@@ -1,0 +1,397 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  direction: rtl;
+  background: #fafaf8;
+  color: #2d3436;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Layout */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background: #2d6a4f;
+  color: white;
+  padding: 0.8rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.header nav {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.header nav a,
+.header nav button {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.header nav a:hover,
+.header nav button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Map Page */
+.map-page {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 56px);
+}
+
+.sidebar {
+  width: 320px;
+  background: white;
+  border-left: 1px solid #e0e0e0;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.sidebar h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+  color: #2d6a4f;
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.filter-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.3rem;
+}
+
+.filter-group select,
+.filter-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.category-chip {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: white;
+  transition: all 0.2s;
+}
+
+.category-chip.active {
+  background: #2d6a4f;
+  color: white;
+  border-color: #2d6a4f;
+}
+
+.map-container {
+  flex: 1;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Producer Card */
+.producer-card {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.producer-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.producer-card h3 {
+  font-size: 1rem;
+  color: #2d6a4f;
+  margin-bottom: 0.3rem;
+}
+
+.producer-card .city {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.producer-card .categories {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.producer-card .cat-tag {
+  font-size: 0.75rem;
+  background: #e8f5e9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  color: #2d6a4f;
+}
+
+.fav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.2rem;
+}
+
+/* Producer Detail */
+.producer-detail {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.producer-detail h1 {
+  color: #2d6a4f;
+  margin-bottom: 0.5rem;
+}
+
+.producer-detail .meta {
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.producer-detail section {
+  margin-bottom: 1.5rem;
+}
+
+.producer-detail section h2 {
+  font-size: 1.1rem;
+  color: #2d6a4f;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #e8f5e9;
+  padding-bottom: 0.3rem;
+}
+
+.product-item,
+.delivery-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Auth Pages */
+.auth-page {
+  max-width: 420px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.auth-page h2 {
+  color: #2d6a4f;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.btn {
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.btn-primary {
+  background: #2d6a4f;
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: #1b4332;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Admin */
+.admin-page {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.admin-page h1 {
+  color: #2d6a4f;
+  margin-bottom: 1.5rem;
+}
+
+.admin-card {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-card .info h3 {
+  margin-bottom: 0.3rem;
+}
+
+.admin-card .actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Recipes */
+.recipes-page {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.recipe-card {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.recipe-card h3 {
+  color: #2d6a4f;
+}
+
+/* Multi-step form */
+.steps-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  background: #e0e0e0;
+  color: #888;
+}
+
+.step-dot.active {
+  background: #2d6a4f;
+  color: white;
+}
+
+.step-dot.done {
+  background: #81c784;
+  color: white;
+}
+
+/* Messages */
+.error-msg {
+  background: #fce4ec;
+  color: #c62828;
+  padding: 0.6rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.success-msg {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.6rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
