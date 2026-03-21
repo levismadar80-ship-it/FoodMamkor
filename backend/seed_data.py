@@ -1,9 +1,11 @@
 """Seed the database with initial categories and sample producers."""
 import uuid
 
+from app.auth import hash_password
 from app.config import settings
 from app.database import SessionLocal
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product
+from app.models.models import User
 
 CATEGORIES = [
     ("בשר ודגים", "🥩"),
@@ -179,6 +181,21 @@ def seed():
                 ))
 
         db.commit()
+
+        # Seed admin user
+        admin_email = "sapir000s@gmail.com"
+        existing_admin = db.query(User).filter(User.email == admin_email).first()
+        if not existing_admin:
+            admin_user = User(
+                email=admin_email,
+                name="Admin",
+                password_hash=hash_password("Zaq123edcv"),
+                role="admin",
+            )
+            db.add(admin_user)
+            db.commit()
+            print(f"Admin user created: {admin_email}")
+
         print("Seed data inserted successfully!")
     finally:
         db.close()

@@ -75,7 +75,19 @@ function App() {
           path="/register/producer"
           element={<RegisterProducerPage onLogin={setUser} />}
         />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route
+          path="/admin"
+          element={
+            user?.role === "admin" ? (
+              <AdminPage />
+            ) : (
+              <div style={{ textAlign: "center", padding: "3rem" }}>
+                <h2>אין הרשאה</h2>
+                <p>עמוד זה מיועד למנהלים בלבד.</p>
+              </div>
+            )
+          }
+        />
         <Route path="/recipes" element={<RecipesPage />} />
         <Route path="/recipes/:id" element={<RecipeDetail />} />
         <Route path="/favorites" element={<FavoritesPage />} />
