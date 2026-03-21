@@ -65,5 +65,36 @@ export default function MapComponent({ producers = [], onProducerClick }) {
     });
   }, [producers, onProducerClick]);
 
-  return <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[12px]" />;
+  const goToMyLocation = () => {
+    if (!mapInstanceRef.current || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        mapInstanceRef.current.setView([latitude, longitude], 13);
+        L.circleMarker([latitude, longitude], {
+          radius: 8,
+          color: "#2D6A2D",
+          fillColor: "#2D6A2D",
+          fillOpacity: 0.8,
+        })
+          .addTo(mapInstanceRef.current)
+          .bindPopup("המיקום שלי")
+          .openPopup();
+      },
+      () => alert("לא הצלחנו לקבל את המיקום שלך"),
+    );
+  };
+
+  return (
+    <div className="relative">
+      <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[12px]" />
+      <button
+        onClick={goToMyLocation}
+        className="absolute top-3 left-3 z-[1000] bg-white rounded-[12px] px-3 py-2 shadow-md hover:bg-gray-50 transition text-sm"
+        title="המיקום שלי"
+      >
+        📍 המיקום שלי
+      </button>
+    </div>
+  );
 }

@@ -31,6 +31,9 @@ export default function Header() {
           </Link>
           {user ? (
             <div className="flex items-center gap-4">
+              <Link href="/favorites" className="text-text-secondary hover:text-primary transition">
+                ❤️ מועדפים
+              </Link>
               <span className="text-sm text-text-secondary">{user.name}</span>
               {user.role === "admin" && (
                 <Link href="/admin" className="text-accent hover:underline text-sm">
@@ -74,6 +77,9 @@ export default function Header() {
           </Link>
           {user ? (
             <>
+              <Link href="/favorites" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
+                ❤️ מועדפים
+              </Link>
               {user.role === "admin" && (
                 <Link href="/admin" className="block text-accent" onClick={() => setMenuOpen(false)}>
                   אדמין

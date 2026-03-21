@@ -12,7 +12,7 @@ export default function HomePage() {
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState({ category: "", delivery_city: "" });
+  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
   const [showHomeForm, setShowHomeForm] = useState(false);
 
   useEffect(() => {
@@ -29,6 +29,7 @@ export default function HomePage() {
     const params = {};
     if (filters.category) params.category = filters.category;
     if (filters.delivery_city) params.delivery_city = filters.delivery_city;
+    if (filters.has_delivery) params.has_delivery = true;
     loadProducers(params);
   };
 
@@ -96,6 +97,15 @@ export default function HomePage() {
               onChange={(e) => setFilters({ ...filters, delivery_city: e.target.value })}
               className="flex-1 border rounded-[12px] px-3 py-2 text-text-primary"
             />
+            <label className="flex items-center gap-2 text-text-primary text-sm whitespace-nowrap cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.has_delivery}
+                onChange={(e) => setFilters({ ...filters, has_delivery: e.target.checked })}
+                className="w-4 h-4 accent-primary"
+              />
+              יש משלוחים
+            </label>
             <button
               onClick={handleFilter}
               className="bg-accent text-white px-6 py-2 rounded-[12px] hover:bg-accent-light transition font-medium"

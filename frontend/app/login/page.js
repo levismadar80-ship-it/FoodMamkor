@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -63,6 +64,11 @@ export default function LoginPage() {
             {loading ? "מתחבר..." : "התחבר"}
           </button>
         </form>
+
+        <GoogleAuthButton
+          onSuccess={() => router.push("/")}
+          onError={(msg) => setError(msg)}
+        />
 
         <p className="text-center text-sm text-text-secondary mt-6">
           אין לך חשבון?{" "}
