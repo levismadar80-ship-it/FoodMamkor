@@ -16,81 +16,115 @@ CATEGORIES = [
     ("מותססים וכבושים", "🥒"),
     ("מוצרים מוכנים", "🫙"),
     ("צמחי מרפא ותוספים", "🌿"),
-    ("סבונים וטיפוח", "🧴"),
-    ("קוסמטיקה טבעית", "🌸"),
+    ("סבונים טבעיים", "🧴"),
+    ("קרמים ושמנים", "🌸"),
+    ("תכשירי צמחים", "🌿"),
+    ("נרות וארומה", "🕯️"),
+    ("תוספי תזונה", "💊"),
 ]
 
 PRODUCERS = [
     {
-        "name": "ארז וליאת",
-        "description": "לחמי מחמצת, מטבלים, קישים — הכל בעבודת יד מחומרי גלם אמיתיים.",
-        "city": "מרכז",
-        "lat": 32.0853,
-        "lng": 34.7818,
-        "phone": "+972556603367",
-        "category_ids": [4],  # לחמים ואפייה
-        "products": [
-            {"name": "לחם מחמצת", "price_range": ""},
-            {"name": "מטבלים", "price_range": ""},
-            {"name": "קישים", "price_range": ""},
-        ],
-        "delivery_areas": [],
-    },
-    {
-        "name": "אביגיל תותים ואוכמניות",
-        "description": "פירות וירקות מחקלאים מכל הארץ — טרי, עונתי ואמיתי.",
-        "city": "כל הארץ",
-        "lat": 31.9,
-        "lng": 34.8,
-        "category_ids": [7],  # פירות
-        "products": [
-            {"name": "תותים", "price_range": ""},
-            {"name": "אוכמניות", "price_range": ""},
-            {"name": "פירות עונתיים", "price_range": ""},
-        ],
-        "delivery_areas": [
-            {"city": "כל הארץ", "min_order": 0, "delivery_day": ""},
-        ],
-    },
-    {
-        "name": "יוסף חווה RAW אורגני",
-        "description": "חלב גולמי, שמן זית, דבש, שמן קוקוס — הכל גולמי ואורגני.",
-        "city": "",
-        "lat": 32.5,
-        "lng": 35.0,
-        "category_ids": [2, 5],  # חלב וגבינות + שמנים ודבש
-        "products": [
-            {"name": "חלב גולמי", "price_range": ""},
-            {"name": "שמן זית", "price_range": ""},
-            {"name": "דבש", "price_range": ""},
-            {"name": "שמן קוקוס", "price_range": ""},
-        ],
-        "delivery_areas": [],
-    },
-    {
-        "name": "איתן דגים",
-        "description": "מעדניית דגים ודליקטסים — דגים טריים ומוצרי דליקטסן איכותיים.",
-        "city": "",
-        "lat": 32.1,
-        "lng": 34.8,
+        "name": "חוות הגליל - בשר אורגני",
+        "description": "חווה משפחתית בגליל המגדלת בקר grass-fed על מרעה טבעי. ללא הורמונים, ללא אנטיביוטיקה.",
+        "city": "כרמיאל",
+        "lat": 32.9136,
+        "lng": 35.3035,
+        "phone": "050-1234567",
+        "instagram": "@galil_farm",
         "category_ids": [1],  # בשר ודגים
         "products": [
-            {"name": "דגים טריים", "price_range": ""},
-            {"name": "דליקטסים", "price_range": ""},
+            {"name": "סטייק אנטריקוט", "price_range": "120-180₪/ק\"ג"},
+            {"name": "בשר טחון", "price_range": "70-90₪/ק\"ג"},
+            {"name": "נקניקיות ביתיות", "price_range": "85₪/ק\"ג"},
         ],
-        "delivery_areas": [],
+        "delivery_areas": [
+            {"city": "חיפה", "min_order": 200, "delivery_day": "שלישי"},
+            {"city": "כרמיאל", "min_order": 100, "delivery_day": "ראשון"},
+            {"city": "עכו", "min_order": 200, "delivery_day": "שלישי"},
+        ],
     },
     {
-        "name": "ציר עצמות",
-        "description": "ציר עצמות ביתי — מבושל לאט מעצמות grass-fed.",
-        "city": "",
-        "lat": 31.8,
-        "lng": 34.7,
-        "category_ids": [9],  # מוצרים מוכנים
+        "name": "גבינות הר הגולן",
+        "description": "מחלבה בוטיק ברמת הגולן. גבינות מחלב עיזים ופרות שגדלות במרעה חופשי.",
+        "city": "קצרין",
+        "lat": 32.9940,
+        "lng": 35.6910,
+        "phone": "052-9876543",
+        "instagram": "@golan_cheese",
+        "website": "https://golan-cheese.co.il",
+        "category_ids": [2],  # חלב וגבינות
         "products": [
-            {"name": "ציר עצמות ביתי", "price_range": ""},
+            {"name": "גבינת עיזים מיושנת", "price_range": "65₪/יח'"},
+            {"name": "לאבנה ביתית", "price_range": "35₪/יח'"},
+            {"name": "חמאה טבעית", "price_range": "40₪/יח'"},
         ],
-        "delivery_areas": [],
+        "delivery_areas": [
+            {"city": "תל אביב", "min_order": 300, "delivery_day": "חמישי"},
+            {"city": "חיפה", "min_order": 250, "delivery_day": "רביעי"},
+            {"city": "ירושלים", "min_order": 300, "delivery_day": "חמישי"},
+        ],
+    },
+    {
+        "name": "מאפיית המחמצת של דנה",
+        "description": "לחמים ומאפים מקמח כוסמין וקמחים מלאים. מחמצת טבעית בת 8 שנים. ללא שמרים מסחריים.",
+        "city": "תל אביב",
+        "lat": 32.0853,
+        "lng": 34.7818,
+        "phone": "054-5551234",
+        "instagram": "@dana_sourdough",
+        "category_ids": [4],  # לחמים ואפייה
+        "products": [
+            {"name": "לחם מחמצת כוסמין", "price_range": "45₪"},
+            {"name": "פוקאצ'ה זעתר", "price_range": "35₪"},
+            {"name": "עוגיות שיבולת שועל", "price_range": "30₪/חבילה"},
+        ],
+        "delivery_areas": [
+            {"city": "תל אביב", "min_order": 80, "delivery_day": "שישי"},
+            {"city": "רמת גן", "min_order": 100, "delivery_day": "שישי"},
+            {"city": "הרצליה", "min_order": 120, "delivery_day": "שישי"},
+        ],
+    },
+    {
+        "name": "תסס - מותססים טבעיים",
+        "description": "סדנה לתסיסה טבעית. קימצ'י, כרוב כבוש, קומבוצ'ה ומשקאות מותססים - הכל בעבודת יד.",
+        "city": "ירושלים",
+        "lat": 31.7683,
+        "lng": 35.2137,
+        "phone": "050-7778899",
+        "instagram": "@tases_ferments",
+        "category_ids": [8],  # מותססים וכבושים
+        "products": [
+            {"name": "קימצ'י קוריאני מסורתי", "price_range": "45₪/צנצנת"},
+            {"name": "כרוב כבוש קלאסי", "price_range": "35₪/צנצנת"},
+            {"name": "קומבוצ'ה ג'ינג'ר", "price_range": "25₪/בקבוק"},
+        ],
+        "delivery_areas": [
+            {"city": "ירושלים", "min_order": 80, "delivery_day": "ראשון"},
+            {"city": "בית שמש", "min_order": 150, "delivery_day": "שני"},
+            {"city": "תל אביב", "min_order": 200, "delivery_day": "רביעי"},
+        ],
+    },
+    {
+        "name": "טבע פור - סבונים ושמנים",
+        "description": "סבונים בעבודת יד משמן זית ראשוני ישראלי. קרמים טבעיים ותכשירי צמחים ללא כימיקלים.",
+        "city": "זכרון יעקב",
+        "lat": 32.5714,
+        "lng": 34.9518,
+        "phone": "053-3334455",
+        "instagram": "@teva_pure",
+        "website": "https://tevapure.co.il",
+        "category_ids": [11, 12],  # סבונים + קרמים
+        "products": [
+            {"name": "סבון שמן זית ולבנדר", "price_range": "35₪"},
+            {"name": "קרם פנים אלוורה", "price_range": "85₪"},
+            {"name": "שמן גוף ורדים", "price_range": "95₪"},
+        ],
+        "delivery_areas": [
+            {"city": "חיפה", "min_order": 100, "delivery_day": "שלישי"},
+            {"city": "תל אביב", "min_order": 150, "delivery_day": "חמישי"},
+            {"city": "זכרון יעקב", "min_order": 0, "delivery_day": "כל יום"},
+        ],
     },
 ]
 
