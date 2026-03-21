@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import api from "@/lib/api";
-import CategoryTag from "@/components/CategoryTag";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: false });
 

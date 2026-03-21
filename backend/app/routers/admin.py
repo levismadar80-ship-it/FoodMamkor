@@ -14,7 +14,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/producers", response_model=list[ProducerDetailOut])
 def list_producers(
-    status: str = Query("pending", regex="^(pending|approved|rejected)$"),
+    status: str = Query("pending", pattern="^(pending|approved|rejected)$"),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):

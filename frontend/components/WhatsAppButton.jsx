@@ -3,7 +3,14 @@
 export default function WhatsAppButton({ phone, productTitle, onClick }) {
   if (!phone) return null;
 
-  const cleanPhone = phone.replace(/[^0-9+]/g, "");
+  // Clean phone and convert Israeli local numbers to international format
+  let cleanPhone = phone.replace(/[^0-9+]/g, "");
+  if (cleanPhone.startsWith("0")) {
+    cleanPhone = "972" + cleanPhone.slice(1);
+  } else if (!cleanPhone.startsWith("+") && !cleanPhone.startsWith("972")) {
+    cleanPhone = "972" + cleanPhone;
+  }
+  cleanPhone = cleanPhone.replace(/^\+/, "");
   const message = encodeURIComponent(`היי, ראיתי את "${productTitle}" במהמקור ואשמח לשמוע פרטים!`);
   const url = `https://wa.me/${cleanPhone}?text=${message}`;
 

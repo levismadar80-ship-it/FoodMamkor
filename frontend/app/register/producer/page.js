@@ -19,6 +19,7 @@ export default function RegisterProducerPage() {
     category_ids: [],
     delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
   });
+  const [stepError, setStepError] = useState("");
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -85,8 +86,16 @@ export default function RegisterProducerPage() {
             <input placeholder="שם מלא *" value={form.name} onChange={set("name")} className="w-full border rounded-[12px] px-3 py-2" />
             <input type="email" placeholder="אימייל *" value={form.email} onChange={set("email")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
             <input type="password" placeholder="סיסמה *" value={form.password} onChange={set("password")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+            {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
             <button
-              onClick={() => { if (form.name && form.email && form.password) setStep(2); }}
+              onClick={() => {
+                if (!form.name || !form.email || !form.password) {
+                  setStepError("יש למלא את כל שדות החובה");
+                  return;
+                }
+                setStepError("");
+                setStep(2);
+              }}
               className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition"
             >
               הבא →
@@ -127,10 +136,18 @@ export default function RegisterProducerPage() {
               חינם: עד 3 תמונות + הופעה במפה. פרמיום: תמונות ללא הגבלה + מוצרים + סטטיסטיקות.
             </p>
 
+            {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
             <div className="flex gap-3">
-              <button onClick={() => setStep(1)} className="text-text-secondary">← חזור</button>
+              <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">← חזור</button>
               <button
-                onClick={() => { if (form.producer_name && form.city) setStep(3); }}
+                onClick={() => {
+                  if (!form.producer_name || !form.city) {
+                    setStepError("יש למלא שם עסק ועיר");
+                    return;
+                  }
+                  setStepError("");
+                  setStep(3);
+                }}
                 className="flex-1 bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition"
               >
                 הבא →

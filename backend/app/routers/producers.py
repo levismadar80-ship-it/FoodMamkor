@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Category, DeliveryArea, Producer, ProducerCategory
+from app.models import Category, DeliveryArea, Producer, ProducerCategory, Report
 from app.schemas.schemas import (
     CategoryOut,
     ProducerCreate,
@@ -65,7 +65,12 @@ def get_producer(producer_id: UUID, db: Session = Depends(get_db)):
     if not producer:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Producer not found")
-    return producer
+
+    # Compute report_count from DB
+    report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
+    result = ProducerDetailOut.model_validate(producer)
+    result.report_count = report_count
+    return result
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)

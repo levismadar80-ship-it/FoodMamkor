@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
-export default function FavoriteButton({ producerId, initialFavorited = false }) {
+export default function FavoriteButton({ producerId }) {
   const { user } = useAuth();
-  const [favorited, setFavorited] = useState(initialFavorited);
+  const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    api
+      .get("/users/me/favorites")
+      .then((res) => {
+        const ids = res.data.map((f) => f.producer_id);
+        setFavorited(ids.includes(producerId));
+      })
+      .catch(() => {});
+  }, [user, producerId]);
 
   if (!user) return null;
 

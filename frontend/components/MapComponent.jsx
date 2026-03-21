@@ -43,15 +43,21 @@ export default function MapComponent({ producers = [], onProducerClick }) {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
+    const escapeHtml = (str) => {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    };
+
     producers.forEach((p) => {
       if (!p.lat || !p.lng) return;
+      const cats = p.categories?.map((c) => `${escapeHtml(c.emoji || "")} ${escapeHtml(c.name)}`).join(", ") || "";
       const marker = L.marker([p.lat, p.lng], { icon: defaultIcon })
         .addTo(mapInstanceRef.current)
         .bindPopup(`
           <div style="text-align:right;font-family:Heebo,sans-serif;">
-            <strong>${p.name}</strong><br/>
-            <span style="color:#6B6B6B">${p.city || ""}</span><br/>
-            ${p.categories?.map((c) => `${c.emoji || ""} ${c.name}`).join(", ") || ""}
+            <strong>${escapeHtml(p.name)}</strong><br/>
+            <span style="color:#6B6B6B">${escapeHtml(p.city)}</span><br/>
+            ${cats}
           </div>
         `);
       marker.on("click", () => onProducerClick?.(p));

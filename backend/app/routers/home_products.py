@@ -1,11 +1,11 @@
 import secrets
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user, get_current_user_optional
+from app.auth import get_current_user
 from app.database import get_db
 from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, User
 from app.schemas.schemas import (
@@ -54,6 +54,66 @@ def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
         "seller_name": hp.user.name if hp.user else None,
         "created_at": hp.created_at,
     }
+
+
+# --- Rating by token routes MUST come before /{product_id} to avoid shadowing ---
+
+
+@router.get("/rate/{token}")
+def get_rating_page(token: str, db: Session = Depends(get_db)):
+    """Get info for the rating page (accessed via WhatsApp link)."""
+    click = db.query(HomeProductWhatsAppClick).filter(
+        HomeProductWhatsAppClick.rating_token == token
+    ).first()
+    if not click:
+        raise HTTPException(status_code=404, detail="Invalid rating link")
+    if click.rated:
+        return {"detail": "Already rated", "already_rated": True}
+    hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
+    return {
+        "already_rated": False,
+        "product_title": hp.title if hp else None,
+        "seller_name": hp.user.name if hp and hp.user else None,
+    }
+
+
+@router.post("/rate/{token}")
+def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db)):
+    """Submit a rating via token (no login required)."""
+    click = db.query(HomeProductWhatsAppClick).filter(
+        HomeProductWhatsAppClick.rating_token == token
+    ).first()
+    if not click:
+        raise HTTPException(status_code=404, detail="Invalid rating link")
+    if click.rated:
+        raise HTTPException(status_code=400, detail="Already rated")
+
+    rating = HomeProductRating(
+        click_id=click.id,
+        user_id=click.user_id,
+        home_product_id=click.home_product_id,
+        stars=data.stars,
+        comment=data.comment,
+    )
+    db.add(rating)
+    click.rated = True
+    db.commit()
+
+    # Check if listing should be auto-hidden (3 negative ratings ≤2 stars)
+    negative_count = db.query(func.count(HomeProductRating.id)).filter(
+        HomeProductRating.home_product_id == click.home_product_id,
+        HomeProductRating.stars <= 2,
+    ).scalar()
+    if negative_count >= 3:
+        hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
+        if hp:
+            hp.is_hidden = True
+            db.commit()
+
+    return {"detail": "Rating submitted. Thank you!"}
+
+
+# --- Standard CRUD routes ---
 
 
 @router.get("", response_model=list[HomeProductOut])
@@ -176,57 +236,3 @@ def get_ratings(product_id: UUID, db: Session = Depends(get_db)):
         "rating_count": count or 0,
         "recent_comments": [HomeProductRatingOut.model_validate(r) for r in recent],
     }
-
-
-@router.get("/rate/{token}")
-def get_rating_page(token: str, db: Session = Depends(get_db)):
-    """Get info for the rating page (accessed via WhatsApp link)."""
-    click = db.query(HomeProductWhatsAppClick).filter(
-        HomeProductWhatsAppClick.rating_token == token
-    ).first()
-    if not click:
-        raise HTTPException(status_code=404, detail="Invalid rating link")
-    if click.rated:
-        return {"detail": "Already rated", "already_rated": True}
-    hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
-    return {
-        "already_rated": False,
-        "product_title": hp.title if hp else None,
-        "seller_name": hp.user.name if hp and hp.user else None,
-    }
-
-
-@router.post("/rate/{token}")
-def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db)):
-    """Submit a rating via token (no login required)."""
-    click = db.query(HomeProductWhatsAppClick).filter(
-        HomeProductWhatsAppClick.rating_token == token
-    ).first()
-    if not click:
-        raise HTTPException(status_code=404, detail="Invalid rating link")
-    if click.rated:
-        raise HTTPException(status_code=400, detail="Already rated")
-
-    rating = HomeProductRating(
-        click_id=click.id,
-        user_id=click.user_id,
-        home_product_id=click.home_product_id,
-        stars=data.stars,
-        comment=data.comment,
-    )
-    db.add(rating)
-    click.rated = True
-    db.commit()
-
-    # Check if listing should be auto-hidden (3 negative ratings ≤2 stars)
-    negative_count = db.query(func.count(HomeProductRating.id)).filter(
-        HomeProductRating.home_product_id == click.home_product_id,
-        HomeProductRating.stars <= 2,
-    ).scalar()
-    if negative_count >= 3:
-        hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
-        if hp:
-            hp.is_hidden = True
-            db.commit()
-
-    return {"detail": "Rating submitted. Thank you!"}

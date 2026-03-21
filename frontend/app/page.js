@@ -12,7 +12,7 @@ export default function HomePage() {
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState({ category: "", delivery_city: "", search: "" });
+  const [filters, setFilters] = useState({ category: "", delivery_city: "" });
   const [showHomeForm, setShowHomeForm] = useState(false);
 
   useEffect(() => {
