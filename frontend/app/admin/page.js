@@ -31,19 +31,19 @@ export default function AdminPage() {
   }, [tab, user]);
 
   const loadProducers = (status) => {
-    api.get(`/admin/producers?status=${status}`).then((r) => setProducers(r.data));
+    api.get(`/admin/producers?status=${status}`).then((r) => setProducers(r.data)).catch(() => setProducers([]));
   };
 
   const loadReports = () => {
-    api.get("/admin/reports").then((r) => setReports(r.data));
+    api.get("/admin/reports").then((r) => setReports(r.data)).catch(() => setReports([]));
   };
 
   const loadHidden = () => {
-    api.get("/admin/home-products/hidden").then((r) => setHiddenListings(r.data));
+    api.get("/admin/home-products/hidden").then((r) => setHiddenListings(r.data)).catch(() => setHiddenListings([]));
   };
 
   const loadStats = () => {
-    api.get("/admin/stats").then((r) => setStats(r.data));
+    api.get("/admin/stats").then((r) => setStats(r.data)).catch(() => {});
   };
 
   const approve = async (id) => {
