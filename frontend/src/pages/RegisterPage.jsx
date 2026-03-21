@@ -13,8 +13,8 @@ function RegisterPage({ onLogin }) {
     try {
       const res = await api.post("/auth/register", form);
       localStorage.setItem("token", res.data.access_token);
-      const payload = JSON.parse(atob(res.data.access_token.split(".")[1]));
-      const userData = { id: payload.sub, email: form.email, role: "consumer" };
+      const meRes = await api.get("/auth/me");
+      const userData = meRes.data;
       localStorage.setItem("user", JSON.stringify(userData));
       onLogin(userData);
       navigate("/");

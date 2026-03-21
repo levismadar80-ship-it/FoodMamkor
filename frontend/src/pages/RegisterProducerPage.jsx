@@ -67,8 +67,8 @@ function RegisterProducerPage({ onLogin }) {
       };
       const res = await api.post("/auth/register/producer", payload);
       localStorage.setItem("token", res.data.access_token);
-      const tokenPayload = JSON.parse(atob(res.data.access_token.split(".")[1]));
-      const userData = { id: tokenPayload.sub, email: form.email, role: "producer" };
+      const meRes = await api.get("/auth/me");
+      const userData = meRes.data;
       localStorage.setItem("user", JSON.stringify(userData));
       onLogin(userData);
       setStep(4);

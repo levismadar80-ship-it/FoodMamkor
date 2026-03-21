@@ -14,9 +14,9 @@ function LoginPage({ onLogin }) {
     try {
       const res = await api.post("/auth/login", { email, password });
       localStorage.setItem("token", res.data.access_token);
-      // Decode JWT to get user info (simple base64 decode)
-      const payload = JSON.parse(atob(res.data.access_token.split(".")[1]));
-      const userData = { id: payload.sub, email };
+      // Fetch full user profile (includes role)
+      const meRes = await api.get("/auth/me");
+      const userData = meRes.data;
       localStorage.setItem("user", JSON.stringify(userData));
       onLogin(userData);
       navigate("/");
