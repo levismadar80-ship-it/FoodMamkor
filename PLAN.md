@@ -4,16 +4,26 @@
 
 Full Next.js rewrite of the React+Vite frontend, keeping the FastAPI backend with schema updates.
 
-### Key Decisions (from interview)
+### Key Decisions (from interview + final brief + roadmap)
 - **Frontend**: Next.js App Router (full rewrite) + Tailwind CSS + Leaflet.js
 - **Backend**: FastAPI (keep, update schema)
 - **Images**: Cloudinary
 - **Auth**: Email/password + Google OAuth (JWT)
 - **Hosting**: Vercel (frontend) + Railway (backend + DB)
 - **Mobile**: PWA
-- **Language**: Hebrew only (no toggle)
+- **Language**: Hebrew only (no toggle — add in v2)
 - **Bot**: Removed
 - **מהמטבח של השכן**: Section on home page, WhatsApp redirect for chat
+
+### Design System (from final brief)
+- **Inspiration**: chai-bria.co.il
+- **Primary green**: `#2D6A2D` (buttons, logo, headings)
+- **Background**: `#FAF8F3` (warm cream, not cold white)
+- **Accent**: `#E8823A` (warm orange for highlights)
+- **Text**: `#1C1C1C` primary / `#6B6B6B` secondary
+- **Style**: Minimal, warm, organic — rounded corners 12px, no gradients, no heavy shadows
+- **Font**: Heebo or Assistant (Hebrew Google Font)
+- **RTL**: Hebrew default
 
 ---
 
@@ -38,8 +48,7 @@ home_products table:
 ```
 
 ### 1.2 Update User model
-- Add `role` option: `home_producer` (in addition to consumer/producer/admin)
-- Actually: any logged-in user can post home products, no need for a separate role
+- Any logged-in user can post home products (no separate role needed)
 - Add `phone` field to User model (for WhatsApp redirect)
 
 ### 1.3 New API Endpoints
@@ -53,7 +62,7 @@ DELETE /home-products/:id    — deactivate own listing
 ### 1.4 Cloudinary Integration
 - Add `POST /upload/image` endpoint
 - Accept file upload, push to Cloudinary, return URL
-- Used by: producer registration, home products, admin recipe photos
+- Used by: producer registration, home products
 - Add `cloudinary` to requirements.txt
 
 ### 1.5 Google OAuth
@@ -65,7 +74,24 @@ DELETE /home-products/:id    — deactivate own listing
 ### 1.6 Admin Notifications
 - Email notification on new producer registration (SMTP)
 - WhatsApp notification via Twilio API
-- Triggered in `POST /producers` (new registration)
+- Triggered in `POST /auth/register/producer`
+
+### 1.7 Freemium Logic
+- Add `plan` field to Producer model: `free` | `premium` (default: `free`)
+- Free: 3 images max + appear on map
+- Premium: unlimited images + products list + statistics
+- Enforce image limit in upload endpoint based on plan
+
+### 1.8 Report System
+- New `reports` table: id, reporter_id (FK→users), producer_id (FK→producers), reason, created_at
+- `POST /producers/:id/report` — any logged-in user
+- `GET /admin/reports` — admin only
+- Auto-flag producer for review when report count >= 3
+
+### 1.9 Producer Activity Check (cron/scheduled)
+- Track last_active_at on Producer model
+- Auto-email every 3 months: "confirm you're still active"
+- 6 months no response → mark as inactive
 
 ---
 
@@ -74,20 +100,22 @@ DELETE /home-products/:id    — deactivate own listing
 ### 2.1 Project Setup
 - Create Next.js 14 app with App Router in `/frontend`
 - Configure Tailwind CSS with RTL support + custom color palette:
-  - Primary: green (#2d6a4f)
-  - Warm beige (#f5f0e8), cream (#faf7f2)
-  - Accent earthy tones
+  - Primary: `#2D6A2D`
+  - Background: `#FAF8F3`
+  - Accent: `#E8823A`
+  - Text: `#1C1C1C` / `#6B6B6B`
 - Configure PWA (next-pwa)
 - Set up Cloudinary Next.js integration (next-cloudinary)
 - Hebrew font (Heebo or Assistant from Google Fonts)
+- Border-radius: 12px throughout
 
 ### 2.2 Layout & Navigation
 - Root layout: RTL, Hebrew font, warm/organic feel
 - Header with nav: דף בית | מפה | הצטרף כיצרן
-- Footer: basic links + disclaimer
+- Footer: basic links + link to /terms
 - Mobile hamburger menu
 
-### 2.3 Pages (5 Core MVP Pages)
+### 2.3 Pages (MVP v1)
 
 #### Page 1: Home `/`
 - **Hero section**: Large search bar + tagline "אוכל אמיתי, ישר מהמקור אליך"
@@ -111,21 +139,22 @@ DELETE /home-products/:id    — deactivate own listing
 - Click producer → navigate to detail page
 
 #### Page 3: Producer Detail `/producer/[id]`
-- SSR/SSG for SEO (getStaticProps or server component)
+- SSR for SEO (server component)
 - Image gallery (carousel) from Cloudinary
 - Name + verified badge
 - Full description
 - Category tags
 - Contact buttons: phone / WhatsApp / Instagram / website
 - Delivery table: city | day | min_order
-- Products list
+- Products list (premium producers only)
 - Heart button (favorites, logged-in only)
+- **"דווח על עסק" button** — report system
 - "הצג במפה" button
 
 #### Page 4: Producer Registration `/register/producer`
 - Multi-step form (4 steps):
   1. Account: email + password (or Google OAuth)
-  2. Business: name, description, city, categories, photos (Cloudinary upload)
+  2. Business: name, description, city, categories, photos (Cloudinary upload, max 3 for free)
   3. Delivery: cities + min order + delivery day
   4. Confirmation: "ממתין לאישור" screen
 - Form validation at each step
@@ -134,9 +163,14 @@ DELETE /home-products/:id    — deactivate own listing
 #### Page 5: Admin Dashboard `/admin`
 - Protected route (admin only)
 - Tab 1: Pending producers — approve/reject with reason
-- Tab 2: Stats overview (count of producers, pending, etc.)
+- Tab 2: Reports — flagged producers (3+ reports)
+- Tab 3: Stats overview (count of producers, pending, etc.)
 - On approve/reject → trigger email + WhatsApp notification
 - Simple, clean table/card layout
+
+#### Page 6: Terms of Service `/terms`
+- Static page with full terms text (from final brief)
+- Sections: מהות השירות, אחריות על מוצרים, מהמטבח של השכן, עסקים מאומתים, דיווח, פרטיות
 
 ### 2.4 Auth Pages
 - `/login` — Email/password + Google OAuth button
@@ -146,13 +180,15 @@ DELETE /home-products/:id    — deactivate own listing
 
 ### 2.5 Shared Components
 - `ProducerCard` — reusable card for grid/list views
-- `HomeProductCard` — card for מהמטבח section
+- `HomeProductCard` — card for מהמטבח section with WhatsApp button
 - `CategoryTag` — colored category chip with emoji
 - `FavoriteButton` — heart icon toggle
+- `ReportButton` — "דווח על עסק" with reason modal
 - `ImageGallery` — Cloudinary carousel
 - `MapComponent` — Leaflet wrapper (dynamic import)
 - `SearchBar` — search input with filters
 - `WhatsAppButton` — opens wa.me link with pre-filled message
+- `FreemiumBadge` — shows plan status on producer dashboard
 
 ---
 
@@ -160,9 +196,9 @@ DELETE /home-products/:id    — deactivate own listing
 
 ### 3.1 SEO
 - Meta tags per page (title, description, og:image)
-- Producer pages: dynamic meta from DB data
-- Structured data (JSON-LD) for producers
-- Sitemap generation
+- Producer pages: dynamic meta from DB data — title: "[שם עסק] - [עיר] | מהמקור"
+- Structured data (JSON-LD schema.org) for local businesses
+- Sitemap.xml auto-generated with all producers
 
 ### 3.2 PWA
 - Manifest.json with Hebrew name + icons
@@ -177,11 +213,11 @@ DELETE /home-products/:id    — deactivate own listing
 
 ## Implementation Order
 
-1. **Backend first**: HomeProduct model + Cloudinary + Google OAuth + notifications
+1. **Backend first**: Schema updates (HomeProduct, reports, freemium) + Cloudinary + Google OAuth + notifications
 2. **Next.js setup**: Project scaffold + Tailwind + layout + auth
-3. **Core pages**: Home → Map → Producer Detail → Registration → Admin
+3. **Core pages**: Home → Map → Producer Detail → Registration → Admin → Terms
 4. **מהמטבח של השכן**: Home page section + backend endpoints
-5. **Polish**: SEO, PWA, responsive testing
+5. **Polish**: SEO, PWA, responsive testing, report system
 
 ---
 
@@ -189,7 +225,11 @@ DELETE /home-products/:id    — deactivate own listing
 - Recipes section
 - About/Vision page (/about)
 - Reviews/ratings
-- Freemium billing/payments
-- EN/Hebrew language toggle
-- Advanced producer dashboard
+- EN/Hebrew language toggle (i18next)
+- Advanced producer dashboard with statistics
 - Push notifications
+- Claude bot
+- Freemium billing/payment processing
+- Native mobile app
+- Community validators
+- Producer auto-email every 3 months (implement cron in v2, prepare schema in v1)
