@@ -23,6 +23,7 @@ def list_producers(
     radius_km: float | None = None,
     category: int | None = None,
     delivery_city: str | None = None,
+    has_delivery: bool | None = None,
     verified: bool | None = None,
     db: Session = Depends(get_db),
 ):
@@ -36,6 +37,8 @@ def list_producers(
 
     if delivery_city:
         q = q.join(DeliveryArea).filter(func.lower(DeliveryArea.city) == delivery_city.lower())
+    elif has_delivery:
+        q = q.filter(Producer.delivery_areas.any())
 
     if lat is not None and lng is not None and radius_km is not None:
         # Simple distance filter using Haversine approximation

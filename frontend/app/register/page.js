@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
   const [form, setForm] = useState({ email: "", name: "", password: "", city: "", phone: "" });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -53,15 +55,33 @@ export default function RegisterPage() {
             <label className="block text-sm font-medium mb-1">טלפון</label>
             <input value={form.phone} onChange={set("phone")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
           </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="w-4 h-4 accent-primary"
+              required
+            />
+            <span>
+              קראתי ואישרתי את{" "}
+              <a href="/terms" target="_blank" className="text-primary hover:underline">תנאי השימוש</a>
+            </span>
+          </label>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !agreedToTerms}
             className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
           >
             {loading ? "נרשם..." : "הירשם"}
           </button>
         </form>
+
+        <GoogleAuthButton
+          onSuccess={() => router.push("/")}
+          onError={(msg) => setError(msg)}
+        />
 
         <p className="text-center text-sm text-text-secondary mt-6">
           יש לך חשבון?{" "}

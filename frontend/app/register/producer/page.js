@@ -20,6 +20,9 @@ export default function RegisterProducerPage() {
     delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
   });
   const [stepError, setStepError] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -132,8 +135,54 @@ export default function RegisterProducerPage() {
               </div>
             </div>
 
+            {/* Image Upload */}
+            <div>
+              <p className="font-medium mb-2">תמונות (עד 3 בתוכנית חינם)</p>
+              <div className="flex flex-wrap gap-3 mb-2">
+                {uploadedImages.map((url, i) => (
+                  <div key={i} className="relative w-20 h-20 rounded-[12px] overflow-hidden bg-gray-100">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setUploadedImages(uploadedImages.filter((_, j) => j !== i))}
+                      className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {uploadedImages.length < 3 && (
+                <label className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] cursor-pointer hover:bg-gray-200 transition text-sm">
+                  {uploading ? "מעלה..." : "📷 העלה תמונה"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const res = await api.post("/upload/image", formData);
+                        setUploadedImages([...uploadedImages, res.data.url]);
+                      } catch (err) {
+                        alert(err.response?.data?.detail || "שגיאה בהעלאת תמונה");
+                      }
+                      setUploading(false);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
             <p className="text-sm text-text-secondary">
               חינם: עד 3 תמונות + הופעה במפה. פרמיום: תמונות ללא הגבלה + מוצרים + סטטיסטיקות.
+              {" "}<a href="/upgrade" className="text-accent hover:underline">שדרגו לפרמיום</a>
             </p>
 
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
@@ -187,13 +236,26 @@ export default function RegisterProducerPage() {
               + הוסף אזור משלוח
             </button>
 
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="w-4 h-4 accent-primary"
+              />
+              <span>
+                קראתי ואישרתי את{" "}
+                <a href="/terms" target="_blank" className="text-primary hover:underline">תנאי השימוש</a>
+              </span>
+            </label>
+
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               <button onClick={() => setStep(2)} className="text-text-secondary">← חזור</button>
               <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !agreedToTerms}
                 className="flex-1 bg-accent text-white py-3 rounded-[12px] hover:bg-accent-light transition font-medium disabled:opacity-50"
               >
                 {loading ? "שולח..." : "שלח בקשה"}
