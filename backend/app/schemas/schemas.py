@@ -1,7 +1,8 @@
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 # --- Auth ---
@@ -10,6 +11,7 @@ class UserRegister(BaseModel):
     name: str
     password: str
     city: str | None = None
+    phone: str | None = None
 
 
 class ProducerRegister(BaseModel):
@@ -29,6 +31,10 @@ class ProducerRegister(BaseModel):
     category_ids: list[int] = []
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str
 
 
 class LoginRequest(BaseModel):
@@ -116,6 +122,7 @@ class ProducerListOut(BaseModel):
     lng: float | None = None
     status: str
     is_verified: bool
+    plan: str = "free"
     images: list[str] = []
     categories: list[CategoryOut] = []
 
@@ -128,6 +135,7 @@ class ProducerDetailOut(ProducerListOut):
     website: str | None = None
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
+    report_count: int = 0
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -139,6 +147,7 @@ class UserOut(BaseModel):
     email: str
     name: str
     city: str | None = None
+    phone: str | None = None
     role: str
     producer_id: UUID | None = None
 
@@ -189,3 +198,76 @@ class RecipeOut(BaseModel):
     ingredients: list[RecipeIngredientOut] = []
 
     model_config = {"from_attributes": True}
+
+
+# --- Home Product (מהמטבח של השכן) ---
+class HomeProductCreate(BaseModel):
+    title: str
+    description: str | None = None
+    photo: str | None = None
+    quantity: str | None = None
+    price: Decimal | None = None
+    neighborhood: str | None = None
+    city: str | None = None
+    phone: str | None = None
+
+
+class HomeProductUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    photo: str | None = None
+    quantity: str | None = None
+    price: Decimal | None = None
+    neighborhood: str | None = None
+    city: str | None = None
+    phone: str | None = None
+
+
+class HomeProductRatingOut(BaseModel):
+    stars: int
+    comment: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class HomeProductOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    title: str
+    description: str | None = None
+    photo: str | None = None
+    quantity: str | None = None
+    price: Decimal | None = None
+    neighborhood: str | None = None
+    city: str | None = None
+    phone: str | None = None
+    is_active: bool
+    avg_rating: float | None = None
+    rating_count: int = 0
+    recent_comments: list[HomeProductRatingOut] = []
+    seller_name: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Report ---
+class ReportCreate(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=500)
+
+
+class ReportOut(BaseModel):
+    id: UUID
+    reporter_id: UUID
+    producer_id: UUID
+    reason: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Rating ---
+class RatingSubmit(BaseModel):
+    stars: int = Field(..., ge=1, le=5)
+    comment: str | None = Field(None, max_length=100)

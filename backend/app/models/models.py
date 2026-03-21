@@ -9,6 +9,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -35,12 +36,14 @@ class Producer(Base):
     status = Column(String(20), default="pending")  # pending | approved | rejected
     images = Column(ARRAY(Text), default=[])
     is_verified = Column(Boolean, default=False)
+    plan = Column(String(20), default="free")  # free | premium
     created_at = Column(DateTime, default=datetime.utcnow)
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
     delivery_areas = relationship("DeliveryArea", back_populates="producer", cascade="all, delete-orphan")
     favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
+    reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
 
 
 class User(Base):
@@ -49,10 +52,12 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(200), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
-    password_hash = Column(String(200), nullable=False)
+    password_hash = Column(String(200), nullable=True)  # nullable for Google OAuth users
     city = Column(String(100))
+    phone = Column(String(20))
     role = Column(String(20), default="consumer")  # consumer | producer | admin
     producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id"), nullable=True)
+    google_id = Column(String(200), unique=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     producer = relationship("Producer")
@@ -139,3 +144,76 @@ class RecipeIngredient(Base):
 
     recipe = relationship("Recipe", back_populates="ingredients")
     producer = relationship("Producer")
+
+
+# --- New models for MVP v1 ---
+
+
+class HomeProduct(Base):
+    __tablename__ = "home_products"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text)
+    photo = Column(Text)  # Cloudinary URL
+    quantity = Column(String(100))
+    price = Column(Numeric(10, 2))
+    neighborhood = Column(String(100))
+    city = Column(String(100))
+    phone = Column(String(20))  # for WhatsApp redirect
+    is_active = Column(Boolean, default=True)
+    is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    ratings = relationship("HomeProductRating", back_populates="home_product", cascade="all, delete-orphan")
+    whatsapp_clicks = relationship("HomeProductWhatsAppClick", back_populates="home_product", cascade="all, delete-orphan")
+
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    reporter_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    reason = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    reporter = relationship("User")
+    producer = relationship("Producer", back_populates="reports")
+
+
+class HomeProductWhatsAppClick(Base):
+    __tablename__ = "home_product_whatsapp_clicks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    home_product_id = Column(UUID(as_uuid=True), ForeignKey("home_products.id", ondelete="CASCADE"), nullable=False)
+    clicked_at = Column(DateTime, default=datetime.utcnow)
+    rating_sent = Column(Boolean, default=False)
+    rated = Column(Boolean, default=False)
+    rating_token = Column(String(100), unique=True, nullable=True)
+
+    user = relationship("User")
+    home_product = relationship("HomeProduct", back_populates="whatsapp_clicks")
+    rating = relationship("HomeProductRating", back_populates="click", uselist=False)
+
+
+class HomeProductRating(Base):
+    __tablename__ = "home_product_ratings"
+    __table_args__ = (
+        UniqueConstraint("click_id", name="uq_one_rating_per_click"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    click_id = Column(UUID(as_uuid=True), ForeignKey("home_product_whatsapp_clicks.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    home_product_id = Column(UUID(as_uuid=True), ForeignKey("home_products.id", ondelete="CASCADE"), nullable=False)
+    stars = Column(Integer, nullable=False)  # 1-5
+    comment = Column(String(100))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    click = relationship("HomeProductWhatsAppClick", back_populates="rating")
+    user = relationship("User")
+    home_product = relationship("HomeProduct", back_populates="ratings")

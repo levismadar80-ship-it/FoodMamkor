@@ -4,8 +4,9 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
+from app.config import settings
 from app.database import get_db
-from app.models import Producer, Recipe, User
+from app.models import HomeProduct, Producer, Recipe, User
 from app.schemas.schemas import ProducerDetailOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -30,7 +31,6 @@ def list_producers(
     )
 
 
-# Keep legacy endpoint for backwards compatibility
 @router.get("/producers/pending", response_model=list[ProducerDetailOut])
 def pending_producers(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return (
@@ -54,10 +54,15 @@ def approve_producer(producer_id: UUID, user: User = Depends(require_admin), db:
     producer.status = "approved"
     db.commit()
 
-    # Find the producer's user to get their email
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
-        _send_approval_email(producer_user.email, producer.name)
+        _send_notification_email(
+            producer_user.email,
+            f'מהמקור - העסק "{producer.name}" אושר!',
+            f'שלום,\n\nהעסק שלך "{producer.name}" אושר במהמקור!\n'
+            f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
+            f"בברכה,\nצוות מהמקור",
+        )
 
     return {"detail": "Producer approved"}
 
@@ -75,13 +80,58 @@ def reject_producer(
     producer.status = "rejected"
     db.commit()
 
+    reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
-        _send_rejection_email(producer_user.email, producer.name, reason)
+        _send_notification_email(
+            producer_user.email,
+            f'מהמקור - עדכון לגבי העסק "{producer.name}"',
+            f'שלום,\n\nלצערנו הבקשה לרישום העסק "{producer.name}" במהמקור לא אושרה.{reason_text}\n\n'
+            f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
+            f"בברכה,\nצוות מהמקור",
+        )
 
     return {"detail": "Producer rejected"}
 
 
+# --- Hidden Home Listings ---
+@router.get("/home-products/hidden")
+def get_hidden_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Get home products auto-hidden by negative ratings."""
+    listings = db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).all()
+    return [
+        {
+            "id": str(hp.id),
+            "title": hp.title,
+            "city": hp.city,
+            "seller_name": hp.user.name if hp.user else None,
+            "created_at": hp.created_at.isoformat(),
+        }
+        for hp in listings
+    ]
+
+
+@router.post("/home-products/{product_id}/restore")
+def restore_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    hp.is_hidden = False
+    db.commit()
+    return {"detail": "Listing restored"}
+
+
+@router.delete("/home-products/{product_id}")
+def delete_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    db.delete(hp)
+    db.commit()
+    return {"detail": "Listing deleted"}
+
+
+# --- Recipes ---
 @router.get("/recipes/pending")
 def pending_recipes(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return db.query(Recipe).filter(Recipe.status == "pending").all()
@@ -107,56 +157,38 @@ def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Sess
     return {"detail": "Recipe rejected"}
 
 
-def _send_approval_email(email: str, producer_name: str):
-    """Send approval notification email to producer."""
-    import smtplib
-    from email.mime.text import MIMEText
+# --- Stats ---
+@router.get("/stats")
+def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    return {
+        "total_producers": db.query(Producer).count(),
+        "pending_producers": db.query(Producer).filter(Producer.status == "pending").count(),
+        "approved_producers": db.query(Producer).filter(Producer.status == "approved").count(),
+        "total_users": db.query(User).count(),
+        "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),
+        "hidden_home_products": db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).count(),
+    }
+
+
+def _send_notification_email(to_email: str, subject: str, body: str):
+    """Send email notification."""
+    if not settings.smtp_user:
+        print(f"[EMAIL] Would send to {to_email}: {subject}")
+        return
 
     try:
-        msg = MIMEText(
-            f"שלום,\n\nהעסק שלך \"{producer_name}\" אושר במהמקור!\n"
-            f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
-            f"בברכה,\nצוות מהמקור",
-            "plain",
-            "utf-8",
-        )
-        msg["Subject"] = f"מהמקור - העסק \"{producer_name}\" אושר!"
-        msg["From"] = "noreply@mehamakor.co.il"
-        msg["To"] = email
+        import smtplib
+        from email.mime.text import MIMEText
 
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = settings.smtp_user
+        msg["To"] = to_email
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
             server.starttls()
-            # TODO: configure SMTP credentials in environment variables
-            # server.login(SMTP_USER, SMTP_PASSWORD)
-            # server.send_message(msg)
-        print(f"[EMAIL] Approval email would be sent to {email}")
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+        print(f"[EMAIL] Sent to {to_email}")
     except Exception as e:
-        print(f"[EMAIL] Failed to send approval email to {email}: {e}")
-
-
-def _send_rejection_email(email: str, producer_name: str, reason: str):
-    """Send rejection notification email to producer."""
-    import smtplib
-    from email.mime.text import MIMEText
-
-    reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
-    try:
-        msg = MIMEText(
-            f"שלום,\n\nלצערנו הבקשה לרישום העסק \"{producer_name}\" במהמקור לא אושרה.{reason_text}\n\n"
-            f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
-            f"בברכה,\nצוות מהמקור",
-            "plain",
-            "utf-8",
-        )
-        msg["Subject"] = f"מהמקור - עדכון לגבי העסק \"{producer_name}\""
-        msg["From"] = "noreply@mehamakor.co.il"
-        msg["To"] = email
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            # TODO: configure SMTP credentials in environment variables
-            # server.login(SMTP_USER, SMTP_PASSWORD)
-            # server.send_message(msg)
-        print(f"[EMAIL] Rejection email would be sent to {email}")
-    except Exception as e:
-        print(f"[EMAIL] Failed to send rejection email to {email}: {e}")
+        print(f"[EMAIL] Failed to send to {to_email}: {e}")

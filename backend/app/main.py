@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import admin, auth, favorites, producer_me, producers, recipes
+from app.routers import admin, auth, favorites, home_products, producer_me, producers, recipes, reports, upload
 
 
 @asynccontextmanager
@@ -36,6 +36,9 @@ app.include_router(favorites.router)
 app.include_router(producer_me.router)
 app.include_router(admin.router)
 app.include_router(recipes.router)
+app.include_router(home_products.router)
+app.include_router(reports.router)
+app.include_router(upload.router)
 
 
 @app.get("/")
