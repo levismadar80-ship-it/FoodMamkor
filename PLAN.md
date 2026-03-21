@@ -93,6 +93,53 @@ DELETE /home-products/:id    — deactivate own listing
 - Auto-email every 3 months: "confirm you're still active"
 - 6 months no response → mark as inactive
 
+### 1.10 Rating System for מהמטבח של השכן
+
+#### DB Schema
+```
+home_product_whatsapp_clicks table:
+  id uuid PK
+  user_id FK → users
+  home_product_id FK → home_products
+  clicked_at timestamp
+  rating_sent bool (default false)   — was the rating request sent?
+  rated bool (default false)          — did the user rate?
+
+home_product_ratings table:
+  id uuid PK
+  click_id FK → home_product_whatsapp_clicks (unique — one rating per click)
+  user_id FK → users
+  home_product_id FK → home_products
+  stars int (1-5)
+  comment text (max 100 chars, optional)
+  created_at timestamp
+```
+
+#### API Endpoints
+```
+POST /home-products/:id/whatsapp-click  — log click (authenticated user)
+GET  /home-products/:id/ratings         — public: avg stars, count, last 3 comments
+POST /home-products/ratings/:token      — submit rating (from unique link)
+GET  /home-products/rate/:token         — rating page (token from WhatsApp message)
+```
+
+#### Scheduled Job: Send Rating Requests
+- Runs every hour (or cron)
+- Find clicks where `clicked_at < now - 24h` AND `rating_sent = false`
+- Send WhatsApp via Twilio to buyer:
+  ```
+  "היי! קנית מ[שם המוכר] דרך מהמקור?
+  איך היה? דרגי בקישור הזה 👇
+  [link to rating page with unique token]"
+  ```
+- Mark `rating_sent = true`
+
+#### Safety Rules
+- **Under 3.0 stars average** → yellow warning badge on listing: "⚠️ דירוג נמוך"
+- **3 negative reviews (≤2 stars)** → auto-hide listing + notify admin via WhatsApp
+- **One rating per WhatsApp click per user** — enforced by unique constraint on click_id
+- Hidden listings can be restored by admin after review
+
 ---
 
 ## Phase 2: Frontend — Next.js Rewrite
@@ -127,9 +174,10 @@ DELETE /home-products/:id    — deactivate own listing
 - **"מהמטבח של השכן" section**:
   - Separate grid below producers
   - Banner: "האחריות על המוצר היא של המוכר בלבד"
-  - Cards: photo + title + price + neighborhood + "ביתי" badge
-  - WhatsApp button on each card
+  - Cards: photo + title + price + neighborhood + "ביתי" badge + star rating ("⭐ 4.8 (12 דירוגים)")
+  - WhatsApp button on each card (logs click for rating follow-up)
   - "פרסם מוצר ביתי" button (opens modal/form for logged-in users)
+  - Yellow warning badge on listings with avg < 3.0 stars
 
 #### Page 2: Map `/map`
 - Leaflet.js with category markers + sidebar filters
@@ -164,13 +212,25 @@ DELETE /home-products/:id    — deactivate own listing
 - Protected route (admin only)
 - Tab 1: Pending producers — approve/reject with reason
 - Tab 2: Reports — flagged producers (3+ reports)
-- Tab 3: Stats overview (count of producers, pending, etc.)
+- Tab 3: Hidden home listings (auto-hidden by 3 negative ratings) — restore/delete
+- Tab 4: Stats overview (count of producers, pending, ratings, etc.)
 - On approve/reject → trigger email + WhatsApp notification
 - Simple, clean table/card layout
 
 #### Page 6: Terms of Service `/terms`
 - Static page with full terms text (from final brief)
 - Sections: מהות השירות, אחריות על מוצרים, מהמטבח של השכן, עסקים מאומתים, דיווח, פרטיות
+
+#### Page 7: Rating Page `/rate/[token]`
+- Accessed via unique link sent in WhatsApp message (24h after click)
+- Simple, mobile-first page:
+  - Seller name + product title
+  - 1-5 star selector (tap to rate)
+  - Optional comment field (max 100 chars)
+  - Submit button
+- Takes ~10 seconds to fill
+- Thank you screen after submit
+- Token-based: no login required, one-time use
 
 ### 2.4 Auth Pages
 - `/login` — Email/password + Google OAuth button
@@ -180,7 +240,7 @@ DELETE /home-products/:id    — deactivate own listing
 
 ### 2.5 Shared Components
 - `ProducerCard` — reusable card for grid/list views
-- `HomeProductCard` — card for מהמטבח section with WhatsApp button
+- `HomeProductCard` — card for מהמטבח section with WhatsApp button + star rating display
 - `CategoryTag` — colored category chip with emoji
 - `FavoriteButton` — heart icon toggle
 - `ReportButton` — "דווח על עסק" with reason modal
@@ -189,6 +249,8 @@ DELETE /home-products/:id    — deactivate own listing
 - `SearchBar` — search input with filters
 - `WhatsAppButton` — opens wa.me link with pre-filled message
 - `FreemiumBadge` — shows plan status on producer dashboard
+- `StarRating` — display component: "⭐ 4.8 (12 דירוגים)" + warning badge if avg < 3.0
+- `StarSelector` — interactive 1-5 star picker for rating page
 
 ---
 
