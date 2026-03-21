@@ -2,11 +2,15 @@ from app.models.models import (
     Category,
     DeliveryArea,
     Favorite,
+    HomeProduct,
+    HomeProductRating,
+    HomeProductWhatsAppClick,
     Producer,
     ProducerCategory,
     Product,
     Recipe,
     RecipeIngredient,
+    Report,
     User,
 )
 
@@ -20,4 +24,8 @@ __all__ = [
     "Favorite",
     "Recipe",
     "RecipeIngredient",
+    "HomeProduct",
+    "Report",
+    "HomeProductWhatsAppClick",
+    "HomeProductRating",
 ]
