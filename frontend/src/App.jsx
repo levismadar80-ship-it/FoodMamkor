@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
+import HomePage from "./pages/HomePage";
 import MapPage from "./pages/MapPage";
 import ProducerDetail from "./pages/ProducerDetail";
 import LoginPage from "./pages/LoginPage";
@@ -9,6 +10,7 @@ import AdminPage from "./pages/AdminPage";
 import RecipesPage from "./pages/RecipesPage";
 import RecipeDetail from "./pages/RecipeDetail";
 import FavoritesPage from "./pages/FavoritesPage";
+import AboutPage from "./pages/AboutPage";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -36,8 +38,10 @@ function App() {
           <h1>מהמקור</h1>
         </Link>
         <nav>
-          <Link to="/">מפה</Link>
+          <Link to="/">דף בית</Link>
+          <Link to="/map">מפה</Link>
           <Link to="/recipes">מתכונים</Link>
+          <Link to="/about">החזון</Link>
           {user ? (
             <>
               {user.role === "admin" && <Link to="/admin">ניהול</Link>}
@@ -47,14 +51,17 @@ function App() {
           ) : (
             <>
               <Link to="/login">התחבר</Link>
-              <Link to="/register">הרשמה</Link>
+              <Link to="/register/producer" className="nav-cta">
+                הצטרף כיצרן
+              </Link>
             </>
           )}
         </nav>
       </header>
 
       <Routes>
-        <Route path="/" element={<MapPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/map" element={<MapPage />} />
         <Route path="/producers/:id" element={<ProducerDetail />} />
         <Route
           path="/login"
@@ -72,6 +79,7 @@ function App() {
         <Route path="/recipes" element={<RecipesPage />} />
         <Route path="/recipes/:id" element={<RecipeDetail />} />
         <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/about" element={<AboutPage />} />
       </Routes>
     </div>
   );
