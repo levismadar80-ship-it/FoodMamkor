@@ -90,9 +90,9 @@ export default function RegisterPage() {
           </Link>
         </p>
         <p className="text-center text-sm text-text-secondary mt-2">
-          רוצה להירשם כיצרן?{" "}
-          <Link href="/register/producer" className="text-accent hover:underline">
-            הרשמה ליצרנים
+          רוצה להוסיף את העסק שלך?{" "}
+          <Link href="/register/producer" className="text-secondary hover:underline">
+            הרשמה לבתי עסק
           </Link>
         </p>
       </div>

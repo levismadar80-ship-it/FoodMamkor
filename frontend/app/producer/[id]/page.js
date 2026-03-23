@@ -15,7 +15,7 @@ async function getProducer(id) {
 export async function generateMetadata({ params }) {
   const producer = await getProducer(params.id);
   if (!producer) {
-    return { title: "יצרן לא נמצא | מהמקור" };
+    return { title: "בית עסק לא נמצא | מהמקור" };
   }
 
   const categories = producer.categories?.map((c) => c.name).join(", ") || "";

@@ -72,7 +72,7 @@ export default function RegisterProducerPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="text-2xl font-bold mb-2 text-center">הרשמה כיצרן</h1>
+        <h1 className="text-2xl font-bold mb-2 text-center">הוסף את העסק שלך</h1>
         <p className="text-text-secondary text-center mb-8">הצטרפו למהמקור והגיעו לקונים שמחפשים אוכל אמיתי</p>
 
         {/* Progress bar */}
@@ -182,7 +182,7 @@ export default function RegisterProducerPage() {
 
             <p className="text-sm text-text-secondary">
               חינם: עד 3 תמונות + הופעה במפה. פרמיום: תמונות ללא הגבלה + מוצרים + סטטיסטיקות.
-              {" "}<a href="/upgrade" className="text-accent hover:underline">שדרגו לפרמיום</a>
+              {" "}<a href="/upgrade" className="text-secondary hover:underline">שדרגו לפרמיום</a>
             </p>
 
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
@@ -256,7 +256,7 @@ export default function RegisterProducerPage() {
               <button
                 onClick={handleSubmit}
                 disabled={loading || !agreedToTerms}
-                className="flex-1 bg-accent text-white py-3 rounded-[12px] hover:bg-accent-light transition font-medium disabled:opacity-50"
+                className="flex-1 bg-secondary text-white py-3 rounded-[12px] hover:bg-secondary-light transition font-medium disabled:opacity-50"
               >
                 {loading ? "שולח..." : "שלח בקשה"}
               </button>
