@@ -73,8 +73,8 @@ export default function MapComponent({ producers = [], onProducerClick }) {
         mapInstanceRef.current.setView([latitude, longitude], 13);
         L.circleMarker([latitude, longitude], {
           radius: 8,
-          color: "#2D6A2D",
-          fillColor: "#2D6A2D",
+          color: "#2e6853",
+          fillColor: "#2e6853",
           fillOpacity: 0.8,
         })
           .addTo(mapInstanceRef.current)

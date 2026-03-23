@@ -33,7 +33,7 @@ export default function ProducerDetail() {
   if (!producer) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        יצרן לא נמצא
+        בית עסק לא נמצא
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default function ProducerDetail() {
               <span className="bg-primary text-white text-xs px-3 py-1 rounded-full">מאומת ✓</span>
             )}
             {producer.plan === "premium" && (
-              <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
+              <span className="bg-accent-warm text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
             )}
           </div>
           <p className="text-text-secondary">{producer.city}</p>

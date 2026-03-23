@@ -17,7 +17,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 33vw"
         />
-        <span className="absolute top-3 left-3 bg-accent text-white text-xs px-2 py-1 rounded-full">
+        <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full">
           ביתי 🏠
         </span>
         {product.avg_rating !== null && product.avg_rating < 3 && (

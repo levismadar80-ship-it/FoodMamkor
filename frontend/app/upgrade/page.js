@@ -31,12 +31,12 @@ export default function UpgradePage() {
           </div>
 
           {/* Premium Plan */}
-          <div className="border-2 border-accent rounded-[12px] p-6 relative">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-white text-xs px-3 py-1 rounded-full">
+          <div className="border-2 border-secondary rounded-[12px] p-6 relative">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs px-3 py-1 rounded-full">
               מומלץ
             </span>
             <h3 className="font-semibold text-lg mb-1">פרמיום</h3>
-            <p className="text-3xl font-bold text-accent mb-4">בקרוב</p>
+            <p className="text-3xl font-bold text-secondary mb-4">בקרוב</p>
             <ul className="text-right text-sm space-y-2 text-text-secondary">
               <li>✓ הופעה במפה</li>
               <li>✓ תמונות ללא הגבלה</li>

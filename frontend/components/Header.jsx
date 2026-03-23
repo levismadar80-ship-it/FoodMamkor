@@ -23,11 +23,14 @@ export default function Header() {
           <Link href="/map" className="text-text-secondary hover:text-primary transition">
             מפה
           </Link>
+          <Link href="/about" className="text-text-secondary hover:text-primary transition">
+            אודות
+          </Link>
           <Link
             href="/register/producer"
             className="bg-primary text-white px-4 py-2 rounded-[12px] hover:bg-primary-light transition"
           >
-            הצטרף כיצרן
+            הוסף את העסק שלך
           </Link>
           {user ? (
             <div className="flex items-center gap-4">
@@ -36,7 +39,7 @@ export default function Header() {
               </Link>
               <span className="text-sm text-text-secondary">{user.name}</span>
               {user.role === "admin" && (
-                <Link href="/admin" className="text-accent hover:underline text-sm">
+                <Link href="/admin" className="text-secondary hover:underline text-sm">
                   אדמין
                 </Link>
               )}
@@ -72,8 +75,11 @@ export default function Header() {
           <Link href="/map" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
             מפה
           </Link>
+          <Link href="/about" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
+            אודות
+          </Link>
           <Link href="/register/producer" className="block text-primary font-semibold" onClick={() => setMenuOpen(false)}>
-            הצטרף כיצרן
+            הוסף את העסק שלך
           </Link>
           {user ? (
             <>
@@ -81,7 +87,7 @@ export default function Header() {
                 ❤️ מועדפים
               </Link>
               {user.role === "admin" && (
-                <Link href="/admin" className="block text-accent" onClick={() => setMenuOpen(false)}>
+                <Link href="/admin" className="block text-secondary" onClick={() => setMenuOpen(false)}>
                   אדמין
                 </Link>
               )}

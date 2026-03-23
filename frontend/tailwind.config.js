@@ -7,12 +7,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#2D6A2D",
-        "primary-light": "#3d8a3d",
-        "primary-dark": "#1d4a1d",
-        cream: "#FAF8F3",
-        accent: "#E8823A",
-        "accent-light": "#f0a060",
+        primary: "#2e6853",
+        "primary-light": "#3a7d64",
+        "primary-dark": "#1f4d3c",
+        secondary: "#4cb08b",
+        "secondary-light": "#6dc4a3",
+        background: "#eaf4ee",
+        accent: "#c9e2d3",
+        "accent-warm": "#E8823A",
+        "accent-warm-light": "#f0a060",
         "text-primary": "#1C1C1C",
         "text-secondary": "#6B6B6B",
       },

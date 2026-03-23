@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 
+const PAGE_SIZE = 8;
+
 export default function HomePage() {
   const { user } = useAuth();
   const [producers, setProducers] = useState([]);
@@ -14,6 +16,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
   const [showHomeForm, setShowHomeForm] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -22,7 +25,10 @@ export default function HomePage() {
   }, []);
 
   const loadProducers = (params = {}) => {
-    api.get("/producers", { params }).then((r) => setProducers(r.data));
+    api.get("/producers", { params }).then((r) => {
+      setProducers(r.data);
+      setVisibleCount(PAGE_SIZE);
+    });
   };
 
   const handleFilter = () => {
@@ -64,6 +70,9 @@ export default function HomePage() {
     }
   };
 
+  const visibleProducers = producers.slice(0, visibleCount);
+  const hasMore = visibleCount < producers.length;
+
   return (
     <div>
       {/* Hero Section */}
@@ -73,7 +82,7 @@ export default function HomePage() {
             אוכל אמיתי, ישר מהמקור אליך
           </h1>
           <p className="text-lg text-white/80 mb-8">
-            גלו יצרנים מקומיים, אורגניים ובריאים באזור שלכם
+            גלו בתי עסק מקומיים, אורגניים ובריאים באזור שלכם
           </p>
 
           {/* Filters */}
@@ -108,7 +117,7 @@ export default function HomePage() {
             </label>
             <button
               onClick={handleFilter}
-              className="bg-accent text-white px-6 py-2 rounded-[12px] hover:bg-accent-light transition font-medium"
+              className="bg-secondary text-white px-6 py-2 rounded-[12px] hover:bg-secondary-light transition font-medium"
             >
               חפש
             </button>
@@ -119,18 +128,28 @@ export default function HomePage() {
       {/* Producers Grid */}
       <section className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">יצרנים מומלצים</h2>
+          <h2 className="text-2xl font-bold">בתי עסק מומלצים</h2>
           <Link href="/map" className="text-primary hover:underline flex items-center gap-1">
             הצג במפה 🗺️
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {producers.map((p) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {visibleProducers.map((p) => (
             <ProducerCard key={p.id} producer={p} />
           ))}
         </div>
         {producers.length === 0 && (
-          <p className="text-center text-text-secondary py-12">לא נמצאו יצרנים. נסו לשנות את הסינון.</p>
+          <p className="text-center text-text-secondary py-12">לא נמצאו בתי עסק. נסו לשנות את הסינון.</p>
+        )}
+        {hasMore && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[12px] hover:bg-accent transition font-medium"
+            >
+              הצג עוד
+            </button>
+          </div>
         )}
       </section>
 
@@ -141,7 +160,7 @@ export default function HomePage() {
           {user && (
             <button
               onClick={() => setShowHomeForm(!showHomeForm)}
-              className="bg-accent text-white px-4 py-2 rounded-[12px] hover:bg-accent-light transition text-sm"
+              className="bg-secondary text-white px-4 py-2 rounded-[12px] hover:bg-secondary-light transition text-sm"
             >
               פרסם מוצר ביתי
             </button>
