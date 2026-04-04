@@ -59,6 +59,7 @@ class User(Base):
     role = Column(String(20), default="consumer")  # consumer | producer | admin
     producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id"), nullable=True)
     google_id = Column(String(200), unique=True, nullable=True)
+    apple_id = Column(String(200), unique=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     producer = relationship("Producer")

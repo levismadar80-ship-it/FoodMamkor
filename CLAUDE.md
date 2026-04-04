@@ -267,6 +267,8 @@ GET  /categories
 POST /auth/register          — צרכן רגיל
 POST /auth/register/producer — טופס מלא (multi-step)
 POST /auth/login             — מחזיר JWT
+POST /auth/apple             — Sign in with Apple
+DELETE /users/me             — מחיקת חשבון (Apple App Store חובה)
 
 # מועדפים
 GET    /users/me/favorites
@@ -312,7 +314,7 @@ POST /recipes
 | מפה | Leaflet.js | חינמי |
 | Hosting | Vercel (frontend) + Railway (backend+DB) | |
 | התראות | Twilio WhatsApp API | לאדמין + דירוגים |
-| אימות | JWT + Google OAuth | אימייל+סיסמה + גוגל |
+| אימות | JWT + Google OAuth + Apple OAuth | אימייל+סיסמה + גוגל + אפל |
 | Mobile | PWA | התקנה + push notifications |
 | שפה | עברית RTL בלבד | EN → גרסה 2 |
 
@@ -362,6 +364,23 @@ POST /auth/register/producer →
 
 ---
 
+## 12.5 Apple App Store — דרישות חובה (עדכון אפריל 2026)
+
+### מחיקת חשבון
+- כפתור "מחק חשבון" בהגדרות המשתמש
+- `DELETE /users/me` — מוחק: נתוני משתמש, מועדפים, מוצרים ביתיים, דירוגים
+- דיאלוג אישור לפני מחיקה
+- מייל אישור לאחר מחיקה
+- עמידה בדרישות Apple App Store Guidelines 5.1.1(v)
+
+### Sign in with Apple
+- כפתור "המשך עם Apple" (שחור, טקסט לבן) — מתחת לכפתור Google
+- `POST /auth/apple` — מקבל identity token מ-Apple, מאמת, יוצר/מחבר משתמש
+- חובה אם מציעים Sign in with Google (App Store Guidelines 4.8)
+- שמירת `apple_id` בטבלת users
+
+---
+
 ## 13. בעיות ידועות ופתרונות
 
 ### קריטי — בטיחות מזון
@@ -407,6 +426,8 @@ POST /auth/register/producer →
 - [x] מערכת דירוג דרך ווטסאפ
 - [x] דף חזון /about
 - [x] SEO עם Next.js
+- [x] Sign in with Apple (חובה ל-App Store)
+- [x] מחיקת חשבון DELETE /users/me (חובה ל-App Store)
 
 ### נדחה ל-v2
 - [ ] מתכונים
