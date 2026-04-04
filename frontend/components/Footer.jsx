@@ -1,11 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
     <footer className="bg-white border-t border-gray-100 mt-12">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-primary font-bold text-xl">מהמקור</div>
+          <Link href="/">
+            <Image src="/logo-footer.png" alt="מהמקור" width={127} height={48} />
+          </Link>
           <nav className="flex gap-6 text-sm text-text-secondary">
             <Link href="/about" className="hover:text-primary transition">
               אודות
