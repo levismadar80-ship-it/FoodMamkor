@@ -16,6 +16,7 @@ def _migrate_columns(engine):
         ("users", "google_id", "VARCHAR(200)"),
         ("producers", "last_active_at", "TIMESTAMP DEFAULT NOW()"),
         ("home_products", "available_until", "TIMESTAMP"),
+        ("users", "apple_id", "VARCHAR(200)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
