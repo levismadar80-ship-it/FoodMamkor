@@ -125,6 +125,41 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Horizontal Category Scroll */}
+      {categories.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 pt-8 pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
+            <button
+              onClick={() => { setFilters({ ...filters, category: "" }); handleFilter(); }}
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
+                !filters.category ? "bg-primary text-white" : "bg-white text-text-secondary hover:bg-accent"
+              }`}
+            >
+              הכל
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  const newCat = filters.category === String(cat.id) ? "" : String(cat.id);
+                  setFilters({ ...filters, category: newCat });
+                  const params = {};
+                  if (newCat) params.category = newCat;
+                  if (filters.delivery_city) params.delivery_city = filters.delivery_city;
+                  if (filters.has_delivery) params.has_delivery = true;
+                  loadProducers(params);
+                }}
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
+                  filters.category === String(cat.id) ? "bg-primary text-white" : "bg-white text-text-secondary hover:bg-accent"
+                }`}
+              >
+                {cat.emoji} {cat.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Producers Grid */}
       <section className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between mb-8">

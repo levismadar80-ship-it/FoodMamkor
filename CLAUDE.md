@@ -1,109 +1,484 @@
-# CLAUDE.md — מהמקור (MeHaMakor) Project Spec
+# מהמקור — מסמך חי (Single Source of Truth)
+> עדכון אחרון: אפריל 2026
+> מסמך זה נקרא אוטומטית בכל שיחת Claude Code — אל תמחק אותו
 
-> This file is auto-read by Claude Code. It contains the full project context.
+---
 
-## What is מהמקור?
-A platform connecting local food producers with consumers in Israel.
-Users discover small businesses (organic farms, home bakers, cheese makers) via a map and directory.
-Separate "מהמטבח של השכן" section for casual home sellers with WhatsApp-based contact and ratings.
+## 1. חזון ושם
 
-## Tech Stack
-- **Frontend**: Next.js 14 App Router, Tailwind CSS, Leaflet.js maps, PWA (next-pwa)
-- **Backend**: Python FastAPI, SQLAlchemy ORM, PostgreSQL + PostGIS
-- **Auth**: JWT (email/password + Google OAuth)
-- **Images**: Cloudinary
-- **Notifications**: Twilio WhatsApp API, SMTP email
-- **Hosting**: Vercel (frontend) + Railway (backend + DB)
-- **Language**: Hebrew only (RTL), Heebo font
+**שם:** מהמקור (MEHAMEKOR)
+**סלוגן:** ישר מהמקור אליך
+**דומיין:** mehamekor.co.il (טרם נרכש — לאחר בדיקות)
+**תיאור:** פלטפורמה ישראלית שמחברת בין יצרני אוכל בריא ומוצרי טיפוח טבעיים לבין צרכנים — דירקטורי חי עם מפה אינטראקטיבית.
+**מטאפורה:** "Google Maps של אוכל בריא בישראל"
+**ייחוד:** אין מתחרה קיים בישראל
 
-## Design System
+---
+
+## 2. עיצוב ולוגו
+
+**השראה:** chai-bria.co.il
+**סגנון:** חם ואורגני — תחושת שוק איכרים, לא startup טכנולוגי
+
+### פלטת צבעים (מהלוגו)
 ```
-primary:    #2e6853   — buttons, logo, headings
-secondary:  #4cb08b   — highlights, accents
-background: #eaf4ee   — page background
-accent:     #c9e2d3   — subtle accent, hover states
-accent-warm:#E8823A   — premium badges, warm highlights
-text:       #1C1C1C (primary) / #6B6B6B (secondary)
-```
-- Style: Minimal, warm, organic — 12px border-radius, no gradients
-- Font: Heebo (Google Fonts)
-- Inspiration: chai-bria.co.il
-
-## Naming Convention (Hebrew UI)
-- "יצרן" → "בית עסק" throughout
-- "יצרני מזון" → "בתי עסק"
-- Register button: "הוסף את העסק שלך"
-- Home seller: "שכן מוכר" in UI
-
-## Project Structure
-```
-/backend
-  /app
-    /models/models.py    — SQLAlchemy models
-    /routers/            — FastAPI route files
-    /schemas/schemas.py  — Pydantic schemas
-    /config.py           — env vars
-    /database.py         — DB engine
-    /main.py             — app entry + migrations
-  /seed_data.py          — initial data
-  /requirements.txt
-
-/frontend
-  /app                   — Next.js App Router pages
-    /about, /admin, /favorites, /login, /map,
-    /producer/[id], /rate/[token], /register,
-    /register/producer, /terms, /upgrade
-  /components            — Reusable React components
-  /lib                   — api.js, auth-context.js
-  /public                — manifest.json, robots.txt, sw.js
+primary:    #2e6853  — ירוק כהה (כפתורים, navbar, לוגו)
+secondary:  #4cb08b  — ירוק בינוני (הדגשות)
+background: #eaf4ee  — רקע בהיר ירקרק
+accent:     #c9e2d3  — אקסנט עדין
+white:      #ffffff  — לבן נקי לכרטיסיות
+text:       #1c1c1c  — טקסט ראשי
+text-muted: #6b6b6b  — טקסט משני
+border:     #e8e0d0  — גבולות
 ```
 
-## Key Backend Models
-- **Producer**: name, city, lat/lng, phone, status, images[], plan (free/premium), last_active_at
-- **User**: email, name, password_hash (nullable for OAuth), phone, google_id, role
-- **HomeProduct**: title, photo, price, neighborhood, city, phone, is_hidden
-- **Report**: reporter_id, producer_id, reason
-- **HomeProductWhatsAppClick**: rating_token, rating_sent, rated
-- **HomeProductRating**: click_id (unique), stars 1-5, comment (100 chars max)
+### עקרונות עיצוב
+- מינימליסטי ונקי — הרבה מרווח לבן
+- פינות מעוגלות: border-radius 12px
+- ללא גרדיאנטים, ללא צללים כבדים
+- RTL עברית כברירת מחדל
+- Hero גדול בדף הבית עם תמונת אוכל אמיתי
 
-## Key Features (v1)
-1. Producer directory with map + grid views
-2. Category/city/delivery filters
-3. Producer detail pages with SSR SEO (generateMetadata + JSON-LD)
-4. "מהמטבח של השכן" section — home sellers with WhatsApp redirect
-5. Rating system: 24h post-WhatsApp-click → Twilio rating request → token-based rating page
-6. Report system: 3 reports → auto-flag for admin
-7. Freemium: free = 3 images + map, premium = unlimited
-8. Google OAuth + email/password auth
-9. Favorites system
-10. Admin dashboard: approve/reject producers, manage reports, hidden listings, stats
-11. /about page with vision, values, criteria
-12. Terms of service page
-13. "הצג עוד" (show more) pagination on home page
-14. PWA with manifest + service worker
+### לוגו
+- סל קניות עם לחם וגזר (קו outline)
+- טקסט: MEHA (סריף עדין) + MEKOR (בולד)
+- צבע: #2e6853 על רקע לבן (לאתר)
+- גרסה שנייה: על רקע #eaf4ee (לאינסטגרם/מצגות)
+- favicon: רק הסל ללא טקסט
 
-## Deferred to v2
-- Recipes section
-- EN/Hebrew language toggle
-- Advanced producer dashboard with statistics
-- Push notifications
-- Freemium billing/payment
-- Native mobile app
-- Community validators
-- Producer auto-email every 3 months (schema prepared in v1)
-
-## Dev Commands
+### כלי עיצוב — Impeccable
 ```bash
-# Frontend
-cd frontend && npm run dev      # dev server
-cd frontend && npx next build   # production build
+npx skills add pbakaus/impeccable
+```
+פקודות לשימוש: /audit, /polish, /critique, /normalize, /animate
 
-# Backend
-cd backend && uvicorn app.main:app --reload  # dev server
+---
 
-# Docker
-docker-compose up               # full stack
+## 3. מבנה עמודים
+
+| עמוד | URL | תיאור |
+|------|-----|--------|
+| דף בית | / | Hero + גריד עסקים + מהמטבח של השכן |
+| מפה | /map | Leaflet + סינון |
+| עסק | /producer/:id | פרטים מלאים + משלוחים |
+| חזון | /about | סיפור + ערכים + קריטריונים |
+| מתכונים | /recipes | גרסה 2 |
+| תנאי שימוש | /terms | חובה לפני השקה |
+| אדמין | /admin | רק role=admin |
+
+### דף הבית — מבנה
+1. Hero גדול + כותרת + שורת חיפוש
+2. שורת קטגוריות (scroll אופקי)
+3. 3 מסננים: קטגוריה / עיר / יש משלוחים
+4. גריד עסקים — 8 ראשונים + כפתור "הצג עוד"
+5. סקציית "מהמטבח של השכן" מתחת לגריד
+
+### כרטיסיית עסק
+- תמונה גדולה בחלק העליון
+- שם עסק בולד וגדול
+- עיר + קטגוריה
+- אייקוני קשר: ווטסאפ, טלפון, אינסטגרם
+- כפתור "מידע נוסף"
+- תגית "מאומת" / "ביתי"
+
+### עמוד עסק /producer/:id
+- גלריה תמונות (carousel)
+- שם + תגית מאומת אם is_verified=true
+- תיאור מלא
+- תגיות קטגוריות
+- כפתורי קשר: טלפון / ווטסאפ / אינסטגרם / אתר
+- טבלת משלוחים: עיר | יום | מינימום הזמנה
+- רשימת מוצרים (אם קיים)
+- לב לשמירת מועדפים (למחוברים בלבד)
+
+### מפה /map
+- מפה Leaflet + גריד עסקים מתחת
+- כשמזיזים המפה → הגריד מתעדכן
+- 3 מסננים: קטגוריה / עיר משלוח / מאומת
+
+### דף חזון /about
+- Hero: "אוכל אמיתי, ישר מהמקור אליך"
+- סיפור: למה מהמקור נוצר
+- 4 ערכי כרטיסיות: 🌿 ללא מעובד | 🥩 חומרי גלם מזוהים | 🏡 ייצור קטן | 🌱 טרי ואמיתי
+- קריטריוני הכניסה
+- CTA: "הוסף את העסק שלך" + "מצא עסקים קרובים"
+
+---
+
+## 4. קטגוריות
+
+### קטגוריה א — בשר, עוף ודגים
+🥩 בשר בקר (כולל grass-fed) | 🐔 עוף חופש | 🐟 דגים טריים
+
+### קטגוריה ב — ירקות, פירות ומשקים
+🥬 ירקות אורגניים | 🍓 פירות | 🥤 מיצים ומשקאות טבעיים
+
+### קטגוריה ג — כל השאר
+🥛 חלב וגבינות | 🍞 לחמים ואפייה | 🫒 שמנים ודבש | 🥒 מותססים וכבושים | 🫙 מוצרים מוכנים | 🌿 צמחי מרפא | 🧴 סבונים וטיפוח | 🕯️ נרות וארומה
+
+---
+
+## 5. סוגי משתמשים
+
+| סוג | role | הרשמה | יכולות |
+|-----|------|--------|---------|
+| צרכן | consumer | חופשי | חיפוש, מועדפים, דירוג |
+| בית עסק | producer | טופס → אישור אדמין | ניהול פרופיל, מוצרים, משלוחים |
+| שכן מוכר | home_producer | חופשי — ללא אישור | פרסום מוצרים ביתיים |
+| אדמין | admin | ידנית ב-DB | אישור/דחייה, ניהול מלא |
+
+### שינויי שמות בממשק
+- "יצרני מזון" → "בתי עסק"
+- "יצרן" → "בית עסק"
+- כפתור הרשמה: "הוסף את העסק שלך"
+- "home_producer" → "שכן מוכר"
+
+---
+
+## 6. מהמטבח של השכן
+
+סקציה נפרדת בדף הבית — מתחת לגריד העסקים המאומתים
+
+### פרטי מוצר ביתי
+- כותרת (למשל "כרוב כבוש ביתי")
+- תמונה
+- כמות זמינה
+- מחיר (או "במתנה" / "בהחלפה")
+- שכונה/עיר (לא כתובת מדויקת)
+- תוקף עד (תאריך)
+
+### קשר בין קונה למוכר
+- WhatsApp redirect בלבד — כפתור פותח ווטסאפ עם מספר המוכר
+- אין צ'אט in-app
+- הם מסכמים על מחיר ומשלוח לבד
+
+### מערכת דירוג (כמו Airbnb)
+- 24 שעות אחרי לחיצת ווטסאפ → הודעה אוטומטית לקונה דרך Twilio
+- הודעה: "היי! קנית מ[שם]? איך היה? דרגי כאן 👇 [לינק]"
+- דף דירוג: 1-5 כוכבים + תגובה עד 100 תווים
+- תצוגה: "⭐ 4.8 (12 דירוגים)" + 3 תגובות אחרונות
+- מתחת 3 כוכבים → תגית אזהרה צהובה
+- 3 ביקורות שליליות → הסתרה אוטומטית + התראה לאדמין
+
+### disclaimer חובה
+"האחריות על המוצר היא של המוכר בלבד"
+
+---
+
+## 7. DB Schema
+
+```sql
+-- עסקים
+producers (
+  id uuid PK,
+  name, description, city,
+  lat float, lng float,
+  phone, instagram, website,
+  status: pending|approved|rejected,
+  images text[],
+  is_verified bool,
+  created_at
+)
+
+-- משתמשים
+users (
+  id uuid PK,
+  email unique, name, password_hash,
+  city,
+  role: consumer|producer|admin,
+  producer_id FK nullable,
+  created_at
+)
+
+-- קטגוריות
+categories (id, name, emoji)
+producer_categories (producer_id FK, category_id FK)
+
+-- מוצרים
+products (id, producer_id FK, name, description, price_range)
+
+-- משלוחים
+delivery_areas (
+  id, producer_id FK,
+  city text,
+  min_order int,
+  delivery_day text
+)
+
+-- מועדפים
+favorites (
+  user_id FK, producer_id FK,
+  PRIMARY KEY (user_id, producer_id),
+  created_at
+)
+
+-- מוצרים ביתיים
+home_listings (
+  id uuid PK,
+  user_id FK,
+  title, description, photo_url,
+  quantity, price, neighborhood,
+  available_until date,
+  is_active bool,
+  created_at
+)
+
+-- דירוגים
+ratings (
+  id uuid PK,
+  from_user_id FK,
+  to_user_id FK,
+  listing_id FK,
+  stars int (1-5),
+  comment text (max 100),
+  created_at
+)
+
+-- מתכונים (גרסה 2)
+recipes (
+  id, title, description,
+  steps json,
+  category_id FK,
+  submitted_by FK,
+  status: pending|approved|rejected,
+  created_at
+)
+
+recipe_ingredients (
+  id, recipe_id FK,
+  ingredient_name,
+  producer_id FK nullable,
+  notes
+)
 ```
 
-## Branch
-Development branch: `claude/review-document-HlIVP`
+---
+
+## 8. API Endpoints
+
+```
+# עסקים
+GET  /producers?lat=&lng=&radius_km=&category=&delivery_city=&verified=
+GET  /producers/:id
+POST /producers
+GET  /categories
+
+# אימות
+POST /auth/register          — צרכן רגיל
+POST /auth/register/producer — טופס מלא (multi-step)
+POST /auth/login             — מחזיר JWT
+
+# מועדפים
+GET    /users/me/favorites
+POST   /users/me/favorites/:id
+DELETE /users/me/favorites/:id
+
+# ניהול עסק
+GET  /producers/me
+PUT  /producers/me
+POST /producers/me/images
+
+# אדמין (role=admin בלבד)
+GET  /admin/producers/pending
+POST /admin/producers/:id/approve
+POST /admin/producers/:id/reject
+
+# מהמטבח של השכן
+GET  /home-listings?city=&category=
+POST /home-listings
+GET  /home-listings/:id
+DELETE /home-listings/:id
+
+# דירוגים
+POST /ratings
+GET  /ratings/listing/:id
+
+# מתכונים (גרסה 2)
+GET  /recipes?category=
+GET  /recipes/:id
+POST /recipes
+```
+
+---
+
+## 9. טכנולוגיה
+
+| שכבה | טכנולוגיה | הערות |
+|------|-----------|-------|
+| Frontend | Next.js + Tailwind CSS | מיגרציה הדרגתית מ-React |
+| Backend | FastAPI + Python | נשאר |
+| Database | PostgreSQL + PostGIS | שאילתות מרחק |
+| תמונות | Cloudinary | אופטימיזציה + CDN |
+| מפה | Leaflet.js | חינמי |
+| Hosting | Vercel (frontend) + Railway (backend+DB) | |
+| התראות | Twilio WhatsApp API | לאדמין + דירוגים |
+| אימות | JWT + Google OAuth | אימייל+סיסמה + גוגל |
+| Mobile | PWA | התקנה + push notifications |
+| שפה | עברית RTL בלבד | EN → גרסה 2 |
+
+### מיגרציה לNext.js
+- הדרגתי — לא rewrite מלא
+- יש 11 routes קיימים — לשמור
+- להתחיל מעמודי עסקים — הכי חשוב לSEO
+
+---
+
+## 10. SEO
+
+- כל עמוד עסק = SSR עם meta tags ייחודיים
+- title: "[שם עסק] - [עיר] | מהמקור"
+- description: תיאור העסק
+- sitemap.xml אוטומטי עם כל העסקים
+- schema.org לעסקים מקומיים
+
+---
+
+## 11. התראות למנהלת
+
+**כשיצרן נרשם:**
+```
+POST /auth/register/producer →
+  WhatsApp לטלפון האדמין (Twilio):
+  "עסק חדש מבקש אישור: [שם] - [עיר] - [קטגוריה]
+   לאישור: mehamekor.co.il/admin"
+  + מייל לאדמין
+```
+
+**כשיש דיווח על עסק:**
+- 3 דיווחים → התראה אוטומטית לאדמין
+
+**אימות תקופתי:**
+- מייל אוטומטי כל 3 חודשים: "האם פרטיך עדיין נכונים?"
+- 6 חודשים ללא תגובה → status = inactive
+
+---
+
+## 12. Freemium
+
+| תוכנית | מחיר | תמונות | מוצרים | סטטיסטיקות |
+|--------|------|--------|---------|-------------|
+| חינם | ₪0 | עד 3 | לא | לא |
+| פרמיום | TBD | ללא הגבלה | כן | כן |
+
+---
+
+## 13. בעיות ידועות ופתרונות
+
+### קריטי — בטיחות מזון
+- **בעיה:** קונה מ"מהמטבח של השכן" ומורעל
+- **פתרון:** הצהרה בהרשמה + disclaimer על כל מוצר + תנאי שימוש
+
+### קריטי — עסקים מתחזים
+- **בעיה:** עסק מצהיר "טבעי" אבל משתמש בתוספים
+- **פתרון:** שאלון מפורט בהרשמה + כפתור דיווח + 3 דיווחים = בדיקה
+
+### בינוני — עסקים לא מעדכנים
+- **פתרון:** מייל כל 3 חודשים, 6 חודשים = inactive
+
+### בינוני — ספאם בצ'אט
+- **פתרון:** כפתור דיווח, 3 דיווחים = חסימה
+
+---
+
+## 14. תנאי שימוש (טיוטה לדף /terms)
+
+1. **מהות השירות** — מהמקור מחברת בין יצרנים לצרכנים. אינה מוכרת מוצרים.
+2. **אחריות מוצרים** — האחריות על כל מוצר היא של המוכר בלבד.
+3. **מהמטבח של השכן** — מוצרים ביתיים באחריות המוכר. הקונה רוכש על אחריותו.
+4. **עסקים מאומתים** — תגית "מאומת" = בדיקה ראשונית. לא ערובה לכל רכישה.
+5. **דיווח** — כפתור דיווח בכל עמוד, טיפול תוך 48 שעות.
+6. **פרטיות** — מידע לצרכי הפלטפורמה בלבד. אין מכירה לצדדים שלישיים.
+
+---
+
+## 15. גרסה 1 — MVP (לשחרר עכשיו)
+
+### נכנס ב-v1
+- [x] דף בית: Hero + גריד + מהמטבח של השכן
+- [x] מפה Leaflet
+- [x] עמוד עסק מלא
+- [x] הרשמת צרכן + Google OAuth
+- [x] הרשמת בית עסק (multi-step, ממתין לאישור)
+- [x] אדמין + התראות ווטסאפ
+- [x] מועדפים
+- [x] PWA
+- [x] תנאי שימוש /terms
+- [x] Freemium (3 תמונות חינם)
+- [x] מערכת דירוג דרך ווטסאפ
+- [x] דף חזון /about
+- [x] SEO עם Next.js
+
+### נדחה ל-v2
+- [ ] מתכונים
+- [ ] EN/עב toggle (אם לא קיים כבר)
+- [ ] ביקורות לעסקים מאומתים
+- [ ] בוט Claude
+
+---
+
+## 16. גרסה 2
+
+- [ ] ביקורות ודירוגים על עסקים מאומתים
+- [ ] עסקים ש"אחרים שמרו"
+- [ ] בוט Claude לשאלות תזונה
+- [ ] מתכונים (הגשה ממשתמשים → אישור אדמין)
+- [ ] EN/עב toggle עם i18next
+- [ ] אפליקציה נייטיבית React Native
+- [ ] ניוזלטר שבועי
+- [ ] מאמתים מתנדבים מהקהילה
+- [ ] השוואת מחירים (גישה ידנית קודם, אוטומטית אחר כך)
+- [ ] Freemium עם סליקת אשראי
+- [ ] API פתוח לעסקים
+
+---
+
+## 17. גרסה 3+ (רעיונות עתידיים)
+
+- שוק שבועי וירטואלי — "יום שוק" עם מבצעים
+- קהילות לפי אזור
+- תיבת ירקות שבועית — מנוי קבוע
+- שיתוף עם מסעדות ושפים
+- הרחבה לחו"ל
+
+---
+
+## 18. תוכנית בדיקות לפני דומיין
+
+### לפני שקונים דומיין — חובה לעבור:
+- [ ] שלב 0: Docker + localhost עובד
+- [ ] שלב 1: דף הבית — עיצוב + מסננים
+- [ ] שלב 2: עמוד עסק
+- [ ] שלב 3: הרשמה + Google OAuth
+- [ ] שלב 4: הרשמת בית עסק + התראות
+- [ ] שלב 5: פאנל אדמין
+- [ ] שלב 6: מהמטבח של השכן + דירוג
+- [ ] שלב 7: מועדפים
+- [ ] שלב 8: מפה
+- [ ] שלב 9: תנאי שימוש
+- [ ] שלב 10: Freemium
+- [ ] שלב 11: ביצועים + אבטחה + מובייל
+- [ ] שלב 12: SEO
+- [ ] שלב 13: 5+ אנשים ניסו + 3 יצרנים ניסו להירשם
+
+---
+
+## 19. סקריפטים שימושיים
+
+### scraper מחירים (גרסה 2)
+```
+scripts/price_scraper.py
+- סורק מחירים מאתרי יצרנים
+- שומר ל /data/prices.json
+- מוצרים: בשר בקר/קג, ביצים/תריסר, חלב/ליטר, לחם/כיכר
+- מריץ ידנית בהתחלה
+```
+
+---
+
+## 20. איך לעדכן מסמך זה
+
+כשיש החלטה חדשה, כתבי:
+```
+עדכן CLAUDE.md: [תיאור ההחלטה]
+```
+Claude Code יוסיף לסעיף הרלוונטי עם תאריך.

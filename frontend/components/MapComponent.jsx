@@ -14,10 +14,12 @@ const defaultIcon = L.icon({
   popupAnchor: [1, -34],
 });
 
-export default function MapComponent({ producers = [], onProducerClick }) {
+export default function MapComponent({ producers = [], onProducerClick, onBoundsChange }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  onBoundsChangeRef.current = onBoundsChange;
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -27,6 +29,19 @@ export default function MapComponent({ producers = [], onProducerClick }) {
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
+
+    // Fire bounds change on map move/zoom
+    const fireBounds = () => {
+      if (!mapInstanceRef.current || !onBoundsChangeRef.current) return;
+      const b = mapInstanceRef.current.getBounds();
+      onBoundsChangeRef.current({
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      });
+    };
+    mapInstanceRef.current.on("moveend", fireBounds);
 
     return () => {
       if (mapInstanceRef.current) {
