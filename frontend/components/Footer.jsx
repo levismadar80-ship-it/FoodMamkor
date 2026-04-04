@@ -7,11 +7,14 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-primary font-bold text-xl">מהמקור</div>
           <nav className="flex gap-6 text-sm text-text-secondary">
+            <Link href="/about" className="hover:text-primary transition">
+              אודות
+            </Link>
             <Link href="/terms" className="hover:text-primary transition">
               תנאי שימוש
             </Link>
             <Link href="/register/producer" className="hover:text-primary transition">
-              הצטרפו כיצרנים
+              הוסף את העסק שלך
             </Link>
           </nav>
           <p className="text-xs text-text-secondary">

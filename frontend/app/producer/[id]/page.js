@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   const categories = producer.categories?.map((c) => c.name).join(", ") || "";
   const description = producer.description
     ? producer.description.slice(0, 155)
-    : `${producer.name} — יצרן אוכל מקומי מ${producer.city}${categories ? `. ${categories}` : ""}`;
+    : `${producer.name} — בית עסק מקומי מ${producer.city}${categories ? `. ${categories}` : ""}`;
 
   return {
     title: `${producer.name} | מהמקור`,
@@ -37,6 +37,48 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function ProducerPage() {
-  return <ProducerDetail />;
+function ProducerJsonLd({ producer }) {
+  if (!producer) return null;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: producer.name,
+    description: producer.description || "",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: producer.city || "",
+      addressCountry: "IL",
+    },
+    ...(producer.lat && producer.lng && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: producer.lat,
+        longitude: producer.lng,
+      },
+    }),
+    ...(producer.phone && { telephone: producer.phone }),
+    ...(producer.website && {
+      url: producer.website.startsWith("http") ? producer.website : `https://${producer.website}`,
+    }),
+    ...(producer.images?.length > 0 && { image: producer.images[0] }),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+}
+
+export default async function ProducerPage({ params }) {
+  const producer = await getProducer(params.id);
+
+  return (
+    <>
+      <ProducerJsonLd producer={producer} />
+      <ProducerDetail />
+    </>
+  );
 }

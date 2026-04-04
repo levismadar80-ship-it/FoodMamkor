@@ -38,6 +38,7 @@ class Producer(Base):
     is_verified = Column(Boolean, default=False)
     plan = Column(String(20), default="free")  # free | premium
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")

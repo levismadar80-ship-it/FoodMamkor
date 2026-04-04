@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
@@ -153,8 +154,16 @@ export default function ProducerDetail() {
         </div>
       )}
 
-      {/* Report */}
-      <div className="mt-8 pt-6 border-t">
+      {/* Show on map + Report */}
+      <div className="mt-8 pt-6 border-t flex items-center justify-between">
+        {producer.lat && producer.lng && (
+          <Link
+            href={`/map?lat=${producer.lat}&lng=${producer.lng}`}
+            className="inline-flex items-center gap-2 text-primary hover:underline text-sm font-medium"
+          >
+            🗺️ הצג במפה
+          </Link>
+        )}
         <ReportButton producerId={producer.id} />
       </div>
     </div>
