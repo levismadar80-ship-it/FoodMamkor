@@ -7,6 +7,10 @@ export const metadata = {
   title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
   description: "פלטפורמה לחיבור בין בתי עסק מקומיים לקונים. מצאו בתי עסק מקומיים, אורגניים ובריאים באזור שלכם.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport = {

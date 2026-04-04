@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -11,8 +12,8 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold text-primary">
-          מהמקור
+        <Link href="/">
+          <Image src="/logo.png" alt="מהמקור" width={106} height={40} priority />
         </Link>
 
         {/* Desktop nav */}
