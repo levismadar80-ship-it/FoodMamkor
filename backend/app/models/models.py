@@ -163,6 +163,7 @@ class HomeProduct(Base):
     neighborhood = Column(String(100))
     city = Column(String(100))
     phone = Column(String(20))  # for WhatsApp redirect
+    available_until = Column(DateTime, nullable=True)  # expiry date
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
     created_at = Column(DateTime, default=datetime.utcnow)

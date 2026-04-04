@@ -18,6 +18,7 @@ module.exports = {
         "accent-warm-light": "#f0a060",
         "text-primary": "#1C1C1C",
         "text-secondary": "#6B6B6B",
+        border: "#e8e0d0",
       },
       borderRadius: {
         DEFAULT: "12px",

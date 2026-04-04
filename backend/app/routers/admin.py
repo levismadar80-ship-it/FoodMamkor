@@ -64,6 +64,13 @@ def approve_producer(producer_id: UUID, user: User = Depends(require_admin), db:
             f"בברכה,\nצוות מהמקור",
         )
 
+    # Notify admin via WhatsApp
+    if settings.admin_whatsapp_to:
+        _send_whatsapp(
+            settings.admin_whatsapp_to,
+            f'✅ העסק "{producer.name}" אושר במהמקור.',
+        )
+
     return {"detail": "Producer approved"}
 
 
@@ -89,6 +96,13 @@ def reject_producer(
             f'שלום,\n\nלצערנו הבקשה לרישום העסק "{producer.name}" במהמקור לא אושרה.{reason_text}\n\n'
             f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
             f"בברכה,\nצוות מהמקור",
+        )
+
+    # Notify admin via WhatsApp
+    if settings.admin_whatsapp_to:
+        _send_whatsapp(
+            settings.admin_whatsapp_to,
+            f'❌ העסק "{producer.name}" נדחה.{reason_text}',
         )
 
     return {"detail": "Producer rejected"}
@@ -192,3 +206,23 @@ def _send_notification_email(to_email: str, subject: str, body: str):
         print(f"[EMAIL] Sent to {to_email}")
     except Exception as e:
         print(f"[EMAIL] Failed to send to {to_email}: {e}")
+
+
+def _send_whatsapp(to: str, body: str):
+    """Send WhatsApp notification via Twilio."""
+    if not settings.twilio_account_sid or not settings.twilio_auth_token:
+        print(f"[WHATSAPP] Would send to {to}: {body}")
+        return
+
+    try:
+        from twilio.rest import Client
+
+        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+        client.messages.create(
+            body=body,
+            from_=f"whatsapp:{settings.twilio_whatsapp_from}",
+            to=f"whatsapp:{to}",
+        )
+        print(f"[WHATSAPP] Sent to {to}")
+    except Exception as e:
+        print(f"[WHATSAPP] Failed to send to {to}: {e}")
