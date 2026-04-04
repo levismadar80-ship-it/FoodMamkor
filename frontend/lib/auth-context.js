@@ -49,6 +49,21 @@ export function AuthProvider({ children }) {
     return me.data;
   };
 
+  const loginWithApple = async (idToken, name) => {
+    const res = await api.post("/auth/apple", { id_token: idToken, name });
+    localStorage.setItem("token", res.data.access_token);
+    const me = await api.get("/auth/me");
+    setUser(me.data);
+    return me.data;
+  };
+
+  const deleteAccount = async () => {
+    await api.delete("/auth/me");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -56,7 +71,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, loginWithApple, deleteAccount, logout }}>
       {children}
     </AuthContext.Provider>
   );
