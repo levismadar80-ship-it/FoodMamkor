@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
+import AppleAuthButton from "@/components/AppleAuthButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -66,6 +67,10 @@ export default function LoginPage() {
         </form>
 
         <GoogleAuthButton
+          onSuccess={() => router.push("/")}
+          onError={(msg) => setError(msg)}
+        />
+        <AppleAuthButton
           onSuccess={() => router.push("/")}
           onError={(msg) => setError(msg)}
         />

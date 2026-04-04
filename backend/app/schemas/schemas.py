@@ -37,6 +37,11 @@ class GoogleAuthRequest(BaseModel):
     id_token: str
 
 
+class AppleAuthRequest(BaseModel):
+    id_token: str
+    name: str | None = None  # Apple only sends name on first auth
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str

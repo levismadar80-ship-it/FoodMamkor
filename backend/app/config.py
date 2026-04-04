@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Google OAuth
     google_client_id: str = ""
 
+    # Apple Sign In
+    apple_client_id: str = ""
+
     # Twilio WhatsApp
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""

@@ -37,7 +37,9 @@ export default function Header() {
               <Link href="/favorites" className="text-text-secondary hover:text-primary transition">
                 ❤️ מועדפים
               </Link>
-              <span className="text-sm text-text-secondary">{user.name}</span>
+              <Link href="/settings" className="text-text-secondary hover:text-primary transition text-sm">
+                {user.name}
+              </Link>
               {user.role === "admin" && (
                 <Link href="/admin" className="text-secondary hover:underline text-sm">
                   אדמין
