@@ -25,7 +25,9 @@ class Producer(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(200), nullable=False)
+    contact_name = Column(String(200), nullable=True)
     description = Column(Text)
+    short_description = Column(Text, nullable=True)
     city = Column(String(100))
     lat = Column(Float)
     lng = Column(Float)
@@ -33,13 +35,21 @@ class Producer(Base):
     phone = Column(String(20))
     instagram = Column(String(100))
     website = Column(String(200))
-    status = Column(String(20), default="pending")  # pending | approved | rejected
+    whatsapp_group = Column(String(300), nullable=True)  # invite link
+    status = Column(String(20), default="pending")  # pending | approved | rejected | inactive
     images = Column(ARRAY(Text), default=[])
     is_verified = Column(Boolean, default=False)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(String(200), nullable=True)  # featured product for cards/map
-    starting_price_label = Column(String(50), nullable=True)  # "מ-₪65/ק״ג"
+    starting_price_label = Column(String(50), nullable=True)  # legacy alias for price_range
+    price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
+    grass_fed = Column(Boolean, default=False)
+    organic_certified = Column(Boolean, default=False)
+    has_delivery = Column(Boolean, default=False)
+    pickup_points = Column(Boolean, default=False)
+    kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
+    admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
 

@@ -1,34 +1,238 @@
+import re
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
 from app.database import get_db
-from app.models import HomeProduct, Producer, Recipe, User
-from app.schemas.schemas import ProducerDetailOut
+from app.models import Category, DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
+from app.schemas.schemas import (
+    ProducerAdminCreate,
+    ProducerDetailOut,
+    ProducerImportPreviewRow,
+    ProducerImportResult,
+    ProducerUpdate,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+def _slugify(text: str) -> str:
+    """Generate URL-safe slug from text. Hebrew → transliterate-ish fallback."""
+    if not text:
+        return ""
+    # Keep ASCII letters/numbers/hyphens; replace whitespace with hyphens
+    s = text.strip().lower()
+    s = re.sub(r"\s+", "-", s)
+    # Strip characters that are not safe URL chars (keep hebrew letters)
+    s = re.sub(r"[^\w\u0590-\u05FF\-]", "", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s[:100]
+
+
+def _yes_no(value) -> bool:
+    """Parse Hebrew/English yes/no values from Excel."""
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    s = str(value).strip().lower()
+    return s in ("כן", "yes", "y", "true", "1", "v", "✓")
+
+
+def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = None) -> str:
+    """Append -2, -3, ... until slug is unique."""
+    if not base_slug:
+        return base_slug
+    candidate = base_slug
+    counter = 2
+    while True:
+        q = db.query(Producer).filter(Producer.slug == candidate)
+        if exclude_id:
+            q = q.filter(Producer.id != exclude_id)
+        if not q.first():
+            return candidate
+        candidate = f"{base_slug}-{counter}"
+        counter += 1
+
+
+def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
+    db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
+    for cid in category_ids:
+        db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+
+
+def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
+    db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
+    for city in cities:
+        city = (city or "").strip()
+        if not city:
+            continue
+        db.add(DeliveryArea(producer_id=producer.id, city=city))
+
+
 @router.get("/producers", response_model=list[ProducerDetailOut])
 def list_producers(
-    status: str = Query("pending", pattern="^(pending|approved|rejected)$"),
+    status: str | None = Query(None, pattern="^(pending|approved|rejected|inactive|all)$"),
+    search: str | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    return (
-        db.query(Producer)
-        .options(
-            joinedload(Producer.categories),
-            joinedload(Producer.products),
-            joinedload(Producer.delivery_areas),
-        )
-        .filter(Producer.status == status)
-        .order_by(Producer.created_at.desc())
-        .all()
+    q = db.query(Producer).options(
+        joinedload(Producer.categories),
+        joinedload(Producer.products),
+        joinedload(Producer.delivery_areas),
     )
+    if status and status != "all":
+        q = q.filter(Producer.status == status)
+    if search:
+        like = f"%{search}%"
+        q = q.filter((Producer.name.ilike(like)) | (Producer.city.ilike(like)))
+    return q.order_by(Producer.created_at.desc()).all()
+
+
+@router.post("/producers", response_model=ProducerDetailOut, status_code=201)
+def admin_create_producer(
+    data: ProducerAdminCreate,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin-created producers are auto-approved."""
+    slug = data.slug or _slugify(data.name)
+    slug = _ensure_unique_slug(db, slug)
+
+    producer = Producer(
+        name=data.name,
+        contact_name=data.contact_name,
+        description=data.description,
+        short_description=data.short_description,
+        city=data.city,
+        lat=data.lat,
+        lng=data.lng,
+        phone=data.phone,
+        instagram=data.instagram,
+        website=data.website,
+        whatsapp_group=data.whatsapp_group,
+        slug=slug,
+        top_product_name=data.top_product_name,
+        price_range=data.price_range,
+        starting_price_label=data.price_range,  # keep both in sync
+        grass_fed=data.grass_fed,
+        organic_certified=data.organic_certified,
+        has_delivery=data.has_delivery,
+        pickup_points=data.pickup_points,
+        kosher=data.kosher,
+        admin_notes=data.admin_notes,
+        is_verified=data.is_verified,
+        images=data.images or [],
+        status="approved",  # admin = pre-approved
+    )
+    db.add(producer)
+    db.flush()
+
+    _apply_categories(db, producer, data.category_ids)
+    _apply_delivery_cities(db, producer, data.delivery_area_cities)
+
+    db.commit()
+    db.refresh(producer)
+    return producer
+
+
+@router.put("/producers/{producer_id}", response_model=ProducerDetailOut)
+def admin_update_producer(
+    producer_id: UUID,
+    data: ProducerUpdate,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+
+    payload = data.model_dump(exclude_unset=True)
+    category_ids = payload.pop("category_ids", None)
+    delivery_cities = payload.pop("delivery_area_cities", None)
+
+    # Keep slug unique if changed
+    if "slug" in payload and payload["slug"]:
+        payload["slug"] = _ensure_unique_slug(db, _slugify(payload["slug"]), exclude_id=producer.id)
+
+    # Mirror price_range → starting_price_label for backward-compat display
+    if "price_range" in payload:
+        producer.starting_price_label = payload["price_range"]
+
+    for field, value in payload.items():
+        setattr(producer, field, value)
+
+    if category_ids is not None:
+        _apply_categories(db, producer, category_ids)
+    if delivery_cities is not None:
+        _apply_delivery_cities(db, producer, delivery_cities)
+
+    db.commit()
+    db.refresh(producer)
+    return producer
+
+
+@router.post("/producers/{producer_id}/toggle-status")
+def toggle_producer_status(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Toggle approved <-> inactive (hides from public listings)."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    producer.status = "inactive" if producer.status == "approved" else "approved"
+    db.commit()
+    return {"detail": "Status toggled", "status": producer.status}
+
+
+@router.delete("/producers/{producer_id}")
+def admin_delete_producer(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    db.delete(producer)
+    db.commit()
+    return {"detail": "Producer deleted"}
+
+
+@router.post("/producers/import")
+async def import_producers_excel(
+    file: UploadFile = File(...),
+    dry_run: bool = Query(True, description="Preview only — set false to actually save"),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Upload Excel/CSV file and import producers. dry_run=true returns preview only."""
+    from io import BytesIO
+
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        raise HTTPException(status_code=500, detail="openpyxl not installed")
+
+    contents = await file.read()
+    try:
+        wb = load_workbook(BytesIO(contents), data_only=True)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"לא ניתן לקרוא את הקובץ: {e}")
+
+    ws = wb.active
+    # Skip header row
+    rows = [list(r) for r in ws.iter_rows(min_row=2, values_only=True)]
+
+    from app.services.producer_import import import_rows
+
+    return import_rows(db, rows, dry_run=dry_run)
 
 
 @router.get("/producers/pending", response_model=list[ProducerDetailOut])

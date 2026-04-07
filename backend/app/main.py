@@ -20,6 +20,16 @@ def _migrate_columns(engine):
         ("producers", "slug", "VARCHAR(100)"),
         ("producers", "top_product_name", "VARCHAR(200)"),
         ("producers", "starting_price_label", "VARCHAR(50)"),
+        ("producers", "contact_name", "VARCHAR(200)"),
+        ("producers", "short_description", "TEXT"),
+        ("producers", "whatsapp_group", "VARCHAR(300)"),
+        ("producers", "price_range", "VARCHAR(100)"),
+        ("producers", "grass_fed", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "organic_certified", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "has_delivery", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "pickup_points", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "kosher", "VARCHAR(50)"),
+        ("producers", "admin_notes", "TEXT"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:

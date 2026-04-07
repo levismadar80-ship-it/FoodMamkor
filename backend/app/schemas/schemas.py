@@ -107,24 +107,82 @@ class ProducerCreate(BaseModel):
     delivery_areas: list[DeliveryAreaCreate] = []
 
 
-class ProducerUpdate(BaseModel):
-    name: str | None = None
+class ProducerAdminCreate(BaseModel):
+    """Used by admin form — pre-approved, supports all extended fields."""
+    name: str
+    contact_name: str | None = None
     description: str | None = None
+    short_description: str | None = None
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    whatsapp_group: str | None = None
+    slug: str | None = None
+    top_product_name: str | None = None
+    price_range: str | None = None
+    grass_fed: bool = False
+    organic_certified: bool = False
+    has_delivery: bool = False
+    pickup_points: bool = False
+    kosher: str | None = None
+    admin_notes: str | None = None
+    is_verified: bool = True
+    images: list[str] = []
+    category_ids: list[int] = []
+    delivery_area_cities: list[str] = []  # simple comma-split list
+
+
+class ProducerImportPreviewRow(BaseModel):
+    row_number: int
+    data: dict
+    errors: list[str] = []
+    warnings: list[str] = []
+
+
+class ProducerImportResult(BaseModel):
+    imported: int
+    skipped: int
+    errors: int
+    rows: list[ProducerImportPreviewRow]
+
+
+class ProducerUpdate(BaseModel):
+    name: str | None = None
+    contact_name: str | None = None
+    description: str | None = None
+    short_description: str | None = None
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    whatsapp_group: str | None = None
     slug: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
+    price_range: str | None = None
+    grass_fed: bool | None = None
+    organic_certified: bool | None = None
+    has_delivery: bool | None = None
+    pickup_points: bool | None = None
+    kosher: str | None = None
+    admin_notes: str | None = None
+    is_verified: bool | None = None
+    images: list[str] | None = None
+    status: str | None = None
+    category_ids: list[int] | None = None
+    delivery_area_cities: list[str] | None = None  # admin form: simple list of city names
 
 
 class ProducerListOut(BaseModel):
     id: UUID
     name: str
     description: str | None = None
+    short_description: str | None = None
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -134,6 +192,12 @@ class ProducerListOut(BaseModel):
     slug: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
+    price_range: str | None = None
+    grass_fed: bool = False
+    organic_certified: bool = False
+    has_delivery: bool = False
+    pickup_points: bool = False
+    kosher: str | None = None
     images: list[str] = []
     categories: list[CategoryOut] = []
 
@@ -141,9 +205,11 @@ class ProducerListOut(BaseModel):
 
 
 class ProducerDetailOut(ProducerListOut):
+    contact_name: str | None = None
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    whatsapp_group: str | None = None
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
