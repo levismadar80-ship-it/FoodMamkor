@@ -73,10 +73,28 @@ class User(Base):
     producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id"), nullable=True)
     google_id = Column(String(200), unique=True, nullable=True)
     apple_id = Column(String(200), unique=True, nullable=True)
+    is_blocked = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
+
+
+class AdminSetting(Base):
+    __tablename__ = "admin_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class StaticPage(Base):
+    __tablename__ = "static_pages"
+
+    slug = Column(String(50), primary_key=True)  # 'about' | 'terms'
+    title = Column(String(200), nullable=False)
+    body = Column(Text, nullable=False, default="")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Category(Base):
