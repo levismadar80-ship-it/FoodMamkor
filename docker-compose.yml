@@ -21,7 +21,13 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/mehamakor
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # Baked into .next/routes-manifest.json at build time. Must match
+        # the runtime BACKEND_URL below or the rewrite destination will
+        # be wrong even after the container restarts.
+        BACKEND_URL: http://backend:8000
     ports:
       - "3000:3000"
     depends_on:
