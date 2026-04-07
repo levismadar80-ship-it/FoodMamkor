@@ -29,7 +29,10 @@ services:
     environment:
       # Inside docker-compose the backend service is reachable at host
       # `backend`, NOT `localhost`. The Next.js rewrite in next.config.js
-      # reads this at runtime to proxy /api/* → backend.
+      # reads BACKEND_URL at runtime to proxy /api/* → backend. We use a
+      # non-NEXT_PUBLIC_ name on purpose so it can never be shadowed by a
+      # frontend/.env.local file that may have leaked into the image.
+      BACKEND_URL: http://backend:8000
       NEXT_PUBLIC_API_URL: http://backend:8000
 
 volumes:
