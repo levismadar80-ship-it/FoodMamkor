@@ -125,6 +125,27 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="max-w-7xl mx-auto px-4 pt-12 pb-4">
+        <h2 className="text-2xl font-bold text-center mb-8">איך זה עובד?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { icon: "🔍", title: "מצא", text: "חפשו בתי עסק קרובים אליכם דרך המפה או הסינון" },
+            { icon: "📞", title: "צור קשר", text: "דברו ישירות עם בית העסק בווטסאפ או בטלפון" },
+            { icon: "🛒", title: "קנה", text: "קבלו אוכל אמיתי, טרי, ישר מהמקור — בלי מתווכים" },
+          ].map((step, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-[12px] p-6 text-center border border-border"
+            >
+              <div className="text-4xl mb-3" aria-hidden>{step.icon}</div>
+              <h3 className="font-bold text-lg mb-2 text-primary">{step.title}</h3>
+              <p className="text-text-secondary text-sm leading-relaxed">{step.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Horizontal Category Scroll */}
       {categories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pt-8 pb-2">

@@ -8,10 +8,11 @@ export default function ProducerCard({ producer }) {
   const imgSrc = producer.images?.[0] || "https://placehold.co/400x300?text=מהמקור";
   const phone = producer.phone;
   const whatsappNumber = phone ? phone.replace(/^0/, "972").replace(/[-\s]/g, "") : null;
+  const producerHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
 
   return (
     <div className="bg-white rounded-[12px] overflow-hidden hover:shadow-md transition group">
-      <Link href={`/producer/${producer.id}`}>
+      <Link href={producerHref}>
         <div className="relative h-56 bg-gray-100">
           <Image
             src={imgSrc}
@@ -33,10 +34,23 @@ export default function ProducerCard({ producer }) {
         </div>
       </Link>
       <div className="p-4">
-        <Link href={`/producer/${producer.id}`}>
+        <Link href={producerHref}>
           <h3 className="font-bold text-lg mb-1 hover:text-primary transition">{producer.name}</h3>
         </Link>
-        <p className="text-text-secondary text-sm mb-3">{producer.city}</p>
+        <p className="text-text-secondary text-sm mb-2">{producer.city}</p>
+        {(producer.top_product_name || producer.starting_price_label) && (
+          <p className="text-sm mb-3">
+            {producer.top_product_name && (
+              <span className="text-text-primary">{producer.top_product_name}</span>
+            )}
+            {producer.top_product_name && producer.starting_price_label && (
+              <span className="text-text-secondary"> · </span>
+            )}
+            {producer.starting_price_label && (
+              <span className="text-primary font-semibold">{producer.starting_price_label}</span>
+            )}
+          </p>
+        )}
         <div className="flex flex-wrap gap-1 mb-3">
           {producer.categories?.slice(0, 3).map((cat) => (
             <CategoryTag key={cat.id} category={cat} />
@@ -81,7 +95,7 @@ export default function ProducerCard({ producer }) {
             )}
           </div>
           <Link
-            href={`/producer/${producer.id}`}
+            href={producerHref}
             className="text-primary text-sm font-medium hover:underline"
           >
             מידע נוסף ←

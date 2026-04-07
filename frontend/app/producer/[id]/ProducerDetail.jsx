@@ -8,20 +8,23 @@ import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportButton from "@/components/ReportButton";
+import ShareButton from "@/components/ShareButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
-export default function ProducerDetail() {
-  const { id } = useParams();
-  const [producer, setProducer] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
+  const params = useParams();
+  const [producer, setProducer] = useState(initialProducer);
+  const [loading, setLoading] = useState(!initialProducer);
 
   useEffect(() => {
+    if (initialProducer) return;
+    const path = fetchPath || `/producers/${params.id}`;
     api
-      .get(`/producers/${id}`)
+      .get(path)
       .then((r) => setProducer(r.data))
       .catch(() => setProducer(null))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [params.id, fetchPath, initialProducer]);
 
   if (loading) {
     return (
@@ -38,6 +41,11 @@ export default function ProducerDetail() {
       </div>
     );
   }
+
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}`
+      : "";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -57,8 +65,24 @@ export default function ProducerDetail() {
             )}
           </div>
           <p className="text-text-secondary">{producer.city}</p>
+          {(producer.top_product_name || producer.starting_price_label) && (
+            <p className="mt-1 text-sm">
+              {producer.top_product_name && (
+                <span className="text-text-primary">{producer.top_product_name}</span>
+              )}
+              {producer.top_product_name && producer.starting_price_label && (
+                <span className="text-text-secondary"> · </span>
+              )}
+              {producer.starting_price_label && (
+                <span className="text-primary font-semibold">{producer.starting_price_label}</span>
+              )}
+            </p>
+          )}
         </div>
-        <FavoriteButton producerId={producer.id} />
+        <div className="flex items-center gap-2">
+          <ShareButton url={shareUrl} title={producer.name} />
+          <FavoriteButton producerId={producer.id} />
+        </div>
       </div>
 
       {/* Categories */}

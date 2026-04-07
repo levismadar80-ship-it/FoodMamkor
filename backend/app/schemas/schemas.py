@@ -116,6 +116,9 @@ class ProducerUpdate(BaseModel):
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    slug: str | None = None
+    top_product_name: str | None = None
+    starting_price_label: str | None = None
 
 
 class ProducerListOut(BaseModel):
@@ -128,6 +131,9 @@ class ProducerListOut(BaseModel):
     status: str
     is_verified: bool
     plan: str = "free"
+    slug: str | None = None
+    top_product_name: str | None = None
+    starting_price_label: str | None = None
     images: list[str] = []
     categories: list[CategoryOut] = []
 

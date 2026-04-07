@@ -28,6 +28,9 @@ CATEGORIES = [
 PRODUCERS = [
     {
         "name": "חוות הגליל - בשר אורגני",
+        "slug": "galil-farm",
+        "top_product_name": "בשר בקר grass-fed",
+        "starting_price_label": "מ-₪70/ק״ג",
         "description": "חווה משפחתית בגליל המגדלת בקר grass-fed על מרעה טבעי. ללא הורמונים, ללא אנטיביוטיקה.",
         "city": "כרמיאל",
         "lat": 32.9136,
@@ -48,6 +51,9 @@ PRODUCERS = [
     },
     {
         "name": "גבינות הר הגולן",
+        "slug": "golan-cheese",
+        "top_product_name": "גבינת עיזים מיושנת",
+        "starting_price_label": "מ-₪35/יח׳",
         "description": "מחלבה בוטיק ברמת הגולן. גבינות מחלב עיזים ופרות שגדלות במרעה חופשי.",
         "city": "קצרין",
         "lat": 32.9940,
@@ -69,6 +75,9 @@ PRODUCERS = [
     },
     {
         "name": "מאפיית המחמצת של דנה",
+        "slug": "dana-sourdough",
+        "top_product_name": "לחם מחמצת כוסמין",
+        "starting_price_label": "מ-₪30",
         "description": "לחמים ומאפים מקמח כוסמין וקמחים מלאים. מחמצת טבעית בת 8 שנים. ללא שמרים מסחריים.",
         "city": "תל אביב",
         "lat": 32.0853,
@@ -89,6 +98,9 @@ PRODUCERS = [
     },
     {
         "name": "תסס - מותססים טבעיים",
+        "slug": "tases-ferments",
+        "top_product_name": "קימצ'י קוריאני מסורתי",
+        "starting_price_label": "מ-₪25/בקבוק",
         "description": "סדנה לתסיסה טבעית. קימצ'י, כרוב כבוש, קומבוצ'ה ומשקאות מותססים - הכל בעבודת יד.",
         "city": "ירושלים",
         "lat": 31.7683,
@@ -109,6 +121,9 @@ PRODUCERS = [
     },
     {
         "name": "טבע פור - סבונים ושמנים",
+        "slug": "teva-pure",
+        "top_product_name": "סבון שמן זית ולבנדר",
+        "starting_price_label": "מ-₪35",
         "description": "סבונים בעבודת יד משמן זית ראשוני ישראלי. קרמים טבעיים ותכשירי צמחים ללא כימיקלים.",
         "city": "זכרון יעקב",
         "lat": 32.5714,
@@ -156,6 +171,9 @@ def seed():
                 phone=p_data.get("phone"),
                 instagram=p_data.get("instagram"),
                 website=p_data.get("website"),
+                slug=p_data.get("slug"),
+                top_product_name=p_data.get("top_product_name"),
+                starting_price_label=p_data.get("starting_price_label"),
                 status="approved",
                 is_verified=True,
             )

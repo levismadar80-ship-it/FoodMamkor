@@ -2,6 +2,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import BottomNav from "@/components/BottomNav";
 
 export const metadata = {
   title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
@@ -20,11 +21,12 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="he" dir="rtl">
-      <body className="font-heebo bg-background text-text-primary min-h-screen flex flex-col">
+      <body className="font-heebo bg-background text-text-primary min-h-screen flex flex-col pb-16 md:pb-0">
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
+          <BottomNav />
         </AuthProvider>
       </body>
     </html>

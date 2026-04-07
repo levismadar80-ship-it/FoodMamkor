@@ -37,6 +37,9 @@ class Producer(Base):
     images = Column(ARRAY(Text), default=[])
     is_verified = Column(Boolean, default=False)
     plan = Column(String(20), default="free")  # free | premium
+    slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
+    top_product_name = Column(String(200), nullable=True)  # featured product for cards/map
+    starting_price_label = Column(String(50), nullable=True)  # "מ-₪65/ק״ג"
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
 

@@ -53,6 +53,27 @@ def list_producers(
     return q.all()
 
 
+@router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
+def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
+    producer = (
+        db.query(Producer)
+        .options(
+            joinedload(Producer.categories),
+            joinedload(Producer.products),
+            joinedload(Producer.delivery_areas),
+        )
+        .filter(Producer.slug == slug, Producer.status == "approved")
+        .first()
+    )
+    if not producer:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Producer not found")
+    report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
+    result = ProducerDetailOut.model_validate(producer)
+    result.report_count = report_count
+    return result
+
+
 @router.get("/producers/{producer_id}", response_model=ProducerDetailOut)
 def get_producer(producer_id: UUID, db: Session = Depends(get_db)):
     producer = (
