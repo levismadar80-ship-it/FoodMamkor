@@ -54,8 +54,8 @@ async def lifespan(app: FastAPI):
     from app.database import Base, engine
     from app.models import models  # noqa: F401 — ensure models are registered
 
-    _migrate_columns(engine)
     Base.metadata.create_all(bind=engine)
+    _migrate_columns(engine)
 
     from seed_data import seed
 
