@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import { producerCompleteness } from "@/lib/producer-completeness";
 
 export default function ProducersPageWrapper() {
   return (
@@ -20,6 +21,7 @@ function ProducersAdminPage() {
   const [producers, setProducers] = useState([]);
   const [producerSearch, setProducerSearch] = useState("");
   const [producerStatus, setProducerStatus] = useState(initialStatus);
+  const [incompleteOnly, setIncompleteOnly] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
@@ -124,11 +126,18 @@ function ProducersAdminPage() {
     return <span className={`text-xs px-2 py-1 rounded-full ${m.cls}`}>{m.label}</span>;
   };
 
+  // Annotate every producer with its completeness report once per render.
+  const annotated = producers.map((p) => ({ ...p, _completeness: producerCompleteness(p) }));
+  const incompleteCount = annotated.filter((p) => p._completeness.priority !== "green").length;
+  const visible = incompleteOnly
+    ? annotated.filter((p) => p._completeness.priority !== "green")
+    : annotated;
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">בתי עסק</h1>
-        <span className="text-sm text-text-secondary">{producers.length} רשומות</span>
+        <span className="text-sm text-text-secondary">{visible.length} רשומות</span>
       </div>
 
       {/* Toolbar */}
@@ -153,6 +162,22 @@ function ProducersAdminPage() {
         </select>
         <button onClick={() => loadAllProducers()} className="bg-secondary text-white px-4 py-2 rounded-[12px] text-sm">
           חפש
+        </button>
+        <button
+          onClick={() => setIncompleteOnly((v) => !v)}
+          className={`px-4 py-2 rounded-[12px] text-sm border whitespace-nowrap transition ${
+            incompleteOnly
+              ? "bg-yellow-100 border-yellow-400 text-yellow-800"
+              : "bg-white border-border text-text-secondary hover:border-yellow-400"
+          }`}
+          title="הצג רק עסקים שחסרים להם פרטים נדרשים"
+        >
+          ⚠️ {incompleteOnly ? "הצג הכל" : "פרטים חסרים"}
+          {incompleteCount > 0 && (
+            <span className="mr-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+              {incompleteCount}
+            </span>
+          )}
         </button>
         <button onClick={exportExcel} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
           📤 ייצוא
@@ -262,16 +287,49 @@ function ProducersAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {producers.length === 0 && (
+              {visible.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-text-secondary">
-                    אין בתי עסק להצגה
+                    {incompleteOnly ? "כל בתי העסק שלמים 🎉" : "אין בתי עסק להצגה"}
                   </td>
                 </tr>
               )}
-              {producers.map((p) => (
+              {visible.map((p) => {
+                const { missing, priority } = p._completeness;
+                const badge =
+                  priority === "red" ? (
+                    <span
+                      title={`חסרים פרטים: ${missing.join(", ")}`}
+                      className="inline-flex items-center text-base leading-none cursor-help"
+                      aria-label="חסרים פרטים קריטיים"
+                    >
+                      🔴
+                    </span>
+                  ) : priority === "yellow" ? (
+                    <span
+                      title={`חסרים פרטים: ${missing.join(", ")}`}
+                      className="inline-flex items-center text-base leading-none cursor-help"
+                      aria-label="חסרים פרטים"
+                    >
+                      🟡
+                    </span>
+                  ) : (
+                    <span
+                      title="כל הפרטים מולאו"
+                      className="inline-flex items-center text-base leading-none cursor-help opacity-60"
+                      aria-label="שלם"
+                    >
+                      🟢
+                    </span>
+                  );
+                return (
                 <tr key={p.id} className="border-t hover:bg-background/50">
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <div className="flex items-center gap-2">
+                      {badge}
+                      <span>{p.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-text-secondary">{p.city || "—"}</td>
                   <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
                   <td className="px-4 py-3 text-xs">
@@ -311,7 +369,8 @@ function ProducersAdminPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
