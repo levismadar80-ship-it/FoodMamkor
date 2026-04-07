@@ -65,14 +65,23 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
 
     producers.forEach((p) => {
       if (!p.lat || !p.lng) return;
-      const cats = p.categories?.map((c) => `${escapeHtml(c.emoji || "")} ${escapeHtml(c.name)}`).join(", ") || "";
+      const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+      const productLine =
+        p.top_product_name || p.starting_price_label
+          ? `<div style="margin:6px 0;font-size:13px;">
+               ${p.top_product_name ? `<span style="color:#1C1C1C">${escapeHtml(p.top_product_name)}</span>` : ""}
+               ${p.top_product_name && p.starting_price_label ? `<span style="color:#6B6B6B"> · </span>` : ""}
+               ${p.starting_price_label ? `<span style="color:#2e6853;font-weight:600">${escapeHtml(p.starting_price_label)}</span>` : ""}
+             </div>`
+          : "";
       const marker = L.marker([p.lat, p.lng], { icon: defaultIcon })
         .addTo(mapInstanceRef.current)
         .bindPopup(`
-          <div style="text-align:right;font-family:Heebo,sans-serif;">
-            <strong>${escapeHtml(p.name)}</strong><br/>
-            <span style="color:#6B6B6B">${escapeHtml(p.city)}</span><br/>
-            ${cats}
+          <div style="text-align:right;font-family:Heebo,sans-serif;min-width:180px;">
+            <div style="font-weight:700;font-size:15px;color:#1C1C1C;">${escapeHtml(p.name)}</div>
+            <div style="color:#6B6B6B;font-size:12px;margin-top:2px;">${escapeHtml(p.city || "")}</div>
+            ${productLine}
+            <a href="${href}" style="display:inline-block;margin-top:6px;background:#2e6853;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;text-decoration:none;font-weight:500;">מידע נוסף ←</a>
           </div>
         `);
       marker.on("click", () => onProducerClick?.(p));

@@ -17,12 +17,19 @@ def _migrate_columns(engine):
         ("producers", "last_active_at", "TIMESTAMP DEFAULT NOW()"),
         ("home_products", "available_until", "TIMESTAMP"),
         ("users", "apple_id", "VARCHAR(200)"),
+        ("producers", "slug", "VARCHAR(100)"),
+        ("producers", "top_product_name", "VARCHAR(200)"),
+        ("producers", "starting_price_label", "VARCHAR(50)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
             conn.execute(text(
                 f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
             ))
+        # Unique index on slug (allow nulls)
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_producers_slug ON producers (slug) WHERE slug IS NOT NULL"
+        ))
         # Make password_hash nullable for Google OAuth users
         conn.execute(text(
             "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
