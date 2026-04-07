@@ -1,0 +1,19 @@
+node_modules
+.next
+.git
+.gitignore
+Dockerfile
+.dockerignore
+# Local env overrides — inside Docker we use docker-compose `environment:`
+# instead. If `.env.local` ends up in the image it pins NEXT_PUBLIC_API_URL
+# to localhost:8000, which inside the frontend container resolves to the
+# frontend itself and breaks the /api proxy to the backend.
+.env*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+e2e
+playwright.config.ts
+test-results
+playwright-report
