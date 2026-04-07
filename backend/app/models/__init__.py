@@ -1,4 +1,5 @@
 from app.models.models import (
+    AdminSetting,
     Category,
     DeliveryArea,
     Favorite,
@@ -11,6 +12,7 @@ from app.models.models import (
     Recipe,
     RecipeIngredient,
     Report,
+    StaticPage,
     User,
 )
 
@@ -28,4 +30,6 @@ __all__ = [
     "Report",
     "HomeProductWhatsAppClick",
     "HomeProductRating",
+    "AdminSetting",
+    "StaticPage",
 ]

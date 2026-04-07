@@ -515,3 +515,31 @@ scripts/price_scraper.py
 עדכן CLAUDE.md: [תיאור ההחלטה]
 ```
 Claude Code יוסיף לסעיף הרלוונטי עם תאריך.
+
+---
+
+## 21. ממשק אדמין מלא (אפריל 2026)
+
+הממשק חי תחת `/admin` עם sidebar קבוע (`frontend/app/admin/layout.js`) ומורכב מ-7 דפים:
+
+| דף | URL | תפקיד |
+|----|-----|--------|
+| לוח מחוונים | `/admin` | 4 stat cards, גרף 6 חודשים, מפה מיני, פעילות אחרונה, התראות |
+| בתי עסק | `/admin/producers` | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר |
+| משתמשים | `/admin/users` | חיפוש, שינוי תפקיד, חסימה, מועדפים |
+| תוכן | `/admin/content` | קטגוריות CRUD, מוצרים ביתיים מוסתרים, עורך about/terms |
+| דיווחים | `/admin/reports` | דיווחים ממוינים לפי דחיפות + פעולות |
+| אנליטיקס | `/admin/analytics` | גרף קו דו-סדרתי, קטגוריות, ערים, top producers, heat map |
+| הגדרות | `/admin/settings` | אימייל/ווטסאפ אדמין, freemium, בדיקת twilio/cloudinary |
+
+### Backend
+- `backend/app/routers/admin_extra.py` — endpoints חדשים: `/admin/users`, `/admin/categories`, `/admin/pages/{slug}`, `/admin/analytics`, `/admin/settings`, `/admin/dashboard`
+- מודלים חדשים: `AdminSetting (key, value)`, `StaticPage (slug, title, body)`, שדה `users.is_blocked`
+- Login דוחה משתמש חסום עם 403
+
+### בדיקות אוטומטיות
+- `tests/test_api.py` — 24 בדיקות pytest המכסות auth, producers, מסננים, admin guard ו-admin flows
+- `tests/test_e2e.spec.ts` — Playwright spec לדפי public + admin guard
+- `tests/conftest.py` — fixture עם DB מבודד (`mehamakor_test`) + factories
+- `tests/README.md` — איך להריץ
+- הרצה: `pytest tests/test_api.py` (24/24 passing) ו-`npx playwright test`

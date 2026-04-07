@@ -126,6 +126,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
     return Token(access_token=create_access_token(user.id))
 
 
