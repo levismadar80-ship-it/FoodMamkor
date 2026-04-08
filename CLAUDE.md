@@ -103,11 +103,14 @@ GET  /api/producers/me/dashboard    — סיכום דשבורד
 ```
 
 ## קבצי תיעוד — קרא לפי הצורך
+> ⚠️ כל הקבצים האלה ב-**שורש הריפו**, לא תחת `docs/`. אל תחפש `docs/` — היא לא קיימת.
 ```
-docs/DESIGN.md   — עיצוב מפורט: hero, category grid, כרטיסיות, footer
-docs/DATA.md     — DB schema + כל ה-API endpoints
-docs/ADMIN.md    — ממשק אדמין המלא + בדיקות אוטומטיות
-docs/ROADMAP.md  — v1 checklist, v2 פיצ'רים, v3 רעיונות
+DESIGN.md        — עיצוב מפורט: hero, category grid, כרטיסיות, footer, parallax
+DATA.md          — DB schema + כל ה-API endpoints
+ADMIN.md         — ממשק אדמין המלא + בדיקות אוטומטיות
+ROADMAP.md       — v1 checklist, v2 פיצ'רים, v3 רעיונות
+TASKS.md         — משימות פתוחות (לפעמים ב-branch אחר — ראה Git gotchas)
+DESIGN_UPDATE.md — מפרט step-by-step של העדכון האחרון
 ```
 
 ## כלי עיצוב
@@ -116,7 +119,106 @@ npx skills add pbakaus/impeccable
 # לאחר שינויים: /audit → /polish homepage → /normalize
 ```
 
+## Dev workflow — הרצה מקומית
+הסביבה רצה ב-`docker-compose`. **אין volume mount לקוד של ה-frontend** — ה-Dockerfile עושה `COPY . . && npm run build` בזמן בניית ה-image, ו-`next start` מגיש את ה-`.next/` הקומפל שכבר קיים. משמעות: **כל שינוי בקוד דורש rebuild של ה-image**, לא מספיק `docker-compose restart`.
+
+```bash
+# אחרי git pull או שינוי קוד:
+docker-compose down
+docker-compose build --no-cache frontend   # --no-cache חובה אחרי שינויים גדולים
+docker-compose up
+```
+
+**אחרי rebuild — נקי את ה-Service Worker:** `next-pwa` רושם SW שממשיך להגיש דפים מ-cache אחרי rebuild. פתח DevTools → Application → Service Workers → Unregister + Storage → Clear site data. או פשוט חלון Incognito.
+
+**Backend migrations:** עמודות חדשות על טבלאות קיימות **חייבות** להתווסף ל-`_migrate_columns()` ב-`backend/app/main.py`. טבלאות חדשות נוצרות אוטומטית ע"י `Base.metadata.create_all()`. אם הוספת עמודה למודל ושכחת את `_migrate_columns` — ה-DB הקיים לא ישתנה והשדה ייראה null בכל query.
+
+## גוצ'יות ומלכודות — שוו עליכם זמן
+
+### Next.js
+- **`next/dynamic` לא מעביר refs אמין.** אל תנסה `forwardRef` דרך dynamic import — השתמש ב-callback prop (`registerApi`) כמו ב-`MapComponent.jsx`.
+- **Leaflet חייב `{ ssr: false }`** כי הוא ניגש ל-`window` ב-import. תמיד לטעון דרך `dynamic(() => import("@/components/MapComponent"), { ssr: false })`.
+- **`<Image>` דורש host ב-`remotePatterns`** ב-`next.config.js`. כרגע מותרים: `res.cloudinary.com`, `images.unsplash.com`. הוספת host = rebuild.
+- **CSS `background-image` עוקף את הבדיקה** — לא צריך להכניס ל-`remotePatterns`. ככה ה-hero parallax והכרטיסיות של הקטגוריות עובדות.
+- **`placehold.co` מחזיר `image/svg+xml`** — `<Image>` חוסם אלא אם `dangerouslyAllowSVG: true`. **אל תשתמש ב-placehold.co**. במקום זה, fallback מקומי עם div מעוצב (ראה `ProducerCard.jsx` ו-`HomeProductCard.jsx`).
+- **`font-variant: small-caps` לא עובד על עברית.** small-caps חל רק על אותיות לטיניות. עבור כתוביות עבריות בסגנון uppercase — השתמש ב-`letter-spacing` ובחירת משקל, לא small-caps.
+
+### Git / branches
+- **TASKS.md ו-DESIGN.md מעודכן היו ב-commit נפרד בלא-branch שלי** (`66daa5a` ב-`claude/review-document-HlIVP`). כשמחפשים תוכן ש"אמור להיות שם" — `git fetch --all` ואז `git show <hash>:<path>`. לא להניח שהכל בbranch הנוכחי.
+
+### עיצוב
+- **אל תשתמש ב-opacity על טקסט** (`text-site-text/60`, `/70`, `/80`) על רקע `#F5F0E8` — זה נופל מתחת 4.5:1 של WCAG AA. **השתמש ב-`text-site-muted` (`#5c584f`)** שנותן ~5.5:1.
+- **שתי מערכות tokens של טקסט קיימות במקביל:**
+  - קנוני (חדש): `text-site-text`, `text-site-muted`
+  - legacy (עדיין בקוד של admin/settings): `text-text-primary`, `text-text-secondary`
+  - **תמיד עדיף לכתוב חדש, כשעורכים קובץ legacy — מגרים בהזדמנות**.
+- **font classes קנוניים:** `font-headline` / `font-body` / `font-english`. ה-aliases `font-serif` / `font-sans` נשארו לתאימות אחורה — אל תכתוב אותם בקוד חדש.
+
+## חוקים שאסור לשבור (Invariants)
+
+### Accessibility
+1. **כל `<input>` / `<textarea>` חייב `<label htmlFor>`**, גם אם הוא `sr-only`. placeholder לבד הוא WCAG fail.
+2. **אל תכתוב `outline-none` בלי `focus-visible:ring-2`** מייד אחריו. זה חוסם keyboard users.
+3. **Touch targets ≥ 44×44px** לכל דבר לחיץ במובייל. ב-`ProducerCard` זה נפתר ע"י עטיפת האייקונים ב-`w-11 h-11 flex items-center justify-center`.
+4. **לינקים/כפתורים עם אייקון בלבד חייבים `aria-label`**. emoji זה לא שם נגיש — `aria-label="שלח הודעה בווטסאפ"` כן.
+5. **SVG דקורטיבי → `aria-hidden="true"`**. SVG משמעותי → `role="img"` ו-`aria-label`.
+6. **הודעות סטטוס (success/error) → `role="status" aria-live="polite"`**. אחרת screen readers לא מכריזים.
+
+### Tokens / theming
+7. **לא לכתוב inline hex ב-`style={{ ... }}`** כשיש token. אם צריך עם opacity — `bg-primary/60` או להגדיר token חדש.
+8. **`border-radius: 16px`** הוא ברירת המחדל. 8px לכפתורים ושדות input. 50px ל-pill search. 20px ל-badges. אחרים — לא.
+
+## Anti-patterns — אל תחזור על זה
+זה מה ש-`/audit` תפס. **אל תיצור מחדש**:
+- **גריד של N כרטיסיות זהות** (icon + heading + text × N). ה-category grid כבר חוטא בזה — אל תוסיף גרידים כאלה.
+- **למרכז הכל** בעמוד. מרכוז שמור ל-Hero ול-CTA. שאר הסקציות — left-aligned (ב-RTL = right-aligned).
+- **`animate-bounce`** — bounce easing תאריך. fade-up עם `ease-out` תמיד עדיף.
+- **cards מקוננים** (card בתוך card בתוך section). שטח את ההיררכיה.
+- **כל כפתור `bg-primary`.** כפתורי פעולה ראשיים = primary. כפתורים משניים = ghost/outlined. ניוזלטר = secondary.
+
+## מצב חלקי / stubs ידועים
+דברים שמומשו חלקית ומחכים לתשומת לב:
+- **`whatsapp_clicks_week`** בדשבורד היצרן מוחזר כ-`0` קבוע. אין טבלת tracking ל-clicks על yבעל עסק (רק על home_products). צריך להוסיף טבלה `producer_whatsapp_clicks` לפני שהמספר באמת יזוז.
+- **חיפוש חכם (Task 5a)** — כרגע ה-hero search מעביר את ה-query כ-`delivery_city`. זה hack. בפועל צריך חיפוש חוצה-שדות (שם עסק + קטגוריה + עיר + מוצר) עם debounce 300ms.
+- **עמוד /producer/:id extras (Task 5b)** — "שעות זמינות", "מפה מיני", "עסקים דומים", כפתור שיתוף, breadcrumb — לא נבנו.
+- **Calendar view ל-/events** — רק grid. אין toggle ל-calendar view חודשי.
+- **תמונת המייסדת ב-/about** — placeholder עם אמוג'י 🌿 ב-div. TODO: תמונה אמיתית של ספיר.
+- **`whatsapp_clicks_week`, smart search, producer page extras** — מופיעים גם ב-ROADMAP.md תחת "scoped later".
+
+## מתכונים למשימות נפוצות
+
+### הוספת קטגוריית אירוע חדשה
+שלושה מקומות לעדכן (לא תשכח אף אחד):
+1. `backend/app/routers/events.py` → `VALID_CATEGORIES` set
+2. `frontend/app/events/page.js` → `CATEGORIES` array
+3. `frontend/app/producer/dashboard/events/new/page.js` → `CATEGORIES` array
+
+### הוספת עמודה לטבלה קיימת
+1. הוסף ל-`backend/app/models/models.py`
+2. **הוסף שורה ל-`_migrate_columns()` ב-`backend/app/main.py`** — אחרת DB קיים לא יקבל את השדה
+3. הוסף ל-schema ב-`backend/app/schemas/schemas.py` (ListOut + DetailOut + Update)
+4. rebuild של ה-backend container
+
+### הוספת host תמונות חדש
+1. `frontend/next.config.js` → `images.remotePatterns`
+2. rebuild של ה-frontend container (`--no-cache`)
+
+### בדיקה אם משהו כבר קיים לפני שבונים מחדש
+Task 3 (Google/Apple OAuth) כבר היה בנוי ב-100%. בזבזתי כמה דקות עד שגיליתי. **תמיד `grep` לשם הקומפוננטה/endpoint לפני שמתחילים**:
+```bash
+grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
+```
+
 ## לוג עדכונים
+- **2026-04-08 · Meta** — תיעוד מה שלמדנו בסשן הזה:
+  - הוספתי סעיפי Dev workflow, Gotchas, Invariants, Anti-patterns, Stubs, מתכונים
+  - תיקנתי את הפניות `docs/*` → שורש הריפו (הספרייה לא קיימת)
+  - תיעדתי את מלכודת ה-Docker build ללא volume mount (בזבז זמן היום)
+  - תיעדתי את הבעיה של `next/dynamic` + forwardRef (פתרון: `registerApi` callback)
+  - תיעדתי את בעיית `placehold.co` (מחזיר SVG, חסום ע"י Next.js)
+  - תיעדתי את בעיית opacity על טקסט (`text-site-text/60` נופל WCAG AA) + הפתרון `text-site-muted`
+  - רשמתי stubs ידועים כדי שסשן הבא ידע מה לא אמיתי
+
 - **2026-04-08 · Task 6** — פיצ'ר אירועים:
   - טבלת DB חדשה: `events` (producer_id, title, event_date, event_time, location, category, price, max_participants, registration_url, is_active)
   - `backend/app/routers/events.py` — 6 endpoints: list, upcoming, detail, create, update, delete
