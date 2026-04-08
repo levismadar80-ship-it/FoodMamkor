@@ -1,22 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import ImageWithFallback from "./ImageWithFallback";
 
 export default function ImageGallery({ images = [] }) {
   const [current, setCurrent] = useState(0);
 
   if (!images.length) {
     return (
-      <div className="h-64 md:h-96 bg-gray-100 rounded-[12px] flex items-center justify-center text-text-secondary">
-        אין תמונות
+      <div
+        className="h-64 md:h-96 rounded-[12px] flex items-center justify-center text-text-secondary"
+        style={{ background: "linear-gradient(135deg, #EAF3DE 0%, #c9e2d3 100%)" }}
+      >
+        <span aria-hidden style={{ fontSize: 48 }}>🌿</span>
       </div>
     );
   }
 
   return (
     <div className="relative h-64 md:h-96 rounded-[12px] overflow-hidden bg-gray-100">
-      <Image
+      <ImageWithFallback
         src={images[current]}
         alt={`תמונה ${current + 1}`}
         fill

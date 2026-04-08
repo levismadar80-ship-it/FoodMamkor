@@ -3,6 +3,7 @@
 import Image from "next/image";
 import StarRating from "./StarRating";
 import WhatsAppButton from "./WhatsAppButton";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -21,7 +22,10 @@ function storageEmoji(type) {
 }
 
 export default function HomeProductCard({ product, onWhatsAppClick }) {
-  const imgSrc = (product.images && product.images[0]) || product.photo;
+  // FINAL_AUDIT: Cloudinary f_auto,q_auto for automatic WebP/AVIF.
+  const imgSrc = optimizeCloudinary(
+    (product.images && product.images[0]) || product.photo
+  );
   const priceNum = product.price != null ? Number(product.price) : null;
   const isFree = priceNum === 0;
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Seal, Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 function WhatsAppIcon({ className }) {
   return (
@@ -32,7 +33,8 @@ function InstagramIcon({ className }) {
 }
 
 export default function ProducerCard({ producer, active, onClick }) {
-  const imgSrc = producer.images?.[0];
+  // FINAL_AUDIT: Cloudinary f_auto,q_auto — WebP/AVIF automatic delivery.
+  const imgSrc = optimizeCloudinary(producer.images?.[0]);
   const phone = producer.phone;
   const whatsappNumber = phone ? phone.replace(/^0/, "972").replace(/[-\s]/g, "") : null;
   const producerHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;

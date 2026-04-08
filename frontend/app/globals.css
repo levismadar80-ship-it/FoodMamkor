@@ -101,3 +101,34 @@ h1, h2, h3 {
     transform: translateY(0);
   }
 }
+
+/* FINAL_AUDIT: consistent vertical rhythm — 80px desktop / 48px mobile */
+.section-y {
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+@media (max-width: 768px) {
+  .section-y {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+}
+
+/* FINAL_AUDIT: print styles — strip chrome, keep content readable */
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #555;
+  }
+}
