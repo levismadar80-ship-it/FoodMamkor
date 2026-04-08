@@ -14,7 +14,11 @@ services:
       - ./backend/init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
 
   backend:
-    build: ./backend
+    # Build context is the repo root so the Dockerfile (also at the repo
+    # root) can COPY backend/ paths — same layout Railway uses.
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     depends_on:

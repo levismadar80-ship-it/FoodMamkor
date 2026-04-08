@@ -59,28 +59,34 @@ run anything manually.
 
 ## 2. Railway — Backend (FastAPI)
 
-### 2.1 Why the previous build failed
+### 2.1 Why the previous build failed (historical)
 
-The error `Error creating build plan with Railpack` happens because:
+The error `Error creating build plan with Railpack` used to happen because:
 
 1. The repo root contains **both** `frontend/` and `backend/`, so Railway's
-   auto-detector can't decide which project to build.
-2. Railpack (Railway's new default) doesn't understand the monorepo layout.
+   auto-detector couldn't decide which project to build.
+2. Railpack (Railway's new default) doesn't understand monorepo layouts.
+3. Our Dockerfile + `railway.json` were nested under `backend/`, which
+   Railway only finds if you set Root Directory = `backend` manually.
 
-**Fix:** Tell Railway explicitly which directory to build, and to use our
-Dockerfile instead of auto-detection.
+**Fix (now committed):** Both `/Dockerfile` and `/railway.json` live at
+the **repo root**. The Dockerfile uses `COPY backend/requirements.txt` and
+`COPY backend/ .` paths so the backend-only image is built from a
+repo-root build context. You do **not** need to set a Root Directory in
+Railway anymore — just import the repo and it works.
 
 ### 2.2 Create the backend service
 
 1. In the same Railway project → **New** → **GitHub Repo** → select
    `levismadar80-ship-it/foodmamkor`.
 2. After the service is created, open **Settings**:
-   - **Root Directory:** `backend`  ← **critical, this is the fix**
+   - **Root Directory:** leave blank (use the repo root)
    - **Branch:** `main` (or your deploy branch)
-   - **Watch Paths:** `backend/**`
+   - **Watch Paths:** `backend/**,Dockerfile,railway.json,.dockerignore`
+     — keeps frontend-only pushes from re-triggering the backend build.
 3. Under **Build**:
-   - **Builder:** `Dockerfile` (will be picked up automatically from
-     `backend/railway.json` — included in this repo)
+   - **Builder:** `Dockerfile` — Railway reads this from `/railway.json`
+     automatically; no manual setting required.
 4. Save. Do **not** redeploy yet — set env vars first.
 
 ### 2.3 Backend environment variables
@@ -170,8 +176,22 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
 1. Vercel Dashboard → **Add New** → **Project** → import
    `levismadar80-ship-it/foodmamkor`.
 2. **Framework Preset:** Next.js (auto-detected).
-3. **Root Directory:** `frontend`  ← **critical**
-4. Leave build / install commands as defaults (vercel.json overrides them).
+3. **Root Directory:** leave **blank** (i.e. the repo root).
+4. Leave build / install commands as defaults.
+
+> **Why blank Root Directory?** The repo has a top-level `vercel.json`
+> that tells Vercel to build the Next.js app from `frontend/` via
+> `installCommand: "cd frontend && npm install"` +
+> `buildCommand: "cd frontend && npm run build"` +
+> `outputDirectory: "frontend/.next"`. This is the config-as-code
+> alternative to setting Root Directory in the UI — it survives re-imports
+> and is visible in git. If you prefer the UI setting, delete the repo-root
+> `vercel.json` and set **Root Directory = `frontend`** in Project Settings
+> instead. Do NOT do both.
+>
+> **Note:** Vercel's `rootDirectory` is NOT a valid field inside `vercel.json`
+> — it's strictly a Project Setting. The build-command cd trick is how you
+> achieve the same effect config-as-code.
 
 ### 3.2 Frontend environment variables
 
@@ -179,9 +199,9 @@ Paste these into **Environment Variables** (scope: *Production, Preview,
 Development*). See [`frontend/.env.example`](./frontend/.env.example).
 
 ```bash
-# From step 2.5 — use the FULL Railway URL, no trailing slash
-BACKEND_URL=https://<your-backend>.up.railway.app
-NEXT_PUBLIC_API_URL=https://<your-backend>.up.railway.app
+# Use the live Railway backend URL — no trailing slash
+BACKEND_URL=https://foodmamkor-production.up.railway.app
+NEXT_PUBLIC_API_URL=https://foodmamkor-production.up.railway.app
 
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 NEXT_PUBLIC_SITE_URL=https://mehamakor.online
@@ -274,8 +294,9 @@ Run through this checklist in a real browser:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Railway: `Error creating build plan with Railpack` | Root directory not set | Settings → **Root Directory** = `backend` |
+| Railway: `Error creating build plan with Railpack` | Railway can't find `/Dockerfile` or `/railway.json` | Make sure you're deploying from a commit that has both at the **repo root** (not `backend/`). Clear build cache + redeploy if the commit looks right. |
 | `ModuleNotFoundError: geoalchemy2` | Stale image from before the Haversine migration | Clear Railway build cache and redeploy |
+| `COPY failed: file not found in build context: backend/...` | Custom Root Directory set to `backend/` | Clear Root Directory in Railway Settings — build context must be the repo root for the new Dockerfile |
 | `column "location" does not exist` | Old schema had a dead PostGIS column | Startup migration drops it; restart the service once |
 | `/producers?lat=...&radius_km=...` returns `[]` unexpectedly | Producers seeded with NULL lat/lng | They're filtered out by design — add coords in admin or seed |
 | Frontend `/api/*` returns HTML (404) | `BACKEND_URL` not set at build time | Set env var in Vercel → **Redeploy** (not just restart) |
@@ -299,12 +320,13 @@ Run through this checklist in a real browser:
 
 | File | Purpose |
 |---|---|
-| `backend/Dockerfile` | Railway build image; uses `$PORT` at runtime |
-| `backend/railway.json` | Forces Dockerfile builder + healthcheck |
+| `Dockerfile` *(repo root)* | Railway build image; builds from repo-root context with `COPY backend/...`; uses `$PORT` at runtime |
+| `railway.json` *(repo root)* | Forces Dockerfile builder + healthcheck; discovered automatically by Railway without a Root Directory setting |
+| `.dockerignore` *(repo root)* | Prunes `frontend/`, docs, `.env`, and caches from the build context |
+| `vercel.json` *(repo root)* | Monorepo build: `cd frontend && npm install/build`, `outputDirectory: frontend/.next`, Next.js preset, security headers. Import project with Root Directory **blank** so this file is picked up. |
 | `backend/.env.example` | All backend env vars, documented |
 | `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
-| `frontend/vercel.json` | Vercel framework hints + security headers |
 | `frontend/.env.example` | All frontend env vars, documented |
 | `frontend/next.config.js` | `/api/*` → `BACKEND_URL` rewrite |
 | `frontend/app/sitemap.js` | Uses `NEXT_PUBLIC_SITE_URL` for dynamic sitemap |
