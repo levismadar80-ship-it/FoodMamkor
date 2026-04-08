@@ -31,7 +31,7 @@ function InstagramIcon({ className }) {
 }
 
 export default function ProducerCard({ producer, active, onClick }) {
-  const imgSrc = producer.images?.[0] || "https://placehold.co/400x300?text=מהמקור";
+  const imgSrc = producer.images?.[0];
   const phone = producer.phone;
   const whatsappNumber = phone ? phone.replace(/^0/, "972").replace(/[-\s]/g, "") : null;
   const producerHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
@@ -58,14 +58,24 @@ export default function ProducerCard({ producer, active, onClick }) {
       style={{ borderRadius: "16px" }}
     >
       <Link href={producerHref}>
-        <div className="relative w-full bg-border/40" style={{ height: "200px", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
-          <Image
-            src={imgSrc}
-            alt={producer.name}
-            fill
-            className="object-cover transition duration-300 hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-          />
+        <div className="relative w-full bg-light" style={{ height: "200px", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+          {imgSrc ? (
+            <Image
+              src={imgSrc}
+              alt={producer.name}
+              fill
+              className="object-cover transition duration-300 hover:scale-105"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center text-primary"
+              aria-label={`${producer.name} — תמונה חסרה`}
+            >
+              <span className="text-5xl" aria-hidden="true">🌿</span>
+              <span className="font-headline text-sm mt-1 opacity-70">מהמקור</span>
+            </div>
+          )}
           {producer.is_verified && (
             <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full">
               ✅ מאומת

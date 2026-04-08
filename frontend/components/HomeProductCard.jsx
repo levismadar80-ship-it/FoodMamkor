@@ -5,18 +5,28 @@ import StarRating from "./StarRating";
 import WhatsAppButton from "./WhatsAppButton";
 
 export default function HomeProductCard({ product, onWhatsAppClick }) {
-  const imgSrc = product.photo || "https://placehold.co/400x300?text=ביתי";
+  const imgSrc = product.photo;
 
   return (
     <div className="bg-white rounded-[12px] overflow-hidden hover:shadow-md transition">
-      <div className="relative h-48 bg-gray-100">
-        <Image
-          src={imgSrc}
-          alt={product.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 33vw"
-        />
+      <div className="relative h-48 bg-light">
+        {imgSrc ? (
+          <Image
+            src={imgSrc}
+            alt={product.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center text-primary"
+            aria-label={`${product.title} — תמונה חסרה`}
+          >
+            <span className="text-5xl" aria-hidden="true">🍲</span>
+            <span className="font-headline text-sm mt-1 opacity-70">מהמטבח</span>
+          </div>
+        )}
         <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full">
           ביתי 🏠
         </span>
