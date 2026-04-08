@@ -156,6 +156,16 @@ export default function MapComponent({
   const markersRef = useRef(new Map()); // producer.id → { marker, producer }
   const hoveredIdRef = useRef(null);
   const activeIdRef = useRef(null);
+  // MAP_IMPROVEMENTS bug #13 — reuse a single marker for "my location"
+  // instead of stacking a fresh circleMarker on every click.
+  const myLocationMarkerRef = useRef(null);
+  // MAP_IMPROVEMENTS #11 — remember whether we've auto-fit yet so we
+  // only do it on the first non-empty batch of producers.
+  const hasFitBoundsRef = useRef(false);
+  // Programmatic-move guard: when we call flyTo/fitBounds ourselves the
+  // resulting `moveend` should NOT mark the map as "user-moved" and
+  // should NOT pop the "search this area" button.
+  const programmaticMoveRef = useRef(false);
 
   // Keep latest callbacks in refs so we don't re-init the map whenever
   // the parent passes new arrow functions.
@@ -192,8 +202,14 @@ export default function MapComponent({
         if (prev) refreshMarkerIcon(prev);
         refreshMarkerIcon(producerId);
         const latlng = entry.marker.getLatLng();
+        // Suppress the "search this area" banner on programmatic flyTo.
+        programmaticMoveRef.current = true;
         mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });
-        setTimeout(() => entry.marker.openPopup(), 1250);
+        // Wait for the flyTo to complete before opening the popup so
+        // the popup anchors correctly to the new map center.
+        mapInstanceRef.current.once("moveend", () => {
+          entry.marker.openPopup();
+        });
       },
       setHoveredProducer: (producerId) => {
         const prev = hoveredIdRef.current;
@@ -260,8 +276,13 @@ export default function MapComponent({
 
     mapInstanceRef.current.on("moveend", () => {
       fireBounds();
-      // MAP_IMPROVEMENTS.md #1 — notify parent that the map moved so
-      // it can show "search this area" button
+      // MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
+      // map so it can show "search this area". Suppress for our own
+      // flyTo/fitBounds calls (initial fit, focusProducer, my-location).
+      if (programmaticMoveRef.current) {
+        programmaticMoveRef.current = false;
+        return;
+      }
       onMapMoveRef.current?.();
     });
 
@@ -270,6 +291,8 @@ export default function MapComponent({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         clusterGroupRef.current = null;
+        myLocationMarkerRef.current = null;
+        hasFitBoundsRef.current = false;
       }
     };
   }, []);
@@ -321,24 +344,59 @@ export default function MapComponent({
       clusterGroupRef.current.addLayer(marker);
       markersRef.current.set(p.id, { marker, producer: p });
     });
+
+    // MAP_IMPROVEMENTS #11 — fit bounds to actual producers on first load.
+    // The default view ([31.5, 34.8] zoom 8) is the whole country, which
+    // leaves most users staring at empty ocean. Fit once when data first
+    // arrives; don't re-fit on subsequent filter changes so the user's
+    // panning isn't yanked back. Guarded by programmaticMoveRef so the
+    // resulting moveend doesn't pop the "search this area" banner.
+    if (!hasFitBoundsRef.current && markersRef.current.size > 0) {
+      const latlngs = Array.from(markersRef.current.values()).map((entry) =>
+        entry.marker.getLatLng(),
+      );
+      const bounds = L.latLngBounds(latlngs);
+      if (bounds.isValid()) {
+        programmaticMoveRef.current = true;
+        mapInstanceRef.current.fitBounds(bounds, {
+          padding: [40, 40],
+          maxZoom: 12,
+        });
+      }
+      hasFitBoundsRef.current = true;
+    }
   }, [producers]);
 
+  // MAP_IMPROVEMENTS bug #13 — fixed: single reusable marker for "my
+  // location" instead of stacking a new one per click. Previous
+  // implementation called L.circleMarker().addTo() on every click
+  // without ever removing prior markers, leaking DOM + visual clutter.
   const goToMyLocation = () => {
     if (!mapInstanceRef.current || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        mapInstanceRef.current.flyTo([latitude, longitude], 13, { duration: 1.2 });
-        L.circleMarker([latitude, longitude], {
-          radius: 8,
-          color: "#2e6853",
-          fillColor: "#2e6853",
-          fillOpacity: 0.85,
-          weight: 2,
-        })
-          .addTo(mapInstanceRef.current)
-          .bindPopup("המיקום שלי")
-          .openPopup();
+        const latlng = [latitude, longitude];
+        programmaticMoveRef.current = true;
+        mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
+
+        // Reuse the existing marker if we already dropped one; otherwise
+        // create one and cache it for next time.
+        if (myLocationMarkerRef.current) {
+          myLocationMarkerRef.current.setLatLng(latlng);
+        } else {
+          myLocationMarkerRef.current = L.circleMarker(latlng, {
+            radius: 8,
+            color: "#2e6853",
+            fillColor: "#2e6853",
+            fillOpacity: 0.85,
+            weight: 2,
+            interactive: true,
+          })
+            .addTo(mapInstanceRef.current)
+            .bindPopup("המיקום שלי");
+        }
+        myLocationMarkerRef.current.openPopup();
       },
       () => alert("לא הצלחנו לקבל את המיקום שלך"),
     );
