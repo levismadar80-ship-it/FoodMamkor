@@ -172,6 +172,41 @@ npx skills add pbakaus/impeccable
 10. **Secrets** — `.env` ב-`.gitignore` (כבר). אף פעם לא להדפיס passwords/tokens ל-log. הלוגים של התחברות משתמשים ב-email prefix בלבד.
 
 ## Dev workflow — הרצה מקומית
+
+### הגדרת `.env` — פעם ראשונה
+קבצי ה-secrets עוברים דרך `.env` בשורש הריפו (אותה ספרייה כמו `docker-compose.yml`). Docker Compose קורא אותו אוטומטית, וה-`docker-compose.yml` מעביר את המשתנים לקונטיינר ה-backend. ה-`.env` ב-.gitignore.
+
+```bash
+# 1. העתיקי את התבנית
+cp .env.example .env   # (Windows PowerShell: Copy-Item .env.example .env)
+
+# 2. עריכי את .env בעורך ומלאי ערכים (בעיקר JWT_SECRET_KEY + ENV)
+```
+
+**PowerShell (Windows)** — אם את רוצה שורת פקודה במקום עריכה ידנית:
+```powershell
+# 1. צרי JWT secret
+$jwt = python -c "import secrets; print(secrets.token_hex(32))"
+# 2. כתבי .env
+@"
+ENV=development
+JWT_SECRET_KEY=$jwt
+CORS_ORIGINS=http://localhost:3000
+"@ | Out-File -FilePath .env -Encoding utf8
+```
+
+**bash/zsh (Linux/Mac):**
+```bash
+cat > .env <<EOF
+ENV=development
+JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
+CORS_ORIGINS=http://localhost:3000
+EOF
+```
+
+לפרודקשן: שני `ENV=production` וערך מלא של `CORS_ORIGINS` עם הדומיין הציבורי שלך. ראי `.env.example` לכל המשתנים הזמינים.
+
+### הרצת הסביבה
 הסביבה רצה ב-`docker-compose`. **אין volume mount לקוד של ה-frontend** — ה-Dockerfile עושה `COPY . . && npm run build` בזמן בניית ה-image, ו-`next start` מגיש את ה-`.next/` הקומפל שכבר קיים. משמעות: **כל שינוי בקוד דורש rebuild של ה-image**, לא מספיק `docker-compose restart`.
 
 ```bash
