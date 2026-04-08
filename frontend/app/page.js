@@ -5,6 +5,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { motion } from "framer-motion";
+import { Cow, Plant, Drop, Bread, Jar, Sparkle, House } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
@@ -15,13 +16,15 @@ const PAGE_SIZE = 8;
 
 const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920";
 
+// Category cards use Phosphor icons instead of emoji (consistent
+// rendering across Android/Windows/iOS — see CLAUDE.md note).
 const CATEGORY_CARDS = [
-  { key: "meat", emoji: "🥩", name: "בשר, עוף ודגים", match: ["בשר", "עוף", "דגים"], image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format" },
-  { key: "veg", emoji: "🥬", name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"], image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format" },
-  { key: "dairy", emoji: "🥛", name: "חלב וגבינות", match: ["חלב", "גבינה", "גבינות"], image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format" },
-  { key: "bread", emoji: "🍞", name: "לחמים ואפייה", match: ["לחם", "אפייה", "מאפים"], image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format" },
-  { key: "oil", emoji: "🫒", name: "שמנים ודבש", match: ["שמן", "דבש"], image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format" },
-  { key: "care", emoji: "🧴", name: "טיפוח וסבונים", match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format" },
+  { key: "meat",  Icon: Cow,     name: "בשר, עוף ודגים",   match: ["בשר", "עוף", "דגים"],       image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format" },
+  { key: "veg",   Icon: Plant,   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],  image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format" },
+  { key: "dairy", Icon: Drop,    name: "חלב וגבינות",       match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format" },
+  { key: "bread", Icon: Bread,   name: "לחמים ואפייה",      match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format" },
+  { key: "oil",   Icon: Jar,     name: "שמנים ודבש",        match: ["שמן", "דבש"],               image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format" },
+  { key: "care",  Icon: Sparkle, name: "טיפוח וסבונים",     match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format" },
 ];
 
 function matchCategoryId(cards, categories) {
@@ -237,7 +240,9 @@ export default function HomePage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
           style={{ gap: "20px" }}
         >
-          {categoryCards.map((card, idx) => (
+          {categoryCards.map((card, idx) => {
+            const Icon = card.Icon;
+            return (
             <motion.button
               key={card.key}
               initial={{ opacity: 0, y: 40 }}
@@ -264,13 +269,14 @@ export default function HomePage() {
                 style={{ backgroundColor: "rgba(46,104,83,0.45)" }}
               />
               <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
-                <span className="block mb-2" style={{ fontSize: "40px" }} aria-hidden="true">{card.emoji}</span>
-                <h3 className="font-headline font-bold" style={{ fontSize: "22px" }}>
+                <Icon size={44} weight="duotone" color="white" aria-hidden="true" />
+                <h3 className="font-headline font-bold mt-3" style={{ fontSize: "22px" }}>
                   {card.name}
                 </h3>
               </div>
             </motion.button>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -429,10 +435,11 @@ export default function HomePage() {
       >
         <div className="flex items-baseline justify-between mb-6">
           <h2
-            className="font-headline font-bold text-site-text"
+            className="font-headline font-bold text-site-text inline-flex items-center gap-2"
             style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
           >
-            🏠 מהמטבח של השכן
+            <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
+            מהמטבח של השכן
           </h2>
           <Link
             href="/neighbor"

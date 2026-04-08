@@ -199,17 +199,21 @@ export default function MapPage() {
       <h1 className="font-headline text-3xl font-bold mb-6 text-site-text">מפת בתי עסק</h1>
 
       {/* Filters (top bar) — city search only. Category filter lives in
-          the legend widget overlaid on the map (MAP_IMPROVEMENTS.md #8). */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <CitySearch
-          id="map-city-search"
-          label="סנן לפי עיר"
-          value={cityFilter}
-          onChange={setCityFilter}
-          onSubmit={handleCityFilter}
-          placeholder="חפשי עיר..."
-          className="md:w-72"
-        />
+          the legend widget overlaid on the map (MAP_IMPROVEMENTS.md #8).
+          FEEDBACK_FIXES fix 4: `overflow-visible` so the autocomplete
+          dropdown isn't clipped; `w-full` wrapper so the CitySearch
+          gets the full viewport width on mobile. */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 overflow-visible">
+        <div className="w-full md:w-72">
+          <CitySearch
+            id="map-city-search"
+            label="סנן לפי עיר"
+            value={cityFilter}
+            onChange={setCityFilter}
+            onSubmit={handleCityFilter}
+            placeholder="חפשי עיר..."
+          />
+        </div>
       </div>
 
       {/* Map container with overlays */}

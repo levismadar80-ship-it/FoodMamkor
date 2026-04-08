@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, MapTrifold, Calendar, CookingPot, Heart } from "@phosphor-icons/react";
+import { House, MapTrifold, CalendarBlank, CookingPot, Heart } from "@phosphor-icons/react";
 
 /**
  * Mobile bottom nav — 5 tabs. Went from 4 to 5 when /neighbor got its
@@ -15,7 +15,7 @@ export default function BottomNav() {
   const tabs = [
     { href: "/", Icon: House, label: "גלה", match: (p) => p === "/" },
     { href: "/map", Icon: MapTrifold, label: "מפה", match: (p) => p === "/map" },
-    { href: "/events", Icon: Calendar, label: "אירועים", match: (p) => p.startsWith("/events") },
+    { href: "/events", Icon: CalendarBlank, label: "אירועים", match: (p) => p.startsWith("/events") },
     { href: "/neighbor", Icon: CookingPot, label: "מהשכן", match: (p) => p.startsWith("/neighbor") },
     { href: "/favorites", Icon: Heart, label: "מועדפים", match: (p) => p === "/favorites" },
   ];

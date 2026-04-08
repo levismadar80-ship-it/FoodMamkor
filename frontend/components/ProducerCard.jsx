@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Seal, Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
 
 function WhatsAppIcon({ className }) {
@@ -72,13 +73,14 @@ export default function ProducerCard({ producer, active, onClick }) {
               className="absolute inset-0 flex flex-col items-center justify-center text-primary"
               aria-label={`${producer.name} — תמונה חסרה`}
             >
-              <span className="text-5xl" aria-hidden="true">🌿</span>
+              <Leaf size={56} weight="duotone" aria-hidden="true" />
               <span className="font-headline text-sm mt-1 opacity-70">מהמקור</span>
             </div>
           )}
           {producer.is_verified && (
-            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full">
-              ✅ מאומת
+            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+              <Seal size={14} weight="fill" aria-hidden="true" />
+              מאומת
             </span>
           )}
           {producer.plan === "premium" && (
@@ -122,13 +124,15 @@ export default function ProducerCard({ producer, active, onClick }) {
         {/* Pill badges */}
         <div className="flex flex-wrap mt-2" style={{ gap: "6px" }}>
           {producer.organic_certified && (
-            <span className="bg-light text-primary" style={{ borderRadius: "20px", padding: "3px 10px", fontSize: "12px" }}>
-              🌿 אורגני
+            <span className="bg-light text-primary inline-flex items-center gap-1" style={{ borderRadius: "20px", padding: "3px 10px", fontSize: "12px" }}>
+              <Leaf size={14} weight="duotone" aria-hidden="true" />
+              אורגני
             </span>
           )}
           {producer.grass_fed && (
-            <span className="bg-light text-primary" style={{ borderRadius: "20px", padding: "3px 10px", fontSize: "12px" }}>
-              🐄 גראס פד
+            <span className="bg-light text-primary inline-flex items-center gap-1" style={{ borderRadius: "20px", padding: "3px 10px", fontSize: "12px" }}>
+              <Cow size={14} weight="duotone" aria-hidden="true" />
+              גראס פד
             </span>
           )}
           {producer.kosher && (
