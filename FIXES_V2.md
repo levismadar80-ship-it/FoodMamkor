@@ -473,3 +473,57 @@ export default function CookieBanner() {
 - Apple OAuth: כפתור שחור מתחת לגוגל
 - Cookies banner — CookieBanner component בlayout.js
 ```
+
+---
+
+## תיקון 7 — מיקוד ב"מהמטבח של השכן" + סינון עיר
+
+### א. סינון לפי עיר בסקציית "מהמטבח של השכן"
+```jsx
+// בראש הסקציה — הוסף מסנן עיר:
+<div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+  <CitySelect
+    value={filterCity}
+    onChange={setFilterCity}
+    placeholder="סנני לפי עיר..."
+  />
+  <button onClick={() => setFilterCity('')}
+    style={{ padding: '10px 16px', borderRadius: 8,
+      border: '1px solid #e8e0d0', background: 'white',
+      cursor: 'pointer', fontFamily: 'DM Sans', fontSize: 14 }}>
+    הצג הכל
+  </button>
+</div>
+
+// API:
+// GET /home-listings?city=[עיר] → מסנן לפי עיר
+```
+
+### ב. כתובת מדויקת בטופס פרסום מוצר ביתי
+```jsx
+// בטופס פרסום — החלף שדה "שכונה" ב-Google Places:
+<AddressSearch
+  onSelect={(address) => {
+    setCity(address.city)
+    setStreet(address.street)
+    setZip(address.zip)
+    setLat(address.lat)
+    setLng(address.lng)
+  }}
+/>
+
+// לאחר בחירה — הצג:
+<div style={{ background: '#EAF3DE', borderRadius: 8, padding: '10px 14px', fontSize: 14 }}>
+  ✅ {address.street} {address.number}, {address.city} {address.zip}
+</div>
+
+// חשוב: אל תציגי כתובת מדויקת בכרטיסייה הציבורית!
+// הצג רק: "שכונה X, עיר Y" — לפרטיות המוכר
+```
+
+### ג. מיקוד (ZIP) — הוסף לטבלת home_listings
+```sql
+ALTER TABLE home_listings ADD COLUMN zip_code text;
+ALTER TABLE home_listings ADD COLUMN street text;
+-- lat + lng כבר קיימים
+```
