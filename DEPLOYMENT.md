@@ -176,8 +176,22 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
 1. Vercel Dashboard → **Add New** → **Project** → import
    `levismadar80-ship-it/foodmamkor`.
 2. **Framework Preset:** Next.js (auto-detected).
-3. **Root Directory:** `frontend`  ← **critical**
-4. Leave build / install commands as defaults (vercel.json overrides them).
+3. **Root Directory:** leave **blank** (i.e. the repo root).
+4. Leave build / install commands as defaults.
+
+> **Why blank Root Directory?** The repo has a top-level `vercel.json`
+> that tells Vercel to build the Next.js app from `frontend/` via
+> `installCommand: "cd frontend && npm install"` +
+> `buildCommand: "cd frontend && npm run build"` +
+> `outputDirectory: "frontend/.next"`. This is the config-as-code
+> alternative to setting Root Directory in the UI — it survives re-imports
+> and is visible in git. If you prefer the UI setting, delete the repo-root
+> `vercel.json` and set **Root Directory = `frontend`** in Project Settings
+> instead. Do NOT do both.
+>
+> **Note:** Vercel's `rootDirectory` is NOT a valid field inside `vercel.json`
+> — it's strictly a Project Setting. The build-command cd trick is how you
+> achieve the same effect config-as-code.
 
 ### 3.2 Frontend environment variables
 
@@ -185,9 +199,9 @@ Paste these into **Environment Variables** (scope: *Production, Preview,
 Development*). See [`frontend/.env.example`](./frontend/.env.example).
 
 ```bash
-# From step 2.5 — use the FULL Railway URL, no trailing slash
-BACKEND_URL=https://<your-backend>.up.railway.app
-NEXT_PUBLIC_API_URL=https://<your-backend>.up.railway.app
+# Use the live Railway backend URL — no trailing slash
+BACKEND_URL=https://foodmamkor-production.up.railway.app
+NEXT_PUBLIC_API_URL=https://foodmamkor-production.up.railway.app
 
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 NEXT_PUBLIC_SITE_URL=https://mehamakor.online
@@ -309,10 +323,10 @@ Run through this checklist in a real browser:
 | `Dockerfile` *(repo root)* | Railway build image; builds from repo-root context with `COPY backend/...`; uses `$PORT` at runtime |
 | `railway.json` *(repo root)* | Forces Dockerfile builder + healthcheck; discovered automatically by Railway without a Root Directory setting |
 | `.dockerignore` *(repo root)* | Prunes `frontend/`, docs, `.env`, and caches from the build context |
+| `vercel.json` *(repo root)* | Monorepo build: `cd frontend && npm install/build`, `outputDirectory: frontend/.next`, Next.js preset, security headers. Import project with Root Directory **blank** so this file is picked up. |
 | `backend/.env.example` | All backend env vars, documented |
 | `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
-| `frontend/vercel.json` | Vercel framework hints + security headers |
 | `frontend/.env.example` | All frontend env vars, documented |
 | `frontend/next.config.js` | `/api/*` → `BACKEND_URL` rewrite |
 | `frontend/app/sitemap.js` | Uses `NEXT_PUBLIC_SITE_URL` for dynamic sitemap |
