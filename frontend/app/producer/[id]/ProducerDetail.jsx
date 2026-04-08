@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
@@ -10,9 +9,11 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
+  const router = useRouter();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
 
@@ -47,8 +48,31 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       ? `${window.location.origin}${producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}`
       : "";
 
+  const primaryCategory = producer.categories?.[0];
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Breadcrumb + back button */}
+      <div className="flex items-center justify-between mb-4">
+        <Breadcrumb
+          items={[
+            { href: "/", label: "בית" },
+            ...(primaryCategory
+              ? [{ href: `/?category=${primaryCategory.id}`, label: primaryCategory.name }]
+              : []),
+            { label: producer.name },
+          ]}
+        />
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          aria-label="חזרה לעמוד הקודם"
+        >
+          → חזרה לתוצאות
+        </button>
+      </div>
+
       {/* Gallery */}
       <ImageGallery images={producer.images || []} />
 
@@ -179,14 +203,31 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       )}
 
       {/* Show on map + Report */}
-      <div className="mt-8 pt-6 border-t flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-border flex items-center justify-between">
         {producer.lat && producer.lng && (
-          <Link
-            href={`/map?lat=${producer.lat}&lng=${producer.lng}`}
-            className="inline-flex items-center gap-2 text-primary hover:underline text-sm font-medium"
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                sessionStorage.setItem(
+                  "focusProducer",
+                  JSON.stringify({
+                    id: producer.id,
+                    lat: producer.lat,
+                    lng: producer.lng,
+                    name: producer.name,
+                  }),
+                );
+              } catch {
+                // sessionStorage may be unavailable (private mode) — map will still open
+              }
+              router.push("/map");
+            }}
+            className="inline-flex items-center gap-2 text-primary hover:underline text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary rounded"
+            aria-label="פתח את המיקום של העסק במפה"
           >
             🗺️ הצג במפה
-          </Link>
+          </button>
         )}
         <ReportButton producerId={producer.id} />
       </div>

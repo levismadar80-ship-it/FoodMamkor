@@ -42,13 +42,23 @@ export default function AboutPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <nav
+        className="max-w-4xl mx-auto px-4 pt-4 text-sm text-site-muted"
+        aria-label="breadcrumb"
+      >
+        <Link href="/" className="hover:text-primary">בית</Link>
+        <span className="mx-2" aria-hidden="true">›</span>
+        <span className="text-site-text">אודות</span>
+      </nav>
+
       {/* Hero */}
       <section className="bg-primary text-white py-20 md:py-28">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6 leading-tight">
+          <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6 leading-tight">
             אוכל אמיתי, ישר מהמקור אליך
           </h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto leading-relaxed font-sans">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto leading-relaxed font-body">
             הפלטפורמה שמחברת בין בתי עסק מקומיים לאנשים שמחפשים אוכל אמיתי
           </p>
         </div>
@@ -292,25 +302,25 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16">
+      {/* Final CTA */}
+      <section className="py-16 bg-background border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-serif text-3xl font-bold mb-4">מוכנים להתחיל?</h2>
-          <p className="text-site-text/70 mb-8 text-lg">
-            הצטרפו לקהילה של בתי עסק מקומיים ואנשים שאוהבים אוכל אמיתי
+          <h2 className="font-headline text-4xl font-bold mb-4 text-site-text">מוכנה להצטרף?</h2>
+          <p className="text-site-muted mb-8 text-lg">
+            הצטרפי לקהילה של בתי עסק מקומיים ואנשים שאוהבים אוכל אמיתי
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/register/producer"
-              className="bg-primary text-white px-8 py-3 rounded-[16px] hover:bg-primary-light transition font-semibold text-lg"
+              className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-semibold text-lg"
             >
               הוסף את העסק שלך
             </Link>
             <Link
               href="/map"
-              className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-light transition font-semibold text-lg"
+              className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-light transition font-semibold text-lg"
             >
-              מצא בתי עסק
+              מצאי עסקים קרובים
             </Link>
           </div>
         </div>
