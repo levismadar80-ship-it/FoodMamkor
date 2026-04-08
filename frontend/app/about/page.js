@@ -8,6 +8,9 @@ export const metadata = {
     title: "החזון שלנו — על מהמקור",
     description: "הסיפור של ספיר, הערכים וקריטריוני הכניסה.",
     type: "article",
+    siteName: "מהמקור",
+    locale: "he_IL",
+    images: ["/og-image.jpg"],
   },
   alternates: { canonical: "/about" },
 };
