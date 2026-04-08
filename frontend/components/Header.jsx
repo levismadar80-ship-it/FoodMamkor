@@ -52,6 +52,9 @@ export default function Header() {
           <Link href="/events" className="text-site-muted hover:text-primary transition">
             אירועים
           </Link>
+          <Link href="/neighbor" className="text-site-muted hover:text-primary transition">
+            מהשכן 🏠
+          </Link>
           <Link href="/about" className="text-site-muted hover:text-primary transition">
             אודות
           </Link>
@@ -112,6 +115,9 @@ export default function Header() {
           </Link>
           <Link href="/events" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
             אירועים
+          </Link>
+          <Link href="/neighbor" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+            מהשכן 🏠
           </Link>
           <Link href="/about" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
             אודות

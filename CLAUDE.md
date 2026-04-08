@@ -40,16 +40,17 @@ border:        #e8e0d0   גבולות
 ## עמודים
 | URL | תיאור |
 |-----|--------|
-| / | Hero + Social Proof Bar + Category Grid + גריד עסקים + עסקים חדשים + Parallax Quote + איך זה עובד + מהמטבח של השכן + אירועים קרובים + CTA |
+| / | Hero + Social Proof Bar + Category Grid + Founder quote + גריד עסקים + עסקים חדשים + Parallax Quote + איך זה עובד + **preview** מהמטבח של השכן (3) + אירועים קרובים + CTA |
 | /map | Leaflet + גריד מתעדכן + פוקוס דו-כיווני בלחיצה |
-| /producer/:id | גלריה + פרטים + משלוחים + מועדפים |
+| /neighbor | **מהמטבח של השכן** — dark hero + CitySearch filter + grid של HomeProductCards + floating CTA |
+| /producer/:id | גלריה + פרטים + sticky contact sidebar + ביקורות |
 | /producer/dashboard | דשבורד יצרן — זמינות היום, מועדפים, quick links |
 | /producer/dashboard/events/new | טופס הוספת אירוע |
 | /events | רשימת אירועים, מסננים (עיר/קטגוריה), מאוגרד לפי חודש |
 | /events/:id | פרטי אירוע + הרשמה |
 | /about | חזון + ערכים + Parallax Quote + סיפור מייסדת + טופס יצירת קשר |
 | /terms | תנאי שימוש |
-| /admin | אדמין — 7 דפים (ראה docs/ADMIN.md) |
+| /admin | אדמין — 7 דפים (ראה ADMIN.md) |
 
 ## סוגי משתמשים
 | role | שם בממשק | הרשמה |
@@ -298,6 +299,14 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · /neighbor dedicated page** — מהמטבח של השכן עבר מסקציה בהומ לדף נפרד:
+  - **`app/neighbor/page.js`** (server wrapper עם metadata: title "מהמטבח של השכן", og:type website) + **`app/neighbor/NeighborClient.jsx`** — dark-green hero (`bg-primary-dark`) עם כותרת "מהמטבח של השכן 🏠" + subtitle, breadcrumb, CitySearch filter, Section-level disclaimer, HomeProductForm togglable, grid 3/2/1 של `HomeProductCard`, floating "פרסמי מוצר" CTA (mobile — `fixed bottom-24 left-1/2`, מעל ה-BottomNav ב-5 tabs, עם Phosphor `Plus`/`X` icons), SkeletonProducerGrid ב-loading, empty-state עם 🍲 circle + CTA.
+  - **`HomeProductCard` נשאר כמו שהוא** — הוא כבר תואם לספק: badge "ביתי 🏠", טייטל+שכונה בלבד (כתובת מדויקת לא נחשפת כי `street`/`zip_code` ב-FIXES_V2 #7c לא ב-HomeProductOut), trust badges (אורגני/כשר/אחסון/קטגוריה), prep/expiry dates, alergens, מחיר+יחידה או "🎁 במתנה" ל-0, סטארים, כפתור WhatsApp, ו-"🔍 בבדיקה" badge על moderation_status=FLAGGED. לא דרוש שינוי.
+  - **Homepage — trimmed the section:** הסרתי את ה-city filter, ה-HomeProductForm, ה-disclaimer, וה-grid המלא. נשארו: כותרת + `ראי עוד →` link ל-`/neighbor` + preview של **עד 3 cards** מ-`homeProducts.slice(0, 3)`. אם אין מוצרים, מוצגת שורת "אין עדיין..." עם קישור ל-`/neighbor` להצטרפות. ה-id="home-kitchen" נשמר כי footer מקשר אליו. State ופונקציות מתות נוקו: `showHomeForm`, `homeKitchenCity`, `handleHomeProductCreated`, וה-imports של `HomeProductForm` ו-`CitySearch`.
+  - **Header nav:** "מהשכן 🏠" נוסף ל-desktop nav (בין "אירועים" ל-"אודות") וגם למobile menu. Footer column "קהילה" כבר היה עם `/#home-kitchen` link — נשאר (זה לא-הכרחי אבל עדיין עובד, ועכשיו גם יש קישור ישיר ל-`/neighbor` דרך ה-Header).
+  - **BottomNav:** גדל מ-4 ל-**5 tabs** (`grid-cols-5`). הסדר: 🏠 גלה · 🗺️ מפה · 📅 אירועים · 🍲 מהשכן · ❤️ מועדפים. האייקון החדש `CookingPot` מ-Phosphor. טקסט הלייבלים קטן מ-`text-xs` ל-`text-[11px]` כדי שיכנס ב-20% width לכל tab.
+  - **מה לא שונה:** ה-navbar mobile menu של ה-header עדיין כולל את כל 5 הקישורים (לא רק 4) — ב-mobile יש יתירות עם ה-BottomNav, אבל זה בסדר: ה-menu טוב גם למשתמשים בדפדפנים עם JS לא-חלקי או שמעדיפים hamburger. ה-HomeProductForm עצמו לא שונה — רק מקום הצגתו עבר לדף ה-/neighbor.
+
 - **2026-04-08 · LAUNCH_CHECKLIST week 4 — Pre-launch verification:**
   - **Backend pytest:** ✓ 30/30 עוברים אחרי כל השינויים של הסשן הזה (design fixes + week 1-3).
   - **Frontend syntax sweep:** ✓ כל 13 הקבצים שנגעו בהם ב-weeks 1-3 (כולל 3 ה-server wrappers החדשים ל-`/about`/`/events`/`/map` + `error.js` + `not-found.js`) עם balanced braces/parens.
