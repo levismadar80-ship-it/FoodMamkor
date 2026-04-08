@@ -1,11 +1,13 @@
 from app.models.models import (
     AdminSetting,
     Category,
+    ContactMessage,
     DeliveryArea,
     Favorite,
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    NewsletterSubscriber,
     Producer,
     ProducerCategory,
     Product,
@@ -32,4 +34,6 @@ __all__ = [
     "HomeProductRating",
     "AdminSetting",
     "StaticPage",
+    "NewsletterSubscriber",
+    "ContactMessage",
 ]

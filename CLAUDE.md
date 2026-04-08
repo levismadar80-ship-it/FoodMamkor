@@ -72,6 +72,13 @@ border:        #e8e0d0   גבולות
 | כפתור הרשמה | הוסף את העסק שלך |
 | pending | פרופיל העסק שלך ממתין לאישור 🌿 |
 
+## Endpoints ציבוריים (שיווק)
+```
+GET  /api/stats       → { producers_count, categories_count }  — Social Proof Bar
+POST /api/newsletter  { email } → 201                            — Footer newsletter
+POST /api/contact     { name, email, message } → 200             — /about contact form
+```
+
 ## קבצי תיעוד — קרא לפי הצורך
 ```
 docs/DESIGN.md   — עיצוב מפורט: hero, category grid, כרטיסיות, footer

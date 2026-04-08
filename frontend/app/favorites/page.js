@@ -33,16 +33,22 @@ export default function FavoritesPage() {
       <h1 className="text-2xl font-bold mb-8">❤️ המועדפים שלי</h1>
 
       {loading ? (
-        <p className="text-center text-text-secondary">טוען...</p>
+        <p className="text-center text-text-secondary">טוענת עסקים טריים...</p>
       ) : favorites.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-5xl mb-4">🤍</p>
-          <p className="text-text-secondary mb-4">עדיין לא שמרת עסקים למועדפים</p>
+          <p className="text-5xl mb-4">🌿</p>
+          <p className="text-text-secondary mb-4">עדיין לא שמרת עסקים 🌿</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="text-primary hover:underline block mb-4"
+          >
+            התחברי כדי לשמור מועדפים
+          </button>
           <button
             onClick={() => router.push("/")}
-            className="bg-primary text-white px-6 py-2 rounded-[12px] hover:bg-primary-light transition"
+            className="bg-primary text-white px-6 py-2 rounded-[16px] hover:bg-primary-light transition"
           >
-            גלה בתי עסק
+            גלי בתי עסק
           </button>
         </div>
       ) : (
