@@ -3,6 +3,7 @@
 
 ## פרויקט
 - **שם:** מהמקור (MEHAMEKOR) | mehamekor.co.il
+- **דומיין פרודקשן:** mehamakor.online (Vercel NS)
 - **מה זה:** דירקטורי ישראלי של יצרני אוכל בריא + מוצרי טיפוח טבעיים
 - **מטאפורה:** "Google Maps של אוכל בריא בישראל"
 - **אינסטגרם:** https://www.instagram.com/mehamekor
@@ -12,7 +13,8 @@
 |------|-----------|
 | Frontend | Next.js + Tailwind CSS |
 | Backend | FastAPI + Python |
-| DB | PostgreSQL + PostGIS |
+| DB | PostgreSQL (Railway default — **ללא PostGIS**) |
+| חישובי מרחק | Haversine ב-SQL על lat/lng (ראה `backend/app/routers/producers.py`) |
 | תמונות | Cloudinary |
 | מפה | Leaflet.js |
 | Hosting | Vercel (frontend) + Railway (backend+DB) |
@@ -152,7 +154,20 @@ ADMIN.md         — ממשק אדמין המלא + בדיקות אוטומטי�
 ROADMAP.md       — v1 checklist, v2 פיצ'רים, v3 רעיונות
 TASKS.md         — משימות פתוחות (לפעמים ב-branch אחר — ראה Git gotchas)
 DESIGN_UPDATE.md — מפרט step-by-step של העדכון האחרון
+DEPLOYMENT.md    — פריסה מלאה ל-Vercel + Railway (step-by-step)
 ```
+
+## פריסה (Production)
+- **Frontend:** Vercel — **Root Directory = `frontend`** (UI setting, לא ניתן להגדיר ב-vercel.json). הקונפיג היחיד ב-`frontend/vercel.json` — framework+headers בלבד, ללא override של Install/Build Command (Vercel מזהה Next.js אוטומטית).
+- **Backend:** Railway — **Root Directory ריק** (מ-repo root), Builder: Dockerfile. ה-`Dockerfile` ו-`railway.json` יושבים ב-repo root ומשתמשים ב-`COPY backend/...`
+- **Backend URL:** `https://foodmamkor-production.up.railway.app`
+- **DB:** Railway PostgreSQL רגיל — **ללא PostGIS**, ללא תוספים ידניים
+- **חישובי מרחק:** נוסחת Haversine ישירות ב-SQL (`/producers?lat=&lng=&radius_km=`). מחזיר גם `distance_km` בכל תוצאה.
+- **Env vars:** `backend/.env.example` + `frontend/.env.example`
+- **חובה:** `BACKEND_URL` ב-Vercel חייב להיות זהה ל-`NEXT_PUBLIC_API_URL` (נצרב ב-build time)
+- **Healthcheck:** `/health` (לא `/`) — עצמאי מ-DB, תמיד מחזיר 200 כל עוד uvicorn רץ
+- **Google OAuth:** Client ID `591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com` — יש להוסיף `https://mehamakor.online` ל-Authorized Origins
+- **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars (seed_data.py). אחרי ה-boot הראשון, לשנות סיסמה ב-/admin ולמחוק `ADMIN_PASSWORD` מ-Railway.
 
 ## כלי עיצוב
 ```bash

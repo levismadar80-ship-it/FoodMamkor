@@ -200,19 +200,27 @@ def seed():
 
         db.commit()
 
-        # Seed admin user
-        admin_email = "sapir000s@gmail.com"
-        existing_admin = db.query(User).filter(User.email == admin_email).first()
-        if not existing_admin:
-            admin_user = User(
-                email=admin_email,
-                name="Admin",
-                password_hash=hash_password("Zaq123edcv"),
-                role="admin",
-            )
-            db.add(admin_user)
-            db.commit()
-            print(f"Admin user created: {admin_email}")
+        # Seed admin user from env vars.
+        # Both ADMIN_EMAIL and ADMIN_PASSWORD must be set; otherwise we
+        # skip the seed so local dev / CI can run without a pre-baked
+        # admin. Secrets must NEVER be hardcoded here — the previous
+        # hardcoded pair was exposed in git history and has been rotated.
+        if settings.admin_email and settings.admin_password:
+            existing_admin = db.query(User).filter(User.email == settings.admin_email).first()
+            if not existing_admin:
+                admin_user = User(
+                    email=settings.admin_email,
+                    name="Admin",
+                    password_hash=hash_password(settings.admin_password),
+                    role="admin",
+                )
+                db.add(admin_user)
+                db.commit()
+                print(f"Admin user created: {settings.admin_email}")
+            else:
+                print(f"Admin user already exists: {settings.admin_email}")
+        else:
+            print("ADMIN_EMAIL or ADMIN_PASSWORD not set — skipping admin seed")
 
         print("Seed data inserted successfully!")
     finally:

@@ -1,0 +1,52 @@
+# Build context is the repo root (see /Dockerfile), so this file prunes
+# everything that isn't backend/ Python code from the tarball that ships
+# to the Docker daemon on each Railway build.
+
+# --- VCS / tooling ---
+.git
+.gitignore
+.github
+.agents
+.claude
+.vscode
+.idea
+
+# --- Frontend (built separately on Vercel) ---
+frontend
+
+# --- Docs & binary assets (never needed at runtime) ---
+*.md
+*.docx
+*.xlsx
+docs
+logo
+ALL_PAGES_DESIGN.md
+admin_brief.docx
+mehamekor_*.docx
+mehamekor_*.xlsx
+skills-lock.json
+
+# --- Python cruft ---
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+*.egg-info
+.pytest_cache
+
+# --- Secrets / local env — NEVER ship these into the image ---
+.env
+**/.env
+.env.*
+!**/.env.example
+
+# --- Tests ---
+tests
+backend/tests
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db

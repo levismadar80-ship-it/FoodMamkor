@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from geoalchemy2 import Geometry
 from sqlalchemy import (
     Boolean,
     Column,
@@ -33,7 +32,6 @@ class Producer(Base):
     city = Column(String(100))
     lat = Column(Float)
     lng = Column(Float)
-    location = Column(Geometry("POINT", srid=4326))
     phone = Column(String(20))
     instagram = Column(String(100))
     website = Column(String(200))
