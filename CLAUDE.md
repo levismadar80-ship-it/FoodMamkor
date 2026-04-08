@@ -660,5 +660,25 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
   - Contact form: labels אמיתיים, focus-visible ring, border-radius 8px
   - site-muted: #5c584f token חדש (מתקן בעיות contrast)
 
+## Production infra (הוסף אפריל 2026 — FINAL_AUDIT)
+- **SEO/OG:** `app/layout.js` — metadata כולל openGraph/twitter, favicon, apple-touch-icon, og-image (`/public/og-image.jpg`, 1200×630). עמודי עסק מוסיפים metadata דינמי ב-`app/[slug]/page.js`.
+- **Analytics:** Microsoft Clarity נטען מ-`app/layout.js` כש-`NEXT_PUBLIC_CLARITY_PROJECT_ID` מוגדר.
+- **Error monitoring:** Sentry (`@sentry/nextjs`) — קבצי `sentry.{client,server,edge}.config.js` + wrap ב-`next.config.js`. מופעל רק אם `NEXT_PUBLIC_SENTRY_DSN` מוגדר.
+- **תמונות Cloudinary:** כל תמונה עוברת דרך `lib/cloudinary.js` (`optimizeCloudinary`) שמזריקה `f_auto,q_auto` → WebP/AVIF אוטומטי.
+- **ImageWithFallback:** `components/ImageWithFallback.jsx` עוטף `next/image` עם fallback ירוק חם + אופטימיזציית Cloudinary. משומש ב-`ImageGallery` וכרטיסיות נוספות לפי הצורך.
+- **Skeletons:** `ProducerCardSkeleton` + `HomeProductCardSkeleton` + `.skeleton-shimmer`/`.skeleton-bar` ב-`globals.css`. דף הבית מציג shimmer עד שהנתונים מגיעים.
+- **WhatsApp share:** `components/WhatsAppShareButton.jsx` בכל דף עסק — ה-viral loop (`wa.me/?text=...`).
+- **Section spacing:** class `.section-y` ב-`globals.css` (80px דסקטופ / 48px מובייל) זמין לכל דף שמעוניין להחיל מרווחים עקביים.
+- **Print CSS:** ב-`globals.css` — מסתיר header/footer/nav בהדפסה.
+
+### ENV חדשים
+```
+NEXT_PUBLIC_CLARITY_PROJECT_ID=xxxxxxxxxx
+NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
+SENTRY_DSN=...          # server
+SENTRY_ORG=mehamekor
+SENTRY_PROJECT=mehamekor-frontend
+```
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`

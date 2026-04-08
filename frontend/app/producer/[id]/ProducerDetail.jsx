@@ -10,6 +10,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import FollowButton from "@/components/FollowButton";
 import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
+import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerReviews from "@/components/ProducerReviews";
 
@@ -317,6 +318,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <div className="flex-1">
                 <ShareButton url={shareUrl} title={producer.name} />
               </div>
+            </div>
+
+            {/* FINAL_AUDIT: WhatsApp share — the viral loop */}
+            <div className="mb-3">
+              <WhatsAppShareButton producer={producer} url={shareUrl} />
             </div>
 
             {/* Show on map */}

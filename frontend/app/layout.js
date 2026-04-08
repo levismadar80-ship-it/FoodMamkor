@@ -1,3 +1,4 @@
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Header from "@/components/Header";
@@ -11,48 +12,62 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 // to every page that doesn't override it. Individual page.js files
 // can extend via `export const metadata = { ... }` on server components
 // or via a wrapping server component for client pages.
-const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
+const SITE_URL = process.env.SITE_URL || "https://mehamekor.co.il";
+const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
+const SITE_DESCRIPTION =
+  "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
+// FINAL_AUDIT: OG image lives in /public/og-image.jpg (1200×630 recommended).
+const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+    default: SITE_TITLE,
     template: "%s | מהמקור",
   },
-  description:
-    "דירקטורי ישראלי של בתי עסק מקומיים לאוכל בריא: מגדלים קטנים, שכנות שמבשלות בבית, בשר grass-fed, גבינות, לחם מחמצת ועוד. גלי בתי עסק קרובים אלייך במפה.",
+  description: SITE_DESCRIPTION,
   keywords: [
-    "אוכל אמיתי", "מוצרים מקומיים", "grass-fed",
-    "אוכל בריא", "אוכל אורגני", "יצרנים ישראלים",
-    "מהמקור", "שוק איכרים",
+    "אוכל אמיתי",
+    "מוצרים מקומיים",
+    "grass-fed",
+    "אוכל בריא",
+    "אוכל אורגני",
+    "יצרנים ישראלים",
+    "מהמקור",
+    "שוק איכרים",
   ],
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/icon-192.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   openGraph: {
     type: "website",
     locale: "he_IL",
     url: SITE_URL,
     siteName: "מהמקור",
-    title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
-    description:
-      "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי קרוב אלייך.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/logo.png",
-        width: 600,
-        height: 225,
-        alt: "מהמקור",
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
-    description:
-      "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
   },
   robots: {
     index: true,
@@ -66,6 +81,9 @@ export const metadata = {
 export const viewport = {
   themeColor: "#2e6853",
 };
+
+// FINAL_AUDIT: Microsoft Clarity — opt-in via NEXT_PUBLIC_CLARITY_PROJECT_ID.
+const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 
 export default function RootLayout({ children }) {
   return (
@@ -89,6 +107,15 @@ export default function RootLayout({ children }) {
             <CookieBanner />
           </SmoothScrollProvider>
         </AuthProvider>
+        {CLARITY_PROJECT_ID && (
+          <Script id="ms-clarity" strategy="afterInteractive">
+            {`(function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");`}
+          </Script>
+        )}
       </body>
     </html>
   );

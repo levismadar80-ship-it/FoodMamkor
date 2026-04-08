@@ -81,4 +81,25 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+let finalConfig = withPWA(nextConfig);
+
+// Wrap with Sentry only when @sentry/nextjs is installed AND a DSN is
+// configured. This keeps dev/CI builds working without the package.
+if (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN) {
+  try {
+    const { withSentryConfig } = require("@sentry/nextjs");
+    finalConfig = withSentryConfig(finalConfig, {
+      silent: true,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      widenClientFileUpload: true,
+      hideSourceMaps: true,
+      disableLogger: true,
+    });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn("[next.config] Sentry DSN set but @sentry/nextjs not installed — skipping wrap.");
+  }
+}
+
+module.exports = finalConfig;
