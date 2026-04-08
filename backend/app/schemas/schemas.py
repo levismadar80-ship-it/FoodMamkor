@@ -290,6 +290,10 @@ class HomeProductCreate(BaseModel):
     price: Decimal | None = None
     neighborhood: str | None = None
     city: str | None = None
+    # FIXES_V2.md fix 7c — street + zip are persisted server-side but NOT
+    # included in HomeProductOut. Use them for internal seller-only views.
+    street: str | None = None
+    zip_code: str | None = None
     phone: str | None = None
     # Expanded fields (FIXES_V2.md fix 2)
     category: str | None = None
@@ -313,6 +317,8 @@ class HomeProductUpdate(BaseModel):
     price: Decimal | None = None
     neighborhood: str | None = None
     city: str | None = None
+    street: str | None = None
+    zip_code: str | None = None
     phone: str | None = None
     category: str | None = None
     prep_date: date | None = None
