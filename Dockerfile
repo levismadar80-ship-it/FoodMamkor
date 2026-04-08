@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
-# System deps: libpq is needed for psycopg2 runtime; build-essential for any
-# source builds (GeoAlchemy2 is pure Python, but keep headers available).
+# System deps: libpq for psycopg2 runtime; build-essential kept for any
+# transitive wheels that need C compilation.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -10,13 +10,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python deps first so Docker layer cache is reused when only app/
-# code changes.
-COPY requirements.txt .
+# Build context is the REPO ROOT (not backend/) so Railway finds this
+# Dockerfile at the top level without needing a Root Directory setting.
+# All COPY paths are prefixed with backend/ accordingly.
+#
+# Install Python deps first so Docker layer cache is reused when only
+# backend/app/ code changes.
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY backend/ .
 
 # Railway (and most PaaS) injects $PORT at runtime. Default to 8000 for
 # docker-compose / local runs.
