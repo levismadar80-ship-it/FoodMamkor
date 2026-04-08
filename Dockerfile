@@ -27,5 +27,9 @@ COPY backend/ .
 ENV PORT=8000
 EXPOSE 8000
 
+# Flush Python stdout/stderr immediately — without this, startup logs
+# can be invisible in Railway's log panel for the first few minutes.
+ENV PYTHONUNBUFFERED=1
+
 # Use sh -c so $PORT is expanded at runtime, not baked into the image.
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
