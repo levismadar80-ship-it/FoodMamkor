@@ -84,13 +84,16 @@ DEPLOYMENT.md    — פריסה מלאה ל-Vercel + Railway (step-by-step)
 ```
 
 ## פריסה (Production)
-- **Frontend:** Vercel — Root Directory: `frontend`, קונפיג ב-`frontend/vercel.json`
+- **Frontend:** Vercel — **Root Directory ריק**, קונפיג ב-`vercel.json` ב-repo root (`cd frontend && npm install/build`, `outputDirectory: frontend/.next`). `vercel.json` לא תומך ב-`rootDirectory` ישירות — משתמשים ב-build commands כמעקף.
 - **Backend:** Railway — **Root Directory ריק** (מ-repo root), Builder: Dockerfile. ה-`Dockerfile` ו-`railway.json` יושבים ב-repo root ומשתמשים ב-`COPY backend/...`
+- **Backend URL:** `https://foodmamkor-production.up.railway.app`
 - **DB:** Railway PostgreSQL רגיל — **ללא PostGIS**, ללא תוספים ידניים
 - **חישובי מרחק:** נוסחת Haversine ישירות ב-SQL (`/producers?lat=&lng=&radius_km=`). מחזיר גם `distance_km` בכל תוצאה.
 - **Env vars:** `backend/.env.example` + `frontend/.env.example`
 - **חובה:** `BACKEND_URL` ב-Vercel חייב להיות זהה ל-`NEXT_PUBLIC_API_URL` (נצרב ב-build time)
+- **Healthcheck:** `/health` (לא `/`) — עצמאי מ-DB, תמיד מחזיר 200 כל עוד uvicorn רץ
 - **Google OAuth:** Client ID `591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com` — יש להוסיף `https://mehamakor.online` ל-Authorized Origins
+- **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars (seed_data.py). אחרי ה-boot הראשון, לשנות סיסמה ב-/admin ולמחוק `ADMIN_PASSWORD` מ-Railway.
 
 ## כלי עיצוב
 ```bash
