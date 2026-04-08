@@ -7,13 +7,59 @@ import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 
+// LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
+// to every page that doesn't override it. Individual page.js files
+// can extend via `export const metadata = { ... }` on server components
+// or via a wrapping server component for client pages.
+const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
+
 export const metadata = {
-  title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
-  description: "פלטפורמה לחיבור בין בתי עסק מקומיים לקונים. מצאו בתי עסק מקומיים, אורגניים ובריאים באזור שלכם.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+    template: "%s | מהמקור",
+  },
+  description:
+    "דירקטורי ישראלי של בתי עסק מקומיים לאוכל בריא: מגדלים קטנים, שכנות שמבשלות בבית, בשר grass-fed, גבינות, לחם מחמצת ועוד. גלי בתי עסק קרובים אלייך במפה.",
+  keywords: [
+    "אוכל אמיתי", "מוצרים מקומיים", "grass-fed",
+    "אוכל בריא", "אוכל אורגני", "יצרנים ישראלים",
+    "מהמקור", "שוק איכרים",
+  ],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     apple: "/icon-192.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "he_IL",
+    url: SITE_URL,
+    siteName: "מהמקור",
+    title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+    description:
+      "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי קרוב אלייך.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 600,
+        height: 225,
+        alt: "מהמקור",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+    description:
+      "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: SITE_URL,
   },
 };
 

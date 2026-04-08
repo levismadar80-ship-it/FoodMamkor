@@ -65,6 +65,7 @@ border:        #e8e0d0   גבולות
 - ללא גרדיאנטים כבדים, ללא צללים חזקים
 - תחושת שוק איכרים — חם ואורגני, לא startup
 - השראה: gardensweetfarm.com + foraged.com/categories
+- **שאלת חובה לכל שינוי עיצובי** (מ-LAUNCH_CHECKLIST): "האם זה מרגיש כמו שוק מקומי או כמו tech startup?" — אם startup, פשטי.
 
 ## Terminology — "יצרן" הוסר מ-UI
 - ב-**UI טקסטים בעברית**: תמיד "בית עסק / בתי עסק" או "בעלת עסק" (נקבה) — לא "יצרן"/"יצרנים"/"יצרנית".
@@ -297,6 +298,70 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · LAUNCH_CHECKLIST week 4 — Pre-launch verification:**
+  - **Backend pytest:** ✓ 30/30 עוברים אחרי כל השינויים של הסשן הזה (design fixes + week 1-3).
+  - **Frontend syntax sweep:** ✓ כל 13 הקבצים שנגעו בהם ב-weeks 1-3 (כולל 3 ה-server wrappers החדשים ל-`/about`/`/events`/`/map` + `error.js` + `not-found.js`) עם balanced braces/parens.
+  - **Live smoke test של welcome email flow:**
+    - `POST /auth/register` עם משתמש חדש → 200, access_token תקין
+    - לוג מראה `[EMAIL] Would send welcome email to xxx@test.co.il (role=consumer)` — fallback הוטמע כמתוכנן (SMTP לא מוגדר בסנדבוקס)
+    - `GET /auth/me` עם ה-token החדש → 200 עם role=consumer ו-email תקין
+    - ✓ Fire-and-forget עובד — רישום לא נחסם על ידי שליחת מייל כושלת
+  - **Security review re-verification:** ✓ כל הפיצ'רים של week 1-3 לא מפרים את ה-security invariants:
+    - Welcome email משתמש ב-`email.split('@')[0]***` ללוגים (email prefix בלבד per security policy)
+    - Error page במצב production לא מראה את ה-error message (רק ב-dev)
+    - Server wrappers ל-client pages לא חושפים server code ל-browser
+    - Sitemap משתמש ב-`SITE_URL` env var (לא hardcoded domain)
+  - **Manual items — out of scope for this pass (content/human work):**
+    - **5 אנשים שאינם מכירים את האתר ניסו להשתמש בו** — user testing, לא code.
+    - **בדיקה על iPhone 13, Samsung Galaxy, iPad, Chrome, Safari, Firefox** — cross-device QA דורש מכשירים אמיתיים.
+    - **בדיקה על 3G (האם נטען תוך 3 שניות?)** — דורש Lighthouse run על פריסה אמיתית + Chrome DevTools throttling.
+    - **3 יצרנים ניסו להירשם בעצמם בלי עזרה** — user testing.
+    - **Lighthouse score > 85** — דורש פריסה + Lighthouse CI או ידני בדפדפן.
+    - **Backup אוטומטי של DB** — DevOps task (pg_dump cron או Railway backup).
+    - **Monitoring (Sentry)** — דורש חשבון Sentry + DSN בקוד + ב-env (frontend ו-backend).
+    - **HTTPS + .env.production הגדרות** — DevOps + הוספת secrets ל-production env.
+  - **ROADMAP.md 13 steps:** לא בדקתי את כל 13 פריטי ה-ROADMAP בנפרד — הרוב כבר בוצעו בסשנים קודמים. מומלץ לעבור עליו כצ׳ק-ליסט ידני לפני דומיין.
+
+- **2026-04-08 · LAUNCH_CHECKLIST week 3 — UX polish:**
+  - **Welcome email:** `_send_welcome_email(email, name, role)` הוסף ל-`auth.py` בעקבות התבנית של `_send_deletion_email` הקיים. נקרא מ-`register` וגם מ-`register_producer`. יש שני body variants:
+    - **Consumer:** "ברוכה הבאה! גלי בתי עסק..." + 3 quick links
+    - **Producer:** "העסק שלך ממתין לאישור אדמין" + הסבר על הקריטריונים + link ל-dashboard
+    - Fire-and-forget: חריגות SMTP נרשמות כ-`[EMAIL] Welcome email failed:` אבל לא חוסמות את ה-registration response. בלי SMTP_USER מוגדר — מדפיס `[EMAIL] Would send...` במקום לשלוח.
+    - לוג מציג רק email prefix (`user***`) פר security policy.
+  - **Global error page:** `app/error.js` חדש — Next.js App Router error boundary. 🌱 + "משהו השתבש" + כפתור "נסי שוב" (קורא ל-`reset()`) + כפתור "חזרה לדף הבית". ב-development מציג את ה-error message ב-`<pre>` קטן. client component (דרוש מ-Next).
+  - **404 page:** אומת ✓ (נוסף ב-ALL_PAGES_DESIGN pass).
+  - **Cookies banner:** אומת ✓ (נוסף ב-FIXES_V2 #6).
+  - **A11y keyboard nav:** אומת במסלול החשוב — כל `<input>` כבר יש לו `<label htmlFor>`, כל `<button>` ו-`<Link>` עם `focus-visible:ring-2`, כל icon-only link עם `aria-label`, decorative SVGs מסומנים `aria-hidden`. ה-SECURITY audit pass כיסה את זה במפורש.
+  - **מה לא בוצע:**
+    - **כפתור נגישות צף** (font size toggle / high contrast) — זה widget ייעודי שלרוב מגיע דרך ספרייה חיצונית (userway, accessibe וכו'). יוסף בנפרד עם החלטה על הספק.
+    - **Contrast ratio automated check** — `text-site-muted` (#5c584f על #F5F0E8) מגיע ל-~5.5:1 שזה AA, תיעדתי ב-`חוקים שאסור לשבור → Accessibility`.
+
+- **2026-04-08 · LAUNCH_CHECKLIST week 2 — Trust signals:**
+  - **Seed data:** 5 producers קיימים ב-`seed_data.py` (כל אחד עם תמונות, קטגוריות, מוצרים, ומשלוחים). ה-checklist רוצה לפחות 8 אבל זה **עבודת תוכן**, לא הנדסה — הוספת 3 producers מזויפים נוספים לא מחזקת את האמון, אלא מחלישה אותו. מוריש למשימת content של הצוות.
+  - **Social Proof Bar:** אומת ✓ — מציג `{producers_count} בתי עסק מאומתים · {categories_count} קטגוריות · מכל רחבי הארץ` עם מספרים **מודגשים** (`font-semibold tabular-nums`), מקבל נתונים מ-`GET /api/stats`.
+  - **WhatsApp CTA על כל עמוד עסק:** אומת ✓ ותיקון קטן:
+    - `ProducerDetail` sticky sidebar — משתמש ב-`?text=היי! מצאתי אותך במהמקור — {producer.name}` (מ-WORLD_CLASS_V2).
+    - `WhatsAppButton` — משתמש ב-`?text=היי, ראיתי את "{productTitle}" במהמקור`.
+    - `ProducerCard` — **היה חסר ה-?text** — תוקן עכשיו, גם הוא עובר ב-`היי! מצאתי אותך במהמקור — {producer.name}`.
+    - כל קישור WhatsApp באתר ממיר `0501234567 → 972501234567` לפורמט E.164.
+  - **Founder story + photo ב-/about:** ה-founder section על /about נמצא עם ניסוח חדש (מ-COPY_FIXES). התמונה עדיין placeholder עם emoji 🌿 — **צריך קובץ תמונה אמיתית של ספיר** (content task, לא engineering).
+  - **First real review:** ה-UI של reviews עובד (FIXES_V2 #3), אבל שתילת ביקורת מזויפת לא מחזקת אמון. **ביקורת אמיתית אפילו מבן משפחה** היא המלצה content, לא code.
+
+- **2026-04-08 · LAUNCH_CHECKLIST week 1 — Performance + SEO:**
+  - **sitemap.xml:** `app/sitemap.js` שוחזר. היה מכסה רק 4 עמודים סטטיים + producers by-id. עכשיו מכסה: `/`, `/map`, `/events`, `/about`, `/register/producer`, `/register`, `/login`, `/terms` + producers (עם slug URLs כשזמין) + event detail pages. משתמש ב-`SITE_URL` env var (ברירת מחדל `https://mehamakor.co.il`). הוסף `changeFrequency` לכל entry.
+  - **robots.txt:** אומת ✓ (`User-agent: *` + Allow: / + Sitemap הוכרז).
+  - **Root metadata:** `app/layout.js` שוחזר עם metadata עשיר — `metadataBase`, `title.template`, `keywords`, `openGraph` (type/locale/siteName/images), `twitter` (summary_large_image), `robots: {index: true, follow: true}`, `alternates.canonical`. ה-template מאפשר לדפים להוסיף title קצר והוא יורש את "| מהמקור" אוטומטית.
+  - **Page-level metadata wrappers:** יצרתי server-component wrappers ל-`/about`, `/events`, `/map` — העמודים המקוריים עברו ל-`*Client.jsx`, וה-`page.js` החדש רק מייצא metadata + מרנדר את ה-client. זה דרוש כי client components לא יכולים לייצא metadata ב-Next App Router. שאר הדפים הקליינט (favorites, register, login) יורשים את layout metadata שזה מספיק עבור דפים נמוך-traffic.
+  - **Producer detail:** אומת ✓ — כבר היה `generateMetadata` + JSON-LD `@type: LocalBusiness`.
+  - **schema.org:** אומת ✓ — מופיע ב-`producer/[id]/page.js` עם address/geo/telephone/url/image.
+  - **Images:** תמונות הקטגוריות בדף הבית משתמשות ב-inline `background-image` (bypass ל-next/image), מה שאומר שהן לא מקבלות lazy loading אוטומטי. ProducerCard + HomeProductCard כן משתמשים ב-`<Image>` עם lazy loading ברירת מחדל.
+
+- **2026-04-08 · LAUNCH_CHECKLIST design fixes (4)** — תיקונים קצרים של דברים שהוגזמו:
+  - **Fix 1 (Login warm):** אומת — ה-login page כבר על `#F5F0E8` עם כרטיס לבן, לא dark. הכיוון הזה נשמר במכוון כשדילגתי על "authkit dark mode" מ-WORLD_CLASS_V2 (מנוגד לברנד).
+  - **Fix 2 (HowItWorks 3 cards):** אומת — הקטע הקיים משתמש ב-`FadeInSection` stagger עם 3 שלבים (01/02/03), לא sticky-scroll 300vh. נשמר מכוון.
+  - **Fix 3 (Organic noise texture):** הוספתי ל-`globals.css` background-image של SVG noise inline ב-3% opacity. Zero HTTP requests, zero deps. מוסיף תחושת נייר עדינה בלי לפגוע בקריאות.
+  - **Fix 4 (Founder quote card):** הוספתי `FadeInSection` על דף הבית בין ה-Category Grid ל-Producers Grid — כרטיס לבן עם 🌿 circle + ציטוט בפרנק-רוהל `"מצאתי בשר grass-fed ליד הבית רק אחרי שעתיים בקבוצות ווטסאפ. בניתי את מהמקור כדי שלך זה ייקח 30 שניות."` — הכל wrapped ב-`<Link href="/about">` עם `focus-visible:ring` + hover shadow.
+
 - **2026-04-08 · Fixes V2 #7** — סינון עיר במהמטבח של השכן + שדות כתובת פרטיים:
   - **(a) City filter בהומ-קיטשן:** `page.js` נוסף state `homeKitchenCity` + `CitySearch` בראש סקציית "מהמטבח של השכן". שינוי העיר יורה `loadHomeProducts()` שקורא `GET /home-products?city=X` (ה-backend כבר תמך בזה קודם — לא דרש שינוי schema/router). הוספתי גם `id="home-kitchen"` לאנchor של ה-footer שכבר מקשר ל-`/#home-kitchen` + `scroll-mt-24` לscroll offset מתחת ל-navbar הדביק.
   - **(c) Street + zip_code פרטיים:** הוספתי שתי עמודות ל-`HomeProduct`: `street VARCHAR(200)` + `zip_code VARCHAR(20)`. Migration entries ב-`_migrate_columns`. ה-`HomeProductCreate`/`Update` schemas מקבלים אותן, אבל **`HomeProductOut` לא חושף אותן** — זה מכוון לשמירת פרטיות המוכר, כמו שה-FIXES_V2 spec אומר "אל תציגי כתובת מדויקת בכרטיסייה הציבורית". ה-router שומר אותן ב-`create_home_product`. ב-`HomeProductForm` הוספתי fieldset קטן לרחוב+מיקוד עם הערה `🔒 הכתובת המדויקת נשמרת לשימוש פנימי בלבד. ללקוחות מוצגים רק עיר ושכונה.`

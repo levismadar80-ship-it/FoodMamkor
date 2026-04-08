@@ -149,7 +149,7 @@ export default function ProducerCard({ producer, active, onClick }) {
           <div className="flex items-center" style={{ gap: "6px" }}>
             {whatsappNumber && (
               <a
-                href={`https://wa.me/${whatsappNumber}`}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="WhatsApp"

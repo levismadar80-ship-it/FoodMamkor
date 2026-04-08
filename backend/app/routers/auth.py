@@ -37,6 +37,8 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
     db.add(user)
     db.commit()
     db.refresh(user)
+    # LAUNCH_CHECKLIST week 3 — welcome email (fire-and-forget, no block)
+    _send_welcome_email(user.email, user.name, role="consumer")
     return Token(access_token=create_access_token(user.id))
 
 
@@ -86,6 +88,8 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
     db.refresh(user)
 
     _notify_admin_new_producer(producer)
+    # LAUNCH_CHECKLIST week 3 — welcome email (business variant)
+    _send_welcome_email(user.email, user.name, role="producer")
 
     return Token(access_token=create_access_token(user.id))
 
@@ -194,6 +198,61 @@ def delete_account(user: User = Depends(get_current_user), db: Session = Depends
     _send_deletion_email(user_email, user_name)
 
     return {"detail": "Account deleted successfully"}
+
+
+def _send_welcome_email(email: str, name: str, role: str = "consumer"):
+    """LAUNCH_CHECKLIST week 3 — send welcome email after registration.
+    Fire-and-forget: SMTP failures never block the registration response.
+    """
+    if not settings.smtp_user:
+        print(f"[EMAIL] Would send welcome email to {email} (role={role})")
+        return
+
+    consumer_body = (
+        f"שלום {name},\n\n"
+        f"ברוכה הבאה למהמקור! 🌿\n\n"
+        f"עכשיו את יכולה לגלות בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית —\n"
+        f"כל האוכל האמיתי, במקום אחד.\n\n"
+        f"מה הלאה?\n"
+        f"  • גלי בתי עסק לפי עיר או קטגוריה: {settings.frontend_url}\n"
+        f"  • פתחי את המפה: {settings.frontend_url}/map\n"
+        f"  • שמרי עסקים מועדפים\n\n"
+        f"אם יש שאלות — פשוט תגיבי למייל הזה.\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+
+    producer_body = (
+        f"שלום {name},\n\n"
+        f"ברוכה הבאה למהמקור! 🌿\n\n"
+        f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
+        f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
+        f"אחרי האישור תקבלי מייל עם הקישור לעסק שלך,\n"
+        f"ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
+        f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+
+    body = producer_body if role == "producer" else consumer_body
+    subject = "ברוכה הבאה למהמקור 🌿"
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = settings.smtp_user
+        msg["To"] = email
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+        # Log only the email prefix per security policy (never full address in logs)
+        print(f"[EMAIL] Welcome email sent to {email.split('@')[0]}***")
+    except Exception as e:
+        # Never block registration on email failure
+        print(f"[EMAIL] Welcome email failed: {e}")
 
 
 def _send_deletion_email(email: str, name: str):
