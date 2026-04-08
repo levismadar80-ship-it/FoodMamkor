@@ -7,8 +7,6 @@ import { useAuth } from "@/lib/auth-context";
 import { motion } from "framer-motion";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
-import HomeProductForm from "@/components/HomeProductForm";
-import CitySearch from "@/components/CitySearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -41,34 +39,22 @@ export default function HomePage() {
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
-  const [showHomeForm, setShowHomeForm] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
-  // FIXES_V2.md fix 7a — city filter for the "מהמטבח של השכן" section
-  const [homeKitchenCity, setHomeKitchenCity] = useState("");
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     loadProducers();
-    loadHomeProducts();
-    api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
-  }, []);
-
-  // Reload home products when the city filter changes
-  useEffect(() => {
-    loadHomeProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homeKitchenCity]);
-
-  const loadHomeProducts = () => {
-    const params = homeKitchenCity ? { city: homeKitchenCity } : {};
+    // Home-kitchen preview — just the 3 most recent, no filter.
+    // Full browse + filter lives on /neighbor.
     api
-      .get("/home-products", { params })
+      .get("/home-products")
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
-  };
+    api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
+  }, []);
 
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
@@ -105,16 +91,6 @@ export default function HomePage() {
       await api.post(`/home-products/${productId}/whatsapp-click`);
     } catch {
       // ignore
-    }
-  };
-
-  const handleHomeProductCreated = async () => {
-    setShowHomeForm(false);
-    try {
-      const r = await api.get("/home-products");
-      setHomeProducts(r.data);
-    } catch {
-      // ignore — the toast from the form already confirmed success
     }
   };
 
@@ -444,73 +420,48 @@ export default function HomePage() {
       </section>
 
       {/* =========================
-          מהמטבח של השכן
+          מהמטבח של השכן — preview (max 3)
+          Full browse lives at /neighbor. The full-section version used
+          to live here but we split it out so the homepage stays tight.
           ========================= */}
       <section
         id="home-kitchen"
         className="max-w-7xl mx-auto px-4 py-16 border-t border-border scroll-mt-24"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>🏠 מהמטבח של השכן</h2>
-          {user && (
-            <button
-              onClick={() => setShowHomeForm(!showHomeForm)}
-              className="bg-secondary text-white px-4 py-2 rounded-[16px] hover:bg-secondary-light transition text-sm"
-            >
-              פרסם מוצר ביתי
-            </button>
-          )}
+        <div className="flex items-baseline justify-between mb-6">
+          <h2
+            className="font-headline font-bold text-site-text"
+            style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+          >
+            🏠 מהמטבח של השכן
+          </h2>
+          <Link
+            href="/neighbor"
+            className="text-primary hover:underline text-sm font-medium whitespace-nowrap"
+          >
+            ראי עוד →
+          </Link>
         </div>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-3 mb-6 text-sm text-yellow-800">
-          ⚠️ האחריות על המוצר היא של המוכר בלבד. מהמקור אינה מאמתת מוצרים בסקציה זו.
-        </div>
-
-        {/* FIXES_V2.md fix 7a — city filter */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="flex-1 min-w-[220px] max-w-md">
-            <CitySearch
-              id="home-kitchen-city"
-              label="סנני לפי עיר"
-              value={homeKitchenCity}
-              onChange={setHomeKitchenCity}
-              placeholder="סנני לפי עיר..."
-            />
+        {homeProducts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {homeProducts.slice(0, 3).map((hp) => (
+              <HomeProductCard
+                key={hp.id}
+                product={hp}
+                onWhatsAppClick={() => handleWhatsAppClick(hp.id)}
+              />
+            ))}
           </div>
-          {homeKitchenCity && (
-            <button
-              type="button"
-              onClick={() => setHomeKitchenCity("")}
-              className="text-sm text-primary hover:underline"
-            >
-              הצגי הכל
-            </button>
-          )}
-        </div>
-
-        {showHomeForm && (
-          <HomeProductForm
-            onCreated={handleHomeProductCreated}
-            onCancel={() => setShowHomeForm(false)}
-          />
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {homeProducts.map((hp) => (
-            <HomeProductCard
-              key={hp.id}
-              product={hp}
-              onWhatsAppClick={() => handleWhatsAppClick(hp.id)}
-            />
-          ))}
-        </div>
-        {homeProducts.length === 0 && (
+        ) : (
           <p className="text-center text-site-muted py-8">
-            {homeKitchenCity
-              ? `אין מוצרים ב${homeKitchenCity} — עדיין 🌱`
-              : user
-                ? "אין עדיין מוצרים ביתיים. היי הראשונה לפרסם!"
-                : "אין עדיין מוצרים ביתיים. התחברי כדי לפרסם."}
+            {user
+              ? "אין עדיין מוצרים ביתיים."
+              : "אין עדיין מוצרים ביתיים. התחברי כדי לפרסם."}
+            {" "}
+            <Link href="/neighbor" className="text-primary hover:underline">
+              הצטרפי למהמטבח של השכן →
+            </Link>
           </p>
         )}
       </section>
