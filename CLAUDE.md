@@ -3,6 +3,7 @@
 
 ## פרויקט
 - **שם:** מהמקור (MEHAMEKOR) | mehamekor.co.il
+- **דומיין פרודקשן:** mehamakor.online (Vercel NS)
 - **מה זה:** דירקטורי ישראלי של יצרני אוכל בריא + מוצרי טיפוח טבעיים
 - **מטאפורה:** "Google Maps של אוכל בריא בישראל"
 - **אינסטגרם:** https://www.instagram.com/mehamekor
@@ -78,7 +79,16 @@ docs/DESIGN.md   — עיצוב מפורט: hero, category grid, כרטיסיו�
 docs/DATA.md     — DB schema + כל ה-API endpoints
 docs/ADMIN.md    — ממשק אדמין המלא + בדיקות אוטומטיות
 docs/ROADMAP.md  — v1 checklist, v2 פיצ'רים, v3 רעיונות
+DEPLOYMENT.md    — פריסה מלאה ל-Vercel + Railway (step-by-step)
 ```
+
+## פריסה (Production)
+- **Frontend:** Vercel — Root Directory: `frontend`, קונפיג ב-`frontend/vercel.json`
+- **Backend:** Railway — Root Directory: `backend`, Builder: Dockerfile (ראה `backend/railway.json`)
+- **DB:** Railway PostgreSQL + PostGIS (`CREATE EXTENSION postgis` ידנית)
+- **Env vars:** `backend/.env.example` + `frontend/.env.example`
+- **חובה:** `BACKEND_URL` ב-Vercel חייב להיות זהה ל-`NEXT_PUBLIC_API_URL` (נצרב ב-build time)
+- **Google OAuth:** Client ID `591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com` — יש להוסיף `https://mehamakor.online` ל-Authorized Origins
 
 ## כלי עיצוב
 ```bash

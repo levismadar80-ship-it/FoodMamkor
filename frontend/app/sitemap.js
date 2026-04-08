@@ -1,11 +1,12 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mehamakor.online";
 
 export default async function sitemap() {
   const staticPages = [
-    { url: "https://mehamakor.co.il", lastModified: new Date(), priority: 1.0 },
-    { url: "https://mehamakor.co.il/map", lastModified: new Date(), priority: 0.8 },
-    { url: "https://mehamakor.co.il/register/producer", lastModified: new Date(), priority: 0.7 },
-    { url: "https://mehamakor.co.il/terms", lastModified: new Date(), priority: 0.3 },
+    { url: `${SITE_URL}`, lastModified: new Date(), priority: 1.0 },
+    { url: `${SITE_URL}/map`, lastModified: new Date(), priority: 0.8 },
+    { url: `${SITE_URL}/register/producer`, lastModified: new Date(), priority: 0.7 },
+    { url: `${SITE_URL}/terms`, lastModified: new Date(), priority: 0.3 },
   ];
 
   let producerPages = [];
@@ -14,7 +15,7 @@ export default async function sitemap() {
     if (res.ok) {
       const producers = await res.json();
       producerPages = producers.map((p) => ({
-        url: `https://mehamakor.co.il/producer/${p.id}`,
+        url: `${SITE_URL}/producer/${p.id}`,
         lastModified: new Date(),
         priority: 0.9,
       }));
