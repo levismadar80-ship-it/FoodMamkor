@@ -96,14 +96,18 @@ export default function CitySearch({
     inputRef.current?.focus();
   };
 
+  // FEEDBACK_FIXES fix 4: min-w-0 everywhere so the input can shrink
+  // inside flex containers without overflowing. The previous setup would
+  // clip the placeholder on narrow viewports when the wrapper was
+  // squeezed by sibling filters on /map.
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative min-w-0 ${className}`}>
       {label && (
         <label htmlFor={id} className="sr-only">
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2 bg-white border border-border rounded-[8px] px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
+      <div className="flex items-center gap-2 bg-white border border-border rounded-[8px] px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
         <svg className="w-4 h-4 text-site-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -121,7 +125,7 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted"
+          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted"
           autoComplete="off"
           role="combobox"
           aria-expanded={isOpen && matches.length > 0}

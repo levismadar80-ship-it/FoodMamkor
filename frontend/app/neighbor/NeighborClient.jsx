@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, X } from "@phosphor-icons/react";
+import { Plus, X, House } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import HomeProductCard from "@/components/HomeProductCard";
 import HomeProductForm from "@/components/HomeProductForm";
@@ -71,10 +71,11 @@ export default function NeighborClient() {
       <section className="bg-primary-dark text-light py-16 md:py-20">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <h1
-            className="font-headline font-bold text-white mb-3"
+            className="font-headline font-bold text-white mb-3 inline-flex items-center gap-3"
             style={{ fontSize: "clamp(36px, 5vw, 56px)" }}
           >
-            מהמטבח של השכן 🏠
+            מהמטבח של השכן
+            <House size={44} weight="duotone" color="#EAF3DE" aria-hidden="true" />
           </h1>
           <p className="font-body text-light/90 text-lg max-w-xl mx-auto">
             מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח

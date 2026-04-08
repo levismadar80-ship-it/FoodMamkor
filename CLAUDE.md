@@ -308,6 +308,22 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · Additional fixes + emoji → Phosphor icons:**
+  - **Fix 2 — /about parallax quote:** שונה מ-"כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת" ל-**"כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"**.
+  - **Fix 4 — /map search bar overflow:** הוספתי `min-w-0` ל-container של `CitySearch` (שני מקומות: root + flex row) + ל-`<input>` עצמו, וכרטוף את הסוגר ב-`/map` ב-`<div className="w-full md:w-72">` חיצוני עם `overflow-visible` ברמת ה-filters row. סיבה: בלי `min-w-0` flex children לא מתכווצים מתחת לרוחב התוכן שלהם, והקלט היה מגלש החוצה ב-viewports צרים.
+  - **Fixes 1, 3, 5, 6 — verified already done:** /about story כבר נכתב מחדש עם הגרסה העשירה ב-FEEDBACK_FIXES (זוהה דרך 2 matches על "בשר מחקלאים" + "משקאות חקלאיים"); "גריד הקטגוריות" כבר הוסר ב-Fix 4b ("גלי בתי עסק קרובים אלייך — ירקות טריים, גבינות מהחווה, לחם מחמצת"); Google Places לא קיים בקוד כלל (CitySearch עם רשימת ערים סטטית); ProducerFollower model + 4 endpoints + FollowButton כבר קיימים מהסשן הקודם. **Push notifications נשארים פתוחים** — דורש חיבור Twilio/FCM transport.
+  - **Emoji → Phosphor icons (cross-platform consistency):**
+    - **Homepage Category Grid:** `CATEGORY_CARDS` שינה מ-`emoji: "🥩"` ל-`Icon: Cow` (וכו' — `Cow`, `Plant`, `Drop`, `Bread`, `Jar`, `Sparkle`). Render משתמש ב-`<Icon size={44} weight="duotone" color="white" />` במקום `<span>{card.emoji}</span>`.
+    - **ProducerCard badges:** ✅ → `<Seal size={14} weight="fill" />`; 🌿 אורגני → `<Leaf size={14} weight="duotone" />`; 🐄 גראס פד → `<Cow size={14} weight="duotone" />`. תוקן גם ה-fallback של תמונה חסרה: 🌿 5xl → `<Leaf size={56} weight="duotone" />`.
+    - **BottomNav:** `Calendar` → `CalendarBlank` (שאר ה-4 tabs כבר השתמשו ב-Phosphor מ-WORLD_CLASS_V2: `House`, `MapTrifold`, `CookingPot`, `Heart`).
+    - **/neighbor hero title:** "מהמטבח של השכן 🏠" → כותרת עם `<House size={44} weight="duotone" color="#EAF3DE" />` כ-inline-flex אחרי הטקסט.
+    - **Homepage home-kitchen preview title:** "🏠 מהמטבח של השכן" → `<House size={32} weight="duotone" className="text-primary" />` ואז הטקסט.
+    - **/about values (4 cards):** 🌿🥩🏡🌱 → `Leaf`/`Cow`/`House`/`Plant` בגודל 32 duotone לבן על chip עגול 14×14 עם רקע `chip` הייחודי לכל כרטיס (primary ירוק / אדום בשר / primary ירוק / סגול). ה-chip מופיע מעל הכותרת במקום האמוג'י הגדול.
+    - **/about founder placeholder:** 🌿 7xl בתוך העיגול → `<Leaf size={120} weight="duotone" className="text-primary" />`.
+    - **404 page:** 🌿 7xl → `<Leaf size={80} weight="duotone" color="#2e6853" />`. Added `"use client"` כי הקומפוננטה הופכת לקליינטית כדי להשתמש ב-Phosphor (בניגוד ל-`@phosphor-icons/react/dist/ssr` שלא וודאתי שקיים). 🌱 הוסר מהטקסט.
+    - **נשמרו כמו שהם:** אמוג'ים ב-toast notifications ("נרשמת! 🌱", "נשמר למועדפים ❤️" וכו') — הם קצרי-חיים; אמוג'ים בהודעות WhatsApp — הן נצרכות ב-WhatsApp שתומך באמוג'ים ילידית; CTA copy "הוסיפי את העסק שלך 🌿" — זה brand copy שלא היה במיפוי המפורש של המשימה.
+  - **30/30 pytest עוברים** — שינויים frontend-only, backend לא נוגע.
+
 - **2026-04-08 · FEEDBACK_FIXES** — feedback round + new follow feature:
   - **Fix 1 (neighbor stays in homepage)** — אומת ✓ כבר קיים: הומ מציג preview של 3 כרטיסיות + "ראי עוד →" ל-`/neighbor`, ו-`/neighbor` הוא דף מלא. לא נמחק כלום.
   - **Fix 2 (Login redesign)** — `app/login/page.js` סידר מחדש: כעת ה-card נפתח עם 🌿 circle + "כניסה למהמקור" + "ברוכה הבאה 🌱". **email קודם**, ואז "או" divider, ואז Google + Apple מתחת (הפוך מהסידור הקודם). ולידציית client-side של email דרך `validateEmail` מ-`lib/validators.js` עם אזהרה inline "כתובת האימייל אינה תקינה". Backend הרי כבר משתמש ב-`EmailStr` — זה רק layer נוסף.

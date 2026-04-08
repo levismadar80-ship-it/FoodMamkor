@@ -2,35 +2,41 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Leaf, Cow, House, Plant } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ParallaxQuote from "@/components/ParallaxQuote";
 
-// FEEDBACK_FIXES.md fix 6 — each value gets its own warm background color
-// so the 4-card grid feels less monotonous than 4 identical white cards.
+// Value cards use Phosphor icons (consistent rendering cross-platform).
+// Each value has its own warm background so the 4-card grid doesn't
+// feel monotonous. The icon sits inside a darker chip on top of the card.
 const values = [
   {
-    emoji: "🌿",
+    Icon: Leaf,
     title: "ללא מעובד",
     desc: "מוצרים טבעיים ללא תוספים מיותרים, עיבוד מינימלי ושימור הטעם האמיתי",
     bg: "#EAF3DE",
+    chip: "#2e6853",
   },
   {
-    emoji: "🥩",
+    Icon: Cow,
     title: "חומרי גלם מזוהים",
     desc: "שקיפות מלאה — תמיד תדעו מאיפה מגיע האוכל ומה יש בפנים",
     bg: "#FFF3E0",
+    chip: "#c04040",
   },
   {
-    emoji: "🏡",
+    Icon: House,
     title: "ייצור קטן",
     desc: "בתי עסק קטנים ומשפחתיים שמכינים בכמויות קטנות עם אהבה",
     bg: "#E8F5E9",
+    chip: "#2e6853",
   },
   {
-    emoji: "🌱",
+    Icon: Plant,
     title: "טרי ואמיתי",
     desc: "אוכל שהוכן לאחרונה, ללא חודשי מדף, ישר מהמקור אליכם",
     bg: "#F3E5F5",
+    chip: "#9b59b6",
   },
 ];
 
@@ -112,17 +118,25 @@ export default function AboutPage() {
           הערכים שלנו
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {values.map((v) => (
-            <div
-              key={v.title}
-              className="rounded-[16px] p-6 shadow-sm hover:shadow-md transition border border-border"
-              style={{ background: v.bg }}
-            >
-              <div className="text-4xl mb-3">{v.emoji}</div>
-              <h3 className="font-headline text-xl font-bold mb-2 text-site-text">{v.title}</h3>
-              <p className="text-site-text/80 leading-relaxed">{v.desc}</p>
-            </div>
-          ))}
+          {values.map((v) => {
+            const Icon = v.Icon;
+            return (
+              <div
+                key={v.title}
+                className="rounded-[16px] p-6 shadow-sm hover:shadow-md transition border border-border"
+                style={{ background: v.bg }}
+              >
+                <div
+                  className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-3"
+                  style={{ background: v.chip }}
+                >
+                  <Icon size={32} weight="duotone" color="white" aria-hidden="true" />
+                </div>
+                <h3 className="font-headline text-xl font-bold mb-2 text-site-text">{v.title}</h3>
+                <p className="text-site-text/80 leading-relaxed">{v.desc}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -149,7 +163,7 @@ export default function AboutPage() {
           ================================================ */}
       <ParallaxQuote
         image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600"
-        quote="כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
+        quote="כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"
         overlayOpacity={0.7}
         height="350px"
       />
@@ -234,7 +248,7 @@ export default function AboutPage() {
                 className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-full bg-light flex items-center justify-center border-4 border-primary/10 overflow-hidden shadow-[0_8px_32px_rgba(46,104,83,0.12)]"
                 aria-label="תמונה של ספיר (placeholder)"
               >
-                <span className="text-7xl">🌿</span>
+                <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
               </div>
             </div>
             {/* Text — left in RTL */}
