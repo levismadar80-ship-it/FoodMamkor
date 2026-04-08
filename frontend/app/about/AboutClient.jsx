@@ -81,7 +81,7 @@ export default function AboutPage() {
           style={{
             inset: "-5%",
             backgroundImage:
-              "url(https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600)",
+              "url(https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -104,7 +104,7 @@ export default function AboutPage() {
       </section>
 
       {/* Story — FEEDBACK_FIXES.md fix 4c — longer, richer text */}
-      <section className="max-w-3xl mx-auto px-4 py-16">
+      <section className="max-w-3xl mx-auto px-4 section-y">
         <h2 className="font-headline text-4xl font-bold mb-8 text-center text-site-text">
           הסיפור שלנו
         </h2>
@@ -131,7 +131,7 @@ export default function AboutPage() {
       </section>
 
       {/* Values grid — per-card warm bg colors (FEEDBACK_FIXES.md fix 6) */}
-      <section className="max-w-5xl mx-auto px-4 py-12">
+      <section className="max-w-5xl mx-auto px-4 section-y">
         <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
           הערכים שלנו
         </h2>
@@ -159,10 +159,10 @@ export default function AboutPage() {
       </section>
 
       {/* Criteria */}
-      <section className="bg-white py-16 border-y border-border">
+      <section className="bg-white section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="font-serif text-3xl font-bold mb-8 text-center">קריטריוני כניסה</h2>
-          <p className="text-site-text/70 text-center mb-8">
+          <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">קריטריוני כניסה</h2>
+          <p className="text-site-muted text-center mb-8">
             לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקים:
           </p>
           <ul className="space-y-4">
@@ -180,7 +180,7 @@ export default function AboutPage() {
           SECTION A — Parallax quote divider
           ================================================ */}
       <ParallaxQuote
-        image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600"
+        image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80"
         quote="כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"
         overlayOpacity={0.7}
         height="350px"
@@ -189,7 +189,7 @@ export default function AboutPage() {
       {/* ================================================
           SECTION B — 3 columns of values (green bg)
           ================================================ */}
-      <section className="bg-primary text-white py-20">
+      <section className="bg-primary text-white section-y">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {/* Mission */}
@@ -205,8 +205,8 @@ export default function AboutPage() {
                   <path d="M32 22C36 22 38 26 38 30" />
                 </svg>
               </div>
-              <h3 className="font-serif text-2xl font-bold mb-4">המשימה</h3>
-              <p className="text-light/90 leading-relaxed font-sans">
+              <h3 className="font-headline text-2xl font-bold mb-4">המשימה</h3>
+              <p className="text-light/90 leading-relaxed font-body">
                 ליצור הזדמנויות כלכליות לבתי עסק מקומיים ולחבר קהילות עם היתרונות הבריאותיים, הסביבתיים והכלכליים של אוכל מקומי.
               </p>
             </div>
@@ -223,8 +223,8 @@ export default function AboutPage() {
                   <line x1="8" y1="54" x2="58" y2="54" />
                 </svg>
               </div>
-              <h3 className="font-serif text-2xl font-bold mb-4">קהילה</h3>
-              <p className="text-light/90 leading-relaxed font-sans">
+              <h3 className="font-headline text-2xl font-bold mb-4">קהילה</h3>
+              <p className="text-light/90 leading-relaxed font-body">
                 כפלטפורמה מונעת ערכים, הקהילה היא העדיפות הראשונה שלנו. חיבור בין אנשים הוא המוקד של כל מה שאנחנו עושים.
               </p>
             </div>
@@ -242,8 +242,8 @@ export default function AboutPage() {
                   <path d="M38 24C38 30 44 34 50 30" />
                 </svg>
               </div>
-              <h3 className="font-serif text-2xl font-bold mb-4">למה מהמקור</h3>
-              <p className="text-light/90 leading-relaxed font-sans">
+              <h3 className="font-headline text-2xl font-bold mb-4">למה מהמקור</h3>
+              <p className="text-light/90 leading-relaxed font-body">
                 מערכות המזון הגלובליות שבירות. בניגוד לתאגידים גדולים, מקורות מזון מקומיים יכולים להסתגל ולהתמיד. אנחנו כאן כדי לחזק אותם.
               </p>
             </div>
@@ -254,7 +254,7 @@ export default function AboutPage() {
       {/* ================================================
           SECTION B — Founder story
           ================================================ */}
-      <section className="bg-background py-20">
+      <section className="bg-background section-y">
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
             {/* FEEDBACK_FIXES.md fix 6 — circular founder placeholder
@@ -303,10 +303,10 @@ export default function AboutPage() {
       {/* ================================================
           SECTION C — Contact form
           ================================================ */}
-      <section className="bg-background py-20 border-t border-border">
+      <section className="bg-background section-y border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-serif text-4xl font-bold text-site-text mb-3">דברי איתנו</h2>
-          <p className="text-site-text/70 font-sans text-base mb-10">
+          <h2 className="font-headline text-4xl font-bold text-site-text mb-3">דברי איתנו</h2>
+          <p className="text-site-muted font-body text-base mb-10">
             שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכם
           </p>
 
@@ -378,7 +378,7 @@ export default function AboutPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 bg-background border-t border-border">
+      <section className="section-y bg-background border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="font-headline text-4xl font-bold mb-4 text-site-text">מוכנה להצטרף?</h2>
           <p className="text-site-muted mb-8 text-lg">

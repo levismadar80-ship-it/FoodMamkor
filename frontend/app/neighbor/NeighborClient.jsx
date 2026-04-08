@@ -76,7 +76,7 @@ export default function NeighborClient() {
           style={{
             inset: "-5%",
             backgroundImage:
-              "url(https://images.unsplash.com/photo-1498579809087-ef1e558fd1da?w=1600)",
+              "url(https://images.unsplash.com/photo-1498579809087-ef1e558fd1da?w=1600&auto=format&q=80)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}

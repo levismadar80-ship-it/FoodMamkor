@@ -27,7 +27,7 @@ export default function Footer() {
     try {
       await api.post("/newsletter", { email });
       setStatus("success");
-      setMessage("נרשמת! 🌱");
+      setMessage("ברוכה הבאה למהמקור 🌱 נפגשות בתיבה");
       setEmail("");
     } catch (err) {
       setStatus("error");

@@ -5,7 +5,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { motion } from "framer-motion";
-import { House } from "@phosphor-icons/react";
+import { House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
@@ -16,11 +16,13 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
 const PAGE_SIZE = 8;
 
-const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920";
+// OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
+// `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
+const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80";
 
 // PREMIUM_DESIGN: parallax divider images between sections.
-const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600";
-const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600";
+const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80";
+const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80";
 
 // PREMIUM_DESIGN: category cards now use hand-drawn SVG line-art
 // (see CategoryIcons.jsx) instead of Phosphor — warmer, more unique
@@ -176,12 +178,11 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-body mt-3"
+            className="font-body mt-3 text-light"
             style={{
               fontSize: "18px",
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#EAF3DE",
             }}
           >
             בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית
@@ -227,11 +228,14 @@ export default function HomePage() {
           </motion.form>
         </div>
 
-        {/* Scroll arrow — actually functional */}
+        {/* Scroll arrow — animate-bounce replaced with a subtle slow
+            fade+glide (PREMIUM_DESIGN rule: no bounce easing). The
+            `scroll-hint` keyframe lives in globals.css and respects
+            prefers-reduced-motion. */}
         <button
           type="button"
           onClick={scrollToProducers}
-          className="absolute left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition-opacity animate-bounce"
+          className="absolute left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition-opacity scroll-hint"
           style={{ bottom: "32px" }}
           aria-label="גלול לרשימת בתי העסק"
         >
@@ -264,7 +268,7 @@ export default function HomePage() {
       {/* =========================
           CATEGORY GRID
           ========================= */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
+      <section className="max-w-7xl mx-auto px-4 section-y">
         <FadeInSection className="text-center mb-10">
           <h2 className="font-headline font-bold text-site-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
             גלי לפי קטגוריה
@@ -323,7 +327,7 @@ export default function HomePage() {
           Pauses on hover; respects prefers-reduced-motion.
           ========================= */}
       <div
-        className="bg-primary overflow-hidden"
+        className="bg-primary overflow-hidden marquee-edge-fade"
         style={{
           padding: "14px 0",
           borderTop: "1px solid rgba(255,255,255,0.1)",
@@ -337,9 +341,8 @@ export default function HomePage() {
               {MARQUEE_ITEMS.map((text) => (
                 <span
                   key={`${loop}-${text}`}
-                  className="font-body whitespace-nowrap"
+                  className="font-body whitespace-nowrap text-light"
                   style={{
-                    color: "#EAF3DE",
                     fontSize: 14,
                     letterSpacing: "0.06em",
                   }}
@@ -362,8 +365,8 @@ export default function HomePage() {
           href="/about"
           className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <div className="w-20 h-20 rounded-full bg-light flex items-center justify-center text-4xl shrink-0" aria-hidden="true">
-            🌿
+          <div className="w-20 h-20 rounded-full bg-light flex items-center justify-center shrink-0" aria-hidden="true">
+            <Leaf size={36} weight="duotone" className="text-primary" />
           </div>
           <div className="flex-1">
             <p className="font-headline italic text-site-text text-lg md:text-xl leading-relaxed mb-2">
@@ -379,7 +382,7 @@ export default function HomePage() {
       {/* =========================
           PRODUCERS GRID
           ========================= */}
-      <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-16">
+      <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
         <div className="flex items-center justify-between mb-8">
           <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
             בתי עסק מומלצים
@@ -450,7 +453,7 @@ export default function HomePage() {
           NEW PRODUCERS (last 4 added)
           ========================= */}
       {newestProducers.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 pb-16">
+        <section className="max-w-7xl mx-auto px-4 pb-20">
           <h2 className="font-headline font-bold text-site-text mb-8" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
             עסקים חדשים ✨
           </h2>
@@ -477,7 +480,7 @@ export default function HomePage() {
       {/* =========================
           HOW IT WORKS
           ========================= */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
+      <section className="max-w-7xl mx-auto px-4 section-y">
         <FadeInSection>
           <h2 className="font-headline font-bold text-site-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
             איך זה עובד?
@@ -505,7 +508,7 @@ export default function HomePage() {
           ========================= */}
       <section
         id="home-kitchen"
-        className="max-w-7xl mx-auto px-4 py-16 border-t border-border scroll-mt-24"
+        className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
       >
         <div className="flex items-baseline justify-between mb-6">
           <h2
@@ -603,7 +606,7 @@ function UpcomingEventsPreview() {
   if (!events.length) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-16 border-t border-border">
+    <section className="max-w-7xl mx-auto px-4 section-y border-t border-border">
       <div className="flex items-baseline justify-between mb-8">
         <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           אירועים קרובים 📅

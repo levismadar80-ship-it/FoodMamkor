@@ -717,5 +717,47 @@ SENTRY_PROJECT=mehamekor-frontend
 ### `focusProducer` — פתיחת popup אחרי flyTo
 לפני: `setTimeout(..., 1250)` שמנסה לתזמן את סיום ה-flyTo של 1.2s. אחרי: `mapInstanceRef.current.once("moveend", ...)` — מדויק יותר, בלי race conditions אם המשתמש מפריע לאנימציה.
 
+## Design pipeline pass (אפריל 2026 — 17-skill sequence)
+רצתי את כל הרשימה `/teach-impeccable → /ui-ux-pro-max → /audit → /arrange → /typeset → /clarify → /colorize → /animate → /delight → /adapt → /harden → /optimize → /normalize → /polish homepage → /polish map → /polish about → /critique`.
+
+### מה נוצר ב-pass הזה
+- **`.impeccable.md`** חדש בשורש — Design Context מתומצת (users/brand/aesthetic/principles/a11y). Canonical source of truth הוא עדיין CLAUDE.md; זה wrapper קצר יותר.
+- **`frontend/lib/map-categories.js`** — `CATEGORY_STYLES`, `DEFAULT_CATEGORY_STYLE`, `CATEGORY_LEGEND`, `styleForProducer`. הוצא משם שהיה כפול ב-`MapComponent.jsx` וב-`MapClient.jsx`. שתי הקבצים עכשיו מייבאים ממקור אחד.
+
+### תיקונים קונקרטיים
+- **Arrange** — `section-y` הוחל על הומ (CATEGORY GRID, HOW IT WORKS, NEIGHBOR PREVIEW, UPCOMING EVENTS) ועל about (Story, Values, Criteria, Green values band, Founder, Contact form, Final CTA). הרו ו-CTA שלהם משאירים `py-20` בכוונה.
+- **Typeset** — 6 שימושים של `font-serif`/`font-sans` ב-`AboutClient.jsx` הוחלפו ב-`font-headline`/`font-body` קנוניים.
+- **Clarify** — `/rate/[token]` "טוען..." → "טוענת..."; alert ב-`/settings` ו-`/producer/dashboard` קיבלו הודעות ספציפיות ב-נקבה במקום "שגיאה ב-X. נסה שוב".
+- **Colorize** — inline `#6b6b6b` ב-`ProducerCard` → `text-site-muted` token; inline `#EAF3DE` על ה-hero subtitle → `text-light` class.
+- **Animate** — ה-`animate-bounce` של hero scroll arrow הוחלף ב-`.scroll-hint` keyframe ב-`globals.css` (ease-out-quart 2.4s, גלישה עדינה עם fade). `prefers-reduced-motion` מכבה.
+- **Delight** — newsletter success message הורחב מ-"נרשמת! 🌱" ל-"ברוכה הבאה למהמקור 🌱 נפגשות בתיבה".
+- **Adapt** — `ImageGallery` arrows מ-`w-10 h-10` (40px) ל-`w-11 h-11` (44px — WCAG touch target). הוסף `aria-label="תמונה קודמת/הבאה"`, indicator dots גדלו מ-`w-2` ל-`w-3` עם `aria-current="true"` על האקטיבי.
+- **Optimize** — כל שבעת ה-URLs של Unsplash (hero + 2 parallax dividers + 3 page heroes + ParallaxQuote) קיבלו `&auto=format&q=80`. הוסף `<link rel="preconnect" href="https://images.unsplash.com">` ב-`layout.js` — משפר LCP בהומ כי ה-hero משתמש ב-CSS background-image (עוקף next/image).
+- **Normalize** — `text-site-text/70` על `/about` (היחיד שנשאר) → `text-site-muted`. `CATEGORY_STYLES` הוצא מ-`MapComponent` ל-`lib/map-categories.js` (ראה לעיל).
+- **Polish homepage** — founder quote card 🌿 emoji → `<Leaf weight="duotone">`; marquee קיבל `.marquee-edge-fade` class עם `mask-image: linear-gradient` לשיכוך קצוות (48px fade on each side); הפסים inline `color: "#EAF3DE"` על marquee spans → `text-light` class.
+- **Polish map** — ה-`📍 קרוב אלי` button קיבל `<Crosshair weight="duotone">` icon במקום emoji; ה-empty state של grid קיבל `<MapTrifold>` במקום `🗺️` emoji.
+- **Polish about** — ה-3 sections שנשארו עם `py-20` (Green values band, Founder story, Contact form) נורמלו ל-`section-y`. ה-hero נשאר `py-20 md:py-28` בכוונה.
+
+### Anti-patterns שנמצאו וניקיו
+- `animate-bounce` on hero scroll arrow — Gone, `.scroll-hint` with ease-out-quart.
+- Inline hex colors `#6b6b6b`, `#EAF3DE` — Gone, replaced with `text-site-muted`, `text-light` tokens.
+- Legacy `font-serif`/`font-sans` in AboutClient — Gone, canonical `font-headline`/`font-body`.
+- Duplicate `CATEGORY_STYLES` between two files — Gone, one source in `lib/map-categories.js`.
+- Emoji icons in UI chrome (📍 קרוב אלי, 🗺️ empty state, 🌿 founder card) — Gone, Phosphor `Crosshair`/`MapTrifold`/`Leaf`.
+- `w-10 h-10` touch targets on ImageGallery — Gone, `w-11 h-11` = 44px.
+- `text-site-text/70` on cream bg (fails WCAG AA ~3.8:1) — Gone, `text-site-muted` = 5.5:1.
+
+### Anti-patterns שנשארו ב-critique (לפוש הבא — לא פוצים בפאס הזה)
+- **Homepage is long** — 13 blocks. Critique suggested removing the "עסקים חדשים" standalone section and badging new cards inline. לא נעשה כי זה decision architecturale.
+- **Social proof bar too subtle** — `py-4` strip after 100vh hero. Critique suggested `py-8` + divider + sub-label. לא נעשה כי זה שינוי עיצובי ולא נכנס בסקופ "run the skills".
+- **Founder quote card on homepage competes with producers grid** — Critique suggested moving it or shrinking to one-liner. Architecture change; not in scope.
+- **Header `backdrop-blur-md` on scroll** — Critique: the one glassmorphism tell on the site; blur is invisible on cream anyway. Simple fix (one-line edit in Header.jsx) but not touched this pass.
+- **No client-side filter feedback on category click** — Critique suggested 200ms skeleton or active chip pulse. Deferred.
+
+### Skipped skills (intentional)
+- **`/ui-ux-pro-max review`** — ran the `--design-system` command against our tech stack. Output recommended red/gold palette + Noto Sans Hebrew. אנחנו לא מאמצים — הפלט הוא suggestion generator ל-NEW projects, והברנד שלנו לוק. השארתי את ההערות ב-`.impeccable.md`.
+- **`/audit`** — לא תיקן כלום בעצמו (זה הכלל של הסקיל — document only, fix via other commands). הפלט שימש כמפת-דרכים לסקילים הבאים.
+- **`/harden`** — ה"באג" של 2 h1s ב-`rate/[token]/page.js` התברר כ-false positive (שני h1s בבלוקים מותנים שלא מופיעים בו-זמנית). לא נגעתי ב-admin loading strings לפי הכלל של CLAUDE.md ("admin-facing strings נשארו כמו שהם").
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`
