@@ -119,6 +119,14 @@ npx skills add pbakaus/impeccable
 # לאחר שינויים: /audit → /polish homepage → /normalize
 ```
 
+## Workflow rules (חוקי עבודה)
+שלושה נאכפים ע"י hooks ב-`.claude/settings.json` (PreToolUse). הרביעי לא אוטומטי — זכרי אותו.
+
+1. **עדכן CLAUDE.md לפני כל `git commit`.** hook מזכיר (non-blocking) לפני קריאות `Bash: git commit ...`. אם עדכנת — תתעלמי מהתזכורת ותתקדמי.
+2. **קראי DESIGN.md לפני שינויי UI.** hook מזכיר לפני `Edit|Write|NotebookEdit` על קבצים ב-`frontend/app/`, `frontend/components/`, או `*.css`. הקובץ בשורש הריפו, לא ב-`docs/`.
+3. **קראי DATA.md לפני שינויי backend.** hook מזכיר לפני `Edit|Write|NotebookEdit` על קבצים ב-`backend/`. הקובץ בשורש הריפו, לא ב-`docs/`.
+4. **`/clear` במעבר בין משימות.** **לא אוטומטי** — hook לא יכול לזהות "מעבר בין משימות" (זה סמנטי). כשאת מתחילה משהו חדש שלא קשור למשימה הקודמת — הריצי `/clear` ידנית כדי לנקות קונטקסט.
+
 ## Dev workflow — הרצה מקומית
 הסביבה רצה ב-`docker-compose`. **אין volume mount לקוד של ה-frontend** — ה-Dockerfile עושה `COPY . . && npm run build` בזמן בניית ה-image, ו-`next start` מגיש את ה-`.next/` הקומפל שכבר קיים. משמעות: **כל שינוי בקוד דורש rebuild של ה-image**, לא מספיק `docker-compose restart`.
 
