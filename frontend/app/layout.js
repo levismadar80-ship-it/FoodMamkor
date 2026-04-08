@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
+import CustomCursor from "@/components/CustomCursor";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
@@ -105,6 +106,9 @@ export default function RootLayout({ children }) {
             <BottomNav />
             <Toaster />
             <CookieBanner />
+            {/* PREMIUM_DESIGN: subtle green dot cursor on desktop only —
+                component self-disables on touch + reduced-motion. */}
+            <CustomCursor />
           </SmoothScrollProvider>
         </AuthProvider>
         {CLARITY_PROJECT_ID && (

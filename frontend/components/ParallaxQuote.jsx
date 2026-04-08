@@ -1,8 +1,14 @@
 "use client";
 
 /**
- * ParallaxQuote — full-bleed divider section with fixed background image
- * and a centered quote. Used between homepage sections and on /about.
+ * ParallaxQuote — full-bleed divider section with a slow Ken Burns
+ * background pan/zoom and a centered quote. Used between homepage
+ * sections and on /about.
+ *
+ * PREMIUM_DESIGN: previously this used `background-attachment: fixed`
+ * parallax. That works but feels dated. The background now lives on an
+ * inner layer with the `kenburns-left` animation, giving a subtle
+ * cinematic drift. Honors prefers-reduced-motion via the global CSS.
  *
  * Props:
  *   - image: Unsplash URL
@@ -18,10 +24,19 @@ export default function ParallaxQuote({
 }) {
   return (
     <section
-      className="parallax-bg relative w-full"
-      style={{ backgroundImage: `url(${image})`, height }}
+      className="relative w-full overflow-hidden"
+      style={{ height }}
       aria-label="ציטוט"
     >
+      <div
+        className="kenburns-left absolute"
+        style={{
+          inset: "-5%",
+          backgroundImage: `url(${image})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
       <div
         className="absolute inset-0 flex items-center justify-center px-6"
         style={{ backgroundColor: `rgba(46, 74, 46, ${overlayOpacity})` }}

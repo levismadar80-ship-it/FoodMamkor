@@ -72,9 +72,27 @@ export default function EventsPage() {
 
   return (
     <div>
-      {/* Header */}
-      <section className="bg-primary text-white py-16">
-        <div className="max-w-5xl mx-auto px-4 text-center">
+      {/* Header — PREMIUM_DESIGN: Ken Burns background image (harvest
+          scene) behind the title, dark overlay preserves contrast. */}
+      <section className="relative text-white py-16 overflow-hidden">
+        <div
+          className="kenburns-right absolute"
+          style={{
+            inset: "-5%",
+            backgroundImage:
+              "url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(46,74,46,0.80) 0%, rgba(46,74,46,0.90) 100%)",
+          }}
+        />
+        <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
             אירועים בחוות ואצל בתי עסק
           </h1>

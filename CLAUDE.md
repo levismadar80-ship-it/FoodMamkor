@@ -680,5 +680,25 @@ SENTRY_ORG=mehamekor
 SENTRY_PROJECT=mehamekor-frontend
 ```
 
+## Premium design details (הוסף אפריל 2026 — PREMIUM_DESIGN)
+השראה: gardensweet.com, Graza, Simply Chocolate, Foraged.
+
+- **אייקוני קטגוריות — hand-drawn SVG line-art:** `frontend/components/CategoryIcons.jsx` מחליף את Phosphor בגריד הקטגוריות של דף הבית. כל אייקון רכיב עצמאי עם `stroke`/`size` props (`MeatIcon`, `VegIcon`, `DairyIcon`, `BreadIcon`, `OilIcon`, `SoapIcon`), ו-`CATEGORY_ICONS` הוא lookup לפי מפתח (`meat`, `veg`, `dairy`, `bread`, `oil`, `care`). **אל תחזיר Phosphor לקטגוריות** — זה היה כוונתי לרענן את התחושה (אנושי, לא generic).
+- **Ken Burns:** `.kenburns-right` / `.kenburns-left` ב-`globals.css` (20s/25s ease-in-out infinite alternate, `scale 1→1.08` + translate קטן). הוחל על: hero בדף הבית, `ParallaxQuote` (המפרסר `inset: -5%` מונע clipping), heroes של `/about`, `/neighbor`, `/events`. `prefers-reduced-motion: reduce` מכבה את האנימציה לגמרי.
+- **Marquee strip:** בין גריד הקטגוריות לכרטיסי העסקים בדף הבית. `MARQUEE_ITEMS` מוגדר ב-`app/page.js`. הטראק מרונדר פעמיים עם `gap: 48px` ו-`translateX(-50%)` ללולאה חלקה. `:hover` משהה; `reduced-motion` עוצר.
+- **AnimatedCounter:** `frontend/components/AnimatedCounter.jsx` סופר מ-0 ל-target כשהאלמנט נכנס ל-viewport (`IntersectionObserver threshold: 0.5`). Ease-out-cubic, 1500ms default. משומש ב-Social Proof Bar בדף הבית. `reduced-motion` → מציג את המספר הסופי מיד.
+- **CustomCursor:** `frontend/components/CustomCursor.jsx` נטען ב-`app/layout.js`. נקודה ירוקה 12px עם `mix-blend-mode: multiply`, `z-index: 9999`. מתגדל ×3 על `a, button, [role="button"], input, textarea, select, label`. **Desktop-only** — מזהה `(hover: none)`, `ontouchstart`, `maxTouchPoints > 0`, `(max-width: 768px)`, ו-`prefers-reduced-motion`, ומכבה את עצמו על מובייל/tablet. הכיתה `custom-cursor-on` מוחלת על `<html>` רק כש-JS החליט להפעיל, וזה מה שמסתיר את הסמן הנייטיב — אם JS נכשל, הסמן הרגיל נשאר.
+- **Unsplash images לפי PREMIUM_DESIGN:**
+  - Hero דף הבית: `photo-1542838132-92c53300491e`
+  - Parallax divider 1 (בין producers ל-how it works): `photo-1488459716781-31db52582fe9`
+  - Parallax divider 2 (לפני events): `photo-1464226184884-fa280b87c399`
+  - /about hero: `photo-1500937386664-56d1dfef3854`
+  - /neighbor hero: `photo-1498579809087-ef1e558fd1da`
+  - /events hero: `photo-1414235077428-338989a2e8c0`
+  - `images.unsplash.com` כבר מאושר ב-`next.config.js` (`remotePatterns` + CSP `img-src`).
+
+### גוצ'ה חשובה — `.parallax-bg` (legacy)
+הכיתה עדיין קיימת ב-`globals.css` (`background-attachment: fixed`) אבל כבר לא בשימוש בשום קומפוננטה. `ParallaxQuote` עברה ל-Ken Burns. אפשר להשאיר את הכיתה כ-fallback או לנקות בעתיד — אין לה תוצאת runtime אם אף אחד לא מחיל אותה.
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`

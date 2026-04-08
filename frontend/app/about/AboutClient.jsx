@@ -73,9 +73,27 @@ export default function AboutPage() {
       {/* FEEDBACK_FIXES.md fix 4a — breadcrumb removed from /about.
           Breadcrumbs belong on producer/map pages, not on brand pages. */}
 
-      {/* Hero */}
-      <section className="bg-primary text-white py-20 md:py-28">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+      {/* Hero — PREMIUM_DESIGN: Ken Burns background image instead of a
+          flat green fill. The dark overlay keeps the headline readable. */}
+      <section className="relative text-white overflow-hidden py-20 md:py-28">
+        <div
+          className="kenburns-right absolute"
+          style={{
+            inset: "-5%",
+            backgroundImage:
+              "url(https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(46,74,46,0.82) 0%, rgba(46,74,46,0.88) 100%)",
+          }}
+        />
+        <div className="relative max-w-4xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6 leading-tight">
             אוכל אמיתי, ישר מהמקור אליך
           </h1>

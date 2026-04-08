@@ -132,3 +132,85 @@ h1, h2, h3 {
     color: #555;
   }
 }
+
+/* =============================================================
+   PREMIUM_DESIGN.md
+   ============================================================= */
+
+/* Ken Burns — slow parallax zoom/pan on hero + parallax dividers.
+   Two directions so adjacent sections don't drift in lock-step.
+   Disabled for prefers-reduced-motion. */
+@keyframes kenburns-right {
+  0%   { transform: scale(1) translate(0%, 0%); }
+  100% { transform: scale(1.08) translate(-2%, -1%); }
+}
+@keyframes kenburns-left {
+  0%   { transform: scale(1) translate(0%, 0%); }
+  100% { transform: scale(1.08) translate(2%, -1%); }
+}
+
+.kenburns-right {
+  animation: kenburns-right 20s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.kenburns-left {
+  animation: kenburns-left 25s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kenburns-right,
+  .kenburns-left {
+    animation: none;
+  }
+}
+
+/* Marquee — infinite horizontal scroll of small hype tags. The track
+   renders the list twice so translating -50% creates a seamless loop. */
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 25s linear infinite;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: max-content;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* Custom cursor — only applied when <CustomCursor /> mounts. The HTML
+   element gains `custom-cursor-on` which hides the native cursor across
+   the whole document. Safety: if JS fails we never trigger this class, so
+   the normal cursor stays visible. */
+.custom-cursor-on,
+.custom-cursor-on * {
+  cursor: none !important;
+}
+.custom-cursor {
+  width: 12px;
+  height: 12px;
+  background: #2e6853;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition:
+    transform 0.18s ease-out,
+    opacity 0.25s ease-out;
+  mix-blend-mode: multiply;
+}
+.custom-cursor--hover {
+  transform: scale(3);
+  opacity: 0.45 !important;
+}
