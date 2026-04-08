@@ -825,5 +825,15 @@ SENTRY_PROJECT=mehamekor-frontend
 - Sentry DSN hooked up for error monitoring
 - Monitoring the first 429s and 401s on the live site
 
+## Address autocomplete — Nominatim (אפריל 2026)
+- **`components/AddressSearch.jsx`** — חדש. Autocomplete לכתובות ישראליות דרך Nominatim של OpenStreetMap. בחינם, ללא API key, ללא חיוב.
+- **למה Nominatim ולא Google Places:** Google Places דורש billing account, API key, ויש לו cooldown על rate limits. Nominatim הוא חינמי, פתוח, ומחזיר structured `address` (street, suburb/neighbourhood, city, postcode) + `lat`/`lon` בפורמט JSON. תומך בעברית דרך `accept-language=he`.
+- **שאילתא:** `https://nominatim.openstreetmap.org/search?q={query}&countrycodes=il&format=json&addressdetails=1&accept-language=he&limit=6`. Debounce 450ms, מינימום 3 תווים, request-sequence guard נגד תגובות מיושנות.
+- **משומש ב-`HomeProductForm.jsx`** — שדה הרחוב. בחירת תוצאה ממלאת אוטומטית `street`, `zip_code`, `city`, ו-`neighborhood` מהאובייקט של OSM. אם המשתמשת כבר הקלידה ערך — לא נדרסת.
+- **CSP — `next.config.js`:** `connect-src` הורחב עם `https://nominatim.openstreetmap.org`. **אם תוסיפי שדה כתובת חדש בעמוד אחר**, האימייל הזה כבר מאושר ב-CSP, אין צורך לעדכן שוב.
+- **Fail-open:** אם הקריאה נכשלת (network/rate-limit/blocked), הקומפוננטה מתנהגת כ-input טקסט רגיל. המשתמשת עדיין יכולה להקליד ידנית. אין error toast — כי הכישלון לא חוסם.
+- **Usage policy של Nominatim:** מקסימום ~1 בקשה/שניה ממקור אחד. ה-debounce של 450ms + הסף של 3 תווים מספיקים ל-MVP. **לפרודקשן עם traffic גבוה** — proxy דרך ה-backend עם User-Agent שמזהה את `mehamekor.co.il` (דפדפנים לא מאפשרים set User-Agent ב-fetch ישיר). לא נעשה כי MVP-traffic ברור שמספיק.
+- **לא נגעתי ב-`CitySearch`** — היא משתמשת ברשימה סטטית של ~100 ערים ישראליות (`data/cities.js`), זה עדיין הפתרון הנכון לשדה city ב-`/register/producer` שצריך אוטוקומפליט מהיר ומבוקר. הרחבה של CitySearch ל-Nominatim היתה שוברת את ה-curated list.
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`
