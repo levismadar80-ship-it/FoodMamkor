@@ -5,13 +5,14 @@ about page contact form). All endpoints are anonymous — no auth required.
 """
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Category, ContactMessage, DeliveryArea, NewsletterSubscriber, Producer
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ class NewsletterIn(BaseModel):
 
 
 @router.post("/newsletter", status_code=201)
-def subscribe_newsletter(data: NewsletterIn, db: Session = Depends(get_db)):
+@limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
+def subscribe_newsletter(request: Request, data: NewsletterIn, db: Session = Depends(get_db)):
     email = data.email.lower().strip()
     existing = (
         db.query(NewsletterSubscriber)
@@ -117,7 +119,8 @@ def list_cities(db: Session = Depends(get_db)):
 
 
 @router.post("/contact", status_code=200)
-def submit_contact(data: ContactIn, db: Session = Depends(get_db)):
+@limiter.limit("5/hour")  # SECURITY FIX #2: cap contact form abuse
+def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_db)):
     msg = ContactMessage(
         name=data.name.strip(),
         email=data.email.lower().strip(),

@@ -1,13 +1,14 @@
 import secrets
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, User
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     HomeProductCreate,
     HomeProductModerationRequest,
@@ -95,7 +96,9 @@ def get_rating_page(token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/validate", response_model=HomeProductModerationResult)
+@limiter.limit("30/hour")  # SECURITY FIX #2: cap Anthropic calls per IP
 def validate_home_product_endpoint(
+    request: Request,
     data: HomeProductModerationRequest,
 ):
     """Run the moderation check WITHOUT persisting anything. Used by the
@@ -170,7 +173,9 @@ def get_home_product(product_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=HomeProductOut, status_code=201)
+@limiter.limit("10/hour")  # SECURITY FIX #2: cap listing spam
 def create_home_product(
+    request: Request,
     data: HomeProductCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

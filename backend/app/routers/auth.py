@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
@@ -6,6 +6,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
     GoogleAuthRequest,
@@ -20,7 +21,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=Token)
-def register(data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
+def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -39,7 +41,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/register/producer", response_model=Token)
-def register_producer(data: ProducerRegister, db: Session = Depends(get_db)):
+@limiter.limit("3/hour")  # SECURITY FIX #2
+def register_producer(request: Request, data: ProducerRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -88,7 +91,8 @@ def register_producer(data: ProducerRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/google", response_model=Token)
-def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
+def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
     user_info = _verify_google_token(data.id_token)
     if not user_info:
@@ -122,7 +126,8 @@ def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
+def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -137,7 +142,8 @@ def get_me(user: User = Depends(get_current_user)):
 
 
 @router.post("/apple", response_model=Token)
-def apple_auth(data: AppleAuthRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # SECURITY FIX #2
+def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
     user_info = _verify_apple_token(data.id_token)
     if not user_info:

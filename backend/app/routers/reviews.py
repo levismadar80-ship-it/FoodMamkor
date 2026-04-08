@@ -6,7 +6,7 @@ all reviews on every write (simple + correct; fine at this scale).
 """
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Producer, ProducerReview, User
+from app.rate_limit import limiter
 
 router = APIRouter(tags=["reviews"])
 
@@ -83,7 +84,9 @@ def list_reviews(
 
 
 @router.post("/reviews", response_model=ReviewOut, status_code=201)
+@limiter.limit("20/day")  # SECURITY FIX #2: cap review spam
 def create_review(
+    request: Request,
     data: ReviewCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
