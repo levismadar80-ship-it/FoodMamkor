@@ -31,5 +31,14 @@ EXPOSE 8000
 # can be invisible in Railway's log panel for the first few minutes.
 ENV PYTHONUNBUFFERED=1
 
-# Use sh -c so $PORT is expanded at runtime, not baked into the image.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# CMD notes:
+#   - `sh -c` is required so ${PORT:-8000} is expanded at runtime
+#   - `exec` makes python replace sh as PID 1, so SIGTERM from Railway
+#     reaches uvicorn cleanly instead of being eaten by the shell
+#   - `python -u -m uvicorn` is equivalent to the `uvicorn` console
+#     script but guarantees unbuffered stdout even if PYTHONUNBUFFERED
+#     somehow isn't honored
+#   - DO NOT also set `startCommand` in railway.json — Railway runs
+#     that without a shell and ${PORT:-8000} would be passed literally,
+#     causing "Invalid value for '--port'". Let the Dockerfile CMD win.
+CMD ["sh", "-c", "exec python -u -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
