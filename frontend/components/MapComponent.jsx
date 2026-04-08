@@ -3,42 +3,204 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-// Fix Leaflet default icon issue with bundlers
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-});
+/**
+ * MapComponent — raw-Leaflet map with custom category-colored markers
+ * and clustering. Covers MAP_IMPROVEMENTS.md items #4, #5, #6, #10.
+ *
+ * Clustering: uses vanilla `leaflet.markercluster` (not
+ * react-leaflet-cluster) because this component drives Leaflet
+ * directly without react-leaflet.
+ *
+ * Bug fix (#10): the old marker had Leaflet's default `alt="Marker"`,
+ * which on some hover tooltips shows up as "arker" after letter
+ * truncation. Now we:
+ *   - Set `alt: producer.name` explicitly
+ *   - Set `title: producer.name` for the browser tooltip
+ *   - Bind a Leaflet tooltip with the actual name
+ *   - Defensively skip producers without name/lat/lng
+ *
+ * Parent communicates via `registerApi` callback (not refs — next/dynamic
+ * doesn't reliably forward refs).
+ */
+
+// MAP_IMPROVEMENTS.md #5 — category color + emoji lookup.
+// Keys match category.name from the DB. Fallback to primary+leaf.
+const CATEGORY_STYLES = {
+  "בשר, עוף ודגים": { color: "#c04040", emoji: "🥩" },
+  "ירקות, פירות ומשקים": { color: "#2e6853", emoji: "🥬" },
+  "חלב וגבינות": { color: "#4a90d9", emoji: "🥛" },
+  "לחמים ואפייה": { color: "#8B6914", emoji: "🍞" },
+  "שמנים ודבש": { color: "#e8a020", emoji: "🫒" },
+  "טיפוח וסבונים": { color: "#9b59b6", emoji: "🧴" },
+};
+const DEFAULT_STYLE = { color: "#2e6853", emoji: "🌿" };
+
+function styleForProducer(producer) {
+  const firstCategory = producer?.categories?.[0]?.name;
+  return (firstCategory && CATEGORY_STYLES[firstCategory]) || DEFAULT_STYLE;
+}
+
+/** Create a teardrop divIcon, color + emoji by category. */
+function createCategoryMarker(producer, { active = false, hovered = false } = {}) {
+  const { color, emoji } = styleForProducer(producer);
+  const size = active ? 44 : hovered ? 38 : 32;
+  const iconOffset = active ? 22 : hovered ? 19 : 16;
+
+  const html = `
+    <div class="mehamekor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""}"
+         style="
+           background: ${active ? color : "white"};
+           color: ${active ? "white" : color};
+           border: 2px solid ${color};
+           border-radius: 50% 50% 50% 0;
+           transform: rotate(-45deg);
+           width: ${size}px;
+           height: ${size}px;
+           display: flex; align-items: center; justify-content: center;
+           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+           transition: all 0.18s ease-out;
+         ">
+      <span aria-hidden="true" style="transform: rotate(45deg); font-size: ${active ? 20 : 14}px;">
+        ${emoji}
+      </span>
+    </div>
+  `;
+
+  return L.divIcon({
+    html,
+    className: "mehamekor-marker-wrap",
+    iconSize: [size, size],
+    iconAnchor: [iconOffset, size],
+    popupAnchor: [0, -size],
+  });
+}
+
+const escapeHtml = (str) => {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+};
+
+/** MAP_IMPROVEMENTS.md #6 — rich popup with photo, rating, and CTAs. */
+function buildPopupHtml(producer) {
+  const href = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
+  const photo = producer.images?.[0];
+  const cat = producer.categories?.[0];
+  const phone = producer.phone
+    ? producer.phone.replace(/[-\s]/g, "").replace(/^0/, "972")
+    : null;
+  const waUrl = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name || ""}`)}`
+    : null;
+
+  return `
+    <div style="text-align:right;font-family:'DM Sans',Heebo,sans-serif;min-width:240px;max-width:260px;direction:rtl;">
+      ${
+        photo
+          ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(producer.name || "")}"
+                 style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />`
+          : ""
+      }
+      <div style="font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;color:#1C1A17;line-height:1.2;">
+        ${escapeHtml(producer.name || "עסק")}
+      </div>
+      <div style="color:#6B6B6B;font-size:12px;margin-top:3px;">
+        ${escapeHtml(producer.city || "")}${cat ? ` · ${escapeHtml(cat.emoji || "")} ${escapeHtml(cat.name || "")}` : ""}
+      </div>
+      ${
+        producer.reviews_count > 0
+          ? `<div style="color:#8B6914;font-size:12px;margin-top:5px;">
+               ⭐ ${Number(producer.avg_rating).toFixed(1)} (${producer.reviews_count})
+             </div>`
+          : ""
+      }
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <a href="${escapeHtml(href)}"
+           style="flex:1;background:#2e6853;color:#fff;padding:8px;border-radius:6px;
+                  text-align:center;text-decoration:none;font-size:13px;font-weight:500;">
+          פרטים מלאים
+        </a>
+        ${
+          waUrl
+            ? `<a href="${escapeHtml(waUrl)}" target="_blank" rel="noopener noreferrer"
+                 aria-label="שלח הודעת ווטסאפ"
+                 style="background:#25D366;color:#fff;padding:8px 12px;border-radius:6px;
+                        text-decoration:none;font-size:16px;line-height:1;">
+                 💬
+               </a>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+}
 
 export default function MapComponent({
   producers = [],
   onProducerClick,
+  onProducerHover,
   onBoundsChange,
+  onMapMove,
   registerApi,
 }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const markersRef = useRef(new Map()); // producer.id → marker
+  const clusterGroupRef = useRef(null);
+  const markersRef = useRef(new Map()); // producer.id → { marker, producer }
+  const hoveredIdRef = useRef(null);
+  const activeIdRef = useRef(null);
+
+  // Keep latest callbacks in refs so we don't re-init the map whenever
+  // the parent passes new arrow functions.
   const onBoundsChangeRef = useRef(onBoundsChange);
   onBoundsChangeRef.current = onBoundsChange;
   const onProducerClickRef = useRef(onProducerClick);
   onProducerClickRef.current = onProducerClick;
+  const onProducerHoverRef = useRef(onProducerHover);
+  onProducerHoverRef.current = onProducerHover;
+  const onMapMoveRef = useRef(onMapMove);
+  onMapMoveRef.current = onMapMove;
 
-  // Expose imperative API via a callback prop — works across next/dynamic
-  // which doesn't reliably forward refs in all Next versions.
+  // Refresh a single marker's icon based on active/hover state
+  const refreshMarkerIcon = (id) => {
+    const entry = markersRef.current.get(id);
+    if (!entry) return;
+    entry.marker.setIcon(
+      createCategoryMarker(entry.producer, {
+        active: activeIdRef.current === id,
+        hovered: hoveredIdRef.current === id,
+      }),
+    );
+  };
+
+  // Expose imperative API via a callback prop
   useEffect(() => {
     if (!registerApi) return;
     const api = {
       focusProducer: (producerId) => {
-        const marker = markersRef.current.get(producerId);
-        if (!marker || !mapInstanceRef.current) return;
-        const latlng = marker.getLatLng();
+        const entry = markersRef.current.get(producerId);
+        if (!entry || !mapInstanceRef.current) return;
+        const prev = activeIdRef.current;
+        activeIdRef.current = producerId;
+        if (prev) refreshMarkerIcon(prev);
+        refreshMarkerIcon(producerId);
+        const latlng = entry.marker.getLatLng();
         mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });
-        setTimeout(() => marker.openPopup(), 1250);
+        setTimeout(() => entry.marker.openPopup(), 1250);
+      },
+      setHoveredProducer: (producerId) => {
+        const prev = hoveredIdRef.current;
+        if (prev === producerId) return;
+        hoveredIdRef.current = producerId;
+        if (prev) refreshMarkerIcon(prev);
+        if (producerId) refreshMarkerIcon(producerId);
       },
       getMap: () => mapInstanceRef.current,
     };
@@ -46,70 +208,118 @@ export default function MapComponent({
     return () => registerApi(null);
   }, [registerApi]);
 
+  // Initialize the map once
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Israel center
-    mapInstanceRef.current = L.map(mapRef.current).setView([31.5, 34.8], 8);
+    mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView(
+      [31.5, 34.8],
+      8,
+    );
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
 
+    // Cluster group for markers — MAP_IMPROVEMENTS.md #4
+    clusterGroupRef.current = L.markerClusterGroup({
+      chunkedLoading: true,
+      showCoverageOnHover: false,
+      maxClusterRadius: 60,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `
+            <div style="
+              background:#2e6853;color:#fff;border-radius:50%;
+              width:40px;height:40px;display:flex;align-items:center;
+              justify-content:center;font-family:'DM Sans',sans-serif;
+              font-size:13px;font-weight:600;border:2px solid #fff;
+              box-shadow:0 2px 10px rgba(46,104,83,0.35);
+            ">${count}</div>`,
+          className: "mehamekor-cluster",
+          iconSize: [40, 40],
+        });
+      },
+    });
+    mapInstanceRef.current.addLayer(clusterGroupRef.current);
+
     const fireBounds = () => {
-      if (!mapInstanceRef.current || !onBoundsChangeRef.current) return;
+      if (!mapInstanceRef.current) return;
       const b = mapInstanceRef.current.getBounds();
-      onBoundsChangeRef.current({
+      const bounds = {
         north: b.getNorth(),
         south: b.getSouth(),
         east: b.getEast(),
         west: b.getWest(),
-      });
+      };
+      onBoundsChangeRef.current?.(bounds);
     };
-    mapInstanceRef.current.on("moveend", fireBounds);
+
+    // Fire once on mount so the grid below matches initial view
+    mapInstanceRef.current.whenReady(fireBounds);
+
+    mapInstanceRef.current.on("moveend", () => {
+      fireBounds();
+      // MAP_IMPROVEMENTS.md #1 — notify parent that the map moved so
+      // it can show "search this area" button
+      onMapMoveRef.current?.();
+    });
 
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        clusterGroupRef.current = null;
       }
     };
   }, []);
 
+  // Re-render markers when producers change
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !clusterGroupRef.current) return;
 
-    // Clear existing markers
-    markersRef.current.forEach((m) => m.remove());
+    // Clear existing markers from the cluster layer
+    clusterGroupRef.current.clearLayers();
     markersRef.current = new Map();
 
-    const escapeHtml = (str) => {
-      if (!str) return "";
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    };
+    // Defensive: guard against null/empty producers (#10)
+    if (!Array.isArray(producers) || producers.length === 0) return;
 
     producers.forEach((p) => {
-      if (!p.lat || !p.lng) return;
-      const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-      const productLine =
-        p.top_product_name || p.starting_price_label
-          ? `<div style="margin:6px 0;font-size:13px;">
-               ${p.top_product_name ? `<span style="color:#1C1A17">${escapeHtml(p.top_product_name)}</span>` : ""}
-               ${p.top_product_name && p.starting_price_label ? `<span style="color:#6B6B6B"> · </span>` : ""}
-               ${p.starting_price_label ? `<span style="color:#8B6914;font-weight:600">${escapeHtml(p.starting_price_label)}</span>` : ""}
-             </div>`
-          : "";
-      const marker = L.marker([p.lat, p.lng], { icon: defaultIcon })
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`
-          <div style="text-align:right;font-family:'DM Sans',Heebo,sans-serif;min-width:200px;">
-            <div style="font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;color:#1C1A17;">${escapeHtml(p.name)}</div>
-            <div style="color:#6B6B6B;font-size:12px;margin-top:2px;">${escapeHtml(p.city || "")}</div>
-            ${productLine}
-            <a href="${href}" style="display:inline-block;margin-top:8px;background:#2e6853;color:#fff;padding:6px 14px;border-radius:8px;font-size:13px;text-decoration:none;font-weight:500;">מידע נוסף ←</a>
-          </div>
-        `);
+      // MAP_IMPROVEMENTS.md #10 — defensive null checks:
+      // skip producers without coordinates or identifying data
+      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number") return;
+      if (!p.id) return;
+
+      const marker = L.marker([p.lat, p.lng], {
+        icon: createCategoryMarker(p, { active: false, hovered: false }),
+        // MAP_IMPROVEMENTS.md #10 — set alt + title to producer name so
+        // no "Marker" (or truncated "arker") leaks into assistive tech
+        // or hover tooltips.
+        alt: p.name || "עסק",
+        title: p.name || "עסק",
+        keyboard: true,
+      });
+
+      // Bind a Leaflet tooltip with the real name for hover feedback
+      marker.bindTooltip(p.name || "עסק", {
+        direction: "top",
+        offset: [0, -30],
+        className: "mehamekor-tooltip",
+      });
+
+      marker.bindPopup(buildPopupHtml(p), {
+        maxWidth: 280,
+        closeButton: true,
+        autoPan: true,
+      });
+
       marker.on("click", () => onProducerClickRef.current?.(p));
-      markersRef.current.set(p.id, marker);
+      marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
+      marker.on("mouseout", () => onProducerHoverRef.current?.(null));
+
+      clusterGroupRef.current.addLayer(marker);
+      markersRef.current.set(p.id, { marker, producer: p });
     });
   }, [producers]);
 
@@ -118,12 +328,13 @@ export default function MapComponent({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        mapInstanceRef.current.setView([latitude, longitude], 13);
+        mapInstanceRef.current.flyTo([latitude, longitude], 13, { duration: 1.2 });
         L.circleMarker([latitude, longitude], {
           radius: 8,
           color: "#2e6853",
           fillColor: "#2e6853",
-          fillOpacity: 0.8,
+          fillOpacity: 0.85,
+          weight: 2,
         })
           .addTo(mapInstanceRef.current)
           .bindPopup("המיקום שלי")
@@ -136,13 +347,15 @@ export default function MapComponent({
   return (
     <div className="relative">
       <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
+      {/* MAP_IMPROVEMENTS.md #2 — "near me" — already in place, polished
+          with Phosphor-style pill and flyTo animation above. */}
       <button
         onClick={goToMyLocation}
-        className="absolute top-3 left-3 z-[1000] bg-white rounded-[8px] px-3 py-2 shadow-md hover:bg-light transition text-sm"
-        title="המיקום שלי"
+        className="absolute bottom-6 left-4 z-[1000] bg-white rounded-[10px] px-3 py-2 shadow-md hover:bg-light transition text-sm flex items-center gap-1.5 border border-border focus-visible:ring-2 focus-visible:ring-primary/40"
+        title="קרוב אלי"
         aria-label="מרכז מפה על המיקום שלי"
       >
-        📍 המיקום שלי
+        📍 קרוב אלי
       </button>
     </div>
   );
