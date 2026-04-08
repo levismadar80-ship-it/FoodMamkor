@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import CitySearch from "@/components/CitySearch";
+import AddressSearch from "@/components/AddressSearch";
 
 /**
  * Create-form for "מהמטבח של השכן" with AI moderation feedback.
@@ -382,18 +383,33 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               placeholder="שכונה (אופציונלי)..."
             />
           </div>
-          {/* FIXES_V2.md fix 7c — private fields, not shown publicly */}
+          {/* FIXES_V2.md fix 7c — private fields, not shown publicly.
+              Street uses AddressSearch (Nominatim) so picking a result
+              auto-fills postcode + city + neighborhood from OpenStreetMap.
+              Falls back to plain text on network failure. */}
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-3">
             <div>
               <label htmlFor="hpf-street" className="block text-sm text-site-text mb-1">
                 רחוב ומספר בית <span className="text-site-muted text-xs">(פרטי — לא מוצג בכרטיסייה)</span>
               </label>
-              <input
+              <AddressSearch
                 id="hpf-street"
+                label="רחוב ומספר בית"
                 value={form.street}
-                onChange={update("street")}
-                className={baseInput}
-                placeholder="לדוגמה: רוטשילד 12"
+                onChange={(val) => setForm((f) => ({ ...f, street: val }))}
+                onSelect={(picked) => {
+                  // Auto-fill the rest of the address from the OSM result.
+                  // Don't clobber a city/neighborhood the user already
+                  // typed manually unless we have a better value to offer.
+                  setForm((f) => ({
+                    ...f,
+                    street: picked.street || f.street,
+                    zip_code: picked.postcode || f.zip_code,
+                    city: picked.city || f.city,
+                    neighborhood: picked.neighborhood || f.neighborhood,
+                  }));
+                }}
+                placeholder="לדוגמה: רוטשילד 12, תל אביב"
               />
             </div>
             <div>

@@ -32,7 +32,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "connect-src 'self' https://accounts.google.com https://appleid.apple.com",
+      "connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org",
       "frame-src 'self' https://accounts.google.com https://appleid.apple.com",
       "object-src 'none'",
       "base-uri 'self'",
