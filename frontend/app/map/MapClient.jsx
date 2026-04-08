@@ -31,16 +31,22 @@ export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cityFilter, setCityFilter] = useState("");
+  // `mapBounds` is the map's live viewport (updates on every pan/zoom).
+  // `committedBounds` is the bounds the grid is actually filtered by —
+  // only updated when the user explicitly clicks "חפשי באזור זה".
+  // This is the Airbnb pattern: pan freely without the list shifting
+  // underneath you (bug #14 fix).
   const [mapBounds, setMapBounds] = useState(null);
+  const [committedBounds, setCommittedBounds] = useState(null);
   const [activeProducerId, setActiveProducerId] = useState(null);
 
   // MAP_IMPROVEMENTS.md #3 — hover sync state shared between cards and map.
   const [hoveredProducerId, setHoveredProducerId] = useState(null);
 
   // MAP_IMPROVEMENTS.md #1 — "search this area" state.
-  // `mapMoved` flips to true after any user-initiated pan/zoom; when the
-  // user clicks the button we re-fetch producers constrained to current
-  // bounds and flip it back.
+  // `mapMoved` flips to true after any user-initiated pan/zoom; clicking
+  // the button commits `mapBounds → committedBounds` so the grid filter
+  // actually updates (see bug #14 fix above).
   const [mapMoved, setMapMoved] = useState(false);
 
   // MAP_IMPROVEMENTS.md #7 — mobile bottom-sheet producer selection.
@@ -95,6 +101,11 @@ export default function MapPage() {
     const params = {};
     if (cityFilter) params.delivery_city = cityFilter;
     loadProducers(params);
+    // When the user changes city, clear any committed bounds filter so
+    // the grid shows ALL matches for the new city — not a stale viewport
+    // from the previous city.
+    setCommittedBounds(null);
+    setMapMoved(false);
   };
 
   const handleBoundsChange = useCallback((bounds) => {
@@ -140,14 +151,15 @@ export default function MapPage() {
     setMapMoved(true);
   }, []);
 
+  // Bug #14 fix: commit the current viewport to `committedBounds` so the
+  // grid below re-filters to it. Previously this only called
+  // `loadProducers()` which refetches the full list from the backend
+  // without changing any filter state — the button was a no-op. Now the
+  // grid genuinely updates only when the user asks.
   const handleSearchThisArea = useCallback(() => {
-    // Re-filter the already-loaded list against the current bounds, OR
-    // request the backend to filter by bbox. For simplicity we do a
-    // client-side refetch (producers list is small in MVP); the bounds
-    // filter below handles actual filtering.
-    loadProducers();
+    setCommittedBounds(mapBounds);
     setMapMoved(false);
-  }, []);
+  }, [mapBounds]);
 
   // MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
   const toggleCategory = (name) => {
@@ -177,18 +189,22 @@ export default function MapPage() {
     });
   }, [allProducers, activeCategoryNames]);
 
+  // Bug #14 fix: filter the grid by `committedBounds`, NOT the live
+  // `mapBounds`, so panning doesn't continuously reshuffle the list.
+  // When `committedBounds` is null (initial state or after a reset) we
+  // show everything.
   const visibleProducers = useMemo(() => {
-    if (!mapBounds) return filteredByCategory;
+    if (!committedBounds) return filteredByCategory;
     return filteredByCategory.filter((p) => {
       if (typeof p.lat !== "number" || typeof p.lng !== "number") return false;
       return (
-        p.lat >= mapBounds.south &&
-        p.lat <= mapBounds.north &&
-        p.lng >= mapBounds.west &&
-        p.lng <= mapBounds.east
+        p.lat >= committedBounds.south &&
+        p.lat <= committedBounds.north &&
+        p.lng >= committedBounds.west &&
+        p.lng <= committedBounds.east
       );
     });
-  }, [filteredByCategory, mapBounds]);
+  }, [filteredByCategory, committedBounds]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -307,33 +323,54 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer */}
+      {/* MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer
+          Improvement #12: the drag handle was inside a flex-between row
+          (where mx-auto doesn't do anything), and the close button was
+          absolute-positioned inside that same row — leaving the handle
+          flush-left. Restructured: handle is its own centered block, X
+          is absolute relative to the dialog. */}
       {selectedProducer && (
         <div
-          className="md:hidden fixed bottom-16 inset-x-3 z-[900] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
+          className="md:hidden fixed bottom-16 inset-x-3 z-[900] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
           role="dialog"
+          aria-modal="true"
           aria-label="פרטי העסק שנבחר"
         >
-          <div className="flex items-start justify-between mb-2">
-            <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
-            <button
-              type="button"
-              onClick={() => setSelectedProducer(null)}
-              className="absolute top-3 right-3 p-1 text-site-muted hover:text-site-text"
-              aria-label="סגור"
-            >
-              <X size={18} weight="bold" />
-            </button>
-          </div>
+          <div
+            className="w-10 h-1 bg-border rounded-full mx-auto mb-3"
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            onClick={() => setSelectedProducer(null)}
+            className="absolute top-3 left-3 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
+            aria-label="סגור"
+          >
+            <X size={18} weight="bold" />
+          </button>
           <ProducerCard producer={selectedProducer} />
         </div>
       )}
 
-      {/* Producer grid below map — filtered by visible bounds + categories */}
+      {/* Producer grid below map — filtered by committed bounds + categories */}
       <div>
-        <h2 className="font-headline text-2xl font-bold mb-4 text-site-text">
-          בתי עסק באזור ({visibleProducers.length})
-        </h2>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <h2 className="font-headline text-2xl font-bold text-site-text">
+            בתי עסק{committedBounds ? " באזור" : ""} ({visibleProducers.length})
+          </h2>
+          {committedBounds && (
+            <button
+              type="button"
+              onClick={() => {
+                setCommittedBounds(null);
+                setMapMoved(false);
+              }}
+              className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            >
+              הצגי את כל הארץ ←
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {visibleProducers.map((p) => (
             <div

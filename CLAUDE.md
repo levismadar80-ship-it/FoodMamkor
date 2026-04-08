@@ -700,5 +700,22 @@ SENTRY_PROJECT=mehamekor-frontend
 ### גוצ'ה חשובה — `.parallax-bg` (legacy)
 הכיתה עדיין קיימת ב-`globals.css` (`background-attachment: fixed`) אבל כבר לא בשימוש בשום קומפוננטה. `ParallaxQuote` עברה ל-Ken Burns. אפשר להשאיר את הכיתה כ-fallback או לנקות בעתיד — אין לה תוצאת runtime אם אף אחד לא מחיל אותה.
 
+## Map — המשך שיפורים (אפריל 2026, second pass)
+> המפרט `MAP_IMPROVEMENTS.md` מונה 10 שיפורים (1–9 + באג 10). כולם נפרסו ב-`claude/review-document-HlIVP` — ראי הלוג למעלה. ה-pass הזה הוסיף שני baגים שהתגלו בקריאה חוזרת (13, 14) ושני שיפורים קטנים (11, 12).
+
+### באגים שתוקנו
+- **#13 — ה-marker של "קרוב אלי" זלג בכל לחיצה.** `MapComponent.goToMyLocation()` קרא ל-`L.circleMarker().addTo(map)` על כל לחיצה בלי להסיר את הקודם, כך ש-DOM הלך ונצבר. התיקון: `myLocationMarkerRef` חדש שמשתף marker יחיד (`setLatLng()` על הקיים במקום יצירה מחדש), מנוקה ב-cleanup של ה-map useEffect. אל תחזירי את הגרסה הישנה.
+- **#14 — "חפשי באזור זה" היה no-op.** `visibleProducers` סינן בלי הפסקה לפי `mapBounds` הלייב, אז בזמן שהכפתור הופיע הסינון כבר הופעל. הלחיצה רק קראה ל-`loadProducers()` (שמביא מחדש את כל העסקים מהשרת) בלי לשנות state. התיקון הוא pattern של Airbnb: הוספתי `committedBounds` שמתעדכן רק כשהמשתמש לוחץ את הכפתור, וה-`visibleProducers` memo מסנן נגדו במקום נגד `mapBounds`. תוצאה: פאן חופשי במפה בלי שהרשימה תזוז, ורק לחיצה מחייבת commit. שינוי עיר או הכפתור החדש "הצגי את כל הארץ ←" מנקים את `committedBounds`.
+
+### שיפורים נוספים
+- **#11 — `fitBounds` אוטומטי בטעינה ראשונה.** ה-default view היה `[31.5, 34.8]` zoom 8 — כל הארץ, כולל ים. עכשיו ברגע שה-producers הראשונים מגיעים, `MapComponent` קורא ל-`mapInstanceRef.current.fitBounds(...)` עם `padding: [40,40]`, `maxZoom: 12`. מתבצע **פעם אחת** דרך `hasFitBoundsRef` כך שסינונים מאוחרים לא טורקים את המבט של המשתמש אחורה.
+- **#12 — layout של ה-drag handle ב-bottom sheet.** היה `<div className="flex items-start justify-between">` עם `mx-auto` על ה-handle (שלא עובד בתוך flex) וה-X button עם `absolute top-3 right-3` מוטמע באותו flex row (שלא עושה כלום עליו). עכשיו: ה-handle הוא בלוק עצמאי עם `mx-auto mb-3`, וה-X יצא מה-flex ל-`absolute top-3 left-3` ביחס ל-dialog עצמו (physical left ב-RTL = קצה קריאה). הוספתי גם `aria-modal="true"`.
+
+### Programmatic-move guard (חדש)
+ב-`MapComponent` יש עכשיו `programmaticMoveRef`. כל קריאה פנימית ל-`flyTo`/`fitBounds` (initial fit, `focusProducer`, `goToMyLocation`) מדליקה את הדגל, ומטפל ה-`moveend` מוותר על הקריאה ל-`onMapMove` כשהוא נדלק (ואז מכבה אותו). זה מונע ש-`mapMoved=true` יידלק מיד עם טעינה ראשונה ושה-banner "חפשי באזור זה" יקפוץ בלי סיבה. אם הוספת איפשהו `flyTo`/`fitBounds` חדש — **זכרי להדליק את הדגל לפני הקריאה**, אחרת הכפתור יחזור לקפוץ.
+
+### `focusProducer` — פתיחת popup אחרי flyTo
+לפני: `setTimeout(..., 1250)` שמנסה לתזמן את סיום ה-flyTo של 1.2s. אחרי: `mapInstanceRef.current.once("moveend", ...)` — מדויק יותר, בלי race conditions אם המשתמש מפריע לאנימציה.
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`
