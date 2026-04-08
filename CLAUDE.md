@@ -759,5 +759,71 @@ SENTRY_PROJECT=mehamekor-frontend
 - **`/audit`** — לא תיקן כלום בעצמו (זה הכלל של הסקיל — document only, fix via other commands). הפלט שימש כמפת-דרכים לסקילים הבאים.
 - **`/harden`** — ה"באג" של 2 h1s ב-`rate/[token]/page.js` התברר כ-false positive (שני h1s בבלוקים מותנים שלא מופיעים בו-זמנית). לא נגעתי ב-admin loading strings לפי הכלל של CLAUDE.md ("admin-facing strings נשארו כמו שהם").
 
+## Pre-launch verification (אפריל 2026 — SECURITY + TESTING + LIGHTHOUSE pass)
+
+### Security — 3-step protocol (SECURITY.md)
+
+**Step 1 — Full review.** Grep sweep across backend + frontend against all 🔴 critical and 🟠 high items. All prior SECURITY_FIX markers still in place (`JWT`, `rate limiting`, `SQL ORM`, `CORS`, `IDOR`, `file upload`, `security headers`, `CSP`, `bcrypt`, `response_model`).
+
+**Step 2 — Fixes applied this round:**
+- **🟠 IDOR gap in `home_products.py`** — `update_home_product` and `deactivate_home_product` only checked `hp.user_id != user.id` without the admin override that CLAUDE.md rule #5 requires. Added `and user.role != "admin"`. Events + reviews already had the pattern (`is_owner or is_admin`), home_products was the outlier.
+- **🟢 OG image missing on 4 overridden pages** — `/map`, `/events`, `/about`, `/neighbor` override `metadata.openGraph` in their `page.js` wrappers. Next.js **replaces** the parent `openGraph` object on override (doesn't merge), so the shared `og:image`, `siteName`, `locale` from `layout.js` were silently dropped. Re-declared `images: ["/og-image.jpg"]`, `siteName: "מהמקור"`, `locale: "he_IL"` in each page's metadata. Verified via `curl` that all four now emit `<meta property="og:image" content=".../og-image.jpg">`. **Gotcha for next time:** always re-declare these if you override `openGraph` on a page.
+
+**Step 3 — Re-verification.**
+- `JWT_SECRET_KEY` hardcoded? ✅ gone
+- Rate limiting on auth? ✅ `@limiter.limit("5/minute")` on login, `3/hour` on register, `10/minute` on OAuth
+- SQL `execute(f"...")` / `text(f"...")`? ✅ none
+- `allow_origins=["*"]`? ✅ reads from `settings.cors_origins_list()`
+- IDOR admin override? ✅ now consistent across all routers
+- File upload magic-byte + size + uuid public_id? ✅ in `upload.py`
+- Security headers on backend response? ✅ live curl shows `x-content-type-options`, `x-frame-options`, `referrer-policy`, `permissions-policy`
+- CSP header in `next.config.js`? ✅
+- bcrypt in auth.py? ✅
+- OG images on all pages? ✅ all 4 restored
+- **Live rate-limit smoke test:** 7 consecutive `POST /auth/login` with bad credentials → attempts 1–4 return `401`, attempts 5–7 return `429` ✅
+
+### Backend tests — `pytest tests/test_api.py`
+- **Result: 24/24 passed.** Ran both before and after the IDOR fix. Deps: postgis extension installed, psycopg2-binary + geoalchemy2 + python-jose added to system python (one-off sandbox install; no requirements.txt change needed — they're already pinned). Command used:
+  ```bash
+  JWT_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))") \
+  ENV=development \
+  TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mehamakor_test" \
+  PYTHONPATH=backend \
+  python3 -m pytest tests/test_api.py -q
+  ```
+- CLAUDE.md previously mentioned "30/30 pytest" — the current suite is 24. I did not investigate whether tests were consolidated or removed; 24/24 all pass and cover auth + producers + admin.
+
+### Frontend E2E — `npx playwright test`
+- **Result: 6/6 desktop tests passed** (`e2e/screenshots.spec.ts`). Backend + frontend dev servers running on `127.0.0.1:8000` + `localhost:3000`.
+- The spec records all console errors + failed requests → 238 entries total, **all sandbox-only noise**: blocked Google Fonts (the test routes these to `abort`), `images.unsplash.com` (sandbox proxy 407), and `*.tile.openstreetmap.org` tiles (proxy 407). **Zero application bugs.** The map code correctly degrades to empty tiles when OSM is unreachable.
+
+### Lighthouse — sandbox limitation, manual audit instead
+- **Chrome + Lighthouse cannot run in this sandbox.** Both `--headless=new` and `--single-process` chrome invocations hit the sandbox's IPv6 restriction (`socket_posix.cc:99 CreatePlatformSocket() failed: Address family not supported by protocol (97)`) and never reach FCP (`NO_FCP`). Playwright's bundled chromium works because it uses special sandbox flags; the Lighthouse CLI doesn't.
+- **Manual Lighthouse-equivalent audit** performed via `curl` → parse rendered HTML with Python, checked every signal Lighthouse scores on:
+
+| Page | Title | Meta-desc | OG | Canonical | Robots | lang+dir | Viewport | h1 count | alt/imgs | aria-labels | focus-rings |
+|------|-------|-----------|----|-----------|--------|----------|----------|----------|----------|-------------|-------------|
+| `/` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 | 2/2 | 15 | 8 |
+| `/map` | ✅ | ✅ | ✅ (fixed) | ✅ | ✅ | ✅ | ✅ | 1 | 2/2 | 6 | 4 |
+| `/about` | ✅ | ✅ | ✅ (fixed) | ✅ | ✅ | ✅ | ✅ | 1 | 2/2 | 6 | 10 |
+| `/events` | ✅ | ✅ | ✅ (fixed) | ✅ | ✅ | ✅ | ✅ | 1 | 2/2 | 5 | 4 |
+| `/neighbor` | ✅ | ✅ | ✅ (fixed) | ✅ | ✅ | ✅ | ✅ | 1 | 2/2 | 6 | 4 |
+| `/login` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 | 2/2 | 4 | 10 |
+
+- **Estimated Lighthouse scores** (based on manual audit):
+  - **SEO ~95+** — all meta/og/canonical/robots/viewport/h1 hierarchy in place
+  - **Accessibility ~90+** — lang+dir correct, 1 h1 per page, all images have alt, focus-visible everywhere, aria-labels on icon buttons, `prefers-reduced-motion` honored across Ken Burns / marquee / AnimatedCounter / CustomCursor
+  - **Performance ~85-90** — bounded by: Unsplash hero image + Google Fonts network (out of our control), mitigated via `&auto=format&q=80` + `preconnect` hints from the `/optimize` skill pass
+  - **Best Practices ~95+** — security headers present, CSP defined, HTTPS enforced (production), no console errors on happy path
+
+- **Honest caveat:** These are estimates based on what Lighthouse *would* check. The only way to get real numbers is to run Lighthouse against a deployed version (e.g. after Vercel deploy, run it from a local machine with working Chrome, or use Vercel's built-in Speed Insights). **Before launch — run real Lighthouse against the production domain and confirm scores > 85/90/85 targets.** Document actuals in this file.
+
+### Still needed before actual launch (out of this scope)
+- Real Lighthouse run against `https://mehamekor.co.il` from a non-sandbox environment
+- User testing (5 consumers + 3 producers per LAUNCH_CHECKLIST)
+- Production `.env` with real `JWT_SECRET_KEY`, `CORS_ORIGINS`, Cloudinary/Twilio/OAuth credentials
+- Sentry DSN hooked up for error monitoring
+- Monitoring the first 429s and 401s on the live site
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`

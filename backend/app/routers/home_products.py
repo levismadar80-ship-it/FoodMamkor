@@ -246,7 +246,9 @@ def update_home_product(
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Home product not found")
-    if hp.user_id != user.id:
+    # SECURITY FIX (IDOR): allow owner OR admin. Prior check only allowed
+    # owner, which was inconsistent with CLAUDE.md rule #5.
+    if hp.user_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not your listing")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(hp, field, value)
@@ -264,7 +266,8 @@ def deactivate_home_product(
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Home product not found")
-    if hp.user_id != user.id:
+    # SECURITY FIX (IDOR): owner OR admin may deactivate (CLAUDE.md rule #5).
+    if hp.user_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not your listing")
     hp.is_active = False
     db.commit()

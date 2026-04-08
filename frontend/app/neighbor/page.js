@@ -9,6 +9,9 @@ export const metadata = {
     description:
       "מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח.",
     type: "website",
+    siteName: "מהמקור",
+    locale: "he_IL",
+    images: ["/og-image.jpg"],
   },
   alternates: { canonical: "/neighbor" },
 };
