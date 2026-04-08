@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { House, MapTrifold, Calendar, Heart } from "@phosphor-icons/react";
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   const tabs = [
-    { href: "/", icon: "🏠", label: "גלה", match: (p) => p === "/" },
-    { href: "/map", icon: "🗺️", label: "מפה", match: (p) => p === "/map" },
-    { href: "/events", icon: "📅", label: "אירועים", match: (p) => p.startsWith("/events") },
-    { href: "/favorites", icon: "❤️", label: "מועדפים", match: (p) => p === "/favorites" },
+    { href: "/", Icon: House, label: "גלה", match: (p) => p === "/" },
+    { href: "/map", Icon: MapTrifold, label: "מפה", match: (p) => p === "/map" },
+    { href: "/events", Icon: Calendar, label: "אירועים", match: (p) => p.startsWith("/events") },
+    { href: "/favorites", Icon: Heart, label: "מועדפים", match: (p) => p === "/favorites" },
   ];
 
   return (
@@ -21,6 +22,7 @@ export default function BottomNav() {
       <ul className="grid grid-cols-4">
         {tabs.map((tab) => {
           const active = tab.match(pathname || "/");
+          const Icon = tab.Icon;
           return (
             <li key={tab.label}>
               <Link
@@ -30,7 +32,7 @@ export default function BottomNav() {
                 }`}
                 aria-current={active ? "page" : undefined}
               >
-                <span className="text-xl leading-none" aria-hidden>{tab.icon}</span>
+                <Icon size={22} weight={active ? "fill" : "duotone"} />
                 <span className="mt-1">{tab.label}</span>
               </Link>
             </li>

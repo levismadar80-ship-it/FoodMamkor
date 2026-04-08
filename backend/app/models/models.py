@@ -201,6 +201,11 @@ class HomeProduct(Base):
     price = Column(Numeric(10, 2))
     neighborhood = Column(String(100))
     city = Column(String(100))
+    # Private address details (FIXES_V2.md fix 7c) — persisted server-side
+    # but NEVER exposed in the public HomeProductOut schema. Only the
+    # seller and admin can see these via a future authenticated endpoint.
+    street = Column(String(200), nullable=True)
+    zip_code = Column(String(20), nullable=True)
     phone = Column(String(20))  # for WhatsApp redirect
     available_until = Column(DateTime, nullable=True)  # expiry date
     is_active = Column(Boolean, default=True)

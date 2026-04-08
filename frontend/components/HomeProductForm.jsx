@@ -62,6 +62,8 @@ export default function HomeProductForm({ onCreated, onCancel }) {
     price: "",
     neighborhood: "",
     city: "",
+    street: "",      // FIXES_V2.md fix 7c — private, not shown publicly
+    zip_code: "",    // FIXES_V2.md fix 7c
     location_notes: "",
     phone: "",
     delivery_method: "",
@@ -173,6 +175,8 @@ export default function HomeProductForm({ onCreated, onCancel }) {
         price: form.price ? Number(form.price) : null,
         neighborhood: form.neighborhood,
         city: form.city,
+        street: form.street || null,
+        zip_code: form.zip_code || null,
         location_notes: form.location_notes || null,
         phone: form.phone,
         delivery_method: form.delivery_method || null,
@@ -378,6 +382,38 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               placeholder="שכונה (אופציונלי)..."
             />
           </div>
+          {/* FIXES_V2.md fix 7c — private fields, not shown publicly */}
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-3">
+            <div>
+              <label htmlFor="hpf-street" className="block text-sm text-site-text mb-1">
+                רחוב ומספר בית <span className="text-site-muted text-xs">(פרטי — לא מוצג בכרטיסייה)</span>
+              </label>
+              <input
+                id="hpf-street"
+                value={form.street}
+                onChange={update("street")}
+                className={baseInput}
+                placeholder="לדוגמה: רוטשילד 12"
+              />
+            </div>
+            <div>
+              <label htmlFor="hpf-zip" className="block text-sm text-site-text mb-1">
+                מיקוד
+              </label>
+              <input
+                id="hpf-zip"
+                value={form.zip_code}
+                onChange={update("zip_code")}
+                className={baseInput}
+                placeholder="6133001"
+                dir="ltr"
+                maxLength={7}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-site-muted">
+            🔒 הכתובת המדויקת נשמרת לשימוש פנימי בלבד. ללקוחות מוצגים רק עיר ושכונה.
+          </p>
           <div>
             <label htmlFor="hpf-location-notes" className="block text-sm text-site-text mb-1">הערות מיקום</label>
             <input id="hpf-location-notes" value={form.location_notes} onChange={update("location_notes")} className={baseInput} placeholder="ליד הסופר, כניסה מהחנייה" />

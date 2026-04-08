@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import HomeProductForm from "@/components/HomeProductForm";
+import CitySearch from "@/components/CitySearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -45,13 +46,29 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
+  // FIXES_V2.md fix 7a — city filter for the "מהמטבח של השכן" section
+  const [homeKitchenCity, setHomeKitchenCity] = useState("");
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     loadProducers();
-    api.get("/home-products").then((r) => setHomeProducts(r.data)).catch(() => {});
+    loadHomeProducts();
     api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
   }, []);
+
+  // Reload home products when the city filter changes
+  useEffect(() => {
+    loadHomeProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homeKitchenCity]);
+
+  const loadHomeProducts = () => {
+    const params = homeKitchenCity ? { city: homeKitchenCity } : {};
+    api
+      .get("/home-products", { params })
+      .then((r) => setHomeProducts(r.data))
+      .catch(() => setHomeProducts([]));
+  };
 
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
@@ -404,7 +421,10 @@ export default function HomePage() {
       {/* =========================
           מהמטבח של השכן
           ========================= */}
-      <section className="max-w-7xl mx-auto px-4 py-16 border-t border-border">
+      <section
+        id="home-kitchen"
+        className="max-w-7xl mx-auto px-4 py-16 border-t border-border scroll-mt-24"
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>🏠 מהמטבח של השכן</h2>
           {user && (
@@ -419,6 +439,28 @@ export default function HomePage() {
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-3 mb-6 text-sm text-yellow-800">
           ⚠️ האחריות על המוצר היא של המוכר בלבד. מהמקור אינה מאמתת מוצרים בסקציה זו.
+        </div>
+
+        {/* FIXES_V2.md fix 7a — city filter */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex-1 min-w-[220px] max-w-md">
+            <CitySearch
+              id="home-kitchen-city"
+              label="סנני לפי עיר"
+              value={homeKitchenCity}
+              onChange={setHomeKitchenCity}
+              placeholder="סנני לפי עיר..."
+            />
+          </div>
+          {homeKitchenCity && (
+            <button
+              type="button"
+              onClick={() => setHomeKitchenCity("")}
+              className="text-sm text-primary hover:underline"
+            >
+              הצגי הכל
+            </button>
+          )}
         </div>
 
         {showHomeForm && (
@@ -439,7 +481,11 @@ export default function HomePage() {
         </div>
         {homeProducts.length === 0 && (
           <p className="text-center text-site-muted py-8">
-            אין עדיין מוצרים ביתיים. {user ? "היה הראשון לפרסם!" : "התחבר כדי לפרסם."}
+            {homeKitchenCity
+              ? `אין מוצרים ב${homeKitchenCity} — עדיין 🌱`
+              : user
+                ? "אין עדיין מוצרים ביתיים. היי הראשונה לפרסם!"
+                : "אין עדיין מוצרים ביתיים. התחברי כדי לפרסם."}
           </p>
         )}
       </section>

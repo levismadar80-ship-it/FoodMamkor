@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
+import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 
 export const metadata = {
   title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
@@ -33,12 +34,14 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-16 md:pb-0">
         <AuthProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <BottomNav />
-          <Toaster />
-          <CookieBanner />
+          <SmoothScrollProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <BottomNav />
+            <Toaster />
+            <CookieBanner />
+          </SmoothScrollProvider>
         </AuthProvider>
       </body>
     </html>

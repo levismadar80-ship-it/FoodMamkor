@@ -54,6 +54,8 @@ def _migrate_columns(engine):
         ("home_products", "images", "TEXT[] DEFAULT ARRAY[]::TEXT[]"),
         ("producers", "avg_rating", "FLOAT DEFAULT 0"),
         ("producers", "reviews_count", "INTEGER DEFAULT 0"),
+        ("home_products", "street", "VARCHAR(200)"),
+        ("home_products", "zip_code", "VARCHAR(20)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:

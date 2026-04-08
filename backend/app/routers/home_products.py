@@ -212,6 +212,8 @@ def create_home_product(
         price=data.price,
         neighborhood=data.neighborhood,
         city=data.city,
+        street=data.street,  # FIXES_V2 fix 7c — private, not in HomeProductOut
+        zip_code=data.zip_code,
         phone=data.phone or user.phone,
         category=data.category,
         prep_date=data.prep_date,

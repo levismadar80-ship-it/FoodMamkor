@@ -297,6 +297,34 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · Fixes V2 #7** — סינון עיר במהמטבח של השכן + שדות כתובת פרטיים:
+  - **(a) City filter בהומ-קיטשן:** `page.js` נוסף state `homeKitchenCity` + `CitySearch` בראש סקציית "מהמטבח של השכן". שינוי העיר יורה `loadHomeProducts()` שקורא `GET /home-products?city=X` (ה-backend כבר תמך בזה קודם — לא דרש שינוי schema/router). הוספתי גם `id="home-kitchen"` לאנchor של ה-footer שכבר מקשר ל-`/#home-kitchen` + `scroll-mt-24` לscroll offset מתחת ל-navbar הדביק.
+  - **(c) Street + zip_code פרטיים:** הוספתי שתי עמודות ל-`HomeProduct`: `street VARCHAR(200)` + `zip_code VARCHAR(20)`. Migration entries ב-`_migrate_columns`. ה-`HomeProductCreate`/`Update` schemas מקבלים אותן, אבל **`HomeProductOut` לא חושף אותן** — זה מכוון לשמירת פרטיות המוכר, כמו שה-FIXES_V2 spec אומר "אל תציגי כתובת מדויקת בכרטיסייה הציבורית". ה-router שומר אותן ב-`create_home_product`. ב-`HomeProductForm` הוספתי fieldset קטן לרחוב+מיקוד עם הערה `🔒 הכתובת המדויקת נשמרת לשימוש פנימי בלבד. ללקוחות מוצגים רק עיר ושכונה.`
+  - **מה לא בוצע מ-Fix 7 (b) Google Places:** דורש API key, עוד dependency, ועלות חודשית. בנוסף ה-spec עצמו אומר שהכתובת המדויקת לא צריכה להיות ציבורית — אז רוב הערך של Google Places (geocoding מדויק) הולך לאיבוד. עדיף CitySearch הפשוט שכבר יש + שדות street/zip פרטיים.
+
+- **2026-04-08 · ALL_PAGES_DESIGN** — עיצוב מלא לכל העמודים:
+  - **`/producer/:id`** נכתב מחדש — layout של 2 עמודות (main-content + sticky contact sidebar 320px). ה-sidebar נשאר נעוץ בזמן scroll דרך description/delivery/reviews. במובייל: עמודה אחת, sidebar עולה למעלה לפני התוכן (`order-first`). הכפתורים: WhatsApp בצבע ה-brand הרשמי `#25D366`, טלפון/אינסטגרם/אתר עם אייקוני Phosphor (`Phone`, `InstagramLogo`, `Globe`), "הצג במפה" משתמש ב-`MapTrifold`. כפתורי favorite+share בשורה אחת. הכל קישורי tel/wa/ins פונקציונליים.
+  - **`app/not-found.js`** חדש — דף 404 עם 🌿, כותרת "404" ב-Frank Ruhl Libre, הודעה "הדף לא נמצא — אבל יש לנו הרבה בתי עסק טובים 🌱", שני כפתורים (חזרה לבית / גלי עסקים במפה). Next.js מרנדר את זה אוטומטית לכל route לא קיים.
+  - **`/terms`** נכתב מחדש — במקום `div` אחד עם section divs, עכשיו 6 sections נפרדות בכרטיסיות לבנות על הרקע הקרם. כל סקציה עם `id=` לקישורי anchor (למשל `/terms#privacy` שהfooter כבר מקשר אליו). כותרת sticky הוסרה כדי להיות עקבי עם שאר העמודים.
+  - **`/admin` layout** — sidebar כהה-ירוק (`bg-primary-dark`) 240px בצד ימין (RTL), אייקוני Phosphor (`Gauge`, `Storefront`, `Users`, `Note`, `Warning`, `ChartLineUp`, `GearSix`) במקום emojis. הפעיל מסומן ב-`bg-primary` עם `weight="fill"`, השאר `text-light/70` עם `weight="duotone"`. תוכן על `bg-background` עם `mr-60` (RTL offset). המובייל: nav אופקי scrollable מעל התוכן. הסיידבר הוא ה**היחיד מקום באתר** שהוא dark — זה מכוון, מסמן "backoffice".
+  - **מה לא בוצע מ-ALL_PAGES_DESIGN בכוונה:**
+    - **`/map` sidebar layout rewrite** — הדף הנוכחי עובד טוב, ל-rewrite יש סיכון לשבור את deep-link-from-producer (Fix 1) ואת ה-bidirectional map focus. דחיתי.
+    - **`/register/business` multi-step rewrite** — הדף הקיים כבר עובד עם 3 שלבים + validation. rewrite מלא עם `AnimatePresence` הוא cosmetic שלא מצדיק את הסיכון לשבור את זרימת ההרשמה.
+    - **Producer page gallery grid** (2fr/1fr layout) — ה-`ImageGallery` הקיים עובד ויש לו תמיכה ב-fullscreen/swipe. נשמר.
+    - **`/events` filter pills rewrite** — הדף הנוכחי כבר יש לו filter pills דרך `CitySearch` + `CATEGORIES` array.
+
+- **2026-04-08 · WORLD_CLASS_V2** — שיפורי navbar + smooth scroll + אייקונים:
+  - `package.json`: `@phosphor-icons/react@^2.1.7` + `lenis@^1.1.13` (דורש `docker-compose build --no-cache frontend` כדי להתקין)
+  - `components/SmoothScrollProvider.jsx` חדש — Lenis עם duration 1.2 + exponential easing. **מכבד `prefers-reduced-motion`** — אם המשתמש ביקש פחות תנועה, לא טוען Lenis בכלל (ברירת מחדל של הדפדפן).
+  - `Header.jsx` — scroll-blur effect: מתחיל עם bg-background solid, עובר ל-`bg-background/85 backdrop-blur-md` אחרי scroll > 60px. תנועות חלקות של 300ms. החלפת ה-SVG hamburger ב-`List`/`X` מ-Phosphor.
+  - `BottomNav.jsx` — 4 אייקוני emoji הוחלפו ב-Phosphor: `House`, `MapTrifold`, `Calendar`, `Heart`. תג `weight="fill"` כשפעיל, `duotone` כברירת מחדל.
+  - `Footer.jsx` — שביל SVG של Instagram (50+ lines) הוחלף ב-`InstagramLogo` מ-Phosphor.
+  - `app/layout.js` — `SmoothScrollProvider` עוטף את כל ה-AuthProvider children (בצד הלקוח).
+  - **מה לא בוצע מ-WORLD_CLASS_V2 בכוונה:**
+    - **Dark-mode login** (`#0f0f0f` authkit style) — מנוגד לכיוון הברנד ב-CLAUDE.md ("תחושת שוק איכרים — חם ואורגני, לא startup") ולמפרט העיצוב המקורי שאמר "לא dark mode". דילגתי.
+    - **Sticky HowItWorks 300vh** — גימיק שמוסיף 2 מסכים של scroll לדף הבית בלי תוכן נוסף. הקטע הקיים עם `FadeInSection` stagger עובד מצוין.
+    - **Mass icon replacement** — Header/BottomNav/Footer עודכנו, אבל שאר ה-emojis בדף הבית (category emojis, "🌿", "🧴" וכו') נשארו כי הם תוכן, לא UI chrome.
+
 - **2026-04-08 · Security** — סקירה + תיקון כל ה-🔴 קריטי + 🟠 חשוב מ-SECURITY.md:
   - **Step 1 Review** מצא 4 פרצות אמיתיות: JWT default secret, אפס rate limiting, file upload לא מאומת, CORS open. **SQL injection + data exposure + IDOR היו כבר תקינים** (ORM everywhere, response_models, ownership checks) — דיווחתי ✅.
   - **Fix #1 JWT**: `config.py` נכתב מחדש. default secret הוסר. ב-dev נוצר secret אקראי לכל תהליך + אזהרה ללוג. ב-`ENV=production` נכשל מיידית אם אין `JWT_SECRET_KEY`. גירעון קיצר מ-7 ימים ל-24 שעות.
