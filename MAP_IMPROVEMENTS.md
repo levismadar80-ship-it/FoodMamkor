@@ -485,3 +485,158 @@ useEffect(() => {
 }, [producers])
 ```
 
+
+---
+
+## תיקון 11 — הסר attribution מתחת ל-Legend
+
+הבעיה: "Leaflet | © OpenStreetMap 🇺🇦" מופיע מתחת לlegend ונראה מוזר.
+
+```css
+/* העבר את ה-attribution לפינה אחרת ותקטין אותו */
+.leaflet-control-attribution {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  font-size: 10px !important;
+  opacity: 0.6 !important;
+  background: rgba(255,255,255,0.7) !important;
+  padding: 2px 6px !important;
+  border-radius: 0 4px 0 0 !important;
+}
+
+/* הסתר את דגל אוקראינה */
+.leaflet-control-attribution a[href*="openstreetmap"] img,
+.leaflet-control-attribution img {
+  display: none !important;
+}
+```
+
+⚠️ חשוב: אסור להסיר את ה-attribution לגמרי — זה דרישת רישיון של OpenStreetMap.
+רק מזיז אותו לפינה שמאל תחתון ומקטין אותו.
+
+---
+
+## תיקון 12 — החלף אמוג'י ב-Legend בעיגולים צבעוניים
+
+```jsx
+// במקום אמוג'י שנראה שונה על כל מכשיר:
+// ❌ <span>🥩</span> בשר
+
+// ✅ עיגול צבעוני + שם:
+const CATEGORY_COLORS = {
+  'בשר':           '#c04040',
+  'ירקות':         '#2e6853',
+  'חלב וגבינות':   '#4a90d9',
+  'לחמים ואפייה':  '#8B6914',
+  'שמנים ודבש':    '#e8a020',
+  'טיפוח וסבונים': '#9b59b6',
+}
+
+// Legend component:
+{Object.entries(CATEGORY_COLORS).map(([name, color]) => (
+  <div key={name} style={{
+    display: 'flex', alignItems: 'center',
+    gap: 8, padding: '4px 0',
+    cursor: 'pointer',
+    opacity: activeCategories.includes(name) ? 1 : 0.4,
+  }}
+  onClick={() => toggleCategory(name)}>
+    <div style={{
+      width: 14, height: 14,
+      background: color,
+      borderRadius: '50%',
+      border: '2px solid white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+      flexShrink: 0,
+    }} />
+    <span style={{
+      fontFamily: 'DM Sans', fontSize: 13,
+      color: '#1C1A17',
+    }}>
+      {name}
+    </span>
+  </div>
+))}
+```
+
+---
+
+## תיקון 13 — Tooltip כפול על סימן
+
+הבעיה: שם העסק מופיע פעמיים — פעם ב-tooltip ופעם ב-popup.
+
+```jsx
+// ❌ בעיה: גם tooltip וגם popup מציגים את השם
+marker.bindTooltip(producer.name)  // ← tooltip
+marker.bindPopup(ProducerPopup(producer))  // ← popup גם מציג שם
+
+// ✅ תיקון: tooltip רק על hover, popup רק בלחיצה — תוכן שונה
+marker.bindTooltip(producer.name, {
+  permanent: false,
+  direction: 'top',
+  offset: [0, -20],
+  className: 'producer-tooltip',
+})
+
+// ב-popup — אל תציגי שם שוב בכותרת, רק תמונה + פעולות
+// (השם כבר נראה ב-tooltip)
+marker.bindPopup(`
+  <div style="min-width:200px; direction:rtl; font-family:DM Sans">
+    <img src="${producer.images[0]}" 
+      style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:10px"/>
+    <div style="font-size:13px;color:#6b6b6b;margin-bottom:8px">
+      ${producer.city} · ${producer.category}
+    </div>
+    <div style="display:flex;gap:6px">
+      <a href="/producer/${producer.slug}" 
+        style="flex:1;background:#2e6853;color:white;padding:8px;
+               border-radius:6px;text-align:center;text-decoration:none;font-size:13px">
+        פרטים מלאים
+      </a>
+      <a href="https://wa.me/${producer.phone}" target="_blank"
+        style="background:#25D366;color:white;padding:8px 10px;
+               border-radius:6px;text-decoration:none;font-size:16px">
+        💬
+      </a>
+    </div>
+  </div>
+`, { maxWidth: 220 })
+```
+
+---
+
+## תיקון 14 — עסק מוצג על הים (קואורדינטות הפוכות)
+
+הבעיה: lat/lng הפוכים — העסק מופיע בים במקום ביבשה.
+
+```python
+# backend — בעת שמירת עסק, בדוק שהקואורדינטות הגיוניות לישראל:
+
+ISRAEL_BOUNDS = {
+  'lat_min': 29.5,  # אילת
+  'lat_max': 33.3,  # גבול צפון
+  'lng_min': 34.2,  # הים התיכון
+  'lng_max': 35.9,  # ירדן
+}
+
+def validate_israel_coordinates(lat: float, lng: float) -> bool:
+    return (ISRAEL_BOUNDS['lat_min'] <= lat <= ISRAEL_BOUNDS['lat_max'] and
+            ISRAEL_BOUNDS['lng_min'] <= lng <= ISRAEL_BOUNDS['lng_max'])
+
+# בעת שמירה:
+if not validate_israel_coordinates(producer.lat, producer.lng):
+    # נסה להפוך — אולי lat/lng הוחלפו
+    if validate_israel_coordinates(producer.lng, producer.lat):
+        producer.lat, producer.lng = producer.lng, producer.lat
+    else:
+        raise HTTPException(400, "קואורדינטות לא תקינות לישראל")
+```
+
+```js
+// frontend — וודא שמשתמש ב-[lat, lng] ולא ב-[lng, lat]:
+// Leaflet מצפה ל: L.marker([lat, lng])
+// ❌ L.marker([producer.lng, producer.lat])
+// ✅ L.marker([producer.lat, producer.lng])
+```
