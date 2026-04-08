@@ -34,7 +34,7 @@ export default function Header() {
             href="/register/producer"
             className="bg-primary text-white px-4 py-2 rounded-[12px] hover:bg-primary-light transition"
           >
-            הוסף את העסק שלך
+            הוסיפי את העסק שלך 🌿
           </Link>
           {user ? (
             <div className="flex items-center gap-4">
@@ -88,7 +88,7 @@ export default function Header() {
             אודות
           </Link>
           <Link href="/register/producer" className="block text-primary font-semibold" onClick={() => setMenuOpen(false)}>
-            הוסף את העסק שלך
+            הוסיפי את העסק שלך 🌿
           </Link>
           {user ? (
             <>

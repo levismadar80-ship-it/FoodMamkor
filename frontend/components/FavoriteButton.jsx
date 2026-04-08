@@ -36,7 +36,7 @@ export default function FavoriteButton({ producerId }) {
         showToast("נשמר למועדפים ❤️");
       }
     } catch {
-      showToast("שגיאה — נסי שוב", "error");
+      showToast("משהו השתבש, נסי שוב", "error");
     }
     setLoading(false);
   };

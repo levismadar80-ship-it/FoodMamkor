@@ -29,16 +29,16 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        טוען...
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
+        טוענת עסקים טריים...
       </div>
     );
   }
 
   if (!producer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        בית עסק לא נמצא
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
+        לא מצאנו את בית העסק הזה — עדיין 🌱
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
           aria-label="חזרה לעמוד הקודם"
         >
-          → חזרה לתוצאות
+          ← חזרה
         </button>
       </div>
 

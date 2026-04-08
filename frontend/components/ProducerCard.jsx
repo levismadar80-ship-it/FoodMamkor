@@ -158,7 +158,7 @@ export default function ProducerCard({ producer, active, onClick }) {
               <a
                 href={`tel:${phone}`}
                 title="טלפון"
-                aria-label="התקשר ליצרן"
+                aria-label="התקשר לבית העסק"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center justify-center rounded-full hover:bg-light transition text-primary"
                 style={{ width: "44px", height: "44px" }}

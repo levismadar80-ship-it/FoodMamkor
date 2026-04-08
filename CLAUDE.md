@@ -66,14 +66,27 @@ border:        #e8e0d0   גבולות
 - תחושת שוק איכרים — חם ואורגני, לא startup
 - השראה: gardensweetfarm.com + foraged.com/categories
 
-## Micro-copy קבוע
+## Terminology — "יצרן" הוסר מ-UI
+- ב-**UI טקסטים בעברית**: תמיד "בית עסק / בתי עסק" או "בעלת עסק" (נקבה) — לא "יצרן"/"יצרנים"/"יצרנית".
+- ב-**DB/API/variable names** (producer, producers, /producers endpoints, ProducerCard קומפוננטה): **נשאר כמו שהוא** — אל תיגעי בשמות המשתנים, נתיבי ה-API, או שמות הטבלאות.
+- כלל אצבע: שנה רק את מה שמשתמש רואה בדפדפן. קוד ו-schema נשארים.
+
+## Micro-copy קבוע (מגדר נקבה בלבד)
 | מקום | טקסט |
 |------|------|
 | search | חפשי ירקות טריים, בשר grass-fed... |
+| hero subtitle | בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית |
 | מועדפים ריקים | עדיין לא שמרת עסקים 🌿 |
 | אין תוצאות | לא מצאנו עסקים באזור הזה — עדיין 🌱 |
 | loading | טוענת עסקים טריים... |
-| כפתור הרשמה | הוסף את העסק שלך |
+| loading producer detail | טוענת... |
+| error fallback | משהו השתבש, נסי שוב |
+| CTA ראשי — הוסף עסק | הוסיפי את העסק שלך 🌿 |
+| CTA הרשמה | הצטרפי לקהילה |
+| CTA מפה | גלי עסקים קרובים |
+| CTA "show more" | עוד בתי עסק |
+| back button | ← חזרה |
+| submit form | שלחי |
 | pending | פרופיל העסק שלך ממתין לאישור 🌿 |
 
 ## Endpoints ציבוריים (שיווק)
@@ -218,6 +231,19 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · Copy Fix** — שיפורי ניסוח + ברידינג נשי:
+  - **Terminology:** "יצרן/יצרנים/יצרנית" → "בית עסק/בתי עסק/בעלת עסק" בכל הטקסטים הגלויים. DB/API/variable names לא נוגעים (producers, /producers, ProducerCard).
+  - **Founder story (/about):** bio חדש — ספיר, 21, תוכניתנית בצבא, לומדת רפואה תזונתית אצל ד״ר גיל יוסף שחר. 4 פסקאות במקום 3.
+  - **"הסיפור שלנו" (/about):** נכתב מחדש — 3 פסקאות יותר קצרות עם "bשר grass-fed", "קבוצות ווטסאפ, עמודי אינסטגרם, פליירים בסופר", "פשוט, נגיש ואמיתי".
+  - **Footer:** "יצרנים" → "בתי עסק". "משפטי" → "שקיפות ואמון" עם ניסוח אנושי ("תנאי השימוש שלנו", "מדיניות פרטיות", "משהו לא בסדר? דווחי לנו").
+  - **Hero subtitle:** "מוצרים מאומתים מיצרנים ישראליים" → "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית".
+  - **CTAs:** "הוסף את העסק שלך" → "הוסיפי את העסק שלך 🌿" ב-Header, about CTA, homepage CTA. "מצאי עסקים קרובים" → "גלי עסקים קרובים". "הצג עוד" → "עוד בתי עסק". "→ חזרה לתוצאות" → "← חזרה" (תיקון כיוון חץ RTL).
+  - **Micro-copy table בCLAUDE.md** הורחב: loading, error fallback, form submit, back button — כולם במגדר נקבה.
+  - **/register:** כותרת "הרשמה" → "הצטרפי לקהילה". כפתור → "הצטרפי". "התחבר" → "כניסה לחשבון" בלינק בתחתית.
+  - **ProducerDetail loading + not-found:** "טוען..." → "טוענת עסקים טריים...". "בית עסק לא נמצא" → "לא מצאנו את בית העסק הזה — עדיין 🌱".
+  - Error fallbacks ב-Footer/FavoriteButton/about-contact-form: "שגיאה — נסי שוב" → "משהו השתבש, נסי שוב". Error messages ב-admin/internal נשארו כמו שהם (הם ב-catch blocks עם context).
+  - **מה לא שונה:** שמות משתנים/קומפוננטות (ProducerCard, producer, producers), API paths (/producers), DB columns, admin-facing strings (backoffice).
+
 - **2026-04-08 · UX Fix 6** — framer-motion (fade + slide only):
   - הוסף `framer-motion@^11.11.0` ל-`package.json` → דורש `docker-compose build --no-cache frontend` כדי להתקין
   - `components/FadeInSection.jsx` — wrapper דק ל-`whileInView` fade+slide, easing `[0.25, 0.46, 0.45, 0.94]` (ease-out-quart), תומך ב-prefers-reduced-motion דרך framer-motion
