@@ -1,8 +1,17 @@
 // Dynamic sitemap (LAUNCH_CHECKLIST week 1 — SEO).
 // Next.js App Router reads the default export and serves it at /sitemap.xml.
-// Uses the SITE_URL env var if set (production) and falls back to the
-// production domain otherwise. BACKEND_URL is the in-Docker API hostname.
-const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
+//
+// SITE_URL preference order (first defined wins):
+//   1. NEXT_PUBLIC_SITE_URL   — canonical, set in Vercel Variables
+//   2. SITE_URL               — legacy server-only name
+//   3. https://mehamakor.online  — production default
+//
+// BACKEND_URL / NEXT_PUBLIC_API_URL is the in-Docker API hostname; either
+// works for server-side fetch() during build.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.SITE_URL ||
+  "https://mehamakor.online";
 const API_URL =
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||

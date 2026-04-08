@@ -204,6 +204,9 @@ class ProducerListOut(BaseModel):
     reviews_count: int = 0
     images: list[str] = []
     categories: list[CategoryOut] = []
+    # Populated by /producers only when ?lat=&lng=&radius_km= are passed.
+    # Computed via Haversine SQL — not a real column.
+    distance_km: float | None = None
 
     model_config = {"from_attributes": True}
 
