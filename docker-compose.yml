@@ -1,0 +1,47 @@
+services:
+  db:
+    # Plain Postgres — matches Railway's stock image. Distance queries use
+    # Haversine in SQL, so PostGIS is NOT required.
+    image: postgres:16
+    environment:
+      POSTGRES_DB: mehamakor
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/mehamakor
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into .next/routes-manifest.json at build time. Must match
+        # the runtime BACKEND_URL below or the rewrite destination will
+        # be wrong even after the container restarts.
+        BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      # Inside docker-compose the backend service is reachable at host
+      # `backend`, NOT `localhost`. The Next.js rewrite in next.config.js
+      # reads BACKEND_URL at runtime to proxy /api/* → backend. We use a
+      # non-NEXT_PUBLIC_ name on purpose so it can never be shadowed by a
+      # frontend/.env.local file that may have leaked into the image.
+      BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_API_URL: http://backend:8000
+
+volumes:
+  pgdata:

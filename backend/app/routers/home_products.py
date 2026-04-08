@@ -1,0 +1,238 @@
+import secrets
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from app.auth import get_current_user
+from app.database import get_db
+from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, User
+from app.schemas.schemas import (
+    HomeProductCreate,
+    HomeProductOut,
+    HomeProductRatingOut,
+    HomeProductUpdate,
+    RatingSubmit,
+)
+
+router = APIRouter(prefix="/home-products", tags=["home-products"])
+
+
+def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
+    """Build HomeProductOut data with rating info."""
+    avg = db.query(func.avg(HomeProductRating.stars)).filter(
+        HomeProductRating.home_product_id == hp.id
+    ).scalar()
+    count = db.query(func.count(HomeProductRating.id)).filter(
+        HomeProductRating.home_product_id == hp.id
+    ).scalar()
+    recent = (
+        db.query(HomeProductRating)
+        .filter(HomeProductRating.home_product_id == hp.id)
+        .order_by(HomeProductRating.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    return {
+        "id": hp.id,
+        "user_id": hp.user_id,
+        "title": hp.title,
+        "description": hp.description,
+        "photo": hp.photo,
+        "quantity": hp.quantity,
+        "price": hp.price,
+        "neighborhood": hp.neighborhood,
+        "city": hp.city,
+        "phone": hp.phone,
+        "is_active": hp.is_active,
+        "avg_rating": round(float(avg), 1) if avg else None,
+        "rating_count": count or 0,
+        "recent_comments": [
+            HomeProductRatingOut.model_validate(r) for r in recent
+        ],
+        "seller_name": hp.user.name if hp.user else None,
+        "created_at": hp.created_at,
+    }
+
+
+# --- Rating by token routes MUST come before /{product_id} to avoid shadowing ---
+
+
+@router.get("/rate/{token}")
+def get_rating_page(token: str, db: Session = Depends(get_db)):
+    """Get info for the rating page (accessed via WhatsApp link)."""
+    click = db.query(HomeProductWhatsAppClick).filter(
+        HomeProductWhatsAppClick.rating_token == token
+    ).first()
+    if not click:
+        raise HTTPException(status_code=404, detail="Invalid rating link")
+    if click.rated:
+        return {"detail": "Already rated", "already_rated": True}
+    hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
+    return {
+        "already_rated": False,
+        "product_title": hp.title if hp else None,
+        "seller_name": hp.user.name if hp and hp.user else None,
+    }
+
+
+@router.post("/rate/{token}")
+def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db)):
+    """Submit a rating via token (no login required)."""
+    click = db.query(HomeProductWhatsAppClick).filter(
+        HomeProductWhatsAppClick.rating_token == token
+    ).first()
+    if not click:
+        raise HTTPException(status_code=404, detail="Invalid rating link")
+    if click.rated:
+        raise HTTPException(status_code=400, detail="Already rated")
+
+    rating = HomeProductRating(
+        click_id=click.id,
+        user_id=click.user_id,
+        home_product_id=click.home_product_id,
+        stars=data.stars,
+        comment=data.comment,
+    )
+    db.add(rating)
+    click.rated = True
+    db.commit()
+
+    # Check if listing should be auto-hidden (3 negative ratings ≤2 stars)
+    negative_count = db.query(func.count(HomeProductRating.id)).filter(
+        HomeProductRating.home_product_id == click.home_product_id,
+        HomeProductRating.stars <= 2,
+    ).scalar()
+    if negative_count >= 3:
+        hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
+        if hp:
+            hp.is_hidden = True
+            db.commit()
+
+    return {"detail": "Rating submitted. Thank you!"}
+
+
+# --- Standard CRUD routes ---
+
+
+@router.get("", response_model=list[HomeProductOut])
+def list_home_products(
+    city: str | None = None,
+    db: Session = Depends(get_db),
+):
+    q = db.query(HomeProduct).filter(
+        HomeProduct.is_active.is_(True),
+        HomeProduct.is_hidden.is_(False),
+    )
+    if city:
+        q = q.filter(func.lower(HomeProduct.city) == city.lower())
+    products = q.order_by(HomeProduct.created_at.desc()).all()
+    return [_enrich_home_product(hp, db) for hp in products]
+
+
+@router.get("/{product_id}", response_model=HomeProductOut)
+def get_home_product(product_id: UUID, db: Session = Depends(get_db)):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Home product not found")
+    return _enrich_home_product(hp, db)
+
+
+@router.post("", response_model=HomeProductOut, status_code=201)
+def create_home_product(
+    data: HomeProductCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    hp = HomeProduct(
+        user_id=user.id,
+        title=data.title,
+        description=data.description,
+        photo=data.photo,
+        quantity=data.quantity,
+        price=data.price,
+        neighborhood=data.neighborhood,
+        city=data.city,
+        phone=data.phone or user.phone,
+    )
+    db.add(hp)
+    db.commit()
+    db.refresh(hp)
+    return _enrich_home_product(hp, db)
+
+
+@router.put("/{product_id}", response_model=HomeProductOut)
+def update_home_product(
+    product_id: UUID,
+    data: HomeProductUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Home product not found")
+    if hp.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not your listing")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(hp, field, value)
+    db.commit()
+    db.refresh(hp)
+    return _enrich_home_product(hp, db)
+
+
+@router.delete("/{product_id}")
+def deactivate_home_product(
+    product_id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Home product not found")
+    if hp.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not your listing")
+    hp.is_active = False
+    db.commit()
+    return {"detail": "Listing deactivated"}
+
+
+@router.post("/{product_id}/whatsapp-click")
+def log_whatsapp_click(
+    product_id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Home product not found")
+    click = HomeProductWhatsAppClick(
+        user_id=user.id,
+        home_product_id=product_id,
+        rating_token=secrets.token_urlsafe(32),
+    )
+    db.add(click)
+    db.commit()
+    return {"detail": "Click logged", "whatsapp_url": f"https://wa.me/{hp.phone}"}
+
+
+@router.get("/{product_id}/ratings", response_model=dict)
+def get_ratings(product_id: UUID, db: Session = Depends(get_db)):
+    avg = db.query(func.avg(HomeProductRating.stars)).filter(
+        HomeProductRating.home_product_id == product_id
+    ).scalar()
+    count = db.query(func.count(HomeProductRating.id)).filter(
+        HomeProductRating.home_product_id == product_id
+    ).scalar()
+    recent = (
+        db.query(HomeProductRating)
+        .filter(HomeProductRating.home_product_id == product_id)
+        .order_by(HomeProductRating.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    return {
+        "avg_rating": round(float(avg), 1) if avg else None,
+        "rating_count": count or 0,
+        "recent_comments": [HomeProductRatingOut.model_validate(r) for r in recent],
+    }

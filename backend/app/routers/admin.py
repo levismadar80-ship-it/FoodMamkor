@@ -1,0 +1,432 @@
+import re
+from uuid import UUID
+
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy.orm import Session, joinedload
+
+from app.auth import require_admin
+from app.config import settings
+from app.database import get_db
+from app.models import Category, DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
+from app.schemas.schemas import (
+    ProducerAdminCreate,
+    ProducerDetailOut,
+    ProducerImportPreviewRow,
+    ProducerImportResult,
+    ProducerUpdate,
+)
+
+router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def _slugify(text: str) -> str:
+    """Generate URL-safe slug from text. Hebrew → transliterate-ish fallback."""
+    if not text:
+        return ""
+    # Keep ASCII letters/numbers/hyphens; replace whitespace with hyphens
+    s = text.strip().lower()
+    s = re.sub(r"\s+", "-", s)
+    # Strip characters that are not safe URL chars (keep hebrew letters)
+    s = re.sub(r"[^\w\u0590-\u05FF\-]", "", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s[:100]
+
+
+def _yes_no(value) -> bool:
+    """Parse Hebrew/English yes/no values from Excel."""
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    s = str(value).strip().lower()
+    return s in ("כן", "yes", "y", "true", "1", "v", "✓")
+
+
+def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = None) -> str:
+    """Append -2, -3, ... until slug is unique."""
+    if not base_slug:
+        return base_slug
+    candidate = base_slug
+    counter = 2
+    while True:
+        q = db.query(Producer).filter(Producer.slug == candidate)
+        if exclude_id:
+            q = q.filter(Producer.id != exclude_id)
+        if not q.first():
+            return candidate
+        candidate = f"{base_slug}-{counter}"
+        counter += 1
+
+
+def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
+    db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
+    for cid in category_ids:
+        db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+
+
+def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
+    db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
+    for city in cities:
+        city = (city or "").strip()
+        if not city:
+            continue
+        db.add(DeliveryArea(producer_id=producer.id, city=city))
+
+
+@router.get("/producers", response_model=list[ProducerDetailOut])
+def list_producers(
+    status: str | None = Query(None, pattern="^(pending|approved|rejected|inactive|all)$"),
+    search: str | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    q = db.query(Producer).options(
+        joinedload(Producer.categories),
+        joinedload(Producer.products),
+        joinedload(Producer.delivery_areas),
+    )
+    if status and status != "all":
+        q = q.filter(Producer.status == status)
+    if search:
+        like = f"%{search}%"
+        q = q.filter((Producer.name.ilike(like)) | (Producer.city.ilike(like)))
+    return q.order_by(Producer.created_at.desc()).all()
+
+
+@router.post("/producers", response_model=ProducerDetailOut, status_code=201)
+def admin_create_producer(
+    data: ProducerAdminCreate,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin-created producers are auto-approved."""
+    slug = data.slug or _slugify(data.name)
+    slug = _ensure_unique_slug(db, slug)
+
+    producer = Producer(
+        name=data.name,
+        contact_name=data.contact_name,
+        description=data.description,
+        short_description=data.short_description,
+        city=data.city,
+        lat=data.lat,
+        lng=data.lng,
+        phone=data.phone,
+        instagram=data.instagram,
+        website=data.website,
+        whatsapp_group=data.whatsapp_group,
+        slug=slug,
+        top_product_name=data.top_product_name,
+        price_range=data.price_range,
+        starting_price_label=data.price_range,  # keep both in sync
+        grass_fed=data.grass_fed,
+        organic_certified=data.organic_certified,
+        has_delivery=data.has_delivery,
+        pickup_points=data.pickup_points,
+        kosher=data.kosher,
+        admin_notes=data.admin_notes,
+        is_verified=data.is_verified,
+        images=data.images or [],
+        status="approved",  # admin = pre-approved
+    )
+    db.add(producer)
+    db.flush()
+
+    _apply_categories(db, producer, data.category_ids)
+    _apply_delivery_cities(db, producer, data.delivery_area_cities)
+
+    db.commit()
+    db.refresh(producer)
+    return producer
+
+
+@router.put("/producers/{producer_id}", response_model=ProducerDetailOut)
+def admin_update_producer(
+    producer_id: UUID,
+    data: ProducerUpdate,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+
+    payload = data.model_dump(exclude_unset=True)
+    category_ids = payload.pop("category_ids", None)
+    delivery_cities = payload.pop("delivery_area_cities", None)
+
+    # Keep slug unique if changed
+    if "slug" in payload and payload["slug"]:
+        payload["slug"] = _ensure_unique_slug(db, _slugify(payload["slug"]), exclude_id=producer.id)
+
+    # Mirror price_range → starting_price_label for backward-compat display
+    if "price_range" in payload:
+        producer.starting_price_label = payload["price_range"]
+
+    for field, value in payload.items():
+        setattr(producer, field, value)
+
+    if category_ids is not None:
+        _apply_categories(db, producer, category_ids)
+    if delivery_cities is not None:
+        _apply_delivery_cities(db, producer, delivery_cities)
+
+    db.commit()
+    db.refresh(producer)
+    return producer
+
+
+@router.post("/producers/{producer_id}/toggle-status")
+def toggle_producer_status(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Toggle approved <-> inactive (hides from public listings)."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    producer.status = "inactive" if producer.status == "approved" else "approved"
+    db.commit()
+    return {"detail": "Status toggled", "status": producer.status}
+
+
+@router.delete("/producers/{producer_id}")
+def admin_delete_producer(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    db.delete(producer)
+    db.commit()
+    return {"detail": "Producer deleted"}
+
+
+@router.post("/producers/import")
+async def import_producers_excel(
+    file: UploadFile = File(...),
+    dry_run: bool = Query(True, description="Preview only — set false to actually save"),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Upload Excel/CSV file and import producers. dry_run=true returns preview only."""
+    from io import BytesIO
+
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        raise HTTPException(status_code=500, detail="openpyxl not installed")
+
+    contents = await file.read()
+    try:
+        wb = load_workbook(BytesIO(contents), data_only=True)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"לא ניתן לקרוא את הקובץ: {e}")
+
+    ws = wb.active
+    # Skip header row
+    rows = [list(r) for r in ws.iter_rows(min_row=2, values_only=True)]
+
+    from app.services.producer_import import import_rows
+
+    return import_rows(db, rows, dry_run=dry_run)
+
+
+@router.get("/producers/pending", response_model=list[ProducerDetailOut])
+def pending_producers(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    return (
+        db.query(Producer)
+        .options(
+            joinedload(Producer.categories),
+            joinedload(Producer.products),
+            joinedload(Producer.delivery_areas),
+        )
+        .filter(Producer.status == "pending")
+        .order_by(Producer.created_at.desc())
+        .all()
+    )
+
+
+@router.post("/producers/{producer_id}/approve")
+def approve_producer(producer_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    producer.status = "approved"
+    db.commit()
+
+    producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    if producer_user:
+        _send_notification_email(
+            producer_user.email,
+            f'מהמקור - העסק "{producer.name}" אושר!',
+            f'שלום,\n\nהעסק שלך "{producer.name}" אושר במהמקור!\n'
+            f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
+            f"בברכה,\nצוות מהמקור",
+        )
+
+    # Notify admin via WhatsApp
+    if settings.admin_whatsapp_to:
+        _send_whatsapp(
+            settings.admin_whatsapp_to,
+            f'✅ העסק "{producer.name}" אושר במהמקור.',
+        )
+
+    return {"detail": "Producer approved"}
+
+
+@router.post("/producers/{producer_id}/reject")
+def reject_producer(
+    producer_id: UUID,
+    reason: str = Body("", embed=True),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    producer.status = "rejected"
+    db.commit()
+
+    reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
+    producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    if producer_user:
+        _send_notification_email(
+            producer_user.email,
+            f'מהמקור - עדכון לגבי העסק "{producer.name}"',
+            f'שלום,\n\nלצערנו הבקשה לרישום העסק "{producer.name}" במהמקור לא אושרה.{reason_text}\n\n'
+            f"ניתן ליצור קשר איתנו לפרטים נוספים.\n\n"
+            f"בברכה,\nצוות מהמקור",
+        )
+
+    # Notify admin via WhatsApp
+    if settings.admin_whatsapp_to:
+        _send_whatsapp(
+            settings.admin_whatsapp_to,
+            f'❌ העסק "{producer.name}" נדחה.{reason_text}',
+        )
+
+    return {"detail": "Producer rejected"}
+
+
+# --- Hidden Home Listings ---
+@router.get("/home-products/hidden")
+def get_hidden_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Get home products auto-hidden by negative ratings."""
+    listings = db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).all()
+    return [
+        {
+            "id": str(hp.id),
+            "title": hp.title,
+            "city": hp.city,
+            "seller_name": hp.user.name if hp.user else None,
+            "created_at": hp.created_at.isoformat(),
+        }
+        for hp in listings
+    ]
+
+
+@router.post("/home-products/{product_id}/restore")
+def restore_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    hp.is_hidden = False
+    db.commit()
+    return {"detail": "Listing restored"}
+
+
+@router.delete("/home-products/{product_id}")
+def delete_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    db.delete(hp)
+    db.commit()
+    return {"detail": "Listing deleted"}
+
+
+# --- Recipes ---
+@router.get("/recipes/pending")
+def pending_recipes(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    return db.query(Recipe).filter(Recipe.status == "pending").all()
+
+
+@router.post("/recipes/{recipe_id}/approve")
+def approve_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    recipe.status = "approved"
+    db.commit()
+    return {"detail": "Recipe approved"}
+
+
+@router.post("/recipes/{recipe_id}/reject")
+def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    recipe.status = "rejected"
+    db.commit()
+    return {"detail": "Recipe rejected"}
+
+
+# --- Stats ---
+@router.get("/stats")
+def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    return {
+        "total_producers": db.query(Producer).count(),
+        "pending_producers": db.query(Producer).filter(Producer.status == "pending").count(),
+        "approved_producers": db.query(Producer).filter(Producer.status == "approved").count(),
+        "total_users": db.query(User).count(),
+        "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),
+        "hidden_home_products": db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).count(),
+    }
+
+
+def _send_notification_email(to_email: str, subject: str, body: str):
+    """Send email notification."""
+    if not settings.smtp_user:
+        print(f"[EMAIL] Would send to {to_email}: {subject}")
+        return
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = settings.smtp_user
+        msg["To"] = to_email
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+        print(f"[EMAIL] Sent to {to_email}")
+    except Exception as e:
+        print(f"[EMAIL] Failed to send to {to_email}: {e}")
+
+
+def _send_whatsapp(to: str, body: str):
+    """Send WhatsApp notification via Twilio."""
+    if not settings.twilio_account_sid or not settings.twilio_auth_token:
+        print(f"[WHATSAPP] Would send to {to}: {body}")
+        return
+
+    try:
+        from twilio.rest import Client
+
+        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+        client.messages.create(
+            body=body,
+            from_=f"whatsapp:{settings.twilio_whatsapp_from}",
+            to=f"whatsapp:{to}",
+        )
+        print(f"[WHATSAPP] Sent to {to}")
+    except Exception as e:
+        print(f"[WHATSAPP] Failed to send to {to}: {e}")
