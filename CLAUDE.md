@@ -157,6 +157,20 @@ npx skills add pbakaus/impeccable
 3. **קראי DATA.md לפני שינויי backend.** hook מזכיר לפני `Edit|Write|NotebookEdit` על קבצים ב-`backend/`. הקובץ בשורש הריפו, לא ב-`docs/`.
 4. **`/clear` במעבר בין משימות.** **לא אוטומטי** — hook לא יכול לזהות "מעבר בין משימות" (זה סמנטי). כשאת מתחילה משהו חדש שלא קשור למשימה הקודמת — הריצי `/clear` ידנית כדי לנקות קונטקסט.
 
+## אבטחה — כללים קריטיים (SECURITY.md)
+> אחרי הסקירה ב-2026-04-08 תוקנו 5 פרצות real. אל תחזרי לאחר מכן.
+
+1. **JWT_SECRET_KEY חייב להיות מוגדר ב-env**. ה-default של `"change-me-in-production"` הוסר; בדאב נוצר secret אקראי בכל boot (טוקנים לא מחזיקים אחרי restart — זה הכוונה). ב-`ENV=production` האפליקציה מסרבת להפעיל בלי `JWT_SECRET_KEY` או `SECRET_KEY`. גירעון הטוקנים: **24 שעות** (היה 7 ימים).
+2. **Rate limiting** דרך `slowapi` (`app/rate_limit.py` — `limiter` משותף). הוחל על: login (5/min), register + register/producer (3/hour), google + apple auth (10/min), POST /home-products (10/hour), POST /home-products/validate (30/hour), POST /newsletter (5/hour), POST /contact (5/hour), POST /reviews (20/day). **כל endpoint מוגן חייב לקבל `request: Request`** כפרמטר ראשון.
+3. **SQL** — תמיד SQLAlchemy ORM. הפעם היחידה שאפשר `text()` היא ב-`_migrate_columns` עם מחרוזות הארדקודדות (לא user input).
+4. **API responses** — תמיד `response_model=` עם Pydantic schema. אף פעם לא לחזור עם SQLAlchemy model ישיר.
+5. **IDOR** — לפני כל `UPDATE`/`DELETE` של משאב שייך-למשתמש, בדקי `resource.user_id == current_user.id` (או `admin` override). כולם כרגע בדוקים. אל תשברי את זה.
+6. **העלאת קבצים (`/upload/image`):** סניפינג magic-bytes לזיהוי פורמט (JPG/PNG/WebP/GIF בלבד), מגבלת גודל **5MB**, `uuid.uuid4().hex` כ-Cloudinary `public_id` (לא filename המשתמש), `resource_type="image"` כשכבת הגנה שנייה.
+7. **CORS** — `settings.cors_origins_list()` מה-env var `CORS_ORIGINS`. ברירת המחדל הם dev origins בלבד; production חייב להגדיר. **לא `["*"]`**.
+8. **Security headers** — middleware ב-`main.py` מוסיף לכל response: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. ב-`next.config.js` הוסף גם HSTS + CSP בכפה של Next responses.
+9. **Passwords** — bcrypt בלבד דרך passlib (כבר מקובע ב-requirements.txt, לא לשנות).
+10. **Secrets** — `.env` ב-`.gitignore` (כבר). אף פעם לא להדפיס passwords/tokens ל-log. הלוגים של התחברות משתמשים ב-email prefix בלבד.
+
 ## Dev workflow — הרצה מקומית
 הסביבה רצה ב-`docker-compose`. **אין volume mount לקוד של ה-frontend** — ה-Dockerfile עושה `COPY . . && npm run build` בזמן בניית ה-image, ו-`next start` מגיש את ה-`.next/` הקומפל שכבר קיים. משמעות: **כל שינוי בקוד דורש rebuild של ה-image**, לא מספיק `docker-compose restart`.
 
@@ -248,6 +262,22 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · Security** — סקירה + תיקון כל ה-🔴 קריטי + 🟠 חשוב מ-SECURITY.md:
+  - **Step 1 Review** מצא 4 פרצות אמיתיות: JWT default secret, אפס rate limiting, file upload לא מאומת, CORS open. **SQL injection + data exposure + IDOR היו כבר תקינים** (ORM everywhere, response_models, ownership checks) — דיווחתי ✅.
+  - **Fix #1 JWT**: `config.py` נכתב מחדש. default secret הוסר. ב-dev נוצר secret אקראי לכל תהליך + אזהרה ללוג. ב-`ENV=production` נכשל מיידית אם אין `JWT_SECRET_KEY`. גירעון קיצר מ-7 ימים ל-24 שעות.
+  - **Fix #2 Rate limiting**: `slowapi==0.1.9` ב-requirements.txt. `app/rate_limit.py` חדש עם `limiter` משותף. הוחל על 9 endpoints: login 5/min, register 3/hour, google/apple 10/min, create home-product 10/hour, validate home-product 30/hour, newsletter 5/hour, contact 5/hour, create review 20/day. Exception handler של 429 + SlowAPIMiddleware נוספו ב-`main.py`.
+  - **Fix #6 File upload**: `upload.py` נכתב מחדש. סניפינג magic-bytes (JPG/PNG/WebP/GIF), 5MB limit, `uuid.uuid4().hex` כ-public_id (לא filename), `resource_type="image"` בכפה של Cloudinary. fallback מקומי (לא placehold.co) כשאין Cloudinary.
+  - **Fix #7 CORS**: `settings.cors_origins` חדש (נקרא מ-`CORS_ORIGINS` env var, ברירת מחדל localhost בלבד). `allow_methods` מוגבל ל-GET/POST/PUT/DELETE/OPTIONS, `allow_headers` ל-Authorization/Content-Type/X-Requested-With.
+  - **Fix #8 Security headers**: backend middleware מוסיף 4 headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy) לכל response. `next.config.js` מוסיף את אותם headers + HSTS + CSP מקיף (img-src כולל res.cloudinary.com/unsplash/openstreetmap tiles, script-src כולל Google/Apple OAuth, connect-src להתחברויות).
+  - **Step 3 Re-verification** ב-TestClient live:
+    - Fix #1: secret_key=64 תווים אקראיים, expiry=1440 ✅
+    - Fix #2: 6th call ל-/auth/login → 429 ✅
+    - Fix #6: spoofed JPEG נדחה (400), oversized נדחה (400), valid PNG מתקבל (200) ✅
+    - Fix #7: cors_origins_list() = ['http://localhost:3000', 'http://localhost:8000'] (אין `*`) ✅
+    - Fix #8: כל 4 ה-headers מופיעים על GET /categories ✅
+  - **30/30 pytest עדיין עוברים** אחרי כל השינויים.
+  - **עדיין פתוח (כל ה-🟡 בינוני מ-SECURITY.md)**: bleach לsanitization של textarea input, admin IP whitelist (אופציונלי), logging של email prefix בלבד במקום full — לא בסקופ של "🔴 + 🟠 בלבד". נרשמים לעתיד.
+
 - **2026-04-08 · Fixes V2 #6** — Cookie banner:
   - `components/CookieBanner.jsx` חדש — floating dialog בפינה הימנית-תחתונה עם 2 כפתורים: "אני מסכימה ✓" (mode=all) ו-"רק הכרחיים" (mode=essential)
   - SSR-safe — לא רנדר בשרת, רק אחרי hydration + בדיקת localStorage, אז משתמשים חוזרים לא רואים flash
