@@ -201,6 +201,10 @@ class HomeProduct(Base):
     available_until = Column(DateTime, nullable=True)  # expiry date
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
+    # AI moderation (see MODERATION.md)
+    moderation_status = Column(String(20), default="APPROVED")  # APPROVED|FLAGGED|REJECTED
+    moderation_reason = Column(Text, nullable=True)
+    moderation_suggestion = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")

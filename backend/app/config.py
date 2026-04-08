@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # App
     frontend_url: str = "http://localhost:3000"
 
+    # Anthropic (home-product moderation)
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-opus-4-6"
+
     class Config:
         env_file = ".env"
 

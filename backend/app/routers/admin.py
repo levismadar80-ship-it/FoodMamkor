@@ -2,6 +2,7 @@ import re
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
@@ -347,6 +348,79 @@ def delete_listing(product_id: UUID, user: User = Depends(require_admin), db: Se
     db.delete(hp)
     db.commit()
     return {"detail": "Listing deleted"}
+
+
+# --- Moderation queue (FLAGGED by AI) ---
+@router.get("/home-products/flagged")
+def get_flagged_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Return home products that AI moderation marked as FLAGGED —
+    published but in the admin review queue.
+    """
+    listings = (
+        db.query(HomeProduct)
+        .filter(
+            HomeProduct.moderation_status == "FLAGGED",
+            HomeProduct.is_active.is_(True),
+        )
+        .order_by(HomeProduct.created_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": str(hp.id),
+            "title": hp.title,
+            "description": hp.description,
+            "city": hp.city,
+            "price": float(hp.price) if hp.price is not None else None,
+            "seller_name": hp.user.name if hp.user else None,
+            "seller_phone": hp.phone,
+            "moderation_reason": hp.moderation_reason,
+            "moderation_suggestion": hp.moderation_suggestion,
+            "created_at": hp.created_at.isoformat() if hp.created_at else None,
+        }
+        for hp in listings
+    ]
+
+
+@router.post("/home-products/{product_id}/approve")
+def approve_flagged_listing(
+    product_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin clears a FLAGGED listing — it stays published, badge goes away."""
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    hp.moderation_status = "APPROVED"
+    hp.moderation_reason = None
+    hp.moderation_suggestion = None
+    db.commit()
+    return {"detail": "Listing approved", "moderation_status": hp.moderation_status}
+
+
+class RemoveListingBody(BaseModel):
+    reason: str | None = None
+
+
+@router.post("/home-products/{product_id}/remove")
+def remove_flagged_listing(
+    product_id: UUID,
+    data: RemoveListingBody = Body(default=RemoveListingBody()),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin removes a flagged listing — is_active=false, records the removal
+    reason so we can surface it to the seller later.
+    """
+    hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
+    if not hp:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    hp.is_active = False
+    if data.reason:
+        hp.moderation_reason = data.reason
+    db.commit()
+    return {"detail": "Listing removed"}
 
 
 # --- Recipes ---
