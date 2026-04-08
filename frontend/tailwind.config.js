@@ -18,6 +18,7 @@ module.exports = {
         "accent-warm-light": "#f0a060",
         light: "#EAF3DE",           // ירוק בהיר — badges
         "site-text": "#1C1A17",     // שחור חם — לא pure black
+        "site-muted": "#5c584f",    // warm muted gray — body copy de-emphasis
         "text-primary": "#1C1A17",
         "text-secondary": "#6B6B6B",
         border: "#e8e0d0",          // גבול חם
@@ -27,8 +28,11 @@ module.exports = {
       },
       fontFamily: {
         heebo: ["Heebo", "sans-serif"],
-        serif: ['"Frank Ruhl Libre"', "serif"],
+        headline: ['"Frank Ruhl Libre"', "serif"],
         english: ['"Cormorant Garamond"', "serif"],
+        body: ['"DM Sans"', '"Heebo"', "sans-serif"],
+        // Backwards-compat aliases for older classes still in the tree
+        serif: ['"Frank Ruhl Libre"', "serif"],
         sans: ['"DM Sans"', '"Heebo"', "sans-serif"],
       },
     },

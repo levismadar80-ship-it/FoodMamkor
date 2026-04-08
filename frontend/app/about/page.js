@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import api from "@/lib/api";
+import ParallaxQuote from "@/components/ParallaxQuote";
 
 const values = [
   { emoji: "🌿", title: "ללא מעובד", desc: "מוצרים טבעיים ללא תוספים מיותרים, עיבוד מינימלי ושימור הטעם האמיתי" },
@@ -101,7 +102,17 @@ export default function AboutPage() {
       </section>
 
       {/* ================================================
-          SECTION A — 3 columns of values (green bg)
+          SECTION A — Parallax quote divider
+          ================================================ */}
+      <ParallaxQuote
+        image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600"
+        quote="כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
+        overlayOpacity={0.7}
+        height="350px"
+      />
+
+      {/* ================================================
+          SECTION B — 3 columns of values (green bg)
           ================================================ */}
       <section className="bg-primary text-white py-20">
         <div className="max-w-6xl mx-auto px-4">
@@ -215,40 +226,61 @@ export default function AboutPage() {
           </p>
 
           <form onSubmit={handleContact} className="space-y-4 text-right">
-            <input
-              type="text"
-              required
-              placeholder="שם מלא"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full bg-white border border-border rounded-[16px] px-4 py-3 outline-none focus:border-primary transition"
-            />
-            <input
-              type="email"
-              required
-              placeholder="אימייל"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full bg-white border border-border rounded-[16px] px-4 py-3 outline-none focus:border-primary transition"
-            />
-            <textarea
-              required
-              rows={4}
-              placeholder="איך נוכל לעזור?"
-              value={form.message}
-              onChange={(e) => setForm({ ...form, message: e.target.value })}
-              className="w-full bg-white border border-border rounded-[16px] px-4 py-3 outline-none focus:border-primary transition resize-none"
-            />
+            <div>
+              <label htmlFor="contact-name" className="block text-sm font-medium text-site-text mb-1">
+                שם מלא
+              </label>
+              <input
+                id="contact-name"
+                type="text"
+                required
+                placeholder="השם המלא שלך"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              />
+            </div>
+            <div>
+              <label htmlFor="contact-email" className="block text-sm font-medium text-site-text mb-1">
+                אימייל
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label htmlFor="contact-message" className="block text-sm font-medium text-site-text mb-1">
+                איך נוכל לעזור?
+              </label>
+              <textarea
+                id="contact-message"
+                required
+                rows={4}
+                placeholder="ספרי לנו על מה את רוצה לדבר..."
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-none"
+              />
+            </div>
             <button
               type="submit"
               disabled={contactStatus === "loading"}
-              className="bg-primary text-white px-8 py-3 rounded-[16px] hover:bg-primary-light transition font-medium w-full md:w-auto disabled:opacity-60"
+              className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-medium w-full md:w-auto disabled:opacity-60"
             >
               {contactStatus === "loading" ? "שולחת..." : "שלח"}
             </button>
 
             {contactMsg && (
               <p
+                role="status"
+                aria-live="polite"
                 className={`text-center text-sm ${
                   contactStatus === "success" ? "text-primary" : "text-red-600"
                 }`}

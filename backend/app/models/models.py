@@ -5,6 +5,7 @@ from geoalchemy2 import Geometry
 from sqlalchemy import (
     Boolean,
     Column,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
@@ -50,6 +52,7 @@ class Producer(Base):
     pickup_points = Column(Boolean, default=False)
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
+    is_available_today = Column(Boolean, default=False)  # producer self-marks daily
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
 
@@ -232,6 +235,30 @@ class HomeProductWhatsAppClick(Base):
     user = relationship("User")
     home_product = relationship("HomeProduct", back_populates="whatsapp_clicks")
     rating = relationship("HomeProductRating", back_populates="click", uselist=False)
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(300), nullable=False)
+    description = Column(Text)
+    event_date = Column(Date, nullable=False)
+    event_time = Column(Time, nullable=True)
+    location = Column(String(300))  # "בחווה שלנו" / full address
+    city = Column(String(100))
+    lat = Column(Float)
+    lng = Column(Float)
+    image_url = Column(Text)
+    category = Column(String(30), nullable=False)  # סדנה|סיור|שוק|קטיף|טעימות|אחר
+    price = Column(Integer, default=0)  # 0 = free
+    max_participants = Column(Integer, nullable=True)
+    registration_url = Column(String(500), nullable=True)  # external signup link
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    producer = relationship("Producer")
 
 
 class NewsletterSubscriber(Base):

@@ -172,6 +172,7 @@ class ProducerUpdate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool | None = None
+    is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
     category_ids: list[int] | None = None
@@ -198,6 +199,7 @@ class ProducerListOut(BaseModel):
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
+    is_available_today: bool = False
     images: list[str] = []
     categories: list[CategoryOut] = []
 

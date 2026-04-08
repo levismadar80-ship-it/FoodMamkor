@@ -3,6 +3,7 @@ from app.models.models import (
     Category,
     ContactMessage,
     DeliveryArea,
+    Event,
     Favorite,
     HomeProduct,
     HomeProductRating,
@@ -36,4 +37,5 @@ __all__ = [
     "StaticPage",
     "NewsletterSubscriber",
     "ContactMessage",
+    "Event",
 ]

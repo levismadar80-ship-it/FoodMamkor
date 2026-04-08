@@ -29,7 +29,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans bg-background text-site-text min-h-screen flex flex-col pb-16 md:pb-0">
+      <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-16 md:pb-0">
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>

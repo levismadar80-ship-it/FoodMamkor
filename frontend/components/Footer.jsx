@@ -41,17 +41,18 @@ export default function Footer() {
                 className="mb-4 brightness-0 invert"
               />
             </Link>
-            <p className="text-light/80 text-sm leading-relaxed max-w-xs">
-              אוכל אמיתי, ישר מהמקור אליך. פלטפורמה שמחברת בין יצרנים מקומיים לבתי ישראליים.
+            <p className="text-light/90 text-sm leading-relaxed max-w-xs">
+              ישר מהמקור אליך. פלטפורמה שמחברת בין יצרנים מקומיים לצרכנים ישראליים.
             </p>
           </div>
 
           {/* Nav */}
           <div>
-            <h3 className="font-serif text-lg font-bold mb-4 text-white">ניווט</h3>
-            <nav className="flex flex-col gap-2 text-sm text-light/80">
+            <h3 className="font-headline text-lg font-bold mb-4 text-white">ניווט</h3>
+            <nav className="flex flex-col gap-2 text-sm text-light/90">
               <Link href="/" className="hover:text-white transition">דף הבית</Link>
               <Link href="/map" className="hover:text-white transition">מפה</Link>
+              <Link href="/events" className="hover:text-white transition">אירועים</Link>
               <Link href="/about" className="hover:text-white transition">אודות</Link>
               <Link href="/terms" className="hover:text-white transition">תנאי שימוש</Link>
               <Link href="/register/producer" className="hover:text-white transition">הוסף את העסק שלך</Link>
@@ -62,6 +63,7 @@ export default function Footer() {
               href="https://www.instagram.com/mehamekor"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="עמוד האינסטגרם של מהמקור — נפתח בחלון חדש"
               className="inline-flex items-center gap-2 mt-5 text-light/90 hover:text-white transition"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -73,30 +75,37 @@ export default function Footer() {
 
           {/* Newsletter */}
           <div>
-            <h3 className="font-serif text-lg font-bold mb-2 text-white">הישארי מעודכנת</h3>
-            <p className="text-light/80 text-sm mb-4">
-              עדכונים על יצרנים חדשים, מתכונים ומה שמעניין — פעם בחודש לתיבה שלך.
+            <h3 className="font-headline text-2xl font-bold mb-2 text-white">הישארי מעודכנת</h3>
+            <p className="text-light/90 text-sm mb-4">
+              מוצרים חדשים, אירועים ועסקים ישר לתיבה שלך.
             </p>
             <form onSubmit={handleSubscribe} className="flex gap-2">
+              <label htmlFor="footer-newsletter-email" className="sr-only">
+                אימייל לניוזלטר
+              </label>
               <input
+                id="footer-newsletter-email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="האימייל שלך"
-                className="flex-1 bg-white/10 border border-white/25 text-white placeholder:text-white/50 rounded-[12px] px-4 py-2 outline-none focus:border-white"
+                className="flex-1 bg-transparent border text-white placeholder:text-light/60 rounded-[8px] px-4 py-2 outline-none focus:border-white focus-visible:ring-2 focus-visible:ring-light"
+                style={{ borderColor: "rgba(255,255,255,0.3)" }}
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-light text-primary-dark px-5 py-2 rounded-[12px] hover:bg-white transition font-medium disabled:opacity-60"
+                className="bg-light text-primary-dark px-5 py-2 rounded-[8px] hover:bg-white transition font-medium disabled:opacity-60"
               >
                 {status === "loading" ? "..." : "הצטרפי"}
               </button>
             </form>
             {message && (
               <p
-                className={`text-sm mt-3 ${status === "success" ? "text-light" : "text-red-300"}`}
+                role="status"
+                aria-live="polite"
+                className={`text-sm mt-3 ${status === "success" ? "text-light" : "text-red-200"}`}
               >
                 {message}
               </p>
