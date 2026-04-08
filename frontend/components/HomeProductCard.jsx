@@ -26,7 +26,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
   const isFree = priceNum === 0;
 
   return (
-    <div className="bg-white rounded-[16px] overflow-hidden hover:shadow-md transition border border-border">
+    <div className="bg-white rounded-[16px] overflow-hidden hover:shadow-md transition border border-border h-full flex flex-col">
       <div className="relative h-48 bg-light">
         {imgSrc ? (
           <Image
@@ -64,7 +64,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
         <h3 className="font-headline font-bold text-lg mb-1 text-site-text">{product.title}</h3>
 
         {/* Trust badges */}
@@ -133,7 +133,9 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         <StarRating avg={product.avg_rating} count={product.rating_count} />
 
-        <div className="mt-3">
+        {/* WhatsApp CTA pinned to the bottom of the flex column so cards
+            of different content lengths line up in the grid */}
+        <div className="mt-auto pt-3">
           <WhatsAppButton phone={product.phone} productTitle={product.title} onClick={onWhatsAppClick} />
         </div>
       </div>

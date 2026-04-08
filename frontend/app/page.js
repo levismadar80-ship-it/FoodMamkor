@@ -289,8 +289,7 @@ export default function HomePage() {
           </div>
           <div className="flex-1">
             <p className="font-headline italic text-site-text text-lg md:text-xl leading-relaxed mb-2">
-              &ldquo;מצאתי בשר grass-fed ליד הבית רק אחרי שעתיים בקבוצות ווטסאפ.
-              בניתי את מהמקור כדי שלך זה ייקח 30 שניות.&rdquo;
+              &ldquo;אוכל אמיתי, מאנשים אמיתיים, ממש ליד הבית.&rdquo;
             </p>
             <p className="font-body text-sm text-primary group-hover:underline">
               ספיר, מייסדת מהמקור →
@@ -406,7 +405,7 @@ export default function HomePage() {
         </FadeInSection>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            { step: "01", title: "מצאי", text: "חפשי בתי עסק קרובים דרך המפה, גריד הקטגוריות או שורת החיפוש" },
+            { step: "01", title: "מצאי", text: "גלי בתי עסק קרובים אלייך — ירקות טריים, גבינות מהחווה, לחם מחמצת" },
             { step: "02", title: "צרי קשר", text: "דברי ישירות עם בית העסק בוואטסאפ, בטלפון או באינסטגרם" },
             { step: "03", title: "קבלי", text: "אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות" },
           ].map((step, idx) => (

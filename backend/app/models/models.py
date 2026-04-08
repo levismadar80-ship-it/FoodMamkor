@@ -156,6 +156,29 @@ class Favorite(Base):
     producer = relationship("Producer", back_populates="favorited_by")
 
 
+class ProducerFollower(Base):
+    """FEEDBACK_FIXES.md new feature — follow a producer to get notified
+    about new products / back-in-stock events. Distinct from Favorite:
+    favorites are for bookmarking, follows are for push notifications.
+    The notification transport itself (Twilio/FCM) is NOT wired up yet —
+    this is the data-only foundation.
+    """
+    __tablename__ = "producer_followers"
+    __table_args__ = (
+        UniqueConstraint("user_id", "producer_id", name="uq_one_follow_per_user_producer"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    notify_new_products = Column(Boolean, default=True)
+    notify_back_in_stock = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    producer = relationship("Producer")
+
+
 class Recipe(Base):
     __tablename__ = "recipes"
 

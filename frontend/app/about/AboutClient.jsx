@@ -5,11 +5,33 @@ import { useState } from "react";
 import api from "@/lib/api";
 import ParallaxQuote from "@/components/ParallaxQuote";
 
+// FEEDBACK_FIXES.md fix 6 — each value gets its own warm background color
+// so the 4-card grid feels less monotonous than 4 identical white cards.
 const values = [
-  { emoji: "🌿", title: "ללא מעובד", desc: "מוצרים טבעיים ללא תוספים מיותרים, עיבוד מינימלי ושימור הטעם האמיתי" },
-  { emoji: "🥩", title: "חומרי גלם מזוהים", desc: "שקיפות מלאה — תמיד תדעו מאיפה מגיע האוכל ומה יש בפנים" },
-  { emoji: "🏡", title: "ייצור קטן", desc: "בתי עסק קטנים ומשפחתיים שמכינים בכמויות קטנות עם אהבה" },
-  { emoji: "🌱", title: "טרי ואמיתי", desc: "אוכל שהוכן לאחרונה, ללא חודשי מדף, ישר מהמקור אליכם" },
+  {
+    emoji: "🌿",
+    title: "ללא מעובד",
+    desc: "מוצרים טבעיים ללא תוספים מיותרים, עיבוד מינימלי ושימור הטעם האמיתי",
+    bg: "#EAF3DE",
+  },
+  {
+    emoji: "🥩",
+    title: "חומרי גלם מזוהים",
+    desc: "שקיפות מלאה — תמיד תדעו מאיפה מגיע האוכל ומה יש בפנים",
+    bg: "#FFF3E0",
+  },
+  {
+    emoji: "🏡",
+    title: "ייצור קטן",
+    desc: "בתי עסק קטנים ומשפחתיים שמכינים בכמויות קטנות עם אהבה",
+    bg: "#E8F5E9",
+  },
+  {
+    emoji: "🌱",
+    title: "טרי ואמיתי",
+    desc: "אוכל שהוכן לאחרונה, ללא חודשי מדף, ישר מהמקור אליכם",
+    bg: "#F3E5F5",
+  },
 ];
 
 const criteria = [
@@ -42,15 +64,8 @@ export default function AboutPage() {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <nav
-        className="max-w-4xl mx-auto px-4 pt-4 text-sm text-site-muted"
-        aria-label="breadcrumb"
-      >
-        <Link href="/" className="hover:text-primary">בית</Link>
-        <span className="mx-2" aria-hidden="true">›</span>
-        <span className="text-site-text">אודות</span>
-      </nav>
+      {/* FEEDBACK_FIXES.md fix 4a — breadcrumb removed from /about.
+          Breadcrumbs belong on producer/map pages, not on brand pages. */}
 
       {/* Hero */}
       <section className="bg-primary text-white py-20 md:py-28">
@@ -64,34 +79,48 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Story */}
+      {/* Story — FEEDBACK_FIXES.md fix 4c — longer, richer text */}
       <section className="max-w-3xl mx-auto px-4 py-16">
-        <h2 className="font-headline text-3xl font-bold mb-6 text-center">הסיפור שלנו</h2>
-        <div className="bg-white rounded-[16px] p-8 shadow-sm leading-relaxed text-lg text-site-text/85 border border-border">
+        <h2 className="font-headline text-4xl font-bold mb-8 text-center text-site-text">
+          הסיפור שלנו
+        </h2>
+        <div className="bg-white rounded-[16px] p-8 md:p-10 shadow-sm leading-loose text-lg text-site-text/85 border border-border space-y-5">
           <p>
-            מהמקור נולדה מתוך צורך אמיתי — למצוא בשר grass-fed ליד הבית,
-            גבינות אמיתיות, לחם מחמצת שמישהו הכין בבית.
+            מהמקור נולדה מתוך צורך אמיתי — למצוא אוכל אמיתי, לא מעובד.
+            בשר מחקלאים, גבינות אמיתיות, לחם מחמצת שמישהו הכין בבית,
+            משקאות חקלאיים וירקות שגדלו באדמה ישראלית.
           </p>
-          <p className="mt-4">
-            הכל היה מפוזר: קבוצות ווטסאפ, עמודי אינסטגרם, פליירים בסופר.
-            קשה למצוא, קשה להגיע, קשה לסמוך.
+          <p>
+            אבל למצוא את כל זה? זה היה מסע. לרוץ אחרי מודעה בפייסבוק לפני
+            שתפוג, לעקוב אחרי עמוד אינסטגרם של מישהי מהכפר, לשאול בקבוצת
+            ווטסאפ של השכונה ולקוות שמישהי תענה.
           </p>
-          <p className="mt-4">
-            מהמקור שמה הכל במקום אחד — פלטפורמה שמרכזת בתי עסק מקומיים,
-            מגדלים קטנים, ושכנות שמבשלות בבית. פשוט, נגיש, ואמיתי.
+          <p>הכל היה מפוזר — קשה למצוא, קשה להגיע, קשה לסמוך.</p>
+          <p className="font-semibold text-site-text">
+            מהמקור שמה הכל במקום אחד.
+          </p>
+          <p>
+            פלטפורמה שמרכזת בתי עסק מקומיים, מגדלים קטנים, ושכנות שמבשלות
+            בבית. פשוט, נגיש, ואמיתי.
           </p>
         </div>
       </section>
 
-      {/* Values grid (existing) */}
+      {/* Values grid — per-card warm bg colors (FEEDBACK_FIXES.md fix 6) */}
       <section className="max-w-5xl mx-auto px-4 py-12">
-        <h2 className="font-serif text-3xl font-bold mb-8 text-center">הערכים שלנו</h2>
+        <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
+          הערכים שלנו
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {values.map((v) => (
-            <div key={v.title} className="bg-white rounded-[16px] p-6 shadow-sm hover:shadow-md transition border border-border">
+            <div
+              key={v.title}
+              className="rounded-[16px] p-6 shadow-sm hover:shadow-md transition border border-border"
+              style={{ background: v.bg }}
+            >
               <div className="text-4xl mb-3">{v.emoji}</div>
-              <h3 className="font-serif text-xl font-bold mb-2">{v.title}</h3>
-              <p className="text-site-text/70 leading-relaxed">{v.desc}</p>
+              <h3 className="font-headline text-xl font-bold mb-2 text-site-text">{v.title}</h3>
+              <p className="text-site-text/80 leading-relaxed">{v.desc}</p>
             </div>
           ))}
         </div>
@@ -196,11 +225,14 @@ export default function AboutPage() {
       <section className="bg-background py-20">
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-            {/* Image placeholder (right side in RTL = first in DOM) */}
+            {/* FEEDBACK_FIXES.md fix 6 — circular founder placeholder
+                (rounded-full instead of rounded-[16px] square). Still
+                a placeholder until a real photo of Sapir lands.
+                TODO: replace with real photo */}
             <div className="flex justify-center md:justify-start order-1">
               <div
-                className="w-[320px] h-[320px] md:w-[400px] md:h-[400px] rounded-[16px] bg-light flex items-center justify-center border border-border overflow-hidden"
-                aria-label="תמונה של ספיר"
+                className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-full bg-light flex items-center justify-center border-4 border-primary/10 overflow-hidden shadow-[0_8px_32px_rgba(46,104,83,0.12)]"
+                aria-label="תמונה של ספיר (placeholder)"
               >
                 <span className="text-7xl">🌿</span>
               </div>

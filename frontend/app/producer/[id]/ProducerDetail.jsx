@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
 import FavoriteButton from "@/components/FavoriteButton";
+import FollowButton from "@/components/FollowButton";
 import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -302,6 +303,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 אתר
               </a>
             )}
+
+            {/* Follow button — FEEDBACK_FIXES.md new feature */}
+            <div className="mb-2">
+              <FollowButton producerId={producer.id} />
+            </div>
 
             {/* Favorites + Share row */}
             <div className="flex gap-2 mb-3">

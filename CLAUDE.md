@@ -134,6 +134,15 @@ POST /api/producers/me/availability — toggle is_available_today
 GET  /api/producers/me/dashboard    — סיכום דשבורד
 ```
 
+## Endpoints follow (consumer → producer)
+```
+POST   /api/producers/:id/follow           — עקבי אחרי עסק (idempotent)
+DELETE /api/producers/:id/follow           — הפסיקי לעקוב
+GET    /api/producers/:id/follow-status    — האם אני כבר עוקבת?
+GET    /api/users/me/following             — רשימת העסקים שאני עוקבת אחריהם
+```
+Notifications themselves (push/Twilio) לא חוברו עדיין — זה foundation data-only.
+
 ## קבצי תיעוד — קרא לפי הצורך
 > ⚠️ כל הקבצים האלה ב-**שורש הריפו**, לא תחת `docs/`. אל תחפש `docs/` — היא לא קיימת.
 ```
@@ -299,6 +308,36 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · FEEDBACK_FIXES** — feedback round + new follow feature:
+  - **Fix 1 (neighbor stays in homepage)** — אומת ✓ כבר קיים: הומ מציג preview של 3 כרטיסיות + "ראי עוד →" ל-`/neighbor`, ו-`/neighbor` הוא דף מלא. לא נמחק כלום.
+  - **Fix 2 (Login redesign)** — `app/login/page.js` סידר מחדש: כעת ה-card נפתח עם 🌿 circle + "כניסה למהמקור" + "ברוכה הבאה 🌱". **email קודם**, ואז "או" divider, ואז Google + Apple מתחת (הפוך מהסידור הקודם). ולידציית client-side של email דרך `validateEmail` מ-`lib/validators.js` עם אזהרה inline "כתובת האימייל אינה תקינה". Backend הרי כבר משתמש ב-`EmailStr` — זה רק layer נוסף.
+  - **Fix 3 (Parallax quote)** — הספק ביקש להחליף את המשפט "grass-fed" במשפט "כשאתה יודע...". בפועל **ה-ParallaxQuote הדיבידר כבר היה עם "כשאתה יודע..."** מסשנים קודמים. המשפט "grass-fed" היה בכרטיסיית המייסדת שהוספתי ב-LAUNCH_CHECKLIST. החלפתי את כרטיסיית המייסדת ל-**"אוכל אמיתי, מאנשים אמיתיים, ממש ליד הבית"** (אלטרנטיבה מהספק) כדי לא לשכפל את ה-ParallaxQuote.
+  - **Fix 4a (/about breadcrumb הוסר)** — הוסר לגמרי. נשאר תגובה בקוד: "breadcrumbs belong on producer/map pages, not on brand pages".
+  - **Fix 4b (HowItWorks step 01 text)** — הספק טען שזה ב-`/about` אבל זה היה בהומ. שיניתי מ-"חפשי בתי עסק קרובים דרך המפה, גריד הקטגוריות או שורת החיפוש" (מכני מדי) ל-**"גלי בתי עסק קרובים אלייך — ירקות טריים, גבינות מהחווה, לחם מחמצת"** (יותר קונקרטי וחם).
+  - **Fix 4c ("הסיפור שלנו" — טקסט חדש)** — `/about/AboutClient.jsx`: הרחבתי מ-3 פסקאות קצרות ל-5 פסקאות עשירות עם "בשר מחקלאים, גבינות אמיתיות, לחם מחמצת... משקאות חקלאיים וירקות שגדלו באדמה ישראלית", הפסקה על המסע ("לרוץ אחרי מודעה בפייסבוק לפני שתפוג... לעקוב אחרי עמוד אינסטגרם של מישהי מהכפר"), והדגשה ב-`font-semibold` על "מהמקור שמה הכל במקום אחד". leading-loose עבור נשימה טובה.
+  - **Fix 5 (/about CTA 2 buttons)** — אומת ✓ כבר קיים מ-LAUNCH_CHECKLIST: "הוסיפי את העסק שלך 🌿" (primary) + "גלי עסקים קרובים" (outline).
+  - **Fix 6 (/about colors + founder placeholder)** — כרטיסי ה-values קיבלו 4 צבעי רקע שונים: `#EAF3DE` (🌿 ללא מעובד), `#FFF3E0` (🥩 חומרי גלם), `#E8F5E9` (🏡 ייצור קטן), `#F3E5F5` (🌱 טרי). Founder placeholder: מ-square (`rounded-[16px]`) ל-**עיגול** (`rounded-full`), `border-4 border-primary/10`, shadow חם יותר, גודל 280/360 במקום 320/400. `font-serif` legacy הוחלף ל-`font-headline` canonical.
+  - **Fix 7 (Google Places IL restriction)** — **לא רלוונטי**: אין שום אינטגרציה עם Google Places באתר. משתמשים ב-`CitySearch` סטטי (100+ ערים ישראליות מ-`data/cities.js`) + backend `/cities` endpoint. אין איך "זכ" יחזיר "מחאפצת ריף דמשק" אצלנו.
+  - **New feature: producer_followers** —
+    - `ProducerFollower` model: `user_id`, `producer_id`, `notify_new_products`, `notify_back_in_stock`, `UniqueConstraint(user_id, producer_id)`. Table נוצר אוטומטית ע"י `Base.metadata.create_all()` — לא צריך migration.
+    - 4 endpoints ב-`producers.py`:
+      - `POST /producers/:id/follow` — idempotent (מחזיר "Already following" אם כבר עוקב)
+      - `DELETE /producers/:id/follow` — no-op אם לא עוקב
+      - `GET /producers/:id/follow-status` — `{following: bool}` לאתחול ה-button
+      - `GET /users/me/following` — רשימת העסקים שהמשתמשת עוקבת
+    - `components/FollowButton.jsx` חדש — Phosphor `Bell`/`BellSlash`, "עקבי אחרי עסק זה" / "עוקבת", toast "מעכשיו תקבלי עדכונים על מוצרים חדשים 🔔" ב-follow. `aria-pressed`. מחזיר `null` אם המשתמשת לא מחוברת.
+    - הוטמע ב-`ProducerDetail` sticky sidebar מעל שורת Favorites + Share.
+    - **Notifications עצמן לא חוברו** — אין Twilio/FCM integration. זה foundation data-only; בהמשך אפשר להוסיף trigger על יצירת מוצר חדש → שליחה לעוקבים.
+  - **Small polish items:**
+    - `WhatsAppButton`: הוספתי `firedRef` + `pending` state — לחיצה ראשונה יורה `onClick` ומשביתה את הכפתור ל-2 שניות (`opacity-70 pointer-events-none`). "WhatsApp" → "נפתח..." בזמן הפקיעה. מונע double-click logging. ה-anchor עדיין נפתח ב-target=_blank רגיל. החלפתי את ה-SVG הארוך ב-`WhatsappLogo` מ-Phosphor. צבע הועבר ל-`#25D366` ברנד רשמי.
+    - `HomeProductCard`: `h-full flex flex-col` על root + `flex flex-col flex-1` על ה-content + `mt-auto` על ה-WhatsApp button — כדי שכל הכרטיסיות בגריד יהיו באותו גובה והכפתור תמיד בתחתית, בלי קשר לכמה metadata יש.
+  - **מה לא נעשה (נרשם לסשן הבא):**
+    - **Push notifications infra** (Twilio/FCM) — ה-foundation מוכן אבל ה-transport עדיין לא.
+    - **תמונת ספיר אמיתית** — עדיין `🌿` emoji; צריך קובץ תמונה.
+    - **Parallax background image ל-"הסיפור שלנו"** — הספק הציע Unsplash shuk image, אבל הסיפור כרגע על cream background נקי וזה עובד טוב. הוספת parallax image תסיח מהטקסט העשיר. דילגתי.
+    - **Custom favicon** — קובץ `/public/favicon.ico` כבר קיים מהתחלת הפרויקט.
+  - **30/30 pytest עוברים** + live smoke test של ה-follow flow עבר (status → follow → status → idempotent → list → unfollow → status).
+
 - **2026-04-08 · MAP_IMPROVEMENTS (all 10)** — refactor כבד של דף המפה:
   - **#10 Bug fix (first)** — ה-hover tooltip/screen reader יכלו להציג "Marker" (ה-default alt של Leaflet) שנקטע ל-"arker" בדפדפנים מסוימים. תיקון משולש: (a) כל marker עכשיו עם `alt: p.name || "עסק"` + `title: p.name` מפורשים, (b) מחליף את ה-default `L.icon` ב-`L.divIcon` מותאם (המטקסט של Leaflet לא רלוונטי יותר), (c) `bindTooltip(p.name)` שגורם ל-hover להראות את השם האמיתי. בונוס: null-guards בכל מקום (`typeof p.lat !== "number"`, `if (!p.id) return`) כך שהצגת producers חסרי קואורדינטות לא מפילה שום דבר.
   - **#4 Clustering** — `leaflet.markercluster@^1.5.3` נוסף ל-`package.json`. בחרתי ב-vanilla plugin (לא `react-leaflet-cluster`) כי MapComponent משתמש ב-Leaflet raw ולא ב-`react-leaflet`. `L.markerClusterGroup({ maxClusterRadius: 60, chunkedLoading: true })` עוטף את כל ה-markers. Cluster icon מותאם — עיגול ירוק עם count בלבן + border לבן ו-shadow.
