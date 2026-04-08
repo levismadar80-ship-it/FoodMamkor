@@ -29,7 +29,11 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
+    # Admin account — used both as the SMTP notification recipient AND as
+    # the initial admin user seeded on first boot (see seed_data.py).
+    # Leave admin_password empty in local dev to skip the admin seed.
     admin_email: str = ""
+    admin_password: str = ""
 
     # App
     frontend_url: str = "http://localhost:3000"
