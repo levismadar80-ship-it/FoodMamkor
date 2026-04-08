@@ -1,397 +1,1429 @@
 [
   {
     "page": "home",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
-    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
   },
   {
     "page": "home",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "home",
-    "project": "mobile",
-    "kind": "missing_element",
-    "detail": "no producer cards / links rendered"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "home",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "map",
-    "project": "mobile",
-    "kind": "http_407",
-    "detail": "GET https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
-    "detail": "GET https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
-    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+    "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "map",
-    "project": "mobile",
-    "kind": "http_407",
-    "detail": "GET https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png — net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "http_407",
-    "detail": "GET https://c.tile.openstreetmap.org/8/153/104.png"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET https://c.tile.openstreetmap.org/8/153/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "http_407",
     "detail": "GET https://b.tile.openstreetmap.org/8/152/104.png"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://b.tile.openstreetmap.org/8/152/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "http_407",
-    "detail": "GET https://a.tile.openstreetmap.org/8/152/103.png"
+    "detail": "GET https://c.tile.openstreetmap.org/8/153/104.png"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/153/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
     "kind": "http_407",
     "detail": "GET https://b.tile.openstreetmap.org/8/153/103.png"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
   },
   {
     "page": "map",
-    "project": "mobile",
-    "kind": "http_407",
-    "detail": "GET https://c.tile.openstreetmap.org/8/152/105.png"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET https://c.tile.openstreetmap.org/8/152/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "http_407",
-    "detail": "GET https://a.tile.openstreetmap.org/8/153/105.png"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET https://a.tile.openstreetmap.org/8/153/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET https://a.tile.openstreetmap.org/8/152/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
-    "kind": "console.error",
-    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  },
-  {
-    "page": "map",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://b.tile.openstreetmap.org/8/153/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
   },
   {
     "page": "map",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/152/105.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/152/103.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/153/105.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/151/103.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/154/103.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/151/104.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/152/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/152/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/153/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/151/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/154/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/151/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/154/104.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://b.tile.openstreetmap.org/8/151/105.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://b.tile.openstreetmap.org/8/151/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://b.tile.openstreetmap.org/8/154/105.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://b.tile.openstreetmap.org/8/154/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/154/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/150/104.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/150/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://b.tile.openstreetmap.org/8/155/104.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://b.tile.openstreetmap.org/8/155/104.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://b.tile.openstreetmap.org/8/150/103.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://b.tile.openstreetmap.org/8/150/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/155/103.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/155/103.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/150/105.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/150/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/155/105.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/155/105.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://b.tile.openstreetmap.org/8/151/102.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://b.tile.openstreetmap.org/8/151/102.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/152/102.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/152/102.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/153/102.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/153/102.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://b.tile.openstreetmap.org/8/154/102.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://b.tile.openstreetmap.org/8/154/102.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://a.tile.openstreetmap.org/8/150/102.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://c.tile.openstreetmap.org/8/155/102.png"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://c.tile.openstreetmap.org/8/155/102.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://a.tile.openstreetmap.org/8/150/102.png — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "map",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
   },
   {
     "page": "producer",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "producer",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "producer",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "producer",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "producer",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Warning: Prop `%s` did not match. Server: %s Client: %s%s href \"https://wa.me/?text=%D7%9E%D7%A6%D7%90%D7%AA%D7%99%20%D7%A2%D7%A1%D7%A7%20%D7%9E%D7%92%D7%A0%D7%99%D7%91%20%D7%91%D7%9E%D7%94%D7%9E%D7%A7%D7%95%D7%A8!%20%F0%9F%8C%BF%0A%D7%97%D7%95%D7%95%D7%AA%20%D7%94%D7%92%D7%9C%D7%99%D7%9C%20-%20%D7%91%D7%A9%D7%A8%20%D7%90%D7%95%D7%A8%D7%92%D7%A0%D7%99%20%E2%80%94%20%D7%9B%D7%A8%D7%9E%D7%99%D7%90%D"
+  },
+  {
+    "page": "about",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "about",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "about",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "about",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "about",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80"
+  },
+  {
+    "page": "about",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "about",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "about",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "login",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "login",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "login",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "login",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET http://localhost:3000/login?_rsc=1ebxd — net::ERR_ABORTED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
-    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET http://localhost:3000/_next/image?url=https%3A%2F%2Fplacehold.co%2F400x300%3Ftext%3D%D7%9E%D7%94%D7%9E%D7%A7%D7%95%D7%A8&w=1200&q=75 — net::ERR_ABORTED"
-  },
-  {
-    "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET http://localhost:3000/?_rsc=1h9g0 — net::ERR_ABORTED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "http_407",
+    "detail": "GET https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: the server responded with a status of 407 (Proxy Authentication Required)"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80 — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format — net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s 2026-01 \n    at svg\n    at div\n    at div\n    at div\n    at AdminDashboard (webpack-internal:///(app-pages-browser)/./app/a"
   },
   {
     "page": "admin",
-    "project": "mobile",
-    "kind": "requestfailed",
-    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s 2026-01 \n    at svg\n    at div\n    at div\n    at div\n    at AdminDashboard (webpack-internal:///(app-pages-browser)/./app/a"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Warning: Each child in a list should have a unique \"key\" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s \n\nCheck the render method of `AdminUsersPage`.  \n    at AdminUsersPage (webpack-internal:///(app-pages-browser)/./app/admin/users/page.js:15:78)\n    at ClientPageRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/client-page.js:1"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
-    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+    "detail": "GET http://localhost:3000/_next/static/webpack/webpack.ddbdf0ff39bd196e.hot-update.js — net::ERR_ABORTED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET http://localhost:3000/_next/static/webpack/webpack.0feb0cdc99f8570f.hot-update.js — net::ERR_ABORTED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET http://localhost:3000/_next/static/webpack/webpack.3e771b2e10067223.hot-update.js — net::ERR_ABORTED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s 2026-01 \n    at svg\n    at div\n    at div\n    at div\n    at AdminAnalyticsPage (webpack-internal:///(app-pages-browser)/./a"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
+    "kind": "requestfailed",
+    "detail": "GET https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap — net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
+    "kind": "console.error",
+    "detail": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "page": "admin",
+    "project": "desktop",
     "kind": "requestfailed",
     "detail": "GET https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap — net::ERR_FAILED"
   },
   {
     "page": "admin",
-    "project": "mobile",
+    "project": "desktop",
     "kind": "console.error",
     "detail": "Failed to load resource: net::ERR_FAILED"
   }
