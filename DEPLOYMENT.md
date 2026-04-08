@@ -1,7 +1,13 @@
 # מהמקור — Production Deployment Guide
 
-> **Target stack:** Frontend → Vercel · Backend → Railway · Database → Railway Postgres (with PostGIS)
+> **Target stack:** Frontend → Vercel · Backend → Railway · Database → Railway Postgres (**stock, no PostGIS**)
 > **Domain:** `mehamakor.online` (nameservers already point to Vercel)
+>
+> **Distance queries** use the Haversine formula directly in SQL against
+> `producers.lat` / `producers.lng` float columns — no PostGIS extension is
+> required. This is a hard requirement because Railway's default Postgres
+> doesn't ship PostGIS and enabling it on their community template is
+> unreliable.
 
 This guide walks through a full cold-start deploy. Follow the steps in order
 — each section ends with a ✅ **Verify** checkpoint. Do not move on until the
@@ -20,11 +26,12 @@ checkpoint passes.
 
 ---
 
-## 1. Railway — PostgreSQL with PostGIS
+## 1. Railway — PostgreSQL (stock, no PostGIS)
 
-Railway's default Postgres plugin **does not include PostGIS**. The backend
-uses `geoalchemy2` / `GEOMETRY(POINT, 4326)` in `producers.location`, so
-PostGIS is required.
+Railway's default Postgres plugin is **all you need**. The backend uses the
+Haversine formula in plain SQL (`cos`, `sin`, `acos`, `radians`) against
+the `producers.lat` / `producers.lng` float columns — no PostGIS, no
+geometry types, no manual extension step.
 
 ### 1.1 Create the database service
 
@@ -32,24 +39,21 @@ PostGIS is required.
 2. Rename the service to `mehamakor-db`.
 3. Open the service → **Variables** tab — confirm `DATABASE_URL` exists.
 
-### 1.2 Enable PostGIS
+### 1.2 Enable `uuid-ossp` (auto-handled)
 
-Open the service → **Data** tab → **Query** and run:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS postgis;
-SELECT PostGIS_Version();
-```
-
-> If `CREATE EXTENSION postgis` errors with "extension is not available",
-> Railway's base image doesn't ship it. Workaround: use a community
-> `postgis/postgis:16-3.4` template, or deploy from a custom Dockerfile.
-> **Template shortcut:** `https://railway.app/template/postgis`
+The only extension we need is `uuid-ossp`, and the backend creates it
+automatically on first boot from `backend/init_db.sql`. You don't have to
+run anything manually.
 
 ### ✅ Verify
 
-- `SELECT PostGIS_Version();` returns a version string (e.g. `3.4 USE_GEOS=1 ...`)
+- Service status is **Active** in the Railway dashboard.
+- `DATABASE_URL` is visible under **Variables**.
+
+> **Why not PostGIS?** We used to have a `location GEOMETRY(POINT, 4326)`
+> column. It was dead code — never read, never written — and blocked
+> deployment on vanilla Railway. It has been removed. See commit history
+> for the Haversine migration.
 
 ---
 
@@ -146,12 +150,16 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
 (possibly empty) array, the backend is live and the DB connection works.
 
 **Troubleshooting:**
-- `500 Internal Server Error` on `/producers` → PostGIS not installed
-  (re-do step 1.2)
+- `500 Internal Server Error` on `/producers?lat=...&lng=...&radius_km=...`
+  → the Haversine query tripped on NULL lat/lng; the router already filters
+  these out, so check that your producers seed has valid coordinates.
 - Cold start hangs → lifespan hook is creating tables + seeding; first boot
-  takes ~20 s
+  takes ~20 s.
 - `psycopg2.OperationalError` → `DATABASE_URL` reference is wrong; re-link
-  via **Add Reference**
+  via **Add Reference**.
+- `column "location" does not exist` (old deployments) → the startup
+  migration in `app/main.py` drops it automatically; a single restart
+  cleans it up.
 
 ---
 
@@ -267,7 +275,9 @@ Run through this checklist in a real browser:
 | Symptom | Cause | Fix |
 |---|---|---|
 | Railway: `Error creating build plan with Railpack` | Root directory not set | Settings → **Root Directory** = `backend` |
-| Backend returns 500 on any geometry query | PostGIS extension missing | Re-run `CREATE EXTENSION postgis;` |
+| `ModuleNotFoundError: geoalchemy2` | Stale image from before the Haversine migration | Clear Railway build cache and redeploy |
+| `column "location" does not exist` | Old schema had a dead PostGIS column | Startup migration drops it; restart the service once |
+| `/producers?lat=...&radius_km=...` returns `[]` unexpectedly | Producers seeded with NULL lat/lng | They're filtered out by design — add coords in admin or seed |
 | Frontend `/api/*` returns HTML (404) | `BACKEND_URL` not set at build time | Set env var in Vercel → **Redeploy** (not just restart) |
 | Google login: `redirect_uri_mismatch` | Production domain not whitelisted | Step 4 |
 | `CORS policy: No 'Access-Control-Allow-Origin'` | Backend CORS closed | Already `allow_origins=["*"]` in `main.py`; lock down later |
@@ -292,6 +302,8 @@ Run through this checklist in a real browser:
 | `backend/Dockerfile` | Railway build image; uses `$PORT` at runtime |
 | `backend/railway.json` | Forces Dockerfile builder + healthcheck |
 | `backend/.env.example` | All backend env vars, documented |
+| `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
+| `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
 | `frontend/vercel.json` | Vercel framework hints + security headers |
 | `frontend/.env.example` | All frontend env vars, documented |
 | `frontend/next.config.js` | `/api/*` → `BACKEND_URL` rewrite |

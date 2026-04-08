@@ -13,7 +13,8 @@
 |------|-----------|
 | Frontend | Next.js + Tailwind CSS |
 | Backend | FastAPI + Python |
-| DB | PostgreSQL + PostGIS |
+| DB | PostgreSQL (Railway default — **ללא PostGIS**) |
+| חישובי מרחק | Haversine ב-SQL על lat/lng (ראה `backend/app/routers/producers.py`) |
 | תמונות | Cloudinary |
 | מפה | Leaflet.js |
 | Hosting | Vercel (frontend) + Railway (backend+DB) |
@@ -85,7 +86,8 @@ DEPLOYMENT.md    — פריסה מלאה ל-Vercel + Railway (step-by-step)
 ## פריסה (Production)
 - **Frontend:** Vercel — Root Directory: `frontend`, קונפיג ב-`frontend/vercel.json`
 - **Backend:** Railway — Root Directory: `backend`, Builder: Dockerfile (ראה `backend/railway.json`)
-- **DB:** Railway PostgreSQL + PostGIS (`CREATE EXTENSION postgis` ידנית)
+- **DB:** Railway PostgreSQL רגיל — **ללא PostGIS**, ללא תוספים ידניים
+- **חישובי מרחק:** נוסחת Haversine ישירות ב-SQL (`/producers?lat=&lng=&radius_km=`). מחזיר גם `distance_km` בכל תוצאה.
 - **Env vars:** `backend/.env.example` + `frontend/.env.example`
 - **חובה:** `BACKEND_URL` ב-Vercel חייב להיות זהה ל-`NEXT_PUBLIC_API_URL` (נצרב ב-build time)
 - **Google OAuth:** Client ID `591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com` — יש להוסיף `https://mehamakor.online` ל-Authorized Origins

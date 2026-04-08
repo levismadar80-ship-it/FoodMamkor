@@ -1,6 +1,6 @@
 -- Initialize MeHaMakor database
+-- No PostGIS: distance queries use the Haversine formula against lat/lng floats.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- Producers
 CREATE TABLE IF NOT EXISTS producers (
@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS producers (
     city VARCHAR(100),
     lat FLOAT,
     lng FLOAT,
-    location GEOMETRY(POINT, 4326),
     phone VARCHAR(20),
     instagram VARCHAR(100),
     website VARCHAR(200),

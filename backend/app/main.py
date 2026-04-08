@@ -45,6 +45,17 @@ def _migrate_columns(engine):
         conn.execute(text(
             "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
         ))
+        # Legacy: drop the PostGIS geometry column from any older deployment.
+        # We now compute distance with Haversine directly against lat/lng,
+        # so no extension is required. Safe no-op if the column is absent.
+        conn.execute(text(
+            "ALTER TABLE producers DROP COLUMN IF EXISTS location"
+        ))
+        # Make sure a plain b-tree index exists for the Haversine WHERE's
+        # lat/lng IS NOT NULL prefilter.
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_producers_lat_lng ON producers (lat, lng)"
+        ))
         conn.commit()
 
 
