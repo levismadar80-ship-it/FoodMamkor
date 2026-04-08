@@ -66,11 +66,11 @@ export default function MapPage() {
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <input
           type="text"
-          placeholder="סנן לפי עיר..."
+          placeholder="חפשי ירקות טריים, בשר grass-fed..."
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleCityFilter()}
-          className="md:w-64 border rounded-[12px] px-3 py-2"
+          className="md:w-72 border border-border rounded-[16px] px-4 py-2 bg-white"
         />
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
@@ -109,7 +109,7 @@ export default function MapPage() {
           ))}
         </div>
         {visibleProducers.length === 0 && (
-          <p className="text-center text-text-secondary py-8">לא נמצאו בתי עסק באזור זה.</p>
+          <p className="text-center text-text-secondary py-8">אין עסקים באזור המפה הנוכחי</p>
         )}
       </div>
     </div>
