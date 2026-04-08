@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Category, ContactMessage, NewsletterSubscriber, Producer
+from app.models import Category, ContactMessage, DeliveryArea, NewsletterSubscriber, Producer
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,41 @@ class ContactIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     email: EmailStr
     message: str = Field(..., min_length=1, max_length=5000)
+
+
+# ============================================================
+# CITIES — GET /cities
+# ============================================================
+
+
+@router.get("/cities", response_model=list[str])
+def list_cities(db: Session = Depends(get_db)):
+    """Return a de-duplicated list of all cities in use — pulls from both
+    approved producer cities and delivery-area cities. Sorted alphabetically.
+    """
+    producer_rows = (
+        db.query(Producer.city)
+        .filter(Producer.status == "approved", Producer.city.isnot(None))
+        .distinct()
+        .all()
+    )
+    delivery_rows = (
+        db.query(DeliveryArea.city)
+        .filter(DeliveryArea.city.isnot(None))
+        .distinct()
+        .all()
+    )
+    seen = set()
+    out = []
+    for (city,) in list(producer_rows) + list(delivery_rows):
+        if not city:
+            continue
+        city = city.strip()
+        if city and city not in seen:
+            seen.add(city)
+            out.append(city)
+    out.sort()
+    return out
 
 
 @router.post("/contact", status_code=200)

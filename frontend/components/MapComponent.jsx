@@ -14,12 +14,37 @@ const defaultIcon = L.icon({
   popupAnchor: [1, -34],
 });
 
-export default function MapComponent({ producers = [], onProducerClick, onBoundsChange }) {
+export default function MapComponent({
+  producers = [],
+  onProducerClick,
+  onBoundsChange,
+  registerApi,
+}) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const markersRef = useRef([]);
+  const markersRef = useRef(new Map()); // producer.id → marker
   const onBoundsChangeRef = useRef(onBoundsChange);
   onBoundsChangeRef.current = onBoundsChange;
+  const onProducerClickRef = useRef(onProducerClick);
+  onProducerClickRef.current = onProducerClick;
+
+  // Expose imperative API via a callback prop — works across next/dynamic
+  // which doesn't reliably forward refs in all Next versions.
+  useEffect(() => {
+    if (!registerApi) return;
+    const api = {
+      focusProducer: (producerId) => {
+        const marker = markersRef.current.get(producerId);
+        if (!marker || !mapInstanceRef.current) return;
+        const latlng = marker.getLatLng();
+        mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });
+        setTimeout(() => marker.openPopup(), 1250);
+      },
+      getMap: () => mapInstanceRef.current,
+    };
+    registerApi(api);
+    return () => registerApi(null);
+  }, [registerApi]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -30,7 +55,6 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
 
-    // Fire bounds change on map move/zoom
     const fireBounds = () => {
       if (!mapInstanceRef.current || !onBoundsChangeRef.current) return;
       const b = mapInstanceRef.current.getBounds();
@@ -56,7 +80,7 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
 
     // Clear existing markers
     markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
+    markersRef.current = new Map();
 
     const escapeHtml = (str) => {
       if (!str) return "";
@@ -69,25 +93,25 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
       const productLine =
         p.top_product_name || p.starting_price_label
           ? `<div style="margin:6px 0;font-size:13px;">
-               ${p.top_product_name ? `<span style="color:#1C1C1C">${escapeHtml(p.top_product_name)}</span>` : ""}
+               ${p.top_product_name ? `<span style="color:#1C1A17">${escapeHtml(p.top_product_name)}</span>` : ""}
                ${p.top_product_name && p.starting_price_label ? `<span style="color:#6B6B6B"> · </span>` : ""}
-               ${p.starting_price_label ? `<span style="color:#2e6853;font-weight:600">${escapeHtml(p.starting_price_label)}</span>` : ""}
+               ${p.starting_price_label ? `<span style="color:#8B6914;font-weight:600">${escapeHtml(p.starting_price_label)}</span>` : ""}
              </div>`
           : "";
       const marker = L.marker([p.lat, p.lng], { icon: defaultIcon })
         .addTo(mapInstanceRef.current)
         .bindPopup(`
-          <div style="text-align:right;font-family:Heebo,sans-serif;min-width:180px;">
-            <div style="font-weight:700;font-size:15px;color:#1C1C1C;">${escapeHtml(p.name)}</div>
+          <div style="text-align:right;font-family:'DM Sans',Heebo,sans-serif;min-width:200px;">
+            <div style="font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;color:#1C1A17;">${escapeHtml(p.name)}</div>
             <div style="color:#6B6B6B;font-size:12px;margin-top:2px;">${escapeHtml(p.city || "")}</div>
             ${productLine}
-            <a href="${href}" style="display:inline-block;margin-top:6px;background:#2e6853;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;text-decoration:none;font-weight:500;">מידע נוסף ←</a>
+            <a href="${href}" style="display:inline-block;margin-top:8px;background:#2e6853;color:#fff;padding:6px 14px;border-radius:8px;font-size:13px;text-decoration:none;font-weight:500;">מידע נוסף ←</a>
           </div>
         `);
-      marker.on("click", () => onProducerClick?.(p));
-      markersRef.current.push(marker);
+      marker.on("click", () => onProducerClickRef.current?.(p));
+      markersRef.current.set(p.id, marker);
     });
-  }, [producers, onProducerClick]);
+  }, [producers]);
 
   const goToMyLocation = () => {
     if (!mapInstanceRef.current || !navigator.geolocation) return;
@@ -111,11 +135,12 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
 
   return (
     <div className="relative">
-      <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[12px]" />
+      <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
       <button
         onClick={goToMyLocation}
-        className="absolute top-3 left-3 z-[1000] bg-white rounded-[12px] px-3 py-2 shadow-md hover:bg-gray-50 transition text-sm"
+        className="absolute top-3 left-3 z-[1000] bg-white rounded-[8px] px-3 py-2 shadow-md hover:bg-light transition text-sm"
         title="המיקום שלי"
+        aria-label="מרכז מפה על המיקום שלי"
       >
         📍 המיקום שלי
       </button>

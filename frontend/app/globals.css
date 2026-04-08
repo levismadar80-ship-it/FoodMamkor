@@ -14,7 +14,7 @@ body {
   color: #1C1A17;
 }
 
-h1, h2, h3, h4 {
+h1, h2, h3 {
   font-family: 'Frank Ruhl Libre', serif;
 }
 
@@ -29,8 +29,8 @@ h1, h2, h3, h4 {
   border-radius: 16px;
 }
 
-/* Parallax hero background */
-.hero-parallax {
+/* Parallax hero + dividers */
+.parallax-bg {
   background-attachment: fixed;
   background-position: center;
   background-repeat: no-repeat;
@@ -38,8 +38,23 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 768px) {
-  .hero-parallax {
+  .parallax-bg {
     background-attachment: scroll;
+  }
+}
+
+/* Fade-in on scroll — set initial state, hook toggles it */
+.fade-in-init {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-init {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 

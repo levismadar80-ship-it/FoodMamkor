@@ -1,20 +1,27 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
+import CitySearch from "@/components/CitySearch";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: false });
 
 export default function MapPage() {
-  const router = useRouter();
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cityFilter, setCityFilter] = useState("");
   const [mapBounds, setMapBounds] = useState(null);
+  const [activeProducerId, setActiveProducerId] = useState(null);
+
+  const mapApiRef = useRef(null);
+  const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
+
+  const registerMapApi = useCallback((api) => {
+    mapApiRef.current = api;
+  }, []);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -45,6 +52,23 @@ export default function MapPage() {
     setMapBounds(bounds);
   }, []);
 
+  // Card click → fly map to producer + open popup + highlight card
+  const handleCardClick = useCallback((producer) => {
+    if (!producer?.lat || !producer?.lng) return;
+    setActiveProducerId(producer.id);
+    document.getElementById("map-container")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => mapApiRef.current?.focusProducer(producer.id), 250);
+  }, []);
+
+  // Marker click → highlight matching card + scroll to it
+  const handleMarkerClick = useCallback((producer) => {
+    setActiveProducerId(producer.id);
+    const el = cardRefs.current.get(producer.id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
   // Filter producers by current map bounds for the grid
   const visibleProducers = mapBounds
     ? allProducers.filter((p) => {
@@ -60,17 +84,18 @@ export default function MapPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">מפת בתי עסק</h1>
+      <h1 className="font-headline text-3xl font-bold mb-6 text-site-text">מפת בתי עסק</h1>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="חפשי ירקות טריים, בשר grass-fed..."
+        <CitySearch
+          id="map-city-search"
+          label="סנן לפי עיר"
           value={cityFilter}
-          onChange={(e) => setCityFilter(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleCityFilter()}
-          className="md:w-72 border border-border rounded-[16px] px-4 py-2 bg-white"
+          onChange={setCityFilter}
+          onSubmit={handleCityFilter}
+          placeholder="חפשי עיר..."
+          className="md:w-72"
         />
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
@@ -80,7 +105,7 @@ export default function MapPage() {
               className={`px-3 py-1 rounded-full text-sm transition ${
                 selectedCategory === cat.id
                   ? "bg-primary text-white"
-                  : "bg-white text-text-secondary hover:bg-gray-50"
+                  : "bg-white text-site-text border border-border hover:bg-light"
               }`}
             >
               {cat.emoji} {cat.name}
@@ -90,26 +115,39 @@ export default function MapPage() {
       </div>
 
       {/* Map */}
-      <div className="h-[500px] mb-8">
+      <div id="map-container" className="h-[500px] mb-8">
         <MapComponent
           producers={allProducers}
-          onProducerClick={(p) => router.push(`/producer/${p.id}`)}
+          onProducerClick={handleMarkerClick}
           onBoundsChange={handleBoundsChange}
+          registerApi={registerMapApi}
         />
       </div>
 
       {/* Producer grid below map — filtered by visible bounds */}
       <div>
-        <h2 className="text-xl font-bold mb-4">
+        <h2 className="font-headline text-2xl font-bold mb-4 text-site-text">
           בתי עסק באזור ({visibleProducers.length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {visibleProducers.map((p) => (
-            <ProducerCard key={p.id} producer={p} />
+            <div
+              key={p.id}
+              ref={(el) => {
+                if (el) cardRefs.current.set(p.id, el);
+                else cardRefs.current.delete(p.id);
+              }}
+            >
+              <ProducerCard
+                producer={p}
+                active={activeProducerId === p.id}
+                onClick={handleCardClick}
+              />
+            </div>
           ))}
         </div>
         {visibleProducers.length === 0 && (
-          <p className="text-center text-text-secondary py-8">אין עסקים באזור המפה הנוכחי</p>
+          <p className="text-center text-site-muted py-8">אין עסקים באזור המפה הנוכחי</p>
         )}
       </div>
     </div>
