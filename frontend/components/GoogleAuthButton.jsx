@@ -42,19 +42,10 @@ export default function GoogleAuthButton({ onSuccess, onError }) {
     }
   };
 
+  // When the env var isn't set (local dev without OAuth creds), the Google
+  // GSI script can't render and there's nothing to show. The parent page
+  // hides the whole "or email/password" layout gracefully in that case.
   if (!clientId) return null;
 
-  return (
-    <div>
-      <div className="relative my-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-200" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-text-secondary">או</span>
-        </div>
-      </div>
-      <div ref={buttonRef} className="w-full" />
-    </div>
-  );
+  return <div ref={buttonRef} className="w-full" />;
 }

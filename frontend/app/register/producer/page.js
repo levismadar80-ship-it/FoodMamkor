@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import CitySearch from "@/components/CitySearch";
+import PasswordStrength from "@/components/PasswordStrength";
+import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 
 export default function RegisterProducerPage() {
   const router = useRouter();
@@ -88,12 +91,23 @@ export default function RegisterProducerPage() {
             <h2 className="font-semibold text-lg">1. פרטי חשבון</h2>
             <input placeholder="שם מלא *" value={form.name} onChange={set("name")} className="w-full border rounded-[12px] px-3 py-2" />
             <input type="email" placeholder="אימייל *" value={form.email} onChange={set("email")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
-            <input type="password" placeholder="סיסמה *" value={form.password} onChange={set("password")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+            <div>
+              <input type="password" placeholder="סיסמה *" value={form.password} onChange={set("password")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" minLength={8} />
+              <PasswordStrength password={form.password} />
+            </div>
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
             <button
               onClick={() => {
                 if (!form.name || !form.email || !form.password) {
                   setStepError("יש למלא את כל שדות החובה");
+                  return;
+                }
+                if (!validateEmail(form.email)) {
+                  setStepError("אימייל לא תקין");
+                  return;
+                }
+                if (!passwordValid(form.password)) {
+                  setStepError("הסיסמה לא עומדת בדרישות");
                   return;
                 }
                 setStepError("");
@@ -112,8 +126,31 @@ export default function RegisterProducerPage() {
             <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
             <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] px-3 py-2" />
             <textarea placeholder="תיאור העסק" value={form.description} onChange={set("description")} className="w-full border rounded-[12px] px-3 py-2 resize-none h-24" />
-            <input placeholder="עיר *" value={form.city} onChange={set("city")} className="w-full border rounded-[12px] px-3 py-2" />
-            <input placeholder="טלפון" value={form.phone} onChange={set("phone")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+            <CitySearch
+              id="producer-register-city"
+              label="עיר"
+              value={form.city}
+              onChange={(val) => setForm({ ...form, city: val })}
+              placeholder="עיר *"
+            />
+            <div>
+              <input
+                placeholder="טלפון (0501234567)"
+                value={form.phone}
+                onChange={set("phone")}
+                className={`w-full border rounded-[12px] px-3 py-2 ${
+                  form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
+                }`}
+                dir="ltr"
+                aria-invalid={form.phone && !validateIsraeliPhone(form.phone) ? true : undefined}
+              />
+              {form.phone && !validateIsraeliPhone(form.phone) && (
+                <p className="text-xs text-red-500 mt-1">❌ מספר טלפון לא תקין</p>
+              )}
+              {form.phone && validateIsraeliPhone(form.phone) && (
+                <p className="text-xs text-primary mt-1">✓ מספר תקין</p>
+              )}
+            </div>
             <input placeholder="אינסטגרם" value={form.instagram} onChange={set("instagram")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
             <input placeholder="אתר" value={form.website} onChange={set("website")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
 
@@ -194,6 +231,10 @@ export default function RegisterProducerPage() {
                     setStepError("יש למלא שם עסק ועיר");
                     return;
                   }
+                  if (form.phone && !validateIsraeliPhone(form.phone)) {
+                    setStepError("מספר טלפון לא תקין");
+                    return;
+                  }
                   setStepError("");
                   setStep(3);
                 }}
@@ -211,11 +252,12 @@ export default function RegisterProducerPage() {
             <h2 className="font-semibold text-lg">3. אזורי משלוח</h2>
             {form.delivery_areas.map((da, i) => (
               <div key={i} className="grid grid-cols-3 gap-3">
-                <input
-                  placeholder="עיר *"
+                <CitySearch
+                  id={`delivery-city-${i}`}
+                  label="עיר משלוח"
                   value={da.city}
-                  onChange={(e) => updateDelivery(i, "city", e.target.value)}
-                  className="border rounded-[12px] px-3 py-2"
+                  onChange={(val) => updateDelivery(i, "city", val)}
+                  placeholder="עיר משלוח"
                 />
                 <input
                   placeholder="מינימום ₪"

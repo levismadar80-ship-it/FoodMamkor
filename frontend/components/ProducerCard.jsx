@@ -108,6 +108,13 @@ export default function ProducerCard({ producer, active, onClick }) {
           )}
         </p>
 
+        {producer.reviews_count > 0 && (
+          <p className="text-xs text-site-muted mt-1">
+            ⭐ {Number(producer.avg_rating).toFixed(1)}
+            <span className="mr-1">({producer.reviews_count})</span>
+          </p>
+        )}
+
         {producer.top_product_name && (
           <p className="text-sm text-site-text/85 mt-2">{producer.top_product_name}</p>
         )}

@@ -1,10 +1,21 @@
 /**
- * Israeli cities list for search autocomplete.
- * Used by CitySearch component in filter inputs, registration forms, etc.
+ * Israeli cities + major neighborhood list for search autocomplete.
  *
- * Sorted roughly by population (larger first). Extend as needed.
+ * Used by the shared CitySearch component (see components/CitySearch.jsx)
+ * which is wired into every city/neighborhood field across the site:
+ *   - /map filter
+ *   - /events filter + /producer/dashboard/events/new
+ *   - /register/producer city field
+ *   - HomeProductForm city + neighborhood fields
+ *   - /settings city field
+ *
+ * The backend also contributes its own cities at runtime via GET /cities
+ * (union of producer.city + delivery_areas.city), which CitySearch merges
+ * with this static list and de-duplicates. This file is the "known good"
+ * baseline so the autocomplete works even before any data exists in the DB.
  */
 export const ISRAEL_CITIES = [
+  // Major cities
   "ירושלים",
   "תל אביב-יפו",
   "חיפה",
@@ -55,4 +66,58 @@ export const ISRAEL_CITIES = [
   "עתלית",
   "נשר",
   "קריית טבעון",
+  // Additional cities (FIXES_V2.md fix 1)
+  "אבו גוש",
+  "אבו סנאן",
+  "אור יהודה",
+  "אור עקיבא",
+  "אלעד",
+  "אפרת",
+  "אריאל",
+  "באר יעקב",
+  "בית דגן",
+  "בית שאן",
+  "בני עי״ש",
+  "בקה אל-גרבייה",
+  "גבעת שמואל",
+  "גבעתיים",
+  "גדרה",
+  "גן יבנה",
+  "טייבה",
+  "טירה",
+  "טמרה",
+  "יהוד-מונוסון",
+  "כפר קאסם",
+  "כרמיאל",
+  "מעלה אדומים",
+  "מעלות-תרשיחא",
+  "נצרת עילית",
+  "נתיבות",
+  "סחנין",
+  "עכו",
+  "עראבה",
+  "קלנסווה",
+  "קריית אונו",
+  "קריית מלאכי",
+  "ראש העין",
+  "רמת השרון",
+  "תל מונד",
+  "חצור הגלילית",
+  // Major neighborhoods (תל אביב)
+  "פלורנטין",
+  "נווה צדק",
+  "יפו",
+  "הצפון הישן",
+  "רמת אביב",
+  // Major neighborhoods (ירושלים)
+  "רחביה",
+  "בקעה",
+  "קטמון",
+  "מושבת הגרמנים",
+  "מרכז העיר",
+  // Major neighborhoods (חיפה)
+  "כרמל",
+  "נווה שאנן",
+  "הדר הכרמל",
+  "רמת הנשיא",
 ];

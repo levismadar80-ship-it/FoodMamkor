@@ -248,6 +248,57 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · Fixes V2 #6** — Cookie banner:
+  - `components/CookieBanner.jsx` חדש — floating dialog בפינה הימנית-תחתונה עם 2 כפתורים: "אני מסכימה ✓" (mode=all) ו-"רק הכרחיים" (mode=essential)
+  - SSR-safe — לא רנדר בשרת, רק אחרי hydration + בדיקת localStorage, אז משתמשים חוזרים לא רואים flash
+  - `localStorage.cookies_accepted` = "all" / "essential" — אם מוגדר, ה-banner לא מופיע
+  - `role="dialog"` + `aria-labelledby` + `aria-describedby` + focus-visible rings
+  - קישור ל-`/terms#privacy` (anchor שכבר מוגדר ב-footer)
+  - מעל ה-BottomNav במובייל (`bottom-20`) כדי לא להסתתר מאחוריו
+  - הוטמע ב-`app/layout.js` → מוצג בכל עמוד
+
+- **2026-04-08 · Fixes V2 #5** — דף login מעודכן:
+  - OAuth (Google + Apple) עלו למעלה, לפני אימייל/סיסמה, עם "— או —" divider
+  - `GoogleAuthButton` ניקוי — הוצאתי את ה-divider שהיה בתוכו (coupling layout עם data), כי הדף כבר מטפל בזה
+  - `AppleAuthButton` — הוסרה `mt-3` הקבועה, הוסף `focus-visible:ring`, radius 16→8
+  - הדף בודק `NEXT_PUBLIC_GOOGLE_CLIENT_ID`/`NEXT_PUBLIC_APPLE_CLIENT_ID` ואם שניהם לא מוגדרים משמיט את הסקציה + ה-divider, כדי שלא יישאר divider ריק
+  - כותרת: "התחברות" → "כניסה לחשבון" (עקבי עם COPY_FIXES)
+  - סיסמה: שדות עם focus-visible ring, קישור "הצטרפי →" במקום "הירשם", error ל-role="alert"
+  - **מה לא שונה:** ההטמעה של Google GSI הקיימת (עובדת), ה-POST /auth/google + /auth/apple. לא עברנו ל-@react-oauth/google כמו בספק — זה thrash מיותר, ההטמעה הנוכחית טובה.
+
+- **2026-04-08 · Fixes V2 #4** — ולידציה של פרטים בהרשמה:
+  - `lib/validators.js` חדש — `validateIsraeliPhone` (050-058 / 072-079), `normalizeIsraeliPhone` (→ E.164), `passwordRules` (3 חוקים: 8 תווים / A-Z / 0-9), `passwordValid`, `validateEmail`
+  - `components/PasswordStrength.jsx` — checklist חי שמופיע מתחת לשדה סיסמה ומתמלא ✓ כשכל חוק מתקיים. מוסתר כשהשדה ריק
+  - `/register` (צרכן): email/password/phone נבדקים client-side לפני submit. feedback bell של "✓ מספר תקין" / "❌ מספר טלפון לא תקין — נסי שוב" מתחת לשדה. PasswordStrength מוצג מתחת לסיסמה
+  - `/register/producer` (Step 1): email + password נבדקים לפני המעבר ל-Step 2. PasswordStrength מוצג. (Step 2): phone נבדק לפני המעבר ל-Step 3
+  - הצד השרת עדיין מקבל את הוולידציה המקורית של EmailStr, אז זה רק הגנה נוספת ו-UX
+
+- **2026-04-08 · Fixes V2 #3** — ביקורות ודירוגים על בתי עסק:
+  - `ProducerReview` model חדש — unique(producer_id, user_id), stars 1-5, title+body אופציונליים
+  - `producers.avg_rating` (FLOAT) + `reviews_count` (INT) — מתעדכן ע"י `_recompute_producer_rating` בכל write
+  - Migration entries ב-`_migrate_columns`
+  - `backend/app/routers/reviews.py` חדש — GET /reviews?producer_id=X, POST /reviews (upsert), DELETE /reviews/:id (owner/admin)
+  - `ProducerListOut` schema חושף `avg_rating` + `reviews_count`
+  - `components/ProducerReviews.jsx` — רשימה + טופס כתיבה (pre-fills אם כבר יש ביקורת), משתמש ב-StarSelector הקיים, toast ב-save
+  - `ProducerDetail` — trust badges חדשים ליד השם ("✅ עסק מאומת" + "⭐ X.X (N)"), קטע ביקורות בתחתית
+  - `ProducerCard` — שורת דירוג קצרה מתחת לעיר/קטגוריה כשיש ביקורות
+  - סביב "producer reviews" vs. "home_product_ratings" — הם שתי מערכות נפרדות: product ratings עובדות דרך טוקני WhatsApp וזה ל-home products בלבד. הביקורות החדשות הן public ו-UI-based ועבור producers.
+  - Smoke-tested end-to-end: empty list → create → avg=5 → upsert → list stays at 1 → avg=4
+
+- **2026-04-08 · Fixes V2 #2** — שדות מורחבים במוצרי בית:
+  - `HomeProduct` model: 11 עמודות חדשות — `category`, `prep_date`, `expiry_date`, `storage_type`, `allergens`, `kosher`, `is_organic`, `unit`, `delivery_method`, `location_notes`, `images` (ARRAY)
+  - Migration entries ב-`_migrate_columns`
+  - Schemas עודכנו: `HomeProductCreate`/`Update`/`Out` חושפים הכל
+  - `create_home_product` שומר הכל + מגדיר `photo` אוטומטית מה-`images[0]` כ-cover
+  - `HomeProductForm.jsx` נכתב מחדש עם 6 fieldsets: פרטי המוצר, מידע חשוב לקונה (dates+storage+allergens+kosher+organic), כמות ומחיר, תמונות (עד 4 עם drag-remove), מיקום (CitySearch), איסוף/מסירה
+  - ולידציה client-side: לפחות תמונה אחת, תאריכי prep+expiry חובה
+  - `HomeProductCard` מראה trust badges (organic/kosher/storage/category), "הוכן עד" dates, שורת אלרגנים עם tooltip אם ארוך, מחיר עם unit או "🎁 במתנה" אם 0
+
+- **2026-04-08 · Fixes V2 #1** — CitySearch בכל שדות העיר:
+  - `data/cities.js`: הורחב מ-50 ל-~100 ערים + שכונות עיקריות של ת"א/ירושלים/חיפה
+  - `CitySearch` הוטמע ב-`/register` (צרכן), ב-`/register/producer` — גם city וגם delivery_areas, ב-`HomeProductForm` (יוטמע גם במלואו ב-Fix 2)
+  - קודם CitySearch היה רק ב-`/map` + `/events` + new-event form
+
 - **2026-04-08 · Moderation** — מערכת מודרציה למהמטבח של השכן:
   - `backend/requirements.txt`: הוסף `anthropic==0.39.0`
   - `backend/app/config.py`: `anthropic_api_key`, `anthropic_model` (ברירת מחדל `claude-opus-4-6`)
