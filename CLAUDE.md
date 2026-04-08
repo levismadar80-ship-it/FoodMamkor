@@ -1,5 +1,13 @@
 # מהמקור — Single Source of Truth
 > עדכון: אפריל 2026 | קרא תמיד בתחילת כל שיחה
+>
+> **סטטוס פרודקשן (2026-04-08):** main מאוחד. PR #1 → #5 מוזגו כולם, כולל:
+> (1) הגירה מ-PostGIS ל-Haversine, (2) Dockerfile+railway.json ב-repo root,
+> (3) admin seed דרך env vars, (4) lifespan עם background DB init +
+> `/health` fail-soft, (5) setup-documentation המלא — security hardening,
+> rate limiting, MODERATION, events/marketing/reviews routers,
+> ProducerFollower, HomeProduct expansion, AddressSearch, design refresh.
+> Railway + Vercel פרוסים מ-main. אם חסר משהו ב-main, זה באג — לא פיצ'ר.
 
 ## פרויקט
 - **שם:** מהמקור (MEHAMEKOR) | mehamekor.co.il
