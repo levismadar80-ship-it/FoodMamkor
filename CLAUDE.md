@@ -210,6 +210,46 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · UX Fix 6** — framer-motion (fade + slide only):
+  - הוסף `framer-motion@^11.11.0` ל-`package.json` → דורש `docker-compose build --no-cache frontend` כדי להתקין
+  - `components/FadeInSection.jsx` — wrapper דק ל-`whileInView` fade+slide, easing `[0.25, 0.46, 0.45, 0.94]` (ease-out-quart), תומך ב-prefers-reduced-motion דרך framer-motion
+  - **Homepage hero:** `motion.h1` + `motion.p` + `motion.form` — fade-in מלמטה על mount עם delays 0/0.2/0.4
+  - **Category Grid:** `motion.button` לכל כרטיסייה, stagger 0.08s
+  - **Producer grid:** `motion.div` wrapper, stagger 0.08s (modulo 4 כדי שלא יעצור את הגלילה)
+  - **How it works:** `FadeInSection` על הכותרת + 3 שלבים עם stagger 0.12s
+  - **שום 3D rotation, שום bounce, שום perspective** — רק fade+slide כמו במפרט
+
+- **2026-04-08 · UX Fix 5** — שיפורי UX רוחביים:
+  - **Toast system:** `lib/toast.js` — module-level pub/sub store; `components/Toaster.jsx` — fixed-position renderer; mounted ב-`layout.js`. שימוש: `import { showToast } from "@/lib/toast"; showToast("נשמר למועדפים ❤️")`.
+  - **Breadcrumb component:** `components/Breadcrumb.jsx` — RTL-safe, משתמשת ב-`aria-current="page"` על הפריט האחרון. הוטמעה ב-/about, /map, /favorites, /events, /events/:id, /producer/:id.
+  - **Skeleton loader:** `components/Skeleton.jsx` — shimmer animation עם `prefers-reduced-motion` fallback. החלפה של "טוענת..." ב-`SkeletonProducerGrid` ב-home + favorites.
+  - **Back button** ב-`/producer/:id`: `router.back()` ליד ה-breadcrumb.
+  - **ShareButton** מעבר ל-toast המשותף (היה לו div משלו).
+  - **FavoriteButton** משתמש ב-toast — "נשמר למועדפים ❤️" / "הוסר מהמועדפים". הוספתי `aria-pressed` + `aria-label`.
+  - **Empty states משופרים:** /favorites ו-/map עם עיגול-אייקון, כותרת headline, CTA ברור. /favorites קורא "גלי עסקים", /map קורא "מכירה מישהי? הזמיני אותה".
+
+- **2026-04-08 · UX Fix 4** — Footer sitemap (4 עמודות ניווט):
+  - `Footer.jsx`: rebuild ל-grid של 12 עמודות — brand (3) + 4 nav (6) + newsletter (3)
+  - 4 עמודות ניווט: **לגלות** / **קהילה** / **יצרנים** / **משפטי**
+  - הקישורים מ-UX_FIXES.md Fix 4 — כולל anchors ל-`/#producers-grid`, `/#home-kitchen`, `/terms#privacy`, `/about#contact`
+  - copy `text-light/60` → `text-light/70` (נגישות טובה יותר)
+
+- **2026-04-08 · UX Fix 3** — עמוד /about:
+  - breadcrumb בראש: "בית › אודות"
+  - CTA תחתון: "מוכנה להצטרף?" עם 2 כפתורים (הוסף את העסק שלך / מצאי עסקים קרובים)
+  - radius 16px → 8px בכפתורי ה-CTA (עקבי עם הגדרות ה-invariants)
+  - `font-serif` → `font-headline`, `font-sans` → `font-body` (canonical)
+
+- **2026-04-08 · UX Fix 2** — ניווט ראשי כולל אירועים:
+  - `Header.jsx` desktop + mobile: הוסף `אירועים 📅` בין מפה לאודות, שיניתי "דף בית" ל-"גלה" (עקבי עם bottom nav)
+  - `BottomNav.jsx`: 4 טאבים חדשים — 🏠 גלה / 🗺️ מפה / 📅 אירועים / ❤️ מועדפים (החלפתי את "פרסם" ו"הודעות")
+  - החלפתי `text-text-secondary` → `text-site-muted` (canonical token)
+
+- **2026-04-08 · UX Fix 1** — "הצג במפה" → פוקוס ישיר:
+  - `ProducerDetail.jsx`: הכפתור עבר מ-`<Link href=/map?lat&lng>` ל-`<button>` שמגדיר `sessionStorage.focusProducer` ואז `router.push("/map")`
+  - `map/page.js`: useEffect שני שקורא מ-sessionStorage אחרי שה-producers טעונים → `setActiveProducerId` + `mapApiRef.current.focusProducer(id)` (מטיס + popup + highlight)
+  - מנקה את sessionStorage מיד אחרי הקריאה כדי שלא יתפוס לטעינות הבאות
+
 - **2026-04-08 · Meta** — תיעוד מה שלמדנו בסשן הזה:
   - הוספתי סעיפי Dev workflow, Gotchas, Invariants, Anti-patterns, Stubs, מתכונים
   - תיקנתי את הפניות `docs/*` → שורש הריפו (הספרייה לא קיימת)

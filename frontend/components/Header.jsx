@@ -18,13 +18,16 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/" className="text-text-secondary hover:text-primary transition">
-            דף בית
+          <Link href="/" className="text-site-muted hover:text-primary transition">
+            גלה
           </Link>
-          <Link href="/map" className="text-text-secondary hover:text-primary transition">
+          <Link href="/map" className="text-site-muted hover:text-primary transition">
             מפה
           </Link>
-          <Link href="/about" className="text-text-secondary hover:text-primary transition">
+          <Link href="/events" className="text-site-muted hover:text-primary transition">
+            אירועים 📅
+          </Link>
+          <Link href="/about" className="text-site-muted hover:text-primary transition">
             אודות
           </Link>
           <Link
@@ -71,14 +74,17 @@ export default function Header() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-3">
-          <Link href="/" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
-            דף בית
+        <div className="md:hidden bg-white border-t border-border px-4 py-3 space-y-3">
+          <Link href="/" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+            גלה
           </Link>
-          <Link href="/map" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
+          <Link href="/map" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
             מפה
           </Link>
-          <Link href="/about" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
+          <Link href="/events" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+            אירועים 📅
+          </Link>
+          <Link href="/about" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
             אודות
           </Link>
           <Link href="/register/producer" className="block text-primary font-semibold" onClick={() => setMenuOpen(false)}>

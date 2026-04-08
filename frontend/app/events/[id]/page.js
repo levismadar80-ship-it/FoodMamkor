@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import Breadcrumb from "@/components/Breadcrumb";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -64,13 +65,14 @@ export default function EventDetailPage() {
       )}
 
       <div className="max-w-3xl mx-auto px-4 py-12">
-        <nav className="text-sm text-site-muted mb-4" aria-label="breadcrumb">
-          <Link href="/" className="hover:text-primary">בית</Link>
-          <span className="mx-2">›</span>
-          <Link href="/events" className="hover:text-primary">אירועים</Link>
-          <span className="mx-2">›</span>
-          <span className="text-site-text">{event.title}</span>
-        </nav>
+        <Breadcrumb
+          items={[
+            { href: "/", label: "בית" },
+            { href: "/events", label: "אירועים" },
+            { label: event.title },
+          ]}
+          className="mb-4"
+        />
 
         <span className="inline-block bg-light text-primary text-xs px-3 py-1 rounded-full mb-3">
           {event.category}

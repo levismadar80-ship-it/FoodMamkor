@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 export default function FavoriteButton({ producerId }) {
   const { user } = useAuth();
@@ -27,12 +28,15 @@ export default function FavoriteButton({ producerId }) {
     try {
       if (favorited) {
         await api.delete(`/users/me/favorites/${producerId}`);
+        setFavorited(false);
+        showToast("הוסר מהמועדפים");
       } else {
         await api.post(`/users/me/favorites/${producerId}`);
+        setFavorited(true);
+        showToast("נשמר למועדפים ❤️");
       }
-      setFavorited(!favorited);
     } catch {
-      // ignore
+      showToast("שגיאה — נסי שוב", "error");
     }
     setLoading(false);
   };
@@ -41,8 +45,10 @@ export default function FavoriteButton({ producerId }) {
     <button
       onClick={toggle}
       disabled={loading}
-      className="text-2xl hover:scale-110 transition"
+      className="text-2xl hover:scale-110 transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
       title={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
+      aria-label={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
+      aria-pressed={favorited}
     >
       {favorited ? "❤️" : "🤍"}
     </button>

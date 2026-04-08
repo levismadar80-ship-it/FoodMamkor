@@ -3,6 +3,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
+import Toaster from "@/components/Toaster";
 
 export const metadata = {
   title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
           <main className="flex-1">{children}</main>
           <Footer />
           <BottomNav />
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

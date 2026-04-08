@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { motion } from "framer-motion";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
+import { SkeletonProducerGrid } from "@/components/Skeleton";
+import FadeInSection from "@/components/FadeInSection";
 
 const PAGE_SIZE = 8;
 
@@ -147,13 +150,19 @@ export default function HomePage() {
           className="absolute left-0 right-0 text-center px-4 text-white"
           style={{ bottom: "25%" }}
         >
-          <h1
+          <motion.h1
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="font-headline font-bold leading-tight"
             style={{ fontSize: "clamp(42px, 6vw, 80px)", lineHeight: 1.15 }}
           >
             אוכל אמיתי, ישר מהמקור אליך
-          </h1>
-          <p
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="font-body mt-3"
             style={{
               fontSize: "18px",
@@ -163,10 +172,13 @@ export default function HomePage() {
             }}
           >
             מוצרים מאומתים מיצרנים ישראליים
-          </p>
+          </motion.p>
 
           {/* Pill search */}
-          <form
+          <motion.form
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             onSubmit={handleSearch}
             role="search"
             className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2 px-5 py-3"
@@ -199,7 +211,7 @@ export default function HomePage() {
             >
               חיפוש
             </button>
-          </form>
+          </motion.form>
         </div>
 
         {/* Scroll arrow — actually functional */}
@@ -233,19 +245,23 @@ export default function HomePage() {
           CATEGORY GRID
           ========================= */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center mb-10">
+        <FadeInSection className="text-center mb-10">
           <h2 className="font-headline font-bold text-site-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
             גלי לפי קטגוריה
           </h2>
           <p className="text-site-muted text-base">ישר מהיצרן — בלי מתווכים</p>
-        </div>
+        </FadeInSection>
         <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
           style={{ gap: "20px" }}
         >
-          {categoryCards.map((card) => (
-            <button
+          {categoryCards.map((card, idx) => (
+            <motion.button
               key={card.key}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               onClick={() => handleCategoryCardClick(card)}
               className="group relative overflow-hidden cursor-pointer text-right"
               style={{
@@ -271,7 +287,7 @@ export default function HomePage() {
                   {card.name}
                 </h3>
               </div>
-            </button>
+            </motion.button>
           ))}
         </div>
       </section>
@@ -311,12 +327,20 @@ export default function HomePage() {
         )}
 
         {producersLoading ? (
-          <p className="text-center text-site-muted py-12">טוענת עסקים טריים...</p>
+          <SkeletonProducerGrid count={8} />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {visibleProducers.map((p) => (
-                <ProducerCard key={p.id} producer={p} />
+              {visibleProducers.map((p, idx) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <ProducerCard producer={p} />
+                </motion.div>
               ))}
             </div>
             {producers.length === 0 && (
@@ -368,20 +392,22 @@ export default function HomePage() {
           HOW IT WORKS
           ========================= */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="font-headline font-bold text-site-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
-          איך זה עובד?
-        </h2>
+        <FadeInSection>
+          <h2 className="font-headline font-bold text-site-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+            איך זה עובד?
+          </h2>
+        </FadeInSection>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
             { step: "01", title: "מצאי", text: "חפשי בתי עסק קרובים דרך המפה, גריד הקטגוריות או שורת החיפוש" },
             { step: "02", title: "צרי קשר", text: "דברי ישירות עם היצרן בוואטסאפ, בטלפון או באינסטגרם" },
             { step: "03", title: "קבלי", text: "אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות" },
-          ].map((step) => (
-            <div key={step.step}>
+          ].map((step, idx) => (
+            <FadeInSection key={step.step} delay={idx * 0.12}>
               <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
               <h3 className="font-headline text-2xl font-bold mb-2">{step.title}</h3>
               <p className="text-site-text/85 leading-relaxed">{step.text}</p>
-            </div>
+            </FadeInSection>
           ))}
         </div>
       </section>

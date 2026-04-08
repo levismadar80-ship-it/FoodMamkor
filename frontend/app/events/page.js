@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
+import Breadcrumb from "@/components/Breadcrumb";
 
 const CATEGORIES = [
   { key: "", label: "הכל" },
@@ -82,6 +83,11 @@ export default function EventsPage() {
           </p>
         </div>
       </section>
+
+      {/* Breadcrumb */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <Breadcrumb items={[{ href: "/", label: "בית" }, { label: "אירועים" }]} />
+      </div>
 
       {/* Filters */}
       <section className="max-w-5xl mx-auto px-4 py-8">
