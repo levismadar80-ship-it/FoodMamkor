@@ -15,6 +15,29 @@ from app.schemas.schemas import (
 
 router = APIRouter(tags=["producers"])
 
+# Earth radius in km — used by the Haversine formula. Accurate enough for
+# city-scale directory queries (well under 0.5% error vs. WGS-84 ellipsoid).
+EARTH_RADIUS_KM = 6371.0
+
+
+def _haversine_km(lat: float, lng: float):
+    """
+    Haversine distance (in km) between the caller's (lat, lng) and each
+    producer row. Returns a SQLAlchemy expression that can be used in
+    SELECT, WHERE, and ORDER BY clauses. Runs entirely in Postgres — no
+    PostGIS required, just standard trig functions.
+
+    The inner sum can land a hair above 1.0 due to float rounding, which
+    would make acos() raise "input is out of range". func.least(1.0, ...)
+    clamps it.
+    """
+    cos_delta = (
+        func.cos(func.radians(lat)) * func.cos(func.radians(Producer.lat))
+        * func.cos(func.radians(Producer.lng) - func.radians(lng))
+        + func.sin(func.radians(lat)) * func.sin(func.radians(Producer.lat))
+    )
+    return EARTH_RADIUS_KM * func.acos(func.least(1.0, cos_delta))
+
 
 @router.get("/producers", response_model=list[ProducerListOut])
 def list_producers(
@@ -27,7 +50,26 @@ def list_producers(
     verified: bool | None = None,
     db: Session = Depends(get_db),
 ):
-    q = db.query(Producer).options(joinedload(Producer.categories)).filter(Producer.status == "approved")
+    geo_search = lat is not None and lng is not None and radius_km is not None
+
+    if geo_search:
+        distance_expr = _haversine_km(lat, lng).label("distance_km")
+        q = (
+            db.query(Producer, distance_expr)
+            .options(joinedload(Producer.categories))
+            .filter(Producer.status == "approved")
+            # Haversine is undefined for NULL coords — exclude them before
+            # applying the distance filter.
+            .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
+            .filter(distance_expr <= radius_km)
+            .order_by(distance_expr.asc())
+        )
+    else:
+        q = (
+            db.query(Producer)
+            .options(joinedload(Producer.categories))
+            .filter(Producer.status == "approved")
+        )
 
     if verified is not None:
         q = q.filter(Producer.is_verified == verified)
@@ -40,15 +82,22 @@ def list_producers(
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
 
-    if lat is not None and lng is not None and radius_km is not None:
-        # Simple distance filter using Haversine approximation
-        # 1 degree lat ≈ 111km
-        lat_range = radius_km / 111.0
-        lng_range = radius_km / (111.0 * func.cos(func.radians(lat)))
-        q = q.filter(
-            Producer.lat.between(lat - lat_range, lat + lat_range),
-            Producer.lng.between(lng - lng_range, lng + lng_range),
-        )
+    if geo_search:
+        # A multi-entity query combined with joinedload on a collection
+        # relationship (categories) can emit duplicate rows — the legacy
+        # Query identity-map dedupe only applies to single-entity queries.
+        # De-dupe by producer id while preserving the distance-ASC order.
+        seen: set = set()
+        results = []
+        for producer, distance_km in q.all():
+            if producer.id in seen:
+                continue
+            seen.add(producer.id)
+            # Attach computed distance so Pydantic's from_attributes picks
+            # it up in ProducerListOut.
+            producer.distance_km = round(float(distance_km), 2)
+            results.append(producer)
+        return results
 
     return q.all()
 
