@@ -10,11 +10,14 @@ from app.database import get_db
 from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, User
 from app.schemas.schemas import (
     HomeProductCreate,
+    HomeProductModerationRequest,
+    HomeProductModerationResult,
     HomeProductOut,
     HomeProductRatingOut,
     HomeProductUpdate,
     RatingSubmit,
 )
+from app.services.home_product_moderation import validate_home_product
 
 router = APIRouter(prefix="/home-products", tags=["home-products"])
 
@@ -46,6 +49,9 @@ def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
         "city": hp.city,
         "phone": hp.phone,
         "is_active": hp.is_active,
+        "moderation_status": hp.moderation_status or "APPROVED",
+        "moderation_reason": hp.moderation_reason,
+        "moderation_suggestion": hp.moderation_suggestion,
         "avg_rating": round(float(avg), 1) if avg else None,
         "rating_count": count or 0,
         "recent_comments": [
@@ -75,6 +81,19 @@ def get_rating_page(token: str, db: Session = Depends(get_db)):
         "product_title": hp.title if hp else None,
         "seller_name": hp.user.name if hp and hp.user else None,
     }
+
+
+@router.post("/validate", response_model=HomeProductModerationResult)
+def validate_home_product_endpoint(
+    data: HomeProductModerationRequest,
+):
+    """Run the moderation check WITHOUT persisting anything. Used by the
+    frontend form to surface warnings/blocks while the user is still typing.
+
+    Returns APPROVED/FLAGGED/REJECTED + optional reason + suggestion.
+    """
+    result = validate_home_product(data.model_dump())
+    return HomeProductModerationResult(**result)
 
 
 @router.post("/rate/{token}")
@@ -145,6 +164,26 @@ def create_home_product(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Run AI moderation — blocks REJECTED, records status for APPROVED/FLAGGED.
+    # The frontend also calls /validate before submit for fast feedback, but
+    # we re-check server-side so a crafted client can't bypass.
+    moderation = validate_home_product(
+        {
+            "title": data.title,
+            "description": data.description,
+            "price": data.price,
+        }
+    )
+    if moderation["status"] == "REJECTED":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "listing_rejected",
+                "reason": moderation.get("reason") or "התוכן אינו עומד בקריטריונים שלנו",
+                "suggestion": moderation.get("suggestion"),
+            },
+        )
+
     hp = HomeProduct(
         user_id=user.id,
         title=data.title,
@@ -155,6 +194,9 @@ def create_home_product(
         neighborhood=data.neighborhood,
         city=data.city,
         phone=data.phone or user.phone,
+        moderation_status=moderation["status"],
+        moderation_reason=moderation.get("reason"),
+        moderation_suggestion=moderation.get("suggestion"),
     )
     db.add(hp)
     db.commit()

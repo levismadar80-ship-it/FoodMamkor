@@ -32,6 +32,9 @@ def _migrate_columns(engine):
         ("producers", "admin_notes", "TEXT"),
         ("users", "is_blocked", "BOOLEAN DEFAULT FALSE"),
         ("producers", "is_available_today", "BOOLEAN DEFAULT FALSE"),
+        ("home_products", "moderation_status", "VARCHAR(20) DEFAULT 'APPROVED'"),
+        ("home_products", "moderation_reason", "TEXT"),
+        ("home_products", "moderation_suggestion", "TEXT"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:

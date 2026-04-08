@@ -97,6 +97,23 @@ POST /api/newsletter  { email } → 201                            — Footer ne
 POST /api/contact     { name, email, message } → 200             — /about contact form
 ```
 
+## Moderation — מהמטבח של השכן
+מערכת Hybrid: AI → Badge → Admin. כל יצירת home-product עוברת דרך Claude.
+- **תלויות:** `anthropic==0.39.0` (ב-requirements.txt), `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL` ב-settings. אם ה-key חסר — fail open, הכל מתקבל כ-APPROVED + לוג.
+- **DB columns (home_products):** `moderation_status` (APPROVED|FLAGGED|REJECTED), `moderation_reason`, `moderation_suggestion`. עם migration ב-`_migrate_columns`.
+- **Service:** `backend/app/services/home_product_moderation.py::validate_home_product()` — fail-open: כל חריגה (parse error, rate limit, network) חוזרת כ-APPROVED.
+- **Endpoints:**
+  - `POST /home-products/validate` → { status, reason, suggestion } (בלי auth, בלי DB write) — ה-frontend קורא בזמן הקלדה עם debounce 1.5s
+  - `POST /home-products` (create) — קורא לוולידציה שוב server-side (defense-in-depth), REJECTED זורק 400 עם `detail.error = "listing_rejected"`
+  - `GET /admin/home-products/flagged` — רשימת הקף של מה שסומן
+  - `POST /admin/home-products/:id/approve` — מסיר את ה-FLAGGED
+  - `POST /admin/home-products/:id/remove` { reason } — is_active=false + שומר סיבה
+- **UI:**
+  - `components/HomeProductForm.jsx` — הטופס החדש עם debounce ו-feedback: צהוב ל-FLAGGED, אדום ל-REJECTED (חוסם submit). אם ה-API נופל — fail open בצד הלקוח.
+  - `HomeProductCard.jsx` — badge "🔍 בבדיקה" צהוב עבור moderation_status=FLAGGED
+  - `/admin/reports` — עכשיו 3 טאבים: דיווחים / בבדיקה / מוסתרים אוטומטית
+- **חוקי עבודה:** אם בית העסק מפורסם עם FLAGGED, הוא ORATE עולה לקהל עם תגית ומופיע ב-admin queue. אם REJECTED, הוא לא נכנס ל-DB בכלל.
+
 ## Endpoints אירועים
 ```
 GET    /api/events?city=&category=&from_date=&to_date=   — רשימה מסוננת
@@ -231,6 +248,20 @@ grep -rn "GoogleAuth\|apple_auth" backend/ frontend/
 ```
 
 ## לוג עדכונים
+- **2026-04-08 · Moderation** — מערכת מודרציה למהמטבח של השכן:
+  - `backend/requirements.txt`: הוסף `anthropic==0.39.0`
+  - `backend/app/config.py`: `anthropic_api_key`, `anthropic_model` (ברירת מחדל `claude-opus-4-6`)
+  - `HomeProduct` model: הוספתי 3 עמודות (moderation_status/reason/suggestion) + migration
+  - `HomeProductOut` schema: חשוף את 3 השדות ב-API
+  - **service חדש:** `backend/app/services/home_product_moderation.py::validate_home_product()` — fail open אם אין API key או אם הקריאה נכשלת
+  - `POST /home-products/validate` endpoint — בלי auth, בלי DB write (לטופס בזמן הקלדה)
+  - `POST /home-products` — קורא לוולידציה server-side; REJECTED → HTTP 400 עם `detail.error=listing_rejected`
+  - `GET /admin/home-products/flagged` + `POST /admin/home-products/:id/approve` + `POST /admin/home-products/:id/remove {reason}`
+  - **HomeProductForm component חדש** (הוצאתי מ-page.js) — debounce 1.5s, request-sequence guard למניעת תגובות מיושנות, feedback צהוב/אדום, ה-Submit נחסם רק ב-REJECTED
+  - `HomeProductCard`: "🔍 בבדיקה" badge צהוב על FLAGGED (מחליף את ה-"דירוג נמוך" badge בשעה שיש moderation flag)
+  - `/admin/reports`: 3 טאבים — דיווחי משתמשים / מוצרים ביתיים בבדיקה / מוסתרים אוטומטית; counter ליד כל טאב
+  - **Fail-open design**: אם משהו נפל (API key חסר, rate limit, parse error) החוויה לא נחסמת — מתקבל כ-APPROVED + לוג. עדיף לפעמים לפרסם מוצר גרוע מאשר לשבור לכולם.
+
 - **2026-04-08 · Copy Fix** — שיפורי ניסוח + ברידינג נשי:
   - **Terminology:** "יצרן/יצרנים/יצרנית" → "בית עסק/בתי עסק/בעלת עסק" בכל הטקסטים הגלויים. DB/API/variable names לא נוגעים (producers, /producers, ProducerCard).
   - **Founder story (/about):** bio חדש — ספיר, 21, תוכניתנית בצבא, לומדת רפואה תזונתית אצל ד״ר גיל יוסף שחר. 4 פסקאות במקום 3.

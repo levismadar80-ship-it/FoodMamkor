@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { motion } from "framer-motion";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
+import HomeProductForm from "@/components/HomeProductForm";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -90,25 +91,13 @@ export default function HomePage() {
     }
   };
 
-  const handleCreateHomeProduct = async (e) => {
-    e.preventDefault();
-    const form = new FormData(e.target);
-    const data = {
-      title: form.get("title"),
-      description: form.get("description"),
-      quantity: form.get("quantity"),
-      price: form.get("price") || null,
-      neighborhood: form.get("neighborhood"),
-      city: form.get("city"),
-      phone: form.get("phone"),
-    };
+  const handleHomeProductCreated = async () => {
+    setShowHomeForm(false);
     try {
-      await api.post("/home-products", data);
-      setShowHomeForm(false);
       const r = await api.get("/home-products");
       setHomeProducts(r.data);
     } catch {
-      alert("שגיאה ביצירת המוצר");
+      // ignore — the toast from the form already confirmed success
     }
   };
 
@@ -433,26 +422,10 @@ export default function HomePage() {
         </div>
 
         {showHomeForm && (
-          <div className="bg-white rounded-[16px] p-6 mb-6 border border-border">
-            <h3 className="font-semibold mb-4">פרסום מוצר ביתי</h3>
-            <form onSubmit={handleCreateHomeProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input name="title" placeholder="כותרת *" required className="border border-border rounded-[12px] px-3 py-2 bg-white" />
-              <input name="price" type="number" step="0.01" placeholder="מחיר (₪)" className="border border-border rounded-[12px] px-3 py-2 bg-white" />
-              <input name="quantity" placeholder="כמות" className="border border-border rounded-[12px] px-3 py-2 bg-white" />
-              <input name="neighborhood" placeholder="שכונה" className="border border-border rounded-[12px] px-3 py-2 bg-white" />
-              <input name="city" placeholder="עיר" className="border border-border rounded-[12px] px-3 py-2 bg-white" />
-              <input name="phone" placeholder="טלפון (ל-WhatsApp)" className="border border-border rounded-[12px] px-3 py-2 bg-white" />
-              <textarea name="description" placeholder="תיאור" className="border border-border rounded-[12px] px-3 py-2 md:col-span-2 resize-none h-20 bg-white" />
-              <div className="md:col-span-2 flex gap-3">
-                <button type="submit" className="bg-primary text-white px-6 py-2 rounded-[16px] hover:bg-primary-light transition">
-                  פרסם
-                </button>
-                <button type="button" onClick={() => setShowHomeForm(false)} className="text-site-muted">
-                  ביטול
-                </button>
-              </div>
-            </form>
-          </div>
+          <HomeProductForm
+            onCreated={handleHomeProductCreated}
+            onCancel={() => setShowHomeForm(false)}
+          />
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

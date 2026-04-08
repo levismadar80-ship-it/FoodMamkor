@@ -322,6 +322,9 @@ class HomeProductOut(BaseModel):
     city: str | None = None
     phone: str | None = None
     is_active: bool
+    moderation_status: str = "APPROVED"
+    moderation_reason: str | None = None
+    moderation_suggestion: str | None = None
     avg_rating: float | None = None
     rating_count: int = 0
     recent_comments: list[HomeProductRatingOut] = []
@@ -329,6 +332,20 @@ class HomeProductOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class HomeProductModerationRequest(BaseModel):
+    """Payload for the in-form validation call — no auth, no DB write."""
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str | None = None
+    category: str | None = None
+    price: Decimal | None = None
+
+
+class HomeProductModerationResult(BaseModel):
+    status: str  # APPROVED | FLAGGED | REJECTED
+    reason: str | None = None
+    suggestion: str | None = None
 
 
 # --- Report ---
