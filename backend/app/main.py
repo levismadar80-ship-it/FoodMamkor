@@ -1,9 +1,40 @@
+import logging
+import os
+import sys
+import traceback
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import admin, admin_extra, auth, favorites, home_products, producer_me, producers, recipes, reports, upload
+
+# Force stdout to be unbuffered so Railway's log panel shows startup
+# messages in real time. Without this, Python buffers until the process
+# writes a newline + the buffer fills, which can swallow early-boot
+# errors entirely in container environments.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    stream=sys.stdout,
+)
+log = logging.getLogger("mehamakor.startup")
+
+
+def _redacted_db_url() -> str:
+    """Log-safe version of DATABASE_URL: scheme + host + db only, no password."""
+    raw = os.getenv("DATABASE_URL", "")
+    if not raw:
+        return "<unset>"
+    try:
+        p = urlparse(raw)
+        host = p.hostname or "?"
+        port = f":{p.port}" if p.port else ""
+        db = p.path.lstrip("/") or "?"
+        return f"{p.scheme}://{host}{port}/{db}"
+    except Exception:
+        return "<unparseable>"
 
 
 def _migrate_columns(engine):
@@ -61,17 +92,55 @@ def _migrate_columns(engine):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables and seed on startup
-    from app.database import Base, engine
-    from app.models import models  # noqa: F401 — ensure models are registered
+    """
+    On startup: create tables, run column migrations, seed.
 
-    Base.metadata.create_all(bind=engine)
-    _migrate_columns(engine)
+    CRITICAL: each step is wrapped in try/except and logs a clear marker
+    before and after. If any step fails, we log the full traceback and
+    STILL yield so the HTTP server comes up — that way the /health
+    endpoint responds and we can diagnose from logs instead of the app
+    being a black box. Without this guard, a single DB connection error
+    during boot makes the whole container look "unhealthy" with zero
+    signal for debugging.
+    """
+    log.info("=" * 60)
+    log.info("mehamakor backend starting up")
+    log.info("DATABASE_URL  = %s", _redacted_db_url())
+    log.info("PORT          = %s", os.getenv("PORT", "<unset, default 8000>"))
+    log.info("SECRET_KEY set= %s", "yes" if os.getenv("SECRET_KEY") else "no (using default)")
+    log.info("ADMIN_EMAIL   = %s", os.getenv("ADMIN_EMAIL") or "<unset>")
+    log.info("=" * 60)
 
-    from seed_data import seed
+    try:
+        log.info("[1/4] importing models...")
+        from app.database import Base, engine
+        from app.models import models  # noqa: F401 — ensure models are registered
+        log.info("[1/4] models imported OK")
 
-    seed()
+        log.info("[2/4] Base.metadata.create_all...")
+        Base.metadata.create_all(bind=engine)
+        log.info("[2/4] create_all OK")
+
+        log.info("[3/4] running column migrations...")
+        _migrate_columns(engine)
+        log.info("[3/4] column migrations OK")
+
+        log.info("[4/4] running seed_data.seed()...")
+        from seed_data import seed
+        seed()
+        log.info("[4/4] seed OK")
+
+        log.info("startup complete — yielding to uvicorn")
+    except Exception:
+        # Don't crash the container. Log loudly and let the HTTP server
+        # come up so /health still responds and the operator can see
+        # what's wrong via the usual endpoints.
+        log.error("STARTUP FAILED — app will come up without seed/migration")
+        log.error("traceback follows:\n%s", traceback.format_exc())
+
     yield
+
+    log.info("mehamakor backend shutting down")
 
 
 app = FastAPI(title="מהמקור - MeHaMakor API", version="1.0.0", lifespan=lifespan)
@@ -99,3 +168,13 @@ app.include_router(upload.router)
 @app.get("/")
 def root():
     return {"message": "מהמקור API - ברוכים הבאים"}
+
+
+@app.get("/health")
+def health():
+    """
+    Lightweight health endpoint used by Railway's healthcheck. Must NOT
+    touch the database — if DB init fails, this still has to return 200
+    so Railway doesn't kill the container before we can read the logs.
+    """
+    return {"status": "ok"}
