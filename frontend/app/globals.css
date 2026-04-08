@@ -9,14 +9,244 @@ html {
 }
 
 body {
-  font-family: 'Heebo', sans-serif;
-  background-color: #eaf4ee;
-  color: #1C1C1C;
+  font-family: 'DM Sans', 'Heebo', sans-serif;
+  /* LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay
+     at 3% opacity. Adds organic "texture" without affecting legibility.
+     Inline SVG keeps it CSS-only (no extra HTTP request). */
+  background-color: #F5F0E8;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  color: #1C1A17;
+}
+
+h1, h2, h3 {
+  font-family: 'Frank Ruhl Libre', serif;
+}
+
+.font-english {
+  font-family: 'Cormorant Garamond', serif;
 }
 
 /* Leaflet map fixes */
 .leaflet-container {
   height: 100%;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 16px;
+}
+
+/* Parallax hero + dividers */
+.parallax-bg {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (max-width: 768px) {
+  .parallax-bg {
+    background-attachment: scroll;
+  }
+}
+
+/* Fade-in on scroll — set initial state, hook toggles it */
+.fade-in-init {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-init {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Hide scrollbar helper */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* MAP_IMPROVEMENTS.md: custom Leaflet marker + tooltip styling */
+.mehamekor-marker-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+.mehamekor-tooltip {
+  background: #1C1A17;
+  color: #F5F0E8;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.mehamekor-tooltip::before {
+  border-top-color: #1C1A17;
+}
+.mehamekor-cluster {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Slide-up animation for the mobile bottom sheet on /map */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* FINAL_AUDIT: consistent vertical rhythm — 80px desktop / 48px mobile */
+.section-y {
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+@media (max-width: 768px) {
+  .section-y {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+}
+
+/* FINAL_AUDIT: print styles — strip chrome, keep content readable */
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #555;
+  }
+}
+
+/* =============================================================
+   PREMIUM_DESIGN.md
+   ============================================================= */
+
+/* Ken Burns — slow parallax zoom/pan on hero + parallax dividers.
+   Two directions so adjacent sections don't drift in lock-step.
+   Disabled for prefers-reduced-motion. */
+@keyframes kenburns-right {
+  0%   { transform: scale(1) translate(0%, 0%); }
+  100% { transform: scale(1.08) translate(-2%, -1%); }
+}
+@keyframes kenburns-left {
+  0%   { transform: scale(1) translate(0%, 0%); }
+  100% { transform: scale(1.08) translate(2%, -1%); }
+}
+
+.kenburns-right {
+  animation: kenburns-right 20s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.kenburns-left {
+  animation: kenburns-left 25s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kenburns-right,
+  .kenburns-left {
+    animation: none;
+  }
+}
+
+/* Marquee — infinite horizontal scroll of small hype tags. The track
+   renders the list twice so translating -50% creates a seamless loop. */
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 25s linear infinite;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  width: max-content;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+/* Polish: fade marquee in/out at the edges so words don't pop abruptly.
+   Applied on the wrapper (.marquee-edge-fade), not the track, so the
+   mask doesn't scroll with the content. */
+.marquee-edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 48px,
+    #000 calc(100% - 48px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 48px,
+    #000 calc(100% - 48px),
+    transparent 100%
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* Custom cursor — only applied when <CustomCursor /> mounts. The HTML
+   element gains `custom-cursor-on` which hides the native cursor across
+   the whole document. Safety: if JS fails we never trigger this class, so
+   the normal cursor stays visible. */
+.custom-cursor-on,
+.custom-cursor-on * {
+  cursor: none !important;
+}
+.custom-cursor {
+  width: 12px;
+  height: 12px;
+  background: #2e6853;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition:
+    transform 0.18s ease-out,
+    opacity 0.25s ease-out;
+  mix-blend-mode: multiply;
+}
+.custom-cursor--hover {
+  transform: scale(3);
+  opacity: 0.45 !important;
+}
+
+/* Hero scroll-hint — refined replacement for animate-bounce.
+   Slow glide down + fade, ease-out-quart, 2.4s loop. Avoids the
+   dated bouncy feel; honours prefers-reduced-motion. */
+@keyframes scroll-hint {
+  0%   { transform: translateY(0)   translateX(-50%); opacity: 0.55; }
+  50%  { transform: translateY(8px) translateX(-50%); opacity: 1; }
+  100% { transform: translateY(0)   translateX(-50%); opacity: 0.55; }
+}
+.scroll-hint {
+  animation: scroll-hint 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint {
+    animation: none;
+  }
 }

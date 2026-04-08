@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { showToast } from "@/lib/toast";
 
 export default function ShareButton({ url, title }) {
-  const [copied, setCopied] = useState(false);
-
   const handleShare = async () => {
     if (!url) return;
     // Try native share first (mobile)
-    if (navigator.share) {
+    if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: title || "מהמקור", url });
         return;
@@ -18,8 +16,7 @@ export default function ShareButton({ url, title }) {
     }
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      showToast("הועתק לקליפבורד 🔗");
     } catch {
       // last-resort fallback
       const ta = document.createElement("textarea");
@@ -28,8 +25,7 @@ export default function ShareButton({ url, title }) {
       ta.select();
       try {
         document.execCommand("copy");
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
+        showToast("הועתק לקליפבורד 🔗");
       } finally {
         document.body.removeChild(ta);
       }
@@ -37,24 +33,14 @@ export default function ShareButton({ url, title }) {
   };
 
   return (
-    <>
-      <button
-        onClick={handleShare}
-        className="inline-flex items-center gap-2 bg-white border border-border px-3 py-2 rounded-[12px] hover:bg-background transition text-sm"
-        title="שתף לינק"
-        aria-label="שתף לינק"
-      >
-        <span aria-hidden>🔗</span>
-        <span className="hidden sm:inline">שתף</span>
-      </button>
-      {copied && (
-        <div
-          role="status"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[2000] bg-primary text-white px-4 py-2 rounded-[12px] shadow-lg text-sm"
-        >
-          הלינק הועתק! ✓
-        </div>
-      )}
-    </>
+    <button
+      onClick={handleShare}
+      className="inline-flex items-center gap-2 bg-white border border-border px-3 py-2 rounded-[8px] hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+      title="שתף לינק"
+      aria-label="שתף לינק לעסק"
+    >
+      <span aria-hidden>🔗</span>
+      <span className="hidden sm:inline">שתף</span>
+    </button>
   );
 }

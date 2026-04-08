@@ -15,3 +15,5 @@ twilio==9.3.0
 PyJWT[crypto]==2.9.0
 requests==2.32.3
 openpyxl==3.1.5
+anthropic==0.39.0
+slowapi==0.1.9

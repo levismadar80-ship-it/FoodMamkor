@@ -2,3 +2,5 @@ node_modules/
 .next/
 out/
 .env.local
+# Playwright transient test artifacts (traces, videos, DOM dumps)
+test-results/

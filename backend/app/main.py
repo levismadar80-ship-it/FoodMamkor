@@ -6,10 +6,16 @@ import traceback
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
-from app.routers import admin, admin_extra, auth, favorites, home_products, producer_me, producers, recipes, reports, upload
+from app.config import settings
+from app.rate_limit import limiter
+from app.routers import admin, admin_extra, auth, events, favorites, home_products, marketing, producer_me, producers, recipes, reports, reviews, upload
 
 # Force stdout to be unbuffered so Railway's log panel shows startup
 # messages in real time. Without this, Python buffers until the process
@@ -63,6 +69,25 @@ def _migrate_columns(engine):
         ("producers", "kosher", "VARCHAR(50)"),
         ("producers", "admin_notes", "TEXT"),
         ("users", "is_blocked", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "is_available_today", "BOOLEAN DEFAULT FALSE"),
+        ("home_products", "moderation_status", "VARCHAR(20) DEFAULT 'APPROVED'"),
+        ("home_products", "moderation_reason", "TEXT"),
+        ("home_products", "moderation_suggestion", "TEXT"),
+        ("home_products", "category", "VARCHAR(50)"),
+        ("home_products", "prep_date", "DATE"),
+        ("home_products", "expiry_date", "DATE"),
+        ("home_products", "storage_type", "VARCHAR(30)"),
+        ("home_products", "allergens", "TEXT"),
+        ("home_products", "kosher", "VARCHAR(30)"),
+        ("home_products", "is_organic", "BOOLEAN DEFAULT FALSE"),
+        ("home_products", "unit", "VARCHAR(30)"),
+        ("home_products", "delivery_method", "VARCHAR(30)"),
+        ("home_products", "location_notes", "TEXT"),
+        ("home_products", "images", "TEXT[] DEFAULT ARRAY[]::TEXT[]"),
+        ("producers", "avg_rating", "FLOAT DEFAULT 0"),
+        ("producers", "reviews_count", "INTEGER DEFAULT 0"),
+        ("home_products", "street", "VARCHAR(200)"),
+        ("home_products", "zip_code", "VARCHAR(20)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
@@ -177,13 +202,42 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="מהמקור - MeHaMakor API", version="1.0.0", lifespan=lifespan)
 
+# SECURITY FIX #2: rate limiting. The limiter is a module-level Limiter()
+# imported from app.rate_limit so routers can decorate individual endpoints
+# with `@limiter.limit("5/minute")`. The middleware hooks into FastAPI's
+# request lifecycle and the exception handler converts 429s into a JSON body.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# SECURITY FIX #7: CORS origins are now read from the `CORS_ORIGINS` env var
+# (comma-separated). The default in settings is local dev hosts only —
+# production MUST override via env. Previously `allow_origins=["*"]`, which
+# together with `allow_credentials=True` is a browser-level no-op anyway
+# but still sent CORS headers for every origin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
+
+
+# SECURITY FIX #8: HTTP security headers. Applied as middleware so every
+# response (including errors) carries them. Kept minimal — HSTS is typically
+# handled by the reverse proxy (Railway/nginx), so we don't set it here.
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next) -> Response:
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=(self)"
+    )
+    return response
+
 
 app.include_router(auth.router)
 app.include_router(producers.router)
@@ -195,6 +249,9 @@ app.include_router(recipes.router)
 app.include_router(home_products.router)
 app.include_router(reports.router)
 app.include_router(upload.router)
+app.include_router(marketing.router)
+app.include_router(events.router)
+app.include_router(reviews.router)
 
 
 @app.get("/")

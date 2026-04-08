@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -172,6 +172,7 @@ class ProducerUpdate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool | None = None
+    is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
     category_ids: list[int] | None = None
@@ -198,6 +199,9 @@ class ProducerListOut(BaseModel):
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
+    is_available_today: bool = False
+    avg_rating: float = 0
+    reviews_count: int = 0
     images: list[str] = []
     categories: list[CategoryOut] = []
     # Populated by /producers only when ?lat=&lng=&radius_km= are passed.
@@ -289,7 +293,23 @@ class HomeProductCreate(BaseModel):
     price: Decimal | None = None
     neighborhood: str | None = None
     city: str | None = None
+    # FIXES_V2.md fix 7c — street + zip are persisted server-side but NOT
+    # included in HomeProductOut. Use them for internal seller-only views.
+    street: str | None = None
+    zip_code: str | None = None
     phone: str | None = None
+    # Expanded fields (FIXES_V2.md fix 2)
+    category: str | None = None
+    prep_date: date | None = None
+    expiry_date: date | None = None
+    storage_type: str | None = None
+    allergens: str | None = None
+    kosher: str | None = None
+    is_organic: bool = False
+    unit: str | None = None
+    delivery_method: str | None = None
+    location_notes: str | None = None
+    images: list[str] = []
 
 
 class HomeProductUpdate(BaseModel):
@@ -300,7 +320,20 @@ class HomeProductUpdate(BaseModel):
     price: Decimal | None = None
     neighborhood: str | None = None
     city: str | None = None
+    street: str | None = None
+    zip_code: str | None = None
     phone: str | None = None
+    category: str | None = None
+    prep_date: date | None = None
+    expiry_date: date | None = None
+    storage_type: str | None = None
+    allergens: str | None = None
+    kosher: str | None = None
+    is_organic: bool | None = None
+    unit: str | None = None
+    delivery_method: str | None = None
+    location_notes: str | None = None
+    images: list[str] | None = None
 
 
 class HomeProductRatingOut(BaseModel):
@@ -323,6 +356,20 @@ class HomeProductOut(BaseModel):
     city: str | None = None
     phone: str | None = None
     is_active: bool
+    category: str | None = None
+    prep_date: date | None = None
+    expiry_date: date | None = None
+    storage_type: str | None = None
+    allergens: str | None = None
+    kosher: str | None = None
+    is_organic: bool = False
+    unit: str | None = None
+    delivery_method: str | None = None
+    location_notes: str | None = None
+    images: list[str] = []
+    moderation_status: str = "APPROVED"
+    moderation_reason: str | None = None
+    moderation_suggestion: str | None = None
     avg_rating: float | None = None
     rating_count: int = 0
     recent_comments: list[HomeProductRatingOut] = []
@@ -330,6 +377,20 @@ class HomeProductOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class HomeProductModerationRequest(BaseModel):
+    """Payload for the in-form validation call — no auth, no DB write."""
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str | None = None
+    category: str | None = None
+    price: Decimal | None = None
+
+
+class HomeProductModerationResult(BaseModel):
+    status: str  # APPROVED | FLAGGED | REJECTED
+    reason: str | None = None
+    suggestion: str | None = None
 
 
 # --- Report ---

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
+import Breadcrumb from "@/components/Breadcrumb";
+import { SkeletonProducerGrid } from "@/components/Skeleton";
 
 export default function FavoritesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -29,20 +31,31 @@ export default function FavoritesPage() {
   if (authLoading || !user) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-2xl font-bold mb-8">❤️ המועדפים שלי</h1>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <Breadcrumb
+        items={[{ href: "/", label: "בית" }, { label: "מועדפים" }]}
+        className="mb-4"
+      />
+      <h1 className="font-headline text-3xl font-bold mb-8 text-site-text">❤️ המועדפים שלי</h1>
 
       {loading ? (
-        <p className="text-center text-text-secondary">טוען...</p>
+        <SkeletonProducerGrid count={6} />
       ) : favorites.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-5xl mb-4">🤍</p>
-          <p className="text-text-secondary mb-4">עדיין לא שמרת עסקים למועדפים</p>
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl">
+            🌿
+          </div>
+          <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+            עדיין לא שמרת עסקים 🌿
+          </h2>
+          <p className="text-site-muted mb-6 max-w-md mx-auto">
+            לחצי על הלב בכרטיסיית עסק כדי לשמור אותו כאן לגישה מהירה.
+          </p>
           <button
             onClick={() => router.push("/")}
-            className="bg-primary text-white px-6 py-2 rounded-[12px] hover:bg-primary-light transition"
+            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium"
           >
-            גלה בתי עסק
+            גלי עסקים
           </button>
         </div>
       ) : (
