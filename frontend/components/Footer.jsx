@@ -7,11 +7,11 @@ import api from "@/lib/api";
 
 /**
  * Four-column sitemap footer + brand column + newsletter block.
- * Structure (per UX_FIXES.md Fix 4):
- *   - לגלות:   דף הבית | מפה | אירועים | עסקים חדשים
- *   - קהילה:   אירועים | מהמטבח של השכן | אודות
- *   - יצרנים:  הוסף עסק | כניסת יצרן | שאלות נפוצות
- *   - משפטי:   תנאי שימוש | פרטיות | דווח על בעיה
+ * Structure (per UX_FIXES.md Fix 4 + COPY_FIXES.md Fix 4):
+ *   - לגלות:          דף הבית | מפה | אירועים | עסקים חדשים
+ *   - קהילה:          אירועים | מהמטבח של השכן | אודות
+ *   - בתי עסק:       הוסף עסק | כניסה | דשבורד
+ *   - שקיפות ואמון:   תנאי שימוש | פרטיות | דווח
  */
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -30,7 +30,7 @@ export default function Footer() {
       setEmail("");
     } catch (err) {
       setStatus("error");
-      setMessage(err.response?.data?.detail || "שגיאה — נסי שוב");
+      setMessage(err.response?.data?.detail || "משהו השתבש, נסי שוב");
     }
   };
 
@@ -53,19 +53,19 @@ export default function Footer() {
       ],
     },
     {
-      title: "יצרנים",
+      title: "בתי עסק",
       links: [
-        { href: "/register/producer", label: "הוסף עסק" },
-        { href: "/login", label: "כניסת יצרן" },
+        { href: "/register/producer", label: "הוסיפי את העסק שלך 🌿" },
+        { href: "/login", label: "כניסה לחשבון" },
         { href: "/producer/dashboard", label: "דשבורד" },
       ],
     },
     {
-      title: "משפטי",
+      title: "שקיפות ואמון",
       links: [
-        { href: "/terms", label: "תנאי שימוש" },
-        { href: "/terms#privacy", label: "פרטיות" },
-        { href: "/about#contact", label: "דווח על בעיה" },
+        { href: "/terms", label: "תנאי השימוש שלנו" },
+        { href: "/terms#privacy", label: "מדיניות פרטיות" },
+        { href: "/about#contact", label: "משהו לא בסדר? דווחי לנו" },
       ],
     },
   ];
@@ -87,7 +87,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-light/90 text-sm leading-relaxed max-w-xs mb-4">
-              ישר מהמקור אליך. פלטפורמה שמחברת בין יצרנים מקומיים לצרכנים ישראליים.
+              ישר מהמקור אליך. פלטפורמה שמחברת בין בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית — לצרכנים ישראליים.
             </p>
 
             {/* Instagram */}

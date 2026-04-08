@@ -76,7 +76,7 @@ export default function EventsPage() {
       <section className="bg-primary text-white py-16">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
-            אירועים בחוות ואצל יצרנים
+            אירועים בחוות ואצל בתי עסק
           </h1>
           <p className="text-light text-lg">
             סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור

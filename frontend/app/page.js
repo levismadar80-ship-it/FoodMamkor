@@ -171,7 +171,7 @@ export default function HomePage() {
               color: "#EAF3DE",
             }}
           >
-            מוצרים מאומתים מיצרנים ישראליים
+            בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית
           </motion.p>
 
           {/* Pill search */}
@@ -194,7 +194,7 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <label htmlFor="hero-search" className="sr-only">
-              חיפוש יצרנים וערים
+              חיפוש בתי עסק וערים
             </label>
             <input
               id="hero-search"
@@ -220,7 +220,7 @@ export default function HomePage() {
           onClick={scrollToProducers}
           className="absolute left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition-opacity animate-bounce"
           style={{ bottom: "32px" }}
-          aria-label="גלול לרשימת היצרנים"
+          aria-label="גלול לרשימת בתי העסק"
         >
           <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -233,7 +233,7 @@ export default function HomePage() {
           ========================= */}
       <section className="bg-primary text-white py-4 text-center">
         <p className="font-body text-lg tracking-wide">
-          <span className="font-semibold tabular-nums">{statsProducersCount}</span> יצרנים מאומתים
+          <span className="font-semibold tabular-nums">{statsProducersCount}</span> בתי עסק מאומתים
           &nbsp;·&nbsp;
           <span className="font-semibold tabular-nums">{statsCategoriesCount}</span> קטגוריות
           &nbsp;·&nbsp;
@@ -249,7 +249,7 @@ export default function HomePage() {
           <h2 className="font-headline font-bold text-site-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
             גלי לפי קטגוריה
           </h2>
-          <p className="text-site-muted text-base">ישר מהיצרן — בלי מתווכים</p>
+          <p className="text-site-muted text-base">ישר מבית העסק — בלי מתווכים</p>
         </FadeInSection>
         <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
@@ -354,7 +354,7 @@ export default function HomePage() {
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
                   className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-light transition font-medium"
                 >
-                  הצג עוד
+                  עוד בתי עסק
                 </button>
               </div>
             )}
@@ -400,7 +400,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
             { step: "01", title: "מצאי", text: "חפשי בתי עסק קרובים דרך המפה, גריד הקטגוריות או שורת החיפוש" },
-            { step: "02", title: "צרי קשר", text: "דברי ישירות עם היצרן בוואטסאפ, בטלפון או באינסטגרם" },
+            { step: "02", title: "צרי קשר", text: "דברי ישירות עם בית העסק בוואטסאפ, בטלפון או באינסטגרם" },
             { step: "03", title: "קבלי", text: "אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות" },
           ].map((step, idx) => (
             <FadeInSection key={step.step} delay={idx * 0.12}>
@@ -485,13 +485,13 @@ export default function HomePage() {
             יש לך עסק? בואי אליו
           </h2>
           <p className="text-light/90 text-lg mb-8 max-w-xl mx-auto">
-            אם את יצרנית, חקלאית או מגדלת — הצטרפי לדירקטורי הראשון בישראל לאוכל אמיתי.
+            אם את בעלת עסק, חקלאית או מגדלת — הצטרפי לדירקטורי הראשון בישראל לאוכל אמיתי.
           </p>
           <Link
             href="/register/producer"
             className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-light transition font-medium"
           >
-            הוסף את העסק שלך
+            הוסיפי את העסק שלך 🌿
           </Link>
         </div>
       </section>

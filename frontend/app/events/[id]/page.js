@@ -127,7 +127,7 @@ export default function EventDetailPage() {
               href={`/producer/${event.producer_id}`}
               className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
-              צור קשר עם היצרן
+              צור קשר עם בית העסק
             </Link>
           )}
           <Link

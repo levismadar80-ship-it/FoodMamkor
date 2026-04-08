@@ -36,7 +36,7 @@ export default function AboutPage() {
       setForm({ name: "", email: "", message: "" });
     } catch (err) {
       setContactStatus("error");
-      setContactMsg(err.response?.data?.detail || "שגיאה בשליחה — נסי שוב");
+      setContactMsg(err.response?.data?.detail || "משהו השתבש, נסי שוב");
     }
   };
 
@@ -66,15 +66,19 @@ export default function AboutPage() {
 
       {/* Story */}
       <section className="max-w-3xl mx-auto px-4 py-16">
-        <h2 className="font-serif text-3xl font-bold mb-6 text-center">הסיפור שלנו</h2>
-        <div className="bg-white rounded-[16px] p-8 shadow-sm leading-relaxed text-lg text-site-text/80 border border-border">
+        <h2 className="font-headline text-3xl font-bold mb-6 text-center">הסיפור שלנו</h2>
+        <div className="bg-white rounded-[16px] p-8 shadow-sm leading-relaxed text-lg text-site-text/85 border border-border">
           <p>
-            מהמקור נוצרה מתוך צורך אמיתי — למצוא grass-fed ליד הבית, גבינות אמיתיות,
-            לחם מחמצת שמישהו הכין בבית. הכל היה מפוזר בקבוצות ווטסאפ, קשה למצוא, קשה להגיע.
+            מהמקור נולדה מתוך צורך אמיתי — למצוא בשר grass-fed ליד הבית,
+            גבינות אמיתיות, לחם מחמצת שמישהו הכין בבית.
           </p>
           <p className="mt-4">
-            מהמקור שמה הכל במפה אחת — פלטפורמה אחת שמרכזת את כל בתי העסק המקומיים,
-            היצרנים הקטנים והשכנים שמבשלים בבית. פשוט, נגיש ואמיתי.
+            הכל היה מפוזר: קבוצות ווטסאפ, עמודי אינסטגרם, פליירים בסופר.
+            קשה למצוא, קשה להגיע, קשה לסמוך.
+          </p>
+          <p className="mt-4">
+            מהמקור שמה הכל במקום אחד — פלטפורמה שמרכזת בתי עסק מקומיים,
+            מגדלים קטנים, ושכנות שמבשלות בבית. פשוט, נגיש, ואמיתי.
           </p>
         </div>
       </section>
@@ -142,7 +146,7 @@ export default function AboutPage() {
               </div>
               <h3 className="font-serif text-2xl font-bold mb-4">המשימה</h3>
               <p className="text-light/90 leading-relaxed font-sans">
-                ליצור הזדמנויות כלכליות ליצרנים מקומיים ולחבר קהילות עם היתרונות הבריאותיים, הסביבתיים והכלכליים של אוכל מקומי.
+                ליצור הזדמנויות כלכליות לבתי עסק מקומיים ולחבר קהילות עם היתרונות הבריאותיים, הסביבתיים והכלכליים של אוכל מקומי.
               </p>
             </div>
 
@@ -203,20 +207,27 @@ export default function AboutPage() {
             </div>
             {/* Text — left in RTL */}
             <div className="order-2 text-right">
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-site-text mb-6">
+              <h2 className="font-headline text-4xl md:text-5xl font-bold text-site-text mb-6">
                 היי, אני ספיר.
               </h2>
               <div
-                className="text-site-text/80 font-sans text-lg space-y-5"
+                className="text-site-text/85 font-body text-lg space-y-5"
                 style={{ lineHeight: "1.8" }}
               >
-                <p>אמא, מחפשת אוכל אמיתי, ובעלת מהמקור.</p>
+                <p>
+                  מייסדת מהמקור. בת 21, תוכניתנית בצבא, ולומדת רפואה תזונתית
+                  אצל ד&quot;ר גיל יוסף שחר.
+                </p>
+                <p>
+                  התחלתי לשים לב שהכל סביבי רווי אוכל מעובד —
+                  ואין מקום אחד שפשוט מראה לך איפה יש אוכל אמיתי קרוב לבית.
+                </p>
                 <p>
                   כמו הרבה משפחות, התחלנו לחפש מקורות מזון מקומיים ובריאים יותר.
                   וגילינו שזה לוקח המון צעדים — לשאול בקבוצות ווטסאפ, לגוגל, לחפש באינסטגרם...
                 </p>
                 <p>
-                  עם כל הטכנולוגיה שיש לנו, זה לא אמור להיות כל כך מסובך למצוא יצרן טוב בקרבת הבית.
+                  עם כל הטכנולוגיה שיש לנו, זה לא אמור להיות כל כך מסובך.
                   אז מהמקור נולד.
                 </p>
               </div>
@@ -284,7 +295,7 @@ export default function AboutPage() {
               disabled={contactStatus === "loading"}
               className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-medium w-full md:w-auto disabled:opacity-60"
             >
-              {contactStatus === "loading" ? "שולחת..." : "שלח"}
+              {contactStatus === "loading" ? "שולחת..." : "שלחי"}
             </button>
 
             {contactMsg && (
@@ -314,13 +325,13 @@ export default function AboutPage() {
               href="/register/producer"
               className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-semibold text-lg"
             >
-              הוסף את העסק שלך
+              הוסיפי את העסק שלך 🌿
             </Link>
             <Link
               href="/map"
               className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-light transition font-semibold text-lg"
             >
-              מצאי עסקים קרובים
+              גלי עסקים קרובים
             </Link>
           </div>
         </div>
