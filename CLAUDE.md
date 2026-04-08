@@ -85,7 +85,7 @@ DEPLOYMENT.md    — פריסה מלאה ל-Vercel + Railway (step-by-step)
 
 ## פריסה (Production)
 - **Frontend:** Vercel — Root Directory: `frontend`, קונפיג ב-`frontend/vercel.json`
-- **Backend:** Railway — Root Directory: `backend`, Builder: Dockerfile (ראה `backend/railway.json`)
+- **Backend:** Railway — **Root Directory ריק** (מ-repo root), Builder: Dockerfile. ה-`Dockerfile` ו-`railway.json` יושבים ב-repo root ומשתמשים ב-`COPY backend/...`
 - **DB:** Railway PostgreSQL רגיל — **ללא PostGIS**, ללא תוספים ידניים
 - **חישובי מרחק:** נוסחת Haversine ישירות ב-SQL (`/producers?lat=&lng=&radius_km=`). מחזיר גם `distance_km` בכל תוצאה.
 - **Env vars:** `backend/.env.example` + `frontend/.env.example`

@@ -59,28 +59,34 @@ run anything manually.
 
 ## 2. Railway — Backend (FastAPI)
 
-### 2.1 Why the previous build failed
+### 2.1 Why the previous build failed (historical)
 
-The error `Error creating build plan with Railpack` happens because:
+The error `Error creating build plan with Railpack` used to happen because:
 
 1. The repo root contains **both** `frontend/` and `backend/`, so Railway's
-   auto-detector can't decide which project to build.
-2. Railpack (Railway's new default) doesn't understand the monorepo layout.
+   auto-detector couldn't decide which project to build.
+2. Railpack (Railway's new default) doesn't understand monorepo layouts.
+3. Our Dockerfile + `railway.json` were nested under `backend/`, which
+   Railway only finds if you set Root Directory = `backend` manually.
 
-**Fix:** Tell Railway explicitly which directory to build, and to use our
-Dockerfile instead of auto-detection.
+**Fix (now committed):** Both `/Dockerfile` and `/railway.json` live at
+the **repo root**. The Dockerfile uses `COPY backend/requirements.txt` and
+`COPY backend/ .` paths so the backend-only image is built from a
+repo-root build context. You do **not** need to set a Root Directory in
+Railway anymore — just import the repo and it works.
 
 ### 2.2 Create the backend service
 
 1. In the same Railway project → **New** → **GitHub Repo** → select
    `levismadar80-ship-it/foodmamkor`.
 2. After the service is created, open **Settings**:
-   - **Root Directory:** `backend`  ← **critical, this is the fix**
+   - **Root Directory:** leave blank (use the repo root)
    - **Branch:** `main` (or your deploy branch)
-   - **Watch Paths:** `backend/**`
+   - **Watch Paths:** `backend/**,Dockerfile,railway.json,.dockerignore`
+     — keeps frontend-only pushes from re-triggering the backend build.
 3. Under **Build**:
-   - **Builder:** `Dockerfile` (will be picked up automatically from
-     `backend/railway.json` — included in this repo)
+   - **Builder:** `Dockerfile` — Railway reads this from `/railway.json`
+     automatically; no manual setting required.
 4. Save. Do **not** redeploy yet — set env vars first.
 
 ### 2.3 Backend environment variables
@@ -274,8 +280,9 @@ Run through this checklist in a real browser:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Railway: `Error creating build plan with Railpack` | Root directory not set | Settings → **Root Directory** = `backend` |
+| Railway: `Error creating build plan with Railpack` | Railway can't find `/Dockerfile` or `/railway.json` | Make sure you're deploying from a commit that has both at the **repo root** (not `backend/`). Clear build cache + redeploy if the commit looks right. |
 | `ModuleNotFoundError: geoalchemy2` | Stale image from before the Haversine migration | Clear Railway build cache and redeploy |
+| `COPY failed: file not found in build context: backend/...` | Custom Root Directory set to `backend/` | Clear Root Directory in Railway Settings — build context must be the repo root for the new Dockerfile |
 | `column "location" does not exist` | Old schema had a dead PostGIS column | Startup migration drops it; restart the service once |
 | `/producers?lat=...&radius_km=...` returns `[]` unexpectedly | Producers seeded with NULL lat/lng | They're filtered out by design — add coords in admin or seed |
 | Frontend `/api/*` returns HTML (404) | `BACKEND_URL` not set at build time | Set env var in Vercel → **Redeploy** (not just restart) |
@@ -299,8 +306,9 @@ Run through this checklist in a real browser:
 
 | File | Purpose |
 |---|---|
-| `backend/Dockerfile` | Railway build image; uses `$PORT` at runtime |
-| `backend/railway.json` | Forces Dockerfile builder + healthcheck |
+| `Dockerfile` *(repo root)* | Railway build image; builds from repo-root context with `COPY backend/...`; uses `$PORT` at runtime |
+| `railway.json` *(repo root)* | Forces Dockerfile builder + healthcheck; discovered automatically by Railway without a Root Directory setting |
+| `.dockerignore` *(repo root)* | Prunes `frontend/`, docs, `.env`, and caches from the build context |
 | `backend/.env.example` | All backend env vars, documented |
 | `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
