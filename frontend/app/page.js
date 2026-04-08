@@ -5,26 +5,45 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { motion } from "framer-motion";
-import { Cow, Plant, Drop, Bread, Jar, Sparkle, House } from "@phosphor-icons/react";
+import { House } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
+import AnimatedCounter from "@/components/AnimatedCounter";
+import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
 const PAGE_SIZE = 8;
 
 const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920";
 
-// Category cards use Phosphor icons instead of emoji (consistent
-// rendering across Android/Windows/iOS — see CLAUDE.md note).
+// PREMIUM_DESIGN: parallax divider images between sections.
+const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600";
+const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600";
+
+// PREMIUM_DESIGN: category cards now use hand-drawn SVG line-art
+// (see CategoryIcons.jsx) instead of Phosphor — warmer, more unique
+// than a generic icon library. Match-terms + Unsplash images unchanged.
 const CATEGORY_CARDS = [
-  { key: "meat",  Icon: Cow,     name: "בשר, עוף ודגים",   match: ["בשר", "עוף", "דגים"],       image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format" },
-  { key: "veg",   Icon: Plant,   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],  image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format" },
-  { key: "dairy", Icon: Drop,    name: "חלב וגבינות",       match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format" },
-  { key: "bread", Icon: Bread,   name: "לחמים ואפייה",      match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format" },
-  { key: "oil",   Icon: Jar,     name: "שמנים ודבש",        match: ["שמן", "דבש"],               image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format" },
-  { key: "care",  Icon: Sparkle, name: "טיפוח וסבונים",     match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format" },
+  { key: "meat",  name: "בשר, עוף ודגים",    match: ["בשר", "עוף", "דגים"],        image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format" },
+  { key: "veg",   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],   image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format" },
+  { key: "dairy", name: "חלב וגבינות",        match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a432?w=600&fit=crop&auto=format" },
+  { key: "bread", name: "לחמים ואפייה",       match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format" },
+  { key: "oil",   name: "שמנים ודבש",         match: ["שמן", "דבש"],                image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format" },
+  { key: "care",  name: "טיפוח וסבונים",      match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&fit=crop&auto=format" },
+];
+
+// PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
+const MARQUEE_ITEMS = [
+  "🌿 ללא מעובד",
+  "🥩 ממרעה",
+  "🧀 אורגני",
+  "🍞 מחמצת",
+  "🫒 כתית",
+  "🌱 טרי ואמיתי",
+  "✅ מאומת",
+  "📍 מקומי",
 ];
 
 function matchCategoryId(cards, categories) {
@@ -116,11 +135,20 @@ export default function HomePage() {
     <div>
       {/* =========================
           HERO — gardensweet.com style
+          PREMIUM_DESIGN: Ken Burns slow pan/zoom on the background image.
+          The image lives on an absolutely-positioned inner layer so the
+          animation doesn't affect the text overlay.
           ========================= */}
-      <section
-        className="parallax-bg relative w-full"
-        style={{ backgroundImage: `url(${HERO_IMAGE})`, height: "100vh" }}
-      >
+      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
+        <div
+          className="kenburns-right absolute"
+          style={{
+            inset: "-5%",
+            backgroundImage: `url(${HERO_IMAGE})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
         {/* Gradient overlay — dark at bottom, fading up */}
         <div
           className="absolute inset-0"
@@ -215,12 +243,19 @@ export default function HomePage() {
 
       {/* =========================
           SOCIAL PROOF BAR
+          PREMIUM_DESIGN: numbers count up from 0 when scrolled into view.
           ========================= */}
       <section className="bg-primary text-white py-4 text-center">
         <p className="font-body text-lg tracking-wide">
-          <span className="font-semibold tabular-nums">{statsProducersCount}</span> בתי עסק מאומתים
+          <span className="font-semibold tabular-nums">
+            <AnimatedCounter target={statsProducersCount} />
+          </span>{" "}
+          בתי עסק מאומתים
           &nbsp;·&nbsp;
-          <span className="font-semibold tabular-nums">{statsCategoriesCount}</span> קטגוריות
+          <span className="font-semibold tabular-nums">
+            <AnimatedCounter target={statsCategoriesCount} />
+          </span>{" "}
+          קטגוריות
           &nbsp;·&nbsp;
           מכל רחבי הארץ
         </p>
@@ -241,7 +276,8 @@ export default function HomePage() {
           style={{ gap: "20px" }}
         >
           {categoryCards.map((card, idx) => {
-            const Icon = card.Icon;
+            // PREMIUM_DESIGN: hand-drawn line-art icon per category.
+            const LineArt = CATEGORY_ICONS[card.key];
             return (
             <motion.button
               key={card.key}
@@ -269,7 +305,7 @@ export default function HomePage() {
                 style={{ backgroundColor: "rgba(46,104,83,0.45)" }}
               />
               <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
-                <Icon size={44} weight="duotone" color="white" aria-hidden="true" />
+                {LineArt && <LineArt size={64} stroke="white" strokeWidth={1.75} />}
                 <h3 className="font-headline font-bold mt-3" style={{ fontSize: "22px" }}>
                   {card.name}
                 </h3>
@@ -279,6 +315,42 @@ export default function HomePage() {
           })}
         </div>
       </section>
+
+      {/* =========================
+          MARQUEE STRIP (PREMIUM_DESIGN)
+          Infinite scrolling hype tags between categories + producers.
+          The list is rendered twice so the -50% translate loops cleanly.
+          Pauses on hover; respects prefers-reduced-motion.
+          ========================= */}
+      <div
+        className="bg-primary overflow-hidden"
+        style={{
+          padding: "14px 0",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+        }}
+        aria-hidden="true"
+      >
+        <div className="marquee-track">
+          {[0, 1].map((loop) => (
+            <div key={loop} className="flex items-center" style={{ gap: "48px" }}>
+              {MARQUEE_ITEMS.map((text) => (
+                <span
+                  key={`${loop}-${text}`}
+                  className="font-body whitespace-nowrap"
+                  style={{
+                    color: "#EAF3DE",
+                    fontSize: 14,
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {text}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* =========================
           FOUNDER QUOTE CARD (LAUNCH_CHECKLIST fix 4)
@@ -391,10 +463,12 @@ export default function HomePage() {
       )}
 
       {/* =========================
-          PARALLAX QUOTE
+          PARALLAX DIVIDER 1 (PREMIUM_DESIGN)
+          First full-bleed divider. Ken Burns lives inside ParallaxQuote.
+          Uses the farm-field Unsplash asset from PREMIUM_DESIGN.md.
           ========================= */}
       <ParallaxQuote
-        image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600"
+        image={PARALLAX_IMAGE_1}
         quote="כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
         overlayOpacity={0.6}
         height="400px"
@@ -471,6 +545,18 @@ export default function HomePage() {
           </p>
         )}
       </section>
+
+      {/* =========================
+          PARALLAX DIVIDER 2 (PREMIUM_DESIGN)
+          Visual breather before the events block. Quote is intentionally
+          shorter than the first divider so the page has rhythm.
+          ========================= */}
+      <ParallaxQuote
+        image={PARALLAX_IMAGE_2}
+        quote="כל עונה — טעם אחר"
+        overlayOpacity={0.55}
+        height="340px"
+      />
 
       {/* =========================
           UPCOMING EVENTS PREVIEW (Task 6)

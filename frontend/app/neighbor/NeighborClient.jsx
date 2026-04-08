@@ -67,9 +67,28 @@ export default function NeighborClient() {
 
   return (
     <div>
-      {/* ================= Hero ================= */}
-      <section className="bg-primary-dark text-light py-16 md:py-20">
-        <div className="max-w-5xl mx-auto px-4 text-center">
+      {/* ================= Hero =================
+          PREMIUM_DESIGN: Ken Burns background image behind the title —
+          kitchen/cooking photo from Unsplash. */}
+      <section className="relative text-light py-16 md:py-20 overflow-hidden">
+        <div
+          className="kenburns-left absolute"
+          style={{
+            inset: "-5%",
+            backgroundImage:
+              "url(https://images.unsplash.com/photo-1498579809087-ef1e558fd1da?w=1600)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(46,74,46,0.78) 0%, rgba(46,74,46,0.90) 100%)",
+          }}
+        />
+        <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1
             className="font-headline font-bold text-white mb-3 inline-flex items-center gap-3"
             style={{ fontSize: "clamp(36px, 5vw, 56px)" }}
