@@ -11,6 +11,7 @@ from app.models.models import (
     NewsletterSubscriber,
     Producer,
     ProducerCategory,
+    ProducerReview,
     Product,
     Recipe,
     RecipeIngredient,
@@ -38,4 +39,5 @@ __all__ = [
     "NewsletterSubscriber",
     "ContactMessage",
     "Event",
+    "ProducerReview",
 ]

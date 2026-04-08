@@ -10,6 +10,7 @@ import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Breadcrumb from "@/components/Breadcrumb";
+import ProducerReviews from "@/components/ProducerReviews";
 
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
@@ -79,13 +80,24 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       {/* Header */}
       <div className="mt-6 flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold">{producer.name}</h1>
+          <div className="flex items-center flex-wrap gap-2 mb-2">
+            <h1 className="font-headline text-3xl font-bold text-site-text ml-2">{producer.name}</h1>
             {producer.is_verified && (
-              <span className="bg-primary text-white text-xs px-3 py-1 rounded-full">מאומת ✓</span>
+              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full">
+                ✅ עסק מאומת
+              </span>
+            )}
+            {producer.reviews_count > 0 && (
+              <span
+                className="text-xs px-3 py-1 rounded-full"
+                style={{ background: "#FFF9E6", color: "#946A00", border: "1px solid #F0C040" }}
+                title={`${producer.reviews_count} ביקורות`}
+              >
+                ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
+              </span>
             )}
             {producer.plan === "premium" && (
-              <span className="bg-accent-warm text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
+              <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
             )}
           </div>
           <p className="text-text-secondary">{producer.city}</p>
@@ -231,6 +243,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         )}
         <ReportButton producerId={producer.id} />
       </div>
+
+      {/* Reviews section (FIXES_V2.md fix 3) */}
+      <ProducerReviews producerId={producer.id} />
     </div>
   );
 }

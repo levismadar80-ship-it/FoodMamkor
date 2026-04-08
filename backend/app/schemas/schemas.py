@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -200,6 +200,8 @@ class ProducerListOut(BaseModel):
     pickup_points: bool = False
     kosher: str | None = None
     is_available_today: bool = False
+    avg_rating: float = 0
+    reviews_count: int = 0
     images: list[str] = []
     categories: list[CategoryOut] = []
 
@@ -289,6 +291,18 @@ class HomeProductCreate(BaseModel):
     neighborhood: str | None = None
     city: str | None = None
     phone: str | None = None
+    # Expanded fields (FIXES_V2.md fix 2)
+    category: str | None = None
+    prep_date: date | None = None
+    expiry_date: date | None = None
+    storage_type: str | None = None
+    allergens: str | None = None
+    kosher: str | None = None
+    is_organic: bool = False
+    unit: str | None = None
+    delivery_method: str | None = None
+    location_notes: str | None = None
+    images: list[str] = []
 
 
 class HomeProductUpdate(BaseModel):
@@ -300,6 +314,17 @@ class HomeProductUpdate(BaseModel):
     neighborhood: str | None = None
     city: str | None = None
     phone: str | None = None
+    category: str | None = None
+    prep_date: date | None = None
+    expiry_date: date | None = None
+    storage_type: str | None = None
+    allergens: str | None = None
+    kosher: str | None = None
+    is_organic: bool | None = None
+    unit: str | None = None
+    delivery_method: str | None = None
+    location_notes: str | None = None
+    images: list[str] | None = None
 
 
 class HomeProductRatingOut(BaseModel):
@@ -322,6 +347,17 @@ class HomeProductOut(BaseModel):
     city: str | None = None
     phone: str | None = None
     is_active: bool
+    category: str | None = None
+    prep_date: date | None = None
+    expiry_date: date | None = None
+    storage_type: str | None = None
+    allergens: str | None = None
+    kosher: str | None = None
+    is_organic: bool = False
+    unit: str | None = None
+    delivery_method: str | None = None
+    location_notes: str | None = None
+    images: list[str] = []
     moderation_status: str = "APPROVED"
     moderation_reason: str | None = None
     moderation_suggestion: str | None = None

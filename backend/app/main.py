@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import admin, admin_extra, auth, events, favorites, home_products, marketing, producer_me, producers, recipes, reports, upload
+from app.routers import admin, admin_extra, auth, events, favorites, home_products, marketing, producer_me, producers, recipes, reports, reviews, upload
 
 
 def _migrate_columns(engine):
@@ -35,6 +35,19 @@ def _migrate_columns(engine):
         ("home_products", "moderation_status", "VARCHAR(20) DEFAULT 'APPROVED'"),
         ("home_products", "moderation_reason", "TEXT"),
         ("home_products", "moderation_suggestion", "TEXT"),
+        ("home_products", "category", "VARCHAR(50)"),
+        ("home_products", "prep_date", "DATE"),
+        ("home_products", "expiry_date", "DATE"),
+        ("home_products", "storage_type", "VARCHAR(30)"),
+        ("home_products", "allergens", "TEXT"),
+        ("home_products", "kosher", "VARCHAR(30)"),
+        ("home_products", "is_organic", "BOOLEAN DEFAULT FALSE"),
+        ("home_products", "unit", "VARCHAR(30)"),
+        ("home_products", "delivery_method", "VARCHAR(30)"),
+        ("home_products", "location_notes", "TEXT"),
+        ("home_products", "images", "TEXT[] DEFAULT ARRAY[]::TEXT[]"),
+        ("producers", "avg_rating", "FLOAT DEFAULT 0"),
+        ("producers", "reviews_count", "INTEGER DEFAULT 0"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
@@ -89,6 +102,7 @@ app.include_router(reports.router)
 app.include_router(upload.router)
 app.include_router(marketing.router)
 app.include_router(events.router)
+app.include_router(reviews.router)
 
 
 @app.get("/")

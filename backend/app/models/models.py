@@ -53,6 +53,9 @@ class Producer(Base):
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     is_available_today = Column(Boolean, default=False)  # producer self-marks daily
+    # Aggregates (denormalized for fast list queries) — maintained in review router
+    avg_rating = Column(Float, default=0)
+    reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
 
@@ -61,6 +64,7 @@ class Producer(Base):
     delivery_areas = relationship("DeliveryArea", back_populates="producer", cascade="all, delete-orphan")
     favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
+    reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
 
 
 class User(Base):
@@ -192,7 +196,7 @@ class HomeProduct(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
     description = Column(Text)
-    photo = Column(Text)  # Cloudinary URL
+    photo = Column(Text)  # Cloudinary URL (primary/cover — first of `images`)
     quantity = Column(String(100))
     price = Column(Numeric(10, 2))
     neighborhood = Column(String(100))
@@ -201,6 +205,18 @@ class HomeProduct(Base):
     available_until = Column(DateTime, nullable=True)  # expiry date
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
+    # --- expanded fields (FIXES_V2.md fix 2) ---
+    category = Column(String(50), nullable=True)  # בשר ועוף / דגים / ירקות / ...
+    prep_date = Column(Date, nullable=True)       # תאריך הכנה / קטיף
+    expiry_date = Column(Date, nullable=True)     # תאריך תפוגה
+    storage_type = Column(String(30), nullable=True)  # מקרר / מקפיא / טמפרטורת חדר
+    allergens = Column(Text, nullable=True)       # "חיטה, ביצים, חלב..."
+    kosher = Column(String(30), nullable=True)    # כשר / לא כשר / לא ידוע
+    is_organic = Column(Boolean, default=False)
+    unit = Column(String(30), nullable=True)      # ק״ג / יח׳ / ליטר / מנות
+    delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
+    location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
+    images = Column(ARRAY(Text), default=[])      # up to 4 photos (Cloudinary URLs)
     # AI moderation (see MODERATION.md)
     moderation_status = Column(String(20), default="APPROVED")  # APPROVED|FLAGGED|REJECTED
     moderation_reason = Column(Text, nullable=True)
@@ -281,6 +297,28 @@ class ContactMessage(Base):
     email = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProducerReview(Base):
+    """Public reviews for producers (not for home-products — those have
+    HomeProductRating). One review per user per producer (unique constraint).
+    Aggregates maintained on producers.avg_rating + reviews_count.
+    """
+    __tablename__ = "producer_reviews"
+    __table_args__ = (
+        UniqueConstraint("producer_id", "user_id", name="uq_one_review_per_producer_per_user"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    stars = Column(Integer, nullable=False)  # 1-5
+    title = Column(String(200), nullable=True)
+    body = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    producer = relationship("Producer", back_populates="reviews")
+    user = relationship("User")
 
 
 class HomeProductRating(Base):

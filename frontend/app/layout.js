@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata = {
   title: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }) {
           <Footer />
           <BottomNav />
           <Toaster />
+          <CookieBanner />
         </AuthProvider>
       </body>
     </html>
