@@ -1,12 +1,43 @@
+"""Image upload endpoint.
+
+SECURITY FIX #6 (SECURITY.md): the previous version trusted the client-
+submitted `Content-Type` header (forgeable) and used no size limit.
+This version:
+  1. Enforces MAX_FILE_SIZE before anything else (5 MB)
+  2. Validates the file contents by matching magic bytes — the browser's
+     declared content-type is not trusted
+  3. Uses a UUID for Cloudinary's public_id (not the user-supplied filename)
+  4. Tells Cloudinary resource_type="image" which adds a server-side check
+"""
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/upload", tags=["upload"])
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB — matches SECURITY.md fix 6
+
+# Magic-byte signatures for the image formats we allow. Much cheaper and
+# less dependency-heavy than python-magic (which requires libmagic on the
+# host). These covers the three formats the frontend lets users upload.
+def _sniff_image_type(header: bytes) -> str | None:
+    if len(header) < 12:
+        return None
+    if header.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "webp"
+    if header[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+    return None
 
 
 @router.post("/image")
@@ -15,9 +46,29 @@ async def upload_image(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Upload image to Cloudinary. Enforces free plan limit (3 images)."""
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+    """Upload image to Cloudinary. Validates size and real content type.
+    Enforces free plan limit (3 images) for producers.
+    """
+    # Read the whole file once so we can size-check and content-sniff. We cap
+    # at MAX_FILE_SIZE + 1 so oversized uploads still fail cheaply without
+    # OOM-ing the process.
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
+        )
+    if not contents:
+        raise HTTPException(status_code=400, detail="קובץ ריק")
+
+    # SECURITY FIX #6: sniff the real format from magic bytes, don't trust
+    # the client-reported content_type.
+    detected = _sniff_image_type(contents[:32])
+    if detected is None:
+        raise HTTPException(
+            status_code=400,
+            detail="רק תמונות JPG/PNG/WebP/GIF מותרות",
+        )
 
     # Check freemium limit for producers
     if user.role == "producer" and user.producer_id:
@@ -29,8 +80,9 @@ async def upload_image(
             )
 
     if not settings.cloudinary_cloud_name:
-        # Fallback: return a placeholder when Cloudinary is not configured
-        return {"url": f"https://placehold.co/600x400?text={file.filename}"}
+        # Dev fallback: return a local placeholder URL that won't trigger
+        # the Next.js remote-image SVG guard.
+        return {"url": f"/placeholder-image.png?name={uuid.uuid4().hex[:8]}"}
 
     try:
         import cloudinary
@@ -41,8 +93,18 @@ async def upload_image(
             api_key=settings.cloudinary_api_key,
             api_secret=settings.cloudinary_api_secret,
         )
-        contents = await file.read()
-        result = cloudinary.uploader.upload(contents, folder="mehamakor")
+        # SECURITY FIX #6: use a UUID public_id (not file.filename), and
+        # resource_type="image" which makes Cloudinary reject non-images
+        # server-side as a second layer of defense.
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor",
+            public_id=uuid.uuid4().hex,
+            resource_type="image",
+            transformation=[{"width": 1200, "crop": "limit"}],
+        )
         return {"url": result["secure_url"]}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

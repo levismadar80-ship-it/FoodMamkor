@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
@@ -6,6 +6,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
     GoogleAuthRequest,
@@ -20,7 +21,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=Token)
-def register(data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
+def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -35,11 +37,14 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    # LAUNCH_CHECKLIST week 3 — welcome email (fire-and-forget, no block)
+    _send_welcome_email(user.email, user.name, role="consumer")
     return Token(access_token=create_access_token(user.id))
 
 
 @router.post("/register/producer", response_model=Token)
-def register_producer(data: ProducerRegister, db: Session = Depends(get_db)):
+@limiter.limit("3/hour")  # SECURITY FIX #2
+def register_producer(request: Request, data: ProducerRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -83,12 +88,15 @@ def register_producer(data: ProducerRegister, db: Session = Depends(get_db)):
     db.refresh(user)
 
     _notify_admin_new_producer(producer)
+    # LAUNCH_CHECKLIST week 3 — welcome email (business variant)
+    _send_welcome_email(user.email, user.name, role="producer")
 
     return Token(access_token=create_access_token(user.id))
 
 
 @router.post("/google", response_model=Token)
-def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
+def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
     user_info = _verify_google_token(data.id_token)
     if not user_info:
@@ -122,7 +130,8 @@ def google_auth(data: GoogleAuthRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
+def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -137,7 +146,8 @@ def get_me(user: User = Depends(get_current_user)):
 
 
 @router.post("/apple", response_model=Token)
-def apple_auth(data: AppleAuthRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # SECURITY FIX #2
+def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
     user_info = _verify_apple_token(data.id_token)
     if not user_info:
@@ -188,6 +198,61 @@ def delete_account(user: User = Depends(get_current_user), db: Session = Depends
     _send_deletion_email(user_email, user_name)
 
     return {"detail": "Account deleted successfully"}
+
+
+def _send_welcome_email(email: str, name: str, role: str = "consumer"):
+    """LAUNCH_CHECKLIST week 3 — send welcome email after registration.
+    Fire-and-forget: SMTP failures never block the registration response.
+    """
+    if not settings.smtp_user:
+        print(f"[EMAIL] Would send welcome email to {email} (role={role})")
+        return
+
+    consumer_body = (
+        f"שלום {name},\n\n"
+        f"ברוכה הבאה למהמקור! 🌿\n\n"
+        f"עכשיו את יכולה לגלות בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית —\n"
+        f"כל האוכל האמיתי, במקום אחד.\n\n"
+        f"מה הלאה?\n"
+        f"  • גלי בתי עסק לפי עיר או קטגוריה: {settings.frontend_url}\n"
+        f"  • פתחי את המפה: {settings.frontend_url}/map\n"
+        f"  • שמרי עסקים מועדפים\n\n"
+        f"אם יש שאלות — פשוט תגיבי למייל הזה.\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+
+    producer_body = (
+        f"שלום {name},\n\n"
+        f"ברוכה הבאה למהמקור! 🌿\n\n"
+        f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
+        f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
+        f"אחרי האישור תקבלי מייל עם הקישור לעסק שלך,\n"
+        f"ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
+        f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+
+    body = producer_body if role == "producer" else consumer_body
+    subject = "ברוכה הבאה למהמקור 🌿"
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = settings.smtp_user
+        msg["To"] = email
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+        # Log only the email prefix per security policy (never full address in logs)
+        print(f"[EMAIL] Welcome email sent to {email.split('@')[0]}***")
+    except Exception as e:
+        # Never block registration on email failure
+        print(f"[EMAIL] Welcome email failed: {e}")
 
 
 def _send_deletion_email(email: str, name: str):

@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     Column,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
@@ -48,6 +50,10 @@ class Producer(Base):
     pickup_points = Column(Boolean, default=False)
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
+    is_available_today = Column(Boolean, default=False)  # producer self-marks daily
+    # Aggregates (denormalized for fast list queries) — maintained in review router
+    avg_rating = Column(Float, default=0)
+    reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
 
@@ -56,6 +62,7 @@ class Producer(Base):
     delivery_areas = relationship("DeliveryArea", back_populates="producer", cascade="all, delete-orphan")
     favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
+    reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
 
 
 class User(Base):
@@ -147,6 +154,29 @@ class Favorite(Base):
     producer = relationship("Producer", back_populates="favorited_by")
 
 
+class ProducerFollower(Base):
+    """FEEDBACK_FIXES.md new feature — follow a producer to get notified
+    about new products / back-in-stock events. Distinct from Favorite:
+    favorites are for bookmarking, follows are for push notifications.
+    The notification transport itself (Twilio/FCM) is NOT wired up yet —
+    this is the data-only foundation.
+    """
+    __tablename__ = "producer_followers"
+    __table_args__ = (
+        UniqueConstraint("user_id", "producer_id", name="uq_one_follow_per_user_producer"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    notify_new_products = Column(Boolean, default=True)
+    notify_back_in_stock = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    producer = relationship("Producer")
+
+
 class Recipe(Base):
     __tablename__ = "recipes"
 
@@ -187,15 +217,36 @@ class HomeProduct(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
     description = Column(Text)
-    photo = Column(Text)  # Cloudinary URL
+    photo = Column(Text)  # Cloudinary URL (primary/cover — first of `images`)
     quantity = Column(String(100))
     price = Column(Numeric(10, 2))
     neighborhood = Column(String(100))
     city = Column(String(100))
+    # Private address details (FIXES_V2.md fix 7c) — persisted server-side
+    # but NEVER exposed in the public HomeProductOut schema. Only the
+    # seller and admin can see these via a future authenticated endpoint.
+    street = Column(String(200), nullable=True)
+    zip_code = Column(String(20), nullable=True)
     phone = Column(String(20))  # for WhatsApp redirect
     available_until = Column(DateTime, nullable=True)  # expiry date
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
+    # --- expanded fields (FIXES_V2.md fix 2) ---
+    category = Column(String(50), nullable=True)  # בשר ועוף / דגים / ירקות / ...
+    prep_date = Column(Date, nullable=True)       # תאריך הכנה / קטיף
+    expiry_date = Column(Date, nullable=True)     # תאריך תפוגה
+    storage_type = Column(String(30), nullable=True)  # מקרר / מקפיא / טמפרטורת חדר
+    allergens = Column(Text, nullable=True)       # "חיטה, ביצים, חלב..."
+    kosher = Column(String(30), nullable=True)    # כשר / לא כשר / לא ידוע
+    is_organic = Column(Boolean, default=False)
+    unit = Column(String(30), nullable=True)      # ק״ג / יח׳ / ליטר / מנות
+    delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
+    location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
+    images = Column(ARRAY(Text), default=[])      # up to 4 photos (Cloudinary URLs)
+    # AI moderation (see MODERATION.md)
+    moderation_status = Column(String(20), default="APPROVED")  # APPROVED|FLAGGED|REJECTED
+    moderation_reason = Column(Text, nullable=True)
+    moderation_suggestion = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
@@ -230,6 +281,70 @@ class HomeProductWhatsAppClick(Base):
     user = relationship("User")
     home_product = relationship("HomeProduct", back_populates="whatsapp_clicks")
     rating = relationship("HomeProductRating", back_populates="click", uselist=False)
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(300), nullable=False)
+    description = Column(Text)
+    event_date = Column(Date, nullable=False)
+    event_time = Column(Time, nullable=True)
+    location = Column(String(300))  # "בחווה שלנו" / full address
+    city = Column(String(100))
+    lat = Column(Float)
+    lng = Column(Float)
+    image_url = Column(Text)
+    category = Column(String(30), nullable=False)  # סדנה|סיור|שוק|קטיף|טעימות|אחר
+    price = Column(Integer, default=0)  # 0 = free
+    max_participants = Column(Integer, nullable=True)
+    registration_url = Column(String(500), nullable=True)  # external signup link
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    producer = relationship("Producer")
+
+
+class NewsletterSubscriber(Base):
+    __tablename__ = "newsletter_subscribers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(200), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ContactMessage(Base):
+    __tablename__ = "contact_messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False)
+    email = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProducerReview(Base):
+    """Public reviews for producers (not for home-products — those have
+    HomeProductRating). One review per user per producer (unique constraint).
+    Aggregates maintained on producers.avg_rating + reviews_count.
+    """
+    __tablename__ = "producer_reviews"
+    __table_args__ = (
+        UniqueConstraint("producer_id", "user_id", name="uq_one_review_per_producer_per_user"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    stars = Column(Integer, nullable=False)  # 1-5
+    title = Column(String(200), nullable=True)
+    body = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    producer = relationship("Producer", back_populates="reviews")
+    user = relationship("User")
 
 
 class HomeProductRating(Base):

@@ -1,28 +1,69 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mehamakor.online";
+// Dynamic sitemap (LAUNCH_CHECKLIST week 1 — SEO).
+// Next.js App Router reads the default export and serves it at /sitemap.xml.
+//
+// SITE_URL preference order (first defined wins):
+//   1. NEXT_PUBLIC_SITE_URL   — canonical, set in Vercel Variables
+//   2. SITE_URL               — legacy server-only name
+//   3. https://mehamakor.online  — production default
+//
+// BACKEND_URL / NEXT_PUBLIC_API_URL is the in-Docker API hostname; either
+// works for server-side fetch() during build.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.SITE_URL ||
+  "https://mehamakor.online";
+const API_URL =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8000";
 
 export default async function sitemap() {
+  const now = new Date();
+
   const staticPages = [
-    { url: `${SITE_URL}`, lastModified: new Date(), priority: 1.0 },
-    { url: `${SITE_URL}/map`, lastModified: new Date(), priority: 0.8 },
-    { url: `${SITE_URL}/register/producer`, lastModified: new Date(), priority: 0.7 },
-    { url: `${SITE_URL}/terms`, lastModified: new Date(), priority: 0.3 },
+    { url: `${SITE_URL}`, lastModified: now, priority: 1.0, changeFrequency: "daily" },
+    { url: `${SITE_URL}/map`, lastModified: now, priority: 0.9, changeFrequency: "daily" },
+    { url: `${SITE_URL}/events`, lastModified: now, priority: 0.8, changeFrequency: "daily" },
+    { url: `${SITE_URL}/about`, lastModified: now, priority: 0.6, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/register/producer`, lastModified: now, priority: 0.7, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/register`, lastModified: now, priority: 0.5, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/login`, lastModified: now, priority: 0.3, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/terms`, lastModified: now, priority: 0.2, changeFrequency: "yearly" },
   ];
 
+  // Producer pages — prefer slug URLs (SEO-friendly) when available.
   let producerPages = [];
   try {
     const res = await fetch(`${API_URL}/producers`);
     if (res.ok) {
       const producers = await res.json();
       producerPages = producers.map((p) => ({
-        url: `${SITE_URL}/producer/${p.id}`,
-        lastModified: new Date(),
+        url: p.slug ? `${SITE_URL}/${p.slug}` : `${SITE_URL}/producer/${p.id}`,
+        lastModified: now,
         priority: 0.9,
+        changeFrequency: "weekly",
       }));
     }
   } catch {
     // API not available during build — skip dynamic pages
   }
 
-  return [...staticPages, ...producerPages];
+  // Event detail pages — only future events
+  let eventPages = [];
+  try {
+    const res = await fetch(`${API_URL}/events`);
+    if (res.ok) {
+      const events = await res.json();
+      eventPages = events.map((e) => ({
+        url: `${SITE_URL}/events/${e.id}`,
+        lastModified: now,
+        priority: 0.7,
+        changeFrequency: "weekly",
+      }));
+    }
+  } catch {
+    // ignore
+  }
+
+  return [...staticPages, ...producerPages, ...eventPages];
 }

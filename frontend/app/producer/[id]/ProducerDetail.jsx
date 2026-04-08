@@ -1,18 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
 import FavoriteButton from "@/components/FavoriteButton";
+import FollowButton from "@/components/FollowButton";
 import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import WhatsAppShareButton from "@/components/WhatsAppShareButton";
+import Breadcrumb from "@/components/Breadcrumb";
+import ProducerReviews from "@/components/ProducerReviews";
 
+/**
+ * Producer detail page (ALL_PAGES_DESIGN.md עמוד 2).
+ *
+ * Layout: two-column on desktop — main info on the right (RTL leading),
+ * sticky contact card on the left. Contact card stays visible while the
+ * user scrolls through description/delivery/reviews.
+ * Mobile: single column, contact card inlines after the header.
+ */
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
+  const router = useRouter();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
 
@@ -28,16 +40,16 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        טוען...
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
+        טוענת עסקים טריים...
       </div>
     );
   }
 
   if (!producer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        בית עסק לא נמצא
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
+        לא מצאנו את בית העסק הזה — עדיין 🌱
       </div>
     );
   }
@@ -47,148 +59,286 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       ? `${window.location.origin}${producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}`
       : "";
 
+  const primaryCategory = producer.categories?.[0];
+  const whatsappNumber = producer.phone
+    ? producer.phone.replace(/^0/, "972").replace(/[-\s]/g, "")
+    : null;
+
+  const handleShowOnMap = () => {
+    try {
+      sessionStorage.setItem(
+        "focusProducer",
+        JSON.stringify({
+          id: producer.id,
+          lat: producer.lat,
+          lng: producer.lng,
+          name: producer.name,
+        }),
+      );
+    } catch {
+      // private mode — map will still open, just without highlight
+    }
+    router.push("/map");
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* Breadcrumb + back button */}
+      <div className="flex items-center justify-between mb-4">
+        <Breadcrumb
+          items={[
+            { href: "/", label: "בית" },
+            ...(primaryCategory
+              ? [{ href: `/?category=${primaryCategory.id}`, label: primaryCategory.name }]
+              : []),
+            { label: producer.name },
+          ]}
+        />
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          aria-label="חזרה לעמוד הקודם"
+        >
+          ← חזרה
+        </button>
+      </div>
+
       {/* Gallery */}
       <ImageGallery images={producer.images || []} />
 
-      {/* Header */}
-      <div className="mt-6 flex items-start justify-between">
+      {/* Two-column layout: main + sticky contact sidebar */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+        {/* ================= Main column ================= */}
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold">{producer.name}</h1>
+          {/* Header: name + trust badges */}
+          <div className="flex items-center flex-wrap gap-2 mb-2">
+            <h1 className="font-headline text-4xl font-bold text-site-text">
+              {producer.name}
+            </h1>
             {producer.is_verified && (
-              <span className="bg-primary text-white text-xs px-3 py-1 rounded-full">מאומת ✓</span>
+              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full">
+                ✅ עסק מאומת
+              </span>
+            )}
+            {producer.reviews_count > 0 && (
+              <span
+                className="bg-[#FFF9E6] text-[#946A00] border border-[#F0C040] text-xs px-3 py-1 rounded-full"
+                title={`${producer.reviews_count} ביקורות`}
+              >
+                ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
+              </span>
             )}
             {producer.plan === "premium" && (
-              <span className="bg-accent-warm text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
+              <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">
+                פרמיום
+              </span>
             )}
           </div>
-          <p className="text-text-secondary">{producer.city}</p>
+
+          <p className="text-site-muted text-sm flex items-center gap-1.5 mb-3">
+            <MapPin size={14} weight="duotone" />
+            {producer.city}
+            {primaryCategory && (
+              <>
+                <span className="mx-1">·</span>
+                {primaryCategory.emoji} {primaryCategory.name}
+              </>
+            )}
+          </p>
+
           {(producer.top_product_name || producer.starting_price_label) && (
-            <p className="mt-1 text-sm">
+            <p className="mt-1 text-sm mb-3">
               {producer.top_product_name && (
-                <span className="text-text-primary">{producer.top_product_name}</span>
+                <span className="text-site-text">{producer.top_product_name}</span>
               )}
               {producer.top_product_name && producer.starting_price_label && (
-                <span className="text-text-secondary"> · </span>
+                <span className="text-site-muted"> · </span>
               )}
               {producer.starting_price_label && (
-                <span className="text-primary font-semibold">{producer.starting_price_label}</span>
+                <span className="text-accent font-semibold">{producer.starting_price_label}</span>
               )}
             </p>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          <ShareButton url={shareUrl} title={producer.name} />
-          <FavoriteButton producerId={producer.id} />
-        </div>
-      </div>
 
-      {/* Categories */}
-      <div className="flex flex-wrap gap-2 mt-4">
-        {producer.categories?.map((cat) => (
-          <CategoryTag key={cat.id} category={cat} />
-        ))}
-      </div>
+          {/* Categories */}
+          {producer.categories?.length > 1 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {producer.categories.map((cat) => (
+                <CategoryTag key={cat.id} category={cat} />
+              ))}
+            </div>
+          )}
 
-      {/* Description */}
-      {producer.description && (
-        <div className="mt-6">
-          <h2 className="font-semibold text-lg mb-2">אודות</h2>
-          <p className="text-text-secondary leading-relaxed">{producer.description}</p>
-        </div>
-      )}
+          {/* Description */}
+          {producer.description && (
+            <section className="mt-8">
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-3">אודות</h2>
+              <p className="text-site-text/85 leading-relaxed whitespace-pre-line">
+                {producer.description}
+              </p>
+            </section>
+          )}
 
-      {/* Contact */}
-      <div className="mt-6 flex flex-wrap gap-3">
-        {producer.phone && (
-          <>
-            <a
-              href={`tel:${producer.phone}`}
-              className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
-            >
-              📞 {producer.phone}
-            </a>
-            <WhatsAppButton phone={producer.phone} productTitle={producer.name} />
-          </>
-        )}
-        {producer.instagram && (
-          <a
-            href={`https://instagram.com/${producer.instagram}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
-          >
-            📷 Instagram
-          </a>
-        )}
-        {producer.website && (
-          <a
-            href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
-          >
-            🌐 אתר
-          </a>
-        )}
-      </div>
-
-      {/* Products (premium only) */}
-      {producer.products?.length > 0 && (
-        <div className="mt-8">
-          <h2 className="font-semibold text-lg mb-4">מוצרים</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {producer.products.map((product) => (
-              <div key={product.id} className="bg-white rounded-[12px] p-4 border">
-                <p className="font-medium">{product.name}</p>
-                {product.description && <p className="text-sm text-text-secondary">{product.description}</p>}
-                {product.price_range && <p className="text-primary font-medium mt-1">{product.price_range}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Delivery Areas */}
-      {producer.delivery_areas?.length > 0 && (
-        <div className="mt-8">
-          <h2 className="font-semibold text-lg mb-4">אזורי משלוח</h2>
-          <div className="bg-white rounded-[12px] overflow-hidden border">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-text-secondary">עיר</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-text-secondary">מינימום הזמנה</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-text-secondary">יום משלוח</th>
-                </tr>
-              </thead>
-              <tbody>
-                {producer.delivery_areas.map((da) => (
-                  <tr key={da.id} className="border-t">
-                    <td className="px-4 py-3">{da.city}</td>
-                    <td className="px-4 py-3">{da.min_order ? `₪${da.min_order}` : "-"}</td>
-                    <td className="px-4 py-3">{da.delivery_day || "-"}</td>
-                  </tr>
+          {/* Products (premium only) */}
+          {producer.products?.length > 0 && (
+            <section className="mt-8">
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">מוצרים</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {producer.products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="bg-white rounded-[12px] p-4 border border-border"
+                  >
+                    <p className="font-medium text-site-text">{product.name}</p>
+                    {product.description && (
+                      <p className="text-sm text-site-muted mt-1">{product.description}</p>
+                    )}
+                    {product.price_range && (
+                      <p className="text-accent font-medium mt-2">{product.price_range}</p>
+                    )}
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              </div>
+            </section>
+          )}
 
-      {/* Show on map + Report */}
-      <div className="mt-8 pt-6 border-t flex items-center justify-between">
-        {producer.lat && producer.lng && (
-          <Link
-            href={`/map?lat=${producer.lat}&lng=${producer.lng}`}
-            className="inline-flex items-center gap-2 text-primary hover:underline text-sm font-medium"
-          >
-            🗺️ הצג במפה
-          </Link>
-        )}
-        <ReportButton producerId={producer.id} />
+          {/* Delivery Areas */}
+          {producer.delivery_areas?.length > 0 && (
+            <section className="mt-8">
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+                אזורי משלוח
+              </h2>
+              <div className="bg-white rounded-[12px] overflow-hidden border border-border">
+                <table className="w-full">
+                  <thead className="bg-light">
+                    <tr>
+                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
+                        עיר
+                      </th>
+                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
+                        מינימום הזמנה
+                      </th>
+                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
+                        יום משלוח
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {producer.delivery_areas.map((da) => (
+                      <tr key={da.id} className="border-t border-border">
+                        <td className="px-4 py-3 text-site-text">{da.city}</td>
+                        <td className="px-4 py-3 text-site-text">
+                          {da.min_order ? `₪${da.min_order}` : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-site-text">{da.delivery_day || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* Report */}
+          <div className="mt-8 pt-6 border-t border-border">
+            <ReportButton producerId={producer.id} />
+          </div>
+
+          {/* Reviews */}
+          <ProducerReviews producerId={producer.id} />
+        </div>
+
+        {/* ================= Sticky contact sidebar ================= */}
+        <aside className="order-first lg:order-last">
+          <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
+            <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
+
+            {/* WhatsApp — primary CTA */}
+            {whatsappNumber && (
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-2.5 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
+              >
+                <WhatsappLogo size={20} weight="fill" />
+                שלחי הודעה
+              </a>
+            )}
+
+            {/* Phone */}
+            {producer.phone && (
+              <a
+                href={`tel:${producer.phone}`}
+                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-2.5"
+                dir="ltr"
+              >
+                <Phone size={18} weight="duotone" className="text-primary shrink-0" />
+                {producer.phone}
+              </a>
+            )}
+
+            {/* Instagram */}
+            {producer.instagram && (
+              <a
+                href={`https://instagram.com/${producer.instagram}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-2.5"
+              >
+                <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
+                @{producer.instagram}
+              </a>
+            )}
+
+            {/* Website */}
+            {producer.website && (
+              <a
+                href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-4"
+              >
+                <Globe size={18} weight="duotone" className="text-primary shrink-0" />
+                אתר
+              </a>
+            )}
+
+            {/* Follow button — FEEDBACK_FIXES.md new feature */}
+            <div className="mb-2">
+              <FollowButton producerId={producer.id} />
+            </div>
+
+            {/* Favorites + Share row */}
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1 flex justify-center border border-border rounded-[10px] py-2 hover:bg-light transition">
+                <FavoriteButton producerId={producer.id} />
+              </div>
+              <div className="flex-1">
+                <ShareButton url={shareUrl} title={producer.name} />
+              </div>
+            </div>
+
+            {/* FINAL_AUDIT: WhatsApp share — the viral loop */}
+            <div className="mb-3">
+              <WhatsAppShareButton producer={producer} url={shareUrl} />
+            </div>
+
+            {/* Show on map */}
+            {producer.lat && producer.lng && (
+              <button
+                type="button"
+                onClick={handleShowOnMap}
+                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="פתח את המיקום של העסק במפה"
+              >
+                <MapTrifold size={16} weight="duotone" />
+                הצג במפה
+              </button>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );
