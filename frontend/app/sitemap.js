@@ -1,27 +1,60 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Dynamic sitemap (LAUNCH_CHECKLIST week 1 — SEO).
+// Next.js App Router reads the default export and serves it at /sitemap.xml.
+// Uses the SITE_URL env var if set (production) and falls back to the
+// production domain otherwise. BACKEND_URL is the in-Docker API hostname.
+const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
+const API_URL =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8000";
 
 export default async function sitemap() {
+  const now = new Date();
+
   const staticPages = [
-    { url: "https://mehamakor.co.il", lastModified: new Date(), priority: 1.0 },
-    { url: "https://mehamakor.co.il/map", lastModified: new Date(), priority: 0.8 },
-    { url: "https://mehamakor.co.il/register/producer", lastModified: new Date(), priority: 0.7 },
-    { url: "https://mehamakor.co.il/terms", lastModified: new Date(), priority: 0.3 },
+    { url: `${SITE_URL}`, lastModified: now, priority: 1.0, changeFrequency: "daily" },
+    { url: `${SITE_URL}/map`, lastModified: now, priority: 0.9, changeFrequency: "daily" },
+    { url: `${SITE_URL}/events`, lastModified: now, priority: 0.8, changeFrequency: "daily" },
+    { url: `${SITE_URL}/about`, lastModified: now, priority: 0.6, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/register/producer`, lastModified: now, priority: 0.7, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/register`, lastModified: now, priority: 0.5, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/login`, lastModified: now, priority: 0.3, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/terms`, lastModified: now, priority: 0.2, changeFrequency: "yearly" },
   ];
 
+  // Producer pages — prefer slug URLs (SEO-friendly) when available.
   let producerPages = [];
   try {
     const res = await fetch(`${API_URL}/producers`);
     if (res.ok) {
       const producers = await res.json();
       producerPages = producers.map((p) => ({
-        url: `https://mehamakor.co.il/producer/${p.id}`,
-        lastModified: new Date(),
+        url: p.slug ? `${SITE_URL}/${p.slug}` : `${SITE_URL}/producer/${p.id}`,
+        lastModified: now,
         priority: 0.9,
+        changeFrequency: "weekly",
       }));
     }
   } catch {
     // API not available during build — skip dynamic pages
   }
 
-  return [...staticPages, ...producerPages];
+  // Event detail pages — only future events
+  let eventPages = [];
+  try {
+    const res = await fetch(`${API_URL}/events`);
+    if (res.ok) {
+      const events = await res.json();
+      eventPages = events.map((e) => ({
+        url: `${SITE_URL}/events/${e.id}`,
+        lastModified: now,
+        priority: 0.7,
+        changeFrequency: "weekly",
+      }));
+    }
+  } catch {
+    // ignore
+  }
+
+  return [...staticPages, ...producerPages, ...eventPages];
 }

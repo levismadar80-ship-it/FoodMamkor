@@ -299,6 +299,31 @@ export default function HomePage() {
       </section>
 
       {/* =========================
+          FOUNDER QUOTE CARD (LAUNCH_CHECKLIST fix 4)
+          Hand-off between the abstract category grid and the concrete
+          producer grid. Establishes personal voice before browse mode.
+          ========================= */}
+      <FadeInSection className="max-w-4xl mx-auto px-4 mb-8">
+        <Link
+          href="/about"
+          className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <div className="w-20 h-20 rounded-full bg-light flex items-center justify-center text-4xl shrink-0" aria-hidden="true">
+            🌿
+          </div>
+          <div className="flex-1">
+            <p className="font-headline italic text-site-text text-lg md:text-xl leading-relaxed mb-2">
+              &ldquo;מצאתי בשר grass-fed ליד הבית רק אחרי שעתיים בקבוצות ווטסאפ.
+              בניתי את מהמקור כדי שלך זה ייקח 30 שניות.&rdquo;
+            </p>
+            <p className="font-body text-sm text-primary group-hover:underline">
+              ספיר, מייסדת מהמקור →
+            </p>
+          </div>
+        </Link>
+      </FadeInSection>
+
+      {/* =========================
           PRODUCERS GRID
           ========================= */}
       <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-16">
