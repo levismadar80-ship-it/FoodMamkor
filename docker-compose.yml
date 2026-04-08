@@ -19,6 +19,21 @@ services:
       - db
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/mehamakor
+      # --- Security config (SECURITY.md fixes #1, #7) ---
+      # These are read from a `.env` file in the project root (same dir
+      # as this docker-compose.yml). Docker Compose picks it up automatically.
+      # See `.env.example` for the template. The `:-` syntax gives a dev
+      # fallback if the var isn't set, so local-dev-without-.env still works.
+      ENV: ${ENV:-development}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      # --- Optional third-party keys ---
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
 
   frontend:
     build:
