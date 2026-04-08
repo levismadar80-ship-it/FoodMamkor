@@ -3,29 +3,14 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import { MagnifyingGlass, X, MapTrifold } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
+import { CATEGORY_LEGEND } from "@/lib/map-categories";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: false });
-
-/**
- * Category styling mirrored from MapComponent.CATEGORY_STYLES. Kept here
- * (and not exported from MapComponent) because MapComponent is dynamically
- * imported with ssr:false; its exports aren't available at render time on
- * the server pass. The spec lists these in two places; we keep them in
- * sync manually.
- */
-const CATEGORY_LEGEND = [
-  { name: "בשר, עוף ודגים", color: "#c04040", emoji: "🥩" },
-  { name: "ירקות, פירות ומשקים", color: "#2e6853", emoji: "🥬" },
-  { name: "חלב וגבינות", color: "#4a90d9", emoji: "🥛" },
-  { name: "לחמים ואפייה", color: "#8B6914", emoji: "🍞" },
-  { name: "שמנים ודבש", color: "#e8a020", emoji: "🫒" },
-  { name: "טיפוח וסבונים", color: "#9b59b6", emoji: "🧴" },
-];
 
 export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);
@@ -397,8 +382,8 @@ export default function MapPage() {
         </div>
         {visibleProducers.length === 0 && (
           <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl" aria-hidden="true">
-              🗺️
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6" aria-hidden="true">
+              <MapTrifold size={44} weight="duotone" className="text-primary" />
             </div>
             <h3 className="font-headline text-xl font-bold text-site-text mb-2">
               אין עסקים באזור המפה הנוכחי 🌱

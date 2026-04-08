@@ -6,6 +6,8 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import { Crosshair } from "@phosphor-icons/react";
+import { styleForProducer } from "@/lib/map-categories";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -27,22 +29,9 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
  * doesn't reliably forward refs).
  */
 
-// MAP_IMPROVEMENTS.md #5 — category color + emoji lookup.
-// Keys match category.name from the DB. Fallback to primary+leaf.
-const CATEGORY_STYLES = {
-  "בשר, עוף ודגים": { color: "#c04040", emoji: "🥩" },
-  "ירקות, פירות ומשקים": { color: "#2e6853", emoji: "🥬" },
-  "חלב וגבינות": { color: "#4a90d9", emoji: "🥛" },
-  "לחמים ואפייה": { color: "#8B6914", emoji: "🍞" },
-  "שמנים ודבש": { color: "#e8a020", emoji: "🫒" },
-  "טיפוח וסבונים": { color: "#9b59b6", emoji: "🧴" },
-};
-const DEFAULT_STYLE = { color: "#2e6853", emoji: "🌿" };
-
-function styleForProducer(producer) {
-  const firstCategory = producer?.categories?.[0]?.name;
-  return (firstCategory && CATEGORY_STYLES[firstCategory]) || DEFAULT_STYLE;
-}
+// MAP_IMPROVEMENTS.md #5 — category color + emoji lookup lives in
+// lib/map-categories.js (shared with MapClient since this component is
+// dynamically loaded with ssr:false).
 
 /** Create a teardrop divIcon, color + emoji by category. */
 function createCategoryMarker(producer, { active = false, hovered = false } = {}) {
@@ -408,12 +397,14 @@ export default function MapComponent({
       {/* MAP_IMPROVEMENTS.md #2 — "near me" — already in place, polished
           with Phosphor-style pill and flyTo animation above. */}
       <button
+        type="button"
         onClick={goToMyLocation}
-        className="absolute bottom-6 left-4 z-[1000] bg-white rounded-[10px] px-3 py-2 shadow-md hover:bg-light transition text-sm flex items-center gap-1.5 border border-border focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="absolute bottom-6 left-4 z-[1000] bg-white rounded-[10px] px-3 py-2 shadow-md hover:bg-light transition text-sm flex items-center gap-2 border border-border focus-visible:ring-2 focus-visible:ring-primary/40"
         title="קרוב אלי"
         aria-label="מרכז מפה על המיקום שלי"
       >
-        📍 קרוב אלי
+        <Crosshair size={16} weight="duotone" className="text-primary" aria-hidden="true" />
+        קרוב אלי
       </button>
     </div>
   );

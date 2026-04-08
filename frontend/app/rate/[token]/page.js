@@ -39,7 +39,7 @@ export default function RatingPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-text-secondary">טוען...</p>
+        <p className="text-text-secondary">טוענת...</p>
       </div>
     );
   }

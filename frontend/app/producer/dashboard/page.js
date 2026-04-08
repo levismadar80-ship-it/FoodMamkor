@@ -46,7 +46,7 @@ export default function ProducerDashboardPage() {
           : prev,
       );
     } catch {
-      alert("שגיאה בעדכון הזמינות");
+      alert("לא הצלחנו לעדכן את סטטוס הזמינות — נסי שוב בעוד רגע");
     } finally {
       setSaving(false);
     }

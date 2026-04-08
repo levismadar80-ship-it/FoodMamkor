@@ -92,6 +92,11 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* OPTIMIZE: preconnect to Unsplash so the hero background
+            (which lives on a CSS `background-image` and therefore
+            bypasses next/image) starts downloading as early as possible.
+            Improves LCP on the homepage hero. */}
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"

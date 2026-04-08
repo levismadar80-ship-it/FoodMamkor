@@ -23,7 +23,7 @@ export default function SettingsPage() {
       await deleteAccount();
       router.push("/");
     } catch {
-      alert("שגיאה במחיקת החשבון. נסה שוב.");
+      alert("משהו השתבש במחיקת החשבון. נסי שוב בעוד כמה רגעים.");
     }
     setDeleting(false);
   };

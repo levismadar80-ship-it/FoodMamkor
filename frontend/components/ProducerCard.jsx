@@ -105,7 +105,7 @@ export default function ProducerCard({ producer, active, onClick }) {
           </h3>
         </Link>
 
-        <p className="text-[13px] mt-1" style={{ color: "#6b6b6b" }}>
+        <p className="text-[13px] text-site-muted mt-1">
           {producer.city}
           {producer.categories?.[0] && (
             <> · {producer.categories[0].emoji} {producer.categories[0].name}</>
