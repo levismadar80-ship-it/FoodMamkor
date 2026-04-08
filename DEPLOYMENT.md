@@ -176,22 +176,24 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
 1. Vercel Dashboard → **Add New** → **Project** → import
    `levismadar80-ship-it/foodmamkor`.
 2. **Framework Preset:** Next.js (auto-detected).
-3. **Root Directory:** leave **blank** (i.e. the repo root).
-4. Leave build / install commands as defaults.
+3. **Root Directory:** set to **`frontend`** ← **critical**
+4. **Build & Development Settings:** leave everything at **Default** — do NOT
+   override Install Command, Build Command, or Output Directory. Vercel's
+   Next.js preset handles all of them automatically from
+   `frontend/package.json`.
 
-> **Why blank Root Directory?** The repo has a top-level `vercel.json`
-> that tells Vercel to build the Next.js app from `frontend/` via
-> `installCommand: "cd frontend && npm install"` +
-> `buildCommand: "cd frontend && npm run build"` +
-> `outputDirectory: "frontend/.next"`. This is the config-as-code
-> alternative to setting Root Directory in the UI — it survives re-imports
-> and is visible in git. If you prefer the UI setting, delete the repo-root
-> `vercel.json` and set **Root Directory = `frontend`** in Project Settings
-> instead. Do NOT do both.
+> **Why `frontend`?** The Next.js app lives in `frontend/`. With Root
+> Directory = `frontend`, Vercel `cd`s in there, reads `frontend/vercel.json`
+> for headers + framework hints, and uses default `npm install` + `next build`
+> from that cwd. This is the canonical Vercel monorepo pattern.
 >
-> **Note:** Vercel's `rootDirectory` is NOT a valid field inside `vercel.json`
-> — it's strictly a Project Setting. The build-command cd trick is how you
-> achieve the same effect config-as-code.
+> **Warning:** Vercel's `rootDirectory` is NOT a valid field inside
+> `vercel.json` — it's strictly a Project Setting in the dashboard. Don't try
+> to set it in a config file; you have to click it in the UI once per project.
+>
+> **If you see `cd: frontend: No such file or directory` in the build log:**
+> you have a leftover custom Install Command in **Settings → General → Build
+> & Development Settings**. Reset it to Default.
 
 ### 3.2 Frontend environment variables
 
@@ -323,7 +325,7 @@ Run through this checklist in a real browser:
 | `Dockerfile` *(repo root)* | Railway build image; builds from repo-root context with `COPY backend/...`; uses `$PORT` at runtime |
 | `railway.json` *(repo root)* | Forces Dockerfile builder + healthcheck; discovered automatically by Railway without a Root Directory setting |
 | `.dockerignore` *(repo root)* | Prunes `frontend/`, docs, `.env`, and caches from the build context |
-| `vercel.json` *(repo root)* | Monorepo build: `cd frontend && npm install/build`, `outputDirectory: frontend/.next`, Next.js preset, security headers. Import project with Root Directory **blank** so this file is picked up. |
+| `frontend/vercel.json` | Next.js framework hint + security headers. Imported by Vercel when Root Directory is set to `frontend`. No custom install/build commands — Vercel's defaults handle Next.js. |
 | `backend/.env.example` | All backend env vars, documented |
 | `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |

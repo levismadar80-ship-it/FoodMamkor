@@ -84,7 +84,7 @@ DEPLOYMENT.md    — פריסה מלאה ל-Vercel + Railway (step-by-step)
 ```
 
 ## פריסה (Production)
-- **Frontend:** Vercel — **Root Directory ריק**, קונפיג ב-`vercel.json` ב-repo root (`cd frontend && npm install/build`, `outputDirectory: frontend/.next`). `vercel.json` לא תומך ב-`rootDirectory` ישירות — משתמשים ב-build commands כמעקף.
+- **Frontend:** Vercel — **Root Directory = `frontend`** (UI setting, לא ניתן להגדיר ב-vercel.json). הקונפיג היחיד ב-`frontend/vercel.json` — framework+headers בלבד, ללא override של Install/Build Command (Vercel מזהה Next.js אוטומטית).
 - **Backend:** Railway — **Root Directory ריק** (מ-repo root), Builder: Dockerfile. ה-`Dockerfile` ו-`railway.json` יושבים ב-repo root ומשתמשים ב-`COPY backend/...`
 - **Backend URL:** `https://foodmamkor-production.up.railway.app`
 - **DB:** Railway PostgreSQL רגיל — **ללא PostGIS**, ללא תוספים ידניים
