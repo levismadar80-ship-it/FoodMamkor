@@ -122,12 +122,29 @@ Detail: [ADMIN.md](./ADMIN.md)
 | ✅ | v1 | All images have alt text + lazy loading | — |
 | ✅ | v1 | `prefers-reduced-motion` honored across Ken Burns / marquee / cursor / counter | — |
 
+### Legal compliance (Israel, April 2026)
+
+Shipped in PR #23 + #24 + #31 as the legally-required surface for an Israeli
+directory platform. All four pages are linked from the Footer's שקיפות ואמון
+column and use staging's `SECTIONS`-array layout with `font-headline` + `site-text` tokens.
+
+| Status | Version | Feature | Where |
+|---|---|---|---|
+| ✅ | v1 | `/privacy` — Privacy Policy aligned with חוק הגנת הפרטיות amendment 13 (2025); data categories, third parties (Cloudinary/Google/Anthropic/Twilio/Vercel/Railway), user rights, cookies, 18+, contact | `frontend/app/privacy/page.js` |
+| ✅ | v1 | `/terms` — Terms of Service: directory-only platform; seller licensing responsibility under חוק רישוי עסקים התשכ״ח–1968; 18+ requirement; violation reporting; Israeli governing law + Tel Aviv jurisdiction | `frontend/app/terms/page.js` |
+| ✅ | v1 | `/contact` — public contact form with SMTP delivery to `CONTACT_EMAIL` (falls back to `ADMIN_EMAIL`), fail-open to `contact_messages` DB row, 3-business-day SLA copy | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact` |
+| ✅ | v1 | `/accessibility` — Israeli Standard ת״י 5568 AA / WCAG 2.1 AA statement with an accessibility coordinator email | `frontend/app/accessibility/page.js` |
+| ✅ | v1 | `DirectoryDisclaimer` — shared "פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר בלבד." note, rendered on every producer detail page and inline on every `HomeProductCard` | `frontend/components/DirectoryDisclaimer.jsx` |
+| ✅ | v1 | Cookie banner — two-button ("אני מסכימה" / "רק הכרחיים") consent dialog, persists to `localStorage.cookies_accepted`, SSR-safe (no flash for returning users) | `frontend/components/CookieBanner.jsx` |
+| ✅ | v1 | Producer registration required checkboxes — declaration of business-licensing compliance under חוק רישוי עסקים התשכ״ח–1968 + explicit terms+privacy consent, submit disabled until both are checked | `frontend/app/register/producer/page.js` |
+| ✅ | v1 | Consumer registration terms+privacy checkbox — links both `/terms` and `/privacy` | `frontend/app/register/page.js` |
+
 ### Marketing & growth
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | Newsletter signup (footer) | `backend/app/routers/marketing.py` |
-| ✅ | v1 | Contact form (`/about`) | `backend/app/routers/marketing.py` |
+| ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP | `backend/app/routers/marketing.py` |
+| ✅ | v1 | Contact form — standalone `/contact` page (migrated out of `/about`), POST /contact persists to `contact_messages` + sends SMTP email to CONTACT_EMAIL, fail-open if SMTP unconfigured, rate-limited 5/hour per IP, 12 pytest cases | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact`, `tests/test_api.py::TestContact` |
 | ✅ | v1 | WhatsApp share button on every producer page (viral loop) | `frontend/components/WhatsAppShareButton.jsx` |
 | ✅ | v1 | WhatsApp click tracking on home products | `home_products.py` |
 | ✅ | v1 | Social proof bar with `AnimatedCounter` | `frontend/components/AnimatedCounter.jsx` |

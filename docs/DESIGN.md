@@ -38,16 +38,29 @@
 tailwind.config.js:
 ```js
 colors: {
-  primary:        '#2e6853',
-  'primary-dark': '#2E4A2E',
-  secondary:      '#4cb08b',
-  background:     '#F5F0E8',
-  'site-text':    '#1C1A17',
-  accent:         '#8B6914',
-  light:          '#EAF3DE',
-  border:         '#e8e0d0',
+  // ——— Core brand ———
+  primary:         '#2e6853',
+  'primary-light': '#3a7d64',   // producer card hover, CTA hover
+  'primary-dark':  '#2E4A2E',   // footer, hero overlay
+  secondary:       '#4cb08b',
+  'secondary-light':'#6dc4a3',  // secondary CTA hover
+  background:      '#F5F0E8',
+  'site-text':     '#1C1A17',
+  'site-muted':    '#6B6B6B',   // secondary copy, placeholders
+  accent:          '#8B6914',   // gold — prices, highlights
+  'accent-warm':   '#E8823A',   // warm orange — "premium" badge
+  'accent-warm-light':'#f0a060',
+  light:           '#EAF3DE',
+  border:          '#e8e0d0',
+  // ——— Text aliases (used in legacy components) ———
+  'text-primary':  '#1C1C1C',
+  'text-secondary':'#6B6B6B',
 }
 ```
+
+The 8 "core brand" tokens are locked; the hover-state, muted-text, and
+accent-warm tokens evolved with the v1 shipping work and are also
+considered canonical.
 
 globals.css:
 ```css
@@ -68,20 +81,28 @@ h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 ```
 
-| פונט | שימוש |
-|------|--------|
-| Frank Ruhl Libre | כותרות עברית h1-h3, גדול ואלגנטי |
-| Cormorant Garamond | טקסט אנגלי בלבד, italic לציטוטים |
-| DM Sans | גוף טקסט, כפתורים, ניווט |
+| פונט | שימוש | משקלים נטענים |
+|------|--------|----------------|
+| Frank Ruhl Libre | כותרות עברית h1-h3, גדול ואלגנטי | 400, 700, 900 |
+| Cormorant Garamond | טקסט אנגלי בלבד (לציטוטים) | 400, 600 |
+| DM Sans | גוף טקסט, כפתורים, ניווט | 400, 500, 600 |
+| Heebo | fallback לעברית כאשר DM Sans לא זמין | 300–700 |
 
 tailwind:
 ```js
 fontFamily: {
   headline: ['Frank Ruhl Libre', 'serif'],
   english:  ['Cormorant Garamond', 'serif'],
-  body:     ['DM Sans', 'sans-serif'],
+  body:     ['DM Sans', 'Heebo', 'sans-serif'],
+  heebo:    ['Heebo', 'sans-serif'],  // used by legacy components
 }
 ```
+
+Heebo is loaded from `globals.css` (not from `layout.js` like the other
+three) at weights 300/400/500/600/700. It's the fallback Hebrew body
+font — DM Sans renders Hebrew fine for most glyphs but Heebo covers the
+tail of less-common code points and legacy components that explicitly
+ask for `font-heebo`.
 
 ---
 
@@ -116,7 +137,7 @@ gradient overlay (מלמטה כלפי מעלה):
     line-height: 1.15
 
   כתובית:
-    "מוצרים מאומתים מיצרנים ישראליים"
+    "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית"
     font-family: DM Sans
     font-size: 18px
     letter-spacing: 0.12em
@@ -338,8 +359,8 @@ background: #2E4A2E | color: #EAF3DE | padding: 48px 0
   כותרת: "הישארי מעודכנת" (Frank Ruhl Libre, 22px)
   תת-כותרת: "מוצרים חדשים, אירועים ועסקים ישר לתיבה שלך"
   input email + כפתור "הצטרפי"
-  POST /api/newsletter → newsletter_subscribers
-  success: "נרשמת! 🌱"
+  POST /newsletter → newsletter_subscribers
+  success: "ברוכה הבאה למהמקור 🌱 נפגשות בתיבה"
   עיצוב input: border: 1px solid rgba(255,255,255,0.3), bg: transparent, color white
 
 שורה תחתונה:

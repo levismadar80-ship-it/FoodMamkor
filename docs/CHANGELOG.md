@@ -6,9 +6,11 @@
 > view, see [FEATURES.md](./FEATURES.md). For "what's coming", see
 > [ROADMAP.md](./ROADMAP.md).
 >
-> Newer changes go in commit messages and PR descriptions, not here —
-> this file exists so the rich session-knowledge accumulated during the
-> April 2026 build sessions isn't lost. When in doubt, trust git log.
+> **Policy (per CLAUDE.md workflow rule 11):** every PR adds a one-line
+> entry under the dated sessions below — no exceptions. The rich
+> session-knowledge from the April 2026 build weeks is preserved as
+> paragraphs; post-restructure entries are short (PR number, date, what
+> shipped) and link out to the PR for details.
 
 ## Topical index — April 2026 sessions
 
@@ -31,7 +33,23 @@ about:
 | **Feedback round** | FEEDBACK_FIXES (login polish + /about rewrite + follow feature) |
 | **Final polish** | Additional fixes + emoji → Phosphor (cross-platform icon consistency) |
 
-For changes after 2026-04-08, see `git log` and the GitHub PR list.
+---
+
+## 2026-04-11 — post-restructure session (PRs #22–#33)
+
+Short-form entries for the April 11 session. The CHANGELOG-opt-out line
+that lived here previously ("see git log and PR list") has been removed
+in favor of workflow rule 11's "always add a one-line entry" policy,
+and the five PRs below have been backfilled.
+
+- **PR #22 · experiences moderation** — Community experiences feature: public `/experiences` list + `/experiences/new` authenticated form + Claude Haiku pre-moderation → admin approval flow + `/admin/experiences` queue with 5 tabs and host notification emails. Separate from `/events` (different moderation pipeline).
+- **PR #23 · feat: legal compliance + manual testing checklist** — Israeli-law-required legal surface: new `/privacy` (חוק הגנת הפרטיות amendment 13, 2025), `/terms` (directory-only platform, חוק רישוי עסקים licensing, 18+, Tel Aviv jurisdiction), `/contact` (form with mailto fallback), `/accessibility` (ת״י 5568 AA). New `DirectoryDisclaimer` component rendered on producer detail + every `HomeProductCard`. Producer registration gets required licensing + terms+privacy checkboxes. Footer legal column. Cookie banner preserved. First `docs/MANUAL_TESTING.md` checklist + CLAUDE.md workflow rules expanded to 10.
+- **PR #24 · feat(contact): SMTP email delivery + CONTACT_EMAIL env var + 12 tests** — `POST /contact` now sends real email via `_send_contact_email()` helper using SMTP_USER / SMTP_PASSWORD credentials; routes to `CONTACT_EMAIL` env var (falls back to `ADMIN_EMAIL`); fail-open semantics (DB row always persists, SMTP errors logged and swallowed); 12 `TestContact` pytest cases covering validation, DB save, email delivery, fail-open paths. Plain-text emails with subject `"מהמקור — פנייה חדשה מ-{name}"`.
+- **PR #27 · fix(contact): /contact page display fix** — SUPERSEDED by PR #31 before merge. Retargeted to the new canonical `levismadar80@gmail.com` email and reopened there.
+- **PR #28 · docs(CLAUDE.md): add workflow rule 11** — "After every PR, auto-update every doc your code touched" — DATA.md / ADMIN.md / DESIGN.md / FEATURES.md / MANUAL_TESTING.md / SECURITY.md / DEPLOYMENT.md / CHANGELOG.md all have explicit triggers. CLAUDE.md grew from 72 → 81 lines (still within the ≤100 cap).
+- **PR #31 · feat(contact): switch CONTACT_EMAIL to levismadar80@gmail.com (+ display fix)** — Canonical public contact inbox moved from `contactmehamakor.online@gmail.com` to the founder's own Gmail, which also hosts the SMTP credentials so `From:` matches the authenticated sender and Gmail doesn't flag outbound as spoofed. Bundles the `/contact` page display fix from the superseded PR #27. Backend is unchanged — only the env var value and the frontend constant.
+- **PR #33 · fix(security): require auth on POST /producers** — Close silent gap where `POST /producers` was anonymous in code but docs/DATA.md documented it as auth-required. Added `get_current_user` dep + 4 TDD test cases. Zero frontend callers (only `GET /producers` + admin subpaths), so the fix is safe. The public "become a producer" signup at `POST /auth/register/producer` is a different endpoint and is unaffected.
+- **feature/docs-audit-sync-april-2026 (this PR)** — Full documentation audit: found + fixed drift in `DATA.md` (none after PR #33 lands), `SECURITY.md` (dropped `mehamakor123` legacy reference, JWT + IDOR blocks rewritten as "shipped"), `DEPLOYMENT.md` (ACCESS_TOKEN_EXPIRE_MINUTES 10080 → 1440, added ANTHROPIC_API_KEY / ANTHROPIC_MODEL / CONTACT_EMAIL), `DESIGN.md` (added Heebo font + 7 extra Tailwind tokens + correct hero subtitle + correct newsletter success text), `ADMIN.md` (7 → 8 pages, added `/admin/experiences` row), `FEATURES.md` (new "Legal compliance" section with 8 ✅ rows, `/contact` migrated out of `/about`), `MANUAL_TESTING.md` (split "Events & Experiences" into separate sections, added Experiences tests with Claude Haiku pre-check). CLAUDE.md gets a "April 2026 docs audit complete" locked-decision line.
 
 ---
 
