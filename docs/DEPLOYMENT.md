@@ -337,11 +337,16 @@ production.
 
 **The fix.** A GitHub Actions workflow at
 [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) runs on every
-push to `main` *or* `staging` and POSTs to the matching Railway **Deploy
-Hook URL**, which kicks Railway into a fresh deploy regardless of which
-paths the merge touched. Two jobs, gated by branch — production and staging
-each have their own secret and run independently. Vercel keeps doing its
-own thing — this workflow does **not** touch Vercel.
+push to `main` *or* `staging`, installs the **Railway CLI**, and runs
+`railway redeploy` against the matching environment. This kicks Railway
+into a fresh deploy regardless of which paths the merge touched. Two jobs,
+gated by branch — production and staging share the same `RAILWAY_TOKEN`
+secret and run independently. Vercel keeps doing its own thing — this
+workflow does **not** touch Vercel.
+
+> **Why CLI instead of Deploy Hooks?** Railway's Deploy Hooks feature
+> isn't available on our plan. The CLI works on every plan, so this is
+> the path that scales with us.
 
 ```
 merge PR → main                        merge PR → staging
@@ -352,132 +357,153 @@ merge PR → main                        merge PR → staging
    │                                       │
    └──▶ .github/workflows/deploy.yml       └──▶ .github/workflows/deploy.yml
         production job, gated by ref            staging job, gated by ref
-        ──▶ POST                                ──▶ POST
-        $RAILWAY_PRODUCTION_DEPLOY_HOOK         $RAILWAY_STAGING_DEPLOY_HOOK
-        ──▶ Railway prod env redeploys          ──▶ Railway staging env redeploys
+        npm i -g @railway/cli                   npm i -g @railway/cli
+        railway redeploy \                      railway redeploy \
+          --service $SERVICE \                    --service $SERVICE \
+          --environment production               --environment staging
+        (auth: $RAILWAY_TOKEN)                  (auth: $RAILWAY_TOKEN)
 ```
+
+Both jobs read the same `RAILWAY_TOKEN` secret and the same
+`RAILWAY_SERVICE_NAME` variable — a single token covers both environments
+because account-scoped (and project-scoped) Railway tokens have access to
+every environment within the project.
 
 ### One-time setup
 
-There are two secrets to add. Add them in order: production first (the
-Railway production environment already exists), staging second (only after
-the Railway staging environment is created per
-[§B "Branching Strategy — One-Time Platform Setup"](#branching-strategy--one-time-platform-setup)
-above).
+There is **one secret** and **one variable** to add.
 
-#### 1. Generate the Railway **production** deploy hook URL
+#### 1. Generate a Railway token
 
-1. Open <https://railway.app/dashboard> → **mehamakor** project →
-   **production** environment (top-left environment selector).
-2. Click the backend service (the FastAPI one — not the Postgres service).
-3. **Settings → Deploy → Deploy Hooks → + New Deploy Hook**.
-4. Name it `github-actions-main` and target the `main` branch.
-5. Railway gives you a URL like:
-   ```
-   https://backboard.railway.app/hooks/<long-opaque-token>
-   ```
-   **This URL is the secret** — anyone who has it can trigger a redeploy.
-   Copy it once; Railway will let you reveal it again later but treat it
-   like a password.
+You have two options, in order of preference:
 
-#### 2. Add the production URL as a GitHub repository secret
+**Option A — Project-scoped token (preferred if your plan offers it):**
+
+1. Open <https://railway.app/dashboard> → **FoodMamkor** project →
+   **Settings → Tokens → New Token**.
+2. Name it `github-actions-deploy`. Scope: this project.
+3. Copy the token immediately — Railway shows it once.
+
+This token can only act on the FoodMamkor project. Smaller blast radius
+if it ever leaks.
+
+**Option B — Account-scoped token (works on every plan):**
+
+1. Open <https://railway.app/account/tokens> (or: avatar menu → **Account
+   Settings → Tokens**).
+2. Click **New Token**. Name it `github-actions-deploy`.
+3. Copy the token immediately.
+
+> ⚠️ **Account tokens have read+write access to your entire Railway
+> account** — every project, every service, every secret, every
+> environment, plus delete permissions. Treat the value like a production
+> password. Rotate immediately if you suspect any exposure. Migrate to a
+> project-scoped token (Option A) the moment your plan offers it.
+
+#### 2. Add the token as a GitHub repository secret
 
 1. Open <https://github.com/levismadar80-ship-it/foodmamkor/settings/secrets/actions>.
-2. **New repository secret** → Name: `RAILWAY_PRODUCTION_DEPLOY_HOOK`.
-   Value: paste the URL from step 1. Save.
+2. **New repository secret** → Name: `RAILWAY_TOKEN`. Value: paste the
+   token from step 1. Save.
 3. The secret name **must** match exactly — the workflow reads
-   `${{ secrets.RAILWAY_PRODUCTION_DEPLOY_HOOK }}`.
+   `${{ secrets.RAILWAY_TOKEN }}`.
 
-That's it for production. The next merge to `main` will trigger the
-workflow automatically.
+#### 3. Set the Railway service name as a GitHub *variable* (not a secret)
 
-#### 3. Generate the Railway **staging** deploy hook URL
+The CLI's `--service` flag needs the **service name** as it appears in
+Railway. The service is the deployable thing inside the project (the
+backend FastAPI service, not the Postgres database).
 
-> ⚠️ **Prerequisite:** the Railway staging environment must already exist.
-> If you haven't done §B above ("Railway — add a staging environment
-> alongside production"), do that first. The staging job in the workflow
-> fail-softs with a warning until this secret is added, so it's safe to
-> skip until you're ready.
+1. Same page as above, switch to the **Variables** tab:
+   <https://github.com/levismadar80-ship-it/foodmamkor/settings/variables/actions>.
+2. **New repository variable** → Name: `RAILWAY_SERVICE_NAME`. Value: the
+   exact service name from Railway → **FoodMamkor** project → service list.
+   Most likely `FoodMamkor` (matches the project) but it could be
+   `backend`, `api`, or something else — copy whatever Railway shows.
+3. Why a *variable* instead of a secret: service names aren't sensitive,
+   and variables are visible in the Actions log which makes debugging
+   easier ("did we target the right service?").
+4. **If you don't set this variable**, the workflow falls back to
+   `FoodMamkor` as the default. So if that's the actual service name
+   you can skip this step entirely.
 
-1. Open <https://railway.app/dashboard> → **mehamakor** project →
-   **staging** environment (switch via the top-left environment selector).
-2. Click the backend service inside the *staging* environment.
-3. **Settings → Deploy → Deploy Hooks → + New Deploy Hook**.
-4. Name it `github-actions-staging` and target the `staging` branch.
-5. Copy the URL — same format as production, but a different opaque token.
+#### 4. Verify it works
 
-#### 4. Add the staging URL as a GitHub repository secret
-
-1. Same secrets page as before.
-2. **New repository secret** → Name: `RAILWAY_STAGING_DEPLOY_HOOK`. Value:
-   paste the URL from step 3. Save.
-3. The secret name **must** match exactly — the workflow reads
-   `${{ secrets.RAILWAY_STAGING_DEPLOY_HOOK }}`.
-
-#### 5. Verify both secrets work
-
-For each environment, either wait for the next merge or trigger the
-workflow manually:
+After adding the secret (and variable, if you set one), trigger a test
+run for each environment:
 
 1. Open <https://github.com/levismadar80-ship-it/foodmamkor/actions/workflows/deploy.yml>.
 2. Click **Run workflow** → choose the branch (`main` for production,
    `staging` for staging) → **Run workflow**.
-3. The job for the matching environment should finish in ~5 seconds and
-   the summary should show:
+3. The job for the matching environment should finish in ~30–60s (the
+   bulk of that is `npm install -g @railway/cli`). The summary should
+   end with:
    ```
-   Railway HTTP status (production): 200
-   ✅ Triggered for commit <short-sha>
+   ✅ Triggered for commit <short-sha> (service: <SERVICE_NAME>)
    ```
-   (or `(staging)` for the staging job — only one job runs per dispatch
-   because the other is gated by `if: github.ref == ...`).
-4. Cross-check Railway: the matching backend service should show a new
-   "Deploying" build kicked off within 10 seconds, and the commit SHA on
-   the new deploy should match the one in the workflow log.
+4. Cross-check Railway: the matching service should show a new
+   "Deploying" build within 10 seconds of the CLI step completing, and
+   the commit SHA on the new deploy should match the one in the workflow
+   log.
+
+If the CLI step fails with `Service "FoodMamkor" not found` (or similar),
+the `RAILWAY_SERVICE_NAME` variable doesn't match the actual service.
+Update it in **Settings → Variables** and re-run — no code edit needed.
 
 ### Behavior details
 
-- **Fail-soft when a secret is missing.** If `RAILWAY_PRODUCTION_DEPLOY_HOOK`
-  or `RAILWAY_STAGING_DEPLOY_HOOK` is not set yet (e.g. the workflow lands
-  before someone has time to add the secret, or the staging Railway env
-  doesn't exist yet), the matching job exits 0 with a GitHub Actions
-  warning annotation rather than blocking the merge. Vercel still deploys;
+- **Fail-soft when `RAILWAY_TOKEN` is missing.** If the secret hasn't
+  been added yet, every job exits 0 with a GitHub Actions warning
+  annotation rather than blocking the merge. Vercel still deploys;
   you'll just have to click "Redeploy" once in the Railway UI until the
-  secret is added. **This is what makes the workflow safe to land before
-  the staging Railway environment exists** — staging merges won't fail.
-- **Fail-loud when the webhook errors.** If the secret is set but Railway
-  returns a non-2xx response (rotated URL, deleted service, Railway outage),
-  the job fails with a clear error annotation that includes which
-  environment and which HTTP code. Re-generate the deploy hook, update the
-  secret, and re-run the workflow.
+  secret is added. **This is what makes the workflow safe to land
+  before the token is generated.**
+- **Fail-loud when the CLI errors.** If `railway redeploy` exits non-zero
+  (bad token, wrong service name, Railway outage, network failure), the
+  step fails with the CLI's own error message and the job fails. Fix the
+  underlying issue (rotate the token, fix the service name variable, wait
+  out the outage) and re-run the workflow.
 - **Branch gating.** Each job has an `if: github.ref == 'refs/heads/<branch>'`
-  guard. A push to `main` runs only the production job; a push to `staging`
-  runs only the staging job. The other job is skipped — no wasted runner
-  minutes, and the Actions log shows exactly which environment ran.
+  guard. A push to `main` runs only the production job; a push to
+  `staging` runs only the staging job. The other job is skipped — no
+  wasted runner minutes, and the Actions log shows exactly which
+  environment ran.
 - **Per-environment concurrency.** The concurrency group is
   `deploy-${{ github.ref_name }}` with `cancel-in-progress: true`. If two
-  pushes land on the same branch within seconds, only the latest one fires
-  the webhook. Crucially, a push to `main` and a push to `staging` do
+  pushes land on the same branch within seconds, only the latest one
+  fires the CLI. Crucially, a push to `main` and a push to `staging` do
   **not** cancel each other — they're in different concurrency groups —
   so promoting `staging → main` doesn't lose the staging deploy that
   triggered moments earlier.
 - **Manual trigger.** The `workflow_dispatch` trigger means you can also
-  fire either webhook from the Actions tab without pushing a commit —
-  useful if Railway crashed and you need to nudge it without writing code.
-  Pick the branch in the Run workflow dialog and only the matching job
-  runs.
+  fire either redeploy from the Actions tab without pushing a commit —
+  useful if Railway crashed and you need to nudge it without writing
+  code. Pick the branch in the Run workflow dialog and only the matching
+  job runs.
+- **`--yes` flag** is passed to `railway redeploy` to skip the
+  interactive confirmation prompt. Without it the CLI hangs in CI
+  forever (no TTY to confirm against).
 
 ### Disabling temporarily
 
-If Railway is having an outage on one environment (or both) and you want
-to stop the workflow from spamming retries on every merge, the cheapest
-fix is to **delete the matching secret** in GitHub Settings →
-Secrets and variables → Actions. The workflow falls back to its fail-soft
-warning path for that environment, leaves the merge alone, and you can
-re-add the secret once Railway is healthy.
+If Railway is having an outage and you want to stop the workflow from
+spamming retries on every merge, the cheapest fix is to **delete the
+`RAILWAY_TOKEN` secret** in GitHub Settings → Secrets and variables →
+Actions. Both jobs fall back to their fail-soft warning path, leave
+merges alone, and you can re-add the secret once Railway is healthy.
 
-You can disable just one environment this way without affecting the
-other. Don't disable the workflow at the file level — re-enabling later
-usually slips through the cracks.
+This disables both environments at once — there's no per-environment
+toggle because both jobs share the same secret. If you need to disable
+just one, comment out the corresponding job in `.github/workflows/deploy.yml`
+and revert in a follow-up commit. Don't disable the workflow at the
+file/UI level — re-enabling later usually slips through the cracks.
+
+### Rotating the token
+
+Generate a new token in Railway (steps under "Generate a Railway token"
+above), then update the `RAILWAY_TOKEN` secret in GitHub Settings → Secrets
+and variables → Actions. Old token continues to work until you delete it
+in Railway, so there's no rollback window.
 
 ### Why not run pytest / playwright in this workflow?
 

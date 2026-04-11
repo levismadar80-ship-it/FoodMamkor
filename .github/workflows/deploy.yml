@@ -11,15 +11,24 @@ name: Deploy
 #   2. Railway needs a kick because its own watch-paths config can
 #      legitimately skip deploys (e.g. doc-only PRs that don't touch
 #      backend/) and previously left main and Railway out of sync.
-#      This workflow calls Railway's Deploy Hook URL on every merge
-#      to main or staging so the matching Railway environment is
-#      always running the latest commit on its tracked branch.
+#      This workflow installs the Railway CLI and runs
+#      `railway redeploy` against the matching environment so the
+#      backend can't lag behind regardless of which paths a merge
+#      touches.
+#
+# Why CLI instead of deploy hooks?
+#   Deploy hooks aren't available on our Railway plan. The CLI works
+#   on every plan, just needs a RAILWAY_TOKEN with redeploy permissions.
 #
 # Two jobs, gated by branch:
 #   - production: runs only when ref is refs/heads/main, calls
-#     RAILWAY_PRODUCTION_DEPLOY_HOOK
+#     `railway redeploy --environment production`
 #   - staging:    runs only when ref is refs/heads/staging, calls
-#     RAILWAY_STAGING_DEPLOY_HOOK
+#     `railway redeploy --environment staging`
+#
+# Service name is sourced from the GitHub *variable* (not secret)
+# `RAILWAY_SERVICE_NAME` — set it via Settings → Secrets and variables
+# → Actions → Variables tab. If unset, defaults to `FoodMamkor`.
 #
 # Setup is documented in docs/DEPLOYMENT.md → "GitHub Actions auto-deploy".
 
@@ -29,9 +38,9 @@ on:
   workflow_dispatch:
 
 # Cancel any in-flight run if a new push lands while we're still calling
-# the webhook. Concurrency groups are per-environment so a main push and
-# a staging push don't cancel each other — only back-to-back pushes to
-# the *same* branch dedupe.
+# the CLI. Concurrency groups are per-branch (deploy-main vs deploy-staging)
+# so a main push and a staging push don't cancel each other — only
+# back-to-back pushes to the *same* branch dedupe.
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: true
@@ -44,120 +53,83 @@ jobs:
     name: Trigger Railway production redeploy
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      # Service name lives in a *variable* (not a secret) so it can be
+      # overridden without code changes. Defaults to FoodMamkor.
+      SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME || 'FoodMamkor' }}
 
     steps:
-      - name: Call Railway production deploy hook
-        env:
-          DEPLOY_HOOK: ${{ secrets.RAILWAY_PRODUCTION_DEPLOY_HOOK }}
-          ENV_NAME: production
+      - name: Fail-soft if RAILWAY_TOKEN missing
+        if: env.RAILWAY_TOKEN == ''
         run: |
-          set -u
+          echo "::warning title=Missing secret::RAILWAY_TOKEN is not set."
+          echo "::warning::Add it via: Settings → Secrets and variables → Actions → New repository secret."
+          echo "::warning::Generate the token at: Railway → Account Settings → Tokens → New Token (or, preferred, project-scoped under FoodMamkor → Settings → Tokens)."
+          echo "::warning::See docs/DEPLOYMENT.md → 'GitHub Actions auto-deploy' for the full setup."
+          exit 0
 
-          # Fail-soft: if the secret hasn't been added yet, just warn
-          # and exit 0 so the merge isn't blocked. The first deploy
-          # after this workflow lands may have to be triggered manually
-          # in the Railway UI; subsequent deploys will be automatic
-          # once the secret is set.
-          if [ -z "${DEPLOY_HOOK:-}" ]; then
-            echo "::warning title=Missing secret::RAILWAY_PRODUCTION_DEPLOY_HOOK is not set."
-            echo "::warning::Add it via: Settings → Secrets and variables → Actions → New repository secret."
-            echo "::warning::See docs/DEPLOYMENT.md → 'GitHub Actions auto-deploy' for the full setup."
-            exit 0
-          fi
+      - name: Install Railway CLI
+        if: env.RAILWAY_TOKEN != ''
+        run: |
+          npm install -g @railway/cli
+          railway --version
 
-          # Call the webhook. Railway deploy hooks accept POST with no
-          # body; the URL itself is the secret. Capture body + status
-          # code separately so we can decide what to print.
-          http_code=$(curl --silent --show-error \
-            --max-time 30 \
-            --output /tmp/railway-response.txt \
-            --write-out "%{http_code}" \
-            --request POST \
-            "$DEPLOY_HOOK" || echo "curl_error")
-
-          echo "Railway HTTP status ($ENV_NAME): $http_code"
-          if [ -s /tmp/railway-response.txt ]; then
-            echo "::group::Railway response body"
-            cat /tmp/railway-response.txt
-            echo
-            echo "::endgroup::"
-          fi
-
+      - name: Redeploy production service
+        if: env.RAILWAY_TOKEN != ''
+        run: |
+          set -e
           short_sha="${GITHUB_SHA:0:7}"
+          echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment 'production' (commit $short_sha)..."
 
-          case "$http_code" in
-            200|201|202|204)
-              echo "::notice title=Railway $ENV_NAME redeploy::✅ Triggered for commit $short_sha"
-              ;;
-            curl_error)
-              echo "::error title=Railway webhook unreachable::curl could not reach the $ENV_NAME deploy-hook URL — check Railway service status."
-              exit 1
-              ;;
-            *)
-              echo "::error title=Railway webhook failed::HTTP $http_code from $ENV_NAME deploy hook. Check the URL secret is still valid (Railway rotates these on service deletion)."
-              exit 1
-              ;;
-          esac
+          # --yes skips the interactive confirmation prompt that
+          # `railway redeploy` would otherwise wait on forever in CI.
+          railway redeploy \
+            --service "$SERVICE_NAME" \
+            --environment production \
+            --yes
+
+          echo "::notice title=Railway production redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME)"
 
   # ──────────────────────────────────────────────────────────────────
   # STAGING — runs on push to staging
   # ──────────────────────────────────────────────────────────────────
-  #
-  # NOTE: until the Railway staging environment exists (see
-  # docs/DEPLOYMENT.md §B "Railway — add a staging environment alongside
-  # production"), the RAILWAY_STAGING_DEPLOY_HOOK secret will be empty
-  # and this job will fail-soft with a warning instead of failing the
-  # build. That is intentional: it keeps the workflow safe to land
-  # before the platform-side setup is finished.
   staging:
     name: Trigger Railway staging redeploy
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME || 'FoodMamkor' }}
 
     steps:
-      - name: Call Railway staging deploy hook
-        env:
-          DEPLOY_HOOK: ${{ secrets.RAILWAY_STAGING_DEPLOY_HOOK }}
-          ENV_NAME: staging
+      - name: Fail-soft if RAILWAY_TOKEN missing
+        if: env.RAILWAY_TOKEN == ''
         run: |
-          set -u
+          echo "::warning title=Missing secret::RAILWAY_TOKEN is not set."
+          echo "::warning::Add it via: Settings → Secrets and variables → Actions → New repository secret."
+          echo "::warning::Generate the token at: Railway → Account Settings → Tokens → New Token (or, preferred, project-scoped under FoodMamkor → Settings → Tokens)."
+          echo "::warning::See docs/DEPLOYMENT.md → 'GitHub Actions auto-deploy' for the full setup."
+          exit 0
 
-          if [ -z "${DEPLOY_HOOK:-}" ]; then
-            echo "::warning title=Missing secret::RAILWAY_STAGING_DEPLOY_HOOK is not set."
-            echo "::warning::This is expected if the Railway staging environment doesn't exist yet."
-            echo "::warning::See docs/DEPLOYMENT.md → 'Branching Strategy — One-Time Platform Setup' → §A, then add the secret via Settings → Secrets and variables → Actions."
-            exit 0
-          fi
+      - name: Install Railway CLI
+        if: env.RAILWAY_TOKEN != ''
+        run: |
+          npm install -g @railway/cli
+          railway --version
 
-          http_code=$(curl --silent --show-error \
-            --max-time 30 \
-            --output /tmp/railway-response.txt \
-            --write-out "%{http_code}" \
-            --request POST \
-            "$DEPLOY_HOOK" || echo "curl_error")
-
-          echo "Railway HTTP status ($ENV_NAME): $http_code"
-          if [ -s /tmp/railway-response.txt ]; then
-            echo "::group::Railway response body"
-            cat /tmp/railway-response.txt
-            echo
-            echo "::endgroup::"
-          fi
-
+      - name: Redeploy staging service
+        if: env.RAILWAY_TOKEN != ''
+        run: |
+          set -e
           short_sha="${GITHUB_SHA:0:7}"
+          echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment 'staging' (commit $short_sha)..."
 
-          case "$http_code" in
-            200|201|202|204)
-              echo "::notice title=Railway $ENV_NAME redeploy::✅ Triggered for commit $short_sha"
-              ;;
-            curl_error)
-              echo "::error title=Railway webhook unreachable::curl could not reach the $ENV_NAME deploy-hook URL — check Railway service status."
-              exit 1
-              ;;
-            *)
-              echo "::error title=Railway webhook failed::HTTP $http_code from $ENV_NAME deploy hook. Check the URL secret is still valid (Railway rotates these on service deletion)."
-              exit 1
-              ;;
-          esac
+          railway redeploy \
+            --service "$SERVICE_NAME" \
+            --environment staging \
+            --yes
+
+          echo "::notice title=Railway staging redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME)"
