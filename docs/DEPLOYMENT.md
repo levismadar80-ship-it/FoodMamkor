@@ -639,13 +639,32 @@ DATABASE_URL=${{mehamakor-db.DATABASE_URL}}
 # Generate locally:  python -c "import secrets; print(secrets.token_urlsafe(64))"
 SECRET_KEY=<paste generated secret>
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
+# 24 hours — matches backend/app/config.py default; was 10080 (7 days) in
+# older snapshots but was shortened per SECURITY.md JWT fix. Longer
+# sessions are rejected by the config loader.
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
 CLOUDINARY_CLOUD_NAME=<from cloudinary dashboard>
 CLOUDINARY_API_KEY=<from cloudinary dashboard>
 CLOUDINARY_API_SECRET=<from cloudinary dashboard>
+
+# Anthropic (home-product moderation + chat widget). Required for the
+# moderation flow to actually hit Claude — without it, moderation
+# fail-opens to APPROVED and the chat widget returns a friendly Hebrew
+# "offline" message (see CLAUDE.md AI fail-open rule). ANTHROPIC_MODEL
+# defaults to claude-opus-4-6 in config.py; override only if Opus is
+# unavailable and you want to fall back to Haiku.
+ANTHROPIC_API_KEY=<from console.anthropic.com>
+ANTHROPIC_MODEL=claude-opus-4-6
+
+# Public contact-form inbox (POST /contact). The April 2026 canonical
+# value is levismadar80@gmail.com — the founder's Gmail, which also
+# hosts the SMTP_USER credentials so the From: header matches. Falls
+# back to ADMIN_EMAIL when unset. If SMTP is unconfigured, the
+# submission is still persisted to contact_messages (fail-open).
+CONTACT_EMAIL=levismadar80@gmail.com
 
 FRONTEND_URL=https://mehamakor.online
 ```

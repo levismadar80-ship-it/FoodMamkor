@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import EventsClient from "./EventsClient";
 
 export const metadata = {
@@ -17,6 +18,19 @@ export const metadata = {
   alternates: { canonical: "/events" },
 };
 
+// EventsClient uses useSearchParams() to keep the ?tab=experiences
+// deep-link in the URL. Next.js 14 requires a Suspense boundary
+// around any component that reads search params in the App Router.
 export default function EventsPage() {
-  return <EventsClient />;
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-5xl mx-auto px-4 py-16 text-center text-site-muted">
+          טוענת אירועים...
+        </div>
+      }
+    >
+      <EventsClient />
+    </Suspense>
+  );
 }
