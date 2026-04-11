@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     # Leave admin_password empty in local dev to skip the admin seed.
     admin_email: str = ""
     admin_password: str = ""
+    # Destination for public contact-form submissions (POST /contact). Set
+    # independently from admin_email so the public inbox can be a distinct
+    # address (e.g. a branded Gmail alias). Falls back to admin_email when
+    # unset so existing installs keep working.
+    contact_email: str = ""
 
     # App
     frontend_url: str = "http://localhost:3000"
