@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
 
@@ -412,3 +412,118 @@ class ReportOut(BaseModel):
 class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     comment: str | None = Field(None, max_length=100)
+
+
+# --- Experiences (community-submitted workshops) ---
+class ExperienceCreate(BaseModel):
+    title: str = Field(..., min_length=4, max_length=300)
+    description: str = Field(..., min_length=20)
+    image_url: str | None = None
+    category: str | None = None
+    event_date: date
+    event_time: time | None = None
+    duration_minutes: int | None = Field(None, ge=15, le=1440)
+    location_type: str = Field("home", pattern="^(home|public)$")
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    max_participants: int | None = Field(None, ge=1, le=500)
+    price_per_person: Decimal | None = None  # NULL / 0 = free
+    requirements: str | None = None
+    is_recurring: bool = False
+    recurring_schedule: str | None = None
+
+
+class ExperienceUpdate(BaseModel):
+    title: str | None = Field(None, min_length=4, max_length=300)
+    description: str | None = Field(None, min_length=20)
+    image_url: str | None = None
+    category: str | None = None
+    event_date: date | None = None
+    event_time: time | None = None
+    duration_minutes: int | None = Field(None, ge=15, le=1440)
+    location_type: str | None = Field(None, pattern="^(home|public)$")
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    max_participants: int | None = Field(None, ge=1, le=500)
+    price_per_person: Decimal | None = None
+    requirements: str | None = None
+    is_recurring: bool | None = None
+    recurring_schedule: str | None = None
+
+
+class ExperienceModerationAction(BaseModel):
+    """Admin action payload for reject / request-changes."""
+    feedback: str | None = Field(None, max_length=2000)
+
+
+class ExperienceValidateRequest(BaseModel):
+    """Real-time form validation. No auth, no persistence."""
+    title: str = Field(..., min_length=1, max_length=300)
+    description: str | None = None
+    category: str | None = None
+    city: str | None = None
+    location_type: str | None = None
+    price_per_person: Decimal | None = None
+    max_participants: int | None = None
+
+
+class ExperienceValidateResult(BaseModel):
+    status: str  # APPROVED | FLAGGED | REJECTED
+    reason: str | None = None
+    suggestion: str | None = None
+
+
+class ExperienceHostOut(BaseModel):
+    id: UUID
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+class ExperienceListOut(BaseModel):
+    """Public listing — deliberately does NOT expose `address`.
+    The full street address is private and only returned by the
+    detail endpoint to the owner or an admin.
+    """
+    id: UUID
+    title: str
+    description: str
+    image_url: str | None = None
+    category: str | None = None
+    event_date: date
+    event_time: time | None = None
+    duration_minutes: int | None = None
+    location_type: str
+    city: str | None = None
+    max_participants: int | None = None
+    participants_count: int = 0
+    spots_left: int | None = None
+    price_per_person: Decimal | None = None
+    is_recurring: bool = False
+    recurring_schedule: str | None = None
+    status: str
+    host: ExperienceHostOut | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ExperienceDetailOut(ExperienceListOut):
+    """Detail view. Includes `address`, `requirements`, and the
+    full moderation context — only returned to the owner or an admin
+    when the experience is non-approved."""
+    address: str | None = None
+    requirements: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    moderation_status: str | None = None
+    moderation_reason: str | None = None
+    moderation_suggestion: str | None = None
+    admin_feedback: str | None = None
+    rejection_reason: str | None = None
+
+    model_config = {"from_attributes": True}
