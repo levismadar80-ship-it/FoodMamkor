@@ -93,14 +93,14 @@ export default function Footer() {
 
             {/* Instagram */}
             <a
-              href="https://www.instagram.com/mehamakor"
+              href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="עמוד האינסטגרם של מהמקור — נפתח בחלון חדש"
               className="inline-flex items-center gap-2 text-light/90 hover:text-white transition"
             >
               <InstagramLogo size={20} weight="duotone" aria-hidden="true" />
-              <span className="font-body">@mehamakor</span>
+              <span className="font-body">@meha_makor</span>
             </a>
           </div>
 
