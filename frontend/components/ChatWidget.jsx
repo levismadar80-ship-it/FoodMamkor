@@ -44,9 +44,33 @@ const OPENING_MESSAGE = {
 
 const SUGGESTED_PROMPTS = [
   "איך נרשמים כבעלת עסק?",
-  "איך מוצאים עסקים באזור שלי?",
+  "איך מוצאים עסקים קרובים אליי?",
   "איך מפרסמים מוצר ביתי?",
+  "האם ההרשמה בחינם?",
+  "כמה זמן לוקח האישור?",
+  "איך יוצרים קשר עם בית עסק?",
+  'מה זה "מהמטבח של השכן"?',
+  "איך מדווחים על בעיה?",
 ];
+
+// Hardcoded answers for the three canonical suggested prompts.
+// Clicking one of these returns an instant, consistent, free response —
+// no API call, no model drift, no Anthropic cost. Freeform questions
+// (including any of the 5 other suggested prompts that aren't in this
+// map) still go to Claude Haiku via POST /chat, which uses the matching
+// knowledge-base sections in backend/app/routers/chat.py::SYSTEM_PROMPT
+// so the answers stay consistent with these canonical ones.
+//
+// Keys MUST match the suggested-prompt strings above exactly (byte-for-
+// byte) — the match check is a plain object lookup in sendMessage.
+const HARDCODED_ANSWERS = {
+  "איך נרשמים כבעלת עסק?":
+    "בעלות עסק נרשמות דרך טופס הרשמה פשוט בן 3 שלבים — חינם לגמרי! 🎉\nאחרי שליחת הטופס, הצוות שלנו בודק את הפרטים ומאשר את הפרופיל שלך תוך זמן קצר.",
+  "איך מוצאים עסקים קרובים אליי?":
+    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם סינון לפי קטגוריה.\n2. דף הבית — חפשי לפי קטגוריה ועיר.\n\nכל עסק כולל כפתור WhatsApp ישיר לבעלת העסק! 😊",
+  "איך מפרסמים מוצר ביתי?":
+    "נכנסי לעמוד 'מהמטבח של השכן', לחצי על 'פרסמי מוצר', מלאי את הטופס — וזהו! 🎉\nהמוצר שלך מאושר בדרך כלל תוך שעות ספורות. הכתובת המדויקת שלך לא נחשפת — רק העיר והשכונה.",
+};
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -91,6 +115,20 @@ export default function ChatWidget() {
     const nextMessages = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setInput("");
+
+    // Shortcut: if the user clicked (or typed verbatim) one of the three
+    // canonical suggested prompts, return the hardcoded answer instantly
+    // without going through Claude. See HARDCODED_ANSWERS at the top of
+    // this file for the rationale (consistent copy, zero cost, zero
+    // latency for the most-clicked prompts).
+    if (HARDCODED_ANSWERS[trimmed]) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: HARDCODED_ANSWERS[trimmed] },
+      ]);
+      return;
+    }
+
     setSending(true);
 
     try {
