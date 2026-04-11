@@ -599,3 +599,64 @@ SENTRY_PROJECT=mehamakor-frontend
 
 - **v2 upgrade path מתועד ב-ROADMAP.md** — תחת `## v2 — Claude Agent SDK Integration` יש שלושה סוכנים מתוכננים: AI Support Agent (שדרוג של ה-`/chat` הנוכחי לסוכן עם tool-use דרך `claude-agent-sdk`), AI Search Agent (חיפוש בשפה טבעית במקום הסינונים הידניים), ו-Auto-Moderation Agent (העברת `home_product_moderation.py` ללולאת agent). העדיפות לפי ה-ROADMAP: אחרי launch של v1 ולאחר onboarding של 10 בתי עסק אמיתיים.
 
+## Community experiences — Claude Haiku moderation + admin approval (אפריל 2026)
+
+פיצ'ר חדש לגמרי על `feature/experiences-moderation`. הוסיף מסלול הגשה קהילתי
+לסדנאות, סיורי אוכל ושיעורי תזונה — נפרד לגמרי מהטבלת `events` הקיימת כדי
+לא לפגוע בזרימת האירועים של בתי העסק.
+
+- **החלטה ארכיטקטונית:** טבלה נפרדת `experiences` במקום להרחיב את `events`.
+  הסיבה: `events` ו-`experiences` שונים במודל ההרשאה (`producer_id` חובה
+  מול `host_user_id` חובה), במודל המודרציה (אין מול pending/approved/
+  rejected/changes_requested), ובסמנטיקה של מחיר (int shekels מול
+  numeric(10,2)). דחיסה שלהם לטבלה אחת עם עמודות nullable היתה מייצרת
+  מחלקה של באגים שבהם קוד אחד מנסה לקרוא שדה שלא שייך לו. ההפרדה הזאת
+  אומרת שגם ה-`/admin/producers` שנוגע באירועים וגם ה-`/admin/experiences`
+  החדש יכולים להישאר פשוטים.
+- **Claude Haiku, לא Opus:** `experience_moderation.py` מקבע את
+  `claude-haiku-4-5-20251001` בקוד ולא דרך `settings.anthropic_model`.
+  הסיבה: מוצרי בית (`home_product_moderation.py`) משתמשים ב-Opus כי ה-
+  verdict שלהם הוא ההחלטה הסופית לפרסום. חוויות עוברות אישור אדמין אחרי
+  ה-verdict, כך ש-Haiku (פי ~5 זול, פי ~3 מהיר) מספיק לתפקיד "דגל ראשוני".
+- **Fail-open לאורך כל הצינור:** חסר `ANTHROPIC_API_KEY` → APPROVED + לוג.
+  שגיאת רשת → APPROVED + לוג. JSON לא תקני → APPROVED + לוג. חסר SMTP
+  לטעות-התראה → לוג בלבד. כל כשל תשתיתי מסתיים בהגשה שמגיעה לאדמין
+  ידנית — לעולם לא חסימה של המשתמשת.
+- **פרטיות כתובת:** `experiences.address` נשמר במסד אבל מורד מה-
+  `ExperienceListOut` הציבורי. בבקשת detail, הראוטר מחזיר את ה-`address`
+  רק אם המבקשת היא הבעלים או אדמין. הדפוס זהה ל-`home_products.street/
+  zip_code` מ-FIXES_V2 #7c — אותו הגיון של "הכתובת המלאה פרטית, רק
+  העיר והשכונה ציבוריות".
+- **Deep-link טאב ב-`/events`:** הוספתי טאב בר ל-`EventsClient.jsx` עם
+  מצב שמור ב-`?tab=experiences`. החלפת טאב מאפסת את סינוני העיר/קטגוריה
+  כי ל-`events` ו-`experiences` יש ורבולרים שונים לקטגוריות. ה-fallback
+  כשאין `tab` הוא `events`, כך ששום לינק קיים לא נשבר. יש גם עמוד עצמאי
+  `/experiences` עם hero משלו שמוביל ישירות ל-`/experiences/new`.
+- **Suspense boundary:** `EventsClient` התחיל לקרוא ל-`useSearchParams()`
+  בגלל הטאב, ו-Next.js 14 דורש שכל קומפוננטה שקוראת search params תהיה
+  עטופה ב-`<Suspense>` ב-App Router. עטפתי גם את `events/page.js` וגם
+  את `experiences/[id]/page.js` (שמשתמש ב-`?pending=1` לבאנר ההגשה).
+  בלי זה ה-`next build` היה נכשל על Vercel.
+- **Rate limiting:** 10/hour על POST /experiences (תואם /home-products),
+  30/hour על /experiences/validate (תואם /home-products/validate).
+  Slowapi דורש `request: Request` בחתימה של כל endpoint מוגבל, אחרת
+  ההחצנה של ה-key function שוברת ב-runtime — חתמתי את זה באופן מפורש.
+- **TDD — 40 מקרי בדיקה ב-`tests/test_experiences.py`:** נכתב לפני הקוד
+  וה-commit הראשון (`test(experiences):`) נשמר אדום בכוונה. כיסוי:
+  הגשה + validate + public listing + detail visibility + admin
+  approve/reject/request-changes + מחזור חיים מלא + IDOR (non-owner
+  cannot edit/delete). Claude mocked דרך monkeypatch על המודול ועל
+  הראוטר כדי לכסות את שתי צורות הייבוא.
+- **אפסו רגרסיות:** 70/70 passing אחרי כל commit — 24 api + 6 rating
+  dispatch + 40 experiences. לא נגעתי ב-`events`, ב-`producers`,
+  ב-`home_products` או ב-`chat`.
+- **תיקון docs/DATA.md:** עשיתי refresh מלא של DATA.md — הקובץ הזה היה
+  stub ישן שתיאר את ה-schema של אפריל 2025 (PostGIS, בלי events, בלי
+  reviews, בלי experiences). עכשיו הוא מקיף את 21 הטבלאות ואת ~80
+  ה-endpoints שיש ב-staging היום. מעכשיו DATA.md הוא שוב הקובץ הקנוני —
+  כשהוא סוטה מהקוד, מתקנים אותו מיד.
+- **תוספת ל-docs/TESTING.md:** סקציה §6a ״חוויות קהילתיות״ עם צ'קליסט
+  ידני שמכסה הגשה, Claude live feedback, privacy של הכתובת, tabs,
+  admin moderation, מחזור חיים מלא, ו-iOS zoom + פונטים עבריים +
+  RTL + voice פמיני.
+

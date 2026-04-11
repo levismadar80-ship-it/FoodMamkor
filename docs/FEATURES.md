@@ -41,6 +41,8 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | "מהמטבח של השכן" — dedicated `/neighbor` page | `frontend/app/neighbor/NeighborClient.jsx` |
 | ✅ | v1 | Events: list, filter, detail (`/events`, `/events/:id`) | `frontend/app/events/` |
 | ✅ | v1 | Upcoming events preview on homepage (3 cards) | `frontend/app/page.js` |
+| ✅ | v1 | Community experiences: list, submit, detail (`/experiences`, `/experiences/new`, `/experiences/:id`) | `frontend/app/experiences/` |
+| ✅ | v1 | Unified browse tab bar on `/events` (אירועים בחוות / חוויות וסדנאות) | `frontend/app/events/EventsClient.jsx` |
 | ✅ | v1 | About page (`/about`) with founder story + values + contact form | `frontend/app/about/AboutClient.jsx` |
 
 ### Auth & accounts
@@ -71,6 +73,8 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Free posting (no producer approval required) | `backend/app/routers/home_products.py` |
 | ✅ | v1 | Hybrid AI moderation: APPROVED / FLAGGED / REJECTED | `backend/app/services/home_product_moderation.py` |
 | ✅ | v1 | Real-time validation while typing (debounced 1.5s) | `frontend/components/HomeProductForm.jsx` |
+| ✅ | v1 | Experiences moderation: Claude Haiku pre-check + admin approval gate | `backend/app/services/experience_moderation.py`, `backend/app/routers/admin_experiences.py` |
+| ✅ | v1 | `/admin/experiences` queue with tabs, approve / request-changes / reject + feedback modal | `frontend/app/admin/experiences/page.js` |
 | ✅ | v1 | Address autocomplete via Nominatim (street + house number) | `frontend/components/AddressSearch.jsx` |
 | ✅ | v1 | Trust badges (organic, kosher, storage, category) | `frontend/components/HomeProductCard.jsx` |
 | ✅ | v1 | Private street/zip stored server-side, only city/neighborhood shown publicly | `backend/app/models/models.py` |
