@@ -9,6 +9,21 @@
 > ProducerFollower, HomeProduct expansion, AddressSearch, design refresh.
 > Railway + Vercel פרוסים מ-main. אם חסר משהו ב-main, זה באג — לא פיצ'ר.
 
+## Branch strategy (אפריל 2026)
+> **לפני שאת פותחת branch חדש — קראי `DEPLOYMENT.md` → §Branch Strategy.**
+>
+> | Branch | תפקיד | פורס ל- |
+> |---|---|---|
+> | `main` | פרודקשן | mehamekor.online + Railway production |
+> | `staging` | בדיקה לפני פרודקשן | staging.mehamekor.online + Railway staging |
+> | `feature/*` | עבודה חדשה | preview ב-Vercel בלבד |
+>
+> **הזרימה:** `feature/xxx → staging → main`. תמיד מסתעפת מ-`staging` (לא מ-`main`). אסור push ישיר ל-`main` או ל-`staging` — שניהם PR-only.
+>
+> **ה-`claude/*` branches מהסשנים הישנים נמחקו.** אל תיצרי `claude/xxx` חדשים — השתמשי ב-`feature/xxx`.
+>
+> **הגדרת הסביבות (Railway, Vercel, GitHub branch protection)** מתועדת ב-`DEPLOYMENT.md` כרשימת צעדים ידנית — אין API לגישה מהקוד, צריך ללחוץ בכל אחד מה-UIs.
+
 ## פרויקט
 - **שם:** מהמקור (MEHAMEKOR) | mehamekor.co.il
 - **דומיין פרודקשן:** mehamakor.online (Vercel NS)
