@@ -43,7 +43,7 @@
 - Full setup instructions for Railway environments, Vercel domains, and GitHub branch protection rules: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "Branch Strategy" + "One-Time Platform Setup".
 
 ## Workflow rules
-1. **Read CLAUDE.md first** at the start of every session. Also read [docs/DESIGN.md](./docs/DESIGN.md) before touching UI and [docs/DATA.md](./docs/DATA.md) before backend changes (a pre-commit hook in `.claude/settings.json` reminds you on `frontend/` or `backend/` edits).
+1. **Read CLAUDE.md first** at the start of every session. Also read [docs/DESIGN.md](./docs/DESIGN.md) before touching UI and [docs/DATA.md](./docs/DATA.md) before backend changes (a pre-commit hook in `.claude/settings.json` reminds you on `frontend/` or `backend/` edits). **Optional but recommended:** preload architecture context at session start with `claude --append-system-prompt "$(cat .ai/diagrams/*.md)"` — injects the auth/DB/API Mermaid diagrams from [.ai/diagrams/](./.ai/diagrams/) so the session starts with full mental model, no re-reads needed.
 2. **Branch from `staging`** — never from `main`. See "Branch strategy" above.
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
 4. **Plan before coding.** Propose the approach in plain text before touching files. Wait for explicit `go` before editing. No code-first.
@@ -53,7 +53,7 @@
 8. **Use "ultrathink" for complex problems** — schema migrations, security tradeoffs, multi-file refactors, anything where a wrong call costs more than 10 minutes to undo.
 9. **After every PR — always send the Vercel preview URL.** Format: `"בדיקי על: https://food-mamkor-[hash].vercel.app"`. **Wait for approval before merging to staging.** Full flow + mobile checklist: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "Testing workflow".
 10. **After every PR — update [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md)** with any new features. Format: `[ ] Test — איך לבדוק — תוצאה מצופה`. Add under the relevant page/feature section, or create a new section.
-11. **After every PR — auto-update every doc your code touched.** If you edited a code area, update its doc in the same PR — don't wait to be asked. Rule: code change → doc update, same commit or same PR.
+11. **After every PR — auto-update every doc your code touched.** If you edited a code area, update its doc in the same PR — don't wait to be asked. Rule: code change → doc update, same commit or same PR. **Stop hooks in `.claude/settings.json` run `npm run build` + `pytest tests/test_api.py` before any task is marked done** — if either fails, Claude blocks and must fix before proceeding. Also keep [.ai/diagrams/](./.ai/diagrams/) (auth-flow / db-schema / api-routes) in sync if you changed any of those surfaces — they're loaded at session start via the alias in rule 1.
     - [`docs/DATA.md`](./docs/DATA.md) — if DB schema or endpoints changed
     - [`docs/ADMIN.md`](./docs/ADMIN.md) — if admin panel changed
     - [`docs/DESIGN.md`](./docs/DESIGN.md) — if UI/UX changed
@@ -62,6 +62,7 @@
     - [`docs/SECURITY.md`](./docs/SECURITY.md) — if auth or permissions changed
     - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — if env vars or infra changed
     - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — always add a one-line entry
+    - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
 
 ## Documentation map
 | File | What's in it |

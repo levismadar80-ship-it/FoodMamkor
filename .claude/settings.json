@@ -24,6 +24,20 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'set -o pipefail; cd frontend && npm run build 2>&1 | tail -20 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Frontend build failed — fix errors before completing this task\"}'\"'\"''"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'set -o pipefail; cd backend && python -m pytest tests/test_api.py -q 2>&1 | tail -10 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
+          }
+        ]
+      }
     ]
   }
 }
