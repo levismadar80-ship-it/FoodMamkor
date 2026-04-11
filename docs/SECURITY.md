@@ -266,6 +266,41 @@ module.exports = {
 
 ---
 
+### ✅ 8a. Analytics privacy (feature/producer-analytics, April 2026)
+
+Two new invariants shipped with the analytics feature. Both are guarded
+by tests (`tests/test_analytics.py`) and documented here so future
+sessions know not to drift.
+
+- **No raw IPs in the DB.** `producer_page_views.viewer_ip_hash` is a
+  SHA-256 hex of `(request.client.host + SECRET_KEY[:32])`. Rotating
+  the JWT secret (e.g. on credential leak) also rotates the analytics
+  salt, limiting rainbow-table attacks across the old dataset. The
+  hashing helper lives at `backend/app/services/analytics.py::hash_ip`
+  and is the ONLY write path for the column — the Pydantic schema has
+  no `viewer_ip` field that could accidentally bypass it.
+
+- **Per-process in-memory sliding window for server_health (v1
+  limitation).** `GET /admin/dashboard` exposes `response_time_avg_ms`
+  and `requests_per_minute` over the last hour, computed from a bounded
+  deque in `backend/app/services/analytics.py::_samples`. Three caveats
+  to remember:
+  - **Resets on every deploy.** Railway redeploys flush the deque. The
+    dashboard panel shows "מחכה לתנועה..." for a minute post-deploy.
+  - **Per-process.** If uvicorn ever runs with >1 worker, each worker
+    keeps its own deque; the dashboard reflects whichever worker handled
+    the `GET /admin/dashboard` request. The current Railway config runs
+    a single worker, so this is a no-op in production — but flag it
+    before scaling horizontally.
+  - **Not durable.** There's no disk spill, no Prometheus push, no
+    Grafana story. A v2 task in `docs/ROADMAP.md` could replace this
+    with a real observability stack if the operator dashboard needs to
+    survive restarts.
+
+Both invariants are compatible with the April 2026 `/privacy` page
+(`חוק הגנת הפרטיות תיקון 13, 2025`), which lists IP as "data collected"
+— minimized + time-limited, not stored raw.
+
 ## 🟡 בינוני — תקן החודש
 
 ### 9. XSS — ניקוי input מהמשתמש

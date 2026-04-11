@@ -13,7 +13,9 @@ from app.models.models import (
     Producer,
     ProducerCategory,
     ProducerFollower,
+    ProducerPageView,
     ProducerReview,
+    ProducerWhatsAppClick,
     Product,
     Recipe,
     RecipeIngredient,
@@ -44,4 +46,6 @@ __all__ = [
     "Experience",
     "ProducerReview",
     "ProducerFollower",
+    "ProducerPageView",
+    "ProducerWhatsAppClick",
 ]

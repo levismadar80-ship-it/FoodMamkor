@@ -209,6 +209,38 @@ experiences (
 | Admin UI | `/admin/producers` (implicit) | `/admin/experiences` (dedicated) |
 | Why separate | Simple producer calendar | Full trust-and-safety flow |
 
+### Analytics (feature/producer-analytics, April 2026)
+
+```sql
+-- One row per GET /producers/{id} hit (minus bot user-agents).
+-- Feeds the producer dashboard (profile_views, search_appearances,
+-- views_by_day, top_cities) and the admin dashboard top_cities panel.
+-- IP is HASHED (SHA-256 with a rotating salt from SECRET_KEY), never
+-- stored raw — privacy minimization per חוק הגנת הפרטיות תיקון 13.
+producer_page_views (
+  id uuid PK,
+  producer_id FK producers.id ON DELETE CASCADE (indexed),
+  viewer_ip_hash varchar(64) NULL,       -- SHA-256 hex
+  city varchar(100) NULL,                -- from authed user.city, else NULL
+  referrer varchar(30) NULL,             -- search|map|category|home|favorites|follow|NULL
+  created_at timestamp (indexed)
+)
+
+-- One row per WhatsApp CTA click on a producer detail page.
+-- Distinct from home_product_whatsapp_clicks — producer clicks don't
+-- trigger the 24h rating SMS loop, they're just counted.
+producer_whatsapp_clicks (
+  id uuid PK,
+  producer_id FK producers.id ON DELETE CASCADE (indexed),
+  clicked_at timestamp (indexed)
+)
+
+-- DAU tracking column on users. Updated by get_current_user() on every
+-- authenticated request, throttled to at most 1 write per 5 minutes
+-- per user. Feeds /admin/dashboard daily_active_users chart.
+users.last_active_at timestamp NULL
+```
+
 ### Marketing + admin + content
 
 ```sql
@@ -269,7 +301,22 @@ GET    /users/me/following                        auth
 GET    /producers/me                              producer
 PUT    /producers/me                              producer
 POST   /producers/me/availability                 producer  — toggle is_available_today
-GET    /producers/me/dashboard                    producer
+GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
+GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
+                                                              profile_views / search_appearances / whatsapp_clicks
+                                                              as {last_7d, last_30d, total}; follower_count +
+                                                              new_followers_this_week; average_rating + total_reviews;
+                                                              home_products_count; views_by_day (30-entry zero-filled
+                                                              series); top_cities (top 5, excludes NULL city)
+
+# Producer detail — public (tracked, anonymous)
+GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row
+                                                              (bot UAs filtered, IP SHA-256 hashed with rotating salt,
+                                                              city copied from authed viewer.city when present, NULL
+                                                              otherwise; referrer normalized to an allowlist)
+POST   /producers/{id}/whatsapp-click             public    — anonymous, rate-limited 10/min per IP
+                                                              appends a producer_whatsapp_clicks row;
+                                                              frontend fires via navigator.sendBeacon
 ```
 
 ### Favorites (`app/routers/favorites.py`)

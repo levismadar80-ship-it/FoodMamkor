@@ -80,6 +80,11 @@ class User(Base):
     apple_id = Column(String(200), unique=True, nullable=True)
     is_blocked = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Analytics (feature/producer-analytics): updated on every authenticated
+    # request via a tiny middleware in main.py. Used to compute daily-active-user
+    # counts on the /admin/dashboard. Nullable for pre-existing users who
+    # haven't made a request yet after this column was added.
+    last_active_at = Column(DateTime, nullable=True, index=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
@@ -442,3 +447,71 @@ class HomeProductRating(Base):
     click = relationship("HomeProductWhatsAppClick", back_populates="rating")
     user = relationship("User")
     home_product = relationship("HomeProduct", back_populates="ratings")
+
+
+# ============================================================
+# Analytics — feature/producer-analytics
+# ============================================================
+
+
+class ProducerPageView(Base):
+    """Raw row per GET /producers/{id} hit (minus bot user-agents).
+
+    The row is the source of truth for:
+      - Producer dashboard: profile_views (7d / 30d / total), views_by_day
+        (30-day chart), top_cities aggregation, search_appearances (rows
+        with referrer='search').
+      - Admin dashboard: top cities across all producers.
+
+    Privacy: we store `viewer_ip_hash` (SHA-256 with a rotating salt from
+    settings) rather than the raw IP — lets us dedupe uniques inside a
+    window without keeping PII indefinitely. See docs/SECURITY.md for the
+    full rationale.
+    """
+
+    __tablename__ = "producer_page_views"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # SHA-256 hex (64 chars) of IP + salt. NULL only if the request had
+    # no usable client IP (unit tests, some proxy configs).
+    viewer_ip_hash = Column(String(64), nullable=True)
+    # City the viewer is located in — filled from the authenticated user's
+    # `city` field when available, NULL for anonymous viewers. We deliberately
+    # do NOT geolocate raw IPs (no MaxMind DB in the image, no external API
+    # dependency on the hot path of /producers/{id}).
+    city = Column(String(100), nullable=True)
+    # Where the view came from — lets the producer dashboard answer
+    # "how often did people find me via search" without a separate impression
+    # table. NULL = direct/unknown.
+    referrer = Column(String(30), nullable=True)  # search | map | category | home | None
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class ProducerWhatsAppClick(Base):
+    """Raw row per click on a WhatsApp CTA on a producer detail page.
+
+    Distinct from `HomeProductWhatsAppClick` — that table tracks clicks on
+    *home-product* cards (which also dispatches a rating SMS 24h later).
+    Producer-page clicks are simpler: we just count them for the producer
+    dashboard's `whatsapp_clicks` metric, no rating loop.
+
+    Written from `POST /producers/{id}/whatsapp-click`, which is anonymous
+    and rate-limited 10/minute per IP (slowapi).
+    """
+
+    __tablename__ = "producer_whatsapp_clicks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

@@ -1,18 +1,20 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_current_user_optional
 from app.database import get_db
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, Report, User
+from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Report, User
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryOut,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
 )
+from app.services.analytics import track_producer_view
 
 router = APIRouter(tags=["producers"])
 
@@ -125,7 +127,13 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
 
 
 @router.get("/producers/{producer_id}", response_model=ProducerDetailOut)
-def get_producer(producer_id: UUID, db: Session = Depends(get_db)):
+def get_producer(
+    producer_id: UUID,
+    request: Request,
+    from_: str | None = Query(None, alias="from"),
+    viewer: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
     producer = (
         db.query(Producer)
         .options(
@@ -137,14 +145,49 @@ def get_producer(producer_id: UUID, db: Session = Depends(get_db)):
         .first()
     )
     if not producer:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Producer not found")
 
     # Compute report_count from DB
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
+
+    # feature/producer-analytics: track the view. Best-effort; swallows
+    # all exceptions so tracking glitches can never break the response.
+    # Bot UAs are filtered inside track_producer_view.
+    client_ip = request.client.host if request.client else None
+    track_producer_view(
+        db,
+        producer_id=producer_id,
+        viewer_ip=client_ip,
+        user_agent=request.headers.get("user-agent"),
+        viewer_user=viewer,
+        referrer=from_,
+    )
+
     return result
+
+
+@router.post("/producers/{producer_id}/whatsapp-click")
+@limiter.limit("10/minute")  # SECURITY FIX #2 — cap anonymous write abuse
+def record_whatsapp_click(
+    request: Request,
+    producer_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """Log a WhatsApp CTA click for the producer dashboard.
+
+    Anonymous (no auth). Frontend fires this via `navigator.sendBeacon`
+    immediately before opening `wa.me` — fire-and-forget, doesn't block
+    the window. Rate-limited 10/minute per IP to bound abuse. Unknown
+    producer IDs return 404.
+    """
+    exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    db.add(ProducerWhatsAppClick(producer_id=producer_id))
+    db.commit()
+    return {"detail": "logged"}
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
