@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 
 /**
- * Admin layout (ALL_PAGES_DESIGN.md עמוד 6).
+ * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
  *
  * Dark-green sidebar + cream content area. The dark sidebar is
  * intentionally the only dark chrome in the entire site — it signals

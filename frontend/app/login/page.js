@@ -9,7 +9,7 @@ import AppleAuthButton from "@/components/AppleAuthButton";
 import { validateEmail } from "@/lib/validators";
 
 /**
- * Login page (FEEDBACK_FIXES.md fix 2).
+ * Login page (docs/archive/FEEDBACK_FIXES.md fix 2).
  *
  * Layout order per the brief:
  *   1. Leaf-in-circle brand mark

@@ -6,7 +6,7 @@ import { WhatsappLogo } from "@phosphor-icons/react";
 /**
  * WhatsApp CTA for home-product cards.
  *
- * FEEDBACK_FIXES.md small items — prevent double-click: the click
+ * docs/archive/FEEDBACK_FIXES.md small items — prevent double-click: the click
  * handler fires onClick (which logs a whatsapp_click on the backend)
  * only ONCE per 2-second window, and the button visibly disables
  * itself for 1 second so users see that something happened. The

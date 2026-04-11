@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Lenis from "lenis";
 
 /**
- * SmoothScrollProvider (WORLD_CLASS_V2.md #1)
+ * SmoothScrollProvider (docs/archive/WORLD_CLASS_V2.md #1)
  *
  * Wraps the app with Lenis smooth-scroll. Mounted once in layout.js so
  * every page benefits without each page having to opt in.

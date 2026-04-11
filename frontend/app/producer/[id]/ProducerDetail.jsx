@@ -15,7 +15,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ProducerReviews from "@/components/ProducerReviews";
 
 /**
- * Producer detail page (ALL_PAGES_DESIGN.md עמוד 2).
+ * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
  *
  * Layout: two-column on desktop — main info on the right (RTL leading),
  * sticky contact card on the left. Contact card stays visible while the
@@ -305,7 +305,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               </a>
             )}
 
-            {/* Follow button — FEEDBACK_FIXES.md new feature */}
+            {/* Follow button — docs/archive/FEEDBACK_FIXES.md new feature */}
             <div className="mb-2">
               <FollowButton producerId={producer.id} />
             </div>

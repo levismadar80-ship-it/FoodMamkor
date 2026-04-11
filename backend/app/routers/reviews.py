@@ -1,6 +1,6 @@
 """Producer reviews (1-5 stars + optional title/body).
 
-Per FIXES_V2.md fix 3. One review per user per producer; the aggregates
+Per docs/archive/FIXES_V2.md fix 3. One review per user per producer; the aggregates
 `producers.avg_rating` and `producers.reviews_count` are recomputed from
 all reviews on every write (simple + correct; fine at this scale).
 """
