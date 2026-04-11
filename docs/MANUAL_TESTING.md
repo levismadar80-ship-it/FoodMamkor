@@ -270,6 +270,34 @@ Test each form on real mobile + desktop. The spinner should be visible for the n
 
 ---
 
+## CSP — Vercel Live feedback widget on preview URLs (fix/csp-allow-vercel-live-preview)
+
+Vercel injects `https://vercel.live/_next-live/feedback/feedback.js` into every preview deployment so reviewers can leave inline comments. The previous CSP in `next.config.js` didn't whitelist `vercel.live`, so Chrome blocked the script and spammed the console with CSP violation warnings on every preview page load — making it hard to spot real errors during testing.
+
+The fix conditionally appends `vercel.live` (and Pusher, which the widget uses for realtime) to 6 CSP directives **only when `process.env.VERCEL_ENV === "preview"`**. Production CSP stays strict — `vercel.live` does not load in production and is not whitelisted there.
+
+- [ ] Open any Vercel **preview URL** → DevTools → Console → reload → **zero** `"Loading the script ... violates the following Content Security Policy directive"` messages for `vercel.live`
+- [ ] Same preview → bottom-left → Vercel feedback widget button loads and is clickable
+- [ ] **Production** `mehamakor.online` → DevTools → Network tab → no requests to `vercel.live/*` at all (widget is not injected)
+- [ ] Production → DevTools → Response Headers on any page → `Content-Security-Policy` does NOT contain `vercel.live` anywhere in its directives — regression guard that the conditional isn't leaking into prod
+- [ ] `/login` Google OAuth still works (regression check — we touched the same CSP block as Google's GSI whitelist)
+- [ ] Apple Sign-In button on `/login` still works (regression check — same reason)
+- [ ] Unsplash images on the homepage category grid still load (regression check — `img-src` gained an entry so order/syntax matters)
+- [ ] Cloudinary producer photos still render (regression check — `img-src` again)
+- [ ] OpenStreetMap Leaflet tiles still render on `/map` (regression check — same directive)
+
+### Local verification commands (run once before merging)
+
+```bash
+# Production CSP (strict, vercel.live should NOT appear)
+node -e "const c=require('./frontend/next.config.js'); c.headers().then(h=>console.log(h[0].headers.find(x=>x.key==='Content-Security-Policy').value))"
+
+# Preview CSP (vercel.live + pusher should appear on 6 directives)
+VERCEL_ENV=preview node -e "const c=require('./frontend/next.config.js'); c.headers().then(h=>console.log(h[0].headers.find(x=>x.key==='Content-Security-Policy').value))"
+```
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
