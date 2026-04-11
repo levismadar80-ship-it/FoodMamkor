@@ -53,7 +53,7 @@ export default function AdminSettingsPage() {
             value={settings.admin_email || ""}
             onChange={(e) => update("admin_email", e.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2"
-            placeholder="admin@mehamekor.co.il"
+            placeholder="admin@mehamakor.co.il"
           />
         </Field>
         <Field label="מספר ווטסאפ אדמין (E.164)">

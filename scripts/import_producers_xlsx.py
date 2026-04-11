@@ -1,4 +1,4 @@
-"""One-shot import: load mehamekor_producers_final.xlsx into the dev DB.
+"""One-shot import: load mehamakor_producers_final.xlsx into the dev DB.
 
 Uses the same `import_rows` function that powers POST /admin/producers/import,
 so the column mapping (CLAUDE.md / admin_brief.docx §4) is identical.
@@ -16,7 +16,7 @@ from openpyxl import load_workbook
 from app.database import SessionLocal
 from app.services.producer_import import import_rows
 
-XLSX = os.path.join(os.path.dirname(__file__), "..", "mehamekor_producers_final.xlsx")
+XLSX = os.path.join(os.path.dirname(__file__), "..", "mehamakor_producers_final.xlsx")
 
 wb = load_workbook(XLSX, data_only=True)
 ws = wb.active

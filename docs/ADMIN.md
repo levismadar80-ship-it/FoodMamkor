@@ -29,7 +29,7 @@ endpoints: `/admin/users`, `/admin/categories`, `/admin/pages/{slug}`,
 ```
 tests/test_api.py       — 24 pytest (auth, producers, filters, admin guard)
 tests/test_e2e.spec.ts  — Playwright (public pages + admin guard)
-tests/conftest.py       — fixture עם DB מבודד (mehamekor_test)
+tests/conftest.py       — fixture עם DB מבודד (mehamakor_test)
 tests/README.md         — הוראות הרצה
 ```
 

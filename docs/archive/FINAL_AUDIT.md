@@ -12,8 +12,8 @@
 // בכל עמוד — הוסף ב-head:
 <meta property="og:title" content="מהמקור — אוכל אמיתי ישר מהמקור אליך" />
 <meta property="og:description" content="בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית" />
-<meta property="og:image" content="https://mehamekor.co.il/og-image.jpg" />
-<meta property="og:url" content="https://mehamekor.co.il" />
+<meta property="og:image" content="https://mehamakor.co.il/og-image.jpg" />
+<meta property="og:url" content="https://mehamakor.co.il" />
 
 // לעמוד עסק ספציפי:
 <meta property="og:title" content={`${producer.name} — ${producer.city} | מהמקור`} />
@@ -91,7 +91,7 @@ export default function ImageWithFallback({ src, alt, ...props }) {
 
 ```jsx
 <a
-  href={`https://wa.me/?text=${encodeURIComponent(`מצאתי עסק מגניב במהמקור! 🌿\n${producer.name} — ${producer.city}\nhttps://mehamekor.co.il/${producer.slug}`)}`}
+  href={`https://wa.me/?text=${encodeURIComponent(`מצאתי עסק מגניב במהמקור! 🌿\n${producer.name} — ${producer.city}\nhttps://mehamakor.co.il/${producer.slug}`)}`}
   target="_blank"
   style={{
     display: 'flex', alignItems: 'center', gap: 6,

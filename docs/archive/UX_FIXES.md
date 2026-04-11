@@ -189,7 +189,7 @@ footer — עמודת ניווט:
 ### ו. כפתור "שתף עסק" בעמוד עסק
 ```js
 const shareProducer = async () => {
-  const url = `https://mehamekor.co.il/${producer.slug}`
+  const url = `https://mehamakor.co.il/${producer.slug}`
   if (navigator.share) {
     await navigator.share({ title: producer.name, url })
   } else {
