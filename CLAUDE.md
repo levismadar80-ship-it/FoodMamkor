@@ -36,7 +36,7 @@
 
 - **Never push directly to `main` or `staging`.** Both are PR-only.
 - **Hotfixes** (the only direct-to-main exception) must be back-merged to `staging` immediately so the lines don't drift.
-- **Auto-deploy on merge to `main`.** Vercel ships the frontend via its native GitHub integration; [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) POSTs the Railway deploy hook so the backend can't lag behind. Setup: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "GitHub Actions auto-deploy".
+- **Auto-deploy on merge to `main` or `staging`.** Vercel ships the frontend via its native GitHub integration; [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) POSTs the matching Railway deploy hook (production or staging) so the backend can't lag behind. Setup: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "GitHub Actions auto-deploy".
 - Full setup instructions for Railway environments, Vercel domains, and GitHub branch protection rules: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "Branch Strategy" + "One-Time Platform Setup".
 
 ## Workflow rules
