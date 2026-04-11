@@ -3,6 +3,12 @@
 import { useState } from "react";
 import api from "@/lib/api";
 
+// Single source of truth for the public contact inbox shown on this page.
+// Must match the backend CONTACT_EMAIL env var (backend/.env.example,
+// backend/app/config.py::Settings.contact_email) so the visible address
+// matches where POST /contact actually delivers.
+const CONTACT_EMAIL = "contactmehamakor.online@gmail.com";
+
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
@@ -27,7 +33,7 @@ export default function ContactPage() {
     }
   };
 
-  const mailtoHref = `mailto:admin@mehamakor.online?subject=${encodeURIComponent(
+  const mailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
     "פנייה דרך האתר"
   )}&body=${encodeURIComponent(
     `שם: ${form.name}\nאימייל: ${form.email}\n\n${form.message}`
@@ -48,15 +54,15 @@ export default function ContactPage() {
           </p>
 
           <div className="bg-light/60 border border-border rounded-[12px] p-4 mb-6 text-sm">
-            <p className="flex items-center gap-2">
+            <p className="flex items-center gap-2 flex-wrap">
               <span>📧</span>
               <span>כתובת מייל:</span>
               <a
-                href="mailto:admin@mehamakor.online"
-                className="text-primary hover:underline font-medium"
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="text-primary hover:underline font-medium break-all"
                 dir="ltr"
               >
-                admin@mehamakor.online
+                {CONTACT_EMAIL}
               </a>
             </p>
             <p className="flex items-center gap-2 mt-2">
