@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 
 /**
@@ -121,7 +122,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-light transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            {loading ? "מתחברת..." : "כניסה"}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <ButtonSpinner />
+                מתחברת...
+              </span>
+            ) : (
+              "כניסה"
+            )}
           </button>
         </form>
 
