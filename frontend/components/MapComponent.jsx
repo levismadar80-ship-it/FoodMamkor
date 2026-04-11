@@ -11,7 +11,7 @@ import { styleForProducer } from "@/lib/map-categories";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
- * and clustering. Covers MAP_IMPROVEMENTS.md items #4, #5, #6, #10.
+ * and clustering. Covers docs/archive/MAP_IMPROVEMENTS.md items #4, #5, #6, #10.
  *
  * Clustering: uses vanilla `leaflet.markercluster` (not
  * react-leaflet-cluster) because this component drives Leaflet
@@ -29,7 +29,7 @@ import { styleForProducer } from "@/lib/map-categories";
  * doesn't reliably forward refs).
  */
 
-// MAP_IMPROVEMENTS.md #5 — category color + emoji lookup lives in
+// docs/archive/MAP_IMPROVEMENTS.md #5 — category color + emoji lookup lives in
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
 
@@ -77,7 +77,7 @@ const escapeHtml = (str) => {
     .replace(/"/g, "&quot;");
 };
 
-/** MAP_IMPROVEMENTS.md #6 — rich popup with photo, rating, and CTAs. */
+/** docs/archive/MAP_IMPROVEMENTS.md #6 — rich popup with photo, rating, and CTAs. */
 function buildPopupHtml(producer) {
   const href = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const photo = producer.images?.[0];
@@ -225,7 +225,7 @@ export default function MapComponent({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
 
-    // Cluster group for markers — MAP_IMPROVEMENTS.md #4
+    // Cluster group for markers — docs/archive/MAP_IMPROVEMENTS.md #4
     clusterGroupRef.current = L.markerClusterGroup({
       chunkedLoading: true,
       showCoverageOnHover: false,
@@ -265,7 +265,7 @@ export default function MapComponent({
 
     mapInstanceRef.current.on("moveend", () => {
       fireBounds();
-      // MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
+      // docs/archive/MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
       // map so it can show "search this area". Suppress for our own
       // flyTo/fitBounds calls (initial fit, focusProducer, my-location).
       if (programmaticMoveRef.current) {
@@ -298,14 +298,14 @@ export default function MapComponent({
     if (!Array.isArray(producers) || producers.length === 0) return;
 
     producers.forEach((p) => {
-      // MAP_IMPROVEMENTS.md #10 — defensive null checks:
+      // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks:
       // skip producers without coordinates or identifying data
       if (!p || typeof p.lat !== "number" || typeof p.lng !== "number") return;
       if (!p.id) return;
 
       const marker = L.marker([p.lat, p.lng], {
         icon: createCategoryMarker(p, { active: false, hovered: false }),
-        // MAP_IMPROVEMENTS.md #10 — set alt + title to producer name so
+        // docs/archive/MAP_IMPROVEMENTS.md #10 — set alt + title to producer name so
         // no "Marker" (or truncated "arker") leaks into assistive tech
         // or hover tooltips.
         alt: p.name || "עסק",
@@ -394,7 +394,7 @@ export default function MapComponent({
   return (
     <div className="relative">
       <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
-      {/* MAP_IMPROVEMENTS.md #2 — "near me" — already in place, polished
+      {/* docs/archive/MAP_IMPROVEMENTS.md #2 — "near me" — already in place, polished
           with Phosphor-style pill and flyTo animation above. */}
       <button
         type="button"

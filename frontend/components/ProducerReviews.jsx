@@ -7,7 +7,7 @@ import { showToast } from "@/lib/toast";
 import StarSelector from "./StarSelector";
 
 /**
- * Reviews section for a producer (FIXES_V2.md fix 3).
+ * Reviews section for a producer (docs/archive/FIXES_V2.md fix 3).
  *
  * - GET /reviews?producer_id={id} — list
  * - POST /reviews — upsert (backend enforces unique(producer_id, user_id))

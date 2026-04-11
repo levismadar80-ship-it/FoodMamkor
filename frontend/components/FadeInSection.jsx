@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 /**
  * Thin wrapper around framer-motion for the "fade + slide up" entry
- * animation used across the site. Per UX_FIXES.md Fix 6, this is the
+ * animation used across the site. Per docs/archive/UX_FIXES.md Fix 6, this is the
  * ONLY motion primitive we use — no 3D rotations, no bounce easing,
  * no heavy perspective. Just fade + slide.
  *

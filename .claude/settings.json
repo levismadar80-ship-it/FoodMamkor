@@ -16,11 +16,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *frontend/app/*|*frontend/components/*|*.css) echo \"⚠️ Reminder: read DESIGN.md (at repo root, NOT docs/DESIGN.md) before making UI changes. It contains the canonical spec for colors, fonts, hero layout, category grid, ProducerCard, Footer, etc.\" >&2 ;; esac; exit 0"
+            "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *frontend/app/*|*frontend/components/*|*.css) echo \"⚠️ Reminder: read docs/DESIGN.md before making UI changes. It contains the canonical spec for colors, fonts, hero layout, category grid, ProducerCard, Footer, etc.\" >&2 ;; esac; exit 0"
           },
           {
             "type": "command",
-            "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *backend/*) echo \"⚠️ Reminder: read DATA.md (at repo root, NOT docs/DATA.md) before making backend changes. It contains the DB schema and API contract.\" >&2 ;; esac; exit 0"
+            "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *backend/*) echo \"⚠️ Reminder: read docs/DATA.md before making backend changes. It contains the DB schema and API contract.\" >&2 ;; esac; exit 0"
           }
         ]
       }

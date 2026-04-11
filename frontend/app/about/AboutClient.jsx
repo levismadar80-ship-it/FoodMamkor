@@ -70,7 +70,7 @@ export default function AboutPage() {
 
   return (
     <div>
-      {/* FEEDBACK_FIXES.md fix 4a — breadcrumb removed from /about.
+      {/* docs/archive/FEEDBACK_FIXES.md fix 4a — breadcrumb removed from /about.
           Breadcrumbs belong on producer/map pages, not on brand pages. */}
 
       {/* Hero — PREMIUM_DESIGN: Ken Burns background image instead of a
@@ -103,7 +103,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Story — FEEDBACK_FIXES.md fix 4c — longer, richer text */}
+      {/* Story — docs/archive/FEEDBACK_FIXES.md fix 4c — longer, richer text */}
       <section className="max-w-3xl mx-auto px-4 section-y">
         <h2 className="font-headline text-4xl font-bold mb-8 text-center text-site-text">
           הסיפור שלנו
@@ -130,7 +130,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Values grid — per-card warm bg colors (FEEDBACK_FIXES.md fix 6) */}
+      {/* Values grid — per-card warm bg colors (docs/archive/FEEDBACK_FIXES.md fix 6) */}
       <section className="max-w-5xl mx-auto px-4 section-y">
         <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
           הערכים שלנו
@@ -257,7 +257,7 @@ export default function AboutPage() {
       <section className="bg-background section-y">
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-            {/* FEEDBACK_FIXES.md fix 6 — circular founder placeholder
+            {/* docs/archive/FEEDBACK_FIXES.md fix 6 — circular founder placeholder
                 (rounded-full instead of rounded-[16px] square). Still
                 a placeholder until a real photo of Sapir lands.
                 TODO: replace with real photo */}

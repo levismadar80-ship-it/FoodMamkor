@@ -8,7 +8,7 @@ import api from "@/lib/api";
 
 /**
  * Four-column sitemap footer + brand column + newsletter block.
- * Structure (per UX_FIXES.md Fix 4 + COPY_FIXES.md Fix 4):
+ * Structure (per docs/archive/UX_FIXES.md Fix 4 + docs/archive/COPY_FIXES.md Fix 4):
  *   - לגלות:          דף הבית | מפה | אירועים | עסקים חדשים
  *   - קהילה:          אירועים | מהמטבח של השכן | אודות
  *   - בתי עסק:       הוסף עסק | כניסה | דשבורד

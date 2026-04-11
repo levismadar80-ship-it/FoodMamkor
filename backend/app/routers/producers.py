@@ -187,7 +187,7 @@ def list_categories(db: Session = Depends(get_db)):
 
 
 # ============================================================
-# FEEDBACK_FIXES.md — follow / unfollow producer
+# docs/archive/FEEDBACK_FIXES.md — follow / unfollow producer
 # ============================================================
 
 

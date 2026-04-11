@@ -9,13 +9,13 @@ import AddressSearch from "@/components/AddressSearch";
 /**
  * Create-form for "מהמטבח של השכן" with AI moderation feedback.
  *
- * Per MODERATION.md:
+ * Per docs/MODERATION.md:
  *   - Debounced /home-products/validate call as user types (1.5s)
  *   - FLAGGED: yellow warning + suggestion, still lets them submit
  *   - REJECTED: red block + disables the submit button
  *   - Server-side REJECTED mirrored into the UI
  *
- * Per FIXES_V2.md fix 2, the form has the full expanded field set:
+ * Per docs/archive/FIXES_V2.md fix 2, the form has the full expanded field set:
  * location + product info + prep/expiry dates + allergens + kosher +
  * organic + quantity/price/unit + up to 4 images + delivery method.
  */
@@ -63,8 +63,8 @@ export default function HomeProductForm({ onCreated, onCancel }) {
     price: "",
     neighborhood: "",
     city: "",
-    street: "",      // FIXES_V2.md fix 7c — private, not shown publicly
-    zip_code: "",    // FIXES_V2.md fix 7c
+    street: "",      // docs/archive/FIXES_V2.md fix 7c — private, not shown publicly
+    zip_code: "",    // docs/archive/FIXES_V2.md fix 7c
     location_notes: "",
     phone: "",
     delivery_method: "",
@@ -383,7 +383,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               placeholder="שכונה (אופציונלי)..."
             />
           </div>
-          {/* FIXES_V2.md fix 7c — private fields, not shown publicly.
+          {/* docs/archive/FIXES_V2.md fix 7c — private fields, not shown publicly.
               Street uses AddressSearch (Nominatim) so picking a result
               auto-fills postcode + city + neighborhood from OpenStreetMap.
               Falls back to plain text on network failure. */}

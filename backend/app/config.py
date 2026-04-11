@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
-# SECURITY FIX #1 (SECURITY.md): the previous default was the literal
+# SECURITY FIX #1 (docs/SECURITY.md): the previous default was the literal
 # string "change-me-in-production" which made JWT forgery trivial if
 # the env var wasn't set. Now:
 #   - Dev: a per-process random secret is generated if JWT_SECRET_KEY
