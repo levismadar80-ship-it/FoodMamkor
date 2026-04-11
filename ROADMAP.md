@@ -56,6 +56,40 @@
 - [ ] API פתוח לעסקים
 - [ ] השוואת מחירים
 
+## v2 — Claude Agent SDK Integration
+
+### AI Support Agent
+- Floating chat widget on all pages
+- Answers questions about mehamakor in Hebrew
+- Knows: how to register, find producers, post listings
+- Uses claude-haiku (cheapest model)
+- Implementation:
+  pip install claude-agent-sdk
+  ANTHROPIC_API_KEY already set in Railway ✅
+
+### AI Search Agent
+- Natural language search: "אני מחפשת בשר grass-fed בחיפה"
+- Returns relevant producers automatically
+- Replaces manual category/city filters
+
+### Auto-Moderation Agent
+- Reviews home listings automatically
+- Flags suspicious content
+- Already partially built in MODERATION.md
+
+Priority: after v1 launch + 10 real producers onboarded.
+
+> **Status note (אפריל 2026):** the simpler "AI Support Agent" pattern
+> already shipped in v1 as a one-shot Claude Haiku endpoint
+> (`backend/app/routers/chat.py` + `frontend/components/ChatWidget.jsx`).
+> The v2 upgrade is to migrate it to the `claude-agent-sdk` so the bot
+> can call backend tools (look up a producer by name, fetch upcoming
+> events, list categories) instead of relying solely on the system
+> prompt. The AI Search Agent and Auto-Moderation Agent above are
+> still pending — Auto-Moderation also has a partial v1 implementation
+> in `MODERATION.md` / `home_product_moderation.py` that can be lifted
+> into the agent loop rather than rebuilt.
+
 ## v3+ — רעיונות
 - שוק שבועי וירטואלי — "יום שוק"
 - קהילות לפי אזור/שכונה

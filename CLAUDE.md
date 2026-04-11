@@ -892,5 +892,7 @@ SENTRY_PROJECT=mehamekor-frontend
 
 - **`from __future__ import annotations` gotcha:** הסרתי אותו מ-`chat.py`. הוא חשוב לקבצים שבהם צריך defer evaluation לסוג, אבל **FastAPI לא יכול לפתור את `body: ChatRequest` בחתימת הroute אם annotations מושהות** — Pydantic זורק `PydanticUndefinedAnnotation: name 'ChatRequest' is not defined`. אם תוסיפי router חדש שמשתמש ב-Pydantic models בחתימה — אל תכתבי `from __future__ import annotations` שם.
 
+- **v2 upgrade path מתועד ב-ROADMAP.md** — תחת `## v2 — Claude Agent SDK Integration` יש שלושה סוכנים מתוכננים: AI Support Agent (שדרוג של ה-`/chat` הנוכחי לסוכן עם tool-use דרך `claude-agent-sdk`), AI Search Agent (חיפוש בשפה טבעית במקום הסינונים הידניים), ו-Auto-Moderation Agent (העברת `home_product_moderation.py` ללולאת agent). העדיפות לפי ה-ROADMAP: אחרי launch של v1 ולאחר onboarding של 10 בתי עסק אמיתיים.
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`
