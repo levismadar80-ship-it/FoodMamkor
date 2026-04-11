@@ -18,13 +18,21 @@ name: Deploy
 #
 # Why CLI instead of deploy hooks?
 #   Deploy hooks aren't available on our Railway plan. The CLI works
-#   on every plan, just needs a RAILWAY_TOKEN with redeploy permissions.
+#   on every plan, just needs a Railway token with redeploy permissions.
 #
-# Two jobs, gated by branch:
+# Two jobs, gated by branch, each with its own secret:
 #   - production: runs only when ref is refs/heads/main, calls
-#     `railway redeploy --environment production`
+#     `railway redeploy --environment production`, auth via
+#     RAILWAY_PRODUCTION_TOKEN
 #   - staging:    runs only when ref is refs/heads/staging, calls
-#     `railway redeploy --environment staging`
+#     `railway redeploy --environment staging`, auth via
+#     RAILWAY_STAGING_TOKEN
+#
+# Why two secrets? Railway project tokens on our plan are scoped to a
+# single environment within the project — one token can hit production
+# OR staging, never both. So we need two secrets, one per environment.
+# Both come from the same Railway project (believable-tenderness),
+# generated from the matching environment view.
 #
 # Service name is sourced from the GitHub *variable* (not secret)
 # `RAILWAY_SERVICE_NAME` — set it via Settings → Secrets and variables
@@ -55,18 +63,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      # Sourced from RAILWAY_PRODUCTION_TOKEN — a Railway project-scoped
+      # token restricted to the production environment. The CLI auto-reads
+      # whatever is in the RAILWAY_TOKEN env var, so we name it that
+      # locally even though the secret name differs.
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
       # Service name lives in a *variable* (not a secret) so it can be
       # overridden without code changes. Defaults to FoodMamkor.
       SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME || 'FoodMamkor' }}
 
     steps:
-      - name: Fail-soft if RAILWAY_TOKEN missing
+      - name: Fail-soft if RAILWAY_PRODUCTION_TOKEN missing
         if: env.RAILWAY_TOKEN == ''
         run: |
-          echo "::warning title=Missing secret::RAILWAY_TOKEN is not set."
+          echo "::warning title=Missing secret::RAILWAY_PRODUCTION_TOKEN is not set."
           echo "::warning::Add it via: Settings → Secrets and variables → Actions → New repository secret."
-          echo "::warning::Generate the token at: Railway → Account Settings → Tokens → New Token (or, preferred, project-scoped under FoodMamkor → Settings → Tokens)."
+          echo "::warning::Generate the token at: Railway → believable-tenderness project → Settings → Tokens → New Token (production environment)."
           echo "::warning::See docs/DEPLOYMENT.md → 'GitHub Actions auto-deploy' for the full setup."
           exit 0
 
@@ -101,16 +113,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      # Sourced from RAILWAY_STAGING_TOKEN — a Railway project-scoped
+      # token restricted to the staging environment. Same CLI behavior
+      # as the production job, just a different secret.
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
       SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME || 'FoodMamkor' }}
 
     steps:
-      - name: Fail-soft if RAILWAY_TOKEN missing
+      - name: Fail-soft if RAILWAY_STAGING_TOKEN missing
         if: env.RAILWAY_TOKEN == ''
         run: |
-          echo "::warning title=Missing secret::RAILWAY_TOKEN is not set."
+          echo "::warning title=Missing secret::RAILWAY_STAGING_TOKEN is not set."
           echo "::warning::Add it via: Settings → Secrets and variables → Actions → New repository secret."
-          echo "::warning::Generate the token at: Railway → Account Settings → Tokens → New Token (or, preferred, project-scoped under FoodMamkor → Settings → Tokens)."
+          echo "::warning::Generate the token at: Railway → believable-tenderness project → Settings → Tokens → New Token (staging environment)."
           echo "::warning::See docs/DEPLOYMENT.md → 'GitHub Actions auto-deploy' for the full setup."
           exit 0
 

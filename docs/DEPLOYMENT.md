@@ -340,13 +340,19 @@ production.
 push to `main` *or* `staging`, installs the **Railway CLI**, and runs
 `railway redeploy` against the matching environment. This kicks Railway
 into a fresh deploy regardless of which paths the merge touched. Two jobs,
-gated by branch — production and staging share the same `RAILWAY_TOKEN`
-secret and run independently. Vercel keeps doing its own thing — this
-workflow does **not** touch Vercel.
+gated by branch — production and staging each have **their own
+environment-scoped Railway token** (`RAILWAY_PRODUCTION_TOKEN` and
+`RAILWAY_STAGING_TOKEN`) and run independently. Vercel keeps doing its
+own thing — this workflow does **not** touch Vercel.
 
 > **Why CLI instead of Deploy Hooks?** Railway's Deploy Hooks feature
-> isn't available on our plan. The CLI works on every plan, so this is
-> the path that scales with us.
+> isn't available on our plan. The CLI works on every plan.
+>
+> **Why two tokens?** Railway project-scoped tokens on our plan are
+> restricted to a single environment within the project — one token can
+> redeploy production OR staging, never both. So the workflow needs two
+> secrets, one per environment. Both come from the same Railway project
+> (`believable-tenderness`), generated from the matching environment view.
 
 ```
 merge PR → main                        merge PR → staging
@@ -361,76 +367,82 @@ merge PR → main                        merge PR → staging
         railway redeploy \                      railway redeploy \
           --service $SERVICE \                    --service $SERVICE \
           --environment production               --environment staging
-        (auth: $RAILWAY_TOKEN)                  (auth: $RAILWAY_TOKEN)
+        (auth: $RAILWAY_PRODUCTION_TOKEN)       (auth: $RAILWAY_STAGING_TOKEN)
 ```
 
-Both jobs read the same `RAILWAY_TOKEN` secret and the same
-`RAILWAY_SERVICE_NAME` variable — a single token covers both environments
-because account-scoped (and project-scoped) Railway tokens have access to
-every environment within the project.
+Both jobs read the same `RAILWAY_SERVICE_NAME` variable (defaults to
+`FoodMamkor` if unset). Each job sources its own token secret as the
+local `RAILWAY_TOKEN` env var because the Railway CLI auto-reads
+whatever is in `RAILWAY_TOKEN` — only the source secret name differs
+per job.
 
 ### One-time setup
 
-There is **one secret** and **one variable** to add.
+There are **two secrets** to add (one per environment) and **one
+variable** (the service name, optional — defaults to `FoodMamkor`).
 
-#### 1. Generate a Railway token
+#### 1. Generate the production token
 
-You have two options, in order of preference:
+1. Open <https://railway.app/dashboard> → **believable-tenderness**
+   project → switch to the **production** environment (top-left
+   environment selector).
+2. **Settings → Tokens → New Token**.
+3. Name it `github-actions-deploy`.
+4. Copy the token immediately — Railway shows it once.
 
-**Option A — Project-scoped token (preferred if your plan offers it):**
+This token is scoped to the believable-tenderness project AND the
+production environment only. It cannot touch staging or any other
+project. Small blast radius.
 
-1. Open <https://railway.app/dashboard> → **FoodMamkor** project →
-   **Settings → Tokens → New Token**.
-2. Name it `github-actions-deploy`. Scope: this project.
-3. Copy the token immediately — Railway shows it once.
+#### 2. Generate the staging token
 
-This token can only act on the FoodMamkor project. Smaller blast radius
-if it ever leaks.
+1. Same project — switch to the **staging** environment via the
+   top-left environment selector.
+2. **Settings → Tokens → New Token**.
+3. Name it `github-actions-deploy` (same name is fine — Railway scopes
+   them by environment, not by name).
+4. Copy the token immediately.
 
-**Option B — Account-scoped token (works on every plan):**
+#### 3. Add both tokens as GitHub repository secrets
 
-1. Open <https://railway.app/account/tokens> (or: avatar menu → **Account
-   Settings → Tokens**).
-2. Click **New Token**. Name it `github-actions-deploy`.
-3. Copy the token immediately.
-
-> ⚠️ **Account tokens have read+write access to your entire Railway
-> account** — every project, every service, every secret, every
-> environment, plus delete permissions. Treat the value like a production
-> password. Rotate immediately if you suspect any exposure. Migrate to a
-> project-scoped token (Option A) the moment your plan offers it.
-
-#### 2. Add the token as a GitHub repository secret
+> ⚠️ **Repository secrets, not Environment secrets.** GitHub has two
+> secret scopes that look similar. The workflow only sees Repository
+> secrets (no `environment:` declaration on either job). If you put
+> these under Settings → Environments → `<env>` → Environment secrets,
+> the workflow will see empty strings and fail-soft. Make sure both
+> tokens are added as Repository secrets, not Environment secrets.
 
 1. Open <https://github.com/levismadar80-ship-it/foodmamkor/settings/secrets/actions>.
-2. **New repository secret** → Name: `RAILWAY_TOKEN`. Value: paste the
-   token from step 1. Save.
-3. The secret name **must** match exactly — the workflow reads
-   `${{ secrets.RAILWAY_TOKEN }}`.
+2. **New repository secret** → Name: `RAILWAY_PRODUCTION_TOKEN`. Value:
+   paste the production token from step 1. Save.
+3. **New repository secret** again → Name: `RAILWAY_STAGING_TOKEN`.
+   Value: paste the staging token from step 2. Save.
+4. The secret names **must** match exactly — the workflow reads
+   `${{ secrets.RAILWAY_PRODUCTION_TOKEN }}` and
+   `${{ secrets.RAILWAY_STAGING_TOKEN }}`.
 
-#### 3. Set the Railway service name as a GitHub *variable* (not a secret)
+#### 4. (Optional) Set the Railway service name as a GitHub *variable*
 
 The CLI's `--service` flag needs the **service name** as it appears in
 Railway. The service is the deployable thing inside the project (the
-backend FastAPI service, not the Postgres database).
+backend FastAPI service, not the Postgres database). Defaults to
+`FoodMamkor`; only set this variable if your service is named
+something else.
 
 1. Same page as above, switch to the **Variables** tab:
    <https://github.com/levismadar80-ship-it/foodmamkor/settings/variables/actions>.
 2. **New repository variable** → Name: `RAILWAY_SERVICE_NAME`. Value: the
-   exact service name from Railway → **FoodMamkor** project → service list.
-   Most likely `FoodMamkor` (matches the project) but it could be
-   `backend`, `api`, or something else — copy whatever Railway shows.
+   exact service name from Railway → believable-tenderness project →
+   service list.
 3. Why a *variable* instead of a secret: service names aren't sensitive,
    and variables are visible in the Actions log which makes debugging
    easier ("did we target the right service?").
-4. **If you don't set this variable**, the workflow falls back to
-   `FoodMamkor` as the default. So if that's the actual service name
-   you can skip this step entirely.
+4. **If your service is named `FoodMamkor`** (the default), skip this
+   step entirely.
 
-#### 4. Verify it works
+#### 5. Verify it works
 
-After adding the secret (and variable, if you set one), trigger a test
-run for each environment:
+After adding both secrets, trigger a test run for each environment:
 
 1. Open <https://github.com/levismadar80-ship-it/foodmamkor/actions/workflows/deploy.yml>.
 2. Click **Run workflow** → choose the branch (`main` for production,
@@ -445,24 +457,31 @@ run for each environment:
    "Deploying" build within 10 seconds of the CLI step completing, and
    the commit SHA on the new deploy should match the one in the workflow
    log.
+5. Repeat for the *other* branch — both tokens need an independent test.
+   A working production token tells you nothing about whether the staging
+   token works, because they're separately scoped.
 
 If the CLI step fails with `Service "FoodMamkor" not found` (or similar),
 the `RAILWAY_SERVICE_NAME` variable doesn't match the actual service.
 Update it in **Settings → Variables** and re-run — no code edit needed.
 
+If the CLI step fails with an auth error like `403 Forbidden` or
+`token does not have access to environment <env>`, the wrong token is
+in the wrong slot. Verify each secret value matches the environment it
+was generated for in Railway.
+
 ### Behavior details
 
-- **Fail-soft when `RAILWAY_TOKEN` is missing.** If the secret hasn't
-  been added yet, every job exits 0 with a GitHub Actions warning
-  annotation rather than blocking the merge. Vercel still deploys;
-  you'll just have to click "Redeploy" once in the Railway UI until the
-  secret is added. **This is what makes the workflow safe to land
-  before the token is generated.**
+- **Fail-soft when a token is missing.** Each job has its own missing-secret
+  guard: the production job fail-softs on missing `RAILWAY_PRODUCTION_TOKEN`,
+  the staging job on missing `RAILWAY_STAGING_TOKEN`. Either job can be
+  unconfigured without affecting the other — useful if you want to wire up
+  one environment first and the other later.
 - **Fail-loud when the CLI errors.** If `railway redeploy` exits non-zero
-  (bad token, wrong service name, Railway outage, network failure), the
-  step fails with the CLI's own error message and the job fails. Fix the
-  underlying issue (rotate the token, fix the service name variable, wait
-  out the outage) and re-run the workflow.
+  (bad token, wrong service name, wrong environment scope, Railway outage,
+  network failure), the step fails with the CLI's own error message and
+  the job fails. Fix the underlying issue (rotate the token, fix the
+  service name variable, wait out the outage) and re-run the workflow.
 - **Branch gating.** Each job has an `if: github.ref == 'refs/heads/<branch>'`
   guard. A push to `main` runs only the production job; a push to
   `staging` runs only the staging job. The other job is skipped — no
@@ -486,24 +505,28 @@ Update it in **Settings → Variables** and re-run — no code edit needed.
 
 ### Disabling temporarily
 
-If Railway is having an outage and you want to stop the workflow from
-spamming retries on every merge, the cheapest fix is to **delete the
-`RAILWAY_TOKEN` secret** in GitHub Settings → Secrets and variables →
-Actions. Both jobs fall back to their fail-soft warning path, leave
-merges alone, and you can re-add the secret once Railway is healthy.
+If Railway is having an outage on a specific environment and you want
+to stop the matching job from spamming errors on every merge, **delete
+the matching token secret** in GitHub Settings → Secrets and variables →
+Actions:
 
-This disables both environments at once — there's no per-environment
-toggle because both jobs share the same secret. If you need to disable
-just one, comment out the corresponding job in `.github/workflows/deploy.yml`
-and revert in a follow-up commit. Don't disable the workflow at the
-file/UI level — re-enabling later usually slips through the cracks.
+- Outage on production only → delete `RAILWAY_PRODUCTION_TOKEN`
+- Outage on staging only → delete `RAILWAY_STAGING_TOKEN`
+- Both → delete both
 
-### Rotating the token
+The matching job(s) fall back to fail-soft warning, leaving merges alone.
+Re-add the secret(s) once Railway is healthy. **You can disable just one
+environment without affecting the other** — that's the main reason for
+two separate secrets. Don't disable the workflow at the file/UI level —
+re-enabling later usually slips through the cracks.
 
-Generate a new token in Railway (steps under "Generate a Railway token"
-above), then update the `RAILWAY_TOKEN` secret in GitHub Settings → Secrets
-and variables → Actions. Old token continues to work until you delete it
-in Railway, so there's no rollback window.
+### Rotating a token
+
+Generate a new token in Railway (from the matching environment view),
+then update the corresponding secret (`RAILWAY_PRODUCTION_TOKEN` or
+`RAILWAY_STAGING_TOKEN`) in GitHub Settings → Secrets and variables →
+Actions. Old token continues to work until you delete it in Railway,
+so there's a brief overlap window.
 
 ### Why not run pytest / playwright in this workflow?
 
