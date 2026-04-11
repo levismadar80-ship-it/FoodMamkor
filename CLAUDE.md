@@ -63,6 +63,7 @@
     - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — if env vars or infra changed
     - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — always add a one-line entry
     - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
+12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.** These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
 
 ## Documentation map
 | File | What's in it |
@@ -81,5 +82,56 @@
 | [docs/archive/](./docs/archive/) | Implemented session specs (FINAL_AUDIT, MAP_IMPROVEMENTS, PREMIUM_DESIGN, etc.) — historical, do not edit |
 
 ## How to update this file
-- Keep it ≤ 100 lines. If you need more space, the content belongs in `docs/`, not here.
+- Keep it ≤ 150 lines (raised from 100 in April 2026 when the inline `## Architecture Diagrams` section was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
+
+## Architecture Diagrams
+Compact Mermaid snapshots of the three most load-bearing surfaces. Rendered inline by GitHub and injected into every session via the `--append-system-prompt "$(cat .ai/diagrams/*.md)"` alias in rule 1. For the long-form versions (multiple diagrams per surface, per-column ER fields, full endpoint listings with rate limits) see [.ai/diagrams/](./.ai/diagrams/).
+
+### Auth flow
+```mermaid
+flowchart LR
+  Reg["POST /auth/register"] --> U["User role=consumer"]
+  RegP["POST /auth/register/producer"] --> UP["User + Producer status=pending"]
+  Google["POST /auth/google (id_token verified)"] --> U
+  Apple["POST /auth/apple (identity_token verified)"] --> U
+  Login["POST /auth/login 5/min"] --> U
+  U --> JWT["JWT HS256 24h, sub=user.id, JWT_SECRET_KEY env"]
+  UP --> JWT
+  JWT --> GCU["get_current_user — decode + load User + bump last_active_at throttled 5min"]
+  GCU --> RP["require_producer"]
+  GCU --> RA["require_admin"]
+```
+
+### DB schema (core tables + relationships)
+```mermaid
+erDiagram
+  users ||--o{ favorites : saves
+  users ||--o| producers : owns
+  users ||--o{ producer_followers : follows
+  users ||--o{ producer_reviews : writes
+  users ||--o{ home_products : lists
+  users ||--o{ experiences : hosts
+  users ||--o{ reports : files
+  producers ||--o{ producer_page_views : tracked
+  producers ||--o{ producer_whatsapp_clicks : tracked
+  producers ||--o{ products : sells
+  producers ||--o{ delivery_areas : delivers
+  producers ||--o{ producer_categories : tagged
+  categories ||--o{ producer_categories : ""
+  producers ||--o{ reports : reported
+```
+
+### API routes (key endpoints grouped by auth gate)
+```mermaid
+graph LR
+  Public["🌐 Public"] --> R1["GET /producers ?from=source ?q= ?category="]
+  Public --> R2["GET /producers/:id — logs view, bot-filtered"]
+  Public --> R3["POST /producers/:id/whatsapp-click 10/min"]
+  Public --> R4["GET /stats, POST /newsletter, POST /contact"]
+  Authed["🔑 authed"] --> R5["POST /auth/register | /login | /google | /apple"]
+  Authed --> R6["POST /home-products (Opus moderation)"]
+  Authed --> R7["POST /experiences (Haiku pre-check)"]
+  Prod["👤 require_producer"] --> R8["/producers/me/{dashboard, analytics, availability}"]
+  Adm["🛡️ require_admin"] --> R9["/admin/dashboard, /producers, /experiences"]
+```
