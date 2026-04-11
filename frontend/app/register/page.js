@@ -58,7 +58,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">שם מלא *</label>
-            <input value={form.name} onChange={set("name")} required className="w-full border rounded-[12px] px-3 py-2" />
+            <input value={form.name} onChange={set("name")} required className="w-full border rounded-[12px] px-3 py-2 text-right" dir="rtl" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">אימייל *</label>
