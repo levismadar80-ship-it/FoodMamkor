@@ -189,6 +189,186 @@ export default function AdminDashboard() {
           ))}
         </ul>
       </div>
+
+      {/* ======== feature/producer-analytics extension ======== */}
+
+      {/* Secondary stats row — weekly deltas + events + experiences */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <DeltaCard
+          label="משתמשים חדשים השבוע"
+          value={s.new_users_this_week || 0}
+          total={s.total_users || 0}
+          icon="👥"
+        />
+        <DeltaCard
+          label="עסקים חדשים השבוע"
+          value={s.new_producers_this_week || 0}
+          total={s.total_producers || 0}
+          icon="🏪"
+        />
+        <SimpleStat
+          label="אירועים"
+          value={s.total_events || 0}
+          icon="📅"
+          href="/admin/content"
+        />
+        <SimpleStat
+          label="חוויות"
+          value={s.total_experiences || 0}
+          icon="🍳"
+          href="/admin/experiences"
+        />
+      </div>
+
+      {/* DAU + top cities */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white border border-border rounded-[12px] p-5">
+          <h2 className="font-semibold mb-3">משתמשים פעילים — 30 ימים אחרונים</h2>
+          <DauLineChart data={data.daily_active_users || []} />
+        </div>
+        <div className="bg-white border border-border rounded-[12px] p-5">
+          <h2 className="font-semibold mb-3">ערים מובילות</h2>
+          <TopCitiesList data={data.top_cities || []} />
+        </div>
+      </div>
+
+      {/* Server health */}
+      <ServerHealthPanel health={data.server_health} />
+    </div>
+  );
+}
+
+function DeltaCard({ label, value, total, icon }) {
+  return (
+    <div className="bg-white border border-border rounded-[12px] p-4">
+      <div className="flex items-start justify-between mb-1">
+        <span className="text-xl" aria-hidden="true">{icon}</span>
+        <span className="text-3xl font-bold text-primary">+{value}</span>
+      </div>
+      <p className="text-xs text-text-secondary">{label}</p>
+      <p className="text-xs text-text-secondary">מתוך {total} סה״כ</p>
+    </div>
+  );
+}
+
+function SimpleStat({ label, value, icon, href }) {
+  return (
+    <Link
+      href={href}
+      className="bg-white border border-border rounded-[12px] p-4 hover:shadow-sm transition block"
+    >
+      <div className="flex items-start justify-between mb-1">
+        <span className="text-xl" aria-hidden="true">{icon}</span>
+        <span className="text-3xl font-bold text-primary">{value}</span>
+      </div>
+      <p className="text-xs text-text-secondary">{label}</p>
+    </Link>
+  );
+}
+
+/**
+ * Inline SVG line chart for daily active users over the last 30 days.
+ * Matches the admin/page.js monthly_producers chart pattern — no chart
+ * library, zero new dependencies.
+ */
+function DauLineChart({ data }) {
+  if (!data || data.length === 0) {
+    return <p className="text-sm text-text-secondary">אין נתונים עדיין</p>;
+  }
+  const W = 320;
+  const H = 110;
+  const pad = 8;
+  const maxV = Math.max(1, ...data.map((d) => d.count));
+  const stepX = data.length > 1 ? (W - pad * 2) / (data.length - 1) : 0;
+  const points = data
+    .map((d, i) => {
+      const x = pad + i * stepX;
+      const y = H - pad - (d.count / maxV) * (H - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-36" role="img" aria-label="DAU 30 days">
+      <polyline fill="none" stroke="#2e6853" strokeWidth="2" points={points} />
+      {data.map((d, i) => {
+        const x = pad + i * stepX;
+        const y = H - pad - (d.count / maxV) * (H - pad * 2);
+        return (
+          <g key={d.date}>
+            <circle cx={x} cy={y} r={d.count > 0 ? 2.5 : 1.5} fill="#2e6853" />
+            {labelIndexes.includes(i) && (
+              <text x={x} y={H + 14} fontSize="9" textAnchor="middle" fill="#6b6b6b">
+                {d.date.slice(5)}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function TopCitiesList({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <p className="text-sm text-text-secondary">
+        עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר.
+      </p>
+    );
+  }
+  const maxV = Math.max(1, ...data.map((d) => d.count));
+  return (
+    <ul className="space-y-2">
+      {data.map((row) => {
+        const pct = (row.count / maxV) * 100;
+        return (
+          <li key={row.city} className="text-sm">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-text-primary">{row.city}</span>
+              <span className="text-text-secondary">{row.count}</span>
+            </div>
+            <div className="h-2 bg-accent rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function ServerHealthPanel({ health }) {
+  if (!health) return null;
+  const empty = (health.sample_count || 0) === 0;
+  return (
+    <div className="bg-white border border-border rounded-[12px] p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold">בריאות שרת — שעה אחרונה</h2>
+        <span className="text-xs text-text-secondary">
+          {empty ? "מחכה לתנועה..." : `${health.sample_count} בקשות`}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs text-text-secondary mb-1">זמן תגובה ממוצע</p>
+          <p className="text-2xl font-bold text-primary">
+            {health.response_time_avg_ms}
+            <span className="text-sm text-text-secondary ms-1">ms</span>
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-text-secondary mb-1">בקשות לדקה</p>
+          <p className="text-2xl font-bold text-primary">
+            {health.requests_per_minute}
+            <span className="text-sm text-text-secondary ms-1">req/min</span>
+          </p>
+        </div>
+      </div>
+      <p className="text-[11px] text-text-secondary mt-3 leading-snug">
+        ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md).
+      </p>
     </div>
   );
 }

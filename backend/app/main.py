@@ -88,6 +88,9 @@ def _migrate_columns(engine):
         ("producers", "reviews_count", "INTEGER DEFAULT 0"),
         ("home_products", "street", "VARCHAR(200)"),
         ("home_products", "zip_code", "VARCHAR(20)"),
+        # feature/producer-analytics — DAU tracking on /admin/dashboard.
+        # Nullable so pre-existing users don't get backfilled to NOW().
+        ("users", "last_active_at", "TIMESTAMP"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
@@ -237,6 +240,33 @@ async def add_security_headers(request: Request, call_next) -> Response:
         "camera=(), microphone=(), geolocation=(self)"
     )
     return response
+
+
+# feature/producer-analytics: lightweight request-timing middleware. Appends
+# (monotonic_timestamp, duration_ms) to a bounded deque in
+# app.services.analytics so /admin/dashboard can compute
+# response_time_avg_ms + requests_per_minute over the last hour. Per-process
+# in-memory — not durable across restarts, not shared across workers.
+# Good enough for a single-operator admin dashboard; docs/SECURITY.md
+# has the full v1-limitation note.
+import time as _time  # noqa: E402 — local import keeps startup banner clean
+
+from app.services.analytics import record_request  # noqa: E402
+
+
+@app.middleware("http")
+async def record_request_metrics(request: Request, call_next) -> Response:
+    start = _time.monotonic()
+    try:
+        response: Response = await call_next(request)
+        return response
+    finally:
+        duration_ms = (_time.monotonic() - start) * 1000.0
+        try:
+            record_request(duration_ms)
+        except Exception:
+            # Never fail a request because of metric bookkeeping.
+            pass
 
 
 app.include_router(auth.router)

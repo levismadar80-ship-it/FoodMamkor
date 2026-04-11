@@ -4,15 +4,21 @@ import { useRef, useState } from "react";
 import { WhatsappLogo } from "@phosphor-icons/react";
 
 /**
- * WhatsApp CTA for home-product cards.
+ * WhatsApp CTA for home-product cards + producer detail pages.
  *
  * docs/archive/FEEDBACK_FIXES.md small items — prevent double-click: the click
  * handler fires onClick (which logs a whatsapp_click on the backend)
  * only ONCE per 2-second window, and the button visibly disables
  * itself for 1 second so users see that something happened. The
  * `<a>` still opens WhatsApp normally.
+ *
+ * feature/producer-analytics — if `producerId` is passed, also fire a
+ * fire-and-forget beacon to POST /producers/{id}/whatsapp-click so the
+ * producer dashboard gets a real count. sendBeacon is guaranteed not to
+ * block the window.open, unlike fetch(). Gracefully no-ops on servers
+ * or environments without sendBeacon.
  */
-export default function WhatsAppButton({ phone, productTitle, onClick }) {
+export default function WhatsAppButton({ phone, productTitle, onClick, producerId }) {
   const [pending, setPending] = useState(false);
   const firedRef = useRef(false);
 
@@ -36,6 +42,17 @@ export default function WhatsAppButton({ phone, productTitle, onClick }) {
     firedRef.current = true;
     setPending(true);
     if (onClick) onClick();
+    // feature/producer-analytics — fire-and-forget beacon to the producer
+    // whatsapp-click endpoint. Only fires when called from a producer
+    // context (producerId present). sendBeacon is the right tool: it
+    // survives page navigation and doesn't block the wa.me window opening.
+    if (producerId && typeof navigator !== "undefined" && navigator.sendBeacon) {
+      try {
+        navigator.sendBeacon(`/api/producers/${producerId}/whatsapp-click`);
+      } catch {
+        // ignore — tracking is best-effort
+      }
+    }
     // Release after 2s so the user can legitimately click again later.
     // The 1s disabled window also prevents the "did it work?" double-tap.
     setTimeout(() => {

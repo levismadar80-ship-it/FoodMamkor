@@ -105,6 +105,28 @@ left in v1" vs "what's planned for v2".
 
 Detail: [ADMIN.md](./ADMIN.md)
 
+### Analytics (feature/producer-analytics, April 2026)
+
+Shipped as one atomic PR. No new JS dependencies — charts are inline
+SVG following the admin dashboard precedent. Privacy-minimized: IPs are
+SHA-256 hashed with a rotating salt (the JWT secret), raw IP is never
+stored.
+
+| Status | Version | Feature | Where |
+|---|---|---|---|
+| ✅ | v1 | `producer_page_views` + `producer_whatsapp_clicks` models + auto-migration | `backend/app/models/models.py`, `backend/app/main.py::_migrate_columns` |
+| ✅ | v1 | View tracking on `GET /producers/{id}` — best-effort, bot UA filter, SHA-256 IP hash, city from authed viewer, referrer allowlist | `backend/app/services/analytics.py::track_producer_view`, `backend/app/routers/producers.py::get_producer` |
+| ✅ | v1 | `POST /producers/{id}/whatsapp-click` — anonymous, rate-limited 10/min per IP | `backend/app/routers/producers.py::record_whatsapp_click` |
+| ✅ | v1 | Fire-and-forget `navigator.sendBeacon` from the WhatsApp CTA (producer detail page + `WhatsAppButton.jsx`) | `frontend/app/producer/[id]/ProducerDetail.jsx`, `frontend/components/WhatsAppButton.jsx` |
+| ✅ | v1 | `?from=search` / `?from=home` referrer threading through `ProducerCard` (homepage grid, "newest" strip, /map) | `frontend/components/ProducerCard.jsx`, `frontend/app/page.js`, `frontend/app/map/MapClient.jsx` |
+| ✅ | v1 | `GET /producers/me/analytics` — 7d/30d/total windows for views/search/whatsapp, follower delta, avg rating, home products count, 30-day zero-filled views_by_day, top 5 cities | `backend/app/routers/producer_me.py::producer_analytics` |
+| ✅ | v1 | Producer dashboard (`/producer/dashboard`) — 6 stat cards + inline SVG line chart + inline SVG horizontal bar chart + 3 quick links + availability hero | `frontend/app/producer/dashboard/page.js` |
+| ✅ | v1 | Admin dashboard extension — 4 secondary stat cards (weekly deltas + events + experiences) + DAU 30d line chart + top 10 cities + server health panel | `frontend/app/admin/page.js`, `backend/app/routers/admin_extra.py::get_dashboard` |
+| ✅ | v1 | `pending_moderation_count` badge on admin sidebar — sums pending producers + open reports + flagged home products + pending experiences | `frontend/app/admin/layout.js` |
+| ✅ | v1 | `users.last_active_at` + throttled (5 min) bump inside `get_current_user` — feeds the DAU chart | `backend/app/auth.py`, `backend/app/models/models.py::User.last_active_at` |
+| ✅ | v1 | Sliding-window request metrics (per-process, 1-hour deque) for admin `server_health` panel | `backend/app/services/analytics.py::record_request / server_health`, `backend/app/main.py::record_request_metrics` middleware |
+| ✅ | v1 | 22 TDD pytest cases covering tracking, endpoints, windows, aggregations, moderation sum | `tests/test_analytics.py` |
+
 ### Cross-cutting infra
 
 | Status | Version | Feature | Where |
