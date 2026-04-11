@@ -117,7 +117,6 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
         onClick={goToMyLocation}
         className="absolute top-3 left-3 z-[1000] bg-white rounded-[12px] px-3 py-2 shadow-md hover:bg-gray-50 transition text-sm inline-flex items-center gap-1.5"
         title="המיקום שלי"
-        aria-label="המיקום שלי"
       >
         <MapPin size={16} className="text-primary" aria-hidden="true" />
         המיקום שלי

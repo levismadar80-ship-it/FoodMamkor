@@ -66,7 +66,7 @@ export default function ProducerCard({ producer }) {
                 href={`https://wa.me/${whatsappNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:scale-110 transition inline-flex items-center justify-center"
+                className="text-primary hover:scale-110 transition inline-flex items-center justify-center p-1.5"
                 title="WhatsApp"
                 aria-label="WhatsApp"
                 onClick={(e) => e.stopPropagation()}
@@ -77,7 +77,7 @@ export default function ProducerCard({ producer }) {
             {phone && (
               <a
                 href={`tel:${phone}`}
-                className="text-primary hover:scale-110 transition inline-flex items-center justify-center"
+                className="text-primary hover:scale-110 transition inline-flex items-center justify-center p-1.5"
                 title="טלפון"
                 aria-label="טלפון"
                 onClick={(e) => e.stopPropagation()}
@@ -90,7 +90,7 @@ export default function ProducerCard({ producer }) {
                 href={`https://instagram.com/${producer.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:scale-110 transition inline-flex items-center justify-center"
+                className="text-primary hover:scale-110 transition inline-flex items-center justify-center p-1.5"
                 title="Instagram"
                 aria-label="Instagram"
                 onClick={(e) => e.stopPropagation()}
