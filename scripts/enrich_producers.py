@@ -1,14 +1,14 @@
-"""Enrich mehamekor_producers_updated.xlsx with data scraped from producer
+"""Enrich mehamakor_producers_updated.xlsx with data scraped from producer
 websites (gathered via web search). Only fills EMPTY cells — never overwrites.
 
-Output: mehamekor_producers_final.xlsx
+Output: mehamakor_producers_final.xlsx
 """
 from pathlib import Path
 from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "mehamekor_producers_updated.xlsx"
-DST = ROOT / "mehamekor_producers_final.xlsx"
+SRC = ROOT / "mehamakor_producers_updated.xlsx"
+DST = ROOT / "mehamakor_producers_final.xlsx"
 
 # Column letters → indices (1-based, openpyxl)
 COL = {c: i + 1 for i, c in enumerate("ABCDEFGHIJKLMNOPQRSTUVW")}

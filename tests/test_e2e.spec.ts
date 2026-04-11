@@ -15,7 +15,7 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 test.describe("Public site", () => {
   test("home page loads with hero and producer cards", async ({ page }) => {
     await page.goto(BASE);
-    await expect(page).toHaveTitle(/מהמקור|MEHAMEKOR|MeHaMakor/i);
+    await expect(page).toHaveTitle(/מהמקור|MEHAMAKOR|MeHaMakor/i);
     // Hero / search bar should exist
     await expect(page.locator("input[type='search'], input[placeholder*='חיפוש']").first()).toBeVisible();
     // At least one producer card or list item rendered

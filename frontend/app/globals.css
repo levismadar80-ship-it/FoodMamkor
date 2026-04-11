@@ -10,7 +10,7 @@ html {
 
 body {
   font-family: 'DM Sans', 'Heebo', sans-serif;
-  /* LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay
+  /* docs/archive/LAUNCH_CHECKLIST.md fix 3: warm cream + subtle paper-noise overlay
      at 3% opacity. Adds organic "texture" without affecting legibility.
      Inline SVG keeps it CSS-only (no extra HTTP request). */
   background-color: #F5F0E8;
@@ -67,12 +67,12 @@ h1, h2, h3 {
   display: none;
 }
 
-/* MAP_IMPROVEMENTS.md: custom Leaflet marker + tooltip styling */
-.mehamekor-marker-wrap {
+/* docs/archive/MAP_IMPROVEMENTS.md: custom Leaflet marker + tooltip styling */
+.mehamakor-marker-wrap {
   background: transparent !important;
   border: none !important;
 }
-.mehamekor-tooltip {
+.mehamakor-tooltip {
   background: #1C1A17;
   color: #F5F0E8;
   border: none;
@@ -82,10 +82,10 @@ h1, h2, h3 {
   font-size: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-.mehamekor-tooltip::before {
+.mehamakor-tooltip::before {
   border-top-color: #1C1A17;
 }
-.mehamekor-cluster {
+.mehamakor-cluster {
   background: transparent !important;
   border: none !important;
 }
@@ -134,7 +134,7 @@ h1, h2, h3 {
 }
 
 /* =============================================================
-   PREMIUM_DESIGN.md
+   docs/archive/PREMIUM_DESIGN.md
    ============================================================= */
 
 /* Ken Burns — slow parallax zoom/pan on hero + parallax dividers.

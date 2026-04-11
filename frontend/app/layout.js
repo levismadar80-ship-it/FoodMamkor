@@ -8,12 +8,13 @@ import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
+import ChatWidget from "@/components/ChatWidget";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
 // can extend via `export const metadata = { ... }` on server components
 // or via a wrapping server component for client pages.
-const SITE_URL = process.env.SITE_URL || "https://mehamekor.co.il";
+const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
@@ -114,6 +115,9 @@ export default function RootLayout({ children }) {
             {/* PREMIUM_DESIGN: subtle green dot cursor on desktop only —
                 component self-disables on touch + reduced-motion. */}
             <CustomCursor />
+            {/* AI Q&A bot — desktop only, floating bottom-left.
+                Self-hides on mobile via `hidden md:flex`. */}
+            <ChatWidget />
           </SmoothScrollProvider>
         </AuthProvider>
         {CLARITY_PROJECT_ID && (

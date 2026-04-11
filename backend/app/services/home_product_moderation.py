@@ -1,6 +1,6 @@
 """AI moderation for the "מהמטבח של השכן" (home products) section.
 
-Per MODERATION.md: every user-submitted home product runs through Claude
+Per docs/MODERATION.md: every user-submitted home product runs through Claude
 before (and during) creation. Three possible verdicts:
   - APPROVED  → publish immediately
   - FLAGGED   → publish with a "בבדיקה" badge + surfaced in admin queue

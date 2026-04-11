@@ -130,8 +130,8 @@ badges: background #EAF3DE, color #2e6853, border-radius: 20px, padding: 2px 8px
 רקע: #2E4A2E | טקסט: #EAF3DE
 
 הוסף אינסטגרם:
-<a href="https://www.instagram.com/mehamekor" target="_blank">
-  <InstagramIcon /> @mehamekor
+<a href="https://www.instagram.com/mehamakor" target="_blank">
+  <InstagramIcon /> @mehamakor
 </a>
 
 הוסף ניוזלטר:
