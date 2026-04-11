@@ -95,11 +95,18 @@ border:        #e8e0d0   גבולות
 
 ## קבצי תיעוד — קרא לפי הצורך
 ```
-docs/DESIGN.md   — עיצוב מפורט: hero, category grid, כרטיסיות, footer
-docs/DATA.md     — DB schema + כל ה-API endpoints
-docs/ADMIN.md    — ממשק אדמין המלא + בדיקות אוטומטיות
-docs/ROADMAP.md  — v1 checklist, v2 פיצ'רים, v3 רעיונות
+docs/DESIGN.md          — עיצוב מפורט: hero, category grid, כרטיסיות, footer
+docs/DATA.md            — DB schema + כל ה-API endpoints
+docs/ADMIN.md           — ממשק אדמין המלא + בדיקות אוטומטיות
+docs/ROADMAP.md         — v1 checklist, v2 פיצ'רים, v3 רעיונות
+docs/MANUAL_TESTING.md  — רשימת בדיקות ידניות לפני שחרור (mobile/RTL/SMTP/OAuth)
 ```
+
+## בדיקות
+- **Backend:** `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mehamakor_test python -m pytest tests/ -v`
+  - 59 בדיקות (24 API core + 29 events + 6 rating dispatch)
+- **E2E:** `npx playwright test` מתוך `tests/test_e2e.spec.ts`
+- **Manual:** לפני כל release, עברי על `docs/MANUAL_TESTING.md`
 
 ## כלי עיצוב
 ```bash
