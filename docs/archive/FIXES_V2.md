@@ -375,7 +375,7 @@ export default function LoginPage() {
 ```
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-APPLE_CLIENT_ID=com.mehamekor.app
+APPLE_CLIENT_ID=com.mehamakor.app
 APPLE_TEAM_ID=your_team_id
 APPLE_KEY_ID=your_key_id
 ```

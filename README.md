@@ -1,7 +1,7 @@
-# מהמקור (Mehamekor)
+# מהמקור (Mehamakor)
 
 > Israeli directory of local food producers and home cooks.
-> Live: **[mehamekor.online](https://mehamekor.online)** · Instagram: [@mehamekor](https://www.instagram.com/mehamekor)
+> Live: **[mehamakor.online](https://mehamakor.online)** · Instagram: [@mehamakor](https://www.instagram.com/mehamakor)
 
 A "Google Maps for real food in Israel" — grass-fed meat, sourdough, raw dairy,
 organic veg, natural skincare. Surface the small producers and home cooks who
@@ -32,7 +32,7 @@ aesthetic — never tech-startup.
 feature/your-thing  ──PR──▶  staging  ──PR──▶  main
                               │                 │
                               ▼                 ▼
-                   staging.mehamekor.online   mehamekor.online
+                   staging.mehamakor.online   mehamakor.online
 ```
 
 Always branch from `staging`, never from `main`. Both `staging` and `main` are

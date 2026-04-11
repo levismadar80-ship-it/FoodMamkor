@@ -3,7 +3,7 @@
 > Last restructure: April 2026. Hard cap: this file stays ≤ 100 lines.
 
 ## Project
-- **Name:** מהמקור (MEHAMEKOR) | mehamekor.online
+- **Name:** מהמקור (MEHAMAKOR) | mehamakor.online
 - **What:** Israeli directory of local food producers (grass-fed meat, sourdough, raw dairy, organic veg) and home cooks (`/neighbor`).
 - **Voice:** Hebrew RTL, **feminine** (`-י` verbs). No "יצרן/ית" in UI — always "בית עסק / בעלת עסק". The locked micro-copy table lives in [docs/DESIGN.md](./docs/DESIGN.md).
 
@@ -30,8 +30,8 @@
 
 | Branch | Role | Deploys to |
 |---|---|---|
-| `main` | Production | mehamekor.online + Railway prod env |
-| `staging` | Pre-production testing | staging.mehamekor.online + Railway staging env |
+| `main` | Production | mehamakor.online + Railway prod env |
+| `staging` | Pre-production testing | staging.mehamakor.online + Railway staging env |
 | `feature/*` | New work | Vercel preview URL only |
 
 - **Never push directly to `main` or `staging`.** Both are PR-only.

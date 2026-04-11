@@ -7,7 +7,7 @@
 
 | Status | Meaning |
 |---|---|
-| ✅ | Shipped on `main`, live on mehamekor.online |
+| ✅ | Shipped on `main`, live on mehamakor.online |
 | 🚧 | In progress on `staging` or a `feature/*` branch |
 | 📋 | Planned, not started |
 | 💡 | Idea, no commitment |

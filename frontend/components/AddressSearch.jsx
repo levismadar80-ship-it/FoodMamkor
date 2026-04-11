@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
  *   - Nominatim's policy: max ~1 req/sec from a single source. We debounce
  *     to 450 ms and only query when the user has typed ≥ 3 chars.
  *   - For high-volume production usage we should proxy through our backend
- *     with a User-Agent identifying mehamekor.co.il (browsers can't set
+ *     with a User-Agent identifying mehamakor.co.il (browsers can't set
  *     User-Agent client-side). MVP volume is fine direct.
  *   - The component degrades gracefully: on network failure or rate-limit
  *     it just keeps the field as a free-text input — users can still type
