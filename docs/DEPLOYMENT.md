@@ -363,18 +363,22 @@ merge PR → main                        merge PR → staging
    │                                       │
    └──▶ .github/workflows/deploy.yml       └──▶ .github/workflows/deploy.yml
         production job, gated by ref            staging job, gated by ref
+        env:                                    env:
+          RAILWAY_TOKEN=$PROD_TOKEN               RAILWAY_TOKEN=$STAGING_TOKEN
+          RAILWAY_ENVIRONMENT=production          RAILWAY_ENVIRONMENT=staging
         npm i -g @railway/cli                   npm i -g @railway/cli
-        railway redeploy \                      railway redeploy \
-          --service $SERVICE \                    --service $SERVICE \
-          --environment production               --environment staging
-        (auth: $RAILWAY_PRODUCTION_TOKEN)       (auth: $RAILWAY_STAGING_TOKEN)
+        railway redeploy --service $SVC --yes   railway redeploy --service $SVC --yes
 ```
 
 Both jobs read the same `RAILWAY_SERVICE_NAME` variable (defaults to
 `FoodMamkor` if unset). Each job sources its own token secret as the
 local `RAILWAY_TOKEN` env var because the Railway CLI auto-reads
 whatever is in `RAILWAY_TOKEN` — only the source secret name differs
-per job.
+per job. Environment selection is plumbed through the
+`RAILWAY_ENVIRONMENT` env var rather than a `--environment` CLI flag,
+because the current Railway CLI does not accept `--environment` as a
+flag on `redeploy` (it errors with `unexpected argument '--environment'
+found`). Same end result, just plumbed via env instead of flag.
 
 ### One-time setup
 
@@ -469,6 +473,16 @@ If the CLI step fails with an auth error like `403 Forbidden` or
 `token does not have access to environment <env>`, the wrong token is
 in the wrong slot. Verify each secret value matches the environment it
 was generated for in Railway.
+
+If the CLI step fails with `error: unexpected argument '--environment'
+found`, you're on a Railway CLI version that doesn't accept
+`--environment` as a `redeploy` flag. The current workflow already
+plumbs environment selection through the `RAILWAY_ENVIRONMENT` env var
+instead, so this error shouldn't surface — but if it does, check that
+the workflow file actually uses the env-var pattern and not the flag
+pattern. We hit this exact failure mode early in the wire-up; the fix
+was to drop `--environment` from the CLI command and set the env var
+on each job.
 
 ### Behavior details
 

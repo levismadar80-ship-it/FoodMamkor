@@ -21,12 +21,18 @@ name: Deploy
 #   on every plan, just needs a Railway token with redeploy permissions.
 #
 # Two jobs, gated by branch, each with its own secret:
-#   - production: runs only when ref is refs/heads/main, calls
-#     `railway redeploy --environment production`, auth via
-#     RAILWAY_PRODUCTION_TOKEN
-#   - staging:    runs only when ref is refs/heads/staging, calls
-#     `railway redeploy --environment staging`, auth via
-#     RAILWAY_STAGING_TOKEN
+#   - production: runs only when ref is refs/heads/main, sets
+#     RAILWAY_ENVIRONMENT=production + RAILWAY_TOKEN from
+#     RAILWAY_PRODUCTION_TOKEN, then calls `railway redeploy --service`
+#   - staging:    runs only when ref is refs/heads/staging, sets
+#     RAILWAY_ENVIRONMENT=staging + RAILWAY_TOKEN from
+#     RAILWAY_STAGING_TOKEN, then calls `railway redeploy --service`
+#
+# The current Railway CLI does NOT accept --environment as a `redeploy`
+# flag — it errors with "unexpected argument '--environment' found".
+# Instead, the CLI auto-reads the RAILWAY_ENVIRONMENT env var, which
+# we set on each job. Same end result, just plumbed via env instead
+# of flag.
 #
 # Why two secrets? Railway project tokens on our plan are scoped to a
 # single environment within the project — one token can hit production
@@ -68,6 +74,12 @@ jobs:
       # whatever is in the RAILWAY_TOKEN env var, so we name it that
       # locally even though the secret name differs.
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+      # The current Railway CLI does NOT accept --environment as a
+      # `redeploy` flag (errors with "unexpected argument '--environment'
+      # found"). Instead, the CLI auto-reads RAILWAY_ENVIRONMENT from
+      # the env. Setting it here scopes every CLI call in this job to
+      # the production environment without polluting the command line.
+      RAILWAY_ENVIRONMENT: production
       # Service name lives in a *variable* (not a secret) so it can be
       # overridden without code changes. Defaults to FoodMamkor.
       SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME || 'FoodMamkor' }}
@@ -93,16 +105,17 @@ jobs:
         run: |
           set -e
           short_sha="${GITHUB_SHA:0:7}"
-          echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment 'production' (commit $short_sha)..."
+          echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment '$RAILWAY_ENVIRONMENT' (commit $short_sha)..."
 
-          # --yes skips the interactive confirmation prompt that
-          # `railway redeploy` would otherwise wait on forever in CI.
+          # Environment is selected via the RAILWAY_ENVIRONMENT env var
+          # set on the job (the CLI auto-reads it). --yes skips the
+          # interactive confirmation prompt that `railway redeploy`
+          # would otherwise wait on forever in CI.
           railway redeploy \
             --service "$SERVICE_NAME" \
-            --environment production \
             --yes
 
-          echo "::notice title=Railway production redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME)"
+          echo "::notice title=Railway production redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME, env: $RAILWAY_ENVIRONMENT)"
 
   # ──────────────────────────────────────────────────────────────────
   # STAGING — runs on push to staging
@@ -117,6 +130,9 @@ jobs:
       # token restricted to the staging environment. Same CLI behavior
       # as the production job, just a different secret.
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      # Selects the staging Railway environment via env var (the CLI
+      # auto-reads it; --environment is not a valid `redeploy` flag).
+      RAILWAY_ENVIRONMENT: staging
       SERVICE_NAME: ${{ vars.RAILWAY_SERVICE_NAME || 'FoodMamkor' }}
 
     steps:
@@ -140,11 +156,10 @@ jobs:
         run: |
           set -e
           short_sha="${GITHUB_SHA:0:7}"
-          echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment 'staging' (commit $short_sha)..."
+          echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment '$RAILWAY_ENVIRONMENT' (commit $short_sha)..."
 
           railway redeploy \
             --service "$SERVICE_NAME" \
-            --environment staging \
             --yes
 
-          echo "::notice title=Railway staging redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME)"
+          echo "::notice title=Railway staging redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME, env: $RAILWAY_ENVIRONMENT)"
