@@ -438,7 +438,12 @@ POST /recipes                    auth   — writes status=pending
 ```
 GET  /stats                      public — { producers_count, categories_count, cities_count }
 POST /newsletter                 public — { email } → newsletter_subscribers
-POST /contact                    public — { name, email, message } → admin email + DB
+                                 rate-limited 5/hour per IP
+POST /contact                    public — { name, email, message } → contact_messages row
+                                 + SMTP email to CONTACT_EMAIL (falls back to
+                                 ADMIN_EMAIL). Fail-open: if SMTP is unconfigured
+                                 or raises, the submission is still persisted.
+                                 rate-limited 5/hour per IP
 GET  /cities                     public — deduped producer+listing city list
 ```
 

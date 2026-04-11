@@ -6,8 +6,9 @@ Coverage:
 - Producers: list, filter by delivery_city, filter by category, get by id
 - Admin: 401/403 for non-admins, approve flow, dashboard, users, categories,
   settings, analytics, page editing
+- Contact: POST /contact — DB save, validation, email sending, fail-open
 """
-from app.models.models import AdminSetting, Producer, StaticPage
+from app.models.models import AdminSetting, ContactMessage, Producer, StaticPage
 from conftest import auth_header, make_category, make_producer, make_user
 
 
@@ -257,3 +258,240 @@ class TestAdminFlows:
         page = db.query(StaticPage).filter(StaticPage.slug == "about").first()
         assert page.title == "החזון שלנו"
         assert page.body == "אוכל אמיתי"
+
+
+# ---------- Contact ----------
+
+class TestContact:
+    """POST /contact — public contact form.
+
+    Required by Israeli consumer protection law (the "legal compliance"
+    PR added the frontend /contact page; this backend endpoint is its
+    counterpart).
+
+    Contract:
+    - Anonymous (no auth).
+    - Validates {name, email, message} via Pydantic.
+    - Persists to contact_messages table (source of truth).
+    - Sends an email to CONTACT_EMAIL (falls back to ADMIN_EMAIL).
+    - Fail-open: returns 200 even if SMTP is unconfigured or raises,
+      because the DB row is the source of truth and the admin can
+      always read messages from the DB directly.
+    """
+
+    VALID_PAYLOAD = {
+        "name": "רות כהן",
+        "email": "ruth@example.com",
+        "message": "היי, יש לכן אפשרות להוסיף יצרן חדש?",
+    }
+
+    # ----- DB persistence -----
+
+    def test_submit_contact_saves_to_db(self, client, db):
+        resp = client.post("/contact", json=self.VALID_PAYLOAD)
+        assert resp.status_code == 200
+        row = db.query(ContactMessage).first()
+        assert row is not None
+        assert row.name == "רות כהן"
+        assert row.email == "ruth@example.com"
+        assert row.message == "היי, יש לכן אפשרות להוסיף יצרן חדש?"
+
+    def test_submit_contact_trims_and_lowercases_email(self, client, db):
+        resp = client.post(
+            "/contact",
+            json={
+                "name": "  רות כהן  ",
+                "email": "Ruth@Example.COM",
+                "message": "  שלום  ",
+            },
+        )
+        assert resp.status_code == 200
+        row = db.query(ContactMessage).first()
+        assert row.name == "רות כהן"
+        assert row.email == "ruth@example.com"
+        assert row.message == "שלום"
+
+    # ----- Validation -----
+
+    def test_submit_contact_missing_name_fails(self, client):
+        payload = dict(self.VALID_PAYLOAD)
+        del payload["name"]
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+
+    def test_submit_contact_missing_email_fails(self, client):
+        payload = dict(self.VALID_PAYLOAD)
+        del payload["email"]
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+
+    def test_submit_contact_missing_message_fails(self, client):
+        payload = dict(self.VALID_PAYLOAD)
+        del payload["message"]
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+
+    def test_submit_contact_invalid_email_fails(self, client):
+        payload = dict(self.VALID_PAYLOAD)
+        payload["email"] = "not-an-email"
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+
+    def test_submit_contact_empty_name_fails(self, client):
+        payload = dict(self.VALID_PAYLOAD)
+        payload["name"] = ""
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+
+    def test_submit_contact_no_auth_required(self, client, db):
+        # Explicit: no Authorization header
+        resp = client.post("/contact", json=self.VALID_PAYLOAD)
+        assert resp.status_code == 200
+        assert db.query(ContactMessage).count() == 1
+
+    # ----- Email delivery (SMTP) -----
+
+    def test_submit_contact_sends_email_to_contact_email(
+        self, client, db, monkeypatch
+    ):
+        """When CONTACT_EMAIL + SMTP are configured, an email is sent to
+        CONTACT_EMAIL with name/email/message in the body."""
+        from app import config
+        from app.routers import marketing
+
+        monkeypatch.setattr(config.settings, "smtp_user", "bot@example.com")
+        monkeypatch.setattr(config.settings, "smtp_password", "secret")
+        monkeypatch.setattr(
+            config.settings, "contact_email", "contactmehamakor.online@gmail.com"
+        )
+
+        sent = {}
+
+        class FakeSMTP:
+            def __init__(self, host, port):
+                sent["host"] = host
+                sent["port"] = port
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def starttls(self):
+                pass
+
+            def login(self, user, password):
+                sent["login"] = (user, password)
+
+            def send_message(self, msg):
+                sent["to"] = msg["To"]
+                sent["from"] = msg["From"]
+                sent["subject"] = msg["Subject"]
+                sent["body"] = msg.get_payload(decode=True).decode("utf-8")
+
+        import smtplib
+        monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
+        # Also patch the late-imported name inside the router module, if any.
+        monkeypatch.setattr(marketing, "smtplib", smtplib, raising=False)
+
+        resp = client.post("/contact", json=self.VALID_PAYLOAD)
+        assert resp.status_code == 200
+
+        assert sent.get("to") == "contactmehamakor.online@gmail.com"
+        assert sent.get("from") == "bot@example.com"
+        assert "רות כהן" in sent.get("body", "")
+        assert "ruth@example.com" in sent.get("body", "")
+        assert "להוסיף יצרן חדש" in sent.get("body", "")
+        # And DB row still created
+        assert db.query(ContactMessage).count() == 1
+
+    def test_submit_contact_falls_back_to_admin_email(
+        self, client, db, monkeypatch
+    ):
+        """If CONTACT_EMAIL is empty but ADMIN_EMAIL is set, the email
+        is routed to ADMIN_EMAIL (backwards-compat with pre-existing
+        SMTP config)."""
+        from app import config
+
+        monkeypatch.setattr(config.settings, "smtp_user", "bot@example.com")
+        monkeypatch.setattr(config.settings, "smtp_password", "secret")
+        monkeypatch.setattr(config.settings, "contact_email", "")
+        monkeypatch.setattr(
+            config.settings, "admin_email", "admin@mehamakor.online"
+        )
+
+        sent = {}
+
+        class FakeSMTP:
+            def __init__(self, host, port):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def starttls(self):
+                pass
+
+            def login(self, *a, **k):
+                pass
+
+            def send_message(self, msg):
+                sent["to"] = msg["To"]
+
+        import smtplib
+        monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
+
+        resp = client.post("/contact", json=self.VALID_PAYLOAD)
+        assert resp.status_code == 200
+        assert sent.get("to") == "admin@mehamakor.online"
+
+    # ----- Fail-open -----
+
+    def test_submit_contact_fail_open_when_smtp_missing(
+        self, client, db, monkeypatch
+    ):
+        """SMTP unconfigured → 200, DB row still saved, no crash."""
+        from app import config
+
+        monkeypatch.setattr(config.settings, "smtp_user", "")
+        monkeypatch.setattr(config.settings, "smtp_password", "")
+        monkeypatch.setattr(config.settings, "contact_email", "")
+        monkeypatch.setattr(config.settings, "admin_email", "")
+
+        resp = client.post("/contact", json=self.VALID_PAYLOAD)
+        assert resp.status_code == 200
+        assert db.query(ContactMessage).count() == 1
+
+    def test_submit_contact_fail_open_on_smtp_exception(
+        self, client, db, monkeypatch
+    ):
+        """SMTP raises → 200, DB row still saved, no crash (AI-fail-open
+        ethos extended to SMTP per CLAUDE.md key locked decisions)."""
+        from app import config
+
+        monkeypatch.setattr(config.settings, "smtp_user", "bot@example.com")
+        monkeypatch.setattr(config.settings, "smtp_password", "secret")
+        monkeypatch.setattr(
+            config.settings, "contact_email", "contactmehamakor.online@gmail.com"
+        )
+
+        class ExplodingSMTP:
+            def __init__(self, *a, **k):
+                raise OSError("SMTP server unreachable")
+
+            def __enter__(self):
+                raise OSError("SMTP server unreachable")
+
+            def __exit__(self, *a):
+                return False
+
+        import smtplib
+        monkeypatch.setattr(smtplib, "SMTP", ExplodingSMTP)
+
+        resp = client.post("/contact", json=self.VALID_PAYLOAD)
+        assert resp.status_code == 200
+        assert db.query(ContactMessage).count() == 1
