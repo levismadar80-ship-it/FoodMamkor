@@ -15,6 +15,223 @@ checkpoint passes.
 
 ---
 
+## Branch Strategy
+
+| Branch | Role | Deploys to | Who can push |
+|---|---|---|---|
+| `main` | Production | mehamekor.online (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
+| `staging` | Non-prod testing | staging.mehamekor.online (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
+| `feature/*` | New features and fixes | None — local + Vercel preview URL | Branch owner. **Always created from `staging`**, never from `main`. |
+
+### The flow
+
+```
+feature/your-thing  ──PR──▶  staging  ──PR──▶  main
+       │                       │                 │
+       │                       ▼                 ▼
+   local + PR        staging.mehamekor.online   mehamekor.online
+   preview                  (test here)           (live)
+```
+
+### Rules
+
+1. **Always branch from `staging`**, not from `main`. `staging` is the
+   integration line — branching from it means your feature merges back
+   cleanly when you're done.
+2. **Never push directly to `main` or `staging`.** Both are PR-only.
+   The only path to `main` is `staging → main` via PR review.
+3. **`feature/*` is the only naming convention for new work.** Use short,
+   descriptive slugs: `feature/whatsapp-share`, `feature/event-rsvp`.
+   Avoid `claude/*`, `wip/*`, personal-name prefixes — they litter the
+   branch list and obscure intent.
+4. **Test on `staging` before merging to `main`.** Open the change at
+   `staging.mehamekor.online`, click through the flow you touched, then
+   approve the PR to `main`.
+
+### Day-to-day workflow
+
+```bash
+# 1. Start a new feature
+git checkout staging
+git pull --ff-only origin staging
+git checkout -b feature/short-description
+
+# 2. Work, commit, push
+git add ...
+git commit -m "feat: short description"
+git push -u origin feature/short-description
+
+# 3. Open PR: feature/short-description → staging
+#    GitHub UI, or:  gh pr create --base staging
+
+# 4. After the staging PR is merged, test on staging.mehamekor.online
+
+# 5. When you're confident, open the promotion PR: staging → main
+#    This is the "ship to production" step.
+```
+
+### Hotfixes
+
+If something is broken in production and you need to ship a fix immediately:
+
+```bash
+git checkout main
+git pull --ff-only origin main
+git checkout -b hotfix/short-description
+# fix, commit, push, open PR straight to main (skip staging)
+
+# Then immediately back-merge main → staging so the two don't drift:
+git checkout staging
+git pull --ff-only origin staging
+git merge origin/main
+git push origin staging
+```
+
+Hotfixes are the only time direct-to-`main` is allowed. Use sparingly — every
+hotfix is a story you'll have to tell during the post-mortem.
+
+### Branch cleanup
+
+The previous workflow created a wave of `claude/*` branches (one per session).
+All work from those branches has been merged into `main` via PR #5, and they
+have been deleted. Going forward:
+
+- **Delete the feature branch immediately after the PR merges.** GitHub has a
+  one-click button on the merged PR; use it.
+- **Local branches:** `git fetch --prune` removes stale tracking refs;
+  `git branch -d feature/foo` deletes the local branch (it refuses if there
+  are unmerged commits — that's a feature).
+- **Never create `claude/*` branches.** Use `feature/*`.
+
+---
+
+## Branching Strategy — One-Time Platform Setup
+
+The `staging` branch was created in code (commit on this PR). The platform-side
+configuration below requires manual clicks in the Railway, Vercel, and GitHub
+UIs — there is no API access from the codebase to do it automatically.
+
+### A. Railway — add a `staging` environment alongside production
+
+The Railway production environment already exists and deploys from `main`.
+Add a parallel `staging` environment that deploys from the `staging` branch.
+
+1. Open <https://railway.app/dashboard> → mehamekor project.
+2. Click the environment selector (top-left dropdown next to the project name)
+   → **+ New environment**.
+3. Name: `staging`. Choose **"Empty Environment"** — do **not** fork production,
+   you want a clean DB so test data doesn't pollute real records.
+4. Inside the new `staging` environment:
+   - Click **+ New** → **Database** → **PostgreSQL** (gives you a
+     `DATABASE_URL` for staging only — see §1 of this doc for the full
+     PostgreSQL setup; same steps, separate instance).
+   - Click **+ New** → **GitHub Repo** → select `levismadar80-ship-it/FoodMamkor`.
+     - **Service settings → Source → Branch:** `staging`
+     - **Build → Builder:** Dockerfile (same as production)
+5. Copy these env vars from `production` → `staging` (Variables tab; "Add
+   Reference" works for the DB URL, others need fresh values):
+
+   | Variable | How to set on staging |
+   |---|---|
+   | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
+   | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
+   | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
+   | `CORS_ORIGINS` | `https://staging.mehamekor.online,http://localhost:3000` |
+   | `ENV` | `staging` |
+   | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
+   | `TWILIO_*` | Use **Twilio test credentials** so staging WhatsApp messages don't go out for real. |
+   | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamekor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
+
+6. Production environment — verify the GitHub source is pinned to `main`.
+   If it's pinned to anything else (e.g. `claude/setup-documentation-sQ6Sw`),
+   change it to `main` now.
+
+### B. Vercel — add `staging.mehamekor.online`
+
+Vercel auto-deploys every branch to a preview URL. The two named deploys are:
+
+- `main` → **Production** → `mehamekor.online`
+- `staging` → **Preview** with custom domain → `staging.mehamekor.online`
+
+Steps:
+
+1. Open <https://vercel.com/dashboard> → mehamekor project.
+2. **Settings → Git → Production Branch:** confirm it's `main`. Change it
+   if not.
+3. **Settings → Domains:**
+   - `mehamekor.online` → **Production** (main) — already configured.
+   - Click **Add** → enter `staging.mehamekor.online`.
+   - When prompted, choose **"Git Branch"** → `staging`.
+   - Vercel will give you a CNAME record: `staging` → `cname.vercel-dns.com`.
+     Add it at your DNS provider.
+4. **Settings → Environment Variables** — add a `staging` (Preview) scope
+   for variables that differ from production:
+
+   | Variable | Production | Preview (staging) |
+   |---|---|---|
+   | `BACKEND_URL` | `https://mehamekor-production.up.railway.app` | `https://mehamekor-staging.up.railway.app` (whatever Railway's staging service URL is) |
+   | `NEXT_PUBLIC_API_URL` | same as production `BACKEND_URL` | same as staging `BACKEND_URL` |
+   | `NEXT_PUBLIC_SITE_URL` | `https://mehamekor.online` | `https://staging.mehamekor.online` |
+   | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
+   | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Production Clarity ID | Empty (don't pollute heatmaps). |
+
+   Mark each variable as **Production** or **Preview** in the Vercel UI. Don't
+   mark anything as **Development** unless you also use `vercel dev` locally.
+
+5. Trigger the first staging deploy: Vercel **Deployments tab** → find the
+   latest `staging` build → if it didn't auto-trigger, click **Redeploy**.
+
+### C. GitHub branch protection
+
+Branch protection requires admin access in the GitHub UI (it can't be set via
+the GitHub MCP tools available in this codebase). Open:
+
+**<https://github.com/levismadar80-ship-it/FoodMamkor/settings/branches>**
+
+#### Rule 1: `main`
+
+- **Branch name pattern:** `main`
+- ✅ Require a pull request before merging
+  - ✅ Require approvals: **1**
+  - ✅ Dismiss stale pull request approvals when new commits are pushed
+- ✅ Require status checks to pass before merging
+  - Add the GitHub Actions checks once they're wired up (pytest, playwright,
+    next build). Leave empty for now if no CI exists yet.
+- ✅ Require branches to be up to date before merging
+- ✅ Require linear history (no merge commits — only rebase or squash)
+- ✅ Do not allow bypassing the above settings (applies to admins too)
+- ❌ Allow force pushes — leave **disabled**
+- ❌ Allow deletions — leave **disabled**
+
+#### Rule 2: `staging`
+
+- **Branch name pattern:** `staging`
+- ✅ Require a pull request before merging
+  - **Required approvals: 0** (self-merge OK at the staging stage — review
+    happens at the `staging → main` step)
+- ✅ Require status checks to pass before merging — same checks as `main`.
+- ❌ Allow force pushes — disabled.
+- ❌ Allow deletions — disabled.
+
+After saving both rules, verify by attempting a direct push from a feature
+branch to `main` — it should be rejected.
+
+### Sanity checks before promoting `staging → main`
+
+- [ ] `npx playwright test --project=desktop` passes locally (6/6)
+- [ ] `pytest tests/test_api.py -q` passes locally (24/24)
+- [ ] Manual smoke test on `staging.mehamekor.online`:
+  - [ ] Homepage hero loads
+  - [ ] Map shows producers
+  - [ ] WhatsApp button on a producer page opens with the right text
+  - [ ] Chat widget bottom-left answers a test question
+  - [ ] No console errors in DevTools
+- [ ] No new entries in Sentry's "issues" tab from the staging deploy
+- [ ] PR description lists every behavior change so the next reviewer knows
+  what they're approving for production
+
+---
+
 ## 0. Prerequisites
 
 - [ ] GitHub repo pushed, with branch `main` as the deploy branch
