@@ -169,7 +169,7 @@ Steps:
 
    | Variable | Production | Preview (staging) |
    |---|---|---|
-   | `BACKEND_URL` | `https://mehamakor-production.up.railway.app` | `https://mehamakor-staging.up.railway.app` (whatever Railway's staging service URL is) |
+   | `BACKEND_URL` | `https://foodmamkor-production.up.railway.app` | `https://foodmamkor-staging.up.railway.app` |
    | `NEXT_PUBLIC_API_URL` | same as production `BACKEND_URL` | same as staging `BACKEND_URL` |
    | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.online` | `https://staging.mehamakor.online` |
    | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
@@ -611,7 +611,7 @@ should see:
 ### 2.5 Generate a public domain
 
 Service → **Settings** → **Networking** → **Generate Domain**. You'll get
-something like `https://mehamakor-backend-production.up.railway.app`.
+something like `https://foodmamkor-production.up.railway.app`.
 **Copy this URL — you'll need it for Vercel.**
 
 ### ✅ Verify
