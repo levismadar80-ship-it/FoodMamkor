@@ -696,6 +696,23 @@ Service → **Settings** → **Networking** → **Generate Domain**. You'll get
 something like `https://foodmamkor-production.up.railway.app`.
 **Copy this URL — you'll need it for Vercel.**
 
+> ⚠️ **Critical: also verify the Target Port.** While you're in
+> **Settings → Networking**, check the **Target Port** field on the
+> public domain row. **It must be `8080`**, not `8000`. Railway injects
+> `$PORT=8080` into the container at runtime, the Dockerfile CMD binds
+> uvicorn to `${PORT:-8000}` (i.e., `8080` in Railway), and Railway's
+> internal router uses the Target Port setting to decide which container
+> port to forward traffic to. If Target Port is `8000` (the value
+> someone copy-pasted from the Dockerfile's `EXPOSE 8000`, which is
+> documentation-only and misleading), traffic hits a port nothing is
+> listening on and Railway returns `502` with `X-Railway-Fallback: true`
+> on every request — even though the container is healthy and uvicorn
+> is running fine on `8080`. We hit this exact failure mode end-to-end
+> in production once; it's a 30-second fix in the Railway UI but it can
+> burn an hour to diagnose because the symptoms (`502` everywhere, no
+> useful logs in the deploy panel since the container itself is fine)
+> point at code or env vars instead of network config.
+
 ### ✅ Verify
 
 Open in a browser or curl:
@@ -712,6 +729,10 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
 (possibly empty) array, the backend is live and the DB connection works.
 
 **Troubleshooting:**
+- `502 Bad Gateway` with response header `X-Railway-Fallback: true` →
+  Railway's networking Target Port is wrong (probably `8000`). Set it
+  to `8080` in **Settings → Networking → Target Port**. See the
+  callout above and the §6 gotchas table.
 - `500 Internal Server Error` on `/producers?lat=...&lng=...&radius_km=...`
   → the Haversine query tripped on NULL lat/lng; the router already filters
   these out, so check that your producers seed has valid coordinates.
@@ -857,9 +878,11 @@ Run through this checklist in a real browser:
 | `COPY failed: file not found in build context: backend/...` | Custom Root Directory set to `backend/` | Clear Root Directory in Railway Settings — build context must be the repo root for the new Dockerfile |
 | `column "location" does not exist` | Old schema had a dead PostGIS column | Startup migration drops it; restart the service once |
 | `/producers?lat=...&radius_km=...` returns `[]` unexpectedly | Producers seeded with NULL lat/lng | They're filtered out by design — add coords in admin or seed |
+| `502 Bad Gateway` from Railway with response header `X-Railway-Fallback: true` on every request | **Railway networking Target Port mismatch.** Railway injects `$PORT=8080` into the container, the Dockerfile binds uvicorn to `${PORT:-8000}` (= `8080` in Railway), but Railway's Settings → Networking → Target Port is set to `8000` (someone copy-pasted from `EXPOSE 8000` in the Dockerfile, which is documentation-only). Container is healthy on `8080`; Railway routes traffic to `8000`; nothing answers; fallback page. | Railway → service → **Settings → Networking** → click the public domain row → set **Target Port** to `8080`. Saves automatically; no redeploy needed. The 502 stops within seconds. |
 | Frontend `/api/*` returns HTML (404) | `BACKEND_URL` not set at build time | Set env var in Vercel → **Redeploy** (not just restart) |
-| Google login: `redirect_uri_mismatch` | Production domain not whitelisted | Step 4 |
-| `CORS policy: No 'Access-Control-Allow-Origin'` | Backend CORS closed | Already `allow_origins=["*"]` in `main.py`; lock down later |
+| Google login: `redirect_uri_mismatch` / `origin_mismatch` | Production domain not whitelisted in Google Cloud Console | §4 — add `https://mehamakor.online` to **Authorized JavaScript origins** AND, if your flow uses a callback, to **Authorized redirect URIs** |
+| Chat widget returns "משהו השתבש 🌱" | `ANTHROPIC_API_KEY` not set in Railway production env | Railway → backend service → **Variables → New Variable** → `ANTHROPIC_API_KEY` = your key. Container restarts automatically on env var change. |
+| `CORS policy: No 'Access-Control-Allow-Origin'` | Backend CORS closed | Set `CORS_ORIGINS` env var on Railway (comma-separated) to include `https://mehamakor.online,https://www.mehamakor.online` |
 | Seed runs every boot | `seed()` in lifespan hook | Seeding is idempotent; safe but noisy — remove once live |
 
 ---

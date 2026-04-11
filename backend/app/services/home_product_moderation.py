@@ -42,8 +42,30 @@ def _get_client():
     if not settings.anthropic_api_key:
         return None
     try:
+        # Imports kept lazy so missing packages can't crash module load
+        # (the rest of the backend stays up even if anthropic is broken).
         import anthropic
-        _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        import httpx
+
+        # Construct an explicit httpx.Client() and pass it via the
+        # Anthropic SDK's `http_client` kwarg. This bypasses the SDK's
+        # internal call to `httpx.Client(proxies=...)`, which is broken
+        # against httpx 0.28+ — that release dropped the `proxies=` kwarg
+        # in favor of `proxy=` (singular), and the anthropic 0.39 SDK
+        # didn't update its internal call. Symptom of the unfixed code:
+        #     TypeError: Client.__init__() got an unexpected keyword
+        #                argument 'proxies'
+        # Caught by PR #29's debug instrumentation in chat.py, fixed in
+        # PR #32 (chat) and this PR (moderation). The explicit
+        # `httpx.Client()` works against any httpx version because we're
+        # constructing it ourselves with no kwargs, so we don't have to
+        # chase the SDK-vs-transitive-dep version dance. SAME PATTERN
+        # MUST be used anywhere else this codebase constructs an
+        # Anthropic client — see CLAUDE.md "Key locked decisions".
+        _client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            http_client=httpx.Client(),
+        )
         return _client
     except Exception as e:  # pragma: no cover — defensive
         logger.warning("anthropic client init failed: %s", e)
