@@ -37,7 +37,14 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 # claude-haiku-4-5 is the cheapest production model. Hard-coded here
 # because the system-wide `settings.anthropic_model` is opus-tier and
 # tuned for moderation accuracy, not chatbot cost.
-CHAT_MODEL = "claude-haiku-4-5"
+#
+# IMPORTANT: use the date-suffixed model ID (`claude-haiku-4-5-20251001`),
+# NOT the bare alias (`claude-haiku-4-5`). The bare alias was rejected by
+# the Anthropic API in production, causing every chat call to silently
+# fail-open with the offline message. The date-suffixed form is the
+# canonical model ID per Anthropic's docs and works reliably. If you
+# upgrade to a newer Haiku, swap the date — the prefix stays the same.
+CHAT_MODEL = "claude-haiku-4-5-20251001"
 
 # Cap on conversation length sent to the API. Each turn is a user msg
 # + assistant msg, so 10 = 20 messages = ~2-3K tokens of history.
@@ -106,8 +113,27 @@ def _get_client():
     if not settings.anthropic_api_key:
         return None
     try:
+        # Imports kept lazy so missing packages can't crash module load
+        # (the rest of the backend stays up even if anthropic is broken).
         import anthropic
-        _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        import httpx
+
+        # Construct an explicit httpx.Client() and pass it via the
+        # Anthropic SDK's `http_client` kwarg. This bypasses the SDK's
+        # internal call to `httpx.Client(proxies=...)`, which is broken
+        # against httpx 0.28+ — that release dropped the `proxies=` kwarg
+        # in favor of `proxy=` (singular), and the anthropic 0.39 SDK
+        # didn't update its internal call. Symptom of the unfixed code:
+        #     TypeError: Client.__init__() got an unexpected keyword
+        #                argument 'proxies'
+        # Caught by PR #29's debug instrumentation, fixed in PR #31.
+        # The explicit `httpx.Client()` works against any httpx version
+        # because we're constructing it ourselves with no kwargs, so we
+        # don't have to chase the SDK-vs-transitive-dep version dance.
+        _client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            http_client=httpx.Client(),
+        )
         return _client
     except Exception as e:  # pragma: no cover — defensive
         logger.warning("anthropic client init failed for chat: %s", e)
