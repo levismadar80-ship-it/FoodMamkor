@@ -486,7 +486,7 @@ class TestContact:
         monkeypatch.setattr(config.settings, "smtp_password", "secret")
         monkeypatch.setattr(config.settings, "contact_email", "")
         monkeypatch.setattr(
-            config.settings, "admin_email", "admin@mehamakor.online"
+            config.settings, "admin_email", "levismadar80@gmail.com"
         )
 
         sent = {}
@@ -515,7 +515,7 @@ class TestContact:
 
         resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
-        assert sent.get("to") == "admin@mehamakor.online"
+        assert sent.get("to") == "levismadar80@gmail.com"
 
     # ----- Fail-open -----
 
