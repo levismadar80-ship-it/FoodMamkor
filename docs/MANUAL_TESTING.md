@@ -298,6 +298,82 @@ VERCEL_ENV=preview node -e "const c=require('./frontend/next.config.js'); c.head
 
 ---
 
+## Eye toggle + inline form validation on /login + /register (tasks_for_claude_code.md PR 8 — tasks 7+8)
+
+Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button. Task 8 = inline onBlur validation with red borders, green checkmarks, error messages, and a submit button that's disabled until the form is valid.
+
+### Password visibility toggle (task 7) — both pages
+
+- [ ] `/login` — password field has a small eye icon on its left side (visual LEFT of the LTR input, which is the END of the RTL reading flow)
+- [ ] `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible
+- [ ] `/login` — tap again → flips back to `password` → characters become dots
+- [ ] `/login` — icon changes: closed eye (`Eye`) when hidden, slashed eye (`EyeSlash`) when visible
+- [ ] `/register` — same 4 checks on the password field there
+- [ ] Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles
+- [ ] Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` reflects state
+
+### Inline validation — /login (task 8)
+
+- [ ] `/login` — load page — submit button is **disabled** (form is empty)
+- [ ] Email field — tap then tap away without typing → no error (touched but empty is neutral)
+- [ ] Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
+- [ ] Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
+- [ ] Password — tap then tap away empty → no error
+- [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
+- [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
+- [ ] Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
+- [ ] Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-enables
+
+### Inline validation — /register (task 8)
+
+- [ ] `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- [ ] Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
+- [ ] Name — type `שרה` → green border + `"✓ תקין"`
+- [ ] Email — same pattern as /login (`"האימייל לא תקין"` error)
+- [ ] Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error)
+- [ ] Password — **strength indicator** appears below the input as soon as the user types anything:
+  - 1 rule passes (e.g. `"abc"` — only len fails, no upper, no digit: **0 rules**) — strength bar shows no color, no label (field still effectively too short)
+  - 1 rule passes (e.g. `"abcdefgh"` — len ✓, upper ✗, digit ✗) — label `"חוזק סיסמה: חלשה"` in red, 1/3 of the bar in red
+  - 2 rules pass (e.g. `"Abcdefgh"` — len ✓, upper ✓, digit ✗) — label `"חוזק סיסמה: בינונית"` in amber, 2/3 of the bar in amber
+  - 3 rules pass (e.g. `"Abcdefg1"` — all three ✓) — label `"חוזק סיסמה: חזקה"` in primary-green, 3/3 of the bar in primary
+- [ ] Password — the existing rule checklist is still visible below the strength bar (one ✓/○ per rule)
+- [ ] Phone — **optional field** — tap and tap away empty → no error, no green check (empty is fine)
+- [ ] Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"`
+- [ ] Phone — fix to `0501234567` → green border + `"✓ תקין"`
+- [ ] City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional)
+- [ ] Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
+  - Name non-empty ✓
+  - Email valid format ✓
+  - Password ≥8 chars ✓
+  - Phone empty OR valid format ✓
+  - Terms checkbox checked ✓
+
+### Task-spec exactness — error message wording
+
+The task spec dictates the exact Hebrew error text for each rule. Verify the strings match character-for-character:
+
+- [ ] `grep -rn 'האימייל לא תקין' frontend/app/login frontend/app/register` → 2 matches (1 per page, in the inline validation block)
+- [ ] `grep -rn 'סיסמא חייבת להכיל לפחות 8 תווים' frontend/app/login frontend/app/register` → 2 matches
+- [ ] `grep -rn 'שם מלא הוא שדה חובה' frontend/app/register` → 1 match
+- [ ] `grep -rn 'מספר טלפון לא תקין' frontend/app/register` → 1 match
+
+### Accessibility checks
+
+- [ ] Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
+- [ ] Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
+- [ ] Error messages are rendered in the same `<div>` as the input so screen readers pick them up
+- [ ] `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works smoothly under reduce-motion (it uses only a CSS `transition` on the icon color — no transform/opacity)
+
+### Regression checks — do NOT break existing behavior
+
+- [ ] `/login` Google OAuth button still works (we imported a new icon but didn't touch the OAuth block)
+- [ ] `/login` Apple Sign-In button still works
+- [ ] `/register/producer` step 1 still works — the `PasswordStrength` upgrade (tier indicator) propagates to its password field too. Verify the new tier bar renders there without layout breakage.
+- [ ] `/register` → submit with invalid data server-side (e.g. email already exists) → error banner at the bottom of the form appears, submit button recovers
+- [ ] `/register` → form validation AFTER clearing a field (e.g. type valid email then backspace to nothing) → red border appears (field is still touched, and the empty-string + touched state should reset to neutral or invalid per the logic). Actually for email: touched + empty → neither invalid nor valid (because `emailInvalid` requires `email.length > 0`). Expected: no red border, no green check, button disabled because `validateEmail("") === false`.
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
