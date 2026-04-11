@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # App
     frontend_url: str = "http://localhost:3000"
 
+    # Anthropic (Claude) — used for event pre-moderation
+    anthropic_api_key: str = ""
+
     class Config:
         env_file = ".env"
 

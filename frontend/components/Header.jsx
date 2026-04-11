@@ -24,6 +24,9 @@ export default function Header() {
           <Link href="/map" className="text-text-secondary hover:text-primary transition">
             מפה
           </Link>
+          <Link href="/events" className="text-text-secondary hover:text-primary transition">
+            אירועים
+          </Link>
           <Link href="/about" className="text-text-secondary hover:text-primary transition">
             אודות
           </Link>
@@ -77,6 +80,9 @@ export default function Header() {
           </Link>
           <Link href="/map" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
             מפה
+          </Link>
+          <Link href="/events" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
+            אירועים
           </Link>
           <Link href="/about" className="block text-text-secondary" onClick={() => setMenuOpen(false)}>
             אודות

@@ -93,8 +93,44 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
     notes TEXT
 );
 
+-- Events & Experiences (v1)
+CREATE TABLE IF NOT EXISTS events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(300) NOT NULL,
+    description TEXT NOT NULL,
+    images TEXT[] DEFAULT '{}',
+    category VARCHAR(50),
+    type VARCHAR(20) NOT NULL DEFAULT 'event',
+    host_type VARCHAR(20) NOT NULL DEFAULT 'community',
+    location_type VARCHAR(20) NOT NULL DEFAULT 'public',
+    host_user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    producer_id UUID REFERENCES producers(id) ON DELETE SET NULL,
+    starts_at TIMESTAMP NOT NULL,
+    ends_at TIMESTAMP,
+    is_recurring BOOLEAN DEFAULT FALSE,
+    recurring_schedule TEXT,
+    city VARCHAR(100),
+    address VARCHAR(300),
+    lat FLOAT,
+    lng FLOAT,
+    max_participants INTEGER,
+    participants_count INTEGER DEFAULT 0,
+    price_per_person NUMERIC(10, 2),
+    requirements TEXT,
+    status VARCHAR(30) DEFAULT 'pending',
+    rejection_reason TEXT,
+    admin_feedback TEXT,
+    moderation_flags JSON,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_producers_status ON producers(status);
 CREATE INDEX IF NOT EXISTS idx_producers_lat_lng ON producers(lat, lng);
 CREATE INDEX IF NOT EXISTS idx_delivery_areas_city ON delivery_areas(city);
 CREATE INDEX IF NOT EXISTS idx_recipes_status ON recipes(status);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_starts_at ON events(starts_at);
+CREATE INDEX IF NOT EXISTS idx_events_type ON events(type);
+CREATE INDEX IF NOT EXISTS idx_events_city ON events(city);

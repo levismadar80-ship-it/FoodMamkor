@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 const NAV = [
   { href: "/admin",            label: "לוח מחוונים", icon: "📊" },
   { href: "/admin/producers",  label: "בתי עסק",     icon: "🏪" },
+  { href: "/admin/events",     label: "אירועים",     icon: "📅" },
   { href: "/admin/users",      label: "משתמשים",     icon: "👥" },
   { href: "/admin/content",    label: "תוכן",        icon: "📝" },
   { href: "/admin/reports",    label: "דיווחים",     icon: "🚨" },

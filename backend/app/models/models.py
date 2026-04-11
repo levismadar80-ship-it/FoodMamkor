@@ -251,3 +251,69 @@ class HomeProductRating(Base):
     click = relationship("HomeProductWhatsAppClick", back_populates="rating")
     user = relationship("User")
     home_product = relationship("HomeProduct", back_populates="ratings")
+
+
+# --- Events & Experiences (v1) ---
+
+
+class Event(Base):
+    """
+    Events & Experiences — Airbnb-Experiences-style listings.
+
+    Two types:
+      - event      — hosted by an approved producer (farm tours, market days…)
+      - experience — hosted by anyone (workshops, nutrition classes, food tours)
+
+    All submissions go through admin moderation before being published.
+    """
+
+    __tablename__ = "events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Core content
+    title = Column(String(300), nullable=False)
+    description = Column(Text, nullable=False)
+    images = Column(ARRAY(Text), default=[])
+    category = Column(String(50), nullable=True)  # בישול | חקלאות | טעימות | ...
+
+    # Classification
+    type = Column(String(20), nullable=False, default="event")  # event | experience
+    host_type = Column(String(20), nullable=False, default="community")  # producer | community
+    location_type = Column(String(20), nullable=False, default="public")  # producer_farm | home | public
+
+    # Host
+    host_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="SET NULL"), nullable=True)
+
+    # Schedule
+    starts_at = Column(DateTime, nullable=False)
+    ends_at = Column(DateTime, nullable=True)
+    is_recurring = Column(Boolean, default=False)
+    recurring_schedule = Column(Text, nullable=True)  # "שבועי בימי שישי" / "חודשי"
+
+    # Location
+    city = Column(String(100))
+    address = Column(String(300), nullable=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+
+    # Capacity & pricing
+    max_participants = Column(Integer, nullable=True)
+    participants_count = Column(Integer, default=0)
+    price_per_person = Column(Numeric(10, 2), nullable=True)  # NULL = free
+
+    # Requirements / prep
+    requirements = Column(Text, nullable=True)
+
+    # Moderation
+    status = Column(String(30), default="pending")  # pending | approved | rejected | changes_requested
+    rejection_reason = Column(Text, nullable=True)
+    admin_feedback = Column(Text, nullable=True)  # for "changes_requested"
+    moderation_flags = Column(JSON, nullable=True)  # Claude pre-moderation output
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    host = relationship("User", foreign_keys=[host_user_id])
+    producer = relationship("Producer", foreign_keys=[producer_id])

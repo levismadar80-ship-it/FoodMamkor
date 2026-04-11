@@ -43,9 +43,12 @@ border:        #e8e0d0   גבולות
 | / | Hero + Social Proof Bar + Category Grid + גריד עסקים + מהמטבח של השכן |
 | /map | Leaflet + גריד מתעדכן + 3 מסננים |
 | /producer/:id | גלריה + פרטים + משלוחים + מועדפים |
+| /events | אירועים וחוויות — סינון לפי סוג/קטגוריה/עיר |
+| /events/new | טופס הגשה (אירוע/חוויה/סדנה) → pending → מודרציית אדמין |
+| /events/:id | פרטי אירוע + מקומות פנויים + WhatsApp למארגן |
 | /about | חזון + ערכים + סיפור מייסדת + טופס יצירת קשר |
 | /terms | תנאי שימוש |
-| /admin | אדמין — 7 דפים (ראה docs/ADMIN.md) |
+| /admin | אדמין — 8 דפים (כולל /admin/events) |
 
 ## סוגי משתמשים
 | role | שם בממשק | הרשמה |
@@ -71,6 +74,24 @@ border:        #e8e0d0   גבולות
 | loading | טוענת עסקים טריים... |
 | כפתור הרשמה | הוסף את העסק שלך |
 | pending | פרופיל העסק שלך ממתין לאישור 🌿 |
+
+## Events & Experiences (v1, אפריל 2026)
+- **שני סוגים:** `event` (יצרן — סיורים, ימי שוק) + `experience` (כל אחד — סדנאות, סיורי אוכל)
+- **host_type:** `producer` | `community` (נקבע אוטו׳ מתפקיד המשתמש)
+- **location_type:** `producer_farm` | `home` | `public`
+- **status flow:** `pending` → admin → `approved` / `rejected` / `changes_requested`
+- **Moderation:** Claude Haiku pre-flags spam/off-topic + מציע שיפורים. נופל חן אם API key חסר.
+- **התראות מייל:** לאדמין בהגשה, להוסט באישור / דחייה / שינויים נדרשים
+- **קבצים עיקריים:**
+  - `backend/app/models/models.py` — `Event`
+  - `backend/app/routers/events.py` — CRUD + הגשה
+  - `backend/app/routers/admin_events.py` — מודרציה
+  - `backend/app/services/event_moderation.py` — Claude pre-moderation
+  - `backend/app/services/event_notifications.py` — מיילים
+  - `frontend/app/events/page.js` + `new/` + `[id]/`
+  - `frontend/app/admin/events/page.js`
+  - `frontend/components/EventCard.jsx`
+- **ENV:** `ANTHROPIC_API_KEY` (אופציונלי — אם חסר, המודרציה מוחזרת כ-not_checked)
 
 ## קבצי תיעוד — קרא לפי הצורך
 ```

@@ -69,6 +69,25 @@ newsletter_subscribers (id, email unique, created_at)
 recipes (id, title, description, steps json, category_id FK,
          submitted_by FK, status: pending|approved|rejected, created_at)
 recipe_ingredients (id, recipe_id FK, ingredient_name, producer_id FK nullable, notes)
+
+-- אירועים וחוויות (v1)
+events (
+  id uuid PK,
+  title, description text, images text[], category,
+  type: event|experience,
+  host_type: producer|community,
+  location_type: producer_farm|home|public,
+  host_user_id FK → users, producer_id FK → producers nullable,
+  starts_at, ends_at, is_recurring bool, recurring_schedule,
+  city, address, lat float, lng float,
+  max_participants int, participants_count int,
+  price_per_person numeric(10,2) nullable,  -- NULL = free
+  requirements text,
+  status: pending|approved|rejected|changes_requested,
+  rejection_reason text, admin_feedback text,
+  moderation_flags json,  -- Claude pre-moderation output
+  created_at, updated_at
+)
 ```
 
 ## API Endpoints
@@ -131,6 +150,20 @@ GET  /admin/dashboard
 GET  /api/stats               → { producers_count, categories_count }
 POST /api/newsletter          → newsletter_subscribers
 POST /api/contact             → מייל לאדמין
+
+# אירועים וחוויות (v1)
+GET    /events?type=&category=&city=      — רק approved
+GET    /events/mine                        — כל ההגשות של המשתמש
+GET    /events/{id}                        — פרטים (owner/admin רואים גם pending)
+POST   /events                             — הגשה → status=pending + Claude pre-mod
+PUT    /events/{id}                        — עריכה (מחזירה ל-pending)
+DELETE /events/{id}                        — רק בעלים/אדמין
+
+# אדמין — מודרציה
+GET  /admin/events?status=pending|approved|rejected|changes_requested|all
+POST /admin/events/{id}/approve
+POST /admin/events/{id}/request-changes    { feedback }
+POST /admin/events/{id}/reject             { feedback }
 ```
 
 ## התראות (Twilio WhatsApp)

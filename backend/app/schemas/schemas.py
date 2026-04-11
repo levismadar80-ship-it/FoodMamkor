@@ -348,3 +348,97 @@ class ReportOut(BaseModel):
 class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     comment: str | None = Field(None, max_length=100)
+
+
+# --- Events & Experiences ---
+class EventCreate(BaseModel):
+    title: str = Field(..., min_length=4, max_length=300)
+    description: str = Field(..., min_length=20)
+    images: list[str] = Field(default_factory=list, max_length=5)
+    category: str | None = None  # בישול | חקלאות | טעימות | ...
+    type: str = Field("event", pattern="^(event|experience)$")
+    location_type: str = Field("public", pattern="^(producer_farm|home|public)$")
+    starts_at: datetime
+    ends_at: datetime | None = None
+    is_recurring: bool = False
+    recurring_schedule: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    max_participants: int | None = Field(None, ge=1, le=1000)
+    price_per_person: Decimal | None = None  # None/0 = free
+    requirements: str | None = None
+
+
+class EventUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    images: list[str] | None = None
+    category: str | None = None
+    location_type: str | None = Field(None, pattern="^(producer_farm|home|public)$")
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    is_recurring: bool | None = None
+    recurring_schedule: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    max_participants: int | None = None
+    price_per_person: Decimal | None = None
+    requirements: str | None = None
+
+
+class EventModerationAction(BaseModel):
+    feedback: str | None = Field(None, max_length=2000)
+
+
+class EventHostOut(BaseModel):
+    id: UUID
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+class EventProducerOut(BaseModel):
+    id: UUID
+    name: str
+    slug: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class EventOut(BaseModel):
+    id: UUID
+    title: str
+    description: str
+    images: list[str] = []
+    category: str | None = None
+    type: str
+    host_type: str
+    location_type: str
+    host_user_id: UUID
+    producer_id: UUID | None = None
+    starts_at: datetime
+    ends_at: datetime | None = None
+    is_recurring: bool
+    recurring_schedule: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    max_participants: int | None = None
+    participants_count: int = 0
+    spots_left: int | None = None
+    price_per_person: Decimal | None = None
+    requirements: str | None = None
+    status: str
+    rejection_reason: str | None = None
+    admin_feedback: str | None = None
+    moderation_flags: dict | None = None
+    host: EventHostOut | None = None
+    producer: EventProducerOut | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

@@ -3,7 +3,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import admin, admin_extra, auth, favorites, home_products, producer_me, producers, recipes, reports, upload
+from app.routers import (
+    admin,
+    admin_events,
+    admin_extra,
+    auth,
+    events,
+    favorites,
+    home_products,
+    producer_me,
+    producers,
+    recipes,
+    reports,
+    upload,
+)
 
 
 def _migrate_columns(engine):
@@ -83,6 +96,8 @@ app.include_router(recipes.router)
 app.include_router(home_products.router)
 app.include_router(reports.router)
 app.include_router(upload.router)
+app.include_router(events.router)
+app.include_router(admin_events.router)
 
 
 @app.get("/")
