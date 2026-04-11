@@ -59,7 +59,7 @@ export default function NewEventPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <nav className="text-sm text-site-muted mb-4">
-        <Link href="/producer/dashboard" className="hover:text-primary">דשבורד</Link>
+        <Link href="/producer/dashboard" className="hover:text-primary">ניהול העסק</Link>
         <span className="mx-2">›</span>
         <span className="text-site-text">אירוע חדש</span>
       </nav>
