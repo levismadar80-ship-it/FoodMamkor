@@ -25,19 +25,19 @@ export default function MapPage() {
   const [committedBounds, setCommittedBounds] = useState(null);
   const [activeProducerId, setActiveProducerId] = useState(null);
 
-  // MAP_IMPROVEMENTS.md #3 — hover sync state shared between cards and map.
+  // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync state shared between cards and map.
   const [hoveredProducerId, setHoveredProducerId] = useState(null);
 
-  // MAP_IMPROVEMENTS.md #1 — "search this area" state.
+  // docs/archive/MAP_IMPROVEMENTS.md #1 — "search this area" state.
   // `mapMoved` flips to true after any user-initiated pan/zoom; clicking
   // the button commits `mapBounds → committedBounds` so the grid filter
   // actually updates (see bug #14 fix above).
   const [mapMoved, setMapMoved] = useState(false);
 
-  // MAP_IMPROVEMENTS.md #7 — mobile bottom-sheet producer selection.
+  // docs/archive/MAP_IMPROVEMENTS.md #7 — mobile bottom-sheet producer selection.
   const [selectedProducer, setSelectedProducer] = useState(null);
 
-  // MAP_IMPROVEMENTS.md #8 — legend = filter. `activeCategoryNames` is
+  // docs/archive/MAP_IMPROVEMENTS.md #8 — legend = filter. `activeCategoryNames` is
   // the current inclusion set. null means "all enabled" (default).
   const [activeCategoryNames, setActiveCategoryNames] = useState(null);
 
@@ -116,7 +116,7 @@ export default function MapPage() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  // MAP_IMPROVEMENTS.md #3 — hover sync: map → card
+  // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync: map → card
   const handleMarkerHover = useCallback((producerId) => {
     setHoveredProducerId(producerId);
   }, []);
@@ -131,7 +131,7 @@ export default function MapPage() {
     mapApiRef.current?.setHoveredProducer(null);
   }, []);
 
-  // MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button
+  // docs/archive/MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button
   const handleMapMove = useCallback(() => {
     setMapMoved(true);
   }, []);
@@ -146,7 +146,7 @@ export default function MapPage() {
     setMapMoved(false);
   }, [mapBounds]);
 
-  // MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
+  // docs/archive/MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
   const toggleCategory = (name) => {
     setActiveCategoryNames((prev) => {
       if (prev === null) {
@@ -200,7 +200,7 @@ export default function MapPage() {
       <h1 className="font-headline text-3xl font-bold mb-6 text-site-text">מפת בתי עסק</h1>
 
       {/* Filters (top bar) — city search only. Category filter lives in
-          the legend widget overlaid on the map (MAP_IMPROVEMENTS.md #8).
+          the legend widget overlaid on the map (docs/archive/MAP_IMPROVEMENTS.md #8).
           FEEDBACK_FIXES fix 4: `overflow-visible` so the autocomplete
           dropdown isn't clipped; `w-full` wrapper so the CitySearch
           gets the full viewport width on mobile. */}
@@ -228,7 +228,7 @@ export default function MapPage() {
           registerApi={registerMapApi}
         />
 
-        {/* MAP_IMPROVEMENTS.md #1 — "search this area" floating button */}
+        {/* docs/archive/MAP_IMPROVEMENTS.md #1 — "search this area" floating button */}
         {mapMoved && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
             <button
@@ -242,7 +242,7 @@ export default function MapPage() {
           </div>
         )}
 
-        {/* MAP_IMPROVEMENTS.md #8 — legend that doubles as filter */}
+        {/* docs/archive/MAP_IMPROVEMENTS.md #8 — legend that doubles as filter */}
         <div
           className="absolute bottom-4 right-4 z-[1000] bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.1)] border border-border p-3 max-w-[200px]"
           role="group"
@@ -285,7 +285,7 @@ export default function MapPage() {
           )}
         </div>
 
-        {/* MAP_IMPROVEMENTS.md #9 — empty state overlay when nothing visible */}
+        {/* docs/archive/MAP_IMPROVEMENTS.md #9 — empty state overlay when nothing visible */}
         {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-[16px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]"
@@ -308,7 +308,7 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer
+      {/* docs/archive/MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer
           Improvement #12: the drag handle was inside a flex-between row
           (where mx-auto doesn't do anything), and the close button was
           absolute-positioned inside that same row — leaving the handle

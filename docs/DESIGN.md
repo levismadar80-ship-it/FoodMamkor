@@ -328,8 +328,8 @@ background: #2E4A2E | color: #EAF3DE | padding: 48px 0
 עמודה 1 — לוגו + תיאור:
   לוגו מהמקור (גרסה לבנה)
   "ישר מהמקור אליך"
-  אינסטגרם: אייקון + "@mehamekor"
-  → https://www.instagram.com/mehamekor (new tab)
+  אינסטגרם: אייקון + "@meha_makor"
+  → https://www.instagram.com/meha_makor (new tab)
 
 עמודה 2 — ניווט:
   דף הבית | מפה | בתי עסק | אירועים | מהמטבח של השכן | הוסף עסק

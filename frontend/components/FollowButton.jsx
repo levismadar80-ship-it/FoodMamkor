@@ -13,7 +13,7 @@ import { showToast } from "@/lib/toast";
  * Silent if the user isn't logged in — we return null. Signed-in users
  * see "🔔 עקבי אחרי עסק זה" (outline) or "🔔 עוקבת" (filled) after they
  * follow. Notifications themselves aren't wired up yet — this is the
- * data-only foundation per FEEDBACK_FIXES.md.
+ * data-only foundation per docs/archive/FEEDBACK_FIXES.md.
  */
 export default function FollowButton({ producerId }) {
   const { user } = useAuth();

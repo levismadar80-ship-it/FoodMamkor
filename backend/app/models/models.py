@@ -155,7 +155,7 @@ class Favorite(Base):
 
 
 class ProducerFollower(Base):
-    """FEEDBACK_FIXES.md new feature — follow a producer to get notified
+    """docs/archive/FEEDBACK_FIXES.md new feature — follow a producer to get notified
     about new products / back-in-stock events. Distinct from Favorite:
     favorites are for bookmarking, follows are for push notifications.
     The notification transport itself (Twilio/FCM) is NOT wired up yet —
@@ -222,7 +222,7 @@ class HomeProduct(Base):
     price = Column(Numeric(10, 2))
     neighborhood = Column(String(100))
     city = Column(String(100))
-    # Private address details (FIXES_V2.md fix 7c) — persisted server-side
+    # Private address details (docs/archive/FIXES_V2.md fix 7c) — persisted server-side
     # but NEVER exposed in the public HomeProductOut schema. Only the
     # seller and admin can see these via a future authenticated endpoint.
     street = Column(String(200), nullable=True)
@@ -231,7 +231,7 @@ class HomeProduct(Base):
     available_until = Column(DateTime, nullable=True)  # expiry date
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
-    # --- expanded fields (FIXES_V2.md fix 2) ---
+    # --- expanded fields (docs/archive/FIXES_V2.md fix 2) ---
     category = Column(String(50), nullable=True)  # בשר ועוף / דגים / ירקות / ...
     prep_date = Column(Date, nullable=True)       # תאריך הכנה / קטיף
     expiry_date = Column(Date, nullable=True)     # תאריך תפוגה
@@ -243,7 +243,7 @@ class HomeProduct(Base):
     delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
     location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
     images = Column(ARRAY(Text), default=[])      # up to 4 photos (Cloudinary URLs)
-    # AI moderation (see MODERATION.md)
+    # AI moderation (see docs/MODERATION.md)
     moderation_status = Column(String(20), default="APPROVED")  # APPROVED|FLAGGED|REJECTED
     moderation_reason = Column(Text, nullable=True)
     moderation_suggestion = Column(Text, nullable=True)

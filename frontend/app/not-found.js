@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
 
 /**
- * 404 page (ALL_PAGES_DESIGN.md עמוד 7).
+ * 404 page (docs/archive/ALL_PAGES_DESIGN.md עמוד 7).
  * Next.js automatically renders this for any route that doesn't match.
  * Client component so we can use the Phosphor icon (matches the rest
  * of the codebase's import style). Metadata moved to a sibling file

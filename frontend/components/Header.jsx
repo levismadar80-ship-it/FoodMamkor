@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Heart, List, X } from "@phosphor-icons/react";
 
 /**
- * Header (WORLD_CLASS_V2.md #2 — navbar scroll blur)
+ * Header (docs/archive/WORLD_CLASS_V2.md #2 — navbar scroll blur)
  *
  * Starts with a solid cream background at the top of the page and
  * transitions to a blurred translucent pane once the user scrolls

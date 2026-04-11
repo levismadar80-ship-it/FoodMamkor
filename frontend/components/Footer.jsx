@@ -8,7 +8,7 @@ import api from "@/lib/api";
 
 /**
  * Four-column sitemap footer + brand column + newsletter block.
- * Structure (per UX_FIXES.md Fix 4 + COPY_FIXES.md Fix 4):
+ * Structure (per docs/archive/UX_FIXES.md Fix 4 + docs/archive/COPY_FIXES.md Fix 4):
  *   - לגלות:          דף הבית | מפה | אירועים | עסקים חדשים
  *   - קהילה:          אירועים | מהמטבח של השכן | אודות
  *   - בתי עסק:       הוסף עסק | כניסה | דשבורד
@@ -93,14 +93,14 @@ export default function Footer() {
 
             {/* Instagram */}
             <a
-              href="https://www.instagram.com/mehamekor"
+              href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="עמוד האינסטגרם של מהמקור — נפתח בחלון חדש"
               className="inline-flex items-center gap-2 text-light/90 hover:text-white transition"
             >
               <InstagramLogo size={20} weight="duotone" aria-hidden="true" />
-              <span className="font-body">@mehamekor</span>
+              <span className="font-body">@meha_makor</span>
             </a>
           </div>
 

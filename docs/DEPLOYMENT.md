@@ -19,8 +19,8 @@ checkpoint passes.
 
 | Branch | Role | Deploys to | Who can push |
 |---|---|---|---|
-| `main` | Production | mehamekor.online (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
-| `staging` | Non-prod testing | staging.mehamekor.online (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
+| `main` | Production | mehamakor.online (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
+| `staging` | Non-prod testing | staging.mehamakor.online (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
 | `feature/*` | New features and fixes | None — local + Vercel preview URL | Branch owner. **Always created from `staging`**, never from `main`. |
 
 ### The flow
@@ -29,7 +29,7 @@ checkpoint passes.
 feature/your-thing  ──PR──▶  staging  ──PR──▶  main
        │                       │                 │
        │                       ▼                 ▼
-   local + PR        staging.mehamekor.online   mehamekor.online
+   local + PR        staging.mehamakor.online   mehamakor.online
    preview                  (test here)           (live)
 ```
 
@@ -45,7 +45,7 @@ feature/your-thing  ──PR──▶  staging  ──PR──▶  main
    Avoid `claude/*`, `wip/*`, personal-name prefixes — they litter the
    branch list and obscure intent.
 4. **Test on `staging` before merging to `main`.** Open the change at
-   `staging.mehamekor.online`, click through the flow you touched, then
+   `staging.mehamakor.online`, click through the flow you touched, then
    approve the PR to `main`.
 
 ### Day-to-day workflow
@@ -64,7 +64,7 @@ git push -u origin feature/short-description
 # 3. Open PR: feature/short-description → staging
 #    GitHub UI, or:  gh pr create --base staging
 
-# 4. After the staging PR is merged, test on staging.mehamekor.online
+# 4. After the staging PR is merged, test on staging.mehamakor.online
 
 # 5. When you're confident, open the promotion PR: staging → main
 #    This is the "ship to production" step.
@@ -116,7 +116,7 @@ UIs — there is no API access from the codebase to do it automatically.
 The Railway production environment already exists and deploys from `main`.
 Add a parallel `staging` environment that deploys from the `staging` branch.
 
-1. Open <https://railway.app/dashboard> → mehamekor project.
+1. Open <https://railway.app/dashboard> → mehamakor project.
 2. Click the environment selector (top-left dropdown next to the project name)
    → **+ New environment**.
 3. Name: `staging`. Choose **"Empty Environment"** — do **not** fork production,
@@ -136,31 +136,31 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `DATABASE_URL` | Auto-injected from the staging Postgres service via Add Reference — don't override. |
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
-   | `CORS_ORIGINS` | `https://staging.mehamekor.online,http://localhost:3000` |
+   | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `TWILIO_*` | Use **Twilio test credentials** so staging WhatsApp messages don't go out for real. |
-   | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamekor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
+   | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
 6. Production environment — verify the GitHub source is pinned to `main`.
    If it's pinned to anything else (e.g. `claude/setup-documentation-sQ6Sw`),
    change it to `main` now.
 
-### B. Vercel — add `staging.mehamekor.online`
+### B. Vercel — add `staging.mehamakor.online`
 
 Vercel auto-deploys every branch to a preview URL. The two named deploys are:
 
-- `main` → **Production** → `mehamekor.online`
-- `staging` → **Preview** with custom domain → `staging.mehamekor.online`
+- `main` → **Production** → `mehamakor.online`
+- `staging` → **Preview** with custom domain → `staging.mehamakor.online`
 
 Steps:
 
-1. Open <https://vercel.com/dashboard> → mehamekor project.
+1. Open <https://vercel.com/dashboard> → mehamakor project.
 2. **Settings → Git → Production Branch:** confirm it's `main`. Change it
    if not.
 3. **Settings → Domains:**
-   - `mehamekor.online` → **Production** (main) — already configured.
-   - Click **Add** → enter `staging.mehamekor.online`.
+   - `mehamakor.online` → **Production** (main) — already configured.
+   - Click **Add** → enter `staging.mehamakor.online`.
    - When prompted, choose **"Git Branch"** → `staging`.
    - Vercel will give you a CNAME record: `staging` → `cname.vercel-dns.com`.
      Add it at your DNS provider.
@@ -169,9 +169,9 @@ Steps:
 
    | Variable | Production | Preview (staging) |
    |---|---|---|
-   | `BACKEND_URL` | `https://mehamekor-production.up.railway.app` | `https://mehamekor-staging.up.railway.app` (whatever Railway's staging service URL is) |
+   | `BACKEND_URL` | `https://mehamakor-production.up.railway.app` | `https://mehamakor-staging.up.railway.app` (whatever Railway's staging service URL is) |
    | `NEXT_PUBLIC_API_URL` | same as production `BACKEND_URL` | same as staging `BACKEND_URL` |
-   | `NEXT_PUBLIC_SITE_URL` | `https://mehamekor.online` | `https://staging.mehamekor.online` |
+   | `NEXT_PUBLIC_SITE_URL` | `https://mehamakor.online` | `https://staging.mehamakor.online` |
    | `NEXT_PUBLIC_SENTRY_DSN` | Production DSN | Empty during MVP, or a separate Sentry project. |
    | `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Production Clarity ID | Empty (don't pollute heatmaps). |
 
@@ -220,7 +220,7 @@ branch to `main` — it should be rejected.
 
 - [ ] `npx playwright test --project=desktop` passes locally (6/6)
 - [ ] `pytest tests/test_api.py -q` passes locally (24/24)
-- [ ] Manual smoke test on `staging.mehamekor.online`:
+- [ ] Manual smoke test on `staging.mehamakor.online`:
   - [ ] Homepage hero loads
   - [ ] Map shows producers
   - [ ] WhatsApp button on a producer page opens with the right text

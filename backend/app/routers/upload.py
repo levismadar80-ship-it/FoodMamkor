@@ -1,6 +1,6 @@
 """Image upload endpoint.
 
-SECURITY FIX #6 (SECURITY.md): the previous version trusted the client-
+SECURITY FIX #6 (docs/SECURITY.md): the previous version trusted the client-
 submitted `Content-Type` header (forgeable) and used no size limit.
 This version:
   1. Enforces MAX_FILE_SIZE before anything else (5 MB)
@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB — matches SECURITY.md fix 6
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB — matches docs/SECURITY.md fix 6
 
 # Magic-byte signatures for the image formats we allow. Much cheaper and
 # less dependency-heavy than python-magic (which requires libmagic on the

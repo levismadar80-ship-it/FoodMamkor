@@ -21,7 +21,7 @@ IDOR (גישה לנתוני משתמשים אחרים), ו-Data Exposure.
 
 # ❌ מה שיש כרגע (ניחוש של תוקף):
 SECRET_KEY = "mysecretkey"
-SECRET_KEY = "mehamekor123"
+SECRET_KEY = "mehamakor123"
 
 # ✅ מה שצריך:
 import secrets
@@ -155,7 +155,7 @@ async def validate_and_upload_image(file: UploadFile) -> str:
     # 3. העלה ל-Cloudinary (שם ייצור אוטומטי — לא שם הקובץ המקורי!)
     result = cloudinary.uploader.upload(
         file.file,
-        folder="mehamekor",
+        folder="mehamakor",
         public_id=f"{uuid.uuid4()}",  # לא השם המקורי!
         resource_type="image",
         transformation=[{"width": 1200, "crop": "limit"}]
@@ -173,8 +173,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 # ✅ רק הדומיינים שלך:
 ALLOWED_ORIGINS = [
-    "https://mehamekor.co.il",
-    "https://www.mehamekor.co.il",
+    "https://mehamakor.co.il",
+    "https://www.mehamakor.co.il",
     "http://localhost:3000",  # רק ב-development!
 ]
 
@@ -283,7 +283,7 @@ class HomeListing(BaseModel):
 
 # .env.example — תעלי לגיט (בלי ערכים אמיתיים):
 JWT_SECRET_KEY=change_me_to_random_64_chars
-DATABASE_URL=postgresql://user:password@localhost/mehamekor
+DATABASE_URL=postgresql://user:password@localhost/mehamakor
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
@@ -291,7 +291,7 @@ TWILIO_ACCOUNT_SID=your_sid
 TWILIO_AUTH_TOKEN=your_token
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_secret
-APPLE_CLIENT_ID=com.mehamekor.app
+APPLE_CLIENT_ID=com.mehamakor.app
 ```
 
 ### 11. Admin endpoint — הגנה כפולה
@@ -435,7 +435,7 @@ Create SECURITY_REPORT.md with findings and fixes applied.
 - API responses: תמיד Response Schema — לא return model ישיר
 - IDOR: בדוק user_id == current_user.id לפני כל עדכון/מחיקה
 - File upload: בדוק MIME type + גודל + UUID שם קובץ
-- CORS: רק mehamekor.co.il (לא *)
+- CORS: רק mehamakor.co.il (לא *)
 - Passwords: bcrypt בלבד
 - Input: sanitize עם bleach על כל textarea
 - Secrets: .env בלבד, .gitignore מעודכן

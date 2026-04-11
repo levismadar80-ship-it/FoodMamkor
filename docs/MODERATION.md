@@ -259,7 +259,7 @@ const checkContent = useMemo(
 
 הודעה אוטומטית למוכר במחיקה (WhatsApp/מייל):
   "היי [שם], המוצר '[כותרת]' הוסר כי: [סיבה].
-   לשאלות: mehamekor.co.il/contact"
+   לשאלות: mehamakor.co.il/contact"
 ```
 
 ---

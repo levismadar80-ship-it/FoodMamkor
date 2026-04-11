@@ -42,7 +42,7 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: `${producer.name} | מהמקור`,
       description,
-      url: `https://mehamekor.co.il/${producer.slug}`,
+      url: `https://mehamakor.co.il/${producer.slug}`,
       images: producer.images?.length > 0 ? [{ url: producer.images[0] }] : [],
       type: "website",
       locale: "he_IL",
