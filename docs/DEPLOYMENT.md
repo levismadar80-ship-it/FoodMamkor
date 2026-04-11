@@ -232,6 +232,95 @@ branch to `main` — it should be rejected.
 
 ---
 
+## Testing workflow — Vercel preview URLs
+
+**Every PR gets a Vercel preview URL.** Before merging to `staging`, that
+preview URL must be tested on a real device — primarily on mobile, since the
+phone is the dominant viewport for mehamakor.online and many bugs only surface
+in actual iOS Safari / Android Chrome.
+
+### How preview URLs are generated
+
+Once the Vercel + GitHub integration is enabled (per §B above), every push to
+any branch — `feature/*`, `staging`, `main` — triggers a Vercel deployment.
+Production-branch pushes deploy to `mehamakor.online`; everything else
+deploys to a unique preview URL.
+
+The preview URL pattern is:
+
+```
+https://food-mamkor-<commit-hash>-<vercel-org-slug>.vercel.app
+```
+
+`food-mamkor` is the Vercel project slug (matches the GitHub repo name lowercased
+with non-alphanumeric chars replaced). The `<commit-hash>` is the short Git SHA
+of the latest commit on the branch. The full URL is also commented onto the PR
+automatically by the Vercel bot within ~60 seconds of the PR opening.
+
+### The end-to-end flow
+
+```
+1. open feature/* branch from staging
+2. push commits
+3. open PR feature/* → staging
+4. Vercel auto-builds + comments preview URL on the PR (~60s)
+5. assistant surfaces preview URL to the user:
+     "בדיקי על: https://food-mamkor-<hash>.vercel.app"
+6. user tests on mobile → approves
+7. merge to staging
+8. Vercel auto-deploys staging to staging.mehamakor.online
+9. final smoke test on staging subdomain
+10. open PR staging → main
+11. merge to main
+12. Vercel auto-deploys main to mehamakor.online
+```
+
+### What every PR description must include
+
+- **Vercel preview URL** — either pasted directly into the PR description, or
+  a placeholder line (`Vercel preview: posted as a comment by @vercel below`)
+  with the bot comment serving as the source of truth.
+- **A test plan checklist** — the specific things the user should verify on
+  the preview URL before approving. At minimum: "loads on mobile", "no console
+  errors", "the changed flow works end-to-end".
+- **A list of behavioral changes** — anything that affects what users see or
+  how they interact. Doc-only PRs can say "no functional changes" and skip
+  the test plan.
+
+### Critical rule
+
+**Never merge a PR to `staging` until the user has tested the preview URL.**
+This is enforced by workflow rule #8 in [CLAUDE.md](../CLAUDE.md). Even when
+the assistant is confident the change is safe, the human-on-mobile check
+catches things desktop QA misses: rendering on small viewports, RTL edge
+cases, real-device touch targets, font fallbacks, third-party SDK behavior
+with the actual production CSP, etc.
+
+The only exception is hotfixes — see [Branch Strategy → Hotfixes](#hotfixes)
+above. Even hotfixes should ideally get a preview-URL check, but if production
+is on fire, ship and verify after.
+
+### Mobile testing checklist
+
+When the user opens the preview URL on a phone, these are the things worth
+checking — particularly for any UI-touching PR:
+
+- [ ] Homepage hero loads, search pill is tappable
+- [ ] Category icons render correctly (no font fallback to box characters)
+- [ ] Map markers visible and tappable
+- [ ] Bottom navigation works, icons sized correctly
+- [ ] WhatsApp button on a producer page opens the WhatsApp app (not the web)
+- [ ] Form inputs don't zoom on focus (iOS Safari quirk — `font-size: 16px`
+  on inputs is the fix)
+- [ ] Hebrew text aligns right, no LTR leakage
+- [ ] No horizontal scroll
+- [ ] Sticky elements (header, BottomNav) don't overlap content
+- [ ] Skeleton loaders appear briefly, then real content
+
+For deeper coverage, see the smoke checklist in [TESTING.md](./TESTING.md).
+
+---
+
 ## 0. Prerequisites
 
 - [ ] GitHub repo pushed, with branch `main` as the deploy branch
