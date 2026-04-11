@@ -159,8 +159,8 @@ border-radius: 16px
 טקסט: #EAF3DE
 
 הוסף אינסטגרם (footer בלבד — לא navbar):
-  אייקון + "@mehamekor"
-  קישור: https://www.instagram.com/mehamekor (new tab)
+  אייקון + "@mehamakor"
+  קישור: https://www.instagram.com/mehamakor (new tab)
 
 הוסף ניוזלטר:
   כותרת: "הישארי מעודכנת"
@@ -294,7 +294,7 @@ DM Sans           — גוף טקסט
 - foraged.com/categories (category grid)
 
 ### אינסטגרם
-https://www.instagram.com/mehamekor
+https://www.instagram.com/mehamakor
 
 ### Endpoints חדשים
 POST /api/newsletter → newsletter_subscribers

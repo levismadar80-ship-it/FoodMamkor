@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 /**
- * GDPR-ish cookie consent banner (FIXES_V2.md fix 6).
+ * GDPR-ish cookie consent banner (docs/archive/FIXES_V2.md fix 6).
  *
  * State persists in localStorage so the banner only appears once per
  * device. Two accept modes:

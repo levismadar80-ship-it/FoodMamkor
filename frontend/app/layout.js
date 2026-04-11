@@ -14,7 +14,7 @@ import ChatWidget from "@/components/ChatWidget";
 // to every page that doesn't override it. Individual page.js files
 // can extend via `export const metadata = { ... }` on server components
 // or via a wrapping server component for client pages.
-const SITE_URL = process.env.SITE_URL || "https://mehamekor.co.il";
+const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";

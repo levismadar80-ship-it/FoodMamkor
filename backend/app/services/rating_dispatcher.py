@@ -93,7 +93,7 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
     listing = click.home_product
     seller_name = listing.user.name if listing and listing.user else "המוכר"
     product_title = listing.title if listing else "המוצר"
-    rate_url = f"https://mehamekor.co.il/rate/{click.rating_token}"
+    rate_url = f"https://mehamakor.co.il/rate/{click.rating_token}"
     body = (
         f"היי! קנית מ{seller_name} ({product_title})? איך היה?\n"
         f"דרגי כאן 👇\n{rate_url}"

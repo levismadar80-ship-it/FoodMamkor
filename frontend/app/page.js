@@ -468,7 +468,7 @@ export default function HomePage() {
       {/* =========================
           PARALLAX DIVIDER 1 (PREMIUM_DESIGN)
           First full-bleed divider. Ken Burns lives inside ParallaxQuote.
-          Uses the farm-field Unsplash asset from PREMIUM_DESIGN.md.
+          Uses the farm-field Unsplash asset from docs/archive/PREMIUM_DESIGN.md.
           ========================= */}
       <ParallaxQuote
         image={PARALLAX_IMAGE_1}
