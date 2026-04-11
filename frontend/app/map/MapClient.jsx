@@ -203,9 +203,15 @@ export default function MapPage() {
           the legend widget overlaid on the map (docs/archive/MAP_IMPROVEMENTS.md #8).
           FEEDBACK_FIXES fix 4: `overflow-visible` so the autocomplete
           dropdown isn't clipped; `w-full` wrapper so the CitySearch
-          gets the full viewport width on mobile. */}
+          gets the full viewport width on mobile.
+          tasks_for_claude_code.md PR 2 (task 3): desktop width bumped
+          from w-72 (288px) → w-96 (384px) so longer Hebrew city names
+          like "ראשון לציון" / "מעלה אדומים" no longer truncate in the
+          input or its autocomplete dropdown. The dropdown inherits
+          `w-full` from this same wrapper so the single width change
+          fixes both. */}
       <div className="flex flex-col md:flex-row gap-4 mb-6 overflow-visible">
-        <div className="w-full md:w-72">
+        <div className="w-full md:w-96">
           <CitySearch
             id="map-city-search"
             label="סנן לפי עיר"
