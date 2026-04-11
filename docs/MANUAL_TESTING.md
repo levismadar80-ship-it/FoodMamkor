@@ -298,6 +298,33 @@ VERCEL_ENV=preview node -e "const c=require('./frontend/next.config.js'); c.head
 
 ---
 
+## Chat widget — plain Hebrew (feature/chatbot-plain-hebrew-v2)
+
+### Suggested prompts — order + copy
+- [ ] Open the widget from desktop homepage — the 8 suggested prompts appear in this exact order: `איך נרשמים כבעלת עסק?` / `איך מוצאים עסקים קרובים אליי?` / `איך מפרסמים מוצר ביתי?` / `מה זה מהמקור?` / `האם האתר בחינם?` / `איך יוצרים קשר עם בית עסק?` / `מה זה "מהמטבח של השכן"?` / `כמה זמן לוקח האישור של העסק?`
+- [ ] `איך מדווחים על בעיה?` and `האם ההרשמה בחינם?` and `כמה זמן לוקח האישור?` (bare, without "של העסק") should NOT appear anywhere in the prompt list
+
+### Hardcoded answers — instant + plain Hebrew
+- [ ] Click `איך נרשמים כבעלת עסק?` — instant response (no typing dots), text contains `"תוך יום-יומיים"` and `"העסק שלך"`, does NOT contain `"הפרופיל"` or `"מודרציה"` or `"אוטומטית"`
+- [ ] Click `איך מוצאים עסקים קרובים אליי?` — instant response mentioning both המפה + דף הבית and the WhatsApp button
+- [ ] Click `איך מפרסמים מוצר ביתי?` — instant response contains `"המוצר שלך"` and `"תוך שעות ספורות"`, does NOT contain `"מודרציה"` or `"הפרופיל"`
+- [ ] Network tab: clicking any of the 3 canonical prompts does NOT fire a request to `/api/chat`
+
+### Freeform questions — backend KB sections
+- [ ] Type `מה זה מהמקור?` — response explains the directory concept + categories + map (may use slight model rephrasing but must not mention "מודרציה" / "פרופיל")
+- [ ] Type `האם האתר בחינם?` — response confirms free for both buyers + sellers and mentions premium as optional
+- [ ] Type `כמה זמן לוקח האישור של העסק?` — response mentions `"יום-יומיים"` and `"העסק"` explicitly
+- [ ] Type `איך יוצרים קשר עם בית עסק?` — response mentions WhatsApp button + phone/Instagram/site
+- [ ] Type `מה זה "מהמטבח של השכן"?` — response mentions neighbors cooking at home + review by team, does NOT use "מודרציה"
+
+### Regression guards (grep-based)
+- [ ] `grep -n 'מודרציה' backend/app/routers/chat.py` — every match must be either inside a `#` comment block or inside the meta-instruction `אל תשתמשי במונחים טכניים כמו "מודרציה"`; must NEVER appear inside a KB section like `**איך נרשמים...**`
+- [ ] `grep -n 'הפרופיל' backend/app/routers/chat.py` — must only appear in the comment (`never say "הפרופיל מאושר"`) or the meta-instruction; must NEVER appear inside a KB section
+- [ ] `grep -n 'מודרציה\|הפרופיל' frontend/components/ChatWidget.jsx` — must only appear in the `//` comment block above `HARDCODED_ANSWERS`; must NEVER appear inside any value of the `HARDCODED_ANSWERS` map
+- [ ] Backend + frontend approvals of businesses must always say `"העסק שלך"`: `grep -c 'העסק שלך' frontend/components/ChatWidget.jsx` → ≥1; `grep -c 'העסק שלך' backend/app/routers/chat.py` → ≥1
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
