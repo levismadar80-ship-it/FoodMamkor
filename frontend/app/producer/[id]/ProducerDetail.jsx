@@ -266,6 +266,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => {
+                  // feature/producer-analytics — fire-and-forget beacon
+                  // so the producer dashboard counts this click. Doesn't
+                  // block the wa.me window open.
+                  if (
+                    typeof navigator !== "undefined" &&
+                    navigator.sendBeacon
+                  ) {
+                    try {
+                      navigator.sendBeacon(
+                        `/api/producers/${producer.id}/whatsapp-click`,
+                      );
+                    } catch {
+                      // tracking is best-effort
+                    }
+                  }
+                }}
                 className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-2.5 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
               >
                 <WhatsappLogo size={20} weight="fill" />

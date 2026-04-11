@@ -29,6 +29,28 @@ def create_access_token(user_id: UUID) -> str:
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
+# feature/producer-analytics: throttle last_active_at writes to at most
+# once per 5 minutes per user, so we don't hammer the DB on chatty clients
+# (e.g. polling dashboards or auto-refreshing lists).
+_LAST_ACTIVE_THROTTLE = timedelta(minutes=5)
+
+
+def _maybe_bump_last_active(db: Session, user: User) -> None:
+    """Update users.last_active_at if the throttle window has elapsed."""
+    now = datetime.utcnow()
+    last = user.last_active_at
+    if last is not None and (now - last) < _LAST_ACTIVE_THROTTLE:
+        return
+    try:
+        user.last_active_at = now
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+
 def get_current_user(
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
@@ -46,6 +68,8 @@ def get_current_user(
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
+    _maybe_bump_last_active(db, user)
     return user
 
 
