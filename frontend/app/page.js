@@ -426,7 +426,7 @@ export default function HomePage() {
                   viewport={{ once: true, amount: 0.1 }}
                   transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
-                  <ProducerCard producer={p} />
+                  <ProducerCard producer={p} referrer="home" />
                 </motion.div>
               ))}
             </div>
@@ -459,7 +459,7 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {newestProducers.map((p) => (
-              <ProducerCard key={`new-${p.id}`} producer={p} />
+              <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" />
             ))}
           </div>
         </section>
