@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
@@ -131,7 +132,14 @@ export default function RegisterPage() {
             disabled={loading || !agreedToTerms}
             className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
           >
-            {loading ? "נרשמת..." : "הצטרפי"}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <ButtonSpinner />
+                נרשמת...
+              </span>
+            ) : (
+              "הצטרפי"
+            )}
           </button>
         </form>
 
