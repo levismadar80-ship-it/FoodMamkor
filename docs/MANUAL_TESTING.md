@@ -179,6 +179,48 @@ Test on a **real iOS device** (iPhone Safari + Chrome iOS preferred) — simulat
 
 ---
 
+## WhatsApp phone normalization (tasks_for_claude_code.md PR 5 — task 17)
+
+The bug was: 4 separate inline phone-normalization implementations across the frontend, each with its own subset of handled input formats. One of them (`ProducerCard.jsx` and its copy in `ProducerDetail.jsx`) had an order-of-operations bug where input with leading whitespace would output an unchanged local-format number. Fix: a single `normalizePhone()` helper in `lib/utils.js` with 19 unit tests, applied at all 4 call sites.
+
+### Unit tests (run locally before merge)
+
+- [ ] `cd frontend && node lib/utils.test.mjs` → `19 passed, 0 failed` ← pure Node, no Jest/Vitest needed
+
+### End-to-end: the wa.me link actually works for every input format
+
+For each of the formats below, set an approved producer's phone field (via `/admin/producers` edit or directly in the DB) and tap the WhatsApp button:
+
+- [ ] Plain local format `"0501234567"` → `/producer/:id` → WhatsApp button opens `wa.me/972501234567` (not `wa.me/0501234567`)
+- [ ] Dashes `"052-123-4567"` → `wa.me/972521234567`
+- [ ] Parentheses `"(050) 123-4567"` → `wa.me/972501234567`
+- [ ] E.164 with `+` `"+972501234567"` → `wa.me/972501234567` (no stray `+` in the URL)
+- [ ] Dots `"050.123.4567"` → `wa.me/972501234567`
+- [ ] **Leading whitespace** `" 0501234567"` → `wa.me/972501234567` (this was the ProducerCard/ProducerDetail order-of-operations bug — verify the fix on the producer card + the detail page)
+- [ ] Already normalized `"972501234567"` → `wa.me/972501234567` (no double-prefix)
+
+### All 4 call sites must be tested
+
+The fix applies to **4 distinct UI surfaces** — verify each:
+
+- [ ] **Homepage producer grid** → click the WhatsApp icon on a `ProducerCard` → correct wa.me URL
+- [ ] **`/producer/:id` detail page** → click the big green WhatsApp button in the sticky contact sidebar → correct wa.me URL
+- [ ] **`/map` popup** → click a producer marker → popup has a WhatsApp link → opens wa.me with correct number
+- [ ] **`/neighbor` home-product cards** → click the green WhatsApp CTA (the `WhatsAppButton` component) → correct wa.me URL
+
+### Empty-input guards still work
+
+- [ ] Producer with `phone: null` → no WhatsApp button rendered on ProducerCard, ProducerDetail, MapComponent popup, WhatsAppButton
+- [ ] Producer with `phone: ""` → same: button hidden
+- [ ] Producer with `phone: "abc"` (letters only) → `normalizePhone("abc") === ""` → button hidden
+
+### Regression guards (grep-based, safe to automate)
+
+- [ ] `grep -rn "replace(/\^0" frontend/` → zero matches outside `lib/utils.js` + `lib/utils.test.mjs` (no residual inline phone logic)
+- [ ] `grep -rn "normalizePhone" frontend/` → exactly 4 imports (WhatsAppButton, ProducerCard, ProducerDetail, MapComponent) + 4 usages at the relevant call sites + 1 export in `lib/utils.js` + the test file
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
