@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import L from "leaflet";
+import { MapPin } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon issue with bundlers
@@ -114,10 +115,12 @@ export default function MapComponent({ producers = [], onProducerClick, onBounds
       <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[12px]" />
       <button
         onClick={goToMyLocation}
-        className="absolute top-3 left-3 z-[1000] bg-white rounded-[12px] px-3 py-2 shadow-md hover:bg-gray-50 transition text-sm"
+        className="absolute top-3 left-3 z-[1000] bg-white rounded-[12px] px-3 py-2 shadow-md hover:bg-gray-50 transition text-sm inline-flex items-center gap-1.5"
         title="המיקום שלי"
+        aria-label="המיקום שלי"
       >
-        📍 המיקום שלי
+        <MapPin size={16} className="text-primary" aria-hidden="true" />
+        המיקום שלי
       </button>
     </div>
   );

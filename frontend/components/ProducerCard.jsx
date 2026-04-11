@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { BadgeCheck, Instagram, MessageCircle, Phone } from "lucide-react";
 import CategoryTag from "./CategoryTag";
 
 export default function ProducerCard({ producer }) {
@@ -22,8 +23,9 @@ export default function ProducerCard({ producer }) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           />
           {producer.is_verified && (
-            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full">
-              מאומת ✓
+            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+              <BadgeCheck size={12} strokeWidth={2.25} aria-hidden="true" />
+              מאומת
             </span>
           )}
           {producer.plan === "premium" && (
@@ -64,21 +66,23 @@ export default function ProducerCard({ producer }) {
                 href={`https://wa.me/${whatsappNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-lg hover:scale-110 transition"
+                className="text-primary hover:scale-110 transition inline-flex items-center justify-center"
                 title="WhatsApp"
+                aria-label="WhatsApp"
                 onClick={(e) => e.stopPropagation()}
               >
-                💬
+                <MessageCircle size={20} aria-hidden="true" />
               </a>
             )}
             {phone && (
               <a
                 href={`tel:${phone}`}
-                className="text-lg hover:scale-110 transition"
+                className="text-primary hover:scale-110 transition inline-flex items-center justify-center"
                 title="טלפון"
+                aria-label="טלפון"
                 onClick={(e) => e.stopPropagation()}
               >
-                📞
+                <Phone size={20} aria-hidden="true" />
               </a>
             )}
             {producer.instagram && (
@@ -86,11 +90,12 @@ export default function ProducerCard({ producer }) {
                 href={`https://instagram.com/${producer.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-lg hover:scale-110 transition"
+                className="text-primary hover:scale-110 transition inline-flex items-center justify-center"
                 title="Instagram"
+                aria-label="Instagram"
                 onClick={(e) => e.stopPropagation()}
               >
-                📷
+                <Instagram size={20} aria-hidden="true" />
               </a>
             )}
           </div>

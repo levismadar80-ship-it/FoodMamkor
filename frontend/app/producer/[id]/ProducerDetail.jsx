@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { BadgeCheck, Globe, Instagram, Map, Phone } from "lucide-react";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
@@ -58,7 +59,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold">{producer.name}</h1>
             {producer.is_verified && (
-              <span className="bg-primary text-white text-xs px-3 py-1 rounded-full">מאומת ✓</span>
+              <span className="bg-primary text-white text-xs px-3 py-1 rounded-full inline-flex items-center gap-1">
+                <BadgeCheck size={14} strokeWidth={2.25} aria-hidden="true" />
+                מאומת
+              </span>
             )}
             {producer.plan === "premium" && (
               <span className="bg-accent-warm text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
@@ -108,7 +112,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               href={`tel:${producer.phone}`}
               className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
             >
-              📞 {producer.phone}
+              <Phone size={16} aria-hidden="true" />
+              {producer.phone}
             </a>
             <WhatsAppButton phone={producer.phone} productTitle={producer.name} />
           </>
@@ -120,7 +125,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
           >
-            📷 Instagram
+            <Instagram size={16} aria-hidden="true" />
+            Instagram
           </a>
         )}
         {producer.website && (
@@ -130,7 +136,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
           >
-            🌐 אתר
+            <Globe size={16} aria-hidden="true" />
+            אתר
           </a>
         )}
       </div>
@@ -185,7 +192,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             href={`/map?lat=${producer.lat}&lng=${producer.lng}`}
             className="inline-flex items-center gap-2 text-primary hover:underline text-sm font-medium"
           >
-            🗺️ הצג במפה
+            <Map size={16} aria-hidden="true" />
+            הצג במפה
           </Link>
         )}
         <ReportButton producerId={producer.id} />
