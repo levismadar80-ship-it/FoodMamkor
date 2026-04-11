@@ -148,7 +148,19 @@ def get_producer(producer_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
-def create_producer(data: ProducerCreate, db: Session = Depends(get_db)):
+def create_producer(
+    data: ProducerCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a pending producer row.
+
+    SECURITY: this endpoint was historically public, which meant anyone
+    could create pending producers with no audit trail. It's now
+    authenticated — any logged-in user can create, but anonymous callers
+    get 401. The public "become a producer" signup flow lives at
+    POST /auth/register/producer (see routers/auth.py) and is unaffected.
+    """
     from app.models import DeliveryArea as DA
 
     producer = Producer(

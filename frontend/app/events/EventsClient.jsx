@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
+import ExperienceCard from "@/components/ExperienceCard";
 
 const CATEGORIES = [
   { key: "", label: "הכל" },
@@ -13,6 +15,19 @@ const CATEGORIES = [
   { key: "שוק", label: "שוק" },
   { key: "קטיף", label: "קטיף" },
   { key: "טעימות", label: "טעימות" },
+  { key: "אחר", label: "אחר" },
+];
+
+// Narrower set for the experiences tab — these come from the
+// community side, not producer farms, so the vocabulary is different.
+const EXPERIENCE_CATEGORIES = [
+  { key: "", label: "הכל" },
+  { key: "בישול", label: "בישול" },
+  { key: "תזונה", label: "תזונה" },
+  { key: "סיור אוכל", label: "סיור אוכל" },
+  { key: "חקלאות", label: "חקלאות" },
+  { key: "טעימות", label: "טעימות" },
+  { key: "סדנה", label: "סדנה" },
   { key: "אחר", label: "אחר" },
 ];
 
@@ -35,29 +50,56 @@ function formatTime(t) {
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState([]);
+  const search = useSearchParams();
+  const router = useRouter();
+  // Tab state lives in the URL so /events?tab=experiences is a real
+  // deep-link and survives refresh / share / bookmark.
+  const initialTab = search.get("tab") === "experiences" ? "experiences" : "events";
+  const [tab, setTab] = useState(initialTab);
+
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("");
 
-  useEffect(() => {
-    loadEvents();
-  }, [city, category]);
+  // Reset filters when switching tabs — the two tabs have different
+  // category vocabularies, so keeping a cross-tab category would
+  // silently filter to zero rows.
+  const switchTab = (next) => {
+    if (next === tab) return;
+    setTab(next);
+    setCategory("");
+    setCity("");
+    const qs = next === "experiences" ? "?tab=experiences" : "";
+    router.replace(`/events${qs}`, { scroll: false });
+  };
 
-  const loadEvents = async () => {
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, city, category]);
+
+  const load = async () => {
     setLoading(true);
     try {
       const params = {};
       if (city) params.city = city;
       if (category) params.category = category;
-      const r = await api.get("/events", { params });
-      setEvents(r.data);
+      const endpoint = tab === "experiences" ? "/experiences" : "/events";
+      const r = await api.get(endpoint, { params });
+      setRows(r.data);
     } catch {
-      setEvents([]);
+      setRows([]);
     } finally {
       setLoading(false);
     }
   };
+
+  // Backward-compatibility alias so the existing render code below
+  // keeps using `events` even when the tab is experiences.
+  const events = rows;
+  const activeCategories =
+    tab === "experiences" ? EXPERIENCE_CATEGORIES : CATEGORIES;
 
   const groupedByMonth = useMemo(() => {
     const groups = {};
@@ -107,6 +149,42 @@ export default function EventsPage() {
         <Breadcrumb items={[{ href: "/", label: "בית" }, { label: "אירועים" }]} />
       </div>
 
+      {/* Tabs — combine producer events and community experiences */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <div role="tablist" className="flex gap-2 border-b border-border">
+          <button
+            role="tab"
+            aria-selected={tab === "events"}
+            onClick={() => switchTab("events")}
+            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
+              tab === "events"
+                ? "border-primary text-primary"
+                : "border-transparent text-site-muted hover:text-primary"
+            }`}
+          >
+            🌾 אירועים בחוות
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "experiences"}
+            onClick={() => switchTab("experiences")}
+            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
+              tab === "experiences"
+                ? "border-primary text-primary"
+                : "border-transparent text-site-muted hover:text-primary"
+            }`}
+          >
+            🍳 חוויות וסדנאות
+          </button>
+          <Link
+            href={tab === "experiences" ? "/experiences/new" : "/producer/dashboard/events/new"}
+            className="ms-auto text-sm text-primary hover:underline self-center"
+          >
+            {tab === "experiences" ? "הגישי חוויה" : "הוסיפי אירוע"} ←
+          </Link>
+        </div>
+      </div>
+
       {/* Filters */}
       <section className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -119,7 +197,7 @@ export default function EventsPage() {
             className="md:w-64"
           />
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
+            {activeCategories.map((cat) => (
               <button
                 key={cat.key || "all"}
                 onClick={() => setCategory(cat.key)}
@@ -136,11 +214,19 @@ export default function EventsPage() {
         </div>
 
         {loading ? (
-          <p className="text-center text-site-muted py-12">טוענת אירועים...</p>
+          <p className="text-center text-site-muted py-12">
+            {tab === "experiences" ? "טוענת חוויות..." : "טוענת אירועים..."}
+          </p>
         ) : events.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-5xl mb-4">📅</p>
-            <p className="text-site-muted">אין אירועים שתואמים לסינון הנוכחי — עדיין 🌱</p>
+            <p className="text-5xl mb-4">
+              {tab === "experiences" ? "🌱" : "📅"}
+            </p>
+            <p className="text-site-muted">
+              {tab === "experiences"
+                ? "לא מצאנו חוויות שתואמות לסינון — עדיין"
+                : "אין אירועים שתואמים לסינון הנוכחי — עדיין 🌱"}
+            </p>
           </div>
         ) : (
           <div className="space-y-12">
@@ -150,9 +236,13 @@ export default function EventsPage() {
                   {month}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {monthEvents.map((ev) => (
-                    <EventCard key={ev.id} event={ev} />
-                  ))}
+                  {monthEvents.map((row) =>
+                    tab === "experiences" ? (
+                      <ExperienceCard key={row.id} experience={row} />
+                    ) : (
+                      <EventCard key={row.id} event={row} />
+                    )
+                  )}
                 </div>
               </div>
             ))}

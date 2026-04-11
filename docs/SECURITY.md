@@ -12,27 +12,32 @@ IDOR (גישה לנתוני משתמשים אחרים), ו-Data Exposure.
 
 ---
 
-## 🔴 קריטי — תקן מיד
+## ✅ 1. JWT Secret — SHIPPED (SECURITY FIX #1)
 
-### 1. JWT Secret חלש
+**Status:** fixed in production. This section stays as a regression-test
+reference; the issue below no longer exists in the codebase.
 
 ```python
-# backend/app/core/config.py
-
-# ❌ מה שיש כרגע (ניחוש של תוקף):
-SECRET_KEY = "mysecretkey"
-SECRET_KEY = "mehamakor123"
-
-# ✅ מה שצריך:
-import secrets
-SECRET_KEY = os.environ["JWT_SECRET_KEY"]  # חובה מ-.env בלבד!
-ACCESS_TOKEN_EXPIRE_MINUTES = 15   # קצר! לא 7 ימים
-REFRESH_TOKEN_EXPIRE_DAYS = 30     # refresh token נפרד
-
-# .env (אל תעלי לגיט!):
-# JWT_SECRET_KEY=מחרוזת_אקראית_של_64_תווים
-# לייצר: python -c "import secrets; print(secrets.token_hex(32))"
+# backend/app/config.py — current behavior
+SECRET_KEY = os.environ["JWT_SECRET_KEY"]    # required in production
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
 ```
+
+- **Dev:** if `JWT_SECRET_KEY` is unset, `_load_settings()` generates an
+  ephemeral per-process random secret and logs a loud warning. Tokens
+  are invalidated on every restart — fine for dev, never for prod.
+- **Prod (`ENV=production`):** if `JWT_SECRET_KEY` is unset, the app
+  **refuses to start** with a `RuntimeError` ("SECURITY: JWT_SECRET_KEY
+  must be set in production"). This is the key fail-fast guarantee.
+- **Generation:** `python -c "import secrets; print(secrets.token_hex(32))"`
+- **Token lifetime:** 24 hours (was 7 days; shortened in this fix). No
+  refresh-token infra yet — users re-login daily. A 15-minute ideal
+  would require implementing refresh tokens first; tracked as a v2
+  item in ROADMAP.md, not a security blocker.
+
+> Historical note: earlier snapshots used a hardcoded dev default
+> (`"mehamakor123"`-style). That has been replaced — see the
+> `_DEV_SECRET_SENTINEL` + `_load_settings()` flow in `config.py`.
 
 ### 2. Rate Limiting — חסום brute force
 
@@ -108,24 +113,45 @@ async def get_producer(id: str):
 
 ## 🟠 חשוב — תקן השבוע
 
-### 5. IDOR — משתמש מוחק/עורך של אחרים
+### ✅ 5. IDOR — SHIPPED across all delete/update endpoints
+
+**Status:** every delete/update endpoint in `home_products.py`,
+`producer_me.py`, `favorites.py`, `reports.py`, `reviews.py`,
+`events.py`, and `experiences.py` now checks ownership against
+`current_user.id`, with an admin-override (`current_user.role == "admin"`)
+fallback where appropriate. The pattern below is the canonical shape.
 
 ```python
-# ❌ פרצה קלאסית:
-@router.delete("/home-listings/{id}")
-async def delete_listing(id: str):
-    await db.delete(id)  # כל אחד יכול למחוק כל דבר!
-
-# ✅ תמיד בדקי בעלות:
-@router.delete("/home-listings/{id}")
-async def delete_listing(id: str, current_user=Depends(get_current_user)):
-    listing = await get_listing(id)
+# ✅ Canonical ownership check — used everywhere
+@router.delete("/home-products/{id}")
+def delete_listing(
+    id: UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    listing = db.query(HomeProduct).filter(HomeProduct.id == id).first()
     if listing is None:
         raise HTTPException(404)
-    if listing.user_id != current_user.id and current_user.role != "admin":
+    if listing.user_id != user.id and user.role != "admin":
         raise HTTPException(403, "אין הרשאה")
-    await db.delete(listing)
+    db.delete(listing)
+    db.commit()
 ```
+
+Additional notes:
+
+- **`POST /producers` historical gap:** this endpoint was public
+  until April 2026 — anyone could create a pending producer row with
+  no user association. Fixed in `feature/fix-producers-post-auth`
+  (PR #33): now requires `get_current_user`. The public producer
+  signup flow at `POST /auth/register/producer` was always correct.
+- **`ProducerFollower` notification preferences:** each follower row
+  stores `notify_new_products` + `notify_back_in_stock` booleans
+  (`backend/app/models/models.py::ProducerFollower`). Reads and writes
+  go through `/producers/{id}/follow` and friends; each route checks
+  that the caller owns the follower row before returning/updating
+  the flags. Admin override is intentionally **not** granted for
+  these — notification preferences are personal data.
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
