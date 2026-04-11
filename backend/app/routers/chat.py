@@ -37,7 +37,14 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 # claude-haiku-4-5 is the cheapest production model. Hard-coded here
 # because the system-wide `settings.anthropic_model` is opus-tier and
 # tuned for moderation accuracy, not chatbot cost.
-CHAT_MODEL = "claude-haiku-4-5"
+#
+# IMPORTANT: use the date-suffixed model ID (`claude-haiku-4-5-20251001`),
+# NOT the bare alias (`claude-haiku-4-5`). The bare alias was rejected by
+# the Anthropic API in production, causing every chat call to silently
+# fail-open with the offline message. The date-suffixed form is the
+# canonical model ID per Anthropic's docs and works reliably. If you
+# upgrade to a newer Haiku, swap the date — the prefix stays the same.
+CHAT_MODEL = "claude-haiku-4-5-20251001"
 
 # Cap on conversation length sent to the API. Each turn is a user msg
 # + assistant msg, so 10 = 20 messages = ~2-3K tokens of history.
@@ -104,22 +111,10 @@ def _get_client():
     if _client is not None:
         return _client
     if not settings.anthropic_api_key:
-        # TEMPORARY DEBUG (chat-debug-key-loading): names the failure
-        # cause loudly so anyone reading Railway logs can see it without
-        # having to grep through the rest of the request log. Remove
-        # once the chat widget is verified working in production.
-        logger.warning(
-            "chat: _get_client returning None — settings.anthropic_api_key is empty. "
-            "Check ANTHROPIC_API_KEY env var on Railway production scope."
-        )
         return None
     try:
         import anthropic
         _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        # TEMPORARY DEBUG: log on first successful init so we can confirm
-        # the key was loaded after a redeploy. Logged once per process
-        # because _client is then cached.
-        logger.info("chat: anthropic client initialized successfully")
         return _client
     except Exception as e:  # pragma: no cover — defensive
         logger.warning("anthropic client init failed for chat: %s", e)
@@ -177,46 +172,3 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
         reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
 
     return ChatResponse(reply=reply)
-
-
-# ---------- TEMPORARY DEBUG endpoint ----------
-#
-# REMOVE this `_status` endpoint once the chat widget is verified working
-# in production. It exists solely to make the Anthropic-key load state
-# queryable from a curl command, since reading Railway logs from outside
-# the dashboard is friction.
-#
-# Safety: returns booleans + a length + the standard `sk-ant-` non-secret
-# prefix. Does NOT leak the key value. Anyone who hits this endpoint can
-# learn whether the key is loaded — that's by design — but cannot use
-# the response to forge or recover the actual key.
-
-@router.get("/_status")
-def chat_status():
-    """TEMPORARY: report whether the Anthropic client is initializable.
-
-    Remove once chat is verified working in production. See the block
-    comment above for the rationale and safety analysis.
-    """
-    key = settings.anthropic_api_key or ""
-    return {
-        "anthropic_api_key_loaded": bool(key),
-        "anthropic_api_key_length": len(key),
-        "anthropic_api_key_prefix": (key[:7] + "...") if key else None,
-        "client_initialized": _client is not None,
-        "chat_model": CHAT_MODEL,
-    }
-
-
-# ---------- TEMPORARY DEBUG: startup log ----------
-#
-# Logged ONCE at module import (= container startup). Tells you
-# immediately, on every Railway deploy, whether the env var reached
-# the running process. Remove alongside the `_status` endpoint above
-# once chat is verified working.
-
-logger.info(
-    "chat router loaded — anthropic_api_key loaded: %s (len=%d)",
-    bool(settings.anthropic_api_key),
-    len(settings.anthropic_api_key) if settings.anthropic_api_key else 0,
-)
