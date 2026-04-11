@@ -4,6 +4,7 @@ from app.models.models import (
     ContactMessage,
     DeliveryArea,
     Event,
+    Experience,
     Favorite,
     HomeProduct,
     HomeProductRating,
@@ -40,6 +41,7 @@ __all__ = [
     "NewsletterSubscriber",
     "ContactMessage",
     "Event",
+    "Experience",
     "ProducerReview",
     "ProducerFollower",
 ]

@@ -307,6 +307,84 @@ class Event(Base):
     producer = relationship("Producer")
 
 
+class Experience(Base):
+    """
+    Community-submitted experiences (workshops, food tours, nutrition classes).
+
+    Intentionally separate from `Event`:
+      - Event    = farm event hosted by an approved producer. Simple, no
+                   moderation. Keyed on producer_id.
+      - Experience = community workshop hosted by any logged-in user.
+                   Requires Claude pre-moderation AND admin approval.
+                   Keyed on host_user_id — the host is a User, not a Producer.
+
+    Moderation flow:
+      status: pending | approved | rejected | changes_requested
+      moderation_status: APPROVED | FLAGGED | REJECTED (from Claude)
+
+    REJECTED from Claude blocks the create call (HTTP 400). APPROVED/FLAGGED
+    both persist as status='pending' and wait for admin review — the
+    distinction is surfaced to admin so FLAGGED submissions get extra
+    scrutiny. Admin clears the queue via /admin/experiences approve /
+    reject / request-changes.
+
+    Privacy: `address` is stored but NOT returned in the public list
+    (mirrors home_products.street/zip_code behaviour from FIXES_V2.md #7c).
+    Only the owner + admin see the full address in the detail endpoint.
+    """
+    __tablename__ = "experiences"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Core content
+    title = Column(String(300), nullable=False)
+    description = Column(Text, nullable=False)
+    image_url = Column(Text, nullable=True)
+    category = Column(String(50), nullable=True)  # בישול | תזונה | סיור אוכל | ...
+
+    # Host — any logged-in user (consumer / producer / admin)
+    host_user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    # Schedule — matches Event.event_date/event_time convention for consistency
+    event_date = Column(Date, nullable=False)
+    event_time = Column(Time, nullable=True)
+    duration_minutes = Column(Integer, nullable=True)
+    is_recurring = Column(Boolean, default=False)
+    recurring_schedule = Column(Text, nullable=True)  # "כל שישי 9:00-12:00"
+
+    # Location — producer_farm is explicitly NOT an option; that's what Event is for
+    location_type = Column(String(20), default="home")  # home | public
+    city = Column(String(100))
+    address = Column(Text, nullable=True)  # private — only owner/admin see it
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+
+    # Capacity + pricing
+    max_participants = Column(Integer, nullable=True)
+    participants_count = Column(Integer, default=0)
+    price_per_person = Column(Numeric(10, 2), nullable=True)  # NULL / 0 = free
+
+    # Prep
+    requirements = Column(Text, nullable=True)
+
+    # Moderation
+    status = Column(String(30), default="pending")  # pending | approved | rejected | changes_requested
+    moderation_status = Column(String(20), nullable=True)  # APPROVED | FLAGGED | REJECTED
+    moderation_reason = Column(Text, nullable=True)
+    moderation_suggestion = Column(Text, nullable=True)
+    admin_feedback = Column(Text, nullable=True)  # populated on "request changes"
+    rejection_reason = Column(Text, nullable=True)  # populated on "reject"
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    host = relationship("User", foreign_keys=[host_user_id])
+
+
 class NewsletterSubscriber(Base):
     __tablename__ = "newsletter_subscribers"
 

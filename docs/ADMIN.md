@@ -2,7 +2,7 @@
 > קרא קובץ זה כשעובדים על /admin או בדיקות
 
 ## מבנה האדמין
-sidebar קבוע ב: `frontend/app/admin/layout.js`
+sidebar קבוע ב: `frontend/app/admin/layout.js` — 8 דפים
 
 | דף | URL | תוכן |
 |----|-----|-------|
@@ -12,6 +12,7 @@ sidebar קבוע ב: `frontend/app/admin/layout.js`
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
 | אנליטיקס | /admin/analytics | גרפים + heat map + top producers |
+| חוויות | /admin/experiences | מיתון חוויות — 5 טאבים (ממתינות לאישור / דרוש תיקון / מאושרות / נדחו / הכל) + כפתורי אישור/דחייה/בקשת שינויים + התראת מייל למארח |
 | הגדרות | /admin/settings | אימייל/WhatsApp אדמין + freemium + בדיקת Twilio/Cloudinary |
 
 ## Backend

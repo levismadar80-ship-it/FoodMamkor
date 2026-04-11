@@ -142,6 +142,14 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         <div className="mt-auto pt-3">
           <WhatsAppButton phone={product.phone} productTitle={product.title} onClick={onWhatsAppClick} />
         </div>
+
+        {/* Directory-only disclaimer — required by Israeli consumer
+            protection law on every home-listing card. */}
+        <p className="mt-3 text-[11px] text-site-muted leading-snug border-t border-border pt-2">
+          <span className="font-semibold text-site-text">מהמקור</span> היא
+          פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר
+          בלבד.
+        </p>
       </div>
     </div>
   );
