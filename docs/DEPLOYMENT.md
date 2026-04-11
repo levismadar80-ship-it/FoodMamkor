@@ -321,6 +321,116 @@ For deeper coverage, see the smoke checklist in [TESTING.md](./TESTING.md).
 
 ---
 
+## GitHub Actions auto-deploy
+
+**The problem this solves.** Vercel auto-deploys cleanly off every push to
+`main` via its native GitHub integration — that part is fire-and-forget.
+Railway, however, has bitten us before: its **Watch Paths** config (set in
+§2.2 to `backend/**,Dockerfile,railway.json,.dockerignore`) is great at
+skipping pointless rebuilds for doc-only PRs, but it means a merge to `main`
+that doesn't touch any of those paths leaves Railway running an older commit
+than Vercel. Production then "looks" updated (frontend ships) while the
+backend silently lags — sometimes by days. We hit this exactly: Railway was
+stuck on `1a8b35d` while `main` had moved on through `chat.py` and several
+other backend changes, and the chat widget was 500'ing in production.
+
+**The fix.** A GitHub Actions workflow at
+[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) runs on every
+push to `main` and POSTs to a Railway **Deploy Hook URL**, which kicks
+Railway into a fresh deploy regardless of which paths the merge touched.
+Vercel keeps doing its own thing — this workflow does **not** touch Vercel.
+
+```
+merge PR → main
+   │
+   ├──▶ Vercel GitHub integration   ──▶ frontend deploys to mehamakor.online
+   │    (already wired, no workflow needed)
+   │
+   └──▶ .github/workflows/deploy.yml ──▶ POST $RAILWAY_DEPLOY_HOOK_URL
+                                          ──▶ Railway redeploys backend
+```
+
+### One-time setup
+
+#### 1. Generate the Railway deploy hook URL
+
+1. Open <https://railway.app/dashboard> → **mehamakor** project →
+   **production** environment.
+2. Click the backend service (the FastAPI one — not the Postgres service).
+3. **Settings → Deploy → Deploy Hooks → + New Deploy Hook**.
+4. Name it `github-actions-main` and target the `main` branch.
+5. Railway gives you a URL like:
+   ```
+   https://backboard.railway.app/hooks/<long-opaque-token>
+   ```
+   **This URL is the secret** — anyone who has it can trigger a redeploy.
+   Copy it once; Railway will let you reveal it again later but treat it
+   like a password.
+
+#### 2. Add the URL as a GitHub repository secret
+
+1. Open <https://github.com/levismadar80-ship-it/foodmamkor/settings/secrets/actions>.
+2. **New repository secret** → Name: `RAILWAY_DEPLOY_HOOK_URL`. Value: paste
+   the URL from step 1. Save.
+3. The secret name **must** match exactly — the workflow reads
+   `${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}`.
+
+That's it. The next merge to `main` will trigger the workflow automatically.
+
+#### 3. Verify it works
+
+After adding the secret, either merge the PR that introduced this workflow,
+or trigger it manually:
+
+1. <https://github.com/levismadar80-ship-it/foodmamkor/actions/workflows/deploy.yml>
+2. Click **Run workflow** → branch `main` → **Run workflow**.
+3. The job should finish in ~5 seconds and the summary should show:
+   ```
+   Railway HTTP status: 200
+   ✅ Triggered for commit <short-sha>
+   ```
+4. Cross-check Railway: the backend service should show a new "Deploying"
+   build kicked off within 10 seconds of the workflow finishing, and the
+   commit SHA on the new deploy should match the one in the workflow log.
+
+### Behavior details
+
+- **Fail-soft when the secret is missing.** If `RAILWAY_DEPLOY_HOOK_URL` is
+  not set yet (e.g. the workflow lands before someone has time to add the
+  secret), the job exits 0 with a GitHub Actions warning annotation rather
+  than blocking the merge. Vercel still deploys; you'll just have to click
+  "Redeploy" once in the Railway UI until the secret is added.
+- **Fail-loud when the webhook errors.** If the secret is set but Railway
+  returns a non-2xx response (rotated URL, deleted service, Railway outage),
+  the job fails with a clear error annotation. Re-generate the deploy hook,
+  update the secret, and re-run the workflow.
+- **Concurrency.** The workflow uses a `deploy-main` concurrency group with
+  `cancel-in-progress: true`. If two merges land in the same minute, only
+  the latest one fires the webhook. Railway would deduplicate anyway, but
+  this keeps the Actions log clean.
+- **Manual trigger.** The `workflow_dispatch` trigger means you can also fire
+  the webhook from the Actions tab without pushing a commit — useful if
+  Railway crashed and you need to nudge it without writing code.
+
+### Disabling temporarily
+
+If Railway is having an outage and you want to stop the workflow from
+spamming retries on every merge, the cheapest fix is to delete the
+`RAILWAY_DEPLOY_HOOK_URL` secret. The workflow falls back to its fail-soft
+warning path, leaves the merge alone, and you can re-add the secret once
+Railway is healthy. Don't disable the workflow at the file level —
+re-enabling later usually slips through the cracks.
+
+### Why not run pytest / playwright in this workflow?
+
+This workflow is intentionally **only** about kicking Railway. CI for tests
+will live in a separate workflow file when it's set up, so the deploy
+trigger keeps a single, obvious responsibility. Conflating "run tests" and
+"trigger redeploy" in one job means a flaky test would block legitimate
+deploys, which is exactly the opposite of what we want.
+
+---
+
 ## 0. Prerequisites
 
 - [ ] GitHub repo pushed, with branch `main` as the deploy branch
