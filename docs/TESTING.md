@@ -101,7 +101,72 @@ Report only the REAL issues."
 □ Preview של 3 אירועים בדף הבית
 □ יצרן יכול להוסיף אירוע מ-/producer/dashboard
 □ אירוע שעבר לא מוצג
+□ טאב בר ב-/events: "אירועים בחוות" ו-"חוויות וסדנאות"
+□ ?tab=experiences עמיד לרענון (deep-link עובד)
+□ החלפת טאב מאפסת סינון עיר + קטגוריה
 ```
+
+### 6a. חוויות קהילתיות (feature/experiences-moderation)
+> רץ מול staging. Backend tests: `tests/test_experiences.py` — 40 cases.
+
+**הגשה וזרימת מודרציה**
+```bash
+□ GET /experiences ציבורי — רק approved + upcoming
+□ משתמש מחובר (consumer/producer/admin) יכול POST /experiences
+□ בלי אישור → 401
+□ title < 4 תווים / description < 20 תווים → 422
+□ תוכן אסור (spam, MLM, טענות ריפוי) → Claude REJECTED → 400
+□ תוכן חשוד → Claude FLAGGED → נשמר כ-pending, moderation_status=FLAGGED
+□ תוכן תקין → Claude APPROVED → נשמר כ-pending, ממתין לאישור אדמין
+□ /experiences/new בטופס — עדכון live של Claude תוך 1.5s הקלדה:
+    - APPROVED: אין feedback
+    - FLAGGED: פס צהוב + הצעת שיפור, submit פעיל
+    - REJECTED: פס אדום, submit disabled
+□ הגשה מוצלחת → redirect ל-/experiences/{id}?pending=1 + ירוק banner
+□ אדמין מקבל מייל על כל הגשה חדשה (FLAGGED מופיע בנושא)
+```
+
+**תצוגה ופרטיות**
+```bash
+□ /experiences ציבורי לא מציג כתובת רחוב
+□ /experiences/{id} ציבורי (approved) לא מציג address
+□ /experiences/{id} לבעלים — מציג address + moderation context
+□ /experiences/{id} לאדמין — מציג הכל כמו בעלים
+□ חוויה pending → 404 לזר, 200 לבעלים/אדמין (לא 403 — לא לחשוף קיום)
+□ חוויות עבר (event_date < היום) לא מופיעות בגריד הציבורי
+□ "נשארו X מקומות" על כרטיסייה כשיש max_participants
+□ "אזל" מסתיר את כפתור ה-WhatsApp בעמוד הפרטים
+```
+
+**אדמין**
+```bash
+□ /admin/experiences חסום ל-consumer/producer (403)
+□ טאבים: ממתינות / שינויים נדרשים / מאושרות / נדחו / הכל
+□ שורה ניתנת להרחבה — מציגה תיאור, דרישות, Claude reason/suggestion
+□ "אשרי" → status=approved → מופיע בגריד הציבורי + מייל לבעלים
+□ "שינויים" דורש הערה (400 אם ריק) → status=changes_requested + מייל
+□ "דחי" עם הערה → status=rejected + מייל
+□ בעלים מקבלת מייל עם feedback verbatim
+```
+
+**מחזור חיים מלא**
+```bash
+□ pending → changes_requested (עם admin_feedback)
+□ בעלים עורכת PUT /experiences/{id} → status חוזר ל-pending
+□ admin_feedback + rejection_reason מתנקים
+□ Claude רץ שוב על התוכן החדש
+□ אדמין מקבל מייל "הגשה חדשה"
+□ אדמין מאשר → approved → מופיע בציבור
+```
+
+**עברית + RTL + iOS**
+```bash
+□ פונטים נטענים: Frank Ruhl Libre בכותרות, DM Sans בגוף
+□ כל העמודים RTL — אין דלף LTR בטופס / בטאב בר / במודל
+□ iOS Safari על iPhone: אין zoom אוטומטי על שדות (font-size ≥ 16px)
+□ טקסט פמיני עקבי: הגישי, טוענת, אישרי, דחי
+```
+
 
 ### 7. UX כללי
 ```bash
