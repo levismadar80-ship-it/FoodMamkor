@@ -221,6 +221,55 @@ The fix applies to **4 distinct UI surfaces** — verify each:
 
 ---
 
+## Form submit loading state — 5 forms (tasks_for_claude_code.md PR 6 — task 18)
+
+A shared `ButtonSpinner` component (`frontend/components/ButtonSpinner.jsx`, wraps Phosphor `CircleNotch` + Tailwind `animate-spin`) is now used inside the submit button of every public form. Each form also kept `disabled={loading}` so double-submission is prevented before the spinner even needs to be visible.
+
+Test each form on real mobile + desktop. The spinner should be visible for the network round-trip (usually 200–800ms on prod), then disappear on success OR on error.
+
+### /login
+
+- [ ] `/login` — fill email + password → tap "כניסה" → **button disables immediately** (can't tap again), spinner + "מתחברת..." show inside the button for the duration of the request
+- [ ] `/login` — wrong password → after the server returns an error, button re-enables and the original text "כניסה" comes back, spinner hidden
+- [ ] `/login` — slow-3G (DevTools network throttling) — verify spinner is visible for ~2+ seconds
+
+### /register
+
+- [ ] `/register` — fill all fields + agree to terms → tap "הצטרפי" → button shows spinner + "נרשמת..."
+- [ ] `/register` — trigger a client validation failure (wrong password shape) → button doesn't go into loading state at all (validation happens before `setLoading(true)`)
+- [ ] `/register` — server error (duplicate email) → button recovers to "הצטרפי"
+
+### /register/producer
+
+- [ ] `/register/producer` → progress through step 1 + step 2 → on step 3, check both compliance checkboxes → tap **"שלחי בקשה"** (NOTE: was "שלח בקשה" — masculine — before this PR; verify it's now feminine)
+- [ ] `/register/producer` step 3 → during submit the button shows spinner + **"שולחת..."** (NOTE: was "שולח..." — masculine — before this PR; verify it's now feminine)
+- [ ] `/register/producer` — server error (e.g. duplicate email at step 1 surfacing here) → button recovers to "שלחי בקשה"
+
+### /about contact form
+
+- [ ] `/about` → scroll to contact form → fill name/email/message → tap "שלחי" → button shows spinner + "שולחת..."
+- [ ] `/about` — success → button disappears or recovers, success message below the form
+- [ ] `/about` — server error → button recovers to "שלחי", error message shows
+
+### Footer newsletter
+
+- [ ] Any page → scroll to footer → enter email → tap "הצטרפי" → button shows spinner + **"מצטרפת..."** (NOTE: was the cryptic "..." before this PR — verify the new text)
+- [ ] Footer — success → feminine Hebrew "welcome" message appears below
+- [ ] Footer — rate-limit error (429, after 6 quick signups) → button recovers to "הצטרפי"
+
+### Cross-cutting accessibility checks
+
+- [ ] `prefers-reduced-motion: reduce` — the spinner's CSS `animate-spin` is a simple rotation, not a content-shifting animation, so it's fine to leave running even under reduced-motion per WCAG. Verify it doesn't cause any layout shift.
+- [ ] Keyboard-only — tab to any submit button, press Enter, confirm button disables via the same loading branch
+- [ ] Screen reader — the spinner has `aria-hidden="true"` so it doesn't announce; the button label + disabled state is what matters
+
+### Regression guards (grep-based)
+
+- [ ] `grep -rn 'שולח\.\.\.' frontend/` → zero matches (the masculine form should not exist anywhere)
+- [ ] `grep -rn 'ButtonSpinner' frontend/` → 5 imports (login, register, register/producer, AboutClient, Footer) + 5 usages + 1 component file
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
