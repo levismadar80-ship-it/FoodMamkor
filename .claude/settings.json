@@ -34,7 +34,7 @@
           },
           {
             "type": "command",
-            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if ! python -c \"import pytest\" 2>/dev/null; then echo \"pytest not available, skipping backend tests\"; exit 0; fi; if [ ! -d \"$root/backend\" ]; then echo \"backend/ not found at $root, skipping tests\"; exit 0; fi; set -o pipefail; cd \"$root/backend\" && python -m pytest tests/test_api.py -q 2>&1 | tail -10 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
+            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if ! python -c \"import pytest\" 2>/dev/null; then echo \"pytest not available, skipping backend tests\"; exit 0; fi; if [ ! -d \"$root/backend\" ]; then echo \"backend/ not found at $root, skipping tests\"; exit 0; fi; if [ ! -f \"$root/backend/tests/test_api.py\" ]; then echo \"backend/tests/test_api.py not found, skipping backend tests (sandbox may not have the test suite)\"; exit 0; fi; set -o pipefail; cd \"$root/backend\" && python -m pytest tests/test_api.py -q 2>&1 | tail -10 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
           }
         ]
       }
