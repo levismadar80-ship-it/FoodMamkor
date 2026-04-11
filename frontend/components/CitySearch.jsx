@@ -149,7 +149,7 @@ export default function CitySearch({
         <ul
           id={`${id}-listbox`}
           role="listbox"
-          className="absolute z-50 mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
+          className="absolute z-[1000] mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
         >
           {matches.map((city, idx) => (
             <li
