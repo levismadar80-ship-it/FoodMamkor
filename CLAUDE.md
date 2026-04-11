@@ -50,6 +50,15 @@
 8. **Use "ultrathink" for complex problems** — schema migrations, security tradeoffs, multi-file refactors, anything where a wrong call costs more than 10 minutes to undo.
 9. **After every PR — always send the Vercel preview URL.** Format: `"בדיקי על: https://food-mamkor-[hash].vercel.app"`. **Wait for approval before merging to staging.** Full flow + mobile checklist: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "Testing workflow".
 10. **After every PR — update [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md)** with any new features. Format: `[ ] Test — איך לבדוק — תוצאה מצופה`. Add under the relevant page/feature section, or create a new section.
+11. **After every PR — auto-update every doc your code touched.** If you edited a code area, update its doc in the same PR — don't wait to be asked. Rule: code change → doc update, same commit or same PR.
+    - [`docs/DATA.md`](./docs/DATA.md) — if DB schema or endpoints changed
+    - [`docs/ADMIN.md`](./docs/ADMIN.md) — if admin panel changed
+    - [`docs/DESIGN.md`](./docs/DESIGN.md) — if UI/UX changed
+    - [`docs/FEATURES.md`](./docs/FEATURES.md) — mark completed features as ✅
+    - [`docs/MANUAL_TESTING.md`](./docs/MANUAL_TESTING.md) — add new test cases (see rule 10)
+    - [`docs/SECURITY.md`](./docs/SECURITY.md) — if auth or permissions changed
+    - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — if env vars or infra changed
+    - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — always add a one-line entry
 
 ## Documentation map
 | File | What's in it |
