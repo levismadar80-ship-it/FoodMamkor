@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
@@ -329,7 +330,14 @@ export default function RegisterProducerPage() {
                 disabled={loading || !agreedToTerms || !declaredLicenses}
                 className="flex-1 bg-secondary text-white py-3 rounded-[12px] hover:bg-secondary-light transition font-medium disabled:opacity-50"
               >
-                {loading ? "שולח..." : "שלח בקשה"}
+                {loading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <ButtonSpinner />
+                    שולחת...
+                  </span>
+                ) : (
+                  "שלחי בקשה"
+                )}
               </button>
             </div>
           </div>

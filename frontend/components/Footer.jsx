@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { InstagramLogo } from "@phosphor-icons/react";
+import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
 
 /**
@@ -149,7 +150,14 @@ export default function Footer() {
                 disabled={status === "loading"}
                 className="bg-light text-primary-dark px-5 py-2 rounded-[8px] hover:bg-white transition font-medium disabled:opacity-60"
               >
-                {status === "loading" ? "..." : "הצטרפי"}
+                {status === "loading" ? (
+                  <span className="inline-flex items-center gap-2">
+                    <ButtonSpinner />
+                    מצטרפת...
+                  </span>
+                ) : (
+                  "הצטרפי"
+                )}
               </button>
             </form>
             {message && (
