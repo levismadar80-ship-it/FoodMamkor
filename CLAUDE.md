@@ -858,5 +858,39 @@ SENTRY_PROJECT=mehamekor-frontend
 - **Usage policy של Nominatim:** מקסימום ~1 בקשה/שניה ממקור אחד. ה-debounce של 450ms + הסף של 3 תווים מספיקים ל-MVP. **לפרודקשן עם traffic גבוה** — proxy דרך ה-backend עם User-Agent שמזהה את `mehamekor.co.il` (דפדפנים לא מאפשרים set User-Agent ב-fetch ישיר). לא נעשה כי MVP-traffic ברור שמספיק.
 - **לא נגעתי ב-`CitySearch`** — היא משתמשת ברשימה סטטית של ~100 ערים ישראליות (`data/cities.js`), זה עדיין הפתרון הנכון לשדה city ב-`/register/producer` שצריך אוטוקומפליט מהיר ומבוקר. הרחבה של CitySearch ל-Nominatim היתה שוברת את ה-curated list.
 
+## AI Q&A widget — `claude-haiku-4-5` (אפריל 2026)
+ווידג'ט שאלות-תשובות צף בפינה השמאלית-תחתונה של דף הבית, עונה על שאלות על השימוש באתר.
+
+- **Backend — `backend/app/routers/chat.py`:**
+  - `POST /chat` (response_model=`ChatResponse`). אין auth — כל גולשת יכולה לשאול לפני הרשמה.
+  - **מודל:** `claude-haiku-4-5` (זול, מהיר, מספיק לתשובות קצרות). הוגדר כקבוע ב-router (`CHAT_MODEL`), לא דרך `settings.anthropic_model` — כי ה-setting הזה תפוס ע"י המודרציה (Opus-tier).
+  - **System prompt בעברית** — נקבה, מצומצם בקפדנות לשימוש באתר (`SYSTEM_PROMPT` בקובץ). מגביל את הבוט לשלושה נושאים: רישום, מציאת בתי עסק, פרסום ב-`/neighbor`. אומר לו ל-handle שאלות אחרות ע"י הפניה לטופס יצירת קשר.
+  - **קלט:** `messages: [{role: "user"|"assistant", content: str}]` (היסטוריה מלאה — ה-API stateless, הקליינט שומר state).
+  - **קיצוץ היסטוריה:** server-side cap על 10 turns (= 20 הודעות), ויש backstop על first-message-must-be-user. הקליינט יכול לשלוח כמה שירצה — ה-router יקצוץ.
+  - **`max_tokens=400`** — תשובות של 2-3 משפטים, לא מאמרים. שומר על cost צפוי ועל UX מהיר.
+  - **Rate limit:** `@limiter.limit("10/minute")` + `@limiter.limit("30/hour")` per IP. CRITICAL כי האנדפוינט unauth ועולה כסף לכל קריאה. נבדק חי: ניסיון 10 מחזיר 429.
+  - **Fail-open:** אם `ANTHROPIC_API_KEY` חסר ב-env (dev sandbox, env לא מוגדר) → מחזיר הודעת "העוזרת לא זמינה כרגע 🌿" ו-200, לא 500. ה-UI ממשיך לעבוד. אותה התנהגות אם הקריאה ל-Anthropic נכשלת ב-runtime.
+  - **לקוח Anthropic:** lazy-init דרך `_get_client()`, מוריש את אותו הדפוס מ-`home_product_moderation.py`. אם תוסיפי endpoint נוסף שצריך Anthropic — שכפלי את הדפוס, אל תייבאי משם (כדי לשמור על isolation).
+
+- **Frontend — `frontend/components/ChatWidget.jsx`:**
+  - **Desktop בלבד** (`hidden md:flex`) — המובייל כבר מלא ב-BottomNav + cookie banner.
+  - **floating button** ב-`fixed bottom-6 left-6 z-[900]` (פינה שמאלית-תחתונה — לא מתנגשת עם "קרוב אלי" של המפה שיושב ימין-תחתון בתוך המפה).
+  - **פאנל פתוח:** רוחב 360px, max-height `min(560px, 80vh)`, בורדר radius 16, צל תכלת-ירוק עדין (`shadow-[0_8px_32px_rgba(46,104,83,0.18)]`).
+  - **State בקומפוננטה** — אין persistence. רענון דף = שיחה חדשה. זה MVP help-bot, לא history archive.
+  - **הודעה פותחת** ("היי 🌿 אני העוזרת...") + 3 כפתורי prompt מוצעים שמתחילים את השיחה ("איך נרשמים כבעלת עסק?", "איך מוצאים עסקים באזור שלי?", "איך מפרסמים מוצר ביתי?"). הם נעלמים ברגע שמשהו נשלח.
+  - **A11y:** `role="dialog"` + `role="log" aria-live="polite"` על רשימת ההודעות + label על ה-input + Esc סוגר + focus-visible rings.
+  - **Phosphor icons:** `ChatCircleDots` (launcher + header), `X` (close), `PaperPlaneTilt` עם `scaleX(-1)` כי PaperPlane של Phosphor פונה שמאלה ב-LTR — RTL הופך את הכיוון כדי שה-tip יצביע ל"שלח".
+  - **Error handling:** 429 → "שלחת הרבה הודעות בזמן קצר — נסי שוב בעוד דקה 🌱". כל שאר השגיאות → "משהו השתבש 🌱 נסי שוב בעוד רגע". לא חושף stack traces.
+  - **רשום ב-`app/layout.js`** ליד `CustomCursor`, אחרי `CookieBanner` (כך ש-z-order לא מתנגש).
+
+- **לא נדרש שינוי CSP** — כל הקריאות הולכות ל-`/api/chat` (אותו מקור), לא ל-`api.anthropic.com` ישירות. הקליינט אף פעם לא רואה את ה-API key.
+
+- **Production checklist:**
+  - הגדירי `ANTHROPIC_API_KEY` ב-env של production (אותו key של המודרציה).
+  - הגבלי את ה-`messages.content` ל-2000 תווים בקליינט (כבר מוגבל ב-Pydantic schema), אבל גם כדאי `maxLength={500}` על ה-input text — כבר קיים.
+  - אם traffic גדל — שקלי לשדרג את rate limit ל-30/דקה אבל בו-זמנית להוסיף quota יומי per-IP. כרגע 30/שעה אמור להיות מספיק כי כל user מקבל ~200 שאלות בשבוע.
+
+- **`from __future__ import annotations` gotcha:** הסרתי אותו מ-`chat.py`. הוא חשוב לקבצים שבהם צריך defer evaluation לסוג, אבל **FastAPI לא יכול לפתור את `body: ChatRequest` בחתימת הroute אם annotations מושהות** — Pydantic זורק `PydanticUndefinedAnnotation: name 'ChatRequest' is not defined`. אם תוסיפי router חדש שמשתמש ב-Pydantic models בחתימה — אל תכתבי `from __future__ import annotations` שם.
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`
