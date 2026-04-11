@@ -118,11 +118,11 @@ const SECTIONS = [
           חוק הגנת הפרטיות מעניק לך את הזכויות הבאות. ניתן לממש כל אחת מהן ללא
           עלות, על ידי פנייה לכתובת{" "}
           <a
-            href="mailto:admin@mehamakor.online"
+            href="mailto:levismadar80@gmail.com"
             className="text-primary hover:underline"
             dir="ltr"
           >
-            admin@mehamakor.online
+            levismadar80@gmail.com
           </a>
           :
         </p>
@@ -208,11 +208,11 @@ const SECTIONS = [
         <br />
         📧{" "}
         <a
-          href="mailto:admin@mehamakor.online"
+          href="mailto:levismadar80@gmail.com"
           className="text-primary hover:underline"
           dir="ltr"
         >
-          admin@mehamakor.online
+          levismadar80@gmail.com
         </a>
       </>
     ),

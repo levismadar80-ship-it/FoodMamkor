@@ -74,11 +74,11 @@ const SECTIONS = [
         <br />
         📧{" "}
         <a
-          href="mailto:admin@mehamakor.online"
+          href="mailto:levismadar80@gmail.com"
           className="text-primary hover:underline"
           dir="ltr"
         >
-          admin@mehamakor.online
+          levismadar80@gmail.com
         </a>
         <br />
         <span className="text-sm text-site-muted">
