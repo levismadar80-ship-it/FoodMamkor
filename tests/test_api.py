@@ -108,6 +108,74 @@ class TestProducers:
         resp = client.get("/producers/00000000-0000-0000-0000-000000000000")
         assert resp.status_code == 404
 
+    # ----- POST /producers auth -----
+    #
+    # docs/DATA.md has always documented POST /producers as auth-required
+    # (it lives under the "producer dashboard" flow), but the handler
+    # historically had no auth dependency — anyone could create a pending
+    # producer row with no audit trail. Fixed in feature/fix-producers-post-auth.
+    #
+    # The public signup flow lives at POST /auth/register/producer and is
+    # untouched; POST /producers is a secondary backend helper that should
+    # only be callable by an authenticated user.
+
+    VALID_PRODUCER_PAYLOAD = {
+        "name": "חוות הבדיקה",
+        "description": "test producer",
+        "city": "תל אביב",
+        "lat": 32.0853,
+        "lng": 34.7818,
+        "phone": "0501234567",
+        "instagram": None,
+        "website": None,
+        "category_ids": [],
+        "delivery_areas": [],
+    }
+
+    def test_post_producers_requires_auth(self, client):
+        """No Authorization header → 401. Protects against anonymous
+        creation of pending producers (was a silent security gap)."""
+        resp = client.post("/producers", json=self.VALID_PRODUCER_PAYLOAD)
+        assert resp.status_code == 401
+
+    def test_post_producers_rejects_invalid_token(self, client):
+        """Garbage token → 401, not 500."""
+        resp = client.post(
+            "/producers",
+            json=self.VALID_PRODUCER_PAYLOAD,
+            headers={"Authorization": "Bearer not-a-real-jwt"},
+        )
+        assert resp.status_code == 401
+
+    def test_post_producers_with_auth_creates_pending_producer(self, client, db):
+        """Authenticated user → 201, producer created with status=pending
+        (pre-existing behavior, now gated behind auth)."""
+        user = make_user(db, email="creator@test.com")
+        resp = client.post(
+            "/producers",
+            json=self.VALID_PRODUCER_PAYLOAD,
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["name"] == "חוות הבדיקה"
+        assert body["status"] == "pending"
+        # DB row exists
+        row = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
+        assert row is not None
+        assert row.status == "pending"
+
+    def test_post_producers_with_blocked_user_fails(self, client, db):
+        """A blocked user should not be able to create producers — the
+        get_current_user dep raises 403 for blocked accounts."""
+        blocked = make_user(db, email="blocked@test.com", is_blocked=True)
+        resp = client.post(
+            "/producers",
+            json=self.VALID_PRODUCER_PAYLOAD,
+            headers=auth_header(blocked),
+        )
+        assert resp.status_code in (401, 403)
+
 
 # ---------- Admin guard ----------
 
