@@ -42,15 +42,26 @@ const OPENING_MESSAGE = {
   content: "היי 🌿 אני העוזרת של מהמקור. אפשר לשאול אותי איך נרשמים, איך מוצאים בתי עסק, או איך מפרסמים מוצר ביתי. מה תרצי לדעת?",
 };
 
+// Suggested prompts — restructured April 2026 (feature/chatbot-plain-hebrew-v2)
+// around the mental model of a first-time visitor. The old list mixed early-
+// funnel questions ("what is this site?") with later-stage ones ("how do I
+// report a problem?") in random order, and phrased "האישור" without saying
+// what was being approved. New grouping:
+//   1-3: canonical hardcoded answers (see HARDCODED_ANSWERS)
+//   4-5: visitor orientation — "what is this?" + "is it free?"
+//   6:   buyer — contacting a business
+//   7:   visitor/buyer curiosity — the "neighbor's kitchen" section
+//   8:   seller follow-up — how long until their business is approved
+// Dropped: "איך מדווחים על בעיה?" (later-stage concern, not a first-visit Q).
 const SUGGESTED_PROMPTS = [
   "איך נרשמים כבעלת עסק?",
   "איך מוצאים עסקים קרובים אליי?",
   "איך מפרסמים מוצר ביתי?",
-  "האם ההרשמה בחינם?",
-  "כמה זמן לוקח האישור?",
+  "מה זה מהמקור?",
+  "האם האתר בחינם?",
   "איך יוצרים קשר עם בית עסק?",
   'מה זה "מהמטבח של השכן"?',
-  "איך מדווחים על בעיה?",
+  "כמה זמן לוקח האישור של העסק?",
 ];
 
 // Hardcoded answers for the three canonical suggested prompts.
@@ -63,13 +74,21 @@ const SUGGESTED_PROMPTS = [
 //
 // Keys MUST match the suggested-prompt strings above exactly (byte-for-
 // byte) — the match check is a plain object lookup in sendMessage.
+//
+// v2 rewrite (feature/chatbot-plain-hebrew-v2): plain everyday Hebrew,
+// active voice on approval ("הצוות שלנו בודק ומאשר" not "מאושר"),
+// explicit about WHAT is being approved ("העסק שלך" / "המוצר שלך"),
+// and specific timeframes ("תוך יום-יומיים" / "תוך שעות ספורות")
+// instead of vague "תוך זמן קצר". No tech jargon like "מודרציה" /
+// "פרופיל" — we say "העסק שלך" because that's what the user thinks
+// they're registering.
 const HARDCODED_ANSWERS = {
   "איך נרשמים כבעלת עסק?":
-    "בעלות עסק נרשמות דרך טופס הרשמה פשוט בן 3 שלבים — חינם לגמרי! 🎉\nאחרי שליחת הטופס, הצוות שלנו בודק את הפרטים ומאשר את הפרופיל שלך תוך זמן קצר.",
+    "נרשמות דרך טופס פשוט בן 3 שלבים — חינם לגמרי! 🎉\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
   "איך מוצאים עסקים קרובים אליי?":
-    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם סינון לפי קטגוריה.\n2. דף הבית — חפשי לפי קטגוריה ועיר.\n\nכל עסק כולל כפתור WhatsApp ישיר לבעלת העסק! 😊",
+    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשי לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בעלת העסק 😊",
   "איך מפרסמים מוצר ביתי?":
-    "נכנסי לעמוד 'מהמטבח של השכן', לחצי על 'פרסמי מוצר', מלאי את הטופס — וזהו! 🎉\nהמוצר שלך מאושר בדרך כלל תוך שעות ספורות. הכתובת המדויקת שלך לא נחשפת — רק העיר והשכונה.",
+    "נכנסי לעמוד 'מהמטבח של השכן', לחצי על 'פרסמי מוצר', מלאי את הטופס — וזהו! 🎉\nהצוות שלנו בודק את המוצר שלך ומאשר אותו בדרך כלל תוך שעות ספורות, ואז הוא מופיע בדף. הכתובת המדויקת שלך לא נחשפת — רק העיר והשכונה.",
 };
 
 export default function ChatWidget() {
