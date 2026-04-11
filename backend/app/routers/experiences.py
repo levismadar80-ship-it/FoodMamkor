@@ -33,6 +33,7 @@ from app.schemas.schemas import (
     ExperienceValidateResult,
 )
 from app.services.experience_moderation import validate_experience
+from app.services.experience_notifications import notify_admin_new_submission
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
 
@@ -260,6 +261,16 @@ def submit_experience(
         .filter(Experience.id == ex.id)
         .first()
     )
+
+    # Best-effort admin email. Never blocks the submission — the service
+    # fails open on missing SMTP / send errors.
+    notify_admin_new_submission(
+        title=ex.title,
+        host_name=user.name,
+        city=ex.city,
+        moderation_status=verdict["status"],
+    )
+
     return _serialize_detail(ex)
 
 
