@@ -270,6 +270,22 @@ Test each form on real mobile + desktop. The spinner should be visible for the n
 
 ---
 
+## Forgot password link on /login (tasks_for_claude_code.md PR 7 — task 6)
+
+Placeholder-only implementation: the backend endpoint `POST /auth/forgot-password` does not yet exist (verified against `docs/DATA.md` § Auth), so per the task spec's conditional branch, clicking the link shows a toast ("נשלח לך מייל לאיפוס סיסמא בקרוב") without firing any real request. The link will be replaced with a real modal + API call in a follow-up PR once the backend ships the endpoint.
+
+- [ ] `/login` — scroll below the password field — the link `"שכחתי סיסמא ←"` is visible
+- [ ] Link position — sits directly below the password input, right-aligned (Hebrew start-of-line), small primary-green text
+- [ ] Tap the link — an info toast appears at the bottom of the viewport saying `"נשלח לך מייל לאיפוס סיסמא בקרוב"`, auto-dismisses after ~2.8 seconds
+- [ ] The toast uses the `info` type color (not red/error, not green/success)
+- [ ] No network request fires on click — verify via DevTools → Network tab → click link → zero new requests to `/api/auth/*`
+- [ ] Form submit still works normally — the link has `type="button"` so clicking it doesn't accidentally submit the login form
+- [ ] Keyboard navigation — tab to the link from the password field → press Enter → same toast fires
+- [ ] Focus ring — tabbing to the link shows a visible ring around it (focus-visible:ring-2)
+- [ ] `/login/page.js` search for `TODO: when the backend ships POST /auth/forgot-password` — comment is present as a reminder for the follow-up PR
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.

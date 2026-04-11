@@ -8,6 +8,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
+import { showToast } from "@/lib/toast";
 
 /**
  * Login page (docs/archive/FEEDBACK_FIXES.md fix 2).
@@ -111,6 +112,27 @@ export default function LoginPage() {
               className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none focus:border-primary transition"
               dir="ltr"
             />
+            {/* tasks_for_claude_code.md task 6: "שכחתי סיסמא" link.
+                Backend endpoint POST /auth/forgot-password does NOT yet
+                exist (verified against docs/DATA.md auth route list — the
+                file lists register / login / me / google / apple only).
+                Per the task spec, when no endpoint exists we fall through
+                to the toast-placeholder branch: click fires an info toast
+                with a "coming soon" message instead of the real reset flow.
+                TODO: when the backend ships POST /auth/forgot-password,
+                replace the toast with a modal (enter email → POST to the
+                endpoint → success state) and delete this comment. */}
+            <div className="mt-2 text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  showToast("נשלח לך מייל לאיפוס סיסמא בקרוב", "info");
+                }}
+                className="text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+              >
+                שכחתי סיסמא ←
+              </button>
+            </div>
           </div>
           {error && (
             <p className="text-red-500 text-sm text-right" role="alert">
