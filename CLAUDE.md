@@ -46,6 +46,7 @@
 5. **Use "ultrathink" for complex problems** — schema migrations, security tradeoffs, multi-file refactors, anything where a wrong call costs more than 10 minutes to undo.
 6. **Read [docs/DESIGN.md](./docs/DESIGN.md) before any UI change.** A pre-commit hook in `.claude/settings.json` will remind you when you touch `frontend/app/`, `frontend/components/`, or `*.css`.
 7. **Read [docs/DATA.md](./docs/DATA.md) before any backend change.** Same hook covers `backend/`.
+8. **After every PR — always send the Vercel preview URL.** Format: `"בדיקי על: https://food-mamkor-[hash].vercel.app"`. **Wait for approval before merging to staging.** Full flow + mobile checklist: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "Testing workflow".
 
 ## Documentation map
 | File | What's in it |
