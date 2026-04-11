@@ -1,7 +1,7 @@
 # מהמקור (Mehamakor)
 
 > Israeli directory of local food producers and home cooks.
-> Live: **[mehamakor.online](https://mehamakor.online)** · Instagram: [@mehamakor](https://www.instagram.com/mehamakor)
+> Live: **[mehamakor.online](https://mehamakor.online)** · Instagram: [@meha_makor](https://www.instagram.com/meha_makor)
 
 A "Google Maps for real food in Israel" — grass-fed meat, sourdough, raw dairy,
 organic veg, natural skincare. Surface the small producers and home cooks who
