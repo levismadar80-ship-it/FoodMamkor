@@ -125,7 +125,8 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted"
+          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted text-right"
+          dir="rtl"
           autoComplete="off"
           role="combobox"
           aria-expanded={isOpen && matches.length > 0}

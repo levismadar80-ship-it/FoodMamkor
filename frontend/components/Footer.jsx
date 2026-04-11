@@ -11,7 +11,7 @@ import api from "@/lib/api";
  * Structure (per docs/archive/UX_FIXES.md Fix 4 + docs/archive/COPY_FIXES.md Fix 4):
  *   - לגלות:          דף הבית | מפה | אירועים | עסקים חדשים
  *   - קהילה:          אירועים | מהמטבח של השכן | אודות
- *   - בתי עסק:       הוסף עסק | כניסה | דשבורד
+ *   - בתי עסק:       הוסף עסק | כניסה | ניהול העסק
  *   - שקיפות ואמון:   תנאי שימוש | פרטיות | נגישות | יצירת קשר
  *                     (Israeli legal compliance — all four pages required)
  */
@@ -59,7 +59,7 @@ export default function Footer() {
       links: [
         { href: "/register/producer", label: "הוסיפי את העסק שלך 🌿" },
         { href: "/login", label: "כניסה לחשבון" },
-        { href: "/producer/dashboard", label: "דשבורד" },
+        { href: "/producer/dashboard", label: "ניהול העסק" },
       ],
     },
     {
