@@ -1,4 +1,4 @@
-"""Chat assistant router — answers questions about mehamekor.online via Claude.
+"""Chat assistant router — answers questions about mehamakor.online via Claude.
 
 A small Q&A bot users can open from the floating widget on the homepage.
 Users get answers to "how do I register?", "how do I find a producer?",
@@ -120,7 +120,7 @@ def _get_client():
 @limiter.limit("10/minute")  # SECURITY: chat is unauth + costs $$, lock it down
 @limiter.limit("30/hour")
 def chat(request: Request, body: ChatRequest) -> ChatResponse:
-    """Answer a user question about mehamekor.online via Claude Haiku 4.5."""
+    """Answer a user question about mehamakor.online via Claude Haiku 4.5."""
     client = _get_client()
     if client is None:
         # Fail-open friendly message — UI keeps working.

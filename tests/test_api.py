@@ -224,14 +224,14 @@ class TestAdminFlows:
 
         resp = client.put(
             "/admin/settings",
-            json={"admin_email": "boss@mehamekor.co.il"},
+            json={"admin_email": "boss@mehamakor.co.il"},
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
         # Persisted
         row = db.query(AdminSetting).filter(AdminSetting.key == "admin_email").first()
         assert row is not None
-        assert row.value == "boss@mehamekor.co.il"
+        assert row.value == "boss@mehamakor.co.il"
 
     def test_analytics_endpoint(self, client, db):
         admin = make_user(db, role="admin")

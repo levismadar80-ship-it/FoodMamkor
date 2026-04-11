@@ -5,7 +5,7 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 /**
- * ChatWidget — floating Q&A bot that answers questions about mehamekor.online
+ * ChatWidget — floating Q&A bot that answers questions about mehamakor.online
  * via the backend `/chat` endpoint (Claude Haiku 4.5 with a Hebrew system
  * prompt scoped to site usage).
  *

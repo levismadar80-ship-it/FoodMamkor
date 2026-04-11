@@ -93,7 +93,7 @@ For changes after 2026-04-08, see `git log` and the GitHub PR list.
   - **#7 Mobile bottom sheet** — כש-marker נלחץ במובייל, `selectedProducer` נקבע ומוצג כ-dialog צף `fixed bottom-16 inset-x-3` (מעל ה-BottomNav) עם `animate-[slide-up_0.25s_ease-out]`, `role="dialog"`, כפתור X לסגור. מכיל `<ProducerCard>` מלא. רק `md:hidden`.
   - **#8 Category legend = filter** — widget קבוע ב-`bottom-4 right-4` (פינה תחתית-ימין של המפה, מתחת לפקדי Leaflet). 6 שורות, כל אחת clickable, `opacity-40` כשה-category לא פעיל, `aria-pressed`. כשקיים filter אקטיבי — מוצג כפתור "הצגי הכל" ל-reset. state `activeCategoryNames` (`null` = "all enabled", array = explicit inclusion list).
   - **#9 Empty state overlay** — card לבן צף במרכז המפה (`top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`) כאשר `visibleProducers.length === 0 && allProducers.length > 0`. 🌱 + "אין עסקים באזור זה עדיין" + "מכירה מישהי שתוכל להצטרף?" + כפתור "הוסיפי עסק +" → `/register/producer`. לא מוצג כש-`mapMoved` (שלא יתחרה עם ה-"חפשי באזור זה" button).
-  - **Globals.css** — הוספתי 4 כללים: `.mehamekor-marker-wrap` (שקוף — ה-divIcon שלנו מעצב את עצמו), `.mehamekor-tooltip` (שחור חם #1C1A17 על רקע קרם #F5F0E8), `.mehamekor-cluster`, ו-keyframe `slide-up` ל-mobile bottom sheet.
+  - **Globals.css** — הוספתי 4 כללים: `.mehamakor-marker-wrap` (שקוף — ה-divIcon שלנו מעצב את עצמו), `.mehamakor-tooltip` (שחור חם #1C1A17 על רקע קרם #F5F0E8), `.mehamakor-cluster`, ו-keyframe `slide-up` ל-mobile bottom sheet.
   - **30/30 pytest עדיין עוברים** — זה שינוי frontend-only.
   - **Rebuild required:** `leaflet.markercluster` dep חדש דורש `docker-compose build --no-cache frontend`.
 
@@ -404,8 +404,8 @@ For changes after 2026-04-08, see `git log` and the GitHub PR list.
 NEXT_PUBLIC_CLARITY_PROJECT_ID=xxxxxxxxxx
 NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 SENTRY_DSN=...          # server
-SENTRY_ORG=mehamekor
-SENTRY_PROJECT=mehamekor-frontend
+SENTRY_ORG=mehamakor
+SENTRY_PROJECT=mehamakor-frontend
 ```
 
 ## Premium design details (הוסף אפריל 2026 — PREMIUM_DESIGN)
@@ -547,7 +547,7 @@ SENTRY_PROJECT=mehamekor-frontend
 - **Honest caveat:** These are estimates based on what Lighthouse *would* check. The only way to get real numbers is to run Lighthouse against a deployed version (e.g. after Vercel deploy, run it from a local machine with working Chrome, or use Vercel's built-in Speed Insights). **Before launch — run real Lighthouse against the production domain and confirm scores > 85/90/85 targets.** Document actuals in this file.
 
 ### Still needed before actual launch (out of this scope)
-- Real Lighthouse run against `https://mehamekor.co.il` from a non-sandbox environment
+- Real Lighthouse run against `https://mehamakor.co.il` from a non-sandbox environment
 - User testing (5 consumers + 3 producers per LAUNCH_CHECKLIST)
 - Production `.env` with real `JWT_SECRET_KEY`, `CORS_ORIGINS`, Cloudinary/Twilio/OAuth credentials
 - Sentry DSN hooked up for error monitoring
@@ -560,7 +560,7 @@ SENTRY_PROJECT=mehamekor-frontend
 - **משומש ב-`HomeProductForm.jsx`** — שדה הרחוב. בחירת תוצאה ממלאת אוטומטית `street`, `zip_code`, `city`, ו-`neighborhood` מהאובייקט של OSM. אם המשתמשת כבר הקלידה ערך — לא נדרסת.
 - **CSP — `next.config.js`:** `connect-src` הורחב עם `https://nominatim.openstreetmap.org`. **אם תוסיפי שדה כתובת חדש בעמוד אחר**, האימייל הזה כבר מאושר ב-CSP, אין צורך לעדכן שוב.
 - **Fail-open:** אם הקריאה נכשלת (network/rate-limit/blocked), הקומפוננטה מתנהגת כ-input טקסט רגיל. המשתמשת עדיין יכולה להקליד ידנית. אין error toast — כי הכישלון לא חוסם.
-- **Usage policy של Nominatim:** מקסימום ~1 בקשה/שניה ממקור אחד. ה-debounce של 450ms + הסף של 3 תווים מספיקים ל-MVP. **לפרודקשן עם traffic גבוה** — proxy דרך ה-backend עם User-Agent שמזהה את `mehamekor.co.il` (דפדפנים לא מאפשרים set User-Agent ב-fetch ישיר). לא נעשה כי MVP-traffic ברור שמספיק.
+- **Usage policy של Nominatim:** מקסימום ~1 בקשה/שניה ממקור אחד. ה-debounce של 450ms + הסף של 3 תווים מספיקים ל-MVP. **לפרודקשן עם traffic גבוה** — proxy דרך ה-backend עם User-Agent שמזהה את `mehamakor.co.il` (דפדפנים לא מאפשרים set User-Agent ב-fetch ישיר). לא נעשה כי MVP-traffic ברור שמספיק.
 - **לא נגעתי ב-`CitySearch`** — היא משתמשת ברשימה סטטית של ~100 ערים ישראליות (`data/cities.js`), זה עדיין הפתרון הנכון לשדה city ב-`/register/producer` שצריך אוטוקומפליט מהיר ומבוקר. הרחבה של CitySearch ל-Nominatim היתה שוברת את ה-curated list.
 
 ## AI Q&A widget — `claude-haiku-4-5` (אפריל 2026)

@@ -40,7 +40,7 @@ function createCategoryMarker(producer, { active = false, hovered = false } = {}
   const iconOffset = active ? 22 : hovered ? 19 : 16;
 
   const html = `
-    <div class="mehamekor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""}"
+    <div class="mehamakor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""}"
          style="
            background: ${active ? color : "white"};
            color: ${active ? "white" : color};
@@ -61,7 +61,7 @@ function createCategoryMarker(producer, { active = false, hovered = false } = {}
 
   return L.divIcon({
     html,
-    className: "mehamekor-marker-wrap",
+    className: "mehamakor-marker-wrap",
     iconSize: [size, size],
     iconAnchor: [iconOffset, size],
     popupAnchor: [0, -size],
@@ -241,7 +241,7 @@ export default function MapComponent({
               font-size:13px;font-weight:600;border:2px solid #fff;
               box-shadow:0 2px 10px rgba(46,104,83,0.35);
             ">${count}</div>`,
-          className: "mehamekor-cluster",
+          className: "mehamakor-cluster",
           iconSize: [40, 40],
         });
       },
@@ -317,7 +317,7 @@ export default function MapComponent({
       marker.bindTooltip(p.name || "עסק", {
         direction: "top",
         offset: [0, -30],
-        className: "mehamekor-tooltip",
+        className: "mehamakor-tooltip",
       });
 
       marker.bindPopup(buildPopupHtml(p), {
