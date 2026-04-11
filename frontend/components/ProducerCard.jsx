@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Seal, Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { normalizePhone } from "@/lib/utils";
 
 function WhatsAppIcon({ className }) {
   return (
@@ -35,8 +36,10 @@ function InstagramIcon({ className }) {
 export default function ProducerCard({ producer, active, onClick, referrer }) {
   // FINAL_AUDIT: Cloudinary f_auto,q_auto — WebP/AVIF automatic delivery.
   const imgSrc = optimizeCloudinary(producer.images?.[0]);
-  const phone = producer.phone;
-  const whatsappNumber = phone ? phone.replace(/^0/, "972").replace(/[-\s]/g, "") : null;
+  // tasks_for_claude_code.md task 17: shared normalizer replaces the
+  // previous inline logic that had an order-of-operations bug on inputs
+  // with leading whitespace. See lib/utils.js.
+  const whatsappNumber = normalizePhone(producer.phone) || null;
   // feature/producer-analytics — append ?from={referrer} so the producer
   // dashboard's search_appearances metric can tell search-referred views
   // apart from direct / bookmark views. Callers: ProducersGrid on the

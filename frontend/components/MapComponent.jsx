@@ -8,6 +8,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Crosshair } from "@phosphor-icons/react";
 import { styleForProducer } from "@/lib/map-categories";
+import { normalizePhone } from "@/lib/utils";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -82,9 +83,10 @@ function buildPopupHtml(producer) {
   const href = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const photo = producer.images?.[0];
   const cat = producer.categories?.[0];
-  const phone = producer.phone
-    ? producer.phone.replace(/[-\s]/g, "").replace(/^0/, "972")
-    : null;
+  // tasks_for_claude_code.md task 17: shared normalizer replaces the
+  // previous inline logic that handled fewer edge cases (no parens, no
+  // dots, no E.164 input). See lib/utils.js.
+  const phone = normalizePhone(producer.phone) || null;
   const waUrl = phone
     ? `https://wa.me/${phone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name || ""}`)}`
     : null;
