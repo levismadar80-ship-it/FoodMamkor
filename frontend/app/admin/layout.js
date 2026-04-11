@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,6 +14,7 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
+import api from "@/lib/api";
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -39,10 +40,24 @@ export default function AdminLayout({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  // feature/producer-analytics: pending moderation badge on the sidebar —
+  // sums pending producers + open reports + flagged home products +
+  // pending experiences. Fetched from /admin/dashboard, which the admin
+  // home page already calls — but we call it here too so the badge shows
+  // on every /admin/* subpath. Cheap: the endpoint is fast.
+  const [pendingModCount, setPendingModCount] = useState(null);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) router.push("/login");
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    api
+      .get("/admin/dashboard")
+      .then((r) => setPendingModCount(r.data?.stats?.pending_moderation_count ?? 0))
+      .catch(() => setPendingModCount(null));
+  }, [user, pathname]);
 
   if (loading || !user || user.role !== "admin") {
     return (
@@ -69,6 +84,7 @@ export default function AdminLayout({ children }) {
           {NAV.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
+            const showBadge = n.href === "/admin" && pendingModCount > 0;
             return (
               <Link
                 key={n.href}
@@ -81,7 +97,16 @@ export default function AdminLayout({ children }) {
                 aria-current={active ? "page" : undefined}
               >
                 <Icon size={18} weight={active ? "fill" : "duotone"} />
-                <span>{n.label}</span>
+                <span className="flex-1">{n.label}</span>
+                {showBadge && (
+                  <span
+                    className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
+                    aria-label={`${pendingModCount} פריטים לאישור`}
+                    title={`${pendingModCount} פריטים ממתינים לאישור`}
+                  >
+                    {pendingModCount}
+                  </span>
+                )}
               </Link>
             );
           })}

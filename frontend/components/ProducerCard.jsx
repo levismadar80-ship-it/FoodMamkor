@@ -32,12 +32,18 @@ function InstagramIcon({ className }) {
   );
 }
 
-export default function ProducerCard({ producer, active, onClick }) {
+export default function ProducerCard({ producer, active, onClick, referrer }) {
   // FINAL_AUDIT: Cloudinary f_auto,q_auto — WebP/AVIF automatic delivery.
   const imgSrc = optimizeCloudinary(producer.images?.[0]);
   const phone = producer.phone;
   const whatsappNumber = phone ? phone.replace(/^0/, "972").replace(/[-\s]/g, "") : null;
-  const producerHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
+  // feature/producer-analytics — append ?from={referrer} so the producer
+  // dashboard's search_appearances metric can tell search-referred views
+  // apart from direct / bookmark views. Callers: ProducersGrid on the
+  // homepage passes "home"; /map passes "map"; the category pill filter
+  // passes "category". No referrer → direct/unknown view.
+  const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
+  const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
   const priceLabel = producer.price_range || producer.starting_price_label;
 

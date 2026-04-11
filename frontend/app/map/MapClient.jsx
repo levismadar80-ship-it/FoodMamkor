@@ -333,7 +333,7 @@ export default function MapPage() {
           >
             <X size={18} weight="bold" />
           </button>
-          <ProducerCard producer={selectedProducer} />
+          <ProducerCard producer={selectedProducer} referrer="search" />
         </div>
       )}
 
@@ -376,6 +376,7 @@ export default function MapPage() {
                 producer={p}
                 active={activeProducerId === p.id}
                 onClick={handleCardClick}
+                referrer="search"
               />
             </div>
           ))}

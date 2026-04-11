@@ -3,7 +3,7 @@ users management, content (categories + static pages), analytics, settings.
 
 Lives in a separate file from admin.py to keep things readable.
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -16,13 +16,17 @@ from app.database import get_db
 from app.models import (
     AdminSetting,
     Category,
+    Event,
+    Experience,
     Favorite,
     HomeProduct,
     Producer,
+    ProducerPageView,
     Report,
     StaticPage,
     User,
 )
+from app.services.analytics import server_health
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
@@ -417,15 +421,43 @@ def get_dashboard(
 ):
     """Single endpoint that returns everything the dashboard needs."""
     now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+
+    # feature/producer-analytics: pending moderation is the sum across
+    # four queues. Individual counts stay available for the alert cards.
+    pending_producers = db.query(func.count(Producer.id)).filter(Producer.status == "pending").scalar() or 0
+    open_reports = db.query(func.count(Report.id)).scalar() or 0
+    flagged_home_products = (
+        db.query(func.count(HomeProduct.id))
+        .filter(HomeProduct.moderation_status == "FLAGGED")
+        .scalar()
+        or 0
+    )
+    pending_experiences = (
+        db.query(func.count(Experience.id))
+        .filter(Experience.status.in_(["pending", "changes_requested"]))
+        .scalar()
+        or 0
+    )
+    pending_moderation_count = int(
+        pending_producers + open_reports + flagged_home_products + pending_experiences
+    )
 
     stats = {
         "total_producers": db.query(func.count(Producer.id)).scalar() or 0,
         "approved_producers": db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar() or 0,
-        "pending_producers": db.query(func.count(Producer.id)).filter(Producer.status == "pending").scalar() or 0,
+        "pending_producers": int(pending_producers),
+        "new_producers_this_week": db.query(func.count(Producer.id)).filter(Producer.created_at >= week_ago).scalar() or 0,
         "total_users": db.query(func.count(User.id)).scalar() or 0,
+        "new_users_this_week": db.query(func.count(User.id)).filter(User.created_at >= week_ago).scalar() or 0,
         "total_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_active.is_(True)).scalar() or 0,
         "hidden_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_hidden.is_(True)).scalar() or 0,
-        "open_reports": db.query(func.count(Report.id)).scalar() or 0,
+        "open_reports": int(open_reports),
+        "total_events": db.query(func.count(Event.id)).scalar() or 0,
+        "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
+        "flagged_home_products": int(flagged_home_products),
+        "pending_experiences": int(pending_experiences),
+        "pending_moderation_count": pending_moderation_count,
     }
 
     pending = (
@@ -477,10 +509,52 @@ def get_dashboard(
         .all()
     ]
 
+    # ---- feature/producer-analytics additions ----
+
+    # Daily active users over last 30 days (zero-filled).
+    # Source: users.last_active_at — updated by the tiny middleware in
+    # main.py on every authenticated request. Pre-existing users who
+    # haven't made a request since the column was added won't count
+    # until they touch the API.
+    today = date.today()
+    dau_cutoff = datetime.combine(today - timedelta(days=29), datetime.min.time())
+    dau_rows = (
+        db.query(
+            func.date(User.last_active_at).label("day"),
+            func.count(func.distinct(User.id)).label("count"),
+        )
+        .filter(User.last_active_at.isnot(None), User.last_active_at >= dau_cutoff)
+        .group_by(func.date(User.last_active_at))
+        .all()
+    )
+    by_day = {str(r.day): int(r.count) for r in dau_rows}
+    daily_active_users = []
+    for i in range(29, -1, -1):
+        d = today - timedelta(days=i)
+        daily_active_users.append({"date": d.isoformat(), "count": by_day.get(d.isoformat(), 0)})
+
+    # Top 10 cities across ALL producer page views (where city is set).
+    # Uses the same producer_page_views table as the per-producer dashboard.
+    top_city_rows = (
+        db.query(
+            ProducerPageView.city,
+            func.count(ProducerPageView.id).label("count"),
+        )
+        .filter(ProducerPageView.city.isnot(None))
+        .group_by(ProducerPageView.city)
+        .order_by(func.count(ProducerPageView.id).desc())
+        .limit(10)
+        .all()
+    )
+    top_cities = [{"city": r.city, "count": int(r.count)} for r in top_city_rows]
+
     return {
         "stats": stats,
         "pending_producers": pending_list,
         "recent_activity": recent_activity,
         "monthly_producers": months,
         "map_points": map_points,
+        "daily_active_users": daily_active_users,
+        "top_cities": top_cities,
+        "server_health": server_health(),
     }
