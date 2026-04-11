@@ -104,52 +104,20 @@ class ChatResponse(BaseModel):
 # ---------- Anthropic client (lazy, mirrors home_product_moderation) ----------
 
 _client = None
-# TEMPORARY DEBUG (chat-debug-init-failure): captures the most recent
-# exception that occurred while trying to construct the Anthropic
-# client. Surfaced via /chat/_status so a curl can read the error
-# without needing Railway log access. Remove together with /_status
-# once chat is verified working.
-_last_init_error: str | None = None
 
 
 def _get_client():
-    global _client, _last_init_error
+    global _client
     if _client is not None:
         return _client
     if not settings.anthropic_api_key:
-        _last_init_error = "settings.anthropic_api_key is empty"
         return None
-
-    # Step 1: import the package. Separated from constructor so we
-    # know which step failed if there's a problem.
     try:
         import anthropic
-        anthropic_version = getattr(anthropic, "__version__", "unknown")
-        logger.info("chat: anthropic module imported, version=%s", anthropic_version)
-    except Exception as e:
-        # logger.exception() includes the full traceback in the log,
-        # which is what we need to diagnose import-time failures (missing
-        # transitive dep, etc).
-        logger.exception("chat: anthropic IMPORT failed: %s: %s", type(e).__name__, e)
-        _last_init_error = f"import anthropic failed: {type(e).__name__}: {e}"
-        return None
-
-    # Step 2: construct the client. This is where the SDK validates
-    # its kwargs and inits the underlying httpx client.
-    try:
         _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        logger.info("chat: anthropic.Anthropic() constructor succeeded")
-        _last_init_error = None
         return _client
-    except Exception as e:
-        logger.exception(
-            "chat: anthropic.Anthropic() constructor failed: %s: %s",
-            type(e).__name__,
-            e,
-        )
-        _last_init_error = (
-            f"anthropic.Anthropic() constructor failed: {type(e).__name__}: {e}"
-        )
+    except Exception as e:  # pragma: no cover — defensive
+        logger.warning("anthropic client init failed for chat: %s", e)
         return None
 
 
@@ -204,47 +172,3 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
         reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
 
     return ChatResponse(reply=reply)
-
-
-# ---------- TEMPORARY DEBUG endpoint (chat-debug-init-failure) ----------
-#
-# REMOVE this `_status` endpoint once the chat widget is verified working
-# in production. It exists solely to make Anthropic client init state
-# queryable from a curl command, since reading Railway logs from outside
-# the dashboard is friction.
-#
-# Differs from the previous /_status (PR #25, removed in PR #26):
-#   - Calls _get_client() ON DEMAND so curl-ing /_status triggers init
-#     and surfaces the failure immediately, without needing to send a
-#     real chat message first.
-#   - Returns `last_init_error` — the most recent exception type +
-#     message captured by _get_client(). This is the smoking gun for
-#     "client init is failing silently" because it tells you what
-#     failed, not just that something did.
-#
-# Safety: returns booleans, a length, the standard `sk-ant-` non-secret
-# prefix, and an exception text. Does NOT leak the API key value. The
-# exception text MAY contain transitive details (e.g. file paths from a
-# traceback) but should not contain credentials.
-
-@router.get("/_status")
-def chat_status():
-    """TEMPORARY: report Anthropic client init state + last init error.
-
-    Calls _get_client() to trigger initialization on demand. Remove
-    once chat is verified working in production. See the block comment
-    above for the rationale and safety analysis.
-    """
-    # Trigger init on demand so curling /_status forces the failure
-    # path to run RIGHT NOW (instead of waiting for a real chat call).
-    client = _get_client()
-
-    key = settings.anthropic_api_key or ""
-    return {
-        "anthropic_api_key_loaded": bool(key),
-        "anthropic_api_key_length": len(key),
-        "anthropic_api_key_prefix": (key[:7] + "...") if key else None,
-        "client_initialized": client is not None,
-        "last_init_error": _last_init_error,
-        "chat_model": CHAT_MODEL,
-    }
