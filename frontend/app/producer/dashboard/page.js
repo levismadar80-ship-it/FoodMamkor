@@ -78,7 +78,7 @@ export default function ProducerDashboardPage() {
         שלום {user.name} 👋
       </h1>
       <p className="text-site-muted mb-8">
-        ברוכה הבאה לדשבורד של <span className="font-semibold">{producer.name}</span>
+        ברוכה הבאה לניהול העסק של <span className="font-semibold">{producer.name}</span>
       </p>
 
       {producer.status === "pending" && (

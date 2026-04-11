@@ -109,6 +109,31 @@
 
 ---
 
+## Registration forms — RTL + dashboard copy (tasks_for_claude_code.md PR 1 — tasks 1+2)
+
+RTL tests (Task 1) — verify on a mobile viewport (iOS Safari / Android Chrome), not only on desktop. The bug reproduces only on mobile.
+
+- [ ] `/register` — פתחי במובייל — שדה "שם מלא" מיישר ימין ונכתב מימין לשמאל
+- [ ] `/register` — שדה "אימייל" — עדיין LTR (תווים לטיניים, intentional)
+- [ ] `/register` — שדה "סיסמה" — עדיין LTR (intentional)
+- [ ] `/register` — שדה "עיר" (CitySearch) — RTL, placeholder "חפשי עיר..." מיושר ימין, התוצאות באוטוקומפליט RTL
+- [ ] `/register` — שדה "טלפון" — עדיין LTR (intentional)
+- [ ] `/register/producer` שלב 1 — שדה "שם מלא" — RTL
+- [ ] `/register/producer` שלב 2 — שדה "שם העסק" — RTL
+- [ ] `/register/producer` שלב 2 — textarea "תיאור העסק" — RTL
+- [ ] `/register/producer` שלב 2 — שדה "עיר" — RTL
+- [ ] `/register/producer` שלב 3 — שדות "עיר משלוח" ו-"יום משלוח" — RTL
+- [ ] `/register/producer` שלב 2 — "אינסטגרם" / "אתר" — עדיין LTR (intentional)
+
+Dashboard copy tests (Task 2):
+
+- [ ] `/producer/dashboard` — שלום משתמשת — הטקסט מתחת לכותרת קורא "ברוכה הבאה לניהול העסק של [שם העסק]" (לא "דשבורד")
+- [ ] `/producer/dashboard/events/new` — breadcrumb בראש הדף — הקישור הראשון קורא "ניהול העסק" (לא "דשבורד"), קליק מחזיר ל-`/producer/dashboard`
+- [ ] Footer — עמודת "בתי עסק" — הלינק השלישי קורא "ניהול העסק" (לא "דשבורד"), ה-`href` עדיין `/producer/dashboard`
+- [ ] `grep -rn 'דשבורד' frontend/` → אפס תוצאות (ניתן להריץ אוטומטית לפני merge)
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
