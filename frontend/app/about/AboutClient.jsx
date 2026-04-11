@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Leaf, Cow, House, Plant } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import ButtonSpinner from "@/components/ButtonSpinner";
 import ParallaxQuote from "@/components/ParallaxQuote";
 
 // Value cards use Phosphor icons (consistent rendering cross-platform).
@@ -359,7 +360,14 @@ export default function AboutPage() {
               disabled={contactStatus === "loading"}
               className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-medium w-full md:w-auto disabled:opacity-60"
             >
-              {contactStatus === "loading" ? "שולחת..." : "שלחי"}
+              {contactStatus === "loading" ? (
+                <span className="inline-flex items-center gap-2">
+                  <ButtonSpinner />
+                  שולחת...
+                </span>
+              ) : (
+                "שלחי"
+              )}
             </button>
 
             {contactMsg && (
