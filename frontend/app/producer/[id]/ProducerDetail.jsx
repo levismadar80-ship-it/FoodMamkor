@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -61,9 +62,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       : "";
 
   const primaryCategory = producer.categories?.[0];
-  const whatsappNumber = producer.phone
-    ? producer.phone.replace(/^0/, "972").replace(/[-\s]/g, "")
-    : null;
+  // tasks_for_claude_code.md task 17: shared normalizer replaces the
+  // previous inline logic that had an order-of-operations bug on inputs
+  // with leading whitespace. See lib/utils.js.
+  const whatsappNumber = normalizePhone(producer.phone) || null;
 
   const handleShowOnMap = () => {
     try {

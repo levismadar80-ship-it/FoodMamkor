@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { WhatsappLogo } from "@phosphor-icons/react";
+import { normalizePhone } from "@/lib/utils";
 
 /**
  * WhatsApp CTA for home-product cards + producer detail pages.
@@ -24,14 +25,14 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
 
   if (!phone) return null;
 
-  // Clean phone and convert Israeli local numbers to international format
-  let cleanPhone = phone.replace(/[^0-9+]/g, "");
-  if (cleanPhone.startsWith("0")) {
-    cleanPhone = "972" + cleanPhone.slice(1);
-  } else if (!cleanPhone.startsWith("+") && !cleanPhone.startsWith("972")) {
-    cleanPhone = "972" + cleanPhone;
-  }
-  cleanPhone = cleanPhone.replace(/^\+/, "");
+  // Shared normalizer — handles local (0...) + E.164 (+972...) + parens
+  // + dots + any other punctuation in one pass. See lib/utils.js for
+  // the full behavior contract and lib/utils.test.mjs for edge-case
+  // coverage. This replaces the inline-and-duplicated logic that used
+  // to live here (and in ProducerCard, ProducerDetail, and MapComponent).
+  const cleanPhone = normalizePhone(phone);
+  if (!cleanPhone) return null;
+
   const message = encodeURIComponent(
     `היי, ראיתי את "${productTitle}" במהמקור ואשמח לשמוע פרטים!`,
   );
