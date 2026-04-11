@@ -61,3 +61,17 @@
 - קהילות לפי אזור/שכונה
 - שיתוף עם מסעדות ושפים
 - הרחבה לחו"ל
+
+## Future AI Workflow Improvements
+
+### Marketing AI Agents (v3 — post-launch)
+When mehamekor has active producers and users, set up specialized marketing agents using coreyhaines31/marketingskills:
+- SEO Agent: optimize producer pages for local search ('אוכל בריא + עיר')
+- Content Agent: generate producer descriptions and category content
+- Growth Agent: referral programs, retention, churn prevention
+- Strategy Agent: competitive analysis vs other Israeli food platforms
+
+Reference: nocode.joshua TikTok — 7 Marketing AI Agents on autopilot
+Install when: site has 50+ producers and 200+ monthly users
+
+Do NOT implement now — this is a post-launch item.
