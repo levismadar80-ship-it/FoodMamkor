@@ -176,9 +176,9 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 <WhatsAppIcon className="w-5 h-5" />
               </a>
             )}
-            {phone && (
+            {producer.phone && (
               <a
-                href={`tel:${phone}`}
+                href={`tel:${producer.phone}`}
                 title="טלפון"
                 aria-label="התקשר לבית העסק"
                 onClick={(e) => e.stopPropagation()}
