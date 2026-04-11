@@ -4,12 +4,15 @@ These are used by the public site (hero social-proof bar, footer newsletter,
 about page contact form). All endpoints are anonymous — no auth required.
 """
 import logging
+import smtplib
+from email.mime.text import MIMEText
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models import Category, ContactMessage, DeliveryArea, NewsletterSubscriber, Producer
 from app.rate_limit import limiter
@@ -129,10 +132,52 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     db.add(msg)
     db.commit()
 
-    # In production this would send an email to the admin.
-    # For now we just log it so the admin can see it in server logs.
+    # Always log so the message is visible in Railway logs even if SMTP
+    # is unconfigured or fails.
     logger.info(
         "New contact message: name=%s email=%s", msg.name, msg.email
     )
 
+    # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
+    # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,
+    # so SMTP problems must never break the public form.
+    _send_contact_email(msg)
+
     return {"detail": "תודה! נחזור אליך בקרוב 🌿"}
+
+
+def _send_contact_email(msg: ContactMessage) -> None:
+    """Deliver a contact-form submission to the admin inbox via SMTP.
+
+    Fail-open: if SMTP is unconfigured or any exception is raised, we
+    log and swallow it. The submission is already persisted to
+    `contact_messages`, so the admin can always read it from the DB.
+    """
+    recipient = settings.contact_email or settings.admin_email
+    if not settings.smtp_user or not recipient:
+        logger.info(
+            "[CONTACT EMAIL] SMTP or recipient unconfigured — skipping send "
+            "(recipient=%r smtp_user_set=%s)",
+            recipient,
+            bool(settings.smtp_user),
+        )
+        return
+
+    try:
+        body = f"שם: {msg.name}\nאימייל: {msg.email}\n\n{msg.message}"
+        mime = MIMEText(body, "plain", "utf-8")
+        mime["Subject"] = f"מהמקור — פנייה חדשה מ-{msg.name}"
+        mime["From"] = settings.smtp_user
+        mime["To"] = recipient
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(mime)
+        logger.info("[CONTACT EMAIL] Sent to %s", recipient)
+    except Exception as exc:  # noqa: BLE001 — fail-open by design
+        logger.warning(
+            "[CONTACT EMAIL] Delivery failed (submission still persisted to "
+            "contact_messages): %s",
+            exc,
+        )
