@@ -106,17 +106,23 @@ export default function RegisterPage() {
               <p className="text-xs text-primary mt-1">✓ מספר תקין</p>
             )}
           </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={agreedToTerms}
               onChange={(e) => setAgreedToTerms(e.target.checked)}
-              className="w-4 h-4 accent-primary"
+              className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
               required
             />
-            <span>
-              קראתי ואישרתי את{" "}
-              <a href="/terms" target="_blank" className="text-primary hover:underline">תנאי השימוש</a>
+            <span className="leading-relaxed">
+              קראתי ואני מסכימ/ה{" "}
+              <a href="/terms" target="_blank" className="text-primary hover:underline">
+                לתנאי השימוש
+              </a>{" "}
+              ו
+              <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                למדיניות הפרטיות
+              </a>
             </span>
           </label>
           {error && <p className="text-red-500 text-sm">{error}</p>}

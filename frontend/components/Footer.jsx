@@ -12,7 +12,8 @@ import api from "@/lib/api";
  *   - לגלות:          דף הבית | מפה | אירועים | עסקים חדשים
  *   - קהילה:          אירועים | מהמטבח של השכן | אודות
  *   - בתי עסק:       הוסף עסק | כניסה | דשבורד
- *   - שקיפות ואמון:   תנאי שימוש | פרטיות | דווח
+ *   - שקיפות ואמון:   תנאי שימוש | פרטיות | נגישות | יצירת קשר
+ *                     (Israeli legal compliance — all four pages required)
  */
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -64,9 +65,10 @@ export default function Footer() {
     {
       title: "שקיפות ואמון",
       links: [
-        { href: "/terms", label: "תנאי השימוש שלנו" },
-        { href: "/terms#privacy", label: "מדיניות פרטיות" },
-        { href: "/about#contact", label: "משהו לא בסדר? דווחי לנו" },
+        { href: "/terms", label: "תנאי שימוש" },
+        { href: "/privacy", label: "מדיניות פרטיות" },
+        { href: "/accessibility", label: "הצהרת נגישות" },
+        { href: "/contact", label: "יצירת קשר" },
       ],
     },
   ];

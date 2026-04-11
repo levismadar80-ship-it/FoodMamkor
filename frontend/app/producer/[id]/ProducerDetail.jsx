@@ -13,6 +13,7 @@ import ShareButton from "@/components/ShareButton";
 import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerReviews from "@/components/ProducerReviews";
+import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -240,8 +241,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </section>
           )}
 
+          {/* Directory-only disclaimer — required by Israeli consumer
+              protection law. The seller bears legal responsibility for
+              products and licensing; the platform is just a directory. */}
+          <DirectoryDisclaimer className="mt-8" />
+
           {/* Report */}
-          <div className="mt-8 pt-6 border-t border-border">
+          <div className="mt-6 pt-6 border-t border-border">
             <ReportButton producerId={producer.id} />
           </div>
 

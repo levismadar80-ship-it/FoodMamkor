@@ -24,6 +24,7 @@ export default function RegisterProducerPage() {
   });
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [declaredLicenses, setDeclaredLicenses] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploading, setUploading] = useState(false);
 
@@ -278,18 +279,45 @@ export default function RegisterProducerPage() {
               + הוסף אזור משלוח
             </button>
 
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-4 h-4 accent-primary"
-              />
-              <span>
-                קראתי ואישרתי את{" "}
-                <a href="/terms" target="_blank" className="text-primary hover:underline">תנאי השימוש</a>
-              </span>
-            </label>
+            {/* Legal compliance — Israeli law requires explicit license
+                declaration and explicit ToS/privacy consent before a producer
+                can be listed. Both checkboxes required to enable submit. */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={declaredLicenses}
+                  onChange={(e) => setDeclaredLicenses(e.target.checked)}
+                  className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  אני מצהיר/ה שיש ברשותי את כל הרישיונות הנדרשים לממכר מזון לפי
+                  חוק רישוי עסקים, התשכ״ח–1968, וכי אני נושא/ת באחריות הבלעדית
+                  לציות לחוק.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                  required
+                />
+                <span className="leading-relaxed">
+                  קראתי ואני מסכימ/ה{" "}
+                  <a href="/terms" target="_blank" className="text-primary hover:underline">
+                    לתנאי השימוש
+                  </a>{" "}
+                  ו
+                  <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                    למדיניות הפרטיות
+                  </a>
+                </span>
+              </label>
+            </div>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -297,7 +325,7 @@ export default function RegisterProducerPage() {
               <button onClick={() => setStep(2)} className="text-text-secondary">← חזור</button>
               <button
                 onClick={handleSubmit}
-                disabled={loading || !agreedToTerms}
+                disabled={loading || !agreedToTerms || !declaredLicenses}
                 className="flex-1 bg-secondary text-white py-3 rounded-[12px] hover:bg-secondary-light transition font-medium disabled:opacity-50"
               >
                 {loading ? "שולח..." : "שלח בקשה"}
