@@ -119,24 +119,24 @@ export default function Header() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-background border-t border-border px-4 py-3 space-y-3">
-          <Link href="/" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+        <div className="md:hidden bg-background border-t border-border px-4 py-2 space-y-1">
+          <Link href="/" className="block text-site-muted py-2" onClick={() => setMenuOpen(false)}>
             {t("nav_discover")}
           </Link>
-          <Link href="/map" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+          <Link href="/map" className="block text-site-muted py-2" onClick={() => setMenuOpen(false)}>
             {t("nav_map")}
           </Link>
-          <Link href="/events" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+          <Link href="/events" className="block text-site-muted py-2" onClick={() => setMenuOpen(false)}>
             {t("nav_events")}
           </Link>
-          <Link href="/neighbor" className="flex items-center gap-1 text-site-muted" onClick={() => setMenuOpen(false)}>
+          <Link href="/neighbor" className="flex items-center gap-1 text-site-muted py-2" onClick={() => setMenuOpen(false)}>
             {t("nav_neighbor")}
             <House size={16} weight="duotone" aria-hidden="true" />
           </Link>
-          <Link href="/about" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+          <Link href="/about" className="block text-site-muted py-2" onClick={() => setMenuOpen(false)}>
             {t("nav_about")}
           </Link>
-          <Link href="/register/producer" className="block text-primary font-semibold" onClick={() => setMenuOpen(false)}>
+          <Link href="/register/producer" className="block text-primary font-semibold py-2" onClick={() => setMenuOpen(false)}>
             {t("nav_add_business")}
           </Link>
           {/* Mobile language toggle */}
@@ -151,21 +151,21 @@ export default function Header() {
           </button>
           {user ? (
             <>
-              <Link href="/favorites" className="flex items-center gap-1 text-site-muted" onClick={() => setMenuOpen(false)}>
+              <Link href="/favorites" className="flex items-center gap-1 text-site-muted py-2" onClick={() => setMenuOpen(false)}>
                 <Heart size={16} weight="duotone" aria-hidden="true" />
                 {t("nav_favorites")}
               </Link>
               {user.role === "admin" && (
-                <Link href="/admin" className="block text-secondary" onClick={() => setMenuOpen(false)}>
+                <Link href="/admin" className="block text-secondary py-2" onClick={() => setMenuOpen(false)}>
                   {t("nav_admin")}
                 </Link>
               )}
-              <button onClick={() => { logout(); setMenuOpen(false); }} className="block text-red-500">
+              <button onClick={() => { logout(); setMenuOpen(false); }} className="block text-red-500 py-2">
                 {t("nav_logout")}
               </button>
             </>
           ) : (
-            <Link href="/login" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
+            <Link href="/login" className="block text-site-muted py-2" onClick={() => setMenuOpen(false)}>
               {t("nav_login")}
             </Link>
           )}

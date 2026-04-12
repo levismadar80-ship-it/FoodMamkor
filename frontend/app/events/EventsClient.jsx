@@ -201,7 +201,7 @@ export default function EventsPage() {
               <button
                 key={cat.key || "all"}
                 onClick={() => setCategory(cat.key)}
-                className={`px-3 py-1 rounded-full text-sm transition ${
+                className={`px-3 py-2 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
                     : "bg-white text-site-text border border-border hover:bg-light"

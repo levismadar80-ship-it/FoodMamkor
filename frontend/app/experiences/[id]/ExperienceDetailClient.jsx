@@ -185,20 +185,20 @@ export default function ExperienceDetailClient() {
         )}
 
         {isApproved && ex.spots_left !== 0 && (
-          <div className="flex flex-wrap gap-3 mt-6">
+          <div className="flex flex-col md:flex-row flex-wrap gap-3 mt-6">
             <a
               href={`https://wa.me/?text=${encodeURIComponent(
                 `היי! אני רוצה להירשם ל-"${ex.title}"`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
+              className="w-full md:w-auto text-center bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
               פני למארחת ב-WhatsApp
             </a>
             <Link
               href="/experiences"
-              className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
+              className="w-full md:w-auto text-center border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
             >
               ← כל החוויות
             </Link>

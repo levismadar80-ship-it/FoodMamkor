@@ -543,6 +543,50 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Comprehensive mobile layout audit (feature/comprehensive-mobile-audit)
+
+### WCAG touch targets (all buttons ≥ 44px)
+- [ ] ProducerCard "מידע נוסף" button — tap with finger on mobile, should be comfortable (was 36px, now 44px)
+- [ ] `/events` category filter pills — height should be comfortable to tap (py-2, not py-1)
+- [ ] `/experiences` category filter pills — same as events
+- [ ] `/map` legend category buttons — comfortable tap targets (py-2)
+- [ ] `/login` password eye toggle — tap area should be ≥ 44px (was ~28px with p-1, now p-2)
+- [ ] `/register` password eye toggle — same fix
+- [ ] `/register/producer` category selection buttons — comfortable tap (py-2, was py-1)
+- [ ] `/settings` "מחק חשבון" button — comfortable tap (py-3, was py-2)
+- [ ] `/settings` delete dialog Cancel/Delete buttons — comfortable tap (py-3), stack vertically on mobile
+- [ ] FavoriteButton default size — comfortable tap (p-2, was p-1)
+- [ ] Header mobile menu links — each link has py-2 for comfortable tap area
+
+### Layout fixes
+- [ ] `/producer/:id` delivery areas table — horizontal scroll on narrow mobile (overflow-x-auto), not clipped
+- [ ] `/producer/:id` h1 producer name — readable on mobile (text-2xl, not text-4xl)
+- [ ] `/register/producer` step 3 delivery grid — stacks vertically on mobile (1 column), 3 columns on desktop
+- [ ] `/events/:id` action buttons — full-width on mobile, inline on desktop
+- [ ] `/experiences/:id` action buttons — full-width on mobile, inline on desktop
+
+### Mobile padding/sizing
+- [ ] `/producer/:id` sidebar — comfortable padding (p-4 on mobile, p-6 on desktop)
+- [ ] `/producer/:id` Favorites + Share buttons — same height, same border treatment, both full-width in row
+- [ ] `/producer/:id` "הצג במפה" button — same height as other sidebar buttons (py-3)
+- [ ] `/login` card — not too padded on mobile (p-5, not p-8)
+- [ ] `/register` card — same comfortable padding (p-5 on mobile)
+- [ ] `/register` inputs — match `/login` input sizing (px-4 py-3, not px-3 py-2)
+- [ ] `/register/producer` card + inputs — same sizing improvements
+- [ ] Map bottom-sheet close button — comfortable tap area (p-2.5)
+
+### Desktop regression checks
+- [ ] `/producer/:id` desktop (> 1024px) — sidebar still sticky 320px card, all buttons look correct
+- [ ] ProducerCard on homepage desktop — "מידע נוסף" button didn't get too tall
+- [ ] `/events` desktop — category pills still look like pills (not oversized)
+- [ ] `/login` desktop — card still centered, password eye toggle still aligns
+- [ ] `/register/producer` step 3 desktop — delivery grid still 3 columns
+- [ ] FavoriteButton on `/favorites` page — uses default compact style (p-2)
+- [ ] ShareButton in ProducerCard — still compact inline style
+- [ ] Header desktop nav — completely unchanged
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.

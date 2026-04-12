@@ -3,7 +3,7 @@
 import { showToast } from "@/lib/toast";
 import { Link as LinkIcon } from "@phosphor-icons/react";
 
-export default function ShareButton({ url, title }) {
+export default function ShareButton({ url, title, className, labelClassName }) {
   const handleShare = async () => {
     if (!url) return;
     // Try native share first (mobile)
@@ -36,12 +36,15 @@ export default function ShareButton({ url, title }) {
   return (
     <button
       onClick={handleShare}
-      className="inline-flex items-center gap-2 bg-white border border-border px-3 py-2 rounded-[8px] hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+      className={
+        className ||
+        "inline-flex items-center gap-2 bg-white border border-border px-3 py-2 rounded-[8px] hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+      }
       title="שתף לינק"
       aria-label="שתף לינק לעסק"
     >
       <LinkIcon size={16} weight="duotone" aria-hidden="true" />
-      <span className="hidden sm:inline">שתף</span>
+      <span className={labelClassName || "hidden sm:inline"}>שתף</span>
     </button>
   );
 }

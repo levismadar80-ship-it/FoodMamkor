@@ -90,7 +90,7 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
-      <div className="bg-white rounded-[12px] p-8">
+      <div className="bg-white rounded-[12px] p-5 md:p-8">
         <h1 className="font-headline text-3xl font-bold mb-6 text-center">הצטרפי לקהילה</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,7 +102,7 @@ export default function RegisterPage() {
               onBlur={() => setNameTouched(true)}
               required
               aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 text-right transition ${
+              className={`w-full border rounded-[12px] px-4 py-3 text-right transition ${
                 nameInvalid
                   ? "border-red-400"
                   : nameValid
@@ -127,7 +127,7 @@ export default function RegisterPage() {
               onBlur={() => setEmailTouched(true)}
               required
               aria-invalid={emailInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 transition ${
+              className={`w-full border rounded-[12px] px-4 py-3 transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                 required
                 minLength={8}
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[12px] pl-11 pr-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                className={`w-full border rounded-[12px] pl-11 pr-4 py-3 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                   passwordInvalid
                     ? "border-red-400"
                     : passwordValidLength
@@ -167,7 +167,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-2"
                 aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
                 aria-pressed={showPassword}
                 tabIndex={0}

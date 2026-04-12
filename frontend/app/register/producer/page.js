@@ -76,7 +76,7 @@ export default function RegisterProducerPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <div className="bg-white rounded-[12px] p-8">
+      <div className="bg-white rounded-[12px] p-5 md:p-8">
         <h1 className="text-2xl font-bold mb-2 text-center">הוסף את העסק שלך</h1>
         <p className="text-text-secondary text-center mb-8">הצטרפו למהמקור והגיעו לקונים שמחפשים אוכל אמיתי</p>
 
@@ -91,10 +91,10 @@ export default function RegisterProducerPage() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">1. פרטי חשבון</h2>
-            <input placeholder="שם מלא *" value={form.name} onChange={set("name")} className="w-full border rounded-[12px] px-3 py-2 text-right" dir="rtl" />
-            <input type="email" placeholder="אימייל *" value={form.email} onChange={set("email")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+            <input placeholder="שם מלא *" value={form.name} onChange={set("name")} className="w-full border rounded-[12px] px-4 py-3 text-right" dir="rtl" />
+            <input type="email" placeholder="אימייל *" value={form.email} onChange={set("email")} className="w-full border rounded-[12px] px-4 py-3" dir="ltr" />
             <div>
-              <input type="password" placeholder="סיסמה *" value={form.password} onChange={set("password")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" minLength={8} />
+              <input type="password" placeholder="סיסמה *" value={form.password} onChange={set("password")} className="w-full border rounded-[12px] px-4 py-3" dir="ltr" minLength={8} />
               <PasswordStrength password={form.password} />
             </div>
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
@@ -126,8 +126,8 @@ export default function RegisterProducerPage() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
-            <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] px-3 py-2 text-right" dir="rtl" />
-            <textarea placeholder="תיאור העסק" value={form.description} onChange={set("description")} className="w-full border rounded-[12px] px-3 py-2 resize-none h-24 text-right" dir="rtl" />
+            <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] px-4 py-3 text-right" dir="rtl" />
+            <textarea placeholder="תיאור העסק" value={form.description} onChange={set("description")} className="w-full border rounded-[12px] px-4 py-3 resize-none h-24 text-right" dir="rtl" />
             <CitySearch
               id="producer-register-city"
               label="עיר"
@@ -140,7 +140,7 @@ export default function RegisterProducerPage() {
                 placeholder="טלפון (0501234567)"
                 value={form.phone}
                 onChange={set("phone")}
-                className={`w-full border rounded-[12px] px-3 py-2 ${
+                className={`w-full border rounded-[12px] px-4 py-3 ${
                   form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
                 }`}
                 dir="ltr"
@@ -153,8 +153,8 @@ export default function RegisterProducerPage() {
                 <p className="text-xs text-primary mt-1">✓ מספר תקין</p>
               )}
             </div>
-            <input placeholder="אינסטגרם" value={form.instagram} onChange={set("instagram")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
-            <input placeholder="אתר" value={form.website} onChange={set("website")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+            <input placeholder="אינסטגרם" value={form.instagram} onChange={set("instagram")} className="w-full border rounded-[12px] px-4 py-3" dir="ltr" />
+            <input placeholder="אתר" value={form.website} onChange={set("website")} className="w-full border rounded-[12px] px-4 py-3" dir="ltr" />
 
             <div>
               <p className="font-medium mb-2">קטגוריות</p>
@@ -164,7 +164,7 @@ export default function RegisterProducerPage() {
                     key={cat.id}
                     type="button"
                     onClick={() => toggleCategory(cat.id)}
-                    className={`px-3 py-1 rounded-full text-sm transition ${
+                    className={`px-4 py-2 rounded-full text-sm transition ${
                       form.category_ids.includes(cat.id) ? "bg-primary text-white" : "bg-gray-100 text-text-secondary"
                     }`}
                   >
@@ -253,7 +253,7 @@ export default function RegisterProducerPage() {
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">3. אזורי משלוח</h2>
             {form.delivery_areas.map((da, i) => (
-              <div key={i} className="grid grid-cols-3 gap-3">
+              <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <CitySearch
                   id={`delivery-city-${i}`}
                   label="עיר משלוח"
@@ -266,13 +266,13 @@ export default function RegisterProducerPage() {
                   type="number"
                   value={da.min_order}
                   onChange={(e) => updateDelivery(i, "min_order", e.target.value)}
-                  className="border rounded-[12px] px-3 py-2"
+                  className="border rounded-[12px] px-4 py-3"
                 />
                 <input
                   placeholder="יום משלוח"
                   value={da.delivery_day}
                   onChange={(e) => updateDelivery(i, "delivery_day", e.target.value)}
-                  className="border rounded-[12px] px-3 py-2 text-right"
+                  className="border rounded-[12px] px-4 py-3 text-right"
                   dir="rtl"
                 />
               </div>

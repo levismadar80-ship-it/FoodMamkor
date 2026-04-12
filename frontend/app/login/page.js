@@ -72,7 +72,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
+      <div className="bg-white rounded-[20px] p-5 sm:p-8 md:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
         {/* Brand mark + heading */}
         <div className="mb-6">
           <div
@@ -151,7 +151,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-2"
                 aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
                 aria-pressed={showPassword}
                 tabIndex={0}

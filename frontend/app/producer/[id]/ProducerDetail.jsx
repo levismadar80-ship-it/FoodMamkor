@@ -130,7 +130,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <div>
           {/* Header: name + trust badges */}
           <div className="flex items-center flex-wrap gap-2 mb-2">
-            <h1 className="font-headline text-4xl font-bold text-site-text">
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-site-text">
               {producer.name}
             </h1>
             {producer.is_verified && (
@@ -227,8 +227,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
                 אזורי משלוח
               </h2>
-              <div className="bg-white rounded-[12px] overflow-hidden border border-border">
-                <table className="w-full">
+              <div className="bg-white rounded-[12px] overflow-hidden border border-border overflow-x-auto">
+                <table className="w-full min-w-[400px]">
                   <thead className="bg-light">
                     <tr>
                       <th className="text-right px-4 py-3 text-sm font-medium text-primary">
@@ -274,7 +274,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
         {/* ================= Sticky contact sidebar ================= */}
         <aside className="order-first lg:order-last">
-          <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
+          <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-4 md:p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
             <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
 
             {/* WhatsApp — primary CTA */}
@@ -350,13 +350,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <FollowButton producerId={producer.id} />
             </div>
 
-            {/* Favorites + Share row */}
+            {/* Favorites + Share row — both buttons full-width with matching
+                height. FavoriteButton and ShareButton accept className props
+                so we can override their default compact styling here. */}
             <div className="flex gap-2 mb-3">
-              <div className="flex-1 flex justify-center border border-border rounded-[10px] py-2 hover:bg-light transition">
-                <FavoriteButton producerId={producer.id} />
+              <div className="flex-1">
+                <FavoriteButton
+                  producerId={producer.id}
+                  className="w-full flex items-center justify-center gap-2 border border-border rounded-[10px] py-3 hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                />
               </div>
               <div className="flex-1">
-                <ShareButton url={shareUrl} title={producer.name} />
+                <ShareButton
+                  url={shareUrl}
+                  title={producer.name}
+                  className="w-full flex items-center justify-center gap-2 border border-border rounded-[10px] py-3 hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                  labelClassName=""
+                />
               </div>
             </div>
 
@@ -370,7 +380,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <button
                 type="button"
                 onClick={handleShowOnMap}
-                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-3 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label="פתח את המיקום של העסק במפה"
               >
                 <MapTrifold size={16} weight="duotone" />

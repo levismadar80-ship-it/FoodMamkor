@@ -112,27 +112,27 @@ export default function EventDetailPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col md:flex-row flex-wrap gap-3">
           {event.registration_url ? (
             <a
               href={event.registration_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
+              className="w-full md:w-auto text-center bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
               להרשמה →
             </a>
           ) : (
             <Link
               href={`/producer/${event.producer_id}`}
-              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
+              className="w-full md:w-auto text-center bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
               צור קשר עם בית העסק
             </Link>
           )}
           <Link
             href="/events"
-            className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
+            className="w-full md:w-auto text-center border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
           >
             ← כל האירועים
           </Link>

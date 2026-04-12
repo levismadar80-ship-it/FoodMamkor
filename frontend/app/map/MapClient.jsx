@@ -307,7 +307,7 @@ export default function MapPage() {
                 key={cat.name}
                 type="button"
                 onClick={() => toggleCategory(cat.name)}
-                className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${
+                className={`w-full flex items-center gap-2 px-1.5 py-2 rounded-md text-right transition ${
                   active ? "opacity-100" : "opacity-40"
                 } hover:bg-light`}
                 aria-pressed={active}
@@ -377,7 +377,7 @@ export default function MapPage() {
           <button
             type="button"
             onClick={() => setSelectedProducer(null)}
-            className="absolute top-3 left-3 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="absolute top-3 left-3 p-2.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="סגור"
           >
             <X size={18} weight="bold" />

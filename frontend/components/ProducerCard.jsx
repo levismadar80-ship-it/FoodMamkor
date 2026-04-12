@@ -212,7 +212,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
             <Link
               href={producerHref}
               className="border border-primary text-primary text-[13px] hover:bg-primary hover:text-white transition"
-              style={{ borderRadius: "8px", padding: "6px 14px" }}
+              style={{ borderRadius: "8px", padding: "10px 14px" }}
             >
               מידע נוסף
             </Link>

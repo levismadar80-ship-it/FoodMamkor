@@ -46,7 +46,7 @@ export default function SettingsPage() {
         </p>
         <button
           onClick={() => setShowDeleteDialog(true)}
-          className="bg-red-600 text-white px-6 py-2 rounded-[12px] hover:bg-red-700 transition text-sm"
+          className="bg-red-600 text-white px-6 py-3 rounded-[12px] hover:bg-red-700 transition text-sm"
         >
           מחק חשבון
         </button>
@@ -70,17 +70,17 @@ export default function SettingsPage() {
               placeholder="הקלד מחק"
               className="w-full border rounded-[12px] px-3 py-2 mb-4"
             />
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse md:flex-row gap-3">
               <button
                 onClick={() => { setShowDeleteDialog(false); setConfirmText(""); }}
-                className="flex-1 bg-gray-100 py-2 rounded-[12px] hover:bg-gray-200 transition text-sm"
+                className="flex-1 bg-gray-100 py-3 rounded-[12px] hover:bg-gray-200 transition text-sm"
               >
                 ביטול
               </button>
               <button
                 onClick={handleDelete}
                 disabled={confirmText !== "מחק" || deleting}
-                className="flex-1 bg-red-600 text-white py-2 rounded-[12px] hover:bg-red-700 transition text-sm disabled:opacity-50"
+                className="flex-1 bg-red-600 text-white py-3 rounded-[12px] hover:bg-red-700 transition text-sm disabled:opacity-50"
               >
                 {deleting ? "מוחק..." : "מחק לצמיתות"}
               </button>
