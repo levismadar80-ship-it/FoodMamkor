@@ -430,6 +430,29 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## /neighbor empty state (task 10)
+
+### City-filtered empty state
+- [ ] `/neighbor` — select a city with no products (e.g. an obscure city) — empty state appears
+- [ ] Large emoji: **🏡** (house with garden) in a round `bg-light` container
+- [ ] Heading: **"אין מוצרים באזור הזה עדיין 🌱"** (exact text)
+- [ ] Subtext (logged in): **"היי את הראשונה לפרסם מוצר בית!"** (exact text)
+- [ ] CTA button (logged in): **"פרסמי מוצר +"** — click opens the product form
+- [ ] Subtext (logged out): **"התחברי כדי לפרסם מוצר משלך."**
+- [ ] CTA button hidden when logged out
+
+### General empty state (no city filter)
+- [ ] `/neighbor` with no products at all — heading: **"אין עדיין מוצרים ביתיים 🌱"**
+- [ ] Same emoji, subtext, and CTA behavior as above
+
+### Regression checks
+- [ ] `/neighbor` with products — grid renders normally, no empty state shown
+- [ ] "הצגי הכל" button still clears city filter
+- [ ] Mobile floating CTA button still works
+- [ ] Disclaimer banner still visible above the grid
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
