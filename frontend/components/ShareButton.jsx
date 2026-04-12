@@ -1,7 +1,7 @@
 "use client";
 
 import { showToast } from "@/lib/toast";
-import { Link as LinkIcon } from "@phosphor-icons/react";
+import { ShareNetwork } from "@phosphor-icons/react";
 
 export default function ShareButton({ url, title }) {
   const handleShare = async () => {
@@ -17,7 +17,7 @@ export default function ShareButton({ url, title }) {
     }
     try {
       await navigator.clipboard.writeText(url);
-      showToast("הועתק לקליפבורד 🔗");
+      showToast("הקישור הועתק ✓");
     } catch {
       // last-resort fallback
       const ta = document.createElement("textarea");
@@ -26,7 +26,7 @@ export default function ShareButton({ url, title }) {
       ta.select();
       try {
         document.execCommand("copy");
-        showToast("הועתק לקליפבורד 🔗");
+        showToast("הקישור הועתק ✓");
       } finally {
         document.body.removeChild(ta);
       }
@@ -40,7 +40,7 @@ export default function ShareButton({ url, title }) {
       title="שתף לינק"
       aria-label="שתף לינק לעסק"
     >
-      <LinkIcon size={16} weight="duotone" aria-hidden="true" />
+      <ShareNetwork size={16} weight="duotone" aria-hidden="true" />
       <span className="hidden sm:inline">שתף</span>
     </button>
   );
