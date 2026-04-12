@@ -65,6 +65,22 @@
     - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
 12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.** These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
 
+## Regression prevention rules
+1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
+2. **Verify key components after refactor.** After any refactor PR: verify that ProducerCard, Header, and BottomNav still import and render cleanly (no undefined variables, no missing props).
+3. **One PR = one change.** One PR = one logical change. Never bundle a refactor with a feature, or a docs change with a code change.
+4. **Mobile preview before approving UI changes.** Before approving any PR that changes visible UI: open the Vercel preview URL on mobile and check the pages most affected by the change.
+
+## PR approval guide
+
+| PR type | What to check | Testing needed? |
+|---|---|---|
+| docs-only (CHANGELOG, ROADMAP, CLAUDE.md) | Read the diff | None |
+| infra-only (.github, settings.json, .gitignore) | Read the diff | None |
+| UI change | Test Vercel preview on mobile | Yes |
+| Backend change | Test the affected API endpoint | Yes |
+| Hotfix | Test only the broken thing | Minimal |
+
 ## Documentation map
 | File | What's in it |
 |---|---|
@@ -82,7 +98,7 @@
 | [docs/archive/](./docs/archive/) | Implemented session specs (FINAL_AUDIT, MAP_IMPROVEMENTS, PREMIUM_DESIGN, etc.) — historical, do not edit |
 
 ## How to update this file
-- Keep it ≤ 150 lines (raised from 100 in April 2026 when the inline `## Architecture Diagrams` section was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
+- Keep it ≤ 175 lines (raised from 150 in April 2026 when regression prevention rules + PR approval guide were added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
 
 ## Architecture Diagrams
