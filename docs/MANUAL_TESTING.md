@@ -430,6 +430,34 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## "קרוב אלי" geolocation button on homepage (task 11)
+
+### Button appearance
+- [ ] Homepage hero section — below the search bar there's a **"קרוב אלי"** button with a Crosshair icon
+- [ ] Button styled as a frosted-glass pill (semi-transparent white with backdrop blur)
+- [ ] Button fades in with the rest of the hero content (Framer Motion stagger)
+
+### Geolocation flow — permission granted
+- [ ] Click "קרוב אלי" → browser asks for location permission
+- [ ] While waiting: button shows **"מחפשת..."** with a spinning Crosshair icon + disabled state
+- [ ] On success: page scrolls to the producer grid, which now shows only nearby producers (radius 15km)
+- [ ] Network tab: `GET /producers?lat=...&lng=...&radius_km=15` fires
+
+### Geolocation flow — permission denied
+- [ ] Click "קרוב אלי" → deny the browser permission prompt
+- [ ] Toast appears: **"אפשרי גישה למיקום בהגדרות הדפדפן"**
+- [ ] Button returns to normal state (not stuck on "מחפשת...")
+
+### Geolocation unavailable
+- [ ] In a browser/context without geolocation API — same toast message appears
+
+### Regression checks
+- [ ] Search bar still works (type a city → Enter → producers filtered)
+- [ ] Category card clicks still filter the grid
+- [ ] "הצגי עוד" load-more button still works after geolocation filter
+
+---
+
 ## /neighbor empty state (task 10)
 
 ### City-filtered empty state
