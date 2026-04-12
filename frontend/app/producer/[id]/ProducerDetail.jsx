@@ -300,7 +300,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     }
                   }
                 }}
-                className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-2.5 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
+                className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-3 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
               >
                 <WhatsappLogo size={20} weight="fill" />
                 שלחי הודעה
@@ -311,7 +311,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {producer.phone && (
               <a
                 href={`tel:${producer.phone}`}
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-2.5"
+                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-3"
                 dir="ltr"
               >
                 <Phone size={18} weight="duotone" className="text-primary shrink-0" />
@@ -325,7 +325,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 href={`https://instagram.com/${producer.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-2.5"
+                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-3"
               >
                 <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
                 @{producer.instagram}
@@ -338,7 +338,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-4"
+                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-3"
               >
                 <Globe size={18} weight="duotone" className="text-primary shrink-0" />
                 אתר

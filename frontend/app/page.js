@@ -369,14 +369,14 @@ export default function HomePage() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               onClick={() => handleCategoryCardClick(card)}
-              className="group relative overflow-hidden cursor-pointer text-right"
               style={{
-                height: "280px",
+                height: undefined,
                 borderRadius: "16px",
                 backgroundImage: `url(${card.image})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
+              className="group relative overflow-hidden cursor-pointer text-right h-[160px] md:h-[280px]"
               aria-label={`הצג קטגוריה: ${card.name}`}
             >
               {/* Zooming bg layer — use transform on a pseudo-ish wrapper by scaling the button via group-hover */}

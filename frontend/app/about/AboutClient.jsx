@@ -109,7 +109,7 @@ export default function AboutPage() {
         <h2 className="font-headline text-4xl font-bold mb-8 text-center text-site-text">
           הסיפור שלנו
         </h2>
-        <div className="bg-white rounded-[16px] p-8 md:p-10 shadow-sm leading-loose text-lg text-site-text/85 border border-border space-y-5">
+        <div className="bg-white rounded-[16px] p-5 md:p-8 lg:p-10 shadow-sm leading-loose text-lg text-site-text/85 border border-border space-y-5">
           <p>
             מהמקור נולדה מתוך צורך אמיתי — למצוא אוכל אמיתי, לא מעובד.
             בשר מחקלאים, גבינות אמיתיות, לחם מחמצת שמישהו הכין בבית,
@@ -192,7 +192,7 @@ export default function AboutPage() {
           ================================================ */}
       <section className="bg-primary text-white section-y">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             {/* Mission */}
             <div className="text-center">
               <div className="mb-6 flex justify-center">
@@ -264,10 +264,11 @@ export default function AboutPage() {
                 TODO: replace with real photo */}
             <div className="flex justify-center md:justify-start order-1">
               <div
-                className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-full bg-light flex items-center justify-center border-4 border-primary/10 overflow-hidden shadow-[0_8px_32px_rgba(46,104,83,0.12)]"
+                className="w-[200px] h-[200px] md:w-[280px] md:h-[280px] lg:w-[360px] lg:h-[360px] rounded-full bg-light flex items-center justify-center border-4 border-primary/10 overflow-hidden shadow-[0_8px_32px_rgba(46,104,83,0.12)]"
                 aria-label="תמונה של ספיר (placeholder)"
               >
-                <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
+                <Leaf size={80} weight="duotone" className="text-primary md:hidden" aria-hidden="true" />
+                <Leaf size={120} weight="duotone" className="text-primary hidden md:block" aria-hidden="true" />
               </div>
             </div>
             {/* Text — left in RTL */}

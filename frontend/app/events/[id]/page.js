@@ -57,7 +57,7 @@ export default function EventDetailPage() {
     <div>
       {event.image_url && (
         <div
-          className="h-[360px] bg-cover bg-center"
+          className="h-[200px] md:h-[360px] bg-cover bg-center"
           style={{ backgroundImage: `url(${event.image_url})` }}
           role="img"
           aria-label={event.title}

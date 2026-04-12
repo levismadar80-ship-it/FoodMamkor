@@ -225,8 +225,8 @@ export default function RegisterProducerPage() {
             </p>
 
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
-            <div className="flex gap-3">
-              <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">← חזור</button>
+            <div className="flex gap-3 items-center">
+              <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary py-3 px-4">← חזור</button>
               <button
                 onClick={() => {
                   if (!form.producer_name || !form.city) {
@@ -323,8 +323,8 @@ export default function RegisterProducerPage() {
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
-            <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="text-text-secondary">← חזור</button>
+            <div className="flex gap-3 items-center">
+              <button onClick={() => setStep(2)} className="text-text-secondary py-3 px-4">← חזור</button>
               <button
                 onClick={handleSubmit}
                 disabled={loading || !agreedToTerms || !declaredLicenses}
