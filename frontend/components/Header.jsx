@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { Heart, List, X } from "@phosphor-icons/react";
+import { Heart, House, List, X } from "@phosphor-icons/react";
 
 /**
  * Header (docs/archive/WORLD_CLASS_V2.md #2 — navbar scroll blur)
@@ -52,8 +52,9 @@ export default function Header() {
           <Link href="/events" className="text-site-muted hover:text-primary transition">
             אירועים
           </Link>
-          <Link href="/neighbor" className="text-site-muted hover:text-primary transition">
-            מהשכן 🏠
+          <Link href="/neighbor" className="text-site-muted hover:text-primary transition inline-flex items-center gap-1">
+            מהשכן
+            <House size={16} weight="duotone" aria-hidden="true" />
           </Link>
           <Link href="/about" className="text-site-muted hover:text-primary transition">
             אודות
@@ -116,8 +117,9 @@ export default function Header() {
           <Link href="/events" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
             אירועים
           </Link>
-          <Link href="/neighbor" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-            מהשכן 🏠
+          <Link href="/neighbor" className="flex items-center gap-1 text-site-muted" onClick={() => setMenuOpen(false)}>
+            מהשכן
+            <House size={16} weight="duotone" aria-hidden="true" />
           </Link>
           <Link href="/about" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
             אודות
@@ -127,8 +129,9 @@ export default function Header() {
           </Link>
           {user ? (
             <>
-              <Link href="/favorites" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-                ❤️ מועדפים
+              <Link href="/favorites" className="flex items-center gap-1 text-site-muted" onClick={() => setMenuOpen(false)}>
+                <Heart size={16} weight="duotone" aria-hidden="true" />
+                מועדפים
               </Link>
               {user.role === "admin" && (
                 <Link href="/admin" className="block text-secondary" onClick={() => setMenuOpen(false)}>

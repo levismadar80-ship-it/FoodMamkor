@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { Camera } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 
@@ -351,7 +352,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             ))}
             {images.length < MAX_IMAGES && (
               <label className="w-24 h-24 border-2 border-dashed border-border rounded-[8px] flex items-center justify-center cursor-pointer hover:bg-light transition text-site-muted text-xs text-center p-2">
-                {uploading ? "מעלה..." : "📷 הוסיפי תמונה"}
+                {uploading ? "מעלה..." : <><Camera size={16} weight="duotone" aria-hidden="true" className="inline" /> הוסיפי תמונה</>}
                 <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageUpload} />
               </label>
             )}

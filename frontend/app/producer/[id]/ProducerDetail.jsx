@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
@@ -120,8 +120,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               {producer.name}
             </h1>
             {producer.is_verified && (
-              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full">
-                ✅ עסק מאומת
+              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full inline-flex items-center gap-1">
+                <Seal size={14} weight="fill" aria-hidden="true" />
+                עסק מאומת
               </span>
             )}
             {producer.reviews_count > 0 && (
