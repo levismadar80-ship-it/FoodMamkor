@@ -6,6 +6,7 @@ import Link from "next/link";
 import { MagnifyingGlass, X, MapTrifold } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
+import { SkeletonProducerGrid } from "@/components/Skeleton";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
@@ -14,6 +15,7 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: f
 
 export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);
+  const [producersLoading, setProducersLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [cityFilter, setCityFilter] = useState("");
   // `mapBounds` is the map's live viewport (updates on every pan/zoom).
@@ -77,10 +79,12 @@ export default function MapPage() {
   }, [allProducers]);
 
   const loadProducers = (params = {}) => {
+    setProducersLoading(true);
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))
-      .catch(() => setAllProducers([]));
+      .catch(() => setAllProducers([]))
+      .finally(() => setProducersLoading(false));
   };
 
   const chipParams = (overrides = {}) => {
@@ -405,6 +409,10 @@ export default function MapPage() {
             </button>
           )}
         </div>
+        {producersLoading ? (
+          <SkeletonProducerGrid count={8} />
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
           {visibleProducers.map((p) => (
             <div
@@ -430,7 +438,7 @@ export default function MapPage() {
             </div>
           ))}
         </div>
-        {visibleProducers.length === 0 && (
+        {visibleProducers.length === 0 && !producersLoading && (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6" aria-hidden="true">
               <MapTrifold size={44} weight="duotone" className="text-primary" />
@@ -448,6 +456,8 @@ export default function MapPage() {
               מכירה מישהי? הזמיני אותה
             </Link>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

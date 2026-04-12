@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal, Link as LinkIcon } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
@@ -29,6 +29,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const router = useRouter();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
+  // Sticky mobile CTA: show fixed WhatsApp bar once sidebar scrolls out of view
+  const sidebarRef = useRef(null);
+  const [showStickyWhatsApp, setShowStickyWhatsApp] = useState(false);
+
+  useEffect(() => {
+    const el = sidebarRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyWhatsApp(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [producer]);
 
   useEffect(() => {
     if (initialProducer) return;
@@ -273,123 +287,134 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         </div>
 
         {/* ================= Sticky contact sidebar ================= */}
-        <aside className="order-first lg:order-last">
+        <aside className="order-first lg:order-last" ref={sidebarRef}>
           <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-4 md:p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
-            <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
+            <h3 className="font-headline text-xl font-bold text-site-text mb-4">צרי קשר</h3>
 
-            {/* WhatsApp — primary CTA */}
-            {whatsappNumber && (
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  // feature/producer-analytics — fire-and-forget beacon
-                  // so the producer dashboard counts this click. Doesn't
-                  // block the wa.me window open.
-                  if (
-                    typeof navigator !== "undefined" &&
-                    navigator.sendBeacon
-                  ) {
-                    try {
-                      navigator.sendBeacon(
-                        `/api/producers/${producer.id}/whatsapp-click`,
-                      );
-                    } catch {
-                      // tracking is best-effort
+            {/* All buttons stacked vertically, same min-height, full-width.
+                Mobile redesign: no side-by-side rows except the bottom
+                favorites + copy-link pair. */}
+            <div className="flex flex-col gap-2.5">
+              {/* 1. WhatsApp — primary green CTA */}
+              {whatsappNumber && (
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+                      try { navigator.sendBeacon(`/api/producers/${producer.id}/whatsapp-click`); } catch {}
                     }
-                  }
-                }}
-                className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-3 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
-              >
-                <WhatsappLogo size={20} weight="fill" />
-                שלחי הודעה
-              </a>
-            )}
+                  }}
+                  className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 rounded-[10px] hover:bg-[#1ea855] transition font-medium focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
+                  style={{ minHeight: "48px" }}
+                >
+                  <WhatsappLogo size={20} weight="fill" />
+                  שלחי הודעה
+                </a>
+              )}
 
-            {/* Phone */}
-            {producer.phone && (
-              <a
-                href={`tel:${producer.phone}`}
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-3"
-                dir="ltr"
-              >
-                <Phone size={18} weight="duotone" className="text-primary shrink-0" />
-                {producer.phone}
-              </a>
-            )}
+              {/* 2. Phone */}
+              {producer.phone && (
+                <a
+                  href={`tel:${producer.phone}`}
+                  className="flex items-center gap-2 border border-border text-site-text px-4 rounded-[10px] hover:bg-light transition text-sm"
+                  style={{ minHeight: "48px" }}
+                  dir="ltr"
+                >
+                  <Phone size={18} weight="duotone" className="text-primary shrink-0" />
+                  {producer.phone}
+                </a>
+              )}
 
-            {/* Instagram */}
-            {producer.instagram && (
-              <a
-                href={`https://instagram.com/${producer.instagram}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-3"
-              >
-                <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
-                @{producer.instagram}
-              </a>
-            )}
+              {/* 3. Instagram */}
+              {producer.instagram && (
+                <a
+                  href={`https://instagram.com/${producer.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 border border-border text-site-text px-4 rounded-[10px] hover:bg-light transition text-sm"
+                  style={{ minHeight: "48px" }}
+                >
+                  <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
+                  @{producer.instagram}
+                </a>
+              )}
 
-            {/* Website */}
-            {producer.website && (
-              <a
-                href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-3"
-              >
-                <Globe size={18} weight="duotone" className="text-primary shrink-0" />
-                אתר
-              </a>
-            )}
+              {/* 4. Website */}
+              {producer.website && (
+                <a
+                  href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 border border-border text-site-text px-4 rounded-[10px] hover:bg-light transition text-sm"
+                  style={{ minHeight: "48px" }}
+                >
+                  <Globe size={18} weight="duotone" className="text-primary shrink-0" />
+                  אתר
+                </a>
+              )}
 
-            {/* Follow button — docs/archive/FEEDBACK_FIXES.md new feature */}
-            <div className="mb-2">
+              {/* 5. WhatsApp share — viral loop */}
+              <WhatsAppShareButton producer={producer} url={shareUrl} />
+
+              {/* 6. Show on map */}
+              {producer.lat && producer.lng && (
+                <button
+                  type="button"
+                  onClick={handleShowOnMap}
+                  className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+                  style={{ minHeight: "48px" }}
+                  aria-label="פתח את המיקום של העסק במפה"
+                >
+                  <MapTrifold size={16} weight="duotone" />
+                  הצג במפה
+                </button>
+              )}
+
+              {/* 7. Follow button */}
               <FollowButton producerId={producer.id} />
-            </div>
 
-            {/* Favorites + Share row — both buttons full-width with matching
-                height. FavoriteButton and ShareButton accept className props
-                so we can override their default compact styling here. */}
-            <div className="flex gap-2 mb-3">
-              <div className="flex-1">
+              {/* 8. Bottom row: favorites (full-width) + copy-link (icon square) */}
+              <div className="flex gap-2 pt-1 border-t border-border mt-1">
                 <FavoriteButton
                   producerId={producer.id}
-                  className="w-full flex items-center justify-center gap-2 border border-border rounded-[10px] py-3 hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="flex-1 flex items-center justify-center gap-2 border border-border rounded-[10px] hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                  style={{ minHeight: "48px" }}
                 />
-              </div>
-              <div className="flex-1">
                 <ShareButton
                   url={shareUrl}
                   title={producer.name}
-                  className="w-full flex items-center justify-center gap-2 border border-border rounded-[10px] py-3 hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
-                  labelClassName=""
+                  className="flex items-center justify-center border border-border rounded-[10px] hover:bg-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                  style={{ width: "48px", minHeight: "48px" }}
+                  labelClassName="sr-only"
                 />
               </div>
             </div>
-
-            {/* FINAL_AUDIT: WhatsApp share — the viral loop */}
-            <div className="mb-3">
-              <WhatsAppShareButton producer={producer} url={shareUrl} />
-            </div>
-
-            {/* Show on map */}
-            {producer.lat && producer.lng && (
-              <button
-                type="button"
-                onClick={handleShowOnMap}
-                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-3 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
-                aria-label="פתח את המיקום של העסק במפה"
-              >
-                <MapTrifold size={16} weight="duotone" />
-                הצג במפה
-              </button>
-            )}
           </div>
         </aside>
       </div>
+
+      {/* Sticky mobile WhatsApp CTA — appears when sidebar scrolls out of view.
+          Hidden on desktop (sidebar is always visible via lg:sticky). */}
+      {whatsappNumber && showStickyWhatsApp && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-[800] bg-white border-t border-border px-4 py-3 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
+          <a
+            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+                try { navigator.sendBeacon(`/api/producers/${producer.id}/whatsapp-click`); } catch {}
+              }
+            }}
+            className="flex items-center justify-center gap-2 bg-[#25D366] text-white w-full py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
+          >
+            <WhatsappLogo size={20} weight="fill" />
+            שלחי הודעה — {producer.name}
+          </a>
+        </div>
+      )}
     </div>
   );
 }

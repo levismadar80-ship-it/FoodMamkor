@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { motion } from "framer-motion";
-import { Crosshair, House, Leaf } from "@phosphor-icons/react";
+import { Crosshair, House, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
@@ -576,9 +576,23 @@ export default function HomePage() {
               ))}
             </div>
             {producers.length === 0 && (
-              <p className="text-center text-site-muted py-12">
-                לא מצאנו עסקים באזור הזה — עדיין 🌱
-              </p>
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6" aria-hidden="true">
+                  <MagnifyingGlass size={44} weight="duotone" className="text-primary" />
+                </div>
+                <h3 className="font-headline text-xl font-bold text-site-text mb-2">
+                  לא מצאנו עסקים באזור הזה — עדיין 🌱
+                </h3>
+                <p className="text-site-muted mb-6 max-w-md mx-auto">
+                  נסי לחפש קטגוריה אחרת או לבדוק עיר אחרת — בינתיים, אולי את רוצה להוסיף את העסק שלך?
+                </p>
+                <Link
+                  href="/register/producer"
+                  className="inline-block bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium"
+                >
+                  הוסיפי את העסק שלך 🌿
+                </Link>
+              </div>
             )}
             {hasMore && (
               <div className="text-center mt-8">

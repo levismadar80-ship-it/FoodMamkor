@@ -3,7 +3,7 @@
 import { showToast } from "@/lib/toast";
 import { Link as LinkIcon } from "@phosphor-icons/react";
 
-export default function ShareButton({ url, title, className, labelClassName }) {
+export default function ShareButton({ url, title, className, labelClassName, style }) {
   const handleShare = async () => {
     if (!url) return;
     // Try native share first (mobile)
@@ -42,6 +42,7 @@ export default function ShareButton({ url, title, className, labelClassName }) {
       }
       title="שתף לינק"
       aria-label="שתף לינק לעסק"
+      style={style}
     >
       <LinkIcon size={16} weight="duotone" aria-hidden="true" />
       <span className={labelClassName || "hidden sm:inline"}>שתף</span>

@@ -1,10 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ImageWithFallback from "./ImageWithFallback";
 
 export default function ImageGallery({ images = [] }) {
   const [current, setCurrent] = useState(0);
+  // Touch-swipe state — no library needed, just track start vs end X.
+  const touchRef = useRef({ startX: 0, startY: 0 });
+
+  const goNext = () => setCurrent((c) => (c + 1) % images.length);
+  const goPrev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
+
+  const onTouchStart = (e) => {
+    touchRef.current.startX = e.touches[0].clientX;
+    touchRef.current.startY = e.touches[0].clientY;
+  };
+  const onTouchEnd = (e) => {
+    const dx = e.changedTouches[0].clientX - touchRef.current.startX;
+    const dy = e.changedTouches[0].clientY - touchRef.current.startY;
+    // Only trigger if horizontal swipe > 50px and more horizontal than vertical
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    // RTL: swipe right (positive dx) = previous, swipe left = next
+    if (dx > 0) goPrev();
+    else goNext();
+  };
 
   if (!images.length) {
     return (
@@ -18,7 +37,11 @@ export default function ImageGallery({ images = [] }) {
   }
 
   return (
-    <div className="relative h-64 md:h-96 rounded-[12px] overflow-hidden bg-gray-100">
+    <div
+      className="relative h-64 md:h-96 rounded-[12px] overflow-hidden bg-gray-100"
+      onTouchStart={images.length > 1 ? onTouchStart : undefined}
+      onTouchEnd={images.length > 1 ? onTouchEnd : undefined}
+    >
       <ImageWithFallback
         src={images[current]}
         alt={`תמונה ${current + 1}`}
@@ -30,7 +53,7 @@ export default function ImageGallery({ images = [] }) {
         <>
           <button
             type="button"
-            onClick={() => setCurrent((current - 1 + images.length) % images.length)}
+            onClick={goPrev}
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="תמונה קודמת"
           >
@@ -38,7 +61,7 @@ export default function ImageGallery({ images = [] }) {
           </button>
           <button
             type="button"
-            onClick={() => setCurrent((current + 1) % images.length)}
+            onClick={goNext}
             className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="תמונה הבאה"
           >
