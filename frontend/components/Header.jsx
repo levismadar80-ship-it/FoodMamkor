@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 import { Heart, House, List, X } from "@phosphor-icons/react";
 
 /**
@@ -17,6 +18,7 @@ import { Heart, House, List, X } from "@phosphor-icons/react";
  */
 export default function Header() {
   const { user, logout } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -44,52 +46,62 @@ export default function Header() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
           <Link href="/" className="text-site-muted hover:text-primary transition">
-            גלה
+            {t("nav_discover")}
           </Link>
           <Link href="/map" className="text-site-muted hover:text-primary transition">
-            מפה
+            {t("nav_map")}
           </Link>
           <Link href="/events" className="text-site-muted hover:text-primary transition">
-            אירועים
+            {t("nav_events")}
           </Link>
           <Link href="/neighbor" className="text-site-muted hover:text-primary transition inline-flex items-center gap-1">
-            מהשכן
+            {t("nav_neighbor")}
             <House size={16} weight="duotone" aria-hidden="true" />
           </Link>
           <Link href="/about" className="text-site-muted hover:text-primary transition">
-            אודות
+            {t("nav_about")}
           </Link>
           <Link
             href="/register/producer"
             className="bg-primary text-white px-4 py-2 rounded-full hover:bg-primary-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            הוסיפי את העסק שלך 🌿
+            {t("nav_add_business")}
           </Link>
+          {/* Language toggle */}
+          <button
+            onClick={() => setLang(lang === "he" ? "en" : "he")}
+            className="text-sm text-site-muted hover:text-primary transition border border-border rounded-full px-3 py-1 flex items-center gap-1.5"
+            aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
+          >
+            <span className={lang === "he" ? "font-bold text-primary" : ""}>עב</span>
+            <span className="text-border">/</span>
+            <span className={lang === "en" ? "font-bold text-primary" : ""}>EN</span>
+          </button>
           {user ? (
             <div className="flex items-center gap-4">
               <Link
                 href="/favorites"
                 className="text-site-muted hover:text-primary transition inline-flex items-center gap-1"
-                aria-label="מועדפים"
+                aria-label={t("nav_favorites")}
               >
                 <Heart size={18} weight="duotone" />
-                <span className="hidden lg:inline">מועדפים</span>
+                <span className="hidden lg:inline">{t("nav_favorites")}</span>
               </Link>
               <Link href="/settings" className="text-site-muted hover:text-primary transition text-sm">
                 {user.name}
               </Link>
               {user.role === "admin" && (
                 <Link href="/admin" className="text-secondary hover:underline text-sm">
-                  אדמין
+                  {t("nav_admin")}
                 </Link>
               )}
               <button onClick={logout} className="text-sm text-site-muted hover:text-red-500">
-                התנתק
+                {t("nav_logout")}
               </button>
             </div>
           ) : (
             <Link href="/login" className="text-site-muted hover:text-primary transition">
-              כניסה לחשבון
+              {t("nav_login")}
             </Link>
           )}
         </nav>
@@ -109,42 +121,52 @@ export default function Header() {
       {menuOpen && (
         <div className="md:hidden bg-background border-t border-border px-4 py-3 space-y-3">
           <Link href="/" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-            גלה
+            {t("nav_discover")}
           </Link>
           <Link href="/map" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-            מפה
+            {t("nav_map")}
           </Link>
           <Link href="/events" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-            אירועים
+            {t("nav_events")}
           </Link>
           <Link href="/neighbor" className="flex items-center gap-1 text-site-muted" onClick={() => setMenuOpen(false)}>
-            מהשכן
+            {t("nav_neighbor")}
             <House size={16} weight="duotone" aria-hidden="true" />
           </Link>
           <Link href="/about" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-            אודות
+            {t("nav_about")}
           </Link>
           <Link href="/register/producer" className="block text-primary font-semibold" onClick={() => setMenuOpen(false)}>
-            הוסיפי את העסק שלך 🌿
+            {t("nav_add_business")}
           </Link>
+          {/* Mobile language toggle */}
+          <button
+            onClick={() => setLang(lang === "he" ? "en" : "he")}
+            className="text-sm text-site-muted border border-border rounded-full px-3 py-1 inline-flex items-center gap-1.5"
+            aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
+          >
+            <span className={lang === "he" ? "font-bold text-primary" : ""}>עב</span>
+            <span className="text-border">/</span>
+            <span className={lang === "en" ? "font-bold text-primary" : ""}>EN</span>
+          </button>
           {user ? (
             <>
               <Link href="/favorites" className="flex items-center gap-1 text-site-muted" onClick={() => setMenuOpen(false)}>
                 <Heart size={16} weight="duotone" aria-hidden="true" />
-                מועדפים
+                {t("nav_favorites")}
               </Link>
               {user.role === "admin" && (
                 <Link href="/admin" className="block text-secondary" onClick={() => setMenuOpen(false)}>
-                  אדמין
+                  {t("nav_admin")}
                 </Link>
               )}
               <button onClick={() => { logout(); setMenuOpen(false); }} className="block text-red-500">
-                התנתק
+                {t("nav_logout")}
               </button>
             </>
           ) : (
             <Link href="/login" className="block text-site-muted" onClick={() => setMenuOpen(false)}>
-              כניסה לחשבון
+              {t("nav_login")}
             </Link>
           )}
         </div>
