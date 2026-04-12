@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -29,12 +30,15 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  // tasks_for_claude_code.md task 7 — eye-icon toggle for password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!validateEmail(email)) {
-      setError("כתובת האימייל אינה תקינה");
+      setError("האימייל לא תקין");
       return;
     }
     setLoading(true);
@@ -53,7 +57,18 @@ export default function LoginPage() {
     typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
+  // tasks_for_claude_code.md task 8 — inline field-level validation.
+  // onBlur flips the `*Touched` state; error / valid states below only
+  // activate after the user has interacted with the field, so the form
+  // doesn't show a sea of red borders before the user types anything.
+  // Submit button is disabled whenever either required field fails —
+  // prevents a round-trip where the server returns a 4xx we already knew
+  // about.
   const emailInvalid = emailTouched && email.length > 0 && !validateEmail(email);
+  const emailValid = emailTouched && validateEmail(email);
+  const passwordInvalid = passwordTouched && password.length > 0 && password.length < 8;
+  const passwordValidLength = passwordTouched && password.length >= 8;
+  const formIsValid = validateEmail(email) && password.length >= 8;
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
@@ -88,29 +103,72 @@ export default function LoginPage() {
               placeholder="האימייל שלך"
               aria-invalid={emailInvalid || undefined}
               className={`w-full border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
-                emailInvalid ? "border-red-400" : "border-border focus:border-primary"
+                emailInvalid
+                  ? "border-red-400"
+                  : emailValid
+                    ? "border-primary"
+                    : "border-border focus:border-primary"
               }`}
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">כתובת האימייל אינה תקינה</p>
+              <p className="text-xs text-red-500 mt-1 text-right">האימייל לא תקין</p>
+            )}
+            {emailValid && (
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
           </div>
           <div>
             <label htmlFor="login-password" className="sr-only">
               סיסמה
             </label>
-            <input
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              placeholder="סיסמה (לפחות 8 תווים)"
-              className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none focus:border-primary transition"
-              dir="ltr"
-            />
+            {/* Eye toggle — task 7. Positioned at the visual LEFT of
+                the input (which is the END of the LTR-typing direction
+                for this password field, matching the convention on
+                Israeli banking + e-commerce sites). `pl-11` on the input
+                reserves 44px of padding so typed text never overlaps
+                the icon. */}
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setPasswordTouched(true)}
+                required
+                minLength={8}
+                placeholder="סיסמה (לפחות 8 תווים)"
+                aria-invalid={passwordInvalid || undefined}
+                className={`w-full border rounded-[10px] pl-11 pr-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                  passwordInvalid
+                    ? "border-red-400"
+                    : passwordValidLength
+                      ? "border-primary"
+                      : "border-border focus:border-primary"
+                }`}
+                dir="ltr"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
+                aria-pressed={showPassword}
+                tabIndex={0}
+              >
+                {showPassword ? (
+                  <EyeSlash size={20} weight="regular" aria-hidden="true" />
+                ) : (
+                  <Eye size={20} weight="regular" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            {passwordInvalid && (
+              <p className="text-xs text-red-500 mt-1 text-right">סיסמא חייבת להכיל לפחות 8 תווים</p>
+            )}
+            {passwordValidLength && (
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
+            )}
           </div>
           {error && (
             <p className="text-red-500 text-sm text-right" role="alert">
@@ -119,7 +177,7 @@ export default function LoginPage() {
           )}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !formIsValid}
             className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-light transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
