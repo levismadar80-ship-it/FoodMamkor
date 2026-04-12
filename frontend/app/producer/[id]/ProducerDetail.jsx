@@ -40,6 +40,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       .finally(() => setLoading(false));
   }, [params.id, fetchPath, initialProducer]);
 
+  // Task 13: save to recently viewed in localStorage
+  useEffect(() => {
+    if (!producer?.id) return;
+    try {
+      const key = "recently_viewed";
+      const stored = JSON.parse(localStorage.getItem(key) || "[]");
+      const filtered = stored.filter((id) => id !== producer.id);
+      filtered.unshift(producer.id);
+      localStorage.setItem(key, JSON.stringify(filtered.slice(0, 5)));
+    } catch {
+      // localStorage unavailable — ignore
+    }
+  }, [producer?.id]);
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
