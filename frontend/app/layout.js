@@ -1,6 +1,7 @@
 import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
@@ -105,6 +106,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-16 md:pb-0">
         <AuthProvider>
+          <LanguageProvider>
           <SmoothScrollProvider>
             <Header />
             <main className="flex-1">{children}</main>
@@ -119,6 +121,7 @@ export default function RootLayout({ children }) {
                 Self-hides on mobile via `hidden md:flex`. */}
             <ChatWidget />
           </SmoothScrollProvider>
+          </LanguageProvider>
         </AuthProvider>
         {CLARITY_PROJECT_ID && (
           <Script id="ms-clarity" strategy="afterInteractive">
