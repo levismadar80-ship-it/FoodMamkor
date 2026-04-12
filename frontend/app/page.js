@@ -5,12 +5,13 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { motion } from "framer-motion";
-import { House, Leaf } from "@phosphor-icons/react";
+import { Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
+import { showToast } from "@/lib/toast";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
@@ -120,6 +122,29 @@ export default function HomePage() {
 
   const scrollToProducers = () => {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleNearMe = () => {
+    if (!navigator.geolocation) {
+      showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        loadProducers({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          radius_km: 15,
+        });
+        setGeoLoading(false);
+        document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+      },
+      () => {
+        setGeoLoading(false);
+        showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
+      },
+    );
   };
 
   const visibleProducers = producers.slice(0, visibleCount);
@@ -226,6 +251,24 @@ export default function HomePage() {
               חיפוש
             </button>
           </motion.form>
+
+          {/* "Near me" geolocation button — task 11 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mt-4"
+          >
+            <button
+              type="button"
+              onClick={handleNearMe}
+              disabled={geoLoading}
+              className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 px-5 py-2.5 rounded-full hover:bg-white/25 transition font-medium text-sm disabled:opacity-50"
+            >
+              <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+              {geoLoading ? "מחפשת..." : "קרוב אלי"}
+            </button>
+          </motion.div>
         </div>
 
         {/* Scroll arrow — animate-bounce replaced with a subtle slow
