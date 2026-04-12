@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 import { motion } from "framer-motion";
 import { House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
@@ -59,6 +60,7 @@ function matchCategoryId(cards, categories) {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -172,7 +174,7 @@ export default function HomePage() {
             className="font-headline font-bold leading-tight"
             style={{ fontSize: "clamp(42px, 6vw, 80px)", lineHeight: 1.15 }}
           >
-            אוכל אמיתי, ישר מהמקור אליך
+            {t("hero_title")}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 30 }}
@@ -185,7 +187,7 @@ export default function HomePage() {
               textTransform: "uppercase",
             }}
           >
-            בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית
+            {t("hero_subtitle")}
           </motion.p>
 
           {/* Pill search */}
@@ -208,14 +210,14 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <label htmlFor="hero-search" className="sr-only">
-              חיפוש בתי עסק וערים
+              {t("search_sr_label")}
             </label>
             <input
               id="hero-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="חפשי ירקות טריים, בשר grass-fed..."
+              placeholder={t("search_placeholder")}
               className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
             />
             <button
