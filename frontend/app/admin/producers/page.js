@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Cow, Leaf, Package, Seal, Truck, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
 
@@ -172,7 +173,7 @@ function ProducersAdminPage() {
           }`}
           title="הצג רק עסקים שחסרים להם פרטים נדרשים"
         >
-          ⚠️ {incompleteOnly ? "הצג הכל" : "פרטים חסרים"}
+          <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {incompleteOnly ? "הצג הכל" : "פרטים חסרים"}
           {incompleteCount > 0 && (
             <span className="mr-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
               {incompleteCount}
@@ -334,11 +335,11 @@ function ProducersAdminPage() {
                   <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
                   <td className="px-4 py-3 text-xs">
                     <div className="flex gap-1 flex-wrap">
-                      {p.is_verified && <span title="מאומת">✅</span>}
-                      {p.organic_certified && <span title="אורגני מוסמך">🌿</span>}
-                      {p.grass_fed && <span title="גראס פד">🐄</span>}
-                      {p.has_delivery && <span title="משלוחים">🚚</span>}
-                      {p.pickup_points && <span title="נקודות איסוף">📦</span>}
+                      {p.is_verified && <span title="מאומת"><Seal size={16} weight="fill" className="text-primary" aria-hidden="true" /></span>}
+                      {p.organic_certified && <span title="אורגני מוסמך"><Leaf size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
+                      {p.grass_fed && <span title="גראס פד"><Cow size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
+                      {p.has_delivery && <span title="משלוחים"><Truck size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
+                      {p.pickup_points && <span title="נקודות איסוף"><Package size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
                       {p.kosher && <span title={p.kosher}>✡️</span>}
                     </div>
                   </td>
