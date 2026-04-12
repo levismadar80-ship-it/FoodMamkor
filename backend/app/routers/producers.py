@@ -51,6 +51,8 @@ def list_producers(
     delivery_city: str | None = None,
     has_delivery: bool | None = None,
     verified: bool | None = None,
+    organic: bool | None = None,
+    kosher: bool | None = None,
     db: Session = Depends(get_db),
 ):
     geo_search = lat is not None and lng is not None and radius_km is not None
@@ -76,6 +78,15 @@ def list_producers(
 
     if verified is not None:
         q = q.filter(Producer.is_verified == verified)
+
+    if organic is not None:
+        q = q.filter(Producer.organic_certified == organic)
+
+    if kosher is not None:
+        if kosher:
+            q = q.filter(Producer.kosher.isnot(None), Producer.kosher != "")
+        else:
+            q = q.filter((Producer.kosher.is_(None)) | (Producer.kosher == ""))
 
     if category is not None:
         q = q.join(ProducerCategory).filter(ProducerCategory.category_id == category)

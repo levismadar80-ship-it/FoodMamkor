@@ -430,6 +430,40 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Advanced filter chips — homepage + /map (task 12)
+
+### Chip appearance (both pages)
+- [ ] Homepage — below "בתי עסק מומלצים" heading, 4 filter chips: ✡️ כשר · 🌿 אורגני · 🚚 משלוח · ✅ מאומת בלבד
+- [ ] `/map` — below the city search, same 4 chips
+- [ ] Mobile — chips row is horizontally scrollable (no line wrap)
+- [ ] Inactive chip: white bg, border, dark text
+- [ ] Active chip: primary-green bg, white text
+
+### Toggle behavior
+- [ ] Click "כשר" → chip turns green → grid reloads with only kosher producers
+- [ ] Click "כשר" again → chip turns white → grid reloads without kosher filter
+- [ ] Multi-select: activate "כשר" + "אורגנ��" simultaneously → grid shows only kosher AND organic producers
+- [ ] Network tab: `GET /producers?kosher=true&organic=true` fires (both params)
+
+### Composability with other filters
+- [ ] Activate "משלוח" chip → search a city in the search bar → both `has_delivery=true` and `delivery_city=` sent
+- [ ] Activate "מאומת בלבד" chip → click a category card → both `verified=true` and `category=` sent
+- [ ] "קרוב אלי" button → with "אורגני" active → `lat=&lng=&radius_km=15&organic=true` sent
+- [ ] Clear category filter ("נקה סינון") → chip filters preserved
+
+### Backend params (new)
+- [ ] `GET /producers?organic=true` → only producers with `organic_certified=true`
+- [ ] `GET /producers?kosher=true` → only producers with a non-empty `kosher` field
+- [ ] Both compose with existing params (`lat`, `lng`, `radius_km`, `category`, `delivery_city`, `verified`)
+
+### Regression checks
+- [ ] Homepage search still works without any chips active
+- [ ] Category card clicks still work
+- [ ] `/map` city search + legend category filter still work
+- [ ] "הצגי עוד" load-more button works after chip-filtered results
+
+---
+
 ## "קרוב אלי" geolocation button on homepage (task 11)
 
 ### Button appearance

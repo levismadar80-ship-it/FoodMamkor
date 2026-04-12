@@ -71,6 +71,7 @@ export default function HomePage() {
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
@@ -97,10 +98,11 @@ export default function HomePage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    const cp = chipParams();
     if (!searchQuery.trim()) {
-      loadProducers();
+      loadProducers(cp);
     } else {
-      loadProducers({ delivery_city: searchQuery });
+      loadProducers({ delivery_city: searchQuery, ...cp });
     }
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -109,7 +111,7 @@ export default function HomePage() {
     if (!card.categoryId) return;
     const newCat = String(card.categoryId);
     setFilters({ ...filters, category: newCat });
-    loadProducers({ category: newCat });
+    loadProducers({ category: newCat, ...chipParams() });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -126,6 +128,26 @@ export default function HomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Build query params from active chips. Called by loadProducers callers
+  // and the chip toggle handler so every filter surface stays in sync.
+  const chipParams = (overrides = {}) => {
+    const c = { ...chips, ...overrides };
+    const p = {};
+    if (c.kosher) p.kosher = true;
+    if (c.organic) p.organic = true;
+    if (c.has_delivery) p.has_delivery = true;
+    if (c.verified) p.verified = true;
+    return p;
+  };
+
+  const toggleChip = (key) => {
+    const next = { ...chips, [key]: !chips[key] };
+    setChips(next);
+    const params = chipParams({ [key]: !chips[key] });
+    if (filters.category) params.category = filters.category;
+    loadProducers(params);
+  };
+
   const handleNearMe = () => {
     if (!navigator.geolocation) {
       showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
@@ -138,6 +160,7 @@ export default function HomePage() {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           radius_km: 15,
+          ...chipParams(),
         });
         setGeoLoading(false);
         document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
@@ -437,6 +460,30 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Filter chips — task 12 */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          {[
+            { key: "kosher", label: "כשר", icon: "✡️" },
+            { key: "organic", label: "אורגני", icon: "🌿" },
+            { key: "has_delivery", label: "משלוח", icon: "🚚" },
+            { key: "verified", label: "מאומת בלבד", icon: "✅" },
+          ].map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => toggleChip(chip.key)}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
+                chips[chip.key]
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              <span aria-hidden="true">{chip.icon}</span>
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
         {filters.category && (
           <div className="mb-6 flex items-center gap-2">
             <span className="text-sm text-site-muted">מציג:</span>
@@ -449,7 +496,7 @@ export default function HomePage() {
             <button
               onClick={() => {
                 setFilters({ ...filters, category: "" });
-                loadProducers();
+                loadProducers(chipParams());
               }}
               className="text-sm text-primary hover:underline"
             >
