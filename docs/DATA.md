@@ -285,7 +285,7 @@ DELETE /users/me                 auth    — account deletion (App Store)
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
 
 ```
-GET    /producers                                 public — filters: lat+lng+radius_km, category, city, verified
+GET    /producers                                 public — filters: lat+lng+radius_km, category, city, verified, organic, kosher
 GET    /producers/{producer_id}                   public
 GET    /producers/by-slug/{slug}                  public
 POST   /producers                                 auth   — self-register (writes pending)
