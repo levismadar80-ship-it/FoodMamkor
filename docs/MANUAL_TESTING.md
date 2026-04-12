@@ -562,6 +562,39 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Producer detail mobile tabs + map bottom sheet (feature/producer-tabs-map-sheet)
+
+### /producer/:id — mobile tabs
+- [ ] Open any producer page on mobile (< 1024px) — should see: gallery → name+badges → contact buttons grid → tab bar → tab content
+- [ ] Tab bar shows אודות as default active tab (green bottom border)
+- [ ] Switch to מוצרים tab — products grid shown (only if producer has products)
+- [ ] Switch to משלוח tab — delivery areas table shown (only if producer has delivery areas)
+- [ ] Switch to ביקורות tab — reviews section shown
+- [ ] If producer has no products → מוצרים tab should NOT appear in the tab bar
+- [ ] If producer has no delivery areas → משלוח tab should NOT appear
+- [ ] Tab bar is sticky below the header when scrolling
+- [ ] Contact buttons layout: Phone + Instagram side by side, Website + Copy-link side by side, Share full-width, Show-on-map full-width, WhatsApp שלחי הודעה full-width green
+- [ ] All contact buttons are 48px min-height
+- [ ] "העתק קישור" button copies URL and shows toast "הקישור הועתק ✓"
+- [ ] Scroll down past the contact section → sticky green WhatsApp bar appears at bottom
+- [ ] Scroll back up to contact section → sticky bar disappears
+
+### /producer/:id — desktop regression
+- [ ] Desktop (≥ 1024px) — two-column layout with sticky sidebar, NO tabs
+- [ ] All sections visible (description, products, delivery, reviews) without tabs
+- [ ] Sidebar has same contact buttons + follow + favorite
+
+### /map — bottom sheet
+- [ ] Click a producer marker on mobile → bottom sheet slides up from the bottom edge (not floating in the middle)
+- [ ] Dark scrim (overlay) behind the sheet — click scrim to close
+- [ ] Close (X) button clearly visible in the top-left of the sheet, easy to tap
+- [ ] Sheet is full-width with rounded top corners (Google Maps style)
+- [ ] Sheet max-height is 60vh — scrollable if content is taller
+- [ ] Click another marker → sheet updates to new producer
+- [ ] Desktop (≥ 768px) — bottom sheet hidden, map popup handles it instead
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.

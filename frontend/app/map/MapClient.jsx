@@ -357,33 +357,42 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* docs/archive/MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer
-          Improvement #12: the drag handle was inside a flex-between row
-          (where mx-auto doesn't do anything), and the close button was
-          absolute-positioned inside that same row — leaving the handle
-          flush-left. Restructured: handle is its own centered block, X
-          is absolute relative to the dialog. */}
+      {/* Mobile bottom sheet — Google Maps style. Full-width from the
+          bottom edge, dark scrim behind, slides up with CSS animation.
+          Renders a ProducerCard inside a constrained container. */}
       {selectedProducer && (
-        <div
-          className="md:hidden fixed bottom-16 inset-x-3 z-[900] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="פרטי העסק שנבחר"
-        >
+        <>
+          {/* Scrim */}
           <div
-            className="w-10 h-1 bg-border rounded-full mx-auto mb-3"
+            className="md:hidden fixed inset-0 z-[899] bg-black/40"
+            onClick={() => setSelectedProducer(null)}
             aria-hidden="true"
           />
-          <button
-            type="button"
-            onClick={() => setSelectedProducer(null)}
-            className="absolute top-3 left-3 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="סגור"
+          {/* Sheet */}
+          <div
+            className="md:hidden fixed bottom-0 inset-x-0 z-[900] bg-white rounded-t-[20px] border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.15)] max-h-[60vh] overflow-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-label="פרטי העסק שנבחר"
+            style={{ animation: "sheet-up 0.25s ease-out" }}
           >
-            <X size={18} weight="bold" />
-          </button>
-          <ProducerCard producer={selectedProducer} referrer="search" />
-        </div>
+            {/* Drag handle + close button */}
+            <div className="sticky top-0 bg-white pt-3 pb-2 px-4 z-10">
+              <div className="w-10 h-1 bg-border rounded-full mx-auto mb-1" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={() => setSelectedProducer(null)}
+                className="absolute top-2 left-3 w-9 h-9 flex items-center justify-center rounded-full text-site-muted hover:text-site-text hover:bg-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="סגור"
+              >
+                <X size={20} weight="bold" />
+              </button>
+            </div>
+            <div className="px-4 pb-4">
+              <ProducerCard producer={selectedProducer} referrer="search" />
+            </div>
+          </div>
+        </>
       )}
 
       {/* Producer grid below map — filtered by committed bounds + categories */}
