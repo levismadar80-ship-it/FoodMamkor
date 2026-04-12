@@ -14,9 +14,7 @@ export default function WhatsAppShareButton({ producer, url }) {
       ? `${window.location.origin}${producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}`
       : "");
 
-  const text = `מצאתי עסק מגניב במהמקור! 🌿\n${producer.name}${
-    producer.city ? ` — ${producer.city}` : ""
-  }\n${shareUrl}`;
+  const text = `גיליתי את ${producer.name} במהמקור — ${shareUrl}`;
 
   const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
 
