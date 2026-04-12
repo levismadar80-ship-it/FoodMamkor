@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
-import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
+import { validateIsraeliPhone, validateEmail } from "@/lib/validators";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,22 +19,35 @@ export default function RegisterPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // tasks_for_claude_code.md tasks 7+8 — per-field touched state for
+  // onBlur inline validation + eye toggle for password visibility.
+  const [nameTouched, setNameTouched] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Client-side validation
-    if (!validateEmail(form.email)) {
-      setError("אימייל לא תקין");
+    // Client-side validation. The inline onBlur rules below already
+    // disable the submit button when any field fails, so this is a
+    // belt-and-suspenders server-round-trip guard.
+    if (!form.name.trim()) {
+      setError("שם מלא הוא שדה חובה");
       return;
     }
-    if (!passwordValid(form.password)) {
-      setError("הסיסמה לא עומדת בדרישות");
+    if (!validateEmail(form.email)) {
+      setError("האימייל לא תקין");
+      return;
+    }
+    if (form.password.length < 8) {
+      setError("סיסמא חייבת להכיל לפחות 8 תווים");
       return;
     }
     if (form.phone && !validateIsraeliPhone(form.phone)) {
-      setError("מספר טלפון לא תקין — נסי שוב");
+      setError("מספר טלפון לא תקין");
       return;
     }
 
@@ -49,7 +63,30 @@ export default function RegisterPage() {
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-  const phoneValid = !form.phone || validateIsraeliPhone(form.phone);
+  // tasks_for_claude_code.md task 8 — inline field-level validity.
+  // *Invalid flags only go true after the field has been touched (i.e.
+  // user moved focus away) AND the current value fails validation —
+  // this way the form doesn't show a sea of red borders before the
+  // user has interacted with anything. *Valid flags similarly gate on
+  // touched. `formIsValid` is used for the submit button disabled
+  // state and does NOT require touched — it's a pure "does the current
+  // input pass every required rule" check.
+  const nameTrimmed = form.name.trim();
+  const nameInvalid = nameTouched && !nameTrimmed;
+  const nameValid = nameTouched && !!nameTrimmed;
+  const emailInvalid = emailTouched && form.email.length > 0 && !validateEmail(form.email);
+  const emailValid = emailTouched && validateEmail(form.email);
+  const passwordInvalid = passwordTouched && form.password.length > 0 && form.password.length < 8;
+  const passwordValidLength = passwordTouched && form.password.length >= 8;
+  const phoneInvalid = phoneTouched && form.phone.length > 0 && !validateIsraeliPhone(form.phone);
+  const phoneValid = phoneTouched && form.phone.length > 0 && validateIsraeliPhone(form.phone);
+
+  const formIsValid =
+    !!nameTrimmed &&
+    validateEmail(form.email) &&
+    form.password.length >= 8 &&
+    (!form.phone || validateIsraeliPhone(form.phone)) &&
+    agreedToTerms;
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
@@ -59,23 +96,92 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">שם מלא *</label>
-            <input value={form.name} onChange={set("name")} required className="w-full border rounded-[12px] px-3 py-2 text-right" dir="rtl" />
+            <input
+              value={form.name}
+              onChange={set("name")}
+              onBlur={() => setNameTouched(true)}
+              required
+              aria-invalid={nameInvalid || undefined}
+              className={`w-full border rounded-[12px] px-3 py-2 text-right transition ${
+                nameInvalid
+                  ? "border-red-400"
+                  : nameValid
+                    ? "border-primary"
+                    : ""
+              }`}
+              dir="rtl"
+            />
+            {nameInvalid && (
+              <p className="text-xs text-red-500 mt-1 text-right">שם מלא הוא שדה חובה</p>
+            )}
+            {nameValid && (
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">אימייל *</label>
-            <input type="email" value={form.email} onChange={set("email")} required className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+            <input
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+              onBlur={() => setEmailTouched(true)}
+              required
+              aria-invalid={emailInvalid || undefined}
+              className={`w-full border rounded-[12px] px-3 py-2 transition ${
+                emailInvalid
+                  ? "border-red-400"
+                  : emailValid
+                    ? "border-primary"
+                    : ""
+              }`}
+              dir="ltr"
+            />
+            {emailInvalid && (
+              <p className="text-xs text-red-500 mt-1 text-right">האימייל לא תקין</p>
+            )}
+            {emailValid && (
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">סיסמה *</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={set("password")}
-              required
-              minLength={8}
-              className="w-full border rounded-[12px] px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
-              dir="ltr"
-            />
+            {/* Eye toggle + relative wrapper — same pattern as /login. */}
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={set("password")}
+                onBlur={() => setPasswordTouched(true)}
+                required
+                minLength={8}
+                aria-invalid={passwordInvalid || undefined}
+                className={`w-full border rounded-[12px] pl-11 pr-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                  passwordInvalid
+                    ? "border-red-400"
+                    : passwordValidLength
+                      ? "border-primary"
+                      : ""
+                }`}
+                dir="ltr"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
+                aria-pressed={showPassword}
+                tabIndex={0}
+              >
+                {showPassword ? (
+                  <EyeSlash size={20} weight="regular" aria-hidden="true" />
+                ) : (
+                  <Eye size={20} weight="regular" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            {passwordInvalid && (
+              <p className="text-xs text-red-500 mt-1 text-right">סיסמא חייבת להכיל לפחות 8 תווים</p>
+            )}
             <PasswordStrength password={form.password} />
           </div>
           <div>
@@ -93,18 +199,23 @@ export default function RegisterPage() {
             <input
               value={form.phone}
               onChange={set("phone")}
+              onBlur={() => setPhoneTouched(true)}
               placeholder="0501234567"
-              className={`w-full border rounded-[12px] px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none ${
-                form.phone && !phoneValid ? "border-red-400" : ""
+              aria-invalid={phoneInvalid || undefined}
+              className={`w-full border rounded-[12px] px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                phoneInvalid
+                  ? "border-red-400"
+                  : phoneValid
+                    ? "border-primary"
+                    : ""
               }`}
               dir="ltr"
-              aria-invalid={form.phone ? !phoneValid : undefined}
             />
-            {form.phone && !phoneValid && (
-              <p className="text-xs text-red-500 mt-1">❌ מספר טלפון לא תקין — נסי שוב</p>
+            {phoneInvalid && (
+              <p className="text-xs text-red-500 mt-1 text-right">מספר טלפון לא תקין</p>
             )}
-            {form.phone && phoneValid && (
-              <p className="text-xs text-primary mt-1">✓ מספר תקין</p>
+            {phoneValid && (
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
           </div>
           <label className="flex items-start gap-2 text-sm cursor-pointer">
@@ -129,7 +240,7 @@ export default function RegisterPage() {
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            disabled={loading || !agreedToTerms}
+            disabled={loading || !formIsValid}
             className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
           >
             {loading ? (
