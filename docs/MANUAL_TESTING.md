@@ -430,6 +430,25 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Share button on producer page (task 14)
+
+### Share button (copy link)
+- [ ] `/producer/:id` — sticky sidebar has a share button with a **ShareNetwork** icon (not a Link icon)
+- [ ] Click share button (desktop, no native share) → toast **"הקישור הועתק ✓"**
+- [ ] Clipboard contains the producer page URL
+- [ ] Mobile (with native share API) → native share sheet opens
+
+### WhatsApp share
+- [ ] WhatsApp share button visible in the sidebar
+- [ ] Click → opens `wa.me` with text: **"גיליתי את [שם העסק] במהמקור — [URL]"**
+- [ ] Text contains the correct producer name and URL
+
+### Regression checks
+- [ ] Other ShareButton consumers (if any) also get the updated icon + toast
+- [ ] Producer detail page still loads and renders correctly
+
+---
+
 ## Recently viewed businesses (task 13)
 
 ### localStorage persistence
