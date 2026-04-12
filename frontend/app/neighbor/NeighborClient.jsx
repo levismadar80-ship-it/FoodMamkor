@@ -164,16 +164,16 @@ export default function NeighborClient() {
         ) : listings.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl" aria-hidden="true">
-              🍲
+              🏡
             </div>
             <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
               {city
-                ? `אין מוצרים ב${city} — עדיין 🌱`
+                ? "אין מוצרים באזור הזה עדיין 🌱"
                 : "אין עדיין מוצרים ביתיים 🌱"}
             </h2>
             <p className="text-site-muted mb-6 max-w-md mx-auto">
               {user
-                ? "היי הראשונה לפרסם! מכירה מישהי שמבשלת בבית? הזמיני אותה."
+                ? "היי את הראשונה לפרסם מוצר בית!"
                 : "התחברי כדי לפרסם מוצר משלך."}
             </p>
             {user && !showForm && (
@@ -182,7 +182,7 @@ export default function NeighborClient() {
                 onClick={() => setShowForm(true)}
                 className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-light transition font-medium"
               >
-                + פרסמי מוצר
+                פרסמי מוצר +
               </button>
             )}
           </div>
