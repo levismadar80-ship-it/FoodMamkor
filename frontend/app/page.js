@@ -72,6 +72,7 @@ export default function HomePage() {
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
   const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
@@ -83,6 +84,16 @@ export default function HomePage() {
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
     api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
+    // Task 13: load recently viewed producers from localStorage
+    try {
+      const ids = JSON.parse(localStorage.getItem("recently_viewed") || "[]");
+      if (ids.length > 0) {
+        Promise.all(ids.map((id) => api.get(`/producers/${id}`).then((r) => r.data).catch(() => null)))
+          .then((results) => setRecentlyViewed(results.filter(Boolean)));
+      }
+    } catch {
+      // localStorage unavailable
+    }
   }, []);
 
   const loadProducers = (params = {}) => {
@@ -446,6 +457,48 @@ export default function HomePage() {
           </div>
         </Link>
       </FadeInSection>
+
+      {/* =========================
+          RECENTLY VIEWED (task 13)
+          ========================= */}
+      {recentlyViewed.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 pb-10">
+          <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+            ביקרת לאחרונה
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            {recentlyViewed.map((p) => {
+              const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+              const imgSrc = p.images?.[0];
+              return (
+                <Link
+                  key={p.id}
+                  href={href}
+                  className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
+                >
+                  <div className="relative w-full h-[100px] bg-light overflow-hidden">
+                    {imgSrc ? (
+                      <img
+                        src={imgSrc}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-primary">
+                        <Leaf size={32} weight="duotone" aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="font-headline font-bold text-sm text-site-text truncate">{p.name}</p>
+                    <p className="text-xs text-site-muted truncate">{p.city}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* =========================
           PRODUCERS GRID
