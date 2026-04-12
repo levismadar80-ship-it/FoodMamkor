@@ -102,7 +102,7 @@ export default function RegisterPage() {
               onBlur={() => setNameTouched(true)}
               required
               aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 text-right transition ${
+              className={`w-full border rounded-[12px] px-4 py-3 text-right transition ${
                 nameInvalid
                   ? "border-red-400"
                   : nameValid
@@ -127,7 +127,7 @@ export default function RegisterPage() {
               onBlur={() => setEmailTouched(true)}
               required
               aria-invalid={emailInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 transition ${
+              className={`w-full border rounded-[12px] px-4 py-3 transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                 required
                 minLength={8}
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[12px] pl-11 pr-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                className={`w-full border rounded-[12px] pl-11 pr-4 py-3 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                   passwordInvalid
                     ? "border-red-400"
                     : passwordValidLength

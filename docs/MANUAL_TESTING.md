@@ -481,6 +481,32 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Mobile layout fixes (feature/mobile-layout-fixes)
+
+### /producer/:id — sidebar contact section
+- [ ] Open a producer detail page on a mobile device (or DevTools < 768px) — the sidebar renders above the main content (single column)
+- [ ] Favorites button and Share button are in a row, both same height (py-3), same border/rounded treatment, both full-width within their half
+- [ ] Share button shows the "שתף" label text (not hidden on mobile like before)
+- [ ] "הצג במפה" button has the same height as the favorites/share buttons (py-3, not py-2.5)
+- [ ] WhatsApp CTA ("שלחי הודעה") is full-width and has py-3
+- [ ] WhatsApp share ("שתפי עם חברות") is full-width and has py-2.5
+- [ ] Follow button ("עקבי אחרי עסק זה") is full-width and has py-2.5
+- [ ] Desktop (> 1024px): sidebar is sticky on the left, all buttons still look correct in the 320px sidebar card
+
+### /register + /register/producer — form input sizing
+- [ ] Open /register on mobile — all form inputs have comfortable padding (px-4 py-3), matching /login's input sizing
+- [ ] Open /register/producer on mobile — same comfortable padding on all 3 steps' inputs
+- [ ] Inputs don't feel cramped compared to /login (the old px-3 py-2 was noticeably smaller)
+- [ ] Password eye toggle on /register still aligns correctly (the icon position uses absolute left-3 which is independent of input padding)
+
+### Regression checks
+- [ ] Desktop /producer/:id — sidebar layout unchanged (still 320px sticky card)
+- [ ] FavoriteButton in /favorites page still works (uses default compact className since no className prop is passed)
+- [ ] ShareButton in any other context still uses its default compact style (no className prop passed elsewhere)
+- [ ] /login form input sizing unchanged (it already had px-4 py-3)
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.

@@ -336,13 +336,26 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <FollowButton producerId={producer.id} />
             </div>
 
-            {/* Favorites + Share row */}
+            {/* Favorites + Share row — both buttons get identical full-width
+                treatment on mobile so tap targets are equal and aligned.
+                feature/mobile-layout-fixes: the old layout wrapped FavoriteButton
+                in a bordered div but left ShareButton with its own compact styling,
+                producing mismatched heights. Now both get flex-1 wrappers with
+                matching border/rounded/py and the child buttons fill the wrapper. */}
             <div className="flex gap-2 mb-3">
-              <div className="flex-1 flex justify-center border border-border rounded-[10px] py-2 hover:bg-light transition">
-                <FavoriteButton producerId={producer.id} />
+              <div className="flex-1">
+                <FavoriteButton
+                  producerId={producer.id}
+                  className="w-full flex items-center justify-center gap-2 border border-border rounded-[10px] py-3 hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                />
               </div>
               <div className="flex-1">
-                <ShareButton url={shareUrl} title={producer.name} />
+                <ShareButton
+                  url={shareUrl}
+                  title={producer.name}
+                  className="w-full flex items-center justify-center gap-2 border border-border rounded-[10px] py-3 hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                  labelClassName=""
+                />
               </div>
             </div>
 
@@ -356,7 +369,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <button
                 type="button"
                 onClick={handleShowOnMap}
-                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-3 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label="פתח את המיקום של העסק במפה"
               >
                 <MapTrifold size={16} weight="duotone" />

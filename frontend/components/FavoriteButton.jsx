@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
-export default function FavoriteButton({ producerId }) {
+export default function FavoriteButton({ producerId, className }) {
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,10 @@ export default function FavoriteButton({ producerId }) {
     <button
       onClick={toggle}
       disabled={loading}
-      className="text-2xl hover:scale-110 transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+      className={
+        className ||
+        "text-2xl hover:scale-110 transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+      }
       title={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
       aria-label={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
       aria-pressed={favorited}
