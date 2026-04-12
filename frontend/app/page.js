@@ -417,7 +417,7 @@ export default function HomePage() {
           <SkeletonProducerGrid count={8} />
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
               {visibleProducers.map((p, idx) => (
                 <motion.div
                   key={p.id}
@@ -457,7 +457,7 @@ export default function HomePage() {
           <h2 className="font-headline font-bold text-site-text mb-8" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
             עסקים חדשים ✨
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
             {newestProducers.map((p) => (
               <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" />
             ))}

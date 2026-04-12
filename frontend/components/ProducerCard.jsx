@@ -70,14 +70,14 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
       style={{ borderRadius: "16px" }}
     >
       <Link href={producerHref}>
-        <div className="relative w-full bg-light" style={{ height: "200px", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+        <div className="relative w-full bg-light h-[140px] md:h-[200px]" style={{ borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
           {imgSrc ? (
             <Image
               src={imgSrc}
               alt={producer.name}
               fill
               className="object-cover transition duration-300 hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 50vw, 25vw"
             />
           ) : (
             <div
@@ -109,12 +109,12 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
 
       <div className="p-4 flex-1 flex flex-col">
         <Link href={producerHref}>
-          <h3 className="font-headline font-bold text-site-text hover:text-primary transition leading-snug" style={{ fontSize: "18px" }}>
+          <h3 className="font-headline font-bold text-site-text hover:text-primary transition leading-snug truncate" style={{ fontSize: "18px" }}>
             {producer.name}
           </h3>
         </Link>
 
-        <p className="text-[13px] text-site-muted mt-1">
+        <p className="text-[13px] text-site-muted mt-1 truncate">
           {producer.city}
           {producer.categories?.[0] && (
             <> · {producer.categories[0].emoji} {producer.categories[0].name}</>
@@ -129,7 +129,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
         )}
 
         {producer.top_product_name && (
-          <p className="text-sm text-site-text/85 mt-2">{producer.top_product_name}</p>
+          <p className="text-sm text-site-text/85 mt-2 truncate">{producer.top_product_name}</p>
         )}
 
         {/* Pill badges */}

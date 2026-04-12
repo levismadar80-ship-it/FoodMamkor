@@ -401,6 +401,35 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Producer cards — 2-column mobile grid (task 9)
+
+### Mobile 2-column layout (< 768px)
+- [ ] Homepage — open on a mobile device / narrow viewport (< 768px) — producer cards display in **2 columns** instead of 1
+- [ ] Homepage — gap between cards is tighter on mobile (~12px) vs tablet+ (~24px)
+- [ ] Homepage — "עסקים חדשים ✨" section also shows 2-column grid on mobile
+- [ ] `/map` — scroll down to the producer list below the map — same 2-column grid on mobile
+- [ ] Tablet (768px–1023px) — grids stay 2-column (unchanged from before)
+- [ ] Desktop (1024px+) — grids stay 4-column (unchanged from before)
+
+### Shorter card images on mobile
+- [ ] Mobile — card image height is **140px** (shorter than desktop)
+- [ ] Desktop — card image height is **200px** (unchanged)
+- [ ] Images are not squished or stretched — `object-cover` fills the shorter container
+
+### Text truncation
+- [ ] Long producer name (e.g. "חוות השקמה של משפחת אברהמי מרחובות") truncates with `…` instead of wrapping to a second line
+- [ ] Long city + category line truncates with `…`
+- [ ] Long top product name truncates with `…`
+
+### Regression checks
+- [ ] `/favorites` grid is **unchanged** — still 1-col on mobile, 2-col at md, 3-col at lg
+- [ ] Card hover shadow + lift effect still works on desktop
+- [ ] "מאומת" / "פרמיום" / "זמין היום" badges still visible on the image
+- [ ] WhatsApp / phone / Instagram icon row in footer still clickable
+- [ ] "מידע נוסף" CTA button still works
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
