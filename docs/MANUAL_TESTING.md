@@ -430,6 +430,34 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Recently viewed businesses (task 13)
+
+### localStorage persistence
+- [ ] Visit any producer page (e.g. `/producer/1`) → open DevTools → Application → Local Storage → `recently_viewed` key contains `[1]`
+- [ ] Visit a second producer → `recently_viewed` is `[2, 1]` (most recent first)
+- [ ] Visit the same producer again → no duplicates, ID moves to front
+- [ ] Visit 6 different producers → only the 5 most recent are stored
+
+### Homepage "ביקרת לאחרונה" section
+- [ ] Homepage — with at least 1 recently viewed producer: **"ביקרת לאחרונה"** section appears above the main producer grid
+- [ ] Section shows small cards in a horizontal scroll row (image + name + city)
+- [ ] Cards are 160px wide with 100px tall images
+- [ ] Long producer names truncate with `…`
+- [ ] Click a card → navigates to that producer's page
+- [ ] Mobile: cards scroll horizontally
+
+### Edge cases
+- [ ] Clear localStorage (`recently_viewed`) → refresh homepage → section is hidden
+- [ ] Fresh browser with no localStorage data → section is hidden (no empty state)
+- [ ] If a stored producer ID no longer exists (deleted) → that card is silently skipped
+
+### Regression checks
+- [ ] Producer detail page still loads correctly (the useEffect doesn't break anything)
+- [ ] Homepage producer grid still renders below the recently-viewed section
+- [ ] Category cards + search + geolocation all still work
+
+---
+
 ## Advanced filter chips — homepage + /map (task 12)
 
 ### Chip appearance (both pages)
