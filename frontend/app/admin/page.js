@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  CalendarBlank,
+  CookingPot,
+  HourglassSimple,
+  Package,
+  Sparkle,
+  Storefront,
+  Users,
+  Warning,
+} from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 export default function AdminDashboard() {
@@ -23,10 +33,10 @@ export default function AdminDashboard() {
 
   const s = data.stats;
   const cards = [
-    { label: "סה״כ בתי עסק",      value: s.total_producers,     icon: "🏪", href: "/admin/producers" },
-    { label: "ממתינים לאישור",   value: s.pending_producers,   icon: "⏳", href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
-    { label: "משתמשים רשומים",   value: s.total_users,         icon: "👥", href: "/admin/users" },
-    { label: "מוצרים ביתיים",     value: s.total_home_products, icon: "🥕", href: "/admin/content" },
+    { label: "סה״כ בתי עסק",      value: s.total_producers,     Icon: Storefront, href: "/admin/producers" },
+    { label: "ממתינים לאישור",   value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
+    { label: "משתמשים רשומים",   value: s.total_users,         Icon: Users, href: "/admin/users" },
+    { label: "מוצרים ביתיים",     value: s.total_home_products, Icon: CookingPot, href: "/admin/content" },
   ];
 
   // Simple inline SVG line chart for monthly producers
@@ -61,7 +71,7 @@ export default function AdminDashboard() {
             }`}
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl">{c.icon}</span>
+              <c.Icon size={28} weight="duotone" aria-hidden="true" className="text-primary" />
               <span className="text-3xl font-bold text-primary">{c.value}</span>
             </div>
             <p className="text-xs text-text-secondary mt-2">{c.label}</p>
@@ -77,7 +87,7 @@ export default function AdminDashboard() {
               href="/admin/producers?status=pending"
               className="bg-yellow-50 border border-yellow-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-yellow-100 transition"
             >
-              <span className="text-2xl">⏳</span>
+              <HourglassSimple size={28} weight="duotone" aria-hidden="true" className="text-yellow-600" />
               <div>
                 <p className="font-medium text-sm">{s.pending_producers} בתי עסק ממתינים לאישור</p>
                 <p className="text-xs text-text-secondary">לחץ לטיפול</p>
@@ -89,7 +99,7 @@ export default function AdminDashboard() {
               href="/admin/reports"
               className="bg-red-50 border border-red-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-red-100 transition"
             >
-              <span className="text-2xl">🚨</span>
+              <Warning size={28} weight="fill" aria-hidden="true" className="text-red-500" />
               <div>
                 <p className="font-medium text-sm">{s.open_reports} דיווחים פתוחים</p>
                 <p className="text-xs text-text-secondary">דורש בדיקה</p>
@@ -101,7 +111,7 @@ export default function AdminDashboard() {
               href="/admin/content"
               className="bg-orange-50 border border-orange-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-orange-100 transition"
             >
-              <span className="text-2xl">📦</span>
+              <Package size={28} weight="duotone" aria-hidden="true" className="text-orange-500" />
               <div>
                 <p className="font-medium text-sm">{s.hidden_home_products} מוצרים ביתיים מוסתרים</p>
                 <p className="text-xs text-text-secondary">לבדיקה</p>
@@ -198,24 +208,24 @@ export default function AdminDashboard() {
           label="משתמשים חדשים השבוע"
           value={s.new_users_this_week || 0}
           total={s.total_users || 0}
-          icon="👥"
+          Icon={Users}
         />
         <DeltaCard
           label="עסקים חדשים השבוע"
           value={s.new_producers_this_week || 0}
           total={s.total_producers || 0}
-          icon="🏪"
+          Icon={Storefront}
         />
         <SimpleStat
           label="אירועים"
           value={s.total_events || 0}
-          icon="📅"
+          Icon={CalendarBlank}
           href="/admin/content"
         />
         <SimpleStat
           label="חוויות"
           value={s.total_experiences || 0}
-          icon="🍳"
+          Icon={Sparkle}
           href="/admin/experiences"
         />
       </div>
@@ -238,11 +248,11 @@ export default function AdminDashboard() {
   );
 }
 
-function DeltaCard({ label, value, total, icon }) {
+function DeltaCard({ label, value, total, Icon }) {
   return (
     <div className="bg-white border border-border rounded-[12px] p-4">
       <div className="flex items-start justify-between mb-1">
-        <span className="text-xl" aria-hidden="true">{icon}</span>
+        <Icon size={24} weight="duotone" aria-hidden="true" className="text-primary" />
         <span className="text-3xl font-bold text-primary">+{value}</span>
       </div>
       <p className="text-xs text-text-secondary">{label}</p>
@@ -251,14 +261,14 @@ function DeltaCard({ label, value, total, icon }) {
   );
 }
 
-function SimpleStat({ label, value, icon, href }) {
+function SimpleStat({ label, value, Icon, href }) {
   return (
     <Link
       href={href}
       className="bg-white border border-border rounded-[12px] p-4 hover:shadow-sm transition block"
     >
       <div className="flex items-start justify-between mb-1">
-        <span className="text-xl" aria-hidden="true">{icon}</span>
+        <Icon size={24} weight="duotone" aria-hidden="true" className="text-primary" />
         <span className="text-3xl font-bold text-primary">{value}</span>
       </div>
       <p className="text-xs text-text-secondary">{label}</p>
