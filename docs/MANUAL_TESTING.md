@@ -430,6 +430,27 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Map z-index token system + UI bugfixes
+
+### Z-index hierarchy (per CLAUDE.md)
+- `tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls:1000 → chat:9999`
+
+### Bug fixes
+- [ ] Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000)
+- [ ] Desktop: hover marker → only ONE tooltip (no browser-native duplicate)
+- [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
+- [ ] Mobile: X close button stays at top-left during scroll → tap → closes
+- [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
+- [ ] Desktop: legend visible at bottom-right (z-800)
+
+### Regression
+- [ ] "חפשי באזור זה" button works (z-1000)
+- [ ] "קרוב אלי" clickable with sheet open
+- [ ] CitySearch dropdown above map tiles
+- [ ] Map pan/zoom works above the sheet
+
+---
+
 ## Performance — Core Web Vitals (CWV audit)
 
 ### Image optimization (LCP)
