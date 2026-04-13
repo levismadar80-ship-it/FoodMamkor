@@ -2,6 +2,14 @@ import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/producer/[id]/ProducerDetail";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const SITE_URL = "https://mehamakor.online";
+
+// Cloudinary OG image transform: 1200x630 crop, auto quality, < 300KB.
+function ogImage(url) {
+  if (!url || typeof url !== "string") return null;
+  if (!url.includes("res.cloudinary.com")) return url;
+  return url.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/");
+}
 
 // Reserved root paths that must NOT be treated as a slug.
 // Next.js static routes already win at routing, but this guards
@@ -31,21 +39,27 @@ export async function generateMetadata({ params }) {
   const producer = await getProducerBySlug(params.slug);
   if (!producer) return { title: "בית עסק לא נמצא | מהמקור" };
 
-  const categories = producer.categories?.map((c) => c.name).join(", ") || "";
+  const category = producer.categories?.[0]?.name || "";
   const description = producer.description
-    ? producer.description.slice(0, 155)
-    : `${producer.name} — בית עסק מקומי מ${producer.city}${categories ? `. ${categories}` : ""}`;
+    ? producer.description.slice(0, 120)
+    : `${producer.name} — בית עסק מקומי מ${producer.city}${category ? `. ${category}` : ""}`;
+
+  const pageUrl = `${SITE_URL}/${producer.slug}`;
+  const img = ogImage(producer.images?.[0]);
 
   return {
     title: `${producer.name} | מהמקור`,
     description,
     openGraph: {
-      title: `${producer.name} | מהמקור`,
+      title: producer.name,
       description,
-      url: `https://mehamakor.co.il/${producer.slug}`,
-      images: producer.images?.length > 0 ? [{ url: producer.images[0] }] : [],
+      url: pageUrl,
+      images: img
+        ? [{ url: img, width: 1200, height: 630 }]
+        : [],
       type: "website",
       locale: "he_IL",
+      siteName: "מהמקור",
     },
   };
 }
