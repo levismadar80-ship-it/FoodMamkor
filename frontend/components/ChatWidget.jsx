@@ -182,13 +182,13 @@ export default function ChatWidget() {
   return (
     <>
       {/* Floating launcher button — all screen sizes.
-          On mobile: sits above BottomNav (bottom-20). On desktop: bottom-6.
-          bottom-LEFT in RTL context, opposite the existing rightside controls. */}
+          On mobile: sits above BottomNav (bottom-20 = 80px). Desktop: bottom-6.
+          Positioned bottom-LEFT. z-[1100] above BottomNav (z-1000). */}
       {!open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex fixed bottom-20 md:bottom-6 left-4 md:left-6 z-[1100] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="!fixed !bottom-20 md:!bottom-6 !left-4 md:!left-6 !z-[1100] !flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label="פתחי את העוזרת של מהמקור"
         >
           <ChatCircleDots size={22} weight="duotone" />
