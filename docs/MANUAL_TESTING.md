@@ -430,6 +430,33 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Compliance fixes (ESLint + RTL + accessibility + disclosures)
+
+### ESLint
+- [ ] `cd frontend && npx eslint . --ext .js,.jsx` → 0 errors
+
+### Skip navigation (IS 5568)
+- [ ] Tab once from page load → "דלג לתוכן הראשי" link appears → Enter → focus jumps to main content
+
+### Business disclosures
+- [ ] Footer shows ח.פ., address, email
+
+### RTL dir="ltr"
+- [ ] Admin settings email input: cursor starts on left
+- [ ] Footer newsletter email: cursor starts on left
+- [ ] Experiences/new image URL: cursor starts on left
+
+### Accessibility statement
+- [ ] `/accessibility` — coordinator name "צוות מהמקור" visible
+- [ ] Phone placeholder "להשלים" visible
+- [ ] Link to gov.il accessibility authority present
+- [ ] Date label: "תאריך בדיקה אחרונה" (not "עדכון אחרון")
+
+### Admin tables RTL
+- [ ] Admin tables use `text-end` (not `text-right`) — text aligns correctly in RTL
+
+---
+
 ## Map z-index token system + UI bugfixes
 
 ### Z-index hierarchy (per CLAUDE.md)
