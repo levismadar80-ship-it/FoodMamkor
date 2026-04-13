@@ -181,22 +181,23 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating launcher button — desktop only.
-          bottom-LEFT per spec, opposite the existing rightside controls. */}
-      {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="hidden md:flex fixed bottom-6 left-6 z-[900] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
-          aria-label="פתחי את העוזרת של מהמקור"
-        >
+      {/* Floating launcher button — always visible. Toggles chat open/close. */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="hidden md:flex fixed bottom-6 left-6 z-[900] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        aria-label={open ? "סגרי את העוזרת" : "פתחי את העוזרת של מהמקור"}
+        aria-expanded={open}
+      >
+        {open ? (
+          <X size={22} weight="bold" />
+        ) : (
           <ChatCircleDots size={22} weight="duotone" />
-          <span className="font-body text-sm">שאלה? שאלי אותי</span>
-        </button>
-      )}
+        )}
+        <span className="font-body text-sm">{open ? "סגרי" : "שאלה? שאלי אותי"}</span>
+      </button>
 
-      {/* Chat panel — desktop only.
-          Width 360px, max-height bound to viewport so the input stays in view. */}
+      {/* Chat panel — visible when open */}
       {open && (
         <div
           className="hidden md:flex fixed bottom-6 left-6 z-[900] w-[360px] max-h-[min(560px,80vh)] flex-col bg-background border border-border rounded-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
@@ -204,7 +205,7 @@ export default function ChatWidget() {
           aria-modal="false"
           aria-label="עוזרת מהמקור"
         >
-          {/* Header */}
+          {/* Header — X to minimize (same as clicking the launcher) */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
@@ -213,8 +214,8 @@ export default function ChatWidget() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="p-1 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
-              aria-label="סגרי את חלון העוזרת"
+              className="p-2 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
+              aria-label="מזער את חלון העוזרת"
             >
               <X size={18} weight="bold" />
             </button>
@@ -298,6 +299,7 @@ export default function ChatWidget() {
               maxLength={500}
               disabled={sending}
               className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-site-muted disabled:opacity-60"
+              style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />
             <button
