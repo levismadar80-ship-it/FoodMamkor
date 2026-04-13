@@ -181,11 +181,13 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating launcher button — always visible. Toggles chat open/close. */}
+      {/* Launcher — always visible on all screens.
+          Mobile: icon-only circle, bottom-20 right-4 (above BottomNav).
+          Desktop: pill with text, bottom-6 left-6. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="hidden md:flex fixed bottom-6 left-6 z-[900] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="flex fixed z-[1100] items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40 bottom-20 right-4 w-12 h-12 md:w-auto md:h-auto md:bottom-6 md:left-6 md:right-auto md:px-4 md:py-3 md:gap-2"
         aria-label={open ? "סגרי את העוזרת" : "פתחי את העוזרת של מהמקור"}
         aria-expanded={open}
       >
@@ -194,13 +196,14 @@ export default function ChatWidget() {
         ) : (
           <ChatCircleDots size={22} weight="duotone" />
         )}
-        <span className="font-body text-sm">{open ? "סגרי" : "שאלה? שאלי אותי"}</span>
+        <span className="hidden md:inline font-body text-sm">{open ? "סגרי" : "שאלה? שאלי אותי"}</span>
       </button>
 
-      {/* Chat panel — visible when open */}
+      {/* Chat panel — all screens.
+          Mobile: full-width from bottom edge. Desktop: 360px bottom-left. */}
       {open && (
         <div
-          className="hidden md:flex fixed bottom-6 left-6 z-[900] w-[360px] max-h-[min(560px,80vh)] flex-col bg-background border border-border rounded-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="flex fixed z-[1100] flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden bottom-0 inset-x-0 max-h-[80vh] rounded-t-[16px] md:bottom-6 md:left-6 md:right-auto md:inset-x-auto md:w-[360px] md:max-h-[min(560px,80vh)] md:rounded-[16px]"
           role="dialog"
           aria-modal="false"
           aria-label="עוזרת מהמקור"
