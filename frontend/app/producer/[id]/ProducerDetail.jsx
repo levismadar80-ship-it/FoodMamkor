@@ -227,54 +227,78 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const btnClass = "flex items-center justify-center gap-2 border border-border text-site-text px-3 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40";
   const btnStyle = { minHeight: "48px" };
 
-  const ContactButtons = () => (
-    <div ref={contactRef} className="flex flex-col gap-2.5">
-      {/* Row 1: Phone + Instagram (2-col grid) */}
-      <div className="grid grid-cols-2 gap-2.5">
-        {producer.phone ? (
-          <a href={`tel:${producer.phone}`} className={btnClass} style={btnStyle} dir="ltr">
-            <Phone size={18} weight="duotone" className="text-primary shrink-0" />
-            <span className="truncate">{producer.phone}</span>
-          </a>
-        ) : <div />}
-        {producer.instagram ? (
-          <a href={`https://instagram.com/${producer.instagram}`} target="_blank" rel="noopener noreferrer" className={btnClass} style={btnStyle}>
-            <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
-            <span className="truncate">@{producer.instagram}</span>
-          </a>
-        ) : <div />}
-      </div>
-      {/* Row 2: Website + Copy link */}
-      <div className="grid grid-cols-2 gap-2.5">
-        {producer.website ? (
-          <a href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`} target="_blank" rel="noopener noreferrer" className={btnClass} style={btnStyle}>
-            <Globe size={18} weight="duotone" className="text-primary shrink-0" />
-            אתר
-          </a>
-        ) : <div />}
-        <button type="button" onClick={handleCopyLink} className={btnClass} style={btnStyle}>
-          <ShareNetwork size={18} weight="duotone" className="text-primary shrink-0" />
-          העתק קישור
-        </button>
-      </div>
-      {/* Row 3: Share full width */}
-      <WhatsAppShareButton producer={producer} url={shareUrl} />
-      {/* Row 4: Show on map */}
-      {producer.lat && producer.lng && (
-        <button type="button" onClick={handleShowOnMap} className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40" style={btnStyle}>
-          <MapTrifold size={16} weight="duotone" />
-          הצג במפה
-        </button>
-      )}
-      {/* Row 5: WhatsApp CTA — primary green */}
-      {whatsappHref && (
-        <a href={whatsappHref} target="_blank" rel="noopener noreferrer" onClick={fireWhatsAppBeacon} className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 rounded-[10px] hover:bg-[#1ea855] transition font-medium focus-visible:ring-2 focus-visible:ring-[#25D366]/40" style={btnStyle}>
-          <WhatsappLogo size={20} weight="fill" />
-          שלחי הודעה
+  const ContactButtons = () => {
+    // Build array of available contact items — dynamically pairs them
+    // into rows of 2, making the last item full-width when odd.
+    const contactItems = [];
+    if (producer.phone) {
+      contactItems.push(
+        <a key="phone" href={`tel:${producer.phone}`} className={btnClass} style={btnStyle} dir="ltr">
+          <Phone size={18} weight="duotone" className="text-primary shrink-0" />
+          <span className="truncate">{producer.phone}</span>
         </a>
-      )}
-    </div>
-  );
+      );
+    }
+    if (producer.instagram) {
+      contactItems.push(
+        <a key="ig" href={`https://instagram.com/${producer.instagram}`} target="_blank" rel="noopener noreferrer" className={btnClass} style={btnStyle}>
+          <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
+          <span className="truncate">@{producer.instagram}</span>
+        </a>
+      );
+    }
+    if (producer.website) {
+      contactItems.push(
+        <a key="web" href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`} target="_blank" rel="noopener noreferrer" className={btnClass} style={btnStyle}>
+          <Globe size={18} weight="duotone" className="text-primary shrink-0" />
+          אתר
+        </a>
+      );
+    }
+    // Copy link is always available
+    contactItems.push(
+      <button key="copy" type="button" onClick={handleCopyLink} className={btnClass} style={btnStyle}>
+        <ShareNetwork size={18} weight="duotone" className="text-primary shrink-0" />
+        העתק קישור
+      </button>
+    );
+
+    // Render items in rows of 2. If odd count, last item gets full-width.
+    const rows = [];
+    for (let i = 0; i < contactItems.length; i += 2) {
+      if (i + 1 < contactItems.length) {
+        rows.push(
+          <div key={i} className="grid grid-cols-2 gap-2.5">
+            {contactItems[i]}
+            {contactItems[i + 1]}
+          </div>
+        );
+      } else {
+        // Odd item — full-width
+        rows.push(<div key={i}>{contactItems[i]}</div>);
+      }
+    }
+
+    return (
+      <div ref={contactRef} className="flex flex-col gap-2.5">
+        {rows}
+        {/* Always full-width: Share, Show on map, WhatsApp CTA */}
+        <WhatsAppShareButton producer={producer} url={shareUrl} />
+        {producer.lat && producer.lng && (
+          <button type="button" onClick={handleShowOnMap} className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40" style={btnStyle}>
+            <MapTrifold size={16} weight="duotone" />
+            הצג במפה
+          </button>
+        )}
+        {whatsappHref && (
+          <a href={whatsappHref} target="_blank" rel="noopener noreferrer" onClick={fireWhatsAppBeacon} className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 rounded-[10px] hover:bg-[#1ea855] transition font-medium focus-visible:ring-2 focus-visible:ring-[#25D366]/40" style={btnStyle}>
+            <WhatsappLogo size={20} weight="fill" />
+            שלחי הודעה
+          </a>
+        )}
+      </div>
+    );
+  };
 
   // ─────────────── Render ───────────────
   return (
