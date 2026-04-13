@@ -430,6 +430,39 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Component tests — vitest (automated)
+
+### Running
+- [ ] `cd frontend && npx vitest run --reporter=verbose` — all 33 tests pass
+- [ ] Stop hook runs vitest automatically on every task completion
+
+### ProducerCard (13 tests)
+- [ ] Renders all fields when fully populated
+- [ ] Hides phone/instagram/WhatsApp buttons when those fields are null
+- [ ] Verified badge only when is_verified=true
+- [ ] Premium badge only when plan="premium"
+- [ ] Availability badge only when is_available_today=true
+- [ ] No reviews line when reviews_count=0
+- [ ] No top product when top_product_name=null
+- [ ] No price when price_range and starting_price_label are null
+- [ ] Image placeholder when images array is empty
+- [ ] Uses slug for href when available, falls back to /producer/:id
+
+### HomeProductCard (16 tests)
+- [ ] Renders image when available, placeholder when null
+- [ ] Price: null → empty, 0 → "🎁 במתנה", number → "₪X / unit"
+- [ ] Neighborhood when available, city as fallback
+- [ ] Allergens/quantity/seller shown only when present
+- [ ] Moderation badge for FLAGGED status
+- [ ] Organic badge only when is_organic=true
+
+### FavoriteButton (4 tests)
+- [ ] Returns null when no user logged in
+- [ ] Shows 🤍 heart when logged in (unfavorited)
+- [ ] Correct aria-label and aria-pressed
+
+---
+
 ## Share button on producer page (task 14)
 
 ### Share button (copy link)
