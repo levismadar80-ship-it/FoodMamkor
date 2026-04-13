@@ -295,6 +295,7 @@ export default function NewExperienceClient() {
         <Field label="תמונה (URL — Cloudinary מומלץ)">
           <input
             type="url"
+            dir="ltr"
             value={form.image_url}
             onChange={setField("image_url")}
             placeholder="https://res.cloudinary.com/..."
