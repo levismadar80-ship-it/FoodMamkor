@@ -114,12 +114,13 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           </h3>
         </Link>
 
-        <p className="text-[13px] text-site-muted mt-1 truncate">
-          {producer.city}
-          {producer.categories?.[0] && (
-            <> · {producer.categories[0].emoji} {producer.categories[0].name}</>
-          )}
-        </p>
+        {(producer.city || producer.categories?.[0]) && (
+          <p className="text-[13px] text-site-muted mt-1 truncate">
+            {producer.city}
+            {producer.city && producer.categories?.[0] && " · "}
+            {producer.categories?.[0] && <>{producer.categories[0].emoji} {producer.categories[0].name}</>}
+          </p>
+        )}
 
         {producer.reviews_count > 0 && (
           <p className="text-xs text-site-muted mt-1">
@@ -132,7 +133,8 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           <p className="text-sm text-site-text/85 mt-2 truncate">{producer.top_product_name}</p>
         )}
 
-        {/* Pill badges */}
+        {/* Pill badges — only render wrapper if at least one badge exists */}
+        {(producer.organic_certified || producer.grass_fed || producer.kosher || producer.categories?.length > 0) && (
         <div className="flex flex-wrap mt-2" style={{ gap: "6px" }}>
           {producer.organic_certified && (
             <span className="bg-light text-primary inline-flex items-center gap-1" style={{ borderRadius: "20px", padding: "3px 10px", fontSize: "12px" }}>
@@ -155,6 +157,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
             <CategoryTag key={cat.id} category={cat} />
           ))}
         </div>
+        )}
 
         {/* Footer row: price + icons + CTA */}
         <div

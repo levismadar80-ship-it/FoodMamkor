@@ -93,11 +93,11 @@ export default function ExperienceCard({ experience: ex }) {
           </p>
         )}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
-          {ex.category && (
+          {ex.category ? (
             <span className="bg-light text-primary text-xs px-2 py-1 rounded-full">
               {ex.category}
             </span>
-          )}
+          ) : <span />}
           <span className="text-accent font-semibold text-sm">
             {formatPrice(ex.price_per_person)}
           </span>

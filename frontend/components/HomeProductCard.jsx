@@ -73,7 +73,8 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
       <div className="p-4 flex flex-col flex-1">
         <h3 className="font-headline font-bold text-lg mb-1 text-site-text">{product.title}</h3>
 
-        {/* Trust badges */}
+        {/* Trust badges — only render if at least one badge exists */}
+        {(product.is_organic || (product.kosher && product.kosher !== "לא ידוע") || product.storage_type || product.category) && (
         <div className="flex flex-wrap gap-1 mb-2">
           {product.is_organic && (
             <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20 inline-flex items-center gap-0.5">
@@ -97,6 +98,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             </span>
           )}
         </div>
+        )}
 
         {/* Dates */}
         {(product.prep_date || product.expiry_date) && (
@@ -114,19 +116,23 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
           </p>
         )}
 
-        {/* Location + price */}
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-site-muted text-sm">
-            <MapPin size={14} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> {product.neighborhood || product.city}
-          </p>
-          <span className="font-semibold text-accent">
-            {isFree
-              ? "🎁 במתנה"
-              : priceNum != null
-                ? `₪${priceNum.toFixed(0)}${product.unit ? ` / ${product.unit}` : ""}`
-                : ""}
-          </span>
-        </div>
+        {/* Location + price — only render row if at least one has data */}
+        {((product.neighborhood || product.city) || priceNum != null) && (
+          <div className="flex items-center justify-between mb-2">
+            {(product.neighborhood || product.city) ? (
+              <p className="text-site-muted text-sm">
+                <MapPin size={14} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> {product.neighborhood || product.city}
+              </p>
+            ) : <span />}
+            <span className="font-semibold text-accent">
+              {isFree
+                ? "🎁 במתנה"
+                : priceNum != null
+                  ? `₪${priceNum.toFixed(0)}${product.unit ? ` / ${product.unit}` : ""}`
+                  : ""}
+            </span>
+          </div>
+        )}
 
         {product.quantity && (
           <p className="text-xs text-site-muted mb-2">

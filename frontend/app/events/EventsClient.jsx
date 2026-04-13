@@ -278,15 +278,19 @@ function EventCard({ event }) {
           {event.title}
         </h3>
         <p className="text-sm text-site-muted mb-2">
-          {event.producer_name} · {event.city}
+          {event.producer_name}
+          {event.producer_name && event.city && " · "}
+          {event.city}
         </p>
         {event.description && (
           <p className="text-sm text-site-text/85 line-clamp-2 mb-3">{event.description}</p>
         )}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
-          <span className="bg-light text-primary text-xs px-2 py-1 rounded-full">
-            {event.category}
-          </span>
+          {event.category ? (
+            <span className="bg-light text-primary text-xs px-2 py-1 rounded-full">
+              {event.category}
+            </span>
+          ) : <span />}
           <span className="text-accent font-semibold text-sm">
             {event.price > 0 ? `₪${event.price}` : "חינם"}
           </span>

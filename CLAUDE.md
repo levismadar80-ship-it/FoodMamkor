@@ -63,7 +63,8 @@
     - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — if env vars or infra changed
     - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — always add a one-line entry
     - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
-12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.** These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
+12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.**
+13. **Never render empty containers for optional fields.** Always conditionally render optional data (`{x && <Tag>{x}</Tag>}`, not `<Tag>{x}</Tag>` with x possibly null). For grids with optional items: build an array of available items first, then render — never hardcode grid positions that may be empty. Separators between optional fields (` · `) must also be conditional on both sides having data. These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
 
 ## Documentation map
 | File | What's in it |
