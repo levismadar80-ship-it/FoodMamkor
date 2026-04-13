@@ -32,6 +32,12 @@ h1, h2, h3 {
   width: 100%;
   border-radius: 16px;
 }
+/* Ensure Leaflet zoom controls sit above the mobile bottom sheet (z-500).
+   Leaflet's default z-index for controls is scoped to its own stacking
+   context; this override ensures they compete at the page level. */
+.leaflet-control-zoom {
+  z-index: 1000 !important;
+}
 
 /* Fade-in on scroll — set initial state, hook toggles it */
 .fade-in-init {

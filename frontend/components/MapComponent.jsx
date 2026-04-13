@@ -307,11 +307,12 @@ export default function MapComponent({
 
       const marker = L.marker([p.lat, p.lng], {
         icon: createCategoryMarker(p, { active: false, hovered: false }),
-        // docs/archive/MAP_IMPROVEMENTS.md #10 — set alt + title to producer name so
-        // no "Marker" (or truncated "arker") leaks into assistive tech
-        // or hover tooltips.
+        // docs/archive/MAP_IMPROVEMENTS.md #10 — set alt for assistive tech.
+        // `title` deliberately omitted — it creates a browser-native hover
+        // tooltip that duplicates the Leaflet tooltip bound below (bug: double
+        // tooltip on hover). Keeping alt-only for screen readers.
         alt: p.name || "עסק",
-        title: p.name || "עסק",
+        title: "",
         keyboard: true,
       });
 
