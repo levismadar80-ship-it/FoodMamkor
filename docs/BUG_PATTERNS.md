@@ -39,6 +39,13 @@
 - **Grep check:** `grep -rn 'hidden md:flex\|hidden lg:flex' frontend/components --include='*.jsx'` — verify each is intentional.
 - **Files fixed:** `ChatWidget.jsx` — `hidden md:flex` → `flex` on both launcher and panel, with responsive positioning (bottom-20 on mobile to clear BottomNav, bottom-6 on desktop).
 
+### Pattern 6: Fixed height cards too tall on mobile
+- **Bug:** Category cards with `height: 280px` filled nearly the entire mobile viewport — users could only see one card at a time without scrolling. The grid was also `grid-cols-1` on mobile, showing just one card per row.
+- **Root cause:** Single fixed height in inline style with no responsive variant. Grid used `grid-cols-1 md:grid-cols-2` instead of starting at 2 columns.
+- **Rule:** Always use responsive heights for grid cards: `h-[140px] md:h-[280px]`. Always use 2+ columns on mobile for compact grids: `grid-cols-2 lg:grid-cols-3`. Scale down icons and text inside smaller cards.
+- **Grep check:** `grep -rn "height:.*px" frontend/app --include='*.js'` — verify each inline height has a responsive class alternative. Also `grep -rn 'grid-cols-1 ' frontend/app --include='*.js'` — verify single-column mobile is intentional.
+- **Files fixed:** `page.js` — category grid `grid-cols-1 md:grid-cols-2` → `grid-cols-2`, card height `280px` → `h-[140px] md:h-[280px]`, icon `size={64}` → `36/64` responsive, title `22px` → `text-sm md:text-[22px]`.
+
 ---
 
 ## How to add a new pattern

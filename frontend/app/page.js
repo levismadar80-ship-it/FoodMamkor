@@ -355,7 +355,7 @@ export default function HomePage() {
           <p className="text-site-muted text-base">ישר מבית העסק — בלי מתווכים</p>
         </FadeInSection>
         <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-2 lg:grid-cols-3"
           style={{ gap: "20px" }}
         >
           {categoryCards.map((card, idx) => {
@@ -369,13 +369,9 @@ export default function HomePage() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               onClick={() => handleCategoryCardClick(card)}
-              className="group relative overflow-hidden cursor-pointer text-right"
+              className="group relative overflow-hidden cursor-pointer text-right h-[140px] md:h-[280px] rounded-[16px] bg-cover bg-center"
               style={{
-                height: "280px",
-                borderRadius: "16px",
                 backgroundImage: `url(${card.image})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
               }}
               aria-label={`הצג קטגוריה: ${card.name}`}
             >
@@ -388,8 +384,13 @@ export default function HomePage() {
                 style={{ backgroundColor: "rgba(46,104,83,0.45)" }}
               />
               <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
-                {LineArt && <LineArt size={64} stroke="white" strokeWidth={1.75} />}
-                <h3 className="font-headline font-bold mt-3" style={{ fontSize: "22px" }}>
+                {LineArt && (
+                  <>
+                    <span className="md:hidden"><LineArt size={36} stroke="white" strokeWidth={1.75} /></span>
+                    <span className="hidden md:inline"><LineArt size={64} stroke="white" strokeWidth={1.75} /></span>
+                  </>
+                )}
+                <h3 className="font-headline font-bold mt-1.5 md:mt-3 text-sm md:text-[22px]">
                   {card.name}
                 </h3>
               </div>
