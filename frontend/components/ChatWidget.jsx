@@ -5,36 +5,20 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 /**
- * ChatWidget — floating Q&A bot that answers questions about mehamakor.online
- * via the backend `/chat` endpoint (Claude Haiku 4.5 with a Hebrew system
- * prompt scoped to site usage).
+ * ChatWidget — floating Q&A bot, all screen sizes.
  *
- * Design:
- *   - Floating button bottom-LEFT (bottom-6 left-6) — opposite the
- *     existing "near me" map button which sits bottom-right inside the
- *     map container; doesn't conflict with anything global.
- *   - **Desktop only** (`hidden md:flex`) per spec. Mobile real estate
- *     is already taken by BottomNav + cookies banner; chat goes in
- *     phase 2.
- *   - Open state shows a 360px panel with brand styling: cream bg,
- *     primary green header, rounded 16px, soft shadow tinted with the
- *     brand primary (CLAUDE.md design rule).
- *   - Conversation state lives in this component — refreshing the page
- *     wipes it. That's intentional for an MVP help-bot; persistence
- *     would mean storing per-user history server-side, which is
- *     scope-creep.
- *   - First-open seeds an opening assistant message so the empty state
- *     doesn't look broken.
- *   - prefers-reduced-motion is honored: panel just appears, no slide.
+ * Launcher:
+ *   Mobile: icon-only circle. bottom-32 when cookie banner visible,
+ *     bottom-20 when dismissed. right-4. z-1100.
+ *   Desktop: pill with text on first visit, icon-only after user has
+ *     opened once (chatWasOpened in localStorage). bottom-6 right-6.
+ *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
- * Server contract (see backend/app/routers/chat.py):
- *   POST /api/chat
- *   { messages: [{ role: "user"|"assistant", content: string }, ...] }
- *   → { reply: string }
+ * Panel:
+ *   Mobile: full-width from bottom. Desktop: 360px bottom-right.
  *
- * The backend is rate-limited (10/min, 30/hour per IP). On 429 we
- * surface a friendly Hebrew message; on any other error we surface a
- * generic "try again" without exposing the error.
+ * Coexistence: listens for "cookie-consent" CustomEvent from
+ * CookieBanner to reposition. Reads "cookieConsent" from localStorage.
  */
 
 const OPENING_MESSAGE = {
@@ -100,14 +84,51 @@ export default function ChatWidget() {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-scroll to the newest message whenever the list grows.
+  // ── Responsive: desktop vs mobile ──
+  const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(mq.matches);
+    const h = (e) => setIsDesktop(e.matches);
+    mq.addEventListener("change", h);
+    return () => mq.removeEventListener("change", h);
+  }, []);
+
+  // ── Cookie banner visibility (for mobile positioning) ──
+  const [bannerUp, setBannerUp] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      try {
+        const v = localStorage.getItem("cookieConsent");
+        setBannerUp(v !== "all" && v !== "essential");
+      } catch (e) { setBannerUp(false); }
+    };
+    check();
+    window.addEventListener("cookie-consent", check);
+    return () => window.removeEventListener("cookie-consent", check);
+  }, []);
+
+  // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
+  const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
+  useEffect(() => {
+    try { setWasOpened(localStorage.getItem("chatWasOpened") === "true"); }
+    catch (e) { setWasOpened(false); }
+  }, []);
+
+  const handleOpen = () => {
+    setOpen(true);
+    if (!wasOpened) {
+      setWasOpened(true);
+      try { localStorage.setItem("chatWasOpened", "true"); } catch (e) {}
     }
+  };
+
+  // ── Standard chat effects ──
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, sending]);
 
-  // When the panel opens, focus the input so the user can type immediately.
   useEffect(() => {
     if (open && inputRef.current) {
       const t = setTimeout(() => inputRef.current?.focus(), 50);
@@ -115,91 +136,87 @@ export default function ChatWidget() {
     }
   }, [open]);
 
-  // Esc closes the panel — standard accessible dialog behavior.
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    const h = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
   }, [open]);
 
+  // ── Send message logic ──
   const sendMessage = async (text) => {
     const trimmed = (text || "").trim();
     if (!trimmed || sending) return;
-
     setError("");
-    // Optimistic append: show user message immediately, then call API.
     const nextMessages = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setInput("");
-
-    // Shortcut: if the user clicked (or typed verbatim) one of the three
-    // canonical suggested prompts, return the hardcoded answer instantly
-    // without going through Claude. See HARDCODED_ANSWERS at the top of
-    // this file for the rationale (consistent copy, zero cost, zero
-    // latency for the most-clicked prompts).
     if (HARDCODED_ANSWERS[trimmed]) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: HARDCODED_ANSWERS[trimmed] },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: HARDCODED_ANSWERS[trimmed] }]);
       return;
     }
-
     setSending(true);
-
     try {
-      // The opening message is UI fluff — don't send it to the model.
-      // The model has its own system prompt; the seed greeting would
-      // just inflate the prefix.
       const apiMessages = nextMessages
         .filter((m, i) => !(i === 0 && m === OPENING_MESSAGE))
         .map(({ role, content }) => ({ role, content }));
-
       const res = await api.post("/chat", { messages: apiMessages });
       const reply = res.data?.reply || "לא הצלחתי להבין את השאלה — אפשר לנסח אותה שוב?";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (e) {
-      // Rate limit (429) gets a specific message; everything else falls
-      // through to a friendly generic.
       if (e.response?.status === 429) {
         setError("שלחת הרבה הודעות בזמן קצר — נסי שוב בעוד דקה 🌱");
       } else {
         setError("משהו השתבש 🌱 נסי שוב בעוד רגע");
       }
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    sendMessage(input);
+  const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
+
+  // ── Positioning (all inline — no Tailwind specificity fights) ──
+  const mobileBottom = bannerUp ? 128 : 80; // bottom-32 vs bottom-20
+  const launcherStyle = {
+    position: "fixed", zIndex: 1100,
+    right: isDesktop ? 24 : 16,
+    bottom: isDesktop ? 24 : mobileBottom,
   };
+  const panelStyle = {
+    position: "fixed", zIndex: 1100,
+    bottom: isDesktop ? 24 : 0,
+    right: isDesktop ? 24 : 0,
+    left: isDesktop ? "auto" : 0,
+    width: isDesktop ? 360 : "100%",
+    maxHeight: isDesktop ? "min(560px, 80vh)" : "80vh",
+    borderRadius: isDesktop ? 16 : "16px 16px 0 0",
+  };
+
+  // Desktop pill with text on first visit, icon-only after; mobile always icon-only.
+  const showPillText = isDesktop && !wasOpened;
 
   return (
     <>
-      {/* Floating launcher button — desktop only.
-          bottom-LEFT per spec, opposite the existing rightside controls. */}
-      {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="hidden md:flex fixed bottom-6 left-6 z-[900] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
-          aria-label="פתחי את העוזרת של מהמקור"
-        >
-          <ChatCircleDots size={22} weight="duotone" />
-          <span className="font-body text-sm">שאלה? שאלי אותי</span>
-        </button>
-      )}
+      {/* ── Launcher ── */}
+      <button
+        type="button"
+        onClick={open ? () => setOpen(false) : handleOpen}
+        style={launcherStyle}
+        className={[
+          "flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
+        ].join(" ")}
+        aria-label={open ? "סגרי את העוזרת" : "פתחי את העוזרת של מהמקור"}
+        aria-expanded={open}
+      >
+        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
+        {showPillText && !open && <span className="font-body text-sm">שאלה? שאלי אותי</span>}
+      </button>
 
-      {/* Chat panel — desktop only.
-          Width 360px, max-height bound to viewport so the input stays in view. */}
+      {/* ── Chat panel ── */}
       {open && (
         <div
-          className="hidden md:flex fixed bottom-6 left-6 z-[900] w-[360px] max-h-[min(560px,80vh)] flex-col bg-background border border-border rounded-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          style={panelStyle}
+          className="flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label="עוזרת מהמקור"
@@ -213,33 +230,24 @@ export default function ChatWidget() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="p-1 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
+              className="p-2 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
               aria-label="סגרי את חלון העוזרת"
             >
               <X size={18} weight="bold" />
             </button>
           </div>
 
-          {/* Message list */}
+          {/* Messages */}
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
-            role="log"
-            aria-live="polite"
-            aria-label="שיחה עם העוזרת"
+            role="log" aria-live="polite" aria-label="שיחה עם העוזרת"
           >
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}
-              >
-                <div
-                  className={`max-w-[85%] px-3 py-2 rounded-[12px] text-sm leading-relaxed whitespace-pre-line ${
-                    m.role === "user"
-                      ? "bg-primary text-white"
-                      : "bg-white text-site-text border border-border"
-                  }`}
-                >
+              <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
+                <div className={`max-w-[85%] px-3 py-2 rounded-[12px] text-sm leading-relaxed whitespace-pre-line ${
+                  m.role === "user" ? "bg-primary text-white" : "bg-white text-site-text border border-border"
+                }`}>
                   {m.content}
                 </div>
               </div>
@@ -256,58 +264,37 @@ export default function ChatWidget() {
               </div>
             )}
             {error && (
-              <p
-                role="status"
-                className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2"
-              >
+              <p role="status" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2">
                 {error}
               </p>
             )}
-            {/* Suggested prompts — only shown when the conversation hasn't started yet */}
             {messages.length === 1 && !sending && (
               <div className="flex flex-col gap-2 pt-1">
                 {SUGGESTED_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => sendMessage(p)}
+                  <button key={p} type="button" onClick={() => sendMessage(p)}
                     className="text-right text-xs text-primary bg-light hover:bg-light/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
-                  >
-                    {p}
-                  </button>
+                  >{p}</button>
                 ))}
               </div>
             )}
           </div>
 
           {/* Composer */}
-          <form
-            onSubmit={handleSubmit}
-            className="border-t border-border bg-white px-3 py-2 flex items-center gap-2"
-          >
-            <label htmlFor="chat-input" className="sr-only">
-              הקלידי שאלה
-            </label>
+          <form onSubmit={handleSubmit} className="border-t border-border bg-white px-3 py-2 flex items-center gap-2">
+            <label htmlFor="chat-input" className="sr-only">הקלידי שאלה</label>
             <input
-              ref={inputRef}
-              id="chat-input"
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="הקלידי שאלה..."
-              maxLength={500}
-              disabled={sending}
+              ref={inputRef} id="chat-input" type="text"
+              value={input} onChange={(e) => setInput(e.target.value)}
+              placeholder="הקלידי שאלה..." maxLength={500} disabled={sending}
               className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-site-muted disabled:opacity-60"
+              style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />
             <button
-              type="submit"
-              disabled={sending || !input.trim()}
+              type="submit" disabled={sending || !input.trim()}
               className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label="שלחי שאלה"
             >
-              {/* Phosphor PaperPlaneTilt is mirrored for RTL by inverting it
-                  so the "send" tip points toward the message direction. */}
               <PaperPlaneTilt size={16} weight="fill" style={{ transform: "scaleX(-1)" }} />
             </button>
           </form>
