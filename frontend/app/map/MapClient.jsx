@@ -291,9 +291,12 @@ export default function MapPage() {
           </div>
         )}
 
-        {/* docs/archive/MAP_IMPROVEMENTS.md #8 — legend that doubles as filter */}
+        {/* docs/archive/MAP_IMPROVEMENTS.md #8 — legend that doubles as filter.
+            z-[800] per CLAUDE.md map z-index tokens. Hidden on mobile to
+            save screen space; filter chips above the map serve the same
+            purpose on small screens. */}
         <div
-          className="absolute bottom-4 right-4 z-[1000] bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.1)] border border-border p-3 max-w-[200px]"
+          className="hidden md:block absolute bottom-4 right-4 z-[800] bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.1)] border border-border p-3 max-w-[200px]"
           role="group"
           aria-label="סינון לפי קטגוריה"
         >
@@ -363,9 +366,13 @@ export default function MapPage() {
           absolute-positioned inside that same row — leaving the handle
           flush-left. Restructured: handle is its own centered block, X
           is absolute relative to the dialog. */}
+      {/* Mobile bottom sheet — z-[600] per CLAUDE.md map z-index tokens.
+          Must stay BELOW map controls (zoom z-1000, search z-1000, legend
+          z-800, "קרוב אלי" z-1000) so controls remain clickable when the
+          sheet is open. pb-6 prevents content cutoff at the rounded edge. */}
       {selectedProducer && (
         <div
-          className="md:hidden fixed bottom-16 inset-x-3 z-[900] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
+          className="md:hidden fixed bottom-16 inset-x-3 z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 pb-6 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
           role="dialog"
           aria-modal="true"
           aria-label="פרטי העסק שנבחר"
@@ -377,7 +384,7 @@ export default function MapPage() {
           <button
             type="button"
             onClick={() => setSelectedProducer(null)}
-            className="absolute top-3 left-3 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="absolute top-3 left-3 z-10 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="סגור"
           >
             <X size={18} weight="bold" />
