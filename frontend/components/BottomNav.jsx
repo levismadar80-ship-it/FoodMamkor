@@ -35,7 +35,7 @@ export default function BottomNav() {
             <li key={tab.labelKey}>
               <Link
                 href={tab.href}
-                className={`flex flex-col items-center justify-center py-2 text-[11px] transition ${
+                className={`flex flex-col items-center justify-center py-2 min-h-[44px] text-[11px] transition ${
                   active ? "text-primary" : "text-site-muted"
                 }`}
                 aria-current={active ? "page" : undefined}

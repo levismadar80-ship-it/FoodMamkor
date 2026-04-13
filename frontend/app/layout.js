@@ -104,7 +104,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-16 md:pb-0">
+      <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-20 md:pb-0">
         <AuthProvider>
           <LanguageProvider>
           <SmoothScrollProvider>
