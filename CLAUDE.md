@@ -81,6 +81,9 @@
 | [docs/CHANGELOG.md](./docs/CHANGELOG.md) | Session log preserved from earlier CLAUDE.md revisions |
 | [docs/archive/](./docs/archive/) | Implemented session specs (FINAL_AUDIT, MAP_IMPROVEMENTS, PREMIUM_DESIGN, etc.) — historical, do not edit |
 
+## Map z-index tokens (do not use arbitrary values on `/map`)
+`tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls/zoom/search:1000 → chat:9999 → cookie:9998`. Bottom sheets must ALWAYS sit below map controls. See `globals.css` for CSS overrides and `MapClient.jsx` for Tailwind classes.
+
 ## How to update this file
 - Keep it ≤ 150 lines (raised from 100 in April 2026 when the inline `## Architecture Diagrams` section was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).

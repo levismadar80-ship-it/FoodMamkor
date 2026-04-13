@@ -3,6 +3,27 @@ const withPWA = require("next-pwa")({
   disable: process.env.NODE_ENV === "development",
 });
 
+// When deployed to a Vercel preview URL (not production, not local dev),
+// Vercel injects its "live feedback" widget at
+// https://vercel.live/_next-live/feedback/feedback.js which lets reviewers
+// leave comments directly on the preview. The widget also opens a
+// WebSocket to Pusher for realtime updates. None of this runs in prod
+// (where `VERCEL_ENV === "production"`) or in local `next dev`, so we
+// only expand the CSP when `VERCEL_ENV === "preview"` — keeping the
+// production CSP strict. See the Vercel Live docs for the canonical
+// list of required CSP sources (script/style/frame/connect/img/font).
+const isVercelPreview = process.env.VERCEL_ENV === "preview";
+const vercelLiveScript = isVercelPreview ? " https://vercel.live" : "";
+const vercelLiveStyle = isVercelPreview ? " https://vercel.live" : "";
+const vercelLiveFrame = isVercelPreview ? " https://vercel.live" : "";
+const vercelLiveConnect = isVercelPreview
+  ? " https://vercel.live wss://ws-us3.pusher.com https://pusher.com"
+  : "";
+const vercelLiveImg = isVercelPreview
+  ? " https://vercel.live https://vercel.com"
+  : "";
+const vercelLiveFont = isVercelPreview ? " https://vercel.live" : "";
+
 // SECURITY FIX #8 (SECURITY.md): HTTP security headers applied by Next.js
 // on every HTML/asset response. Paired with backend/app/main.py which sets
 // the same family of headers on API responses. HSTS is included here for
@@ -25,15 +46,19 @@ const securityHeaders = [
     // because Next.js inlines runtime code and Tailwind injects styles.
     // Cloudinary + Unsplash whitelisted for images; Google fonts + GSI
     // for scripts (OAuth); Leaflet tiles from openstreetmap.
+    //
+    // Vercel Live feedback widget is conditionally whitelisted via the
+    // `vercelLive*` consts above — only when `VERCEL_ENV === "preview"`.
+    // Production CSP stays strict.
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org data: blob:",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
-      "connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org",
-      "frame-src 'self' https://accounts.google.com https://appleid.apple.com",
+      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org data: blob:${vercelLiveImg}`,
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com${vercelLiveStyle}`,
+      `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
+      `connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org${vercelLiveConnect}`,
+      `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

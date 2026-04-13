@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { InstagramLogo } from "@phosphor-icons/react";
+import { useLanguage } from "@/lib/language-context";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
 
@@ -17,6 +18,7 @@ import api from "@/lib/api";
  *                     (Israeli legal compliance — all four pages required)
  */
 export default function Footer() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
@@ -39,37 +41,37 @@ export default function Footer() {
 
   const columns = [
     {
-      title: "לגלות",
+      title: t("footer_discover"),
       links: [
-        { href: "/", label: "דף הבית" },
-        { href: "/map", label: "מפה" },
-        { href: "/#producers-grid", label: "כל העסקים" },
-        { href: "/#producers-grid", label: "עסקים חדשים" },
+        { href: "/", label: t("footer_home") },
+        { href: "/map", label: t("footer_map") },
+        { href: "/#producers-grid", label: t("footer_all_businesses") },
+        { href: "/#producers-grid", label: t("footer_new_businesses") },
       ],
     },
     {
-      title: "קהילה",
+      title: t("footer_community"),
       links: [
-        { href: "/events", label: "אירועים" },
-        { href: "/#home-kitchen", label: "מהמטבח של השכן" },
-        { href: "/about", label: "אודות" },
+        { href: "/events", label: t("footer_events") },
+        { href: "/#home-kitchen", label: t("footer_neighbor_kitchen") },
+        { href: "/about", label: t("footer_about") },
       ],
     },
     {
-      title: "בתי עסק",
+      title: t("footer_businesses"),
       links: [
-        { href: "/register/producer", label: "הוסיפי את העסק שלך 🌿" },
-        { href: "/login", label: "כניסה לחשבון" },
-        { href: "/producer/dashboard", label: "ניהול העסק" },
+        { href: "/register/producer", label: t("footer_add_business") },
+        { href: "/login", label: t("footer_login") },
+        { href: "/producer/dashboard", label: t("footer_manage") },
       ],
     },
     {
-      title: "שקיפות ואמון",
+      title: t("footer_trust"),
       links: [
-        { href: "/terms", label: "תנאי שימוש" },
-        { href: "/privacy", label: "מדיניות פרטיות" },
-        { href: "/accessibility", label: "הצהרת נגישות" },
-        { href: "/contact", label: "יצירת קשר" },
+        { href: "/terms", label: t("footer_terms") },
+        { href: "/privacy", label: t("footer_privacy") },
+        { href: "/accessibility", label: t("footer_accessibility") },
+        { href: "/contact", label: t("footer_contact") },
       ],
     },
   ];
@@ -127,9 +129,9 @@ export default function Footer() {
 
           {/* Newsletter — md:span 3 */}
           <div className="md:col-span-3">
-            <h3 className="font-headline text-2xl font-bold mb-2 text-white">הישארי מעודכנת</h3>
+            <h3 className="font-headline text-2xl font-bold mb-2 text-white">{t("footer_newsletter_title")}</h3>
             <p className="text-light/90 text-sm mb-4">
-              מוצרים חדשים, אירועים ועסקים ישר לתיבה שלך.
+              {t("footer_newsletter_subtitle")}
             </p>
             <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
               <label htmlFor="footer-newsletter-email" className="sr-only">
@@ -141,7 +143,7 @@ export default function Footer() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="האימייל שלך"
+                placeholder={t("footer_newsletter_placeholder")}
                 className="bg-transparent border text-white placeholder:text-light/60 rounded-[8px] px-4 py-2 outline-none focus:border-white focus-visible:ring-2 focus-visible:ring-light"
                 style={{ borderColor: "rgba(255,255,255,0.3)" }}
               />
@@ -153,10 +155,10 @@ export default function Footer() {
                 {status === "loading" ? (
                   <span className="inline-flex items-center gap-2">
                     <ButtonSpinner />
-                    מצטרפת...
+                    {t("footer_newsletter_loading")}
                   </span>
                 ) : (
-                  "הצטרפי"
+                  t("footer_newsletter_submit")
                 )}
               </button>
             </form>
@@ -173,8 +175,8 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-light/70">
-          <p>© {new Date().getFullYear()} מהמקור. כל הזכויות שמורות.</p>
-          <p>נעשה באהבה בישראל 🌿</p>
+          <p>© {new Date().getFullYear()} {t("footer_copyright")}</p>
+          <p>{t("footer_made_with_love")}</p>
         </div>
       </div>
     </footer>

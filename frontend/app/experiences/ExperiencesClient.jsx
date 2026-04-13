@@ -53,7 +53,7 @@ export default function ExperiencesClient() {
           style={{
             inset: "-5%",
             backgroundImage:
-              "url(https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=1600&auto=format&q=80)",
+              "url(https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=1600&auto=format&q=80&fm=webp)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}

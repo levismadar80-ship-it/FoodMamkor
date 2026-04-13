@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckCircle, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 const TABS = [
@@ -147,7 +148,7 @@ export default function AdminReportsPage() {
                         className="mt-3 rounded-[8px] p-3 text-sm"
                         style={{ background: "#FFF9E6", border: "1px solid #F0C040", color: "#946A00" }}
                       >
-                        <p className="font-medium">⚠️ {hp.moderation_reason || "סומן לבדיקה"}</p>
+                        <p className="font-medium"><Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {hp.moderation_reason || "סומן לבדיקה"}</p>
                         {hp.moderation_suggestion && (
                           <p className="mt-1 opacity-80">💡 {hp.moderation_suggestion}</p>
                         )}
@@ -158,7 +159,7 @@ export default function AdminReportsPage() {
                         onClick={() => approveFlagged(hp.id)}
                         className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-light transition"
                       >
-                        ✅ אשרי
+                        <CheckCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> אשרי
                       </button>
                       <button
                         onClick={() => removeFlagged(hp.id)}

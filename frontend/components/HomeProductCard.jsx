@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { CalendarBlank, House, Leaf, MagnifyingGlass, MapPin, Warning } from "@phosphor-icons/react";
 import StarRating from "./StarRating";
 import WhatsAppButton from "./WhatsAppButton";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -49,8 +50,9 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             <span className="font-headline text-sm mt-1 opacity-70">מהמטבח</span>
           </div>
         )}
-        <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full">
-          ביתי 🏠
+        <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+          ביתי
+          <House size={14} weight="fill" aria-hidden="true" />
         </span>
         {product.moderation_status === "FLAGGED" && (
           <span
@@ -58,12 +60,12 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             style={{ background: "#FFF9E6", color: "#946A00", border: "1px solid #F0C040" }}
             title={product.moderation_reason || "המודעה בבדיקת אדמין"}
           >
-            🔍 בבדיקה
+            <MagnifyingGlass size={14} weight="bold" aria-hidden="true" className="inline" /> בבדיקה
           </span>
         )}
         {product.moderation_status !== "FLAGGED" && product.avg_rating !== null && product.avg_rating < 3 && (
           <span className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full">
-            ⚠️ דירוג נמוך
+            <Warning size={14} weight="fill" aria-hidden="true" className="inline" /> דירוג נמוך
           </span>
         )}
       </div>
@@ -74,8 +76,9 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Trust badges */}
         <div className="flex flex-wrap gap-1 mb-2">
           {product.is_organic && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
-              🌿 אורגני
+            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20 inline-flex items-center gap-0.5">
+              <Leaf size={13} weight="duotone" aria-hidden="true" />
+              אורגני
             </span>
           )}
           {product.kosher && product.kosher !== "לא ידוע" && (
@@ -98,7 +101,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Dates */}
         {(product.prep_date || product.expiry_date) && (
           <p className="text-xs text-site-muted mb-2">
-            {product.prep_date && <>📅 הוכן: {formatDate(product.prep_date)}</>}
+            {product.prep_date && <><CalendarBlank size={13} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> הוכן: {formatDate(product.prep_date)}</>}
             {product.prep_date && product.expiry_date && " · "}
             {product.expiry_date && <>עד: {formatDate(product.expiry_date)}</>}
           </p>
@@ -107,14 +110,14 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Allergens warning */}
         {product.allergens && (
           <p className="text-xs text-site-muted mb-2" title={product.allergens}>
-            ⚠️ אלרגנים: {product.allergens.length > 50 ? product.allergens.slice(0, 50) + "…" : product.allergens}
+            <Warning size={13} weight="fill" aria-hidden="true" className="inline align-[-2px]" /> אלרגנים: {product.allergens.length > 50 ? product.allergens.slice(0, 50) + "…" : product.allergens}
           </p>
         )}
 
         {/* Location + price */}
         <div className="flex items-center justify-between mb-2">
           <p className="text-site-muted text-sm">
-            📍 {product.neighborhood || product.city}
+            <MapPin size={14} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> {product.neighborhood || product.city}
           </p>
           <span className="font-semibold text-accent">
             {isFree

@@ -34,7 +34,13 @@
           },
           {
             "type": "command",
-            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if ! python -c \"import pytest\" 2>/dev/null; then echo \"pytest not available, skipping backend tests\"; exit 0; fi; if [ ! -d \"$root/backend\" ]; then echo \"backend/ not found at $root, skipping tests\"; exit 0; fi; set -o pipefail; cd \"$root/backend\" && python -m pytest tests/test_api.py -q 2>&1 | tail -10 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
+            "_comment": "Vitest component tests. Blocks on failure. Skips gracefully if vitest not installed or __tests__/ missing.",
+            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if [ ! -d \"$root/frontend/__tests__\" ]; then echo \"Warning: frontend/__tests__/ not found, skipping component tests\"; exit 0; fi; cd \"$root/frontend\" && npx vitest run --reporter=verbose 2>&1 | tail -30; test ${PIPESTATUS[0]} -eq 0 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Vitest component tests failed — fix errors before completing this task\"}'\"'\"''"
+          },
+          {
+            "type": "command",
+            "_comment": "Backend pytest. Blocks on real test failures. Graceful skip if pytest not installed or test file missing. Install pytest via: pip install pytest pytest-asyncio httpx -r backend/requirements.txt --break-system-packages",
+            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if ! python -m pytest --version >/dev/null 2>&1; then echo \"Warning: pytest not available — install via: pip install pytest pytest-asyncio httpx --break-system-packages\"; exit 0; fi; if [ ! -d \"$root/backend\" ]; then echo \"Warning: backend/ not found, skipping\"; exit 0; fi; if [ ! -f \"$root/backend/tests/test_api.py\" ]; then echo \"Warning: backend/tests/test_api.py not found, skipping backend tests\"; exit 0; fi; cd \"$root/backend\" && python -m pytest tests/test_api.py -q --tb=short 2>&1 | tail -20; test ${PIPESTATUS[0]} -eq 0 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
           }
         ]
       }
