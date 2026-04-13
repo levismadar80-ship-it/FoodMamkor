@@ -10,7 +10,15 @@ import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
 
-const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: false });
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
+      <MapTrifold size={48} weight="duotone" className="text-primary/30" />
+      <p className="text-site-muted text-sm">טוענת מפה...</p>
+    </div>
+  ),
+});
 
 export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);

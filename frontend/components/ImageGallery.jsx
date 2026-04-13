@@ -1,10 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import ImageWithFallback from "./ImageWithFallback";
 
 export default function ImageGallery({ images = [] }) {
   const [current, setCurrent] = useState(0);
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  const handleTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = null;
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    touchEndX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // Swiped left → next (RTL: previous visual)
+        setCurrent((c) => (c + 1) % images.length);
+      } else {
+        // Swiped right → previous (RTL: next visual)
+        setCurrent((c) => (c - 1 + images.length) % images.length);
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  }, [images.length]);
 
   if (!images.length) {
     return (
@@ -18,7 +46,12 @@ export default function ImageGallery({ images = [] }) {
   }
 
   return (
-    <div className="relative h-64 md:h-96 rounded-[12px] overflow-hidden bg-gray-100">
+    <div
+      className="relative h-64 md:h-96 rounded-[12px] overflow-hidden bg-gray-100"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <ImageWithFallback
         src={images[current]}
         alt={`תמונה ${current + 1}`}
