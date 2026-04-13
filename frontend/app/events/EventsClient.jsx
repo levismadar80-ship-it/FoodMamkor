@@ -122,7 +122,7 @@ export default function EventsPage() {
           style={{
             inset: "-5%",
             backgroundImage:
-              "url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&q=80)",
+              "url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&q=80&fm=webp)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
