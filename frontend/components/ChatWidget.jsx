@@ -5,36 +5,16 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 /**
- * ChatWidget — floating Q&A bot that answers questions about mehamakor.online
- * via the backend `/chat` endpoint (Claude Haiku 4.5 with a Hebrew system
- * prompt scoped to site usage).
+ * ChatWidget — floating Q&A bot for mehamakor.online.
  *
- * Design:
- *   - Floating button bottom-LEFT (bottom-6 left-6) — opposite the
- *     existing "near me" map button which sits bottom-right inside the
- *     map container; doesn't conflict with anything global.
- *   - **All screen sizes.** Mobile: full-width panel above BottomNav,
- *     launcher button at bottom-20 to clear the nav. Desktop: 360px
- *     panel at bottom-left corner.
- *   - Open state shows a 360px panel with brand styling: cream bg,
- *     primary green header, rounded 16px, soft shadow tinted with the
- *     brand primary (CLAUDE.md design rule).
- *   - Conversation state lives in this component — refreshing the page
- *     wipes it. That's intentional for an MVP help-bot; persistence
- *     would mean storing per-user history server-side, which is
- *     scope-creep.
- *   - First-open seeds an opening assistant message so the empty state
- *     doesn't look broken.
- *   - prefers-reduced-motion is honored: panel just appears, no slide.
+ * Positioning (all screen sizes):
+ *   Desktop (≥ 768px): bottom-right corner, 24px from edge, z-9999.
+ *   Mobile (< 768px): bottom-right, above BottomNav (80px from bottom).
+ *   If CookieBanner is visible, mobile offset bumps to 128px.
+ *   CookieBanner fires `cookie-consent` CustomEvent on dismiss; this
+ *   component listens + re-reads localStorage to reposition.
  *
- * Server contract (see backend/app/routers/chat.py):
- *   POST /api/chat
- *   { messages: [{ role: "user"|"assistant", content: string }, ...] }
- *   → { reply: string }
- *
- * The backend is rate-limited (10/min, 30/hour per IP). On 429 we
- * surface a friendly Hebrew message; on any other error we surface a
- * generic "try again" without exposing the error.
+ * POST /api/chat — rate-limited 10/min, 30/hour per IP.
  */
 
 const OPENING_MESSAGE = {
@@ -95,6 +75,20 @@ export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([OPENING_MESSAGE]);
   const [input, setInput] = useState("");
+
+  // Cookie banner coexistence: read localStorage + listen for dismiss event
+  const [bannerVisible, setBannerVisible] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      try {
+        const v = localStorage.getItem("cookies_accepted");
+        setBannerVisible(v !== "all" && v !== "essential");
+      } catch (e) { setBannerVisible(false); }
+    };
+    check();
+    window.addEventListener("cookie-consent", check);
+    return () => window.removeEventListener("cookie-consent", check);
+  }, []);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef(null);
@@ -179,35 +173,58 @@ export default function ChatWidget() {
     sendMessage(input);
   };
 
+  // Detect desktop vs mobile for positioning (SSR-safe)
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(mq.matches);
+    const handler = (e) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Launcher position: desktop = bottom-right corner. Mobile = above BottomNav (+ banner if visible).
+  const launcherStyle = {
+    position: "fixed",
+    zIndex: 9999,
+    right: isDesktop ? 24 : 16,
+    bottom: isDesktop ? 24 : bannerVisible ? 128 : 80,
+  };
+
+  // Panel position: desktop = bottom-right 360px. Mobile = full-width from bottom edge.
+  const panelStyle = {
+    position: "fixed",
+    zIndex: 9999,
+    bottom: isDesktop ? 24 : 0,
+    right: isDesktop ? 24 : 0,
+    left: isDesktop ? "auto" : 0,
+    width: isDesktop ? 360 : "100%",
+    maxHeight: isDesktop ? "min(560px, 80vh)" : "80vh",
+    borderRadius: isDesktop ? 16 : "16px 16px 0 0",
+  };
+
   return (
     <>
-      {/* Floating launcher button — ALL screen sizes.
-          Uses a <style> block for the media query to avoid inline vs Tailwind conflicts. */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .chat-launcher { position:fixed; z-index:9999; bottom:80px; right:16px; }
-        .chat-panel { position:fixed; z-index:9999; bottom:0; right:0; left:0; }
-        @media (min-width:768px) {
-          .chat-launcher { bottom:24px; right:24px; }
-          .chat-panel { bottom:24px; right:24px; left:auto; width:360px; border-radius:16px; }
-        }
-      `}} />
+      {/* Launcher button — ALL screen sizes */}
       {!open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="פתחי את העוזרת של מהמקור"
-          className="chat-launcher flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          style={launcherStyle}
+          className="flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <ChatCircleDots size={22} weight="duotone" />
           <span className="font-body text-sm">שאלה? שאלי אותי</span>
         </button>
       )}
 
-      {/* Chat panel — ALL screen sizes.
-          Mobile: full-width from bottom. Desktop: 360px bottom-right. */}
+      {/* Chat panel — ALL screen sizes */}
       {open && (
         <div
-          className="chat-panel flex w-full md:w-[360px] max-h-[80vh] md:max-h-[min(560px,80vh)] flex-col bg-background border border-border rounded-t-[16px] md:rounded-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          style={panelStyle}
+          className="flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label="עוזרת מהמקור"
