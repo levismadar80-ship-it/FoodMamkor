@@ -122,6 +122,17 @@ export default function Footer() {
                       </Link>
                     </li>
                   ))}
+                  {col.title === t("footer_trust") && (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent("chat-widget-restore"))}
+                        className="hover:text-white transition text-right"
+                      >
+                        שאלות? דברי עם העוזרת
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </div>
             ))}
