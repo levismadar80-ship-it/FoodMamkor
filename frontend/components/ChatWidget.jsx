@@ -205,29 +205,18 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* ─── Launcher button ─── */}
+      {/* ─── Launcher button — clean, no X ─── */}
       {!open && (
-        <div style={launcherStyle} className="relative">
-          {/* Dismiss X — top-left corner of the launcher */}
-          <button
-            type="button"
-            onClick={dismiss}
-            className="absolute flex items-center justify-center w-6 h-6 rounded-full bg-site-text/70 text-white hover:bg-site-text transition"
-            style={{ top: -6, left: -6, zIndex: 1, padding: 10 }}
-            aria-label="הסתירי את העוזרת"
-          >
-            <X size={12} weight="bold" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="פתחי את העוזרת של מהמקור"
-          >
-            <ChatCircleDots size={22} weight="duotone" />
-            <span className="font-body text-sm">שאלה? שאלי אותי</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={launcherStyle}
+          className="flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          aria-label="פתחי את העוזרת של מהמקור"
+        >
+          <ChatCircleDots size={22} weight="duotone" />
+          <span className="font-body text-sm">שאלה? שאלי אותי</span>
+        </button>
       )}
 
       {/* ─── Chat panel ─── */}
@@ -239,20 +228,30 @@ export default function ChatWidget() {
           aria-modal="false"
           aria-label="עוזרת מהמקור"
         >
-          {/* Header */}
+          {/* Header — X closes/minimizes, "הסתר" dismisses permanently */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
               <span className="font-headline font-bold text-base">העוזרת של מהמקור</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="p-1 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
-              aria-label="סגרי את חלון העוזרת"
-            >
-              <X size={18} weight="bold" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={dismiss}
+                className="text-[11px] text-white/70 hover:text-white px-2 py-1 rounded transition"
+                title="הסתר את העוזרת לצמיתות"
+              >
+                הסתר
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="p-1.5 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
+                aria-label="מזער את חלון העוזרת"
+              >
+                <X size={18} weight="bold" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
