@@ -241,12 +241,12 @@ function ProducersAdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
-                  <th className="text-right px-3 py-2">שורה</th>
-                  <th className="text-right px-3 py-2">שם</th>
-                  <th className="text-right px-3 py-2">עיר</th>
-                  <th className="text-right px-3 py-2">קטגוריה</th>
-                  <th className="text-right px-3 py-2">slug</th>
-                  <th className="text-right px-3 py-2">סטטוס</th>
+                  <th className="text-end px-3 py-2">שורה</th>
+                  <th className="text-end px-3 py-2">שם</th>
+                  <th className="text-end px-3 py-2">עיר</th>
+                  <th className="text-end px-3 py-2">קטגוריה</th>
+                  <th className="text-end px-3 py-2">slug</th>
+                  <th className="text-end px-3 py-2">סטטוס</th>
                 </tr>
               </thead>
               <tbody>
@@ -279,12 +279,12 @@ function ProducersAdminPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">שם</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">עיר</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">קטגוריות</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">תגיות</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">סטטוס</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">פעולות</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">שם</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">עיר</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">קטגוריות</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">תגיות</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">סטטוס</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">פעולות</th>
               </tr>
             </thead>
             <tbody>

@@ -92,9 +92,14 @@ export default function Footer() {
                 className="mb-4 brightness-0 invert"
               />
             </Link>
-            <p className="text-light/90 text-sm leading-relaxed max-w-xs mb-4">
+            <p className="text-light/90 text-sm leading-relaxed max-w-xs mb-3">
               ישר מהמקור אליך. פלטפורמה שמחברת בין בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית — לצרכנים ישראליים.
             </p>
+            <ul className="text-light/70 text-xs space-y-1 mb-4">
+              <li>ח.פ.: רשום לפני השקה</li>
+              <li>כתובת: רשום לפני השקה</li>
+              <li>📧 levismadar80@gmail.com</li>
+            </ul>
 
             {/* Instagram */}
             <a
@@ -141,6 +146,7 @@ export default function Footer() {
                 id="footer-newsletter-email"
                 type="email"
                 required
+                dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("footer_newsletter_placeholder")}
