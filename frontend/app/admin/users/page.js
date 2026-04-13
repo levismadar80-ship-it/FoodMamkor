@@ -89,13 +89,13 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">שם</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">אימייל</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">עיר</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">תפקיד</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">מועדפים</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">הצטרף</th>
-                <th className="text-right px-4 py-3 font-medium text-text-secondary">פעולות</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">שם</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">אימייל</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">עיר</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">תפקיד</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">מועדפים</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">הצטרף</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">פעולות</th>
               </tr>
             </thead>
             <tbody>
