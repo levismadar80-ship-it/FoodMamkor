@@ -307,18 +307,20 @@ export default function MapComponent({
 
       const marker = L.marker([p.lat, p.lng], {
         icon: createCategoryMarker(p, { active: false, hovered: false }),
-        // docs/archive/MAP_IMPROVEMENTS.md #10 — set alt + title to producer name so
-        // no "Marker" (or truncated "arker") leaks into assistive tech
-        // or hover tooltips.
+        // alt for screen readers; title deliberately empty to avoid a
+        // browser-native tooltip that duplicates the Leaflet tooltip below.
         alt: p.name || "עסק",
-        title: p.name || "עסק",
+        title: "",
         keyboard: true,
       });
 
-      // Bind a Leaflet tooltip with the real name for hover feedback
+      // Hover-only Leaflet tooltip (permanent:false is the default but
+      // stated explicitly so the intent is clear — z-500 per the token
+      // system in CLAUDE.md).
       marker.bindTooltip(p.name || "עסק", {
         direction: "top",
         offset: [0, -30],
+        permanent: false,
         className: "mehamakor-tooltip",
       });
 
