@@ -430,6 +430,26 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Performance — Core Web Vitals (CWV audit)
+
+### Image optimization (LCP)
+- [ ] `grep -rn 'images.unsplash.com' frontend/app/ frontend/components/ | grep -v fm=webp | grep -v next.config | grep -v layout.js` → **0 matches** (all URLs include `&fm=webp`)
+- [ ] `grep -rn 'images.unsplash.com.*w=600' frontend/app/page.js` → all 6 category cards include `&q=80&fm=webp`
+- [ ] Network tab: hero image response header `Content-Type: image/webp` (when browser supports it)
+
+### Layout shift (CLS)
+- [ ] ProducerCard image container has explicit `h-[140px] md:h-[200px]`
+- [ ] HomeProductCard image container has explicit `h-48`
+- [ ] Category cards have explicit `height: 280px`
+- [ ] Hero sections use `height: 100vh`
+- [ ] No visible content jump on page load (manual check)
+
+### Bundle size
+- [ ] `npm run build` — homepage first load JS < 200kB
+- [ ] Shared chunk < 90kB
+
+---
+
 ## Component tests — vitest (automated)
 
 ### Running
