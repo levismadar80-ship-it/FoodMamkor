@@ -270,6 +270,401 @@ Test each form on real mobile + desktop. The spinner should be visible for the n
 
 ---
 
+## CSP — Vercel Live feedback widget on preview URLs (fix/csp-allow-vercel-live-preview)
+
+Vercel injects `https://vercel.live/_next-live/feedback/feedback.js` into every preview deployment so reviewers can leave inline comments. The previous CSP in `next.config.js` didn't whitelist `vercel.live`, so Chrome blocked the script and spammed the console with CSP violation warnings on every preview page load — making it hard to spot real errors during testing.
+
+The fix conditionally appends `vercel.live` (and Pusher, which the widget uses for realtime) to 6 CSP directives **only when `process.env.VERCEL_ENV === "preview"`**. Production CSP stays strict — `vercel.live` does not load in production and is not whitelisted there.
+
+- [ ] Open any Vercel **preview URL** → DevTools → Console → reload → **zero** `"Loading the script ... violates the following Content Security Policy directive"` messages for `vercel.live`
+- [ ] Same preview → bottom-left → Vercel feedback widget button loads and is clickable
+- [ ] **Production** `mehamakor.online` → DevTools → Network tab → no requests to `vercel.live/*` at all (widget is not injected)
+- [ ] Production → DevTools → Response Headers on any page → `Content-Security-Policy` does NOT contain `vercel.live` anywhere in its directives — regression guard that the conditional isn't leaking into prod
+- [ ] `/login` Google OAuth still works (regression check — we touched the same CSP block as Google's GSI whitelist)
+- [ ] Apple Sign-In button on `/login` still works (regression check — same reason)
+- [ ] Unsplash images on the homepage category grid still load (regression check — `img-src` gained an entry so order/syntax matters)
+- [ ] Cloudinary producer photos still render (regression check — `img-src` again)
+- [ ] OpenStreetMap Leaflet tiles still render on `/map` (regression check — same directive)
+
+### Local verification commands (run once before merging)
+
+```bash
+# Production CSP (strict, vercel.live should NOT appear)
+node -e "const c=require('./frontend/next.config.js'); c.headers().then(h=>console.log(h[0].headers.find(x=>x.key==='Content-Security-Policy').value))"
+
+# Preview CSP (vercel.live + pusher should appear on 6 directives)
+VERCEL_ENV=preview node -e "const c=require('./frontend/next.config.js'); c.headers().then(h=>console.log(h[0].headers.find(x=>x.key==='Content-Security-Policy').value))"
+```
+
+---
+
+## Chat widget — plain Hebrew (feature/chatbot-plain-hebrew-v2)
+
+### Suggested prompts — order + copy
+- [ ] Open the widget from desktop homepage — the 8 suggested prompts appear in this exact order: `איך נרשמים כבעלת עסק?` / `איך מוצאים עסקים קרובים אליי?` / `איך מפרסמים מוצר ביתי?` / `מה זה מהמקור?` / `האם האתר בחינם?` / `איך יוצרים קשר עם בית עסק?` / `מה זה "מהמטבח של השכן"?` / `כמה זמן לוקח האישור של העסק?`
+- [ ] `איך מדווחים על בעיה?` and `האם ההרשמה בחינם?` and `כמה זמן לוקח האישור?` (bare, without "של העסק") should NOT appear anywhere in the prompt list
+
+### Hardcoded answers — instant + plain Hebrew
+- [ ] Click `איך נרשמים כבעלת עסק?` — instant response (no typing dots), text contains `"תוך יום-יומיים"` and `"העסק שלך"`, does NOT contain `"הפרופיל"` or `"מודרציה"` or `"אוטומטית"`
+- [ ] Click `איך מוצאים עסקים קרובים אליי?` — instant response mentioning both המפה + דף הבית and the WhatsApp button
+- [ ] Click `איך מפרסמים מוצר ביתי?` — instant response contains `"המוצר שלך"` and `"תוך שעות ספורות"`, does NOT contain `"מודרציה"` or `"הפרופיל"`
+- [ ] Network tab: clicking any of the 3 canonical prompts does NOT fire a request to `/api/chat`
+
+### Freeform questions — backend KB sections
+- [ ] Type `מה זה מהמקור?` — response explains the directory concept + categories + map (may use slight model rephrasing but must not mention "מודרציה" / "פרופיל")
+- [ ] Type `האם האתר בחינם?` — response confirms free for both buyers + sellers and mentions premium as optional
+- [ ] Type `כמה זמן לוקח האישור של העסק?` — response mentions `"יום-יומיים"` and `"העסק"` explicitly
+- [ ] Type `איך יוצרים קשר עם בית עסק?` — response mentions WhatsApp button + phone/Instagram/site
+- [ ] Type `מה זה "מהמטבח של השכן"?` — response mentions neighbors cooking at home + review by team, does NOT use "מודרציה"
+
+### Regression guards (grep-based)
+- [ ] `grep -n 'מודרציה' backend/app/routers/chat.py` — every match must be either inside a `#` comment block or inside the meta-instruction `אל תשתמשי במונחים טכניים כמו "מודרציה"`; must NEVER appear inside a KB section like `**איך נרשמים...**`
+- [ ] `grep -n 'הפרופיל' backend/app/routers/chat.py` — must only appear in the comment (`never say "הפרופיל מאושר"`) or the meta-instruction; must NEVER appear inside a KB section
+- [ ] `grep -n 'מודרציה\|הפרופיל' frontend/components/ChatWidget.jsx` — must only appear in the `//` comment block above `HARDCODED_ANSWERS`; must NEVER appear inside any value of the `HARDCODED_ANSWERS` map
+- [ ] Backend + frontend approvals of businesses must always say `"העסק שלך"`: `grep -c 'העסק שלך' frontend/components/ChatWidget.jsx` → ≥1; `grep -c 'העסק שלך' backend/app/routers/chat.py` → ≥1
+
+---
+
+## Eye toggle + inline form validation on /login + /register (tasks_for_claude_code.md PR 8 — tasks 7+8)
+
+Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button. Task 8 = inline onBlur validation with red borders, green checkmarks, error messages, and a submit button that's disabled until the form is valid.
+
+### Password visibility toggle (task 7) — both pages
+
+- [ ] `/login` — password field has a small eye icon on its left side (visual LEFT of the LTR input, which is the END of the RTL reading flow)
+- [ ] `/login` — tap the eye → input type flips `password` → `text` → the typed characters become visible
+- [ ] `/login` — tap again → flips back to `password` → characters become dots
+- [ ] `/login` — icon changes: closed eye (`Eye`) when hidden, slashed eye (`EyeSlash`) when visible
+- [ ] `/register` — same 4 checks on the password field there
+- [ ] Keyboard — tab to the password field → tab again → focus lands on the eye button → press Enter → toggles
+- [ ] Screen reader — button has `aria-label` that swaps between "הציגי סיסמה" and "הסתירי סיסמה" + `aria-pressed` reflects state
+
+### Inline validation — /login (task 8)
+
+- [ ] `/login` — load page — submit button is **disabled** (form is empty)
+- [ ] Email field — tap then tap away without typing → no error (touched but empty is neutral)
+- [ ] Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
+- [ ] Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
+- [ ] Password — tap then tap away empty → no error
+- [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
+- [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
+- [ ] Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
+- [ ] Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-enables
+
+### Inline validation — /register (task 8)
+
+- [ ] `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- [ ] Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
+- [ ] Name — type `שרה` → green border + `"✓ תקין"`
+- [ ] Email — same pattern as /login (`"האימייל לא תקין"` error)
+- [ ] Password — same pattern as /login (`"סיסמא חייבת להכיל לפחות 8 תווים"` error)
+- [ ] Password — **strength indicator** appears below the input as soon as the user types anything:
+  - 1 rule passes (e.g. `"abc"` — only len fails, no upper, no digit: **0 rules**) — strength bar shows no color, no label (field still effectively too short)
+  - 1 rule passes (e.g. `"abcdefgh"` — len ✓, upper ✗, digit ✗) — label `"חוזק סיסמה: חלשה"` in red, 1/3 of the bar in red
+  - 2 rules pass (e.g. `"Abcdefgh"` — len ✓, upper ✓, digit ✗) — label `"חוזק סיסמה: בינונית"` in amber, 2/3 of the bar in amber
+  - 3 rules pass (e.g. `"Abcdefg1"` — all three ✓) — label `"חוזק סיסמה: חזקה"` in primary-green, 3/3 of the bar in primary
+- [ ] Password — the existing rule checklist is still visible below the strength bar (one ✓/○ per rule)
+- [ ] Phone — **optional field** — tap and tap away empty → no error, no green check (empty is fine)
+- [ ] Phone — type `123` → tap away → red border + `"מספר טלפון לא תקין"`
+- [ ] Phone — fix to `0501234567` → green border + `"✓ תקין"`
+- [ ] City field (CitySearch) — no inline validation added (not in task 8 spec; field is optional)
+- [ ] Submit button — disabled until ALL required fields pass AND terms checkbox is ticked:
+  - Name non-empty ✓
+  - Email valid format ✓
+  - Password ≥8 chars ✓
+  - Phone empty OR valid format ✓
+  - Terms checkbox checked ✓
+
+### Task-spec exactness — error message wording
+
+The task spec dictates the exact Hebrew error text for each rule. Verify the strings match character-for-character:
+
+- [ ] `grep -rn 'האימייל לא תקין' frontend/app/login frontend/app/register` → 2 matches (1 per page, in the inline validation block)
+- [ ] `grep -rn 'סיסמא חייבת להכיל לפחות 8 תווים' frontend/app/login frontend/app/register` → 2 matches
+- [ ] `grep -rn 'שם מלא הוא שדה חובה' frontend/app/register` → 1 match
+- [ ] `grep -rn 'מספר טלפון לא תקין' frontend/app/register` → 1 match
+
+### Accessibility checks
+
+- [ ] Eye button has `aria-label` that swaps + `aria-pressed` that reflects state
+- [ ] Invalid inputs have `aria-invalid="true"` (verify in DevTools Elements tab)
+- [ ] Error messages are rendered in the same `<div>` as the input so screen readers pick them up
+- [ ] `prefers-reduced-motion: reduce` — nothing in this PR adds animation, but verify the eye toggle still works smoothly under reduce-motion (it uses only a CSS `transition` on the icon color — no transform/opacity)
+
+### Regression checks — do NOT break existing behavior
+
+- [ ] `/login` Google OAuth button still works (we imported a new icon but didn't touch the OAuth block)
+- [ ] `/login` Apple Sign-In button still works
+- [ ] `/register/producer` step 1 still works — the `PasswordStrength` upgrade (tier indicator) propagates to its password field too. Verify the new tier bar renders there without layout breakage.
+- [ ] `/register` → submit with invalid data server-side (e.g. email already exists) → error banner at the bottom of the form appears, submit button recovers
+- [ ] `/register` → form validation AFTER clearing a field (e.g. type valid email then backspace to nothing) → red border appears (field is still touched, and the empty-string + touched state should reset to neutral or invalid per the logic). Actually for email: touched + empty → neither invalid nor valid (because `emailInvalid` requires `email.length > 0`). Expected: no red border, no green check, button disabled because `validateEmail("") === false`.
+
+---
+
+## Producer cards — 2-column mobile grid (task 9)
+
+### Mobile 2-column layout (< 768px)
+- [ ] Homepage — open on a mobile device / narrow viewport (< 768px) — producer cards display in **2 columns** instead of 1
+- [ ] Homepage — gap between cards is tighter on mobile (~12px) vs tablet+ (~24px)
+- [ ] Homepage — "עסקים חדשים ✨" section also shows 2-column grid on mobile
+- [ ] `/map` — scroll down to the producer list below the map — same 2-column grid on mobile
+- [ ] Tablet (768px–1023px) — grids stay 2-column (unchanged from before)
+- [ ] Desktop (1024px+) — grids stay 4-column (unchanged from before)
+
+### Shorter card images on mobile
+- [ ] Mobile — card image height is **140px** (shorter than desktop)
+- [ ] Desktop — card image height is **200px** (unchanged)
+- [ ] Images are not squished or stretched — `object-cover` fills the shorter container
+
+### Text truncation
+- [ ] Long producer name (e.g. "חוות השקמה של משפחת אברהמי מרחובות") truncates with `…` instead of wrapping to a second line
+- [ ] Long city + category line truncates with `…`
+- [ ] Long top product name truncates with `…`
+
+### Regression checks
+- [ ] `/favorites` grid is **unchanged** — still 1-col on mobile, 2-col at md, 3-col at lg
+- [ ] Card hover shadow + lift effect still works on desktop
+- [ ] "מאומת" / "פרמיום" / "זמין היום" badges still visible on the image
+- [ ] WhatsApp / phone / Instagram icon row in footer still clickable
+- [ ] "מידע נוסף" CTA button still works
+
+---
+
+## Map z-index token system + UI bugfixes
+
+### Z-index hierarchy (per CLAUDE.md)
+- `tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls:1000 → chat:9999`
+
+### Bug fixes
+- [ ] Mobile: bottom sheet open → zoom +/- still clickable above it (z-600 < z-1000)
+- [ ] Desktop: hover marker → only ONE tooltip (no browser-native duplicate)
+- [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
+- [ ] Mobile: X close button stays at top-left during scroll → tap → closes
+- [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
+- [ ] Desktop: legend visible at bottom-right (z-800)
+
+### Regression
+- [ ] "חפשי באזור זה" button works (z-1000)
+- [ ] "קרוב אלי" clickable with sheet open
+- [ ] CitySearch dropdown above map tiles
+- [ ] Map pan/zoom works above the sheet
+
+---
+
+## Dynamic OG tags + share message (social sharing)
+
+### OG tags on /producer/:id and /:slug
+- [ ] View page source or `curl -s https://mehamakor.online/producer/1 | grep 'og:'` — `og:title` is the producer name (no "| מהמקור" suffix)
+- [ ] `og:description` is the first 120 chars of producer description
+- [ ] `og:image` is a Cloudinary URL with `w_1200,h_630,c_fill` transform
+- [ ] `og:url` uses `mehamakor.online` (not `.co.il`)
+- [ ] Share a producer link on WhatsApp → preview shows producer photo + name + description snippet
+- [ ] Share a slug URL (e.g. `/havat-hashikma`) → same preview quality
+
+### Share button text
+- [ ] Click share on producer page (desktop, no native share) → clipboard contains multi-line message:
+  ```
+  גיליתי את [name] במהמקור 🌿
+  [first 80 chars of description]...
+  ב[city] • [category]
+  👉 [URL]
+  ```
+- [ ] Mobile: native share sheet opens with the formatted text
+- [ ] Producer with no description → description line is omitted
+- [ ] Producer with no city/category → location line is omitted
+
+### Regression
+- [ ] Producer page still loads and renders correctly
+- [ ] WhatsApp share button still works separately
+- [ ] JSON-LD structured data still present in page source
+
+---
+
+## Performance — Core Web Vitals (CWV audit)
+
+### Image optimization (LCP)
+- [ ] `grep -rn 'images.unsplash.com' frontend/app/ frontend/components/ | grep -v fm=webp | grep -v next.config | grep -v layout.js` → **0 matches** (all URLs include `&fm=webp`)
+- [ ] `grep -rn 'images.unsplash.com.*w=600' frontend/app/page.js` → all 6 category cards include `&q=80&fm=webp`
+- [ ] Network tab: hero image response header `Content-Type: image/webp` (when browser supports it)
+
+### Layout shift (CLS)
+- [ ] ProducerCard image container has explicit `h-[140px] md:h-[200px]`
+- [ ] HomeProductCard image container has explicit `h-48`
+- [ ] Category cards have explicit `height: 280px`
+- [ ] Hero sections use `height: 100vh`
+- [ ] No visible content jump on page load (manual check)
+
+### Bundle size
+- [ ] `npm run build` — homepage first load JS < 200kB
+- [ ] Shared chunk < 90kB
+
+---
+
+## Component tests — vitest (automated)
+
+### Running
+- [ ] `cd frontend && npx vitest run --reporter=verbose` — all 33 tests pass
+- [ ] Stop hook runs vitest automatically on every task completion
+
+### ProducerCard (13 tests)
+- [ ] Renders all fields when fully populated
+- [ ] Hides phone/instagram/WhatsApp buttons when those fields are null
+- [ ] Verified badge only when is_verified=true
+- [ ] Premium badge only when plan="premium"
+- [ ] Availability badge only when is_available_today=true
+- [ ] No reviews line when reviews_count=0
+- [ ] No top product when top_product_name=null
+- [ ] No price when price_range and starting_price_label are null
+- [ ] Image placeholder when images array is empty
+- [ ] Uses slug for href when available, falls back to /producer/:id
+
+### HomeProductCard (16 tests)
+- [ ] Renders image when available, placeholder when null
+- [ ] Price: null → empty, 0 → "🎁 במתנה", number → "₪X / unit"
+- [ ] Neighborhood when available, city as fallback
+- [ ] Allergens/quantity/seller shown only when present
+- [ ] Moderation badge for FLAGGED status
+- [ ] Organic badge only when is_organic=true
+
+### FavoriteButton (4 tests)
+- [ ] Returns null when no user logged in
+- [ ] Shows 🤍 heart when logged in (unfavorited)
+- [ ] Correct aria-label and aria-pressed
+
+---
+
+## Share button on producer page (task 14)
+
+### Share button (copy link)
+- [ ] `/producer/:id` — sticky sidebar has a share button with a **ShareNetwork** icon (not a Link icon)
+- [ ] Click share button (desktop, no native share) → toast **"הקישור הועתק ✓"**
+- [ ] Clipboard contains the producer page URL
+- [ ] Mobile (with native share API) → native share sheet opens
+
+### WhatsApp share
+- [ ] WhatsApp share button visible in the sidebar
+- [ ] Click → opens `wa.me` with text: **"גיליתי את [שם העסק] במהמקור — [URL]"**
+- [ ] Text contains the correct producer name and URL
+
+### Regression checks
+- [ ] Other ShareButton consumers (if any) also get the updated icon + toast
+- [ ] Producer detail page still loads and renders correctly
+
+---
+
+## Recently viewed businesses (task 13)
+
+### localStorage persistence
+- [ ] Visit any producer page (e.g. `/producer/1`) → open DevTools → Application → Local Storage → `recently_viewed` key contains `[1]`
+- [ ] Visit a second producer → `recently_viewed` is `[2, 1]` (most recent first)
+- [ ] Visit the same producer again → no duplicates, ID moves to front
+- [ ] Visit 6 different producers → only the 5 most recent are stored
+
+### Homepage "ביקרת לאחרונה" section
+- [ ] Homepage — with at least 1 recently viewed producer: **"ביקרת לאחרונה"** section appears above the main producer grid
+- [ ] Section shows small cards in a horizontal scroll row (image + name + city)
+- [ ] Cards are 160px wide with 100px tall images
+- [ ] Long producer names truncate with `…`
+- [ ] Click a card → navigates to that producer's page
+- [ ] Mobile: cards scroll horizontally
+
+### Edge cases
+- [ ] Clear localStorage (`recently_viewed`) → refresh homepage → section is hidden
+- [ ] Fresh browser with no localStorage data → section is hidden (no empty state)
+- [ ] If a stored producer ID no longer exists (deleted) → that card is silently skipped
+
+### Regression checks
+- [ ] Producer detail page still loads correctly (the useEffect doesn't break anything)
+- [ ] Homepage producer grid still renders below the recently-viewed section
+- [ ] Category cards + search + geolocation all still work
+
+---
+
+## Advanced filter chips — homepage + /map (task 12)
+
+### Chip appearance (both pages)
+- [ ] Homepage — below "בתי עסק מומלצים" heading, 4 filter chips: ✡️ כשר · 🌿 אורגני · 🚚 משלוח · ✅ מאומת בלבד
+- [ ] `/map` — below the city search, same 4 chips
+- [ ] Mobile — chips row is horizontally scrollable (no line wrap)
+- [ ] Inactive chip: white bg, border, dark text
+- [ ] Active chip: primary-green bg, white text
+
+### Toggle behavior
+- [ ] Click "כשר" → chip turns green → grid reloads with only kosher producers
+- [ ] Click "כשר" again → chip turns white → grid reloads without kosher filter
+- [ ] Multi-select: activate "כשר" + "אורגנ��" simultaneously → grid shows only kosher AND organic producers
+- [ ] Network tab: `GET /producers?kosher=true&organic=true` fires (both params)
+
+### Composability with other filters
+- [ ] Activate "משלוח" chip → search a city in the search bar → both `has_delivery=true` and `delivery_city=` sent
+- [ ] Activate "מאומת בלבד" chip → click a category card → both `verified=true` and `category=` sent
+- [ ] "קרוב אלי" button → with "אורגני" active → `lat=&lng=&radius_km=15&organic=true` sent
+- [ ] Clear category filter ("נקה סינון") → chip filters preserved
+
+### Backend params (new)
+- [ ] `GET /producers?organic=true` → only producers with `organic_certified=true`
+- [ ] `GET /producers?kosher=true` → only producers with a non-empty `kosher` field
+- [ ] Both compose with existing params (`lat`, `lng`, `radius_km`, `category`, `delivery_city`, `verified`)
+
+### Regression checks
+- [ ] Homepage search still works without any chips active
+- [ ] Category card clicks still work
+- [ ] `/map` city search + legend category filter still work
+- [ ] "הצגי עוד" load-more button works after chip-filtered results
+
+---
+
+## "קרוב אלי" geolocation button on homepage (task 11)
+
+### Button appearance
+- [ ] Homepage hero section — below the search bar there's a **"קרוב אלי"** button with a Crosshair icon
+- [ ] Button styled as a frosted-glass pill (semi-transparent white with backdrop blur)
+- [ ] Button fades in with the rest of the hero content (Framer Motion stagger)
+
+### Geolocation flow — permission granted
+- [ ] Click "קרוב אלי" → browser asks for location permission
+- [ ] While waiting: button shows **"מחפשת..."** with a spinning Crosshair icon + disabled state
+- [ ] On success: page scrolls to the producer grid, which now shows only nearby producers (radius 15km)
+- [ ] Network tab: `GET /producers?lat=...&lng=...&radius_km=15` fires
+
+### Geolocation flow — permission denied
+- [ ] Click "קרוב אלי" → deny the browser permission prompt
+- [ ] Toast appears: **"אפשרי גישה למיקום בהגדרות הדפדפן"**
+- [ ] Button returns to normal state (not stuck on "מחפשת...")
+
+### Geolocation unavailable
+- [ ] In a browser/context without geolocation API — same toast message appears
+
+### Regression checks
+- [ ] Search bar still works (type a city → Enter → producers filtered)
+- [ ] Category card clicks still filter the grid
+- [ ] "הצגי עוד" load-more button still works after geolocation filter
+
+---
+
+## /neighbor empty state (task 10)
+
+### City-filtered empty state
+- [ ] `/neighbor` — select a city with no products (e.g. an obscure city) — empty state appears
+- [ ] Large emoji: **🏡** (house with garden) in a round `bg-light` container
+- [ ] Heading: **"אין מוצרים באזור הזה עדיין 🌱"** (exact text)
+- [ ] Subtext (logged in): **"היי את הראשונה לפרסם מוצר בית!"** (exact text)
+- [ ] CTA button (logged in): **"פרסמי מוצר +"** — click opens the product form
+- [ ] Subtext (logged out): **"התחברי כדי לפרסם מוצר משלך."**
+- [ ] CTA button hidden when logged out
+
+### General empty state (no city filter)
+- [ ] `/neighbor` with no products at all — heading: **"אין עדיין מוצרים ביתיים 🌱"**
+- [ ] Same emoji, subtext, and CTA behavior as above
+
+### Regression checks
+- [ ] `/neighbor` with products — grid renders normally, no empty state shown
+- [ ] "הצגי הכל" button still clears city filter
+- [ ] Mobile floating CTA button still works
+- [ ] Disclaimer banner still visible above the grid
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
@@ -39,6 +39,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       .catch(() => setProducer(null))
       .finally(() => setLoading(false));
   }, [params.id, fetchPath, initialProducer]);
+
+  // Task 13: save to recently viewed in localStorage
+  useEffect(() => {
+    if (!producer?.id) return;
+    try {
+      const key = "recently_viewed";
+      const stored = JSON.parse(localStorage.getItem(key) || "[]");
+      const filtered = stored.filter((id) => id !== producer.id);
+      filtered.unshift(producer.id);
+      localStorage.setItem(key, JSON.stringify(filtered.slice(0, 5)));
+    } catch {
+      // localStorage unavailable — ignore
+    }
+  }, [producer?.id]);
 
   if (loading) {
     return (
@@ -120,8 +134,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               {producer.name}
             </h1>
             {producer.is_verified && (
-              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full">
-                ✅ עסק מאומת
+              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full inline-flex items-center gap-1">
+                <Seal size={14} weight="fill" aria-hidden="true" />
+                עסק מאומת
               </span>
             )}
             {producer.reviews_count > 0 && (
@@ -341,7 +356,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 <FavoriteButton producerId={producer.id} />
               </div>
               <div className="flex-1">
-                <ShareButton url={shareUrl} title={producer.name} />
+                <ShareButton
+                  url={shareUrl}
+                  title={producer.name}
+                  description={producer.description}
+                  city={producer.city}
+                  category={primaryCategory?.name}
+                />
               </div>
             </div>
 

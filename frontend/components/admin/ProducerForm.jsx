@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
@@ -274,7 +275,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("organic_certified", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            🌿 אורגני מוסמך
+            <Leaf size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> אורגני מוסמך
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -283,7 +284,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("grass_fed", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            🐄 גראס פד
+            <Cow size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> גראס פד
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -292,7 +293,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("is_verified", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            ✅ מאומת
+            <Seal size={16} weight="fill" className="inline align-[-2px] text-primary" aria-hidden="true" /> מאומת
           </label>
           <Field label="כשרות">
             <select

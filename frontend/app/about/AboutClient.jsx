@@ -82,7 +82,7 @@ export default function AboutPage() {
           style={{
             inset: "-5%",
             backgroundImage:
-              "url(https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80)",
+              "url(https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80&fm=webp)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -181,7 +181,7 @@ export default function AboutPage() {
           SECTION A — Parallax quote divider
           ================================================ */}
       <ParallaxQuote
-        image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80"
+        image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80&fm=webp"
         quote="כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"
         overlayOpacity={0.7}
         height="350px"

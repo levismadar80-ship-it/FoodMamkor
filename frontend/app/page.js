@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 import { motion } from "framer-motion";
-import { House, Leaf } from "@phosphor-icons/react";
+import { Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
+import { showToast } from "@/lib/toast";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
@@ -18,22 +20,22 @@ const PAGE_SIZE = 8;
 
 // OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
 // `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
-const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80";
+const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80&fm=webp";
 
 // PREMIUM_DESIGN: parallax divider images between sections.
-const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80";
-const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80";
+const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
+const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80&fm=webp";
 
 // PREMIUM_DESIGN: category cards now use hand-drawn SVG line-art
 // (see CategoryIcons.jsx) instead of Phosphor — warmer, more unique
 // than a generic icon library. Match-terms + Unsplash images unchanged.
 const CATEGORY_CARDS = [
-  { key: "meat",  name: "בשר, עוף ודגים",    match: ["בשר", "עוף", "דגים"],        image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format" },
-  { key: "veg",   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],   image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format" },
-  { key: "dairy", name: "חלב וגבינות",        match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1771578742735-36009188c207?w=600&fit=crop&auto=format" },
-  { key: "bread", name: "לחמים ואפייה",       match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format" },
-  { key: "oil",   name: "שמנים ודבש",         match: ["שמן", "דבש"],                image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format" },
-  { key: "care",  name: "טיפוח וסבונים",      match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&fit=crop&auto=format" },
+  { key: "meat",  name: "בשר, עוף ודגים",    match: ["בשר", "עוף", "דגים"],        image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format&q=80&fm=webp" },
+  { key: "veg",   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],   image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format&q=80&fm=webp" },
+  { key: "dairy", name: "חלב וגבינות",        match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1771578742735-36009188c207?w=600&fit=crop&auto=format&q=80&fm=webp" },
+  { key: "bread", name: "לחמים ואפייה",       match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format&q=80&fm=webp" },
+  { key: "oil",   name: "שמנים ודבש",         match: ["שמן", "דבש"],                image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format&q=80&fm=webp" },
+  { key: "care",  name: "טיפוח וסבונים",      match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&fit=crop&auto=format&q=80&fm=webp" },
 ];
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
@@ -59,6 +61,7 @@ function matchCategoryId(cards, categories) {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -67,6 +70,9 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
@@ -78,6 +84,16 @@ export default function HomePage() {
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
     api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
+    // Task 13: load recently viewed producers from localStorage
+    try {
+      const ids = JSON.parse(localStorage.getItem("recently_viewed") || "[]");
+      if (ids.length > 0) {
+        Promise.all(ids.map((id) => api.get(`/producers/${id}`).then((r) => r.data).catch(() => null)))
+          .then((results) => setRecentlyViewed(results.filter(Boolean)));
+      }
+    } catch {
+      // localStorage unavailable
+    }
   }, []);
 
   const loadProducers = (params = {}) => {
@@ -93,10 +109,11 @@ export default function HomePage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    const cp = chipParams();
     if (!searchQuery.trim()) {
-      loadProducers();
+      loadProducers(cp);
     } else {
-      loadProducers({ delivery_city: searchQuery });
+      loadProducers({ delivery_city: searchQuery, ...cp });
     }
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -105,7 +122,7 @@ export default function HomePage() {
     if (!card.categoryId) return;
     const newCat = String(card.categoryId);
     setFilters({ ...filters, category: newCat });
-    loadProducers({ category: newCat });
+    loadProducers({ category: newCat, ...chipParams() });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -120,6 +137,50 @@ export default function HomePage() {
 
   const scrollToProducers = () => {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Build query params from active chips. Called by loadProducers callers
+  // and the chip toggle handler so every filter surface stays in sync.
+  const chipParams = (overrides = {}) => {
+    const c = { ...chips, ...overrides };
+    const p = {};
+    if (c.kosher) p.kosher = true;
+    if (c.organic) p.organic = true;
+    if (c.has_delivery) p.has_delivery = true;
+    if (c.verified) p.verified = true;
+    return p;
+  };
+
+  const toggleChip = (key) => {
+    const next = { ...chips, [key]: !chips[key] };
+    setChips(next);
+    const params = chipParams({ [key]: !chips[key] });
+    if (filters.category) params.category = filters.category;
+    loadProducers(params);
+  };
+
+  const handleNearMe = () => {
+    if (!navigator.geolocation) {
+      showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        loadProducers({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          radius_km: 15,
+          ...chipParams(),
+        });
+        setGeoLoading(false);
+        document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
+      },
+      () => {
+        setGeoLoading(false);
+        showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
+      },
+    );
   };
 
   const visibleProducers = producers.slice(0, visibleCount);
@@ -172,7 +233,7 @@ export default function HomePage() {
             className="font-headline font-bold leading-tight"
             style={{ fontSize: "clamp(42px, 6vw, 80px)", lineHeight: 1.15 }}
           >
-            אוכל אמיתי, ישר מהמקור אליך
+            {t("hero_title")}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 30 }}
@@ -185,7 +246,7 @@ export default function HomePage() {
               textTransform: "uppercase",
             }}
           >
-            בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית
+            {t("hero_subtitle")}
           </motion.p>
 
           {/* Pill search */}
@@ -208,14 +269,14 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <label htmlFor="hero-search" className="sr-only">
-              חיפוש בתי עסק וערים
+              {t("search_sr_label")}
             </label>
             <input
               id="hero-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="חפשי ירקות טריים, בשר grass-fed..."
+              placeholder={t("search_placeholder")}
               className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
             />
             <button
@@ -226,6 +287,24 @@ export default function HomePage() {
               חיפוש
             </button>
           </motion.form>
+
+          {/* "Near me" geolocation button — task 11 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="mt-4"
+          >
+            <button
+              type="button"
+              onClick={handleNearMe}
+              disabled={geoLoading}
+              className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 px-5 py-2.5 rounded-full hover:bg-white/25 transition font-medium text-sm disabled:opacity-50"
+            >
+              <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+              {geoLoading ? "מחפשת..." : "קרוב אלי"}
+            </button>
+          </motion.div>
         </div>
 
         {/* Scroll arrow — animate-bounce replaced with a subtle slow
@@ -380,6 +459,48 @@ export default function HomePage() {
       </FadeInSection>
 
       {/* =========================
+          RECENTLY VIEWED (task 13)
+          ========================= */}
+      {recentlyViewed.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 pb-10">
+          <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+            ביקרת לאחרונה
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+            {recentlyViewed.map((p) => {
+              const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+              const imgSrc = p.images?.[0];
+              return (
+                <Link
+                  key={p.id}
+                  href={href}
+                  className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
+                >
+                  <div className="relative w-full h-[100px] bg-light overflow-hidden">
+                    {imgSrc ? (
+                      <img
+                        src={imgSrc}
+                        alt={p.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-primary">
+                        <Leaf size={32} weight="duotone" aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="font-headline font-bold text-sm text-site-text truncate">{p.name}</p>
+                    <p className="text-xs text-site-muted truncate">{p.city}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* =========================
           PRODUCERS GRID
           ========================= */}
       <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
@@ -390,6 +511,30 @@ export default function HomePage() {
           <Link href="/map" className="text-primary hover:underline flex items-center gap-1">
             הצג במפה 🗺️
           </Link>
+        </div>
+
+        {/* Filter chips — task 12 */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          {[
+            { key: "kosher", label: "כשר", icon: "✡️" },
+            { key: "organic", label: "אורגני", icon: "🌿" },
+            { key: "has_delivery", label: "משלוח", icon: "🚚" },
+            { key: "verified", label: "מאומת בלבד", icon: "✅" },
+          ].map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => toggleChip(chip.key)}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
+                chips[chip.key]
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              <span aria-hidden="true">{chip.icon}</span>
+              {chip.label}
+            </button>
+          ))}
         </div>
 
         {filters.category && (
@@ -404,7 +549,7 @@ export default function HomePage() {
             <button
               onClick={() => {
                 setFilters({ ...filters, category: "" });
-                loadProducers();
+                loadProducers(chipParams());
               }}
               className="text-sm text-primary hover:underline"
             >
@@ -417,7 +562,7 @@ export default function HomePage() {
           <SkeletonProducerGrid count={8} />
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
               {visibleProducers.map((p, idx) => (
                 <motion.div
                   key={p.id}
@@ -457,7 +602,7 @@ export default function HomePage() {
           <h2 className="font-headline font-bold text-site-text mb-8" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
             עסקים חדשים ✨
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
             {newestProducers.map((p) => (
               <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" />
             ))}

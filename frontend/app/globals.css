@@ -32,6 +32,17 @@ h1, h2, h3 {
   width: 100%;
   border-radius: 16px;
 }
+/* Map z-index token system (see CLAUDE.md § "Map z-index tokens"):
+   Leaflet controls default to z-index within their own stacking context.
+   Override to page-level z-index so they stay above the mobile bottom
+   sheet (z-600) and category legend (z-800). */
+.leaflet-control-zoom {
+  z-index: 1000 !important;
+}
+.leaflet-top.leaflet-left,
+.leaflet-top.leaflet-right {
+  z-index: 1000 !important;
+}
 
 /* Fade-in on scroll — set initial state, hook toggles it */
 .fade-in-init {
