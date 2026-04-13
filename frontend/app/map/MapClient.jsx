@@ -370,7 +370,7 @@ export default function MapPage() {
           />
           {/* Sheet */}
           <div
-            className="md:hidden fixed bottom-0 inset-x-0 z-[900] bg-white rounded-t-[20px] border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.15)] max-h-[60vh] overflow-auto"
+            className="md:hidden fixed bottom-0 inset-x-0 z-[900] bg-white rounded-t-[20px] border-t border-border shadow-[0_-8px_32px_rgba(0,0,0,0.15)] max-h-[70vh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-label="פרטי העסק שנבחר"
@@ -388,7 +388,7 @@ export default function MapPage() {
                 <X size={20} weight="bold" />
               </button>
             </div>
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-20">
               <ProducerCard producer={selectedProducer} referrer="search" />
             </div>
           </div>

@@ -123,11 +123,10 @@ export default function LoginPage() {
               סיסמה
             </label>
             {/* Eye toggle — task 7. Positioned at the visual LEFT of
-                the input (which is the END of the LTR-typing direction
-                for this password field, matching the convention on
-                Israeli banking + e-commerce sites). `pl-11` on the input
-                reserves 44px of padding so typed text never overlaps
-                the icon. */}
+                the input on the RIGHT side (the START/leading side in
+                RTL context, matching Israeli banking + e-commerce sites).
+                `pr-11` on the input reserves 44px of padding so typed
+                text never overlaps the icon. */}
             <div className="relative">
               <input
                 id="login-password"
@@ -139,7 +138,7 @@ export default function LoginPage() {
                 minLength={8}
                 placeholder="סיסמה (לפחות 8 תווים)"
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[10px] pl-11 pr-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                className={`w-full border rounded-[10px] pr-11 pl-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                   passwordInvalid
                     ? "border-red-400"
                     : passwordValidLength
@@ -151,7 +150,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
                 aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
                 aria-pressed={showPassword}
                 tabIndex={0}
