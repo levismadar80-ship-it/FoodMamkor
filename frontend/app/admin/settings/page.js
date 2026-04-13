@@ -50,6 +50,7 @@ export default function AdminSettingsPage() {
         <Field label="אימייל אדמין לקבלת התראות">
           <input
             type="email"
+            dir="ltr"
             value={settings.admin_email || ""}
             onChange={(e) => update("admin_email", e.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2"
