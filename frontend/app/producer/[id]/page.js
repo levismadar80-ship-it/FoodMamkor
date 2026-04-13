@@ -1,6 +1,14 @@
 import ProducerDetail from "./ProducerDetail";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const SITE_URL = "https://mehamakor.online";
+
+// Cloudinary OG image transform: 1200x630 crop, auto quality, < 300KB.
+function ogImage(url) {
+  if (!url || typeof url !== "string") return null;
+  if (!url.includes("res.cloudinary.com")) return url;
+  return url.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/");
+}
 
 async function getProducer(id) {
   try {
@@ -18,21 +26,28 @@ export async function generateMetadata({ params }) {
     return { title: "בית עסק לא נמצא | מהמקור" };
   }
 
-  const categories = producer.categories?.map((c) => c.name).join(", ") || "";
+  const category = producer.categories?.[0]?.name || "";
   const description = producer.description
-    ? producer.description.slice(0, 155)
-    : `${producer.name} — בית עסק מקומי מ${producer.city}${categories ? `. ${categories}` : ""}`;
+    ? producer.description.slice(0, 120)
+    : `${producer.name} — בית עסק מקומי מ${producer.city}${category ? `. ${category}` : ""}`;
+
+  const slug = producer.slug || `producer/${producer.id}`;
+  const pageUrl = `${SITE_URL}/${slug}`;
+  const img = ogImage(producer.images?.[0]);
 
   return {
     title: `${producer.name} | מהמקור`,
     description,
     openGraph: {
-      title: `${producer.name} | מהמקור`,
+      title: producer.name,
       description,
-      url: `https://mehamakor.co.il/producer/${producer.id}`,
-      images: producer.images?.length > 0 ? [{ url: producer.images[0] }] : [],
+      url: pageUrl,
+      images: img
+        ? [{ url: img, width: 1200, height: 630 }]
+        : [],
       type: "website",
       locale: "he_IL",
+      siteName: "מהמקור",
     },
   };
 }

@@ -3,25 +3,36 @@
 import { showToast } from "@/lib/toast";
 import { ShareNetwork } from "@phosphor-icons/react";
 
-export default function ShareButton({ url, title }) {
+export default function ShareButton({ url, title, description, city, category }) {
+  const shareText = [
+    `גיליתי את ${title || "בית עסק"} במהמקור 🌿`,
+    description ? `${description.slice(0, 80)}...` : "",
+    city || category
+      ? `ב${city || ""}${city && category ? " • " : ""}${category || ""}`
+      : "",
+    `👉 ${url}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   const handleShare = async () => {
     if (!url) return;
-    // Try native share first (mobile)
+    // Try native share first (mobile) — text only, no file fetching
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title: title || "מהמקור", url });
+        await navigator.share({ title: title || "מהמקור", text: shareText, url });
         return;
       } catch {
         // user cancelled or unsupported — fall through to clipboard
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareText);
       showToast("הקישור הועתק ✓");
     } catch {
       // last-resort fallback
       const ta = document.createElement("textarea");
-      ta.value = url;
+      ta.value = shareText;
       document.body.appendChild(ta);
       ta.select();
       try {

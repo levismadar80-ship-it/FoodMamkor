@@ -356,7 +356,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 <FavoriteButton producerId={producer.id} />
               </div>
               <div className="flex-1">
-                <ShareButton url={shareUrl} title={producer.name} />
+                <ShareButton
+                  url={shareUrl}
+                  title={producer.name}
+                  description={producer.description}
+                  city={producer.city}
+                  category={primaryCategory?.name}
+                />
               </div>
             </div>
 
