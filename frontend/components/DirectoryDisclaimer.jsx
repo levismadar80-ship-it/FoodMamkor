@@ -13,6 +13,7 @@ export default function DirectoryDisclaimer({ className = "" }) {
     >
       <span className="font-semibold text-site-text">מהמקור</span> היא פלטפורמת
       דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר בלבד.
+      מחירים נקבעים על ידי בתי העסק.
     </div>
   );
 }
