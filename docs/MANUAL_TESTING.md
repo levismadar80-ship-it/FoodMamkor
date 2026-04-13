@@ -430,6 +430,33 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Map UI bugfixes — z-index, tooltip, bottom sheet, legend
+
+### Bug 1 — Bottom sheet no longer blocks zoom
+- [ ] Mobile: open bottom sheet (tap a marker) → zoom +/- buttons on the map are **still clickable above the sheet**
+
+### Bug 2 — No double tooltip on marker hover
+- [ ] Desktop: hover over a marker → only **one** tooltip appears (dark bg Leaflet tooltip)
+- [ ] No browser-native tooltip (lighter, delayed) visible
+
+### Bug 3 — Bottom sheet content not cut off
+- [ ] Mobile: open bottom sheet → scroll to bottom → "מידע נוסף" button fully visible with padding
+
+### Bug 4 — X close button works
+- [ ] Mobile: open bottom sheet → scroll down → X stays visible at top-left → tap X → sheet closes
+
+### Bug 5 — Category legend hidden on mobile
+- [ ] Mobile (< 768px): category legend **not visible** on the map
+- [ ] Desktop (≥ 768px): category legend visible at bottom-right
+
+### Z-index hierarchy
+- `z-[1000]`: zoom controls, "search this area", legend, "קרוב אלי"
+- `z-[500]`: mobile bottom sheet
+- [ ] "קרוב אלי" clickable even with sheet open
+- [ ] Map pannable in area above the bottom sheet
+
+---
+
 ## Performance — Core Web Vitals (CWV audit)
 
 ### Image optimization (LCP)
