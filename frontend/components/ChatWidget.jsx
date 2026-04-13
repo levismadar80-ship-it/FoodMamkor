@@ -228,30 +228,20 @@ export default function ChatWidget() {
           aria-modal="false"
           aria-label="עוזרת מהמקור"
         >
-          {/* Header — X closes/minimizes, "הסתר" dismisses permanently */}
+          {/* Header — X closes/minimizes only */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
               <span className="font-headline font-bold text-base">העוזרת של מהמקור</span>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={dismiss}
-                className="text-[11px] text-white/70 hover:text-white px-2 py-1 rounded transition"
-                title="הסתר את העוזרת לצמיתות"
-              >
-                הסתר
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="p-1.5 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
-                aria-label="מזער את חלון העוזרת"
-              >
-                <X size={18} weight="bold" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="p-1.5 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
+              aria-label="סגרי את חלון העוזרת"
+            >
+              <X size={18} weight="bold" />
+            </button>
           </div>
 
           {/* Messages */}
@@ -316,6 +306,7 @@ export default function ChatWidget() {
               maxLength={500}
               disabled={sending}
               className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-site-muted disabled:opacity-60"
+              style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />
             <button
@@ -327,6 +318,15 @@ export default function ChatWidget() {
               <PaperPlaneTilt size={16} weight="fill" style={{ transform: "scaleX(-1)" }} />
             </button>
           </form>
+
+          {/* Dismiss link — bottom of the chat window */}
+          <button
+            type="button"
+            onClick={dismiss}
+            className="text-[11px] text-site-muted hover:text-site-text py-1.5 text-center transition border-t border-border bg-white"
+          >
+            × הסתר את העוזרת
+          </button>
         </div>
       )}
     </>
