@@ -64,6 +64,8 @@
     - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — always add a one-line entry
     - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
 12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.** These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
+13. **Never render empty containers for optional fields.** Always conditionally render optional data (`{x && <Tag>{x}</Tag>}`). For grids with optional items: build an array first, then render. Separators (` · `) must be conditional on both sides having data.
+14. **Bug Pattern Protocol.** When fixing a bug: (1) identify the root cause pattern, (2) search the entire codebase for the same pattern, (3) fix ALL instances in the same PR, (4) add the pattern to [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md). See that file for known patterns (RTL positioning, empty optional fields, grid with missing items, BottomNav content cutoff).
 
 ## Documentation map
 | File | What's in it |
@@ -79,6 +81,7 @@
 | [docs/ROADMAP.md](./docs/ROADMAP.md) | v1/v2/v3 features and priorities |
 | [docs/FEATURES.md](./docs/FEATURES.md) | Status table — what's shipped, what's open, code paths |
 | [docs/CHANGELOG.md](./docs/CHANGELOG.md) | Session log preserved from earlier CLAUDE.md revisions |
+| [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) | Known bug patterns + grep checks — every bug fix adds an entry here (rule 14) |
 | [docs/archive/](./docs/archive/) | Implemented session specs (FINAL_AUDIT, MAP_IMPROVEMENTS, PREMIUM_DESIGN, etc.) — historical, do not edit |
 
 ## How to update this file

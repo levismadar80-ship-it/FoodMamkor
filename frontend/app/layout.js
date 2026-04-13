@@ -117,8 +117,8 @@ export default function RootLayout({ children }) {
             {/* PREMIUM_DESIGN: subtle green dot cursor on desktop only —
                 component self-disables on touch + reduced-motion. */}
             <CustomCursor />
-            {/* AI Q&A bot — desktop only, floating bottom-left.
-                Self-hides on mobile via `hidden md:flex`. */}
+            {/* AI Q&A bot — all screen sizes, floating bottom-left.
+                Mobile: full-width panel above BottomNav. Desktop: 360px. */}
             <ChatWidget />
           </SmoothScrollProvider>
           </LanguageProvider>

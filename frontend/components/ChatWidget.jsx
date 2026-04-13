@@ -13,9 +13,9 @@ import api from "@/lib/api";
  *   - Floating button bottom-LEFT (bottom-6 left-6) — opposite the
  *     existing "near me" map button which sits bottom-right inside the
  *     map container; doesn't conflict with anything global.
- *   - **Desktop only** (`hidden md:flex`) per spec. Mobile real estate
- *     is already taken by BottomNav + cookies banner; chat goes in
- *     phase 2.
+ *   - **All screen sizes.** Mobile: full-width panel above BottomNav,
+ *     launcher button at bottom-20 to clear the nav. Desktop: 360px
+ *     panel at bottom-left corner.
  *   - Open state shows a 360px panel with brand styling: cream bg,
  *     primary green header, rounded 16px, soft shadow tinted with the
  *     brand primary (CLAUDE.md design rule).
@@ -181,13 +181,14 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating launcher button — desktop only.
-          bottom-LEFT per spec, opposite the existing rightside controls. */}
+      {/* Floating launcher button — all screen sizes.
+          On mobile: sits above BottomNav (bottom-20). On desktop: bottom-6.
+          bottom-LEFT in RTL context, opposite the existing rightside controls. */}
       {!open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="hidden md:flex fixed bottom-6 left-6 z-[900] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex fixed bottom-20 md:bottom-6 left-4 md:left-6 z-[900] items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label="פתחי את העוזרת של מהמקור"
         >
           <ChatCircleDots size={22} weight="duotone" />
@@ -195,11 +196,11 @@ export default function ChatWidget() {
         </button>
       )}
 
-      {/* Chat panel — desktop only.
-          Width 360px, max-height bound to viewport so the input stays in view. */}
+      {/* Chat panel — all screen sizes.
+          Mobile: full-width above BottomNav. Desktop: 360px fixed bottom-left. */}
       {open && (
         <div
-          className="hidden md:flex fixed bottom-6 left-6 z-[900] w-[360px] max-h-[min(560px,80vh)] flex-col bg-background border border-border rounded-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="flex fixed bottom-0 md:bottom-6 inset-x-0 md:inset-x-auto md:left-6 z-[900] w-full md:w-[360px] max-h-[80vh] md:max-h-[min(560px,80vh)] flex-col bg-background border border-border md:rounded-[16px] rounded-t-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label="עוזרת מהמקור"
