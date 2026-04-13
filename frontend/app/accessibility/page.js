@@ -72,6 +72,8 @@ const SECTIONS = [
         נתקלת בבעיית נגישות? נשמח לסייע ולתקן. ניתן לפנות לרכזת הנגישות של
         האתר:
         <br />
+        <strong>רכזת נגישות:</strong> צוות מהמקור
+        <br />
         📧{" "}
         <a
           href="mailto:levismadar80@gmail.com"
@@ -81,10 +83,30 @@ const SECTIONS = [
           levismadar80@gmail.com
         </a>
         <br />
+        📞 להשלים
+        <br />
         <span className="text-sm text-site-muted">
           בפנייה נא לתאר את הבעיה, את הדף שבו נתקלת בה ואת סוג הטכנולוגיה
           המסייעת שבה את/ה משתמש/ת. נחזור אלייך תוך 3 ימי עסקים.
         </span>
+      </>
+    ),
+  },
+  {
+    id: "authority",
+    title: "רשות ממשלתית לנגישות",
+    body: (
+      <>
+        לפרטים נוספים על זכויות נגישות ברשת, ניתן לפנות ל
+        <a
+          href="https://www.gov.il/he/departments/accessibility"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          אתר הנגישות הממשלתי
+        </a>
+        .
       </>
     ),
   },
@@ -95,7 +117,7 @@ export default function AccessibilityPage() {
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="font-headline text-5xl font-bold text-site-text mb-2">הצהרת נגישות</h1>
-        <p className="text-site-muted mb-12">עדכון אחרון: אפריל 2026</p>
+        <p className="text-site-muted mb-12">תאריך בדיקה אחרונה: אפריל 2026</p>
 
         <div className="space-y-4">
           {SECTIONS.map((section) => (

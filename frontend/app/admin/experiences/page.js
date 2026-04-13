@@ -160,12 +160,12 @@ export default function AdminExperiencesPage() {
           <table className="w-full text-sm">
             <thead className="bg-light text-site-muted text-xs">
               <tr>
-                <th className="text-right p-3 font-medium">כותרת</th>
-                <th className="text-right p-3 font-medium">מארחת</th>
-                <th className="text-right p-3 font-medium">תאריך</th>
-                <th className="text-right p-3 font-medium">עיר</th>
-                <th className="text-right p-3 font-medium">Claude</th>
-                <th className="text-right p-3 font-medium">פעולות</th>
+                <th className="text-end p-3 font-medium">כותרת</th>
+                <th className="text-end p-3 font-medium">מארחת</th>
+                <th className="text-end p-3 font-medium">תאריך</th>
+                <th className="text-end p-3 font-medium">עיר</th>
+                <th className="text-end p-3 font-medium">Claude</th>
+                <th className="text-end p-3 font-medium">פעולות</th>
               </tr>
             </thead>
             <tbody>
@@ -250,7 +250,7 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
         <td className="p-3">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="font-medium text-site-text hover:text-primary text-right"
+            className="font-medium text-site-text hover:text-primary text-end"
           >
             {ex.title}
           </button>

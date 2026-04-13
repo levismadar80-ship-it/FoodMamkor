@@ -1,5 +1,11 @@
 {
   "extends": "next/core-web-vitals",
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "ignorePatterns": ["public/sw.js", "public/workbox-*.js"],
   "rules": {
     "no-undef": "error"
   }
