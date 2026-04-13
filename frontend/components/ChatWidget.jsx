@@ -181,26 +181,33 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating launcher button — all screen sizes.
-          On mobile: sits above BottomNav (bottom-20 = 80px). Desktop: bottom-6.
-          Positioned bottom-LEFT. z-[1100] above BottomNav (z-1000). */}
+      {/* Floating launcher button — ALL screen sizes.
+          Uses a <style> block for the media query to avoid inline vs Tailwind conflicts. */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .chat-launcher { position:fixed; z-index:9999; bottom:80px; right:16px; }
+        .chat-panel { position:fixed; z-index:9999; bottom:0; right:0; left:0; }
+        @media (min-width:768px) {
+          .chat-launcher { bottom:24px; right:24px; }
+          .chat-panel { bottom:24px; right:24px; left:auto; width:360px; border-radius:16px; }
+        }
+      `}} />
       {!open && (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="!fixed !bottom-20 md:!bottom-6 !left-4 md:!left-6 !z-[1100] !flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label="פתחי את העוזרת של מהמקור"
+          className="chat-launcher flex items-center gap-2 bg-primary text-white px-4 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <ChatCircleDots size={22} weight="duotone" />
           <span className="font-body text-sm">שאלה? שאלי אותי</span>
         </button>
       )}
 
-      {/* Chat panel — all screen sizes.
-          Mobile: full-width above BottomNav. Desktop: 360px fixed bottom-left. */}
+      {/* Chat panel — ALL screen sizes.
+          Mobile: full-width from bottom. Desktop: 360px bottom-right. */}
       {open && (
         <div
-          className="flex fixed bottom-0 md:bottom-6 inset-x-0 md:inset-x-auto md:left-6 z-[1100] w-full md:w-[360px] max-h-[80vh] md:max-h-[min(560px,80vh)] flex-col bg-background border border-border md:rounded-[16px] rounded-t-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="chat-panel flex w-full md:w-[360px] max-h-[80vh] md:max-h-[min(560px,80vh)] flex-col bg-background border border-border rounded-t-[16px] md:rounded-[16px] shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label="עוזרת מהמקור"

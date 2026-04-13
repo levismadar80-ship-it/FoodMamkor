@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Cookie } from "@phosphor-icons/react";
 
 /**
- * GDPR-ish cookie consent banner (docs/archive/FIXES_V2.md fix 6).
+ * Cookie consent banner — compact bottom bar.
+ *
+ * Mobile: fixed bottom bar above BottomNav (bottom-14), single row with
+ * icon + short text + 2 inline buttons. Max height ~64px.
+ * Desktop: same compact bar at the bottom of the viewport.
  *
  * State persists in localStorage so the banner only appears once per
  * device. Two accept modes:
  *   - "all": full consent (analytics, etc.)
  *   - "essential": only required cookies (auth session, etc.)
- *
- * The banner is SSR-safe — it renders nothing on the server and only
- * appears on the client after hydration + localStorage check, so the
- * initial HTML doesn't flash it for returning users.
  */
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -25,7 +25,6 @@ export default function CookieBanner() {
         setVisible(true);
       }
     } catch {
-      // localStorage unavailable — show the banner, let user accept
       setVisible(true);
     }
   }, []);
@@ -33,9 +32,7 @@ export default function CookieBanner() {
   const accept = (mode) => {
     try {
       localStorage.setItem("cookies_accepted", mode);
-    } catch {
-      // ignore — we'll just show the banner again next time
-    }
+    } catch {}
     setVisible(false);
   };
 
@@ -43,35 +40,33 @@ export default function CookieBanner() {
 
   return (
     <div
-      className="fixed bottom-20 md:bottom-4 inset-x-4 md:inset-x-auto md:right-4 md:max-w-md z-[1500] bg-primary-dark text-light rounded-[16px] shadow-2xl border border-primary-dark/50 p-4 md:p-5"
+      className="fixed bottom-14 md:bottom-0 inset-x-0 z-[1500] bg-primary-dark text-light px-4 py-2.5 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="dialog"
-      aria-labelledby="cookie-banner-title"
-      aria-describedby="cookie-banner-body"
+      aria-label="הסכמה לעוגיות"
     >
-      <h2 id="cookie-banner-title" className="font-headline text-lg font-bold mb-1 text-white">
-        🍪 שימוש בעוגיות
-      </h2>
-      <p id="cookie-banner-body" className="text-sm leading-relaxed mb-4 text-light/90">
-        אנחנו משתמשות בעוגיות כדי לשמור אותך מחוברת ולשפר את החוויה שלך.{" "}
-        <Link href="/terms#privacy" className="underline hover:text-white">
-          מדיניות פרטיות
-        </Link>
-      </p>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <button
-          type="button"
-          onClick={() => accept("all")}
-          className="bg-light text-primary-dark font-medium px-5 py-2 rounded-[8px] hover:bg-white transition focus-visible:ring-2 focus-visible:ring-white"
-        >
-          אני מסכימה ✓
-        </button>
-        <button
-          type="button"
-          onClick={() => accept("essential")}
-          className="bg-transparent text-light border border-light/40 px-5 py-2 rounded-[8px] hover:bg-light/10 transition focus-visible:ring-2 focus-visible:ring-light"
-        >
-          רק הכרחיים
-        </button>
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Cookie size={20} weight="duotone" className="text-light shrink-0" aria-hidden="true" />
+          <p className="text-xs md:text-sm text-light/90 truncate">
+            אנחנו משתמשים בעוגיות לשיפור החוויה
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => accept("all")}
+            className="bg-light text-primary-dark font-medium text-xs px-3 py-1.5 rounded-full hover:bg-white transition whitespace-nowrap"
+          >
+            אני מסכימה
+          </button>
+          <button
+            type="button"
+            onClick={() => accept("essential")}
+            className="text-light/80 text-xs px-3 py-1.5 rounded-full border border-light/30 hover:bg-light/10 transition whitespace-nowrap"
+          >
+            רק הכרחיים
+          </button>
+        </div>
       </div>
     </div>
   );
