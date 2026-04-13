@@ -430,6 +430,35 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## Dynamic OG tags + share message (social sharing)
+
+### OG tags on /producer/:id and /:slug
+- [ ] View page source or `curl -s https://mehamakor.online/producer/1 | grep 'og:'` — `og:title` is the producer name (no "| מהמקור" suffix)
+- [ ] `og:description` is the first 120 chars of producer description
+- [ ] `og:image` is a Cloudinary URL with `w_1200,h_630,c_fill` transform
+- [ ] `og:url` uses `mehamakor.online` (not `.co.il`)
+- [ ] Share a producer link on WhatsApp → preview shows producer photo + name + description snippet
+- [ ] Share a slug URL (e.g. `/havat-hashikma`) → same preview quality
+
+### Share button text
+- [ ] Click share on producer page (desktop, no native share) → clipboard contains multi-line message:
+  ```
+  גיליתי את [name] במהמקור 🌿
+  [first 80 chars of description]...
+  ב[city] • [category]
+  👉 [URL]
+  ```
+- [ ] Mobile: native share sheet opens with the formatted text
+- [ ] Producer with no description → description line is omitted
+- [ ] Producer with no city/category → location line is omitted
+
+### Regression
+- [ ] Producer page still loads and renders correctly
+- [ ] WhatsApp share button still works separately
+- [ ] JSON-LD structured data still present in page source
+
+---
+
 ## Performance — Core Web Vitals (CWV audit)
 
 ### Image optimization (LCP)
