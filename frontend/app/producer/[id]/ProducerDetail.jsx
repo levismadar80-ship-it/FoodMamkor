@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal, Info, Package, Truck, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
@@ -29,6 +29,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const router = useRouter();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
+  const [activeTab, setActiveTab] = useState("about");
+
+  const sectionRefs = useRef({});
+  const tabBarRef = useRef(null);
+
+  const scrollToSection = useCallback((key) => {
+    setActiveTab(key);
+    const el = sectionRefs.current[key];
+    if (el) {
+      const tabBarHeight = tabBarRef.current?.offsetHeight || 56;
+      const y = el.getBoundingClientRect().top + window.scrollY - tabBarHeight - 16;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  }, []);
 
   useEffect(() => {
     if (initialProducer) return;
@@ -124,6 +138,36 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       {/* Gallery */}
       <ImageGallery images={producer.images || []} />
 
+      {/* Mobile tab bar */}
+      <nav
+        ref={tabBarRef}
+        className="md:hidden sticky top-0 z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
+        aria-label="ניווט מהיר בפרופיל"
+      >
+        <div className="flex">
+          {[
+            { key: "about", label: "אודות", Icon: Info },
+            { key: "products", label: "מוצרים", Icon: Package },
+            { key: "delivery", label: "משלוח", Icon: Truck },
+            { key: "reviews", label: "ביקורות", Icon: Star },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => scrollToSection(tab.key)}
+              className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
+                activeTab === tab.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-site-muted"
+              }`}
+            >
+              <tab.Icon size={18} weight={activeTab === tab.key ? "fill" : "duotone"} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
       {/* Two-column layout: main + sticky contact sidebar */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
         {/* ================= Main column ================= */}
@@ -190,7 +234,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
           {/* Description */}
           {producer.description && (
-            <section className="mt-8">
+            <section className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-3">אודות</h2>
               <p className="text-site-text/85 leading-relaxed whitespace-pre-line">
                 {producer.description}
@@ -200,7 +244,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
           {/* Products (premium only) */}
           {producer.products?.length > 0 && (
-            <section className="mt-8">
+            <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">מוצרים</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {producer.products.map((product) => (
@@ -223,7 +267,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
           {/* Delivery Areas */}
           {producer.delivery_areas?.length > 0 && (
-            <section className="mt-8">
+            <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
                 אזורי משלוח
               </h2>
@@ -269,7 +313,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           </div>
 
           {/* Reviews */}
-          <ProducerReviews producerId={producer.id} />
+          <div ref={(el) => { sectionRefs.current.reviews = el; }}>
+            <ProducerReviews producerId={producer.id} />
+          </div>
         </div>
 
         {/* ================= Sticky contact sidebar ================= */}
@@ -307,43 +353,41 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               </a>
             )}
 
-            {/* Phone */}
-            {producer.phone && (
-              <a
-                href={`tel:${producer.phone}`}
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-2.5"
-                dir="ltr"
-              >
-                <Phone size={18} weight="duotone" className="text-primary shrink-0" />
-                {producer.phone}
-              </a>
-            )}
-
-            {/* Instagram */}
-            {producer.instagram && (
-              <a
-                href={`https://instagram.com/${producer.instagram}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-2.5"
-              >
-                <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
-                @{producer.instagram}
-              </a>
-            )}
-
-            {/* Website */}
-            {producer.website && (
-              <a
-                href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 border border-border text-site-text px-4 py-3 rounded-[10px] hover:bg-light transition text-sm mb-4"
-              >
-                <Globe size={18} weight="duotone" className="text-primary shrink-0" />
-                אתר
-              </a>
-            )}
+            {/* Contact buttons — 2-per-row dynamic grid */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {producer.phone && (
+                <a
+                  href={`tel:${producer.phone}`}
+                  className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                  dir="ltr"
+                >
+                  <Phone size={18} weight="duotone" className="text-primary shrink-0" />
+                  <span className="truncate">{producer.phone}</span>
+                </a>
+              )}
+              {producer.instagram && (
+                <a
+                  href={`https://instagram.com/${producer.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                >
+                  <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
+                  <span className="truncate">@{producer.instagram}</span>
+                </a>
+              )}
+              {producer.website && (
+                <a
+                  href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                >
+                  <Globe size={18} weight="duotone" className="text-primary shrink-0" />
+                  אתר
+                </a>
+              )}
+            </div>
 
             {/* Follow button — docs/archive/FEEDBACK_FIXES.md new feature */}
             <div className="mb-2">
@@ -386,6 +430,21 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           </div>
         </aside>
       </div>
+
+      {/* Sticky WhatsApp CTA — mobile only */}
+      {whatsappNumber && (
+        <div className="md:hidden fixed bottom-20 inset-x-0 z-40 px-4 pb-2">
+          <a
+            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-[12px] shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:bg-[#1ea855] transition font-medium text-base"
+          >
+            <WhatsappLogo size={22} weight="fill" />
+            שלחי הודעה בוואטסאפ
+          </a>
+        </div>
+      )}
     </div>
   );
 }

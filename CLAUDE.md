@@ -100,6 +100,14 @@
 ## Map z-index tokens (do not use arbitrary values on `/map`)
 `tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls/zoom/search:1000 → chat:9999 → cookie:9998`. Bottom sheets must ALWAYS sit below map controls. See `globals.css` for CSS overrides and `MapClient.jsx` for Tailwind classes.
 
+## Bug Pattern Protocol
+When a bug is found and fixed, follow this protocol to prevent recurrence:
+1. **Identify the root cause** — don't just fix the symptom. Document *why* the bug happened.
+2. **Grep for siblings** — search the entire codebase for the same pattern. If the bug exists in one place, it likely exists in others (e.g., the RTL eye toggle `left-3`→`right-3` fix applied to both `/login` and `/register`).
+3. **Add a regression rule** — if the pattern is likely to recur, add it to "Regression prevention rules" above.
+4. **Add a test** — write a test that would have caught the bug. If no automated test is possible, add a manual test case to [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md).
+5. **Update docs** — if the fix reveals a non-obvious convention (e.g., "always use physical `right-3` for LTR input toggles in RTL pages"), document it in the relevant doc.
+
 ## How to update this file
 - Keep it ≤ 175 lines (raised from 150 in April 2026 when regression prevention rules + PR approval guide were added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
