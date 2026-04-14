@@ -403,7 +403,7 @@ export default function MapComponent({
       <button
         type="button"
         onClick={goToMyLocation}
-        className="absolute bottom-6 left-4 z-[1000] bg-white rounded-[10px] px-3 py-2 shadow-md hover:bg-light transition text-sm flex items-center gap-2 border border-border focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="map-near-me-btn absolute bottom-6 left-4 z-[1000] bg-white rounded-[10px] px-3 py-2 shadow-md hover:bg-light transition text-sm flex items-center gap-2 border border-border focus-visible:ring-2 focus-visible:ring-primary/40"
         title="קרוב אלי"
         aria-label="מרכז מפה על המיקום שלי"
       >

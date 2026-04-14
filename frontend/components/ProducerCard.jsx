@@ -6,6 +6,7 @@ import { Seal, Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone } from "@/lib/utils";
+import { useLanguage } from "@/lib/language-context";
 
 function WhatsAppIcon({ className }) {
   return (
@@ -34,6 +35,7 @@ function InstagramIcon({ className }) {
 }
 
 export default function ProducerCard({ producer, active, onClick, referrer }) {
+  const { t } = useLanguage();
   // FINAL_AUDIT: Cloudinary f_auto,q_auto — WebP/AVIF automatic delivery.
   const imgSrc = optimizeCloudinary(producer.images?.[0]);
   // tasks_for_claude_code.md task 17: shared normalizer replaces the
@@ -70,7 +72,10 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
       style={{ borderRadius: "16px" }}
     >
       <Link href={producerHref}>
-        <div className="relative w-full bg-light h-[140px] md:h-[200px]" style={{ borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+        <div
+          className="relative w-full h-[140px] md:h-[200px]"
+          style={{ borderRadius: "16px 16px 0 0", overflow: "hidden", backgroundColor: "#F5F0E8" }}
+        >
           {imgSrc ? (
             <Image
               src={imgSrc}
@@ -80,6 +85,9 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 50vw, 25vw"
             />
           ) : (
+            // Bug fix: empty image placeholder uses warm cream #F5F0E8 from
+            // CLAUDE.md brand palette (was bg-light which resolves to a
+            // greener shade). Leaf icon + brand mark unchanged.
             <div
               className="absolute inset-0 flex flex-col items-center justify-center text-primary"
               aria-label={`${producer.name} — תמונה חסרה`}
@@ -209,12 +217,14 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 {priceLabel}
               </span>
             )}
+            {/* Bug fix: align with design system — 12px border-radius
+                (CLAUDE.md standard, was 8px), font-medium for visual
+                weight parity with other CTAs, translated label. */}
             <Link
               href={producerHref}
-              className="border border-primary text-primary text-[13px] hover:bg-primary hover:text-white transition"
-              style={{ borderRadius: "8px", padding: "6px 14px" }}
+              className="border border-primary text-primary text-[13px] font-medium hover:bg-primary hover:text-white transition rounded-[12px] px-4 py-2"
             >
-              מידע נוסף
+              {t("cta_more_info")}
             </Link>
           </div>
         </div>

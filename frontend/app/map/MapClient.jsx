@@ -62,6 +62,19 @@ export default function MapPage() {
     loadProducers();
   }, []);
 
+  // Bug fix: toggle a body class while the bottom sheet is open. Two
+  // CSS rules in globals.css use it: hide hover tooltips that would
+  // overlap the sheet, and lift "קרוב אלי" so the sheet doesn't cover it.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (selectedProducer) {
+      document.body.classList.add("map-sheet-open");
+    } else {
+      document.body.classList.remove("map-sheet-open");
+    }
+    return () => document.body.classList.remove("map-sheet-open");
+  }, [selectedProducer]);
+
   // Deep-link from /producer/:id → sessionStorage → flyTo + popup + highlight card
   useEffect(() => {
     if (allProducers.length === 0) return;
@@ -377,10 +390,12 @@ export default function MapPage() {
       {/* Mobile bottom sheet — z-[600] per CLAUDE.md map z-index tokens.
           Must stay BELOW map controls (zoom z-1000, search z-1000, legend
           z-800, "קרוב אלי" z-1000) so controls remain clickable when the
-          sheet is open. pb-6 prevents content cutoff at the rounded edge. */}
+          sheet is open. pb-6 prevents content cutoff at the rounded edge.
+          Bug fix: max-h-[50vh] (was 55vh) — sheet was too tall and pushed
+          past the comfortable thumb zone. */}
       {selectedProducer && (
         <div
-          className="md:hidden fixed bottom-16 inset-x-3 z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 pb-6 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
+          className="md:hidden fixed bottom-16 inset-x-3 z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 pb-6 max-h-[50vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
           role="dialog"
           aria-modal="true"
           aria-label="פרטי העסק שנבחר"
@@ -389,13 +404,16 @@ export default function MapPage() {
             className="w-10 h-1 bg-border rounded-full mx-auto mb-3"
             aria-hidden="true"
           />
+          {/* Bug fix: X button moved from top-left (LTR convention) to
+              top-right (RTL convention — mirrors the close behavior
+              Hebrew users expect). Touch target bumped to 44×44px. */}
           <button
             type="button"
             onClick={() => setSelectedProducer(null)}
-            className="absolute top-3 left-3 z-10 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="absolute top-3 right-3 z-10 w-11 h-11 inline-flex items-center justify-center rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="סגור"
           >
-            <X size={18} weight="bold" />
+            <X size={20} weight="bold" />
           </button>
           <ProducerCard producer={selectedProducer} referrer="search" />
         </div>

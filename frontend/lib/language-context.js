@@ -64,6 +64,10 @@ const translations = {
     // Main CTAs
     cta_show_on_map: "הצג במפה",
     cta_more_info: "מידע נוסף",
+    cta_near_me: "קרוב אלי",
+    cta_near_me_loading: "מחפשת...",
+    cta_send_whatsapp: "שלחי הודעה בוואטסאפ",
+    cta_contact: "צרי קשר",
   },
   en: {
     // Header + BottomNav
@@ -116,6 +120,10 @@ const translations = {
     // Main CTAs
     cta_show_on_map: "Show on Map",
     cta_more_info: "More Info",
+    cta_near_me: "Near Me",
+    cta_near_me_loading: "Searching...",
+    cta_send_whatsapp: "Message on WhatsApp",
+    cta_contact: "Contact",
   },
 };
 

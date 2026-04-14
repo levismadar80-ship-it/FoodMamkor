@@ -43,6 +43,26 @@ h1, h2, h3 {
 .leaflet-top.leaflet-right {
   z-index: 1000 !important;
 }
+/* Bug fix: tooltip z-index per CLAUDE.md token (500). Was bleeding
+   through the page-level search bar and bottom sheet because Leaflet
+   defaults to ~700 inside its own stacking context. */
+.leaflet-tooltip,
+.leaflet-tooltip-pane {
+  z-index: 500 !important;
+}
+/* Bug fix: when the mobile bottom sheet is open, hide hover tooltips
+   so they don't overlap the sheet content. body.map-sheet-open is set
+   from MapClient.jsx whenever selectedProducer is non-null. */
+body.map-sheet-open .leaflet-tooltip,
+body.map-sheet-open .leaflet-tooltip-pane {
+  display: none !important;
+}
+/* Bug fix: when the mobile bottom sheet is open, lift the "קרוב אלי"
+   button so it isn't covered by the sheet. The button is positioned
+   bottom-6 inside .relative; CSS overrides bottom on its container. */
+body.map-sheet-open .map-near-me-btn {
+  bottom: calc(50vh + 1.5rem) !important;
+}
 
 /* Fade-in on scroll — set initial state, hook toggles it */
 .fade-in-init {

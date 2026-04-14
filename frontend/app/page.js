@@ -302,7 +302,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 px-5 py-2.5 rounded-full hover:bg-white/25 transition font-medium text-sm disabled:opacity-50"
             >
               <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
-              {geoLoading ? "מחפשת..." : "קרוב אלי"}
+              {geoLoading ? t("cta_near_me_loading") : t("cta_near_me")}
             </button>
           </motion.div>
         </div>

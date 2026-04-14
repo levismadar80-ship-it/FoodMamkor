@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal, Info, Package, Truck, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
+import { useLanguage } from "@/lib/language-context";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -27,6 +28,7 @@ import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
   const router = useRouter();
+  const { t } = useLanguage();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
   const [activeTab, setActiveTab] = useState("about");
@@ -321,37 +323,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         {/* ================= Sticky contact sidebar ================= */}
         <aside className="order-first lg:order-last">
           <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
-            <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
+            <h3 className="font-headline text-xl font-bold text-site-text mb-5">{t("cta_contact")}</h3>
 
-            {/* WhatsApp — primary CTA */}
-            {whatsappNumber && (
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  // feature/producer-analytics — fire-and-forget beacon
-                  // so the producer dashboard counts this click. Doesn't
-                  // block the wa.me window open.
-                  if (
-                    typeof navigator !== "undefined" &&
-                    navigator.sendBeacon
-                  ) {
-                    try {
-                      navigator.sendBeacon(
-                        `/api/producers/${producer.id}/whatsapp-click`,
-                      );
-                    } catch {
-                      // tracking is best-effort
-                    }
-                  }
-                }}
-                className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-2.5 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
-              >
-                <WhatsappLogo size={20} weight="fill" />
-                שלחי הודעה
-              </a>
-            )}
+            {/* Bug fix: sidebar WhatsApp removed — was duplicating the
+                sticky bottom bar (which now shows on all viewports).
+                Single source of truth for the primary contact CTA. */}
 
             {/* Contact buttons — 2-per-row dynamic grid */}
             <div className="grid grid-cols-2 gap-2 mb-4">
@@ -376,9 +352,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   <span className="truncate">@{producer.instagram}</span>
                 </a>
               )}
-              {producer.website && (
+              {/* Bug fix: defensive trim() so an empty/whitespace-only
+                  website value doesn't render an empty pill. */}
+              {producer.website?.trim() && (
                 <a
-                  href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                  href={producer.website.trim().startsWith("http") ? producer.website.trim() : `https://${producer.website.trim()}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
@@ -424,24 +402,36 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 aria-label="פתח את המיקום של העסק במפה"
               >
                 <MapTrifold size={16} weight="duotone" />
-                הצג במפה
+                {t("cta_show_on_map")}
               </button>
             )}
           </div>
         </aside>
       </div>
 
-      {/* Sticky WhatsApp CTA — mobile only */}
+      {/* Bug fix: sticky WhatsApp bar is now the SINGLE WhatsApp CTA on
+          producer detail (sidebar duplicate removed). Visible on all
+          devices: bottom-20 on mobile (clears bottom nav) → bottom-6 on
+          desktop. max-w-md keeps it from spanning the full desktop width. */}
       {whatsappNumber && (
-        <div className="md:hidden fixed bottom-20 inset-x-0 z-40 px-4 pb-2">
+        <div className="fixed bottom-20 md:bottom-6 inset-x-0 z-40 px-4 pb-2 pointer-events-none">
           <a
             href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-[12px] shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:bg-[#1ea855] transition font-medium text-base"
+            onClick={() => {
+              if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+                try {
+                  navigator.sendBeacon(`/api/producers/${producer.id}/whatsapp-click`);
+                } catch {
+                  // tracking is best-effort
+                }
+              }
+            }}
+            className="pointer-events-auto mx-auto flex items-center justify-center gap-2 max-w-md bg-[#25D366] text-white py-3.5 rounded-[12px] shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:bg-[#1ea855] transition font-medium text-base focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
           >
             <WhatsappLogo size={22} weight="fill" />
-            שלחי הודעה בוואטסאפ
+            {t("cta_send_whatsapp")}
           </a>
         </div>
       )}

@@ -38,6 +38,13 @@ vi.mock("@/components/CategoryTag", () => ({
   default: ({ category }) => <span data-testid="category-tag">{category.name}</span>,
 }));
 
+// Mock language context — return a passthrough t() that surfaces the key.
+// Bug Pattern Protocol regression guard: keeping the mock here means
+// adding useLanguage() to ProducerCard doesn't break the test suite.
+vi.mock("@/lib/language-context", () => ({
+  useLanguage: () => ({ lang: "he", setLang: () => {}, t: (key) => key }),
+}));
+
 const fullProducer = {
   id: 1,
   name: "חוות השקמה",
