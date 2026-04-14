@@ -145,7 +145,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">סיסמה *</label>
-            {/* Eye toggle + relative wrapper — same pattern as /login. */}
+            {/* Eye toggle — positioned at the END of the LTR password field (physical right). */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                 required
                 minLength={8}
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[12px] pl-11 pr-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                className={`w-full border rounded-[12px] pr-11 pl-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                   passwordInvalid
                     ? "border-red-400"
                     : passwordValidLength
@@ -167,7 +167,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
                 aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
                 aria-pressed={showPassword}
                 tabIndex={0}

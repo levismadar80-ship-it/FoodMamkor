@@ -45,7 +45,7 @@ export default function FavoriteButton({ producerId }) {
     <button
       onClick={toggle}
       disabled={loading}
-      className="text-2xl hover:scale-110 transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+      className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
       title={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
       aria-label={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
       aria-pressed={favorited}
