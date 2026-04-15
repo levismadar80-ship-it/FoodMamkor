@@ -360,20 +360,36 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   <span className="truncate">{producer.phone}</span>
                 </a>
               )}
-              {producer.instagram && (
+              {producer.instagram?.trim() && (() => {
+                // Strip leading "@" so stored values like "@heese_farm"
+                // don't render as "@@heese_farm" (which truncates weirdly
+                // into "heese@@" in the RTL sidebar without an explicit
+                // dir override). The URL path also drops the @.
+                const handle = producer.instagram.trim().replace(/^@+/, "");
+                return (
+                  <a
+                    href={`https://instagram.com/${handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm overflow-hidden"
+                    dir="ltr"
+                  >
+                    <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
+                    <span className="truncate min-w-0">@{handle}</span>
+                  </a>
+                );
+              })()}
+              {/* Pattern 2 guard: producer.website may be "" or "   "
+                  (whitespace-only), which is truthy in JS. Without
+                  trimming, the tile renders with an href of "https:// "
+                  and clicks go nowhere. */}
+              {producer.website?.trim() && (
                 <a
-                  href={`https://instagram.com/${producer.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
-                >
-                  <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
-                  <span className="truncate">@{producer.instagram}</span>
-                </a>
-              )}
-              {producer.website && (
-                <a
-                  href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                  href={
+                    producer.website.trim().startsWith("http")
+                      ? producer.website.trim()
+                      : `https://${producer.website.trim()}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
@@ -401,10 +417,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <FollowButton producerId={producer.id} />
             </div>
 
-            {/* Favorites + Share row */}
-            <div className="flex gap-2 mb-3">
-              <div className="flex-1 flex justify-center border border-border rounded-[10px] py-2 hover:bg-light transition">
-                <FavoriteButton producerId={producer.id} />
+            {/* Favorites + Share row.
+                Bug-fix: use variant="inline" so desktop shows the
+                HeartStraight icon + "שמור" text instead of a bare emoji
+                heart with no label. The outer border wrapper was removed
+                because the inline variant renders its own bordered pill. */}
+            <div className="flex gap-2 mb-3 items-stretch">
+              <div className="flex-1 flex justify-center">
+                <FavoriteButton producerId={producer.id} variant="inline" />
               </div>
               <div className="flex-1">
                 <ShareButton
