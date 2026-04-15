@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Seal, Leaf, Cow } from "@phosphor-icons/react";
+import { Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
 import AvailabilityBadge from "./AvailabilityBadge";
+import BadgeRow from "./BadgeRow";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone } from "@/lib/utils";
 import { useUserLocation } from "@/lib/user-location";
@@ -115,12 +116,9 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               <span className="font-headline text-sm mt-1 opacity-70">מהמקור</span>
             </div>
           )}
-          {producer.is_verified && (
-            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
-              <Seal size={14} weight="fill" aria-hidden="true" />
-              מאומת
-            </span>
-          )}
+          {/* MEH-18: "מאומת" moved into the unified BadgeRow below.
+              Premium / available-today image overlays remain — they're
+              distinct semantics (plan tier + same-day flag). */}
           {producer.plan === "premium" && (
             <span className="absolute top-3 right-3 bg-accent text-white text-xs px-2 py-1 rounded-full">
               פרמיום
@@ -147,6 +145,11 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
             <> · {producer.categories[0].emoji} {producer.categories[0].name}</>
           )}
         </p>
+
+        {/* MEH-18 — unified badge row, max 2 on card per priority. */}
+        <div className="mt-1.5">
+          <BadgeRow producer={producer} limit={2} />
+        </div>
 
         {/* MEH-12 — availability status (full/vacation only on cards;
             "available" is the default so it's hidden to keep cards calm) */}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal, Info, Package, Truck, Star, EnvelopeSimple } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
@@ -14,6 +14,7 @@ import ShareButton from "@/components/ShareButton";
 import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import AvailabilityBadge from "@/components/AvailabilityBadge";
+import BadgeRow from "@/components/BadgeRow";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
@@ -176,12 +177,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               {producer.name}
             </h1>
             <FavoriteButton producerId={producer.id} variant="inline" />
-            {producer.is_verified && (
-              <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full inline-flex items-center gap-1">
-                <Seal size={14} weight="fill" aria-hidden="true" />
-                עסק מאומת
-              </span>
-            )}
+            {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
+            <BadgeRow producer={producer} />
             {producer.reviews_count > 0 && (
               <span
                 className="bg-[#FFF9E6] text-[#946A00] border border-[#F0C040] text-xs px-3 py-1 rounded-full"
