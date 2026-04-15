@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, date
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -71,6 +72,38 @@ def toggle_availability(
     return {"is_available_today": producer.is_available_today}
 
 
+# MEH-12: durable availability status ("open | full | vacation") that
+# persists until the producer changes it, vs. the per-day
+# `is_available_today` flag above. Rendered as a colored-dot badge on
+# ProducerCard + ProducerDetail. Keep the two endpoints separate —
+# collapsing them would break the existing "זמין היום" UX.
+AVAILABILITY_STATUSES = {"available", "full", "vacation"}
+
+
+class AvailabilityStatusUpdate(BaseModel):
+    status: str = Field(..., description="available | full | vacation")
+
+
+@router.post("/availability-status")
+def set_availability_status(
+    data: AvailabilityStatusUpdate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    if data.status not in AVAILABILITY_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status. Must be one of: {sorted(AVAILABILITY_STATUSES)}",
+        )
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="Producer not found")
+    producer.availability_status = data.status
+    producer.last_active_at = datetime.utcnow()
+    db.commit()
+    return {"availability_status": producer.availability_status}
+
+
 @router.get("/dashboard")
 def dashboard(
     user: User = Depends(require_producer),
@@ -108,6 +141,8 @@ def dashboard(
             "id": str(producer.id),
             "name": producer.name,
             "is_available_today": bool(producer.is_available_today),
+            # MEH-12 — dashboard toggle reads this to highlight the active pill
+            "availability_status": producer.availability_status or "available",
             "status": producer.status,
             "plan": producer.plan,
         },

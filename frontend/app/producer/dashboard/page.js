@@ -61,6 +61,31 @@ export default function ProducerDashboardPage() {
     }
   };
 
+  // MEH-12 — durable availability status (available | full | vacation).
+  // Separate from the daily `is_available_today` toggle above; both
+  // coexist and render different badges on cards/detail pages.
+  const setAvailabilityStatus = async (status) => {
+    // Optimistic update so the pill lights up immediately on click.
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            producer: { ...prev.producer, availability_status: status },
+          }
+        : prev,
+    );
+    try {
+      await api.post("/producers/me/availability-status", { status });
+    } catch {
+      alert("לא הצלחנו לעדכן את סטטוס הזמינות — נסי שוב בעוד רגע");
+      // Refetch on failure so the UI doesn't stay out of sync.
+      api
+        .get("/producers/me/dashboard")
+        .then((r) => setData(r.data))
+        .catch(() => {});
+    }
+  };
+
   if (authLoading || !user || user.role !== "producer") return null;
   if (!data) {
     return (
@@ -118,6 +143,54 @@ export default function ProducerDashboardPage() {
           >
             {saving ? "..." : producer.is_available_today ? "בטל סימון" : "סמן זמין היום"}
           </button>
+        </div>
+      </div>
+
+      {/* MEH-12 — durable availability status (colored-dot badge on
+          ProducerCard + ProducerDetail). Distinct from the per-day
+          "זמין היום" flag above. */}
+      <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
+        <p className="text-sm uppercase tracking-wider text-site-muted mb-1">
+          סטטוס זמינות
+        </p>
+        <p className="text-site-muted text-sm mb-4">
+          בחרי את הסטטוס שיוצג ללקוחות בכרטיסייה ובעמוד העסק.
+        </p>
+        <div role="radiogroup" aria-label="סטטוס זמינות" className="flex flex-wrap gap-2">
+          {[
+            { value: "available", label: "פתוח להזמנות", color: "#22c55e" },
+            { value: "full", label: "עמוס כרגע", color: "#f97316" },
+            { value: "vacation", label: "בהפסקה", color: "#9ca3af" },
+          ].map((opt) => {
+            const active = (producer.availability_status || "available") === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setAvailabilityStatus(opt.value)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                  active
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white text-site-text border-border hover:bg-light"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    background: opt.color,
+                    flexShrink: 0,
+                  }}
+                />
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
