@@ -53,6 +53,11 @@ def list_producers(
     verified: bool | None = None,
     organic: bool | None = None,
     kosher: bool | None = None,
+    # MEH-13 — free-text search over name + description, used by /search
+    # results page. Aliased as `q` in the URL to match CLAUDE.md's
+    # documented API shape, but named `search_q` internally so it doesn't
+    # shadow the `q` SQLAlchemy-query-builder local below.
+    search_q: str | None = Query(None, alias="q"),
     db: Session = Depends(get_db),
 ):
     geo_search = lat is not None and lng is not None and radius_km is not None
@@ -95,6 +100,13 @@ def list_producers(
         q = q.join(DeliveryArea).filter(func.lower(DeliveryArea.city) == delivery_city.lower())
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
+
+    # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
+    if search_q and search_q.strip():
+        like = f"%{search_q.strip()}%"
+        q = q.filter(
+            (Producer.name.ilike(like)) | (Producer.description.ilike(like))
+        )
 
     if geo_search:
         # A multi-entity query combined with joinedload on a collection

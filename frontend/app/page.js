@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
+import SmartSearch from "@/components/SmartSearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -68,7 +69,6 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -107,17 +107,6 @@ export default function HomePage() {
         setVisibleCount(PAGE_SIZE);
       })
       .finally(() => setProducersLoading(false));
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const cp = chipParams();
-    if (!searchQuery.trim()) {
-      loadProducers(cp);
-    } else {
-      loadProducers({ delivery_city: searchQuery, ...cp });
-    }
-    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleCategoryCardClick = (card) => {
@@ -252,11 +241,10 @@ export default function HomePage() {
           </motion.p>
 
           {/* Pill search */}
-          <motion.form
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            onSubmit={handleSearch}
             role="search"
             className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2 px-5 py-3"
             style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
@@ -270,25 +258,16 @@ export default function HomePage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <label htmlFor="hero-search" className="sr-only">
-              {t("search_sr_label")}
-            </label>
-            <input
-              id="hero-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+            {/* MEH-13: smart search with autocomplete. Enter-without-
+                selection routes to /search?q=... so the old city-only
+                handleSearch fallback is retired — the results page
+                handles producer + product matches together. */}
+            <SmartSearch
               placeholder={t("search_placeholder")}
-              className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+              srLabel={t("search_sr_label")}
+              className="flex-1"
             />
-            <button
-              type="submit"
-              className="sr-only"
-              aria-label="בצע חיפוש"
-            >
-              חיפוש
-            </button>
-          </motion.form>
+          </motion.div>
 
           {/* "Near me" geolocation button — task 11 */}
           <motion.div
