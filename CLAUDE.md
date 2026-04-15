@@ -1,6 +1,6 @@
 # מהמקור — CLAUDE.md
 > One-page entry point. Read this first; everything detailed lives in `docs/`.
-> Last restructure: April 2026. Hard cap: this file stays ≤ 100 lines.
+> Last restructure: April 2026. Hard cap: this file stays ≤ 175 lines.
 
 ## Project
 - **Name:** מהמקור (MEHAMAKOR) | mehamakor.online
@@ -46,10 +46,10 @@
 1. **Session start protocol (MANDATORY — higher priority than any task).** Before doing ANY work: (a) read this file + [docs/DESIGN.md](./docs/DESIGN.md) (UI) / [docs/DATA.md](./docs/DATA.md) (backend), (b) `git fetch --prune origin && git branch -r | grep -v 'HEAD\|main\|staging'` — list feature branches, (c) list open PRs (MCP `list_pull_requests` or equivalent), (d) `git log --oneline origin/staging..origin/main` — check if staging drifted from main, (e) **report findings to user** and ask "continue an open PR, or start fresh?" This prevents duplicate PRs, stale branches, lost work, and merge conflicts across sessions. Never skip this audit even if the user jumps straight to a task. **Single-session rule:** only ONE Claude Code session may be active at a time on this repo. If you find evidence of a parallel session (branches with similar timestamps, conflicting changes, `claude/*` branches): **stop and report to user** before proceeding. Parallel sessions caused PRs #71, #72, #77 to be re-applied — never again.
 2. **Branch from `staging`** — never from `main`. See "Branch strategy" above.
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
-4. **Plan before coding.** Propose the approach in plain text before touching files. Wait for explicit `go` before editing. No code-first.
+4. **Plan before coding + interview mode.** Propose the approach in plain text before touching files; wait for explicit `go` before editing. **If the task is ambiguous** — missing spec, unclear scope, fuzzy acceptance criteria, or a Linear/issue title with no body — enter interview mode: ask 2–5 targeted questions first, then plan. Don't guess at requirements, don't code-first.
 5. **Tests before implementation.** Write the failing test first (pytest for backend, playwright/component for frontend), then make it pass. See [docs/TESTING.md](./docs/TESTING.md).
 6. **Commit per task with a clear message.** One logical change = one commit. Message states *why*, not just *what*. Update [docs/CHANGELOG.md](./docs/CHANGELOG.md) only for substantial session work — small commits are documented by git log.
-7. **Use `/compact` every 20–30 messages** to reclaim context budget without losing the plan.
+7. **`/compact` discipline — proactive, not reactive.** Run `/compact` when context hits **~40%**, not when the system warns at 95%. Auto-compact is a last resort: it summarizes without your intent and loses load-bearing plan details. **Before `/compact`:** dump current plan + pending todos to the user so nothing is lost. Once a `session-state.md` exists, prefer `/clear` + `/session-resume` (see rule 13 + custom commands below) over `/compact`.
 8. **Use "ultrathink" for complex problems** — schema migrations, security tradeoffs, multi-file refactors, anything where a wrong call costs more than 10 minutes to undo.
 9. **After every PR — always send the Vercel preview URL.** Format: `"בדיקי על: https://food-mamkor-[hash].vercel.app"`. **Wait for approval before merging to staging.** Full flow + mobile checklist: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) → "Testing workflow".
 10. **After every PR — update [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md)** with any new features. Format: `[ ] Test — איך לבדוק — תוצאה מצופה`. Add under the relevant page/feature section, or create a new section.
@@ -64,6 +64,7 @@
     - [`docs/CHANGELOG.md`](./docs/CHANGELOG.md) — always add a one-line entry
     - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
 12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.** These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
+13. **Context reset protocol.** When context usage hits **≥60%** or at a natural task boundary (PR merged, feature shipped): run `/session-save` to write `session-state.md` (current branch, open PR URL, todos, active decisions), then `/clear`, then `/session-resume` on next turn. Auto-compact is a last resort — it silently drops plan details. Pair with rule 7's 40% `/compact` trigger: below 40% keep working, 40–60% `/compact`, ≥60% save + `/clear`.
 
 ## Regression prevention rules
 1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
@@ -94,19 +95,29 @@
 | [docs/MODERATION.md](./docs/MODERATION.md) | Hybrid AI moderation for `/neighbor` listings |
 | [docs/ROADMAP.md](./docs/ROADMAP.md) | v1/v2/v3 features and priorities |
 | [docs/FEATURES.md](./docs/FEATURES.md) | Status table — what's shipped, what's open, code paths |
-| [docs/CHANGELOG.md](./docs/CHANGELOG.md) | Session log preserved from earlier CLAUDE.md revisions |
-| [docs/archive/](./docs/archive/) | Implemented session specs (FINAL_AUDIT, MAP_IMPROVEMENTS, PREMIUM_DESIGN, etc.) — historical, do not edit |
+| [docs/CHANGELOG.md](./docs/CHANGELOG.md) + [docs/archive/](./docs/archive/) | Session log + historical session specs (FINAL_AUDIT, MAP_IMPROVEMENTS, etc. — frozen) |
 
 ## Map z-index tokens (do not use arbitrary values on `/map`)
 `tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 → legend:800 → controls/zoom/search:1000 → chat:9999 → cookie:9998`. Bottom sheets must ALWAYS sit below map controls. See `globals.css` for CSS overrides and `MapClient.jsx` for Tailwind classes.
 
-## Bug Pattern Protocol
-When a bug is found and fixed, follow this protocol to prevent recurrence:
+## Bug Pattern Protocol (when a bug is found and fixed)
 1. **Identify the root cause** — don't just fix the symptom. Document *why* the bug happened.
 2. **Grep for siblings** — search the entire codebase for the same pattern. If the bug exists in one place, it likely exists in others (e.g., the RTL eye toggle `left-3`→`right-3` fix applied to both `/login` and `/register`).
 3. **Add a regression rule** — if the pattern is likely to recur, add it to "Regression prevention rules" above.
 4. **Add a test** — write a test that would have caught the bug. If no automated test is possible, add a manual test case to [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md).
 5. **Update docs** — if the fix reveals a non-obvious convention (e.g., "always use physical `right-3` for LTR input toggles in RTL pages"), document it in the relevant doc.
+
+## Known Bug Patterns (cross-ref before touching; fixes follow Bug Pattern Protocol above)
+- **RTL eye toggle position** — password inputs use `dir="ltr"`; toggle must be `right-3` (physical), never `left-3`. Live in `/login` + `/register`.
+- **Leaflet tooltip z-index** — must be `500` (between markers:400 and bottom-sheet:600). See Map z-index tokens.
+- **Undefined vars after refactor** — grep every consumer before deleting props/vars (Regression rule 1). PR #43 broke ProducerCard this way.
+- **Anthropic `proxies` kwarg** — always pass `http_client=httpx.Client()` (see Key locked decisions). Don't "clean up" the kwarg.
+- **Duplicate producer-detail CTAs** — sidebar WhatsApp is canonical; sticky bar is mobile-only. Never render both at the same breakpoint.
+
+## Custom commands (session lifecycle helpers in `.claude/commands/`, invoked via `/<name>`)
+- `/session-start` — run the Session Start Protocol audit from rule 1 and report findings.
+- `/session-save` — write `session-state.md` (branch, open PR, todos, decisions) so the session survives `/clear`.
+- `/session-resume` — read back `session-state.md` and restore the plan after `/clear`.
 
 ## How to update this file
 - Keep it ≤ 175 lines (raised from 150 in April 2026 when regression prevention rules + PR approval guide were added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.

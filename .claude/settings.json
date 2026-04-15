@@ -25,6 +25,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "_comment": "PostToolUse ESLint — lint the single file just edited in frontend/ so undefined-variable regressions (PR #43 class) surface immediately, not at Stop. Skips on non-frontend files, missing node_modules, or missing config. Lint errors exit 2 (blocks the tool call) so Claude sees the failure and fixes it before moving on.",
+            "command": "bash -c 'if command -v jq >/dev/null 2>&1; then fp=$(jq -r \".tool_input.file_path // \\\"\\\"\"); else fp=$(cat); fi; case \"$fp\" in *frontend/*.js|*frontend/*.jsx|*frontend/*.ts|*frontend/*.tsx) ;; *) exit 0 ;; esac; root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if [ ! -d \"$root/frontend/node_modules\" ] || [ ! -f \"$root/frontend/.eslintrc.json\" ]; then exit 0; fi; cd \"$root/frontend\"; rel=\"${fp#$root/}\"; result=$(npx --no-install eslint \"$rel\" --max-warnings 0 2>&1); lint_exit=$?; if [ $lint_exit -eq 2 ]; then echo \"Warning: ESLint config error on $rel, skipping\" >&2; exit 0; fi; if [ $lint_exit -ne 0 ]; then echo \"$result\" | tail -20 >&2; echo \"ESLint errors in $rel — fix before continuing.\" >&2; exit 2; fi; exit 0'"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
