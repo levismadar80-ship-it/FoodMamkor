@@ -5,6 +5,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { motion } from "framer-motion";
 import { Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
@@ -84,15 +85,16 @@ export default function HomePage() {
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
     api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
-    // Task 13: load recently viewed producers from localStorage
-    try {
-      const ids = JSON.parse(localStorage.getItem("recently_viewed") || "[]");
-      if (ids.length > 0) {
-        Promise.all(ids.map((id) => api.get(`/producers/${id}`).then((r) => r.data).catch(() => null)))
-          .then((results) => setRecentlyViewed(results.filter(Boolean)));
-      }
-    } catch {
-      // localStorage unavailable
+    // Task 13 + MEH-11: load recently viewed producer IDs from
+    // localStorage. The helper applies a 7-day TTL and gracefully
+    // ignores legacy storage shapes.
+    const ids = getRecentlyViewedIds();
+    if (ids.length > 0) {
+      Promise.all(
+        ids.map((id) =>
+          api.get(`/producers/${id}`).then((r) => r.data).catch(() => null),
+        ),
+      ).then((results) => setRecentlyViewed(results.filter(Boolean)));
     }
   }, []);
 
@@ -463,7 +465,7 @@ export default function HomePage() {
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pb-10">
           <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
-            ביקרת לאחרונה
+            צפית לאחרונה
           </h2>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             {recentlyViewed.map((p) => {

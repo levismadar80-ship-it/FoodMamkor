@@ -15,6 +15,7 @@ import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
+import { pushRecentlyViewed } from "@/lib/recently-viewed";
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -54,18 +55,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       .finally(() => setLoading(false));
   }, [params.id, fetchPath, initialProducer]);
 
-  // Task 13: save to recently viewed in localStorage
+  // Task 13: save to recently viewed in localStorage. Storage shape +
+  // 7-day TTL live in lib/recently-viewed.js (MEH-11) so the homepage
+  // read site and this write site can't drift.
   useEffect(() => {
     if (!producer?.id) return;
-    try {
-      const key = "recently_viewed";
-      const stored = JSON.parse(localStorage.getItem(key) || "[]");
-      const filtered = stored.filter((id) => id !== producer.id);
-      filtered.unshift(producer.id);
-      localStorage.setItem(key, JSON.stringify(filtered.slice(0, 5)));
-    } catch {
-      // localStorage unavailable — ignore
-    }
+    pushRecentlyViewed(producer.id);
   }, [producer?.id]);
 
   if (loading) {
