@@ -200,6 +200,8 @@ class ProducerListOut(BaseModel):
     pickup_points: bool = False
     kosher: str | None = None
     is_available_today: bool = False
+    # MEH-12: durable availability status (available | full | vacation).
+    availability_status: str = "available"
     avg_rating: float = 0
     reviews_count: int = 0
     images: list[str] = []

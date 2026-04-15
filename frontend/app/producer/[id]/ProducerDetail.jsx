@@ -13,6 +13,7 @@ import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
 import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
+import AvailabilityBadge from "@/components/AvailabilityBadge";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
@@ -192,6 +193,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 פרמיום
               </span>
             )}
+            {/* MEH-12 — durable availability status (all three variants
+                shown on the detail page so guests see "פתוח להזמנות"
+                prominently where it matters most) */}
+            <AvailabilityBadge
+              status={producer.availability_status}
+              variant="detail"
+            />
           </div>
 
           <p className="text-site-muted text-sm flex items-center gap-1.5 mb-3">

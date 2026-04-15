@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Seal, Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
+import AvailabilityBadge from "./AvailabilityBadge";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone } from "@/lib/utils";
 
@@ -120,6 +121,14 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
             <> · {producer.categories[0].emoji} {producer.categories[0].name}</>
           )}
         </p>
+
+        {/* MEH-12 — availability status (full/vacation only on cards;
+            "available" is the default so it's hidden to keep cards calm) */}
+        {producer.availability_status && producer.availability_status !== "available" && (
+          <div className="mt-1">
+            <AvailabilityBadge status={producer.availability_status} variant="card" />
+          </div>
+        )}
 
         {producer.reviews_count > 0 && (
           <p className="text-xs text-site-muted mt-1">

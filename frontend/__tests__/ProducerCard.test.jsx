@@ -160,4 +160,27 @@ describe("ProducerCard", () => {
     const mainLink = links.find((l) => l.getAttribute("href")?.includes("/producer/2"));
     expect(mainLink).toBeTruthy();
   });
+
+  // ----- MEH-12 availability badge -----
+
+  it("does NOT render availability badge when status is 'available' (default)", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_status: "available" }} />,
+    );
+    expect(screen.queryByText("פתוח להזמנות")).not.toBeInTheDocument();
+  });
+
+  it("renders the 'עמוס כרגע' badge when status is 'full'", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_status: "full" }} />,
+    );
+    expect(screen.getByText("עמוס כרגע")).toBeInTheDocument();
+  });
+
+  it("renders the 'בהפסקה' badge when status is 'vacation'", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_status: "vacation" }} />,
+    );
+    expect(screen.getByText("בהפסקה")).toBeInTheDocument();
+  });
 });
