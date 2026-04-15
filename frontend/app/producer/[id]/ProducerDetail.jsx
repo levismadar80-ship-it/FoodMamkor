@@ -136,7 +136,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       </div>
 
       {/* Gallery */}
-      <ImageGallery images={producer.images || []} />
+      <ImageGallery images={producer.images || []} producerId={producer.id} />
 
       {/* Mobile tab bar */}
       <nav
@@ -177,6 +177,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <h1 className="font-headline text-4xl font-bold text-site-text">
               {producer.name}
             </h1>
+            <FavoriteButton producerId={producer.id} variant="inline" />
             {producer.is_verified && (
               <span className="bg-light text-primary border border-primary/20 text-xs px-3 py-1 rounded-full inline-flex items-center gap-1">
                 <Seal size={14} weight="fill" aria-hidden="true" />
