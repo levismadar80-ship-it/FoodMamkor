@@ -33,6 +33,8 @@ const EMPTY = {
   grass_fed: false,
   organic_certified: false,
   is_verified: true,
+  // MEH-18
+  is_recommended: false,
   admin_notes: "",
   images: [],
 };
@@ -325,6 +327,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className="w-4 h-4 accent-primary"
             />
             <Seal size={16} weight="fill" className="inline align-[-2px] text-primary" aria-hidden="true" /> מאומת
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!form.is_recommended}
+              onChange={(e) => update("is_recommended", e.target.checked)}
+              className="w-4 h-4 accent-accent"
+            />
+            ⭐ מומלץ (תגית עורכת)
           </label>
           <Field label="כשרות">
             <select
