@@ -12,6 +12,7 @@ import {
   ChartLineUp,
   GearSix,
   Sparkle,
+  Star,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -31,6 +32,7 @@ const NAV = [
   { href: "/admin/experiences", label: "חוויות", Icon: Sparkle },
   { href: "/admin/users", label: "משתמשים", Icon: Users },
   { href: "/admin/content", label: "תוכן", Icon: Note },
+  { href: "/admin/reviews", label: "ביקורות", Icon: Star },
   { href: "/admin/reports", label: "דיווחים", Icon: Warning },
   { href: "/admin/analytics", label: "אנליטיקס", Icon: ChartLineUp },
   { href: "/admin/settings", label: "הגדרות", Icon: GearSix },
