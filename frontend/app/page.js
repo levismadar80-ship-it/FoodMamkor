@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
+import { setUserLocation } from "@/lib/user-location";
 import { motion } from "framer-motion";
 import { Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
@@ -158,6 +159,9 @@ export default function HomePage() {
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // MEH-12: cache for the session so all cards can show
+        // distance ("3.2 ק"מ ממך") without re-prompting.
+        setUserLocation(pos.coords.latitude, pos.coords.longitude);
         loadProducers({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,

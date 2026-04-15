@@ -183,4 +183,43 @@ describe("ProducerCard", () => {
     );
     expect(screen.getByText("בהפסקה")).toBeInTheDocument();
   });
+
+  // ----- MEH-13 distance pill -----
+
+  it("does NOT render distance pill when user has not granted geolocation", () => {
+    window.sessionStorage.clear();
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, lat: 32.0853, lng: 34.7818 }}
+      />,
+    );
+    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render distance pill when producer has no lat/lng", () => {
+    window.sessionStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
+    window.sessionStorage.clear();
+  });
+
+  it("renders distance pill when both userLoc and producer coords exist", () => {
+    // Tel Aviv → Jerusalem = ~54 km
+    window.sessionStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }}
+      />,
+    );
+    const pill = screen.getByTestId("distance-pill");
+    expect(pill).toBeInTheDocument();
+    expect(pill.textContent).toMatch(/ק"מ ממך$/);
+    window.sessionStorage.clear();
+  });
 });
