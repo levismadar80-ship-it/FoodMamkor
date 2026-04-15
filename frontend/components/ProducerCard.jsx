@@ -9,6 +9,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone } from "@/lib/utils";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
+import { getPrimaryMethod } from "@/lib/contact-method";
 
 function WhatsAppIcon({ className }) {
   return (
@@ -64,6 +65,17 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
         )
       : null;
+
+  // MEH-17: highlight the primary-method icon in the footer row. A
+  // filled primary-colored circle vs. the default transparent hover.
+  const primaryMethod = getPrimaryMethod(producer);
+  const isPrimary = (method) => primaryMethod === method;
+  const iconClassFor = (method) =>
+    `inline-flex items-center justify-center rounded-full transition ${
+      isPrimary(method)
+        ? "bg-primary text-white hover:bg-primary-light"
+        : "text-primary hover:bg-light"
+    }`;
 
   const handleRootClick = (e) => {
     if (onClick) {
@@ -202,7 +214,8 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 title="WhatsApp"
                 aria-label="שלח הודעה בווטסאפ"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center rounded-full hover:bg-light transition text-primary"
+                data-primary={isPrimary("whatsapp") ? "true" : undefined}
+                className={iconClassFor("whatsapp")}
                 style={{ width: "44px", height: "44px" }}
               >
                 <WhatsAppIcon className="w-5 h-5" />
@@ -214,10 +227,45 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 title="טלפון"
                 aria-label="התקשר לבית העסק"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center rounded-full hover:bg-light transition text-primary"
+                data-primary={isPrimary("phone") ? "true" : undefined}
+                className={iconClassFor("phone")}
                 style={{ width: "44px", height: "44px" }}
               >
                 <PhoneIcon className="w-5 h-5" />
+              </a>
+            )}
+            {producer.website && (
+              <a
+                href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="אתר"
+                aria-label="אתר העסק"
+                onClick={(e) => e.stopPropagation()}
+                data-primary={isPrimary("website") ? "true" : undefined}
+                className={iconClassFor("website")}
+                style={{ width: "44px", height: "44px" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </a>
+            )}
+            {producer.contact_email && (
+              <a
+                href={`mailto:${producer.contact_email}`}
+                title="אימייל"
+                aria-label="שלח אימייל"
+                onClick={(e) => e.stopPropagation()}
+                data-primary={isPrimary("email") ? "true" : undefined}
+                className={iconClassFor("email")}
+                style={{ width: "44px", height: "44px" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
               </a>
             )}
             {producer.instagram && (

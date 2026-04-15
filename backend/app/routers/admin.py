@@ -116,6 +116,9 @@ def admin_create_producer(
         instagram=data.instagram,
         website=data.website,
         whatsapp_group=data.whatsapp_group,
+        # MEH-17
+        primary_contact_method=data.primary_contact_method or "whatsapp",
+        contact_email=data.contact_email,
         slug=slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,

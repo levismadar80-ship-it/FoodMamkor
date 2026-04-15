@@ -222,4 +222,45 @@ describe("ProducerCard", () => {
     expect(pill.textContent).toMatch(/ק"מ ממך$/);
     window.sessionStorage.clear();
   });
+
+  // ----- MEH-17 primary-method highlight -----
+
+  it("marks the WhatsApp icon as primary when primary_contact_method='whatsapp'", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, primary_contact_method: "whatsapp" }}
+      />,
+    );
+    const whatsappLink = screen.getByLabelText("שלח הודעה בווטסאפ");
+    expect(whatsappLink).toHaveAttribute("data-primary", "true");
+    const phoneLink = screen.getByLabelText("התקשר לבית העסק");
+    expect(phoneLink).not.toHaveAttribute("data-primary");
+  });
+
+  it("marks the phone icon as primary when primary_contact_method='phone'", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, primary_contact_method: "phone" }}
+      />,
+    );
+    const phoneLink = screen.getByLabelText("התקשר לבית העסק");
+    expect(phoneLink).toHaveAttribute("data-primary", "true");
+    const whatsappLink = screen.getByLabelText("שלח הודעה בווטסאפ");
+    expect(whatsappLink).not.toHaveAttribute("data-primary");
+  });
+
+  it("renders an email icon when contact_email is set", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          contact_email: "hello@example.com",
+          primary_contact_method: "email",
+        }}
+      />,
+    );
+    const emailLink = screen.getByLabelText("שלח אימייל");
+    expect(emailLink).toHaveAttribute("href", "mailto:hello@example.com");
+    expect(emailLink).toHaveAttribute("data-primary", "true");
+  });
 });

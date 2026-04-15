@@ -28,6 +28,9 @@ class ProducerRegister(BaseModel):
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    # MEH-17: flexible contact methods.
+    primary_contact_method: str = "whatsapp"
+    contact_email: EmailStr | None = None
     category_ids: list[int] = []
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -120,6 +123,9 @@ class ProducerAdminCreate(BaseModel):
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
+    # MEH-17
+    primary_contact_method: str = "whatsapp"
+    contact_email: EmailStr | None = None
     slug: str | None = None
     top_product_name: str | None = None
     price_range: str | None = None
@@ -161,6 +167,9 @@ class ProducerUpdate(BaseModel):
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
+    # MEH-17
+    primary_contact_method: str | None = None
+    contact_email: EmailStr | None = None
     slug: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
@@ -202,6 +211,9 @@ class ProducerListOut(BaseModel):
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
+    # MEH-17: flexible contact methods.
+    primary_contact_method: str = "whatsapp"
+    contact_email: str | None = None
     avg_rating: float = 0
     reviews_count: int = 0
     images: list[str] = []

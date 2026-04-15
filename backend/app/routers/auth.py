@@ -48,6 +48,26 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # MEH-17: validate primary contact method has its required field filled.
+    method = (data.primary_contact_method or "whatsapp").strip().lower()
+    if method not in {"whatsapp", "phone", "website", "email"}:
+        raise HTTPException(status_code=422, detail="אמצעי קשר לא נתמך")
+    if method in {"whatsapp", "phone"} and not (data.phone or "").strip():
+        raise HTTPException(
+            status_code=422,
+            detail="חובה להזין טלפון עבור אמצעי הקשר הנבחר",
+        )
+    if method == "website" and not (data.website or "").strip():
+        raise HTTPException(
+            status_code=422,
+            detail="חובה להזין כתובת אתר עבור אמצעי הקשר הנבחר",
+        )
+    if method == "email" and not (data.contact_email or "").strip():
+        raise HTTPException(
+            status_code=422,
+            detail="חובה להזין אימייל ליצירת קשר עבור אמצעי הקשר הנבחר",
+        )
+
     producer = Producer(
         name=data.producer_name,
         description=data.description,
@@ -57,6 +77,8 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
         phone=data.phone,
         instagram=data.instagram,
         website=data.website,
+        primary_contact_method=method,
+        contact_email=data.contact_email,
         status="pending",
     )
     db.add(producer)

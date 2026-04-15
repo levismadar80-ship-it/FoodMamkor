@@ -20,6 +20,9 @@ export default function RegisterProducerPage() {
     producer_name: "", description: "", city: "",
     lat: null, lng: null,
     phone: "", instagram: "", website: "",
+    // MEH-17 — primary contact method + business email.
+    primary_contact_method: "whatsapp",
+    contact_email: "",
     category_ids: [],
     delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
   });
@@ -57,6 +60,8 @@ export default function RegisterProducerPage() {
     try {
       const data = {
         ...form,
+        // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
+        contact_email: form.contact_email?.trim() || null,
         delivery_areas: form.delivery_areas
           .filter((da) => da.city)
           .map((da) => ({
@@ -155,6 +160,52 @@ export default function RegisterProducerPage() {
             </div>
             <input placeholder="אינסטגרם" value={form.instagram} onChange={set("instagram")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
             <input placeholder="אתר" value={form.website} onChange={set("website")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+
+            {/* MEH-17 — primary contact method radio group + email input. */}
+            <fieldset className="border border-border rounded-[12px] p-3">
+              <legend className="px-2 text-sm font-medium">
+                איך תרצי שיצרו אתך קשר? *
+              </legend>
+              <div className="flex flex-col gap-2 mt-1">
+                {[
+                  { key: "whatsapp", label: "WhatsApp", needs: "phone" },
+                  { key: "phone", label: "טלפון", needs: "phone" },
+                  { key: "website", label: "דרך האתר", needs: "website" },
+                  { key: "email", label: "אימייל", needs: "contact_email" },
+                ].map((opt) => (
+                  <label
+                    key={opt.key}
+                    className="flex items-center gap-2 text-sm cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="primary_contact_method"
+                      value={opt.key}
+                      checked={form.primary_contact_method === opt.key}
+                      onChange={() =>
+                        setForm({ ...form, primary_contact_method: opt.key })
+                      }
+                      className="accent-primary"
+                    />
+                    {opt.label}
+                    {form.primary_contact_method === opt.key && !form[opt.needs] && (
+                      <span className="text-xs text-red-600">
+                        (חובה להזין {opt.needs === "phone" ? "טלפון" : opt.needs === "website" ? "אתר" : "אימייל"})
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <input
+              type="email"
+              placeholder="אימייל ליצירת קשר (לא מופיע בהרשמה — מופיע ללקוחות)"
+              value={form.contact_email}
+              onChange={set("contact_email")}
+              className="w-full border rounded-[12px] px-3 py-2"
+              dir="ltr"
+            />
 
             <div>
               <p className="font-medium mb-2">קטגוריות</p>
