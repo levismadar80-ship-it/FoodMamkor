@@ -5,23 +5,27 @@ import { HeartStraight } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import LoginPromptModal from "./LoginPromptModal";
 
 /**
- * FavoriteButton — auth-gated save button for a producer.
+ * FavoriteButton — save button for a producer. Visible to guests too
+ * (per MEH-8 guest-browsing spec): a guest tap opens a login-prompt
+ * modal instead of silently no-op'ing or hiding the button.
  *
  * Variants:
  *   - "default" (sidebar pair with ShareButton)    — emoji heart in a 44×44 tap target
  *   - "gallery" (absolute overlay on ImageGallery) — white circle 44px, HeartStraight icon
  *   - "inline"  (next to <h1> in producer header)  — small heart + "שמור" text
  *
- * All variants share: auth gate, load-once of /users/me/favorites,
- * POST/DELETE toggle, toast, disabled:opacity-60 while loading,
- * aria-pressed + aria-label for accessibility.
+ * Shared behavior: load-once of /users/me/favorites (logged-in only),
+ * POST/DELETE toggle (logged-in only), toast, disabled:opacity-60
+ * while loading, aria-pressed + aria-label for accessibility.
  */
 export default function FavoriteButton({ producerId, variant = "default" }) {
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -34,9 +38,12 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
       .catch(() => {});
   }, [user, producerId]);
 
-  if (!user) return null;
-
   const toggle = async () => {
+    // Guest: open the login modal and stop — don't hit the API.
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
     setLoading(true);
     try {
       if (favorited) {
@@ -63,8 +70,17 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
     "aria-pressed": favorited,
   };
 
+  // Capture current path for the login `next=` param — evaluated at
+  // click time via the modal's own nextPath prop, so client-side
+  // navigation between producer pages stays accurate.
+  const nextPath =
+    typeof window !== "undefined"
+      ? window.location.pathname + window.location.search
+      : "/";
+
+  let button;
   if (variant === "gallery") {
-    return (
+    button = (
       <button
         {...commonProps}
         className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -77,10 +93,8 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
         />
       </button>
     );
-  }
-
-  if (variant === "inline") {
-    return (
+  } else if (variant === "inline") {
+    button = (
       <button
         {...commonProps}
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
@@ -97,15 +111,27 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
         שמור
       </button>
     );
+  } else {
+    // default — back-compat emoji heart
+    button = (
+      <button
+        {...commonProps}
+        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+      >
+        {favorited ? "❤️" : "🤍"}
+      </button>
+    );
   }
 
-  // default — back-compat for existing sidebar usage
   return (
-    <button
-      {...commonProps}
-      className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
-    >
-      {favorited ? "❤️" : "🤍"}
-    </button>
+    <>
+      {button}
+      <LoginPromptModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="כדי לשמור עסקים אוהבים — היכנסי"
+        nextPath={nextPath}
+      />
+    </>
   );
 }

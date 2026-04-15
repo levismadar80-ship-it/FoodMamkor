@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import FavoriteButton from "@/components/FavoriteButton";
 
 // Mock auth context — default: no user (logged out)
@@ -25,6 +25,7 @@ vi.mock("@/lib/toast", () => ({
 // Mock Phosphor HeartStraight — rendered as a span so we can assert presence
 vi.mock("@phosphor-icons/react", () => ({
   HeartStraight: (props) => <span data-testid="heart-icon" {...props} />,
+  X: (props) => <span data-testid="x-icon" {...props} />,
 }));
 
 describe("FavoriteButton", () => {
@@ -32,20 +33,51 @@ describe("FavoriteButton", () => {
     mockUser.current = null;
   });
 
-  it("renders nothing when user is not logged in (default)", () => {
+  // ------------------------------------------------------------------
+  // Guest behavior (MEH-8 — button is VISIBLE to guests)
+  // ------------------------------------------------------------------
+
+  it("guest: default variant renders the button (not null)", () => {
     const { container } = render(<FavoriteButton producerId={1} />);
-    expect(container.innerHTML).toBe("");
+    expect(container.querySelector("button")).toBeInTheDocument();
   });
 
-  it("renders nothing when user is not logged in (gallery variant)", () => {
-    const { container } = render(<FavoriteButton producerId={1} variant="gallery" />);
-    expect(container.innerHTML).toBe("");
+  it("guest: gallery variant renders the button", () => {
+    render(<FavoriteButton producerId={1} variant="gallery" />);
+    expect(screen.getByRole("button", { name: "הוסף למועדפים" })).toBeInTheDocument();
   });
 
-  it("renders nothing when user is not logged in (inline variant)", () => {
-    const { container } = render(<FavoriteButton producerId={1} variant="inline" />);
-    expect(container.innerHTML).toBe("");
+  it("guest: inline variant renders the button with 'שמור' text", () => {
+    render(<FavoriteButton producerId={1} variant="inline" />);
+    const btn = screen.getByRole("button", { name: "הוסף למועדפים" });
+    expect(btn).toBeInTheDocument();
+    expect(btn.textContent).toContain("שמור");
   });
+
+  it("guest: clicking the button opens the login modal", () => {
+    render(<FavoriteButton producerId={1} />);
+    // Modal not rendered initially
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    // Click the heart
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+    // Modal appears with the spec message
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText("כדי לשמור עסקים אוהבים — היכנסי"),
+    ).toBeInTheDocument();
+  });
+
+  it("guest: clicking does NOT call favorites API", async () => {
+    const api = (await import("@/lib/api")).default;
+    render(<FavoriteButton producerId={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+    expect(api.post).not.toHaveBeenCalled();
+    expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  // ------------------------------------------------------------------
+  // Logged-in behavior (unchanged from MEH-7)
+  // ------------------------------------------------------------------
 
   it("default variant: renders emoji heart when logged in", () => {
     mockUser.current = { id: 1, name: "Test" };
@@ -60,8 +92,7 @@ describe("FavoriteButton", () => {
     render(<FavoriteButton producerId={1} variant="gallery" />);
     const btn = screen.getByRole("button");
     expect(btn).toBeInTheDocument();
-    expect(screen.getByTestId("heart-icon")).toBeInTheDocument();
-    // No "שמור" text on the gallery overlay
+    expect(screen.getAllByTestId("heart-icon").length).toBeGreaterThan(0);
     expect(btn.textContent).not.toContain("שמור");
   });
 
@@ -70,7 +101,7 @@ describe("FavoriteButton", () => {
     render(<FavoriteButton producerId={1} variant="inline" />);
     const btn = screen.getByRole("button");
     expect(btn).toBeInTheDocument();
-    expect(screen.getByTestId("heart-icon")).toBeInTheDocument();
+    expect(screen.getAllByTestId("heart-icon").length).toBeGreaterThan(0);
     expect(btn.textContent).toContain("שמור");
   });
 
