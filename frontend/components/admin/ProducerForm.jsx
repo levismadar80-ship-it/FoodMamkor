@@ -14,6 +14,9 @@ const EMPTY = {
   instagram: "",
   website: "",
   whatsapp_group: "",
+  // MEH-17
+  primary_contact_method: "whatsapp",
+  contact_email: "",
   city: "",
   lat: "",
   lng: "",
@@ -61,6 +64,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         kosher: initial.kosher ?? "",
         contact_name: initial.contact_name ?? "",
         whatsapp_group: initial.whatsapp_group ?? "",
+        // MEH-17
+        primary_contact_method: initial.primary_contact_method ?? "whatsapp",
+        contact_email: initial.contact_email ?? "",
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
@@ -118,6 +124,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       ...form,
       lat: form.lat === "" ? null : parseFloat(form.lat),
       lng: form.lng === "" ? null : parseFloat(form.lng),
+      // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
+      contact_email: form.contact_email?.trim() || null,
       delivery_area_cities: form.delivery_area_cities
         .split(",")
         .map((c) => c.trim())
@@ -210,6 +218,29 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("whatsapp_group", e.target.value)}
               className={inputClass}
               placeholder="https://chat.whatsapp.com/..."
+            />
+          </Field>
+          {/* MEH-17 — primary contact method + business email. */}
+          <Field label="אמצעי קשר ראשי">
+            <select
+              value={form.primary_contact_method}
+              onChange={(e) => update("primary_contact_method", e.target.value)}
+              className={inputClass}
+            >
+              <option value="whatsapp">WhatsApp</option>
+              <option value="phone">טלפון</option>
+              <option value="website">אתר</option>
+              <option value="email">אימייל</option>
+            </select>
+          </Field>
+          <Field label="אימייל ליצירת קשר">
+            <input
+              type="email"
+              value={form.contact_email}
+              onChange={(e) => update("contact_email", e.target.value)}
+              className={inputClass}
+              placeholder="business@example.com"
+              dir="ltr"
             />
           </Field>
           <Field label="עיר / אזור">

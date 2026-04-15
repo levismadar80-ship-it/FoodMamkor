@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal, Info, Package, Truck, Star } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Seal, Info, Package, Truck, Star, EnvelopeSimple } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
@@ -17,6 +17,8 @@ import AvailabilityBadge from "@/components/AvailabilityBadge";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import PrimaryContactButton from "@/components/PrimaryContactButton";
+import { getPrimaryMethod } from "@/lib/contact-method";
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -327,35 +329,27 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
             <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
 
-            {/* WhatsApp — primary CTA */}
-            {whatsappNumber && (
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  // feature/producer-analytics — fire-and-forget beacon
-                  // so the producer dashboard counts this click. Doesn't
-                  // block the wa.me window open.
-                  if (
-                    typeof navigator !== "undefined" &&
-                    navigator.sendBeacon
-                  ) {
-                    try {
-                      navigator.sendBeacon(
-                        `/api/producers/${producer.id}/whatsapp-click`,
-                      );
-                    } catch {
-                      // tracking is best-effort
-                    }
+            {/* MEH-17: primary CTA follows producer.primary_contact_method.
+                WhatsApp still pings the analytics beacon on click so the
+                existing producer-dashboard metric keeps working. */}
+            <PrimaryContactButton
+              producer={producer}
+              onClick={() => {
+                if (
+                  getPrimaryMethod(producer) === "whatsapp" &&
+                  typeof navigator !== "undefined" &&
+                  navigator.sendBeacon
+                ) {
+                  try {
+                    navigator.sendBeacon(
+                      `/api/producers/${producer.id}/whatsapp-click`,
+                    );
+                  } catch {
+                    // tracking is best-effort
                   }
-                }}
-                className="flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-3 rounded-[10px] hover:bg-[#1ea855] transition font-medium mb-2.5 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
-              >
-                <WhatsappLogo size={20} weight="fill" />
-                שלחי הודעה
-              </a>
-            )}
+                }
+              }}
+            />
 
             {/* Contact buttons — 2-per-row dynamic grid */}
             <div className="grid grid-cols-2 gap-2 mb-4">
@@ -389,6 +383,18 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 >
                   <Globe size={18} weight="duotone" className="text-primary shrink-0" />
                   אתר
+                </a>
+              )}
+              {/* MEH-17 — secondary email tile. Skipped when email IS
+                  the primary method (redundant with the big CTA above). */}
+              {producer.contact_email && getPrimaryMethod(producer) !== "email" && (
+                <a
+                  href={`mailto:${producer.contact_email}`}
+                  className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                  dir="ltr"
+                >
+                  <EnvelopeSimple size={18} weight="duotone" className="text-primary shrink-0" />
+                  <span className="truncate">{producer.contact_email}</span>
                 </a>
               )}
             </div>
