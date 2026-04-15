@@ -263,4 +263,32 @@ describe("ProducerCard", () => {
     expect(emailLink).toHaveAttribute("href", "mailto:hello@example.com");
     expect(emailLink).toHaveAttribute("data-primary", "true");
   });
+
+  // ----- MEH-18 badge row -----
+
+  it("renders the unified BadgeRow with 'מאומת' when is_verified is true", () => {
+    render(<ProducerCard producer={{ ...fullProducer, is_verified: true }} />);
+    // Use the <button> inside BadgeRow (the old inline overlay was a <span>).
+    const badge = screen.getByRole("button", { name: /מאומת/ });
+    expect(badge).toHaveAttribute("data-badge", "verified");
+  });
+
+  it("truncates the badge row to max 2 on the card (priority order)", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          is_verified: true,
+          is_recommended: true,
+          days_since_created: 5,
+          delivery_count: 3,
+          products_count: 10,
+        }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /מומלץ/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /חדש/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /משלוח/ })).not.toBeInTheDocument();
+  });
 });

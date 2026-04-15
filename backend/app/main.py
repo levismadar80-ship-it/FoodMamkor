@@ -97,6 +97,8 @@ def _migrate_columns(engine):
         # whatsapp | phone | website | email as the CTA channel.
         ("producers", "primary_contact_method", "VARCHAR(20) DEFAULT 'whatsapp'"),
         ("producers", "contact_email", "VARCHAR(200)"),
+        # MEH-18 — manual editorial "מומלץ" badge.
+        ("producers", "is_recommended", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:

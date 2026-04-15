@@ -46,6 +46,9 @@ class Producer(Base):
     status = Column(String(20), default="pending")  # pending | approved | rejected | inactive
     images = Column(ARRAY(Text), default=[])
     is_verified = Column(Boolean, default=False)
+    # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
+    # from the "verified" trust badge — recommended ≈ editorial pick.
+    is_recommended = Column(Boolean, default=False)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(String(200), nullable=True)  # featured product for cards/map

@@ -136,6 +136,8 @@ class ProducerAdminCreate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool = True
+    # MEH-18
+    is_recommended: bool = False
     images: list[str] = []
     category_ids: list[int] = []
     delivery_area_cities: list[str] = []  # simple comma-split list
@@ -181,6 +183,8 @@ class ProducerUpdate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool | None = None
+    # MEH-18
+    is_recommended: bool | None = None
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
@@ -214,6 +218,14 @@ class ProducerListOut(BaseModel):
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
+    # MEH-18: manual "מומלץ" editorial pick.
+    is_recommended: bool = False
+    # MEH-18: computed-at-serialization fields — none of these are real
+    # columns. `days_since_created` is derived from created_at; counts
+    # come from the already-joinloaded relationships.
+    days_since_created: int | None = None
+    products_count: int = 0
+    delivery_count: int = 0
     avg_rating: float = 0
     reviews_count: int = 0
     images: list[str] = []

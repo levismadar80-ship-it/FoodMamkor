@@ -1,11 +1,34 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user, get_current_user_optional
 from app.database import get_db
+
+
+def _attach_badge_fields(producer):
+    """MEH-18 — hydrate the 3 computed fields the badge system consumes.
+    Safe to call on already-loaded ORM instances. Assumes the products
+    and delivery_areas collections are already loaded (via selectinload
+    in list queries, joinedload in detail queries).
+    """
+    try:
+        producer.products_count = len(producer.products or [])
+    except Exception:
+        producer.products_count = 0
+    try:
+        producer.delivery_count = len(producer.delivery_areas or [])
+    except Exception:
+        producer.delivery_count = 0
+    if producer.created_at:
+        delta = datetime.utcnow() - producer.created_at
+        producer.days_since_created = max(0, delta.days)
+    else:
+        producer.days_since_created = None
+    return producer
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Report, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
@@ -66,7 +89,12 @@ def list_producers(
         distance_expr = _haversine_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
-            .options(joinedload(Producer.categories))
+            .options(
+                joinedload(Producer.categories),
+                # MEH-18 — batch-load the two collections the badge system counts.
+                selectinload(Producer.products),
+                selectinload(Producer.delivery_areas),
+            )
             .filter(Producer.status == "approved")
             # Haversine is undefined for NULL coords — exclude them before
             # applying the distance filter.
@@ -77,7 +105,11 @@ def list_producers(
     else:
         q = (
             db.query(Producer)
-            .options(joinedload(Producer.categories))
+            .options(
+                joinedload(Producer.categories),
+                selectinload(Producer.products),
+                selectinload(Producer.delivery_areas),
+            )
             .filter(Producer.status == "approved")
         )
 
@@ -122,10 +154,14 @@ def list_producers(
             # Attach computed distance so Pydantic's from_attributes picks
             # it up in ProducerListOut.
             producer.distance_km = round(float(distance_km), 2)
+            _attach_badge_fields(producer)
             results.append(producer)
         return results
 
-    return q.all()
+    rows = q.all()
+    for p in rows:
+        _attach_badge_fields(p)
+    return rows
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
@@ -140,6 +176,8 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
     )
+    if producer:
+        _attach_badge_fields(producer)
     if not producer:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Producer not found")
@@ -169,6 +207,9 @@ def get_producer(
     )
     if not producer:
         raise HTTPException(status_code=404, detail="Producer not found")
+
+    # MEH-18 — compute badge fields from the already-loaded relationships.
+    _attach_badge_fields(producer)
 
     # Compute report_count from DB
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
