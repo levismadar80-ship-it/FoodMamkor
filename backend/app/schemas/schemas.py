@@ -236,6 +236,10 @@ class UserOut(BaseModel):
     phone: str | None = None
     role: str
     producer_id: UUID | None = None
+    # MEH-16: whether the user signed in via OAuth. Used by /settings to
+    # hide the password-change form for OAuth-only accounts (they have
+    # no password_hash to verify against).
+    is_oauth: bool = False
 
     model_config = {"from_attributes": True}
 
