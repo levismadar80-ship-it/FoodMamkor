@@ -93,6 +93,10 @@ def _migrate_columns(engine):
         ("users", "last_active_at", "TIMESTAMP"),
         # MEH-12 — durable availability status (available | full | vacation).
         ("producers", "availability_status", "VARCHAR(20) DEFAULT 'available'"),
+        # MEH-17 — flexible contact methods. Producers pick one of
+        # whatsapp | phone | website | email as the CTA channel.
+        ("producers", "primary_contact_method", "VARCHAR(20) DEFAULT 'whatsapp'"),
+        ("producers", "contact_email", "VARCHAR(200)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
