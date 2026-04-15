@@ -43,6 +43,13 @@ h1, h2, h3 {
 .leaflet-top.leaflet-right {
   z-index: 1000 !important;
 }
+/* MEH-15 bug fix: Leaflet's attribution control (© OpenStreetMap ...)
+   defaults to a high stacking context that can cover the site header
+   on top-anchored layouts. Pin it to z-index: 1 so it sits below every
+   page-level control, including the sticky site header. */
+.leaflet-control-attribution {
+  z-index: 1 !important;
+}
 
 /* Fade-in on scroll — set initial state, hook toggles it */
 .fade-in-init {
