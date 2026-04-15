@@ -7,6 +7,8 @@ import CategoryTag from "./CategoryTag";
 import AvailabilityBadge from "./AvailabilityBadge";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone } from "@/lib/utils";
+import { useUserLocation } from "@/lib/user-location";
+import { haversineKm, formatDistance } from "@/lib/distance";
 
 function WhatsAppIcon({ className }) {
   return (
@@ -50,6 +52,18 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
   const priceLabel = producer.price_range || producer.starting_price_label;
+
+  // MEH-12: distance from the user's cached session location. Renders
+  // null when (a) the user hasn't granted geolocation yet, or
+  // (b) this producer has no lat/lng. Re-renders if the location is
+  // set mid-session via the useUserLocation hook subscription.
+  const userLoc = useUserLocation();
+  const distanceLabel =
+    userLoc && producer.lat != null && producer.lng != null
+      ? formatDistance(
+          haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+        )
+      : null;
 
   const handleRootClick = (e) => {
     if (onClick) {
@@ -128,6 +142,15 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           <div className="mt-1">
             <AvailabilityBadge status={producer.availability_status} variant="card" />
           </div>
+        )}
+
+        {/* MEH-13 — distance from user's cached session location. Hidden
+            when the user hasn't granted geolocation OR this producer has
+            no lat/lng. */}
+        {distanceLabel && (
+          <p className="text-xs text-site-muted mt-1" data-testid="distance-pill">
+            📍 {distanceLabel}
+          </p>
         )}
 
         {producer.reviews_count > 0 && (
