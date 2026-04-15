@@ -246,7 +246,11 @@ export default function MapComponent({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView(
-      [31.5, 34.8],
+      // Default view — Jerusalem at zoom 8 so the whole country fits
+      // comfortably on mobile. Previously [31.5, 34.8] (off-coast of
+      // Ashdod) which on narrow viewports panned the camera enough to
+      // show the Sinai / Saudi border instead of Israel proper.
+      [31.7683, 35.2137],
       8,
     );
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

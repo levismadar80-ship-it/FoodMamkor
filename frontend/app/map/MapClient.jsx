@@ -287,8 +287,17 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* MEH-14 chips — category radio group + independent toggles. */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide" role="toolbar" aria-label="סינון מפה">
+        {/* MEH-14 chips — category radio group + independent toggles.
+            MEH-15 bug fix: explicit dir="rtl" so "כל" (first in the array)
+            renders at the visual right. Without it, overflow-x containers
+            can lose inherited RTL direction on some browsers and flip the
+            order so the reset sentinel lands at the left edge. */}
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+          role="toolbar"
+          aria-label="סינון מפה"
+          dir="rtl"
+        >
           {CATEGORY_CHIPS.map((chip) => {
             // Hide chips that don't have a matching category in the DB
             // (except "all", which has null matches and is always shown).
@@ -363,10 +372,15 @@ export default function MapPage() {
       </div>
 
       {/* Map container with overlays.
-          MEH-14: hide on mobile when "list" view is active. */}
+          MEH-14: hide on mobile when "list" view is active.
+          MEH-15 bug fix: mobile uses h-[calc(100vh-64px)] so the map fills
+          the rest of the viewport below the 64px site header (prevents the
+          Leaflet tiles from visually overlapping the header on small screens).
+          Desktop keeps the fixed 500px height since the sidebar + chips take
+          up vertical space. */}
       <div
         id="map-container"
-        className={`relative h-[500px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
+        className={`relative h-[calc(100vh-64px)] md:h-[500px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
       >
         <MapComponent
           producers={filteredByCategory}
