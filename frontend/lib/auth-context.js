@@ -70,8 +70,35 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // MEH-16 — profile update. Backend returns the full UserOut so we
+  // refresh context atomically and any subscriber sees the new values.
+  const updateProfile = async (patch) => {
+    const res = await api.patch("/users/me", patch);
+    setUser(res.data);
+    return res.data;
+  };
+
+  // MEH-16 — password change. 204 No Content on success; no state
+  // mutation needed since the JWT is unchanged.
+  const changePassword = async (current_password, new_password) => {
+    await api.patch("/users/me/password", { current_password, new_password });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, loginWithApple, deleteAccount, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        loginWithGoogle,
+        loginWithApple,
+        deleteAccount,
+        logout,
+        updateProfile,
+        changePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

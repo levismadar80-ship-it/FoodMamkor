@@ -93,6 +93,14 @@ class User(Base):
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
 
+    @property
+    def is_oauth(self) -> bool:
+        """MEH-16: True when the user signed up via OAuth (no local
+        password). Consumed by UserOut → /settings to hide the
+        password-change form for accounts that have no password_hash.
+        """
+        return not self.password_hash
+
 
 class AdminSetting(Base):
     __tablename__ = "admin_settings"
