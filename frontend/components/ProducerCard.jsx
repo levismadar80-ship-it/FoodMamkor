@@ -237,9 +237,13 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 <PhoneIcon className="w-5 h-5" />
               </a>
             )}
-            {producer.website && (
+            {producer.website?.trim() && (
               <a
-                href={producer.website.startsWith("http") ? producer.website : `https://${producer.website}`}
+                href={
+                  producer.website.trim().startsWith("http")
+                    ? producer.website.trim()
+                    : `https://${producer.website.trim()}`
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 title="אתר"
@@ -271,9 +275,12 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 </svg>
               </a>
             )}
-            {producer.instagram && (
+            {producer.instagram?.trim() && (
               <a
-                href={`https://instagram.com/${producer.instagram}`}
+                // Strip leading @ defensively so `@heese_farm` stored
+                // doesn't become `https://instagram.com/@heese_farm`.
+                // Instagram accepts both but consistency is cleaner.
+                href={`https://instagram.com/${producer.instagram.trim().replace(/^@+/, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Instagram"
