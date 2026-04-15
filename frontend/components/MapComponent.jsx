@@ -34,24 +34,37 @@ import { normalizePhone } from "@/lib/utils";
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
 
-/** Create a teardrop divIcon, color + emoji by category. */
-function createCategoryMarker(producer, { active = false, hovered = false } = {}) {
+/** Create a teardrop divIcon, color + emoji by category.
+ *
+ * MEH-14: when `visited` is true we dim the marker (0.55 opacity) so
+ * producers the user has already browsed fade into the background.
+ * Active + hovered states override dim so the current focus is always
+ * crisp.
+ */
+function createCategoryMarker(
+  producer,
+  { active = false, hovered = false, visited = false } = {},
+) {
   const { color, emoji } = styleForProducer(producer);
   const size = active ? 44 : hovered ? 38 : 32;
   const iconOffset = active ? 22 : hovered ? 19 : 16;
+  const dimmed = visited && !active && !hovered;
+  const opacity = dimmed ? 0.55 : 1;
+  const borderColor = dimmed ? "#9ca3af" : color;
 
   const html = `
-    <div class="mehamakor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""}"
+    <div class="mehamakor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""} ${dimmed ? "visited" : ""}"
          style="
            background: ${active ? color : "white"};
            color: ${active ? "white" : color};
-           border: 2px solid ${color};
+           border: 2px solid ${borderColor};
            border-radius: 50% 50% 50% 0;
            transform: rotate(-45deg);
            width: ${size}px;
            height: ${size}px;
            display: flex; align-items: center; justify-content: center;
            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+           opacity: ${opacity};
            transition: all 0.18s ease-out;
          ">
       <span aria-hidden="true" style="transform: rotate(45deg); font-size: ${active ? 20 : 14}px;">
@@ -140,7 +153,14 @@ export default function MapComponent({
   onBoundsChange,
   onMapMove,
   registerApi,
+  // MEH-14: IDs of producers the user has already viewed (from
+  // recently_viewed sessionStorage). These markers render dimmed.
+  visitedIds = null,
 }) {
+  const visitedSet =
+    visitedIds instanceof Set
+      ? visitedIds
+      : new Set(Array.isArray(visitedIds) ? visitedIds : []);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const clusterGroupRef = useRef(null);
@@ -169,7 +189,7 @@ export default function MapComponent({
   const onMapMoveRef = useRef(onMapMove);
   onMapMoveRef.current = onMapMove;
 
-  // Refresh a single marker's icon based on active/hover state
+  // Refresh a single marker's icon based on active/hover/visited state
   const refreshMarkerIcon = (id) => {
     const entry = markersRef.current.get(id);
     if (!entry) return;
@@ -177,6 +197,7 @@ export default function MapComponent({
       createCategoryMarker(entry.producer, {
         active: activeIdRef.current === id,
         hovered: hoveredIdRef.current === id,
+        visited: visitedSet.has(id),
       }),
     );
   };
@@ -213,6 +234,11 @@ export default function MapComponent({
     };
     registerApi(api);
     return () => registerApi(null);
+    // refreshMarkerIcon closes over the latest visitedSet via the
+    // module-scope `visitedSet` variable; intentionally fire-once on
+    // mount so we don't tear down + re-register the parent's API
+    // every time the visited list changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registerApi]);
 
   // Initialize the map once
@@ -220,7 +246,11 @@ export default function MapComponent({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView(
-      [31.5, 34.8],
+      // Default view — Jerusalem at zoom 8 so the whole country fits
+      // comfortably on mobile. Previously [31.5, 34.8] (off-coast of
+      // Ashdod) which on narrow viewports panned the camera enough to
+      // show the Sinai / Saudi border instead of Israel proper.
+      [31.7683, 35.2137],
       8,
     );
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -306,7 +336,11 @@ export default function MapComponent({
       if (!p.id) return;
 
       const marker = L.marker([p.lat, p.lng], {
-        icon: createCategoryMarker(p, { active: false, hovered: false }),
+        icon: createCategoryMarker(p, {
+          active: false,
+          hovered: false,
+          visited: visitedSet.has(p.id),
+        }),
         // alt for screen readers; title deliberately empty to avoid a
         // browser-native tooltip that duplicates the Leaflet tooltip below.
         alt: p.name || "עסק",
@@ -358,7 +392,8 @@ export default function MapComponent({
       }
       hasFitBoundsRef.current = true;
     }
-  }, [producers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [producers, visitedIds]);
 
   // MAP_IMPROVEMENTS bug #13 — fixed: single reusable marker for "my
   // location" instead of stacking a new one per click. Previous
