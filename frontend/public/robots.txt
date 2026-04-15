@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mehamakor.co.il/sitemap.xml
+# Authenticated-only surfaces — no SEO value, may leak PII in referer logs
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /producer/dashboard/
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://mehamakor.online/sitemap.xml
