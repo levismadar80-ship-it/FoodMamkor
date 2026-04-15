@@ -2,8 +2,9 @@
 
 import { useState, useRef, useCallback } from "react";
 import ImageWithFallback from "./ImageWithFallback";
+import FavoriteButton from "./FavoriteButton";
 
-export default function ImageGallery({ images = [] }) {
+export default function ImageGallery({ images = [], producerId = null }) {
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -37,10 +38,15 @@ export default function ImageGallery({ images = [] }) {
   if (!images.length) {
     return (
       <div
-        className="h-64 md:h-96 rounded-[12px] flex items-center justify-center text-text-secondary"
+        className="relative h-64 md:h-96 rounded-[12px] flex items-center justify-center text-text-secondary"
         style={{ background: "linear-gradient(135deg, #EAF3DE 0%, #c9e2d3 100%)" }}
       >
         <span aria-hidden style={{ fontSize: 48 }}>🌿</span>
+        {producerId && (
+          <div className="absolute top-3 right-3 z-10">
+            <FavoriteButton producerId={producerId} variant="gallery" />
+          </div>
+        )}
       </div>
     );
   }
@@ -59,6 +65,11 @@ export default function ImageGallery({ images = [] }) {
         className="object-cover"
         sizes="(max-width: 768px) 100vw, 60vw"
       />
+      {producerId && (
+        <div className="absolute top-3 right-3 z-10">
+          <FavoriteButton producerId={producerId} variant="gallery" />
+        </div>
+      )}
       {images.length > 1 && (
         <>
           <button
