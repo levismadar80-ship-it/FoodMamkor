@@ -91,6 +91,8 @@ def _migrate_columns(engine):
         # feature/producer-analytics — DAU tracking on /admin/dashboard.
         # Nullable so pre-existing users don't get backfilled to NOW().
         ("users", "last_active_at", "TIMESTAMP"),
+        # MEH-12 — durable availability status (available | full | vacation).
+        ("producers", "availability_status", "VARCHAR(20) DEFAULT 'available'"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:

@@ -51,6 +51,10 @@ class Producer(Base):
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     is_available_today = Column(Boolean, default=False)  # producer self-marks daily
+    # MEH-12: durable availability status (vs. the per-day is_available_today above).
+    # Values: "available" (default) | "full" | "vacation". Rendered as a
+    # colored-dot badge on ProducerCard + ProducerDetail.
+    availability_status = Column(String(20), default="available")
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
