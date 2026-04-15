@@ -26,6 +26,7 @@ const translations = {
     nav_logout: "התנתק",
     nav_add_business: "הוסיפי את העסק שלך 🌿",
     nav_mobile_label: "ניווט מובייל",
+    nav_profile: "פרופיל",
 
     // Hero
     hero_title: "אוכל אמיתי, ישר מהמקור אליך",
@@ -78,6 +79,7 @@ const translations = {
     nav_logout: "Sign Out",
     nav_add_business: "Add Your Business 🌿",
     nav_mobile_label: "Mobile navigation",
+    nav_profile: "Profile",
 
     // Hero
     hero_title: "Real Food, Straight From the Source",
