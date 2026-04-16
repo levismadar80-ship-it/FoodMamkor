@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
@@ -9,8 +9,21 @@ import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 
 export default function RegisterProducerPage() {
+  // Wrap in Suspense so useSearchParams (used for MEH-22 prefill) doesn't
+  // break App-Router static prerender.
+  return (
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">טוען טופס הרשמה...</div>}>
+      <RegisterProducerPageBody />
+    </Suspense>
+  );
+}
+
+function RegisterProducerPageBody() {
   const router = useRouter();
+  const params = useSearchParams();
+  const prefillToken = params.get("prefill");
   const [step, setStep] = useState(1);
+  const [prefillApplied, setPrefillApplied] = useState(false);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +48,32 @@ export default function RegisterProducerPage() {
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
   }, []);
+
+  // MEH-22 — if the URL carries ?prefill=TOKEN, fetch the admin-minted
+  // prefill payload and populate the producer-details fields. Personal
+  // account fields (email / password) stay empty on purpose — those
+  // belong to the prospect, not the admin. Runs once per token.
+  useEffect(() => {
+    if (!prefillToken || prefillApplied) return;
+    api
+      .get(`/register/producer/prefill/${prefillToken}`)
+      .then((r) => {
+        const d = r.data || {};
+        setForm((prev) => ({
+          ...prev,
+          producer_name: d.name ?? prev.producer_name,
+          phone: d.phone ?? prev.phone,
+          instagram: d.instagram ?? prev.instagram,
+          website: d.website ?? prev.website,
+          city: d.city ?? prev.city,
+        }));
+        setPrefillApplied(true);
+      })
+      .catch(() => {
+        // 404 / expired token — silently ignore; form renders empty.
+        setPrefillApplied(true);
+      });
+  }, [prefillToken, prefillApplied]);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
   const toggleCategory = (id) => {
@@ -91,6 +130,13 @@ export default function RegisterProducerPage() {
             <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-gray-200"}`} />
           ))}
         </div>
+
+        {/* MEH-22 — prefill banner shown when a token fetched data OK. */}
+        {prefillToken && prefillApplied && (
+          <div className="bg-light text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm">
+            🌿 מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.
+          </div>
+        )}
 
         {/* Step 1: Account */}
         {step === 1 && (
@@ -394,7 +440,7 @@ export default function RegisterProducerPage() {
           </div>
         )}
 
-        {/* Step 4: Confirmation */}
+        {/* Step 4: Confirmation + MEH-22 referral ask */}
         {step === 4 && (
           <div className="text-center py-8">
             <div className="text-6xl mb-4">✅</div>
@@ -402,12 +448,30 @@ export default function RegisterProducerPage() {
             <p className="text-text-secondary mb-6">
               הבקשה שלך ממתינה לאישור. נעדכן אותך ברגע שהעסק יאושר.
             </p>
-            <button
-              onClick={() => router.push("/")}
-              className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition"
+
+            {/* MEH-22 — referral ask. Opens WhatsApp with a pre-written
+                invite message, nudging the new producer to bring a
+                friend. Minimal attribution — we don't track referrer
+                codes here; if we add that later this button's href
+                becomes the attribution surface. */}
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                `היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם צרכניות שמחפשות אוכל אמיתי. חשבתי עלייך, נראה לי שזה יכול להתאים גם לך. מוזמנת להירשם בחינם: https://mehamakor.online/register/producer`,
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-[12px] hover:bg-[#1ea855] transition font-medium mb-3"
             >
-              חזרה לדף הבית
-            </button>
+              📲 הזמיני שכנה להצטרף
+            </a>
+            <div>
+              <button
+                onClick={() => router.push("/")}
+                className="border border-border text-site-text px-6 py-2 rounded-[12px] hover:bg-light transition text-sm"
+              >
+                חזרה לדף הבית
+              </button>
+            </div>
           </div>
         )}
       </div>
