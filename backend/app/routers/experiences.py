@@ -343,7 +343,7 @@ def delete_experience(
     is_owner = ex.host_user_id == user.id
     is_admin = getattr(user, "role", None) == "admin"
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="אין הרשאה")
     db.delete(ex)
     db.commit()
     return {"detail": "Experience deleted"}

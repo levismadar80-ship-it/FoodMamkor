@@ -84,7 +84,7 @@ def get_rating_page(token: str, db: Session = Depends(get_db)):
         HomeProductWhatsAppClick.rating_token == token
     ).first()
     if not click:
-        raise HTTPException(status_code=404, detail="Invalid rating link")
+        raise HTTPException(status_code=404, detail="קישור דירוג לא תקין")
     if click.rated:
         return {"detail": "Already rated", "already_rated": True}
     hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
@@ -117,7 +117,7 @@ def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db))
         HomeProductWhatsAppClick.rating_token == token
     ).first()
     if not click:
-        raise HTTPException(status_code=404, detail="Invalid rating link")
+        raise HTTPException(status_code=404, detail="קישור דירוג לא תקין")
     if click.rated:
         raise HTTPException(status_code=400, detail="Already rated")
 

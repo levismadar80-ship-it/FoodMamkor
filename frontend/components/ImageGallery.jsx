@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { Leaf } from "@phosphor-icons/react";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 
@@ -36,12 +37,17 @@ export default function ImageGallery({ images = [], producerId = null }) {
   }, [images.length]);
 
   if (!images.length) {
+    // MEH-25 Pattern 2: empty-image placeholder spec — warm cream
+    // background, max-height 280px so it doesn't dominate, and a
+    // Hebrew caption instead of just a leaf emoji.
     return (
       <div
-        className="relative h-64 md:h-96 rounded-[12px] flex items-center justify-center text-text-secondary"
-        style={{ background: "linear-gradient(135deg, #EAF3DE 0%, #c9e2d3 100%)" }}
+        className="relative w-full min-h-[200px] max-h-[280px] rounded-[12px] flex flex-col items-center justify-center gap-3 text-site-muted"
+        style={{ background: "#F5F0E8", height: "min(280px, 50vw)" }}
+        data-testid="gallery-empty-state"
       >
-        <span aria-hidden style={{ fontSize: 48 }}>🌿</span>
+        <Leaf size={44} weight="duotone" className="text-primary/70" aria-hidden="true" />
+        <p className="text-sm font-medium">בית עסק זה טרם הוסיף תמונות</p>
         {producerId && (
           <div className="absolute top-3 right-3 z-10">
             <FavoriteButton producerId={producerId} variant="gallery" />
