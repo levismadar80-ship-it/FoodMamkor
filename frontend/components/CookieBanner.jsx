@@ -31,7 +31,7 @@ export default function CookieBanner() {
 
   return (
     <div
-      className="fixed bottom-16 md:bottom-0 inset-x-0 z-[1500] bg-primary-dark text-light shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
+      className="fixed bottom-16 md:bottom-0 inset-x-0 z-[599] bg-primary-dark text-light shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="dialog"
       aria-label="הסכמה לעוגיות"
     >
