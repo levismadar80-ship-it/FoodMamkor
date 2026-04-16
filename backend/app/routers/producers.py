@@ -197,7 +197,7 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
         _attach_badge_fields(producer)
     if not producer:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
@@ -223,7 +223,7 @@ def get_producer(
         .first()
     )
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     # MEH-18 — compute badge fields from the already-loaded relationships.
     _attach_badge_fields(producer)
@@ -265,7 +265,7 @@ def record_whatsapp_click(
     """
     exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
     if not exists:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     db.add(ProducerWhatsAppClick(producer_id=producer_id))
     db.commit()
     return {"detail": "logged"}
@@ -337,7 +337,7 @@ def follow_producer(
     the user already follows this producer."""
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     existing = (
         db.query(ProducerFollower)

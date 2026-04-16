@@ -49,7 +49,7 @@ def list_leads(
     q = db.query(OutreachLead)
     if status:
         if status not in VALID_STATUSES:
-            raise HTTPException(status_code=400, detail="Invalid status")
+            raise HTTPException(status_code=400, detail="סטטוס לא תקין")
         q = q.filter(OutreachLead.status == status)
     if city:
         q = q.filter(func.lower(OutreachLead.city).contains(city.strip().lower()))
@@ -110,11 +110,11 @@ def update_lead(
 ):
     lead = db.query(OutreachLead).filter(OutreachLead.id == lead_id).first()
     if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+        raise HTTPException(status_code=404, detail="ליד לא נמצא")
 
     if data.status is not None:
         if data.status not in VALID_STATUSES:
-            raise HTTPException(status_code=400, detail="Invalid status")
+            raise HTTPException(status_code=400, detail="סטטוס לא תקין")
 
     payload = data.model_dump(exclude_unset=True)
     for field, value in payload.items():
@@ -133,7 +133,7 @@ def delete_lead(
 ):
     lead = db.query(OutreachLead).filter(OutreachLead.id == lead_id).first()
     if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+        raise HTTPException(status_code=404, detail="ליד לא נמצא")
     db.delete(lead)
     db.commit()
     return None
@@ -149,7 +149,7 @@ def mint_prefill_token(
     full lead so the admin UI can read `prefill_token` directly."""
     lead = db.query(OutreachLead).filter(OutreachLead.id == lead_id).first()
     if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+        raise HTTPException(status_code=404, detail="ליד לא נמצא")
 
     # secrets.token_urlsafe(32) → ~43 chars URL-safe base64.
     lead.prefill_token = secrets.token_urlsafe(32)
@@ -205,7 +205,7 @@ def get_prefill(token: str, db: Session = Depends(get_db)):
     expired tokens so the registration form just renders empty (no leak).
     """
     if not token or len(token) < 16:
-        raise HTTPException(status_code=404, detail="Token not found")
+        raise HTTPException(status_code=404, detail="אסימון לא נמצא")
 
     lead = (
         db.query(OutreachLead)
@@ -213,12 +213,12 @@ def get_prefill(token: str, db: Session = Depends(get_db)):
         .first()
     )
     if not lead:
-        raise HTTPException(status_code=404, detail="Token not found")
+        raise HTTPException(status_code=404, detail="אסימון לא נמצא")
     if (
         lead.prefill_token_expires_at is None
         or lead.prefill_token_expires_at < datetime.utcnow()
     ):
-        raise HTTPException(status_code=404, detail="Token expired")
+        raise HTTPException(status_code=404, detail="תוקף האסימון פג")
 
     return OutreachPrefillResponse(
         name=lead.name,

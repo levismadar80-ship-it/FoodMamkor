@@ -98,7 +98,16 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
       style={{ borderRadius: "16px" }}
     >
       <Link href={producerHref}>
-        <div className="relative w-full bg-light h-[140px] md:h-[200px]" style={{ borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+        {/* MEH-25 Pattern 2 — explicit #F5F0E8 background so the empty-
+            image state matches the spec across all card surfaces. */}
+        <div
+          className="relative w-full h-[140px] md:h-[200px]"
+          style={{
+            borderRadius: "16px 16px 0 0",
+            overflow: "hidden",
+            background: "#F5F0E8",
+          }}
+        >
           {imgSrc ? (
             <Image
               src={imgSrc}

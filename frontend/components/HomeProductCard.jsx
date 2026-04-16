@@ -32,7 +32,10 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
   return (
     <div className="bg-white rounded-[16px] overflow-hidden hover:shadow-md transition border border-border h-full flex flex-col">
-      <div className="relative h-48 bg-light">
+      {/* MEH-25 Pattern 2 — explicit #F5F0E8 so empty-image state is
+          consistent with ProducerCard + ImageGallery. House Phosphor
+          icon replaces the 🍲 emoji for cross-platform consistency. */}
+      <div className="relative h-48" style={{ background: "#F5F0E8" }}>
         {imgSrc ? (
           <Image
             src={imgSrc}
@@ -43,11 +46,12 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
           />
         ) : (
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center text-primary"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-primary"
             aria-label={`${product.title} — תמונה חסרה`}
+            data-testid="homeproduct-empty-image"
           >
-            <span className="text-5xl" aria-hidden="true">🍲</span>
-            <span className="font-headline text-sm mt-1 opacity-70">מהמטבח</span>
+            <House size={36} weight="duotone" aria-hidden="true" />
+            <span className="font-headline text-sm opacity-70">מהמטבח של השכן</span>
           </div>
         )}
         <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">

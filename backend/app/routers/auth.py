@@ -24,7 +24,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
 def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
     user = User(
         email=data.email,
@@ -46,7 +46,7 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
 @limiter.limit("3/hour")  # SECURITY FIX #2
 def register_producer(request: Request, data: ProducerRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
     # MEH-17: validate primary contact method has its required field filled.
     method = (data.primary_contact_method or "whatsapp").strip().lower()
@@ -122,7 +122,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
     """Authenticate with Google ID token."""
     user_info = _verify_google_token(data.id_token)
     if not user_info:
-        raise HTTPException(status_code=401, detail="Invalid Google token")
+        raise HTTPException(status_code=401, detail="אסימון Google לא תקין")
 
     google_id = user_info["sub"]
     email = user_info.get("email", "")
@@ -156,7 +156,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
 def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
     return Token(access_token=create_access_token(user.id))
@@ -173,7 +173,7 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
     """Authenticate with Apple ID token."""
     user_info = _verify_apple_token(data.id_token)
     if not user_info:
-        raise HTTPException(status_code=401, detail="Invalid Apple token")
+        raise HTTPException(status_code=401, detail="אסימון Apple לא תקין")
 
     apple_id = user_info["sub"]
     email = user_info.get("email", "")

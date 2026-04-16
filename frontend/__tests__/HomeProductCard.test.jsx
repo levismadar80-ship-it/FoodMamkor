@@ -91,7 +91,9 @@ describe("HomeProductCard", () => {
 
   it("renders placeholder when photo_url is null", () => {
     render(<HomeProductCard product={minimalProduct} />);
-    expect(screen.getByText("מהמטבח")).toBeInTheDocument();
+    // MEH-25 Pattern 2 — the empty-image caption now reads
+    // "מהמטבח של השכן" (harmonized with other empty states).
+    expect(screen.getByText("מהמטבח של השכן")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 

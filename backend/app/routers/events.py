@@ -230,7 +230,7 @@ def update_event(
 
     for field, value in data.model_dump(exclude_unset=True).items():
         if field == "category" and value not in VALID_CATEGORIES:
-            raise HTTPException(status_code=400, detail="Invalid category")
+            raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")
         setattr(event, field, value)
 
     db.commit()
@@ -256,7 +256,7 @@ def delete_event(
     is_owner = user.producer_id == event.producer_id
     is_admin = getattr(user, "role", None) == "admin"
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="אין הרשאה")
     db.delete(event)
     db.commit()
     return {"detail": "Event deleted"}

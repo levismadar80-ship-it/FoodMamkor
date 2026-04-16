@@ -21,7 +21,7 @@ def report_producer(
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     # Check if user already reported this producer
     existing = db.query(Report).filter(

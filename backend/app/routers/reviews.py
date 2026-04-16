@@ -98,7 +98,7 @@ def create_review(
     # Make sure the producer exists
     producer = db.query(Producer).filter(Producer.id == data.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     # Enforce one-review-per-user-per-producer; if exists, update it (upsert)
     existing = (
@@ -146,11 +146,11 @@ def delete_review(
 ):
     review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
     if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     is_owner = review.user_id == user.id
     is_admin = getattr(user, "role", None) == "admin"
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="אין הרשאה")
     producer_id = review.producer_id
     db.delete(review)
     db.commit()
