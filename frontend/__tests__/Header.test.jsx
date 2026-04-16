@@ -8,6 +8,15 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: userRef.current, logout: mockLogout }),
 }));
 
+// MEH-29: Header now reads usePathname() for active-link state +
+// transparent-on-homepage logic. Default to /about so existing
+// assertions don't fight the transparent-on-/ rendering; individual
+// suites can swap to "/" to test homepage behavior.
+const pathnameRef = { current: "/about" };
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathnameRef.current,
+}));
+
 const setLang = vi.fn();
 vi.mock("@/lib/language-context", () => ({
   useLanguage: () => ({
@@ -51,6 +60,7 @@ vi.mock("@phosphor-icons/react", () => ({
 describe("Header", () => {
   beforeEach(() => {
     userRef.current = null;
+    pathnameRef.current = "/about";
     mockLogout.mockClear();
     setLang.mockClear();
   });
@@ -171,6 +181,59 @@ describe("Header", () => {
       // Close
       fireEvent.click(screen.getByLabelText("סגור תפריט"));
       expect(screen.queryByText("הוסיפי את העסק שלך")).toBeNull();
+    });
+  });
+
+  // MEH-29: active-link tracking via usePathname()
+  describe("active nav link (MEH-29)", () => {
+    it("marks the homepage link aria-current=page when pathname=/", () => {
+      pathnameRef.current = "/";
+      render(<Header />);
+      const discover = screen.getAllByRole("link", { name: "גלה" });
+      // The desktop nav link should carry aria-current="page".
+      expect(discover.some((a) => a.getAttribute("aria-current") === "page")).toBe(true);
+      // The other nav links should NOT.
+      const map = screen.getAllByRole("link", { name: "מפה" });
+      expect(map.some((a) => a.getAttribute("aria-current") === "page")).toBe(false);
+    });
+
+    it("marks /map active when pathname is /map", () => {
+      pathnameRef.current = "/map";
+      render(<Header />);
+      const map = screen.getAllByRole("link", { name: "מפה" });
+      expect(map.some((a) => a.getAttribute("aria-current") === "page")).toBe(true);
+    });
+
+    it("uses prefix matching — /map/anything still highlights מפה", () => {
+      pathnameRef.current = "/map/123";
+      render(<Header />);
+      const map = screen.getAllByRole("link", { name: "מפה" });
+      expect(map.some((a) => a.getAttribute("aria-current") === "page")).toBe(true);
+    });
+
+    it("uses EXACT match for / — does not light up גלה on every page", () => {
+      pathnameRef.current = "/about";
+      render(<Header />);
+      const discover = screen.getAllByRole("link", { name: "גלה" });
+      expect(discover.some((a) => a.getAttribute("aria-current") === "page")).toBe(false);
+    });
+  });
+
+  // MEH-29: transparent-on-homepage state
+  describe("transparent on homepage hero (MEH-29)", () => {
+    it("renders transparent header on / before scroll", () => {
+      pathnameRef.current = "/";
+      const { container } = render(<Header />);
+      const header = container.querySelector("header");
+      expect(header.className).toMatch(/bg-transparent/);
+    });
+
+    it("renders cream header on non-homepage routes", () => {
+      pathnameRef.current = "/about";
+      const { container } = render(<Header />);
+      const header = container.querySelector("header");
+      expect(header.className).not.toMatch(/bg-transparent/);
+      expect(header.className).toMatch(/bg-background/);
     });
   });
 });
