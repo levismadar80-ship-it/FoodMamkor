@@ -110,20 +110,58 @@ describe("Header", () => {
     });
   });
 
-  describe("actions — logged in as consumer (MEH-28: desktop shows ONLY {name})", () => {
+  describe("actions — logged in as consumer (MEH-39: desktop shows avatar dropdown)", () => {
     beforeEach(() => {
       userRef.current = { id: "u1", name: "דנה", role: "consumer" };
     });
 
-    it("shows the user name in desktop actions (linking to /settings)", () => {
+    it("renders a circular avatar button with the user's first initial", () => {
       render(<Header />);
-      expect(screen.getAllByText("דנה").length).toBeGreaterThan(0);
+      // The avatar button carries aria-label containing the user name.
+      const avatarBtn = screen.getByLabelText(/תפריט משתמשת — דנה/);
+      expect(avatarBtn).toBeInTheDocument();
+      // Initial letter is rendered inside the button.
+      expect(avatarBtn.textContent).toContain("ד");
     });
 
-    it("does NOT show a logout button in desktop chrome (drawer-only)", () => {
+    it("does NOT show the user's full name in the desktop chrome (dropdown-only)", () => {
       render(<Header />);
-      // Drawer closed → logout button absent everywhere.
-      expect(screen.queryAllByText("התנתק")).toHaveLength(0);
+      // MEH-28 rendered {user.name} as visible text; MEH-39 collapses
+      // it into the avatar button's aria-label + the closed dropdown.
+      // Visible text nodes should not contain the full name.
+      const nameNodes = screen.queryAllByText("דנה", { exact: true });
+      expect(nameNodes).toHaveLength(0);
+    });
+
+    it("keeps the dropdown closed by default", () => {
+      render(<Header />);
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(screen.queryByText("התנתקי")).toBeNull();
+    });
+
+    it("opens the dropdown on avatar click with profile / settings / logout items", () => {
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText(/תפריט משתמשת — דנה/));
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+      expect(screen.getByText("הפרופיל שלי")).toBeInTheDocument();
+      expect(screen.getByText("הגדרות")).toBeInTheDocument();
+      expect(screen.getByText("התנתקי")).toBeInTheDocument();
+    });
+
+    it("hides producer/admin items for plain consumers", () => {
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText(/תפריט משתמשת — דנה/));
+      expect(screen.queryByText("לוח הבקרה שלי")).toBeNull();
+      expect(screen.queryByText("ממשק אדמין")).toBeNull();
+    });
+
+    it("התנתקי button calls auth.logout and closes the dropdown", () => {
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText(/תפריט משתמשת — דנה/));
+      fireEvent.click(screen.getByText("התנתקי"));
+      expect(mockLogout).toHaveBeenCalled();
+      // Menu removed from DOM after click.
+      expect(screen.queryByRole("menu")).toBeNull();
     });
 
     it("does NOT show add-business CTA in desktop chrome (footer-only)", () => {
@@ -131,11 +169,29 @@ describe("Header", () => {
       expect(screen.queryAllByText("הוסיפי את העסק שלך")).toHaveLength(0);
     });
 
-    it("drawer logout button calls auth.logout", () => {
+    it("drawer logout button still calls auth.logout (mobile chrome unchanged)", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("פתח תפריט"));
       fireEvent.click(screen.getByText("התנתק"));
       expect(mockLogout).toHaveBeenCalled();
+    });
+  });
+
+  describe("avatar dropdown — role-specific items (MEH-39)", () => {
+    it("producer sees לוח הבקרה שלי in the dropdown", () => {
+      userRef.current = { id: "u1", name: "מיה", role: "producer" };
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText(/תפריט משתמשת — מיה/));
+      expect(screen.getByText("לוח הבקרה שלי")).toBeInTheDocument();
+      expect(screen.queryByText("ממשק אדמין")).toBeNull();
+    });
+
+    it("admin sees ממשק אדמין in the dropdown", () => {
+      userRef.current = { id: "u1", name: "אורית", role: "admin" };
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText(/תפריט משתמשת — אורית/));
+      expect(screen.getByText("ממשק אדמין")).toBeInTheDocument();
+      expect(screen.queryByText("לוח הבקרה שלי")).toBeNull();
     });
   });
 

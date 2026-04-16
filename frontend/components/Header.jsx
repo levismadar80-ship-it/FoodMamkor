@@ -40,8 +40,31 @@ export default function Header() {
   const { lang, setLang, t } = useLanguage();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // MEH-39: close the avatar dropdown when the user clicks outside it.
+  // Listener is only attached while the menu is open (saves a document
+  // event in the common closed state).
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onDocMouseDown = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [userMenuOpen]);
+
+  // Close the avatar dropdown on route change — clicking a Link inside
+  // the menu would leave it open visually during the fade to the new
+  // page, which looks stuck.
+  useEffect(() => {
+    setUserMenuOpen(false);
+  }, [pathname]);
 
   // rAF-throttled scroll listener — coalesces scroll events into one
   // state read per animation frame. Threshold = 80px per spec.
@@ -121,29 +144,26 @@ export default function Header() {
       {/* Desktop: 3-zone grid. Mobile: plain flex between. */}
       <div className="relative max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
         {/* ACTIONS — left on desktop (justify-self-start); hidden on mobile.
-            MEH-28: exactly ONE item. Guests see ghost "כניסה"; logged-in
-            users see their name linking to /settings. */}
+            MEH-39: guest → outlined primary pill; logged-in → circular
+            avatar with dropdown (profile / settings / dashboard /
+            admin / logout). When the header is transparent (homepage
+            hero), the pill swaps to white-outlined-white-text so it
+            reads against the dark gradient; the avatar keeps its solid
+            primary fill either way (the circle itself provides local
+            contrast regardless of backdrop). */}
         <div className="hidden md:flex items-center justify-self-start">
           {user ? (
-            <Link
-              href="/settings"
-              className={`text-[13px] transition ${
-                transparent ? "text-white hover:text-white/80" : "hover:text-primary"
-              }`}
-              style={{ color: transparent ? undefined : "#6B6B6B", ...transparentTextShadow }}
-            >
-              {user.name}
-            </Link>
+            <UserMenu
+              user={user}
+              logout={logout}
+              open={userMenuOpen}
+              setOpen={setUserMenuOpen}
+              menuRef={userMenuRef}
+              transparent={transparent}
+              textShadow={transparentTextShadow}
+            />
           ) : (
-            <Link
-              href="/login"
-              className={`text-[13px] transition ${
-                transparent ? "text-white hover:text-white/80" : "hover:text-primary"
-              }`}
-              style={{ color: transparent ? undefined : "#6B6B6B", ...transparentTextShadow }}
-            >
-              {t("nav_login")}
-            </Link>
+            <LoginPill label={t("nav_login")} transparent={transparent} />
           )}
         </div>
 
@@ -286,5 +306,132 @@ export default function Header() {
         </div>
       )}
     </header>
+  );
+}
+
+/**
+ * MEH-39 — Outlined pill login button for guests.
+ *
+ * Default: 1.5px solid primary border, transparent bg, primary text.
+ * Hover: solid primary bg, white text (0.2s transition).
+ * Transparent header state: white border + white text with a text-shadow,
+ * hover fills to white bg + primary text — so the pill reads against
+ * the dark hero gradient without clashing.
+ */
+function LoginPill({ label, transparent }) {
+  const base =
+    "inline-flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  const solid =
+    "border-[1.5px] border-primary text-primary bg-transparent hover:bg-primary hover:text-white";
+  const onHero =
+    "border-[1.5px] border-white text-white bg-transparent hover:bg-white hover:text-primary";
+  return (
+    <Link
+      href="/login"
+      className={`${base} ${transparent ? onHero : solid}`}
+      style={transparent ? { textShadow: "0 1px 4px rgba(0,0,0,0.6)" } : undefined}
+    >
+      {label}
+    </Link>
+  );
+}
+
+/**
+ * MEH-39 — Circular avatar button (34×34) with click-toggle dropdown.
+ *
+ * Avatar:
+ *   - `user.avatar` → round cover image (currently a no-op since the
+ *     backend User model has no avatar column, but the branch is
+ *     ready for when it lands).
+ *   - Fallback → first letter of `user.name` centered on a solid
+ *     primary circle, white 14px/600.
+ *
+ * Dropdown items (in order):
+ *   1. הפרופיל שלי  → /settings
+ *   2. הגדרות       → /settings
+ *   3. לוח הבקרה שלי → /producer/dashboard  (producers only)
+ *   4. ממשק אדמין   → /admin                 (admins only)
+ *   5. divider
+ *   6. התנתקי        (red text, calls logout())
+ *
+ * Dropdown wrapper is `position: relative` so the absolute-positioned
+ * menu anchors below the button. `inset-inline-start: 0` → physical
+ * `left: 0` in LTR, `right: 0` in RTL. In the Hebrew site the menu
+ * opens from the avatar's right edge downward.
+ */
+function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShadow }) {
+  const initial = (user.name || "?").trim().charAt(0).toUpperCase();
+  const hasAvatar = !!user.avatar;
+  const isProducer = user.role === "producer";
+  const isAdmin = user.role === "admin";
+
+  const items = [
+    { href: "/settings", label: "הפרופיל שלי" },
+    { href: "/settings", label: "הגדרות" },
+    ...(isProducer ? [{ href: "/producer/dashboard", label: "לוח הבקרה שלי" }] : []),
+    ...(isAdmin ? [{ href: "/admin", label: "ממשק אדמין" }] : []),
+  ];
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`תפריט משתמשת — ${user.name}`}
+        className="w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1"
+        style={{
+          backgroundColor: hasAvatar ? "transparent" : "#2e6853",
+          ...(transparent ? textShadow : {}),
+        }}
+      >
+        {hasAvatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.avatar}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-white text-sm font-semibold leading-none">
+            {initial}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute top-11 bg-white border border-[#e8e0d0] rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
+          style={{ minWidth: 160, insetInlineStart: 0 }}
+        >
+          {items.map((item) => (
+            <Link
+              key={item.label}
+              role="menuitem"
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-site-text hover:bg-[#F5F0E8] transition"
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className="h-px bg-[#e8e0d0] my-1" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              logout();
+            }}
+            className="w-full text-right px-4 py-2 text-sm hover:bg-[#F5F0E8] transition"
+            style={{ color: "#A32D2D" }}
+          >
+            התנתקי
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
