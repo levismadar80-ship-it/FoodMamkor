@@ -294,7 +294,7 @@ export default function MapPage() {
             can lose inherited RTL direction on some browsers and flip the
             order so the reset sentinel lands at the left edge. */}
         <div
-          className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+          className="flex gap-2 overflow-x-auto pb-1 -mx-1 pl-1 pr-4 scrollbar-hide"
           role="toolbar"
           aria-label="סינון מפה"
           dir="rtl"
@@ -375,13 +375,15 @@ export default function MapPage() {
       {/* Map container with overlays.
           MEH-14: hide on mobile when "list" view is active.
           MEH-15 bug fix: mobile uses h-[calc(100vh-64px)] so the map fills
-          the rest of the viewport below the 64px site header (prevents the
-          Leaflet tiles from visually overlapping the header on small screens).
-          Desktop keeps the fixed 500px height since the sidebar + chips take
-          up vertical space. */}
+          the rest of the viewport below the 64px site header.
+          MEH-30 bug fix (this PR): desktop switched from a fixed 500px to
+          60vh with a 500px floor — on short/embedded viewports the old
+          fixed height could squish the map into a tiny strip at the top;
+          60vh + min-h-500 guarantees the map is always at least ~40vh
+          regardless of layout pressure from sticky search + chips above. */}
       <div
         id="map-container"
-        className={`relative h-[calc(100vh-64px)] md:h-[500px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
+        className={`relative h-[calc(100vh-64px)] min-h-[60vh] md:h-[60vh] md:min-h-[500px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
       >
         <MapComponent
           producers={filteredByCategory}
