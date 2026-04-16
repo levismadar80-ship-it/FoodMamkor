@@ -83,9 +83,11 @@ export default function Header() {
   };
 
   // Text-shadow for legibility over a bright hero — only applied while
-  // transparent. Empty object once scrolled so it doesn't linger.
+  // transparent. Pumped to 0.6 alpha + 4px blur (was 0.4/2px) because
+  // the hero gradient in app/page.js:264-267 is only ~10% opaque at
+  // the top, so white text was washing out over bright Unsplash crops.
   const transparentTextShadow = transparent
-    ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" }
+    ? { textShadow: "0 1px 4px rgba(0,0,0,0.6)" }
     : undefined;
 
   return (
@@ -99,8 +101,25 @@ export default function Header() {
             : "bg-background border-b border-[#e8e0d0]",
       ].join(" ")}
     >
+      {/* Local darkening gradient — only when transparent. Lives INSIDE
+          the header so legibility is guaranteed regardless of what the
+          hero image looks like behind it. (The hero overlay in
+          app/page.js is near-zero at the top, leaving white text
+          invisible on bright food shots otherwise.) Marked
+          pointer-events-none so clicks pass through to the actual nav. */}
+      {transparent && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)",
+          }}
+        />
+      )}
+
       {/* Desktop: 3-zone grid. Mobile: plain flex between. */}
-      <div className="max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
+      <div className="relative max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
         {/* ACTIONS — left on desktop (justify-self-start); hidden on mobile.
             MEH-28: exactly ONE item. Guests see ghost "כניסה"; logged-in
             users see their name linking to /settings. */}
@@ -168,7 +187,7 @@ export default function Header() {
             priority
             style={
               transparent
-                ? { filter: "brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }
+                ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
                 : undefined
             }
           />
