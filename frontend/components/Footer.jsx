@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { InstagramLogo } from "@phosphor-icons/react";
+import { ArrowLeft, InstagramLogo, Leaf } from "@phosphor-icons/react";
 import { useLanguage } from "@/lib/language-context";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
@@ -178,6 +178,24 @@ export default function Footer() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* MEH-28: add-business CTA row. Moved out of the desktop navbar
+            (per product decision, most users are consumers — the header
+            CTA was eating real estate). Sits above the copyright border
+            so it's the last call to action before the page ends. */}
+        <div className="bg-white/5 border border-white/10 rounded-[12px] p-5 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm sm:text-base text-white text-center sm:text-right">
+            יש לך עסק מזון מקומי? הצטרפי למהמקור
+          </p>
+          <Link
+            href="/register/producer"
+            className="inline-flex items-center gap-2 bg-primary text-white font-medium px-5 py-2.5 rounded-[8px] hover:bg-primary-light transition focus-visible:ring-2 focus-visible:ring-white/60 whitespace-nowrap"
+          >
+            <Leaf size={16} weight="duotone" aria-hidden="true" />
+            הוסיפי את העסק שלך
+            <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+          </Link>
         </div>
 
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-light/70">

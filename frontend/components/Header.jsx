@@ -8,30 +8,37 @@ import { useLanguage } from "@/lib/language-context";
 import { Heart, List, X } from "@phosphor-icons/react";
 
 /**
- * Header (MEH-20 redesign) — Wolt/Airbnb-style 3-zone desktop layout.
+ * Header (MEH-28 slim redesign) — Wolt/Airbnb-style 3-zone desktop layout.
  *
  * Desktop (md+):
- *     [ actions (left) ]   [ nav (center) ]   [ logo (right) ]
+ *     [ login only (left) ]   [ nav (center) ]   [ logo (right) ]
  *   Implemented as `grid grid-cols-[1fr_auto_1fr]` so the center nav
- *   is truly centered regardless of actions width. Logo lives at
- *   justify-self-end, actions at justify-self-start — no dependence
- *   on RTL flex reversal, which was the root cause of the previous
- *   logo-on-the-wrong-side bug.
+ *   is truly centered regardless of actions width.
+ *
+ *   The left-hand actions cluster was trimmed to ONE thing per product
+ *   decision: "כניסה" for guests, "{name}" → /settings for logged-in.
+ *   The previous header crammed in add-business CTA + favorites +
+ *   logout + language toggle, which ate real estate while most users
+ *   are consumers who just want to browse. Add-business moved to a
+ *   dedicated footer CTA row (like Etsy / Wolt / LinkedIn). Favorites,
+ *   admin, language toggle, and logout are reachable via the profile
+ *   tab in BottomNav and /settings.
  *
  * Mobile (< md):
- *   Top bar = logo right + hamburger left only. Everything else moves
- *   into the drawer (add-business, favorites, admin, language, login).
+ *   Top bar = logo right + hamburger left only. Drawer is the catch-all
+ *   for everything the desktop left-actions used to hold (add-business,
+ *   favorites, admin, language, login, logout) — mobile doesn't have
+ *   a visible top action strip for those.
  *
  * Nav items (exactly 4):
  *   גלה (/) · מפה (/map) · מהשכן (/neighbor) · אודות (/about)
- *   `/events` removed per spec — events are reachable from producer
- *   detail pages only.
+ *   `/events` removed per MEH-20 — events live inside producer detail.
  *
  * Actions visibility rules:
- *   - "הוסיפי את העסק שלך" — hidden when role=producer (they already
- *     have a business).
- *   - Admin link — hidden on desktop (only in hamburger drawer) to keep
- *     the header clean for the 99% of users who aren't admins.
+ *   - "הוסיפי את העסק שלך" — in the drawer only, hidden when
+ *     role=producer (they already have a business).
+ *   - Admin link — drawer only (keep the header clean for the 99% of
+ *     users who aren't admins).
  */
 export default function Header() {
   const { user, logout } = useAuth();
@@ -67,57 +74,28 @@ export default function Header() {
     >
       {/* Desktop: 3-zone grid. Mobile: plain flex between. */}
       <div className="max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
-        {/* ACTIONS — left on desktop (justify-self-start); hidden on mobile. */}
-        <div className="hidden md:flex items-center gap-3 justify-self-start">
+        {/* ACTIONS — left on desktop (justify-self-start); hidden on mobile.
+            MEH-28: exactly ONE item. Guests see ghost "כניסה"; logged-in
+            users see their name linking to /settings (logout / favorites /
+            lang toggle all live in /settings + the hamburger drawer). */}
+        <div className="hidden md:flex items-center justify-self-start">
           {user ? (
-            <>
-              <Link
-                href="/favorites"
-                className="text-site-muted hover:text-primary transition inline-flex items-center gap-1"
-                aria-label={t("nav_favorites")}
-              >
-                <Heart size={18} weight="duotone" />
-                <span className="hidden lg:inline">{t("nav_favorites")}</span>
-              </Link>
-              <Link
-                href="/settings"
-                className="text-site-muted hover:text-primary transition text-sm"
-              >
-                {user.name}
-              </Link>
-              <button
-                onClick={logout}
-                className="text-sm text-site-muted hover:text-red-500"
-              >
-                {t("nav_logout")}
-              </button>
-            </>
+            <Link
+              href="/settings"
+              className="text-[13px] hover:text-primary transition"
+              style={{ color: "#6B6B6B" }}
+            >
+              {user.name}
+            </Link>
           ) : (
             <Link
               href="/login"
-              className="text-site-muted hover:text-primary transition text-sm"
+              className="text-[13px] hover:text-primary transition"
+              style={{ color: "#6B6B6B" }}
             >
               {t("nav_login")}
             </Link>
           )}
-          {showAddBusinessCta && (
-            <Link
-              href="/register/producer"
-              className="bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
-              style={{ borderRadius: "20px" }}
-            >
-              {t("nav_add_business")}
-            </Link>
-          )}
-          <button
-            onClick={() => setLang(lang === "he" ? "en" : "he")}
-            className="text-xs text-site-muted hover:text-primary transition border border-[#e8e0d0] rounded-full px-2.5 py-1 flex items-center gap-1"
-            aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
-          >
-            <span className={lang === "he" ? "font-bold text-primary" : ""}>עב</span>
-            <span className="text-border">/</span>
-            <span className={lang === "en" ? "font-bold text-primary" : ""}>EN</span>
-          </button>
         </div>
 
         {/* NAV — center on desktop (justify-self-center); hidden on mobile. */}
