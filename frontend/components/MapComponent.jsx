@@ -8,7 +8,6 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Crosshair } from "@phosphor-icons/react";
 import { styleForProducer } from "@/lib/map-categories";
-import { normalizePhone } from "@/lib/utils";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -82,70 +81,6 @@ function createCategoryMarker(
   });
 }
 
-const escapeHtml = (str) => {
-  if (str == null) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-};
-
-/** docs/archive/MAP_IMPROVEMENTS.md #6 — rich popup with photo, rating, and CTAs. */
-function buildPopupHtml(producer) {
-  const href = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
-  const photo = producer.images?.[0];
-  const cat = producer.categories?.[0];
-  // tasks_for_claude_code.md task 17: shared normalizer replaces the
-  // previous inline logic that handled fewer edge cases (no parens, no
-  // dots, no E.164 input). See lib/utils.js.
-  const phone = normalizePhone(producer.phone) || null;
-  const waUrl = phone
-    ? `https://wa.me/${phone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name || ""}`)}`
-    : null;
-
-  return `
-    <div style="text-align:right;font-family:'DM Sans',Heebo,sans-serif;min-width:240px;max-width:260px;direction:rtl;">
-      ${
-        photo
-          ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(producer.name || "")}"
-                 style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />`
-          : ""
-      }
-      <div style="font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;color:#1C1A17;line-height:1.2;">
-        ${escapeHtml(producer.name || "עסק")}
-      </div>
-      <div style="color:#6B6B6B;font-size:12px;margin-top:3px;">
-        ${escapeHtml(producer.city || "")}${cat ? ` · ${escapeHtml(cat.emoji || "")} ${escapeHtml(cat.name || "")}` : ""}
-      </div>
-      ${
-        producer.reviews_count > 0
-          ? `<div style="color:#8B6914;font-size:12px;margin-top:5px;">
-               ⭐ ${Number(producer.avg_rating).toFixed(1)} (${producer.reviews_count})
-             </div>`
-          : ""
-      }
-      <div style="display:flex;gap:6px;margin-top:10px;">
-        <a href="${escapeHtml(href)}"
-           style="flex:1;background:#2e6853;color:#fff;padding:8px;border-radius:6px;
-                  text-align:center;text-decoration:none;font-size:13px;font-weight:500;">
-          פרטים מלאים
-        </a>
-        ${
-          waUrl
-            ? `<a href="${escapeHtml(waUrl)}" target="_blank" rel="noopener noreferrer"
-                 aria-label="שלח הודעת ווטסאפ"
-                 style="background:#25D366;color:#fff;padding:8px 12px;border-radius:6px;
-                        text-decoration:none;font-size:16px;line-height:1;">
-                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white" aria-hidden="true"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41zM12.04 21.8a9.86 9.86 0 01-5.03-1.38l-.36-.21-3.72.97.99-3.62-.23-.37a9.84 9.84 0 01-1.51-5.25c0-5.45 4.44-9.88 9.9-9.88a9.87 9.87 0 017 2.89 9.83 9.83 0 012.9 7c-.01 5.45-4.45 9.85-9.94 9.85zm5.43-7.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15s-.77.97-.94 1.17c-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.65-2.04-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.22 3.08.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.17-1.41-.07-.12-.27-.2-.57-.34z"/></svg>
-               </a>`
-            : ""
-        }
-      </div>
-    </div>
-  `;
-}
-
 export default function MapComponent({
   producers = [],
   onProducerClick,
@@ -217,11 +152,6 @@ export default function MapComponent({
         // Suppress the "search this area" banner on programmatic flyTo.
         programmaticMoveRef.current = true;
         mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });
-        // Wait for the flyTo to complete before opening the popup so
-        // the popup anchors correctly to the new map center.
-        mapInstanceRef.current.once("moveend", () => {
-          entry.marker.openPopup();
-        });
       },
       setHoveredProducer: (producerId) => {
         const prev = hoveredIdRef.current;
@@ -341,27 +271,12 @@ export default function MapComponent({
           hovered: false,
           visited: visitedSet.has(p.id),
         }),
-        // alt for screen readers; title deliberately empty to avoid a
-        // browser-native tooltip that duplicates the Leaflet tooltip below.
+        // MEH-30 #8: no Leaflet tooltip or popup. Marker click opens the
+        // bottom sheet in MapClient.jsx (via onProducerClickRef). Hover
+        // syncs with card highlight — it is NOT a tooltip.
         alt: p.name || "עסק",
-        title: "",
+        title: p.name || "עסק",
         keyboard: true,
-      });
-
-      // Hover-only Leaflet tooltip (permanent:false is the default but
-      // stated explicitly so the intent is clear — z-500 per the token
-      // system in CLAUDE.md).
-      marker.bindTooltip(p.name || "עסק", {
-        direction: "top",
-        offset: [0, -30],
-        permanent: false,
-        className: "mehamakor-tooltip",
-      });
-
-      marker.bindPopup(buildPopupHtml(p), {
-        maxWidth: 280,
-        closeButton: true,
-        autoPan: true,
       });
 
       marker.on("click", () => onProducerClickRef.current?.(p));

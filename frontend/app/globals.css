@@ -43,11 +43,12 @@ h1, h2, h3 {
 .leaflet-top.leaflet-right {
   z-index: 1000 !important;
 }
-/* MEH-15 bug fix: Leaflet's attribution control (© OpenStreetMap ...)
-   defaults to a high stacking context that can cover the site header
-   on top-anchored layouts. Pin it to z-index: 1 so it sits below every
-   page-level control, including the sticky site header. */
+/* MEH-15 + MEH-30 #3: Leaflet attribution (© OpenStreetMap) is required
+   by law and cannot be removed. Keep it subtle — small + faded — and
+   pinned to z-index:1 so it never covers the sticky site header. */
 .leaflet-control-attribution {
+  font-size: 10px;
+  opacity: 0.6;
   z-index: 1 !important;
 }
 
@@ -71,23 +72,11 @@ h1, h2, h3 {
   display: none;
 }
 
-/* docs/archive/MAP_IMPROVEMENTS.md: custom Leaflet marker + tooltip styling */
+/* Custom Leaflet marker wrapper — tooltip/popup styles removed per
+   MEH-30 #8 (marker click opens the bottom sheet directly). */
 .mehamakor-marker-wrap {
   background: transparent !important;
   border: none !important;
-}
-.mehamakor-tooltip {
-  background: #1C1A17;
-  color: #F5F0E8;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-.mehamakor-tooltip::before {
-  border-top-color: #1C1A17;
 }
 .mehamakor-cluster {
   background: transparent !important;

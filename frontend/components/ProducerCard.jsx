@@ -143,7 +143,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
 
       <div className="p-4 flex-1 flex flex-col">
         <Link href={producerHref}>
-          <h3 className="font-headline font-bold text-site-text hover:text-primary transition leading-snug truncate" style={{ fontSize: "18px" }}>
+          <h3 className="font-headline font-bold text-site-text hover:text-primary transition leading-snug line-clamp-2" style={{ fontSize: "18px" }}>
             {producer.name}
           </h3>
         </Link>
