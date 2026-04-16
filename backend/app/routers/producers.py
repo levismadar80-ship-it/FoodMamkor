@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -81,6 +81,14 @@ def list_producers(
     # documented API shape, but named `search_q` internally so it doesn't
     # shadow the `q` SQLAlchemy-query-builder local below.
     search_q: str | None = Query(None, alias="q"),
+    # MEH-23 — offset-based pagination. Backwards-compatible: existing
+    # callers that don't pass these get the first 100 rows (prior
+    # behavior was "everything" which is fine at current scale but
+    # unbounded). Total row count is exposed via X-Total-Count header
+    # so the frontend can render "X מתוך Y" and numbered pagination.
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
     geo_search = lat is not None and lng is not None and radius_km is not None
@@ -140,6 +148,14 @@ def list_producers(
             (Producer.name.ilike(like)) | (Producer.description.ilike(like))
         )
 
+    # MEH-23 — compute the total BEFORE applying limit/offset so the
+    # frontend can render "X מתוך Y" and numbered pagination. SQLAlchemy
+    # wants a fresh .count() query; doing it on the same builder works
+    # because we haven't applied ordering yet.
+    total_count = q.with_entities(func.count(Producer.id.distinct())).scalar() or 0
+    if response is not None:
+        response.headers["X-Total-Count"] = str(total_count)
+
     if geo_search:
         # A multi-entity query combined with joinedload on a collection
         # relationship (categories) can emit duplicate rows — the legacy
@@ -147,7 +163,8 @@ def list_producers(
         # De-dupe by producer id while preserving the distance-ASC order.
         seen: set = set()
         results = []
-        for producer, distance_km in q.all():
+        # Slice at the SQL layer: offset first, then limit.
+        for producer, distance_km in q.offset(offset).limit(limit).all():
             if producer.id in seen:
                 continue
             seen.add(producer.id)
@@ -158,7 +175,7 @@ def list_producers(
             results.append(producer)
         return results
 
-    rows = q.all()
+    rows = q.offset(offset).limit(limit).all()
     for p in rows:
         _attach_badge_fields(p)
     return rows

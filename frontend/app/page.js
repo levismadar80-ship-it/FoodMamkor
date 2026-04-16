@@ -69,7 +69,15 @@ export default function HomePage() {
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // MEH-23 — persist visibleCount + scrollY across navigations so the
+  // "Load more" expansion isn't lost when a user opens a producer and
+  // returns via the back button. Read on mount only; subsequent changes
+  // flow through the setter below.
+  const [visibleCount, setVisibleCount] = useState(() => {
+    if (typeof window === "undefined") return PAGE_SIZE;
+    const saved = Number(window.sessionStorage?.getItem("home_visible_count"));
+    return Number.isFinite(saved) && saved >= PAGE_SIZE ? saved : PAGE_SIZE;
+  });
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -99,13 +107,55 @@ export default function HomePage() {
     }
   }, []);
 
+  // MEH-23 — write visibleCount + scrollY to sessionStorage whenever
+  // the user expands the list or scrolls. Cheap: debounced via the
+  // browser's scroll passive listener; storage writes are string ops.
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem("home_visible_count", String(visibleCount));
+    } catch {
+      // private mode — ignore
+    }
+  }, [visibleCount]);
+
+  // Restore scroll on mount when returning from a producer page. We
+  // defer to rAF * 2 so the grid has a chance to render the expanded
+  // visibleCount before we call scrollTo.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedY = Number(window.sessionStorage.getItem("home_scroll_y"));
+    if (!Number.isFinite(savedY) || savedY <= 0) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo(0, savedY));
+    });
+  }, []);
+
+  // Stash scrollY just before the user navigates away (pagehide fires
+  // on both bfcache + hard unload). Read-back happens on next mount.
+  useEffect(() => {
+    const stash = () => {
+      try {
+        window.sessionStorage.setItem("home_scroll_y", String(window.scrollY));
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener("pagehide", stash);
+    return () => window.removeEventListener("pagehide", stash);
+  }, []);
+
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
     api
       .get("/producers", { params })
       .then((r) => {
         setProducers(r.data);
-        setVisibleCount(PAGE_SIZE);
+        // Only reset visibleCount when the user actually changed filters
+        // (i.e. was given `params`). The initial load and the back-from-
+        // producer load should keep the restored visibleCount.
+        if (Object.keys(params).length > 0) {
+          setVisibleCount(PAGE_SIZE);
+        }
       })
       .finally(() => setProducersLoading(false));
   };
@@ -546,6 +596,16 @@ export default function HomePage() {
           <SkeletonProducerGrid count={8} />
         ) : (
           <>
+            {/* MEH-23 — "מציגים X מתוך Y" counter above the grid. */}
+            {producers.length > 0 && (
+              <p
+                className="text-sm text-site-muted mb-3"
+                data-testid="producers-counter"
+                aria-live="polite"
+              >
+                מציגים {Math.min(visibleCount, producers.length)} מתוך {producers.length}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
               {visibleProducers.map((p, idx) => (
                 <motion.div
