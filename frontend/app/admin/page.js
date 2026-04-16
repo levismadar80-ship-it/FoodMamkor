@@ -376,7 +376,7 @@ function ServerHealthPanel({ health }) {
           </p>
         </div>
       </div>
-      <p className="text-[11px] text-text-secondary mt-3 leading-snug">
+      <p className="text-[13px] text-text-secondary mt-3 leading-snug">
         ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md).
       </p>
     </div>
