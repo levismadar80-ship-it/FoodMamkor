@@ -35,7 +35,7 @@ def get_my_producer(user: User = Depends(require_producer), db: Session = Depend
         .first()
     )
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     return producer
 
 
@@ -47,7 +47,7 @@ def update_my_producer(
 ):
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(producer, field, value)
@@ -65,7 +65,7 @@ def toggle_availability(
     """Toggle today's availability for the logged-in producer."""
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.is_available_today = not bool(producer.is_available_today)
     producer.last_active_at = datetime.utcnow()
     db.commit()
@@ -93,11 +93,11 @@ def set_availability_status(
     if data.status not in AVAILABILITY_STATUSES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid status. Must be one of: {sorted(AVAILABILITY_STATUSES)}",
+            detail=f"סטטוס לא תקין. חייב להיות אחד מתוך: {sorted(AVAILABILITY_STATUSES)}",
         )
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.availability_status = data.status
     producer.last_active_at = datetime.utcnow()
     db.commit()
@@ -114,7 +114,7 @@ def dashboard(
     route. The richer analytics live at /producers/me/analytics."""
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     favorites_count = (
         db.query(func.count(Favorite.producer_id))
@@ -184,7 +184,7 @@ def producer_analytics(
     """
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     pid = producer.id
 

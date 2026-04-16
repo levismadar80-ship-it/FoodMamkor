@@ -101,7 +101,7 @@ def update_user_role(
 ):
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     target.role = data.role
     db.commit()
     return {"detail": "Role updated", "role": target.role}
@@ -115,7 +115,7 @@ def block_user(
 ):
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
     target.is_blocked = not bool(target.is_blocked)
@@ -406,7 +406,7 @@ def test_service(
     if service == "cloudinary":
         ok = bool(cfg.cloudinary_cloud_name and cfg.cloudinary_api_key and cfg.cloudinary_api_secret)
         return {"ok": ok, "configured": ok, "service": "cloudinary"}
-    raise HTTPException(status_code=400, detail="Unknown service")
+    raise HTTPException(status_code=400, detail="שירות לא מוכר")
 
 
 # ============================================================
