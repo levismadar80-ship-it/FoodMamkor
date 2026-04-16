@@ -2,55 +2,63 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { Heart, List, X } from "@phosphor-icons/react";
 
 /**
- * Header (MEH-28 slim redesign) — Wolt/Airbnb-style 3-zone desktop layout.
+ * Header (MEH-29 sticky / active / transparent) — layered on top of the
+ * MEH-28 slim layout (logo right · nav center · login-only left).
  *
- * Desktop (md+):
- *     [ login only (left) ]   [ nav (center) ]   [ logo (right) ]
- *   Implemented as `grid grid-cols-[1fr_auto_1fr]` so the center nav
- *   is truly centered regardless of actions width.
+ * Three behaviors added:
  *
- *   The left-hand actions cluster was trimmed to ONE thing per product
- *   decision: "כניסה" for guests, "{name}" → /settings for logged-in.
- *   The previous header crammed in add-business CTA + favorites +
- *   logout + language toggle, which ate real estate while most users
- *   are consumers who just want to browse. Add-business moved to a
- *   dedicated footer CTA row (like Etsy / Wolt / LinkedIn). Favorites,
- *   admin, language toggle, and logout are reachable via the profile
- *   tab in BottomNav and /settings.
+ * 1. Sticky w/ scroll shadow (was already sticky; tightened) —
+ *    `position: sticky; top: 0; z-index: 1000`. No shadow at the top of
+ *    the page; once `scrollY ≥ 80` we add `0 2px 8px rgba(0,0,0,0.08)`
+ *    + a backdrop blur. Threshold tracked via rAF-throttled scroll
+ *    listener (cheaper than a raw scroll handler that fires every frame).
  *
- * Mobile (< md):
- *   Top bar = logo right + hamburger left only. Drawer is the catch-all
- *   for everything the desktop left-actions used to hold (add-business,
- *   favorites, admin, language, login, logout) — mobile doesn't have
- *   a visible top action strip for those.
+ * 2. Active nav link — `usePathname()` decides which of the four
+ *    NAV_ITEMS is current. Exact match for `/`, prefix match for
+ *    `/map`, `/neighbor`, `/about`. Active rendering: `aria-current="page"`,
+ *    primary-green text + 2px primary border-bottom + semibold (transparent
+ *    state swaps both colors to white so the indicator is still visible
+ *    against the dark hero overlay).
  *
- * Nav items (exactly 4):
- *   גלה (/) · מפה (/map) · מהשכן (/neighbor) · אודות (/about)
- *   `/events` removed per MEH-20 — events live inside producer detail.
- *
- * Actions visibility rules:
- *   - "הוסיפי את העסק שלך" — in the drawer only, hidden when
- *     role=producer (they already have a business).
- *   - Admin link — drawer only (keep the header clean for the 99% of
- *     users who aren't admins).
+ * 3. Transparent on homepage hero — Gardensweet-style. Only when
+ *    `pathname === "/"` AND `scrollY < 80`: bg transparent, no border,
+ *    text white, logo inverted, text-shadow on nav text + login link +
+ *    hamburger so it stays legible if the hero image is bright at the
+ *    top (the gradient overlay in `app/page.js:264-267` is only
+ *    `rgba(0,0,0,0.10)` at the very top). Once the user scrolls past
+ *    the threshold the cream bg fades in.
  */
 export default function Header() {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const rafRef = useRef(null);
 
+  // rAF-throttled scroll listener — coalesces scroll events into one
+  // state read per animation frame. Threshold = 80px per spec.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    const onScroll = () => {
+      if (rafRef.current) return;
+      rafRef.current = window.requestAnimationFrame(() => {
+        setScrolled(window.scrollY >= 80);
+        rafRef.current = null;
+      });
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   const isProducer = user?.role === "producer";
@@ -63,35 +71,76 @@ export default function Header() {
     { href: "/about", label: t("nav_about") },
   ];
 
+  const isHomepage = pathname === "/";
+  const transparent = isHomepage && !scrolled;
+
+  // Pathname → active key. Exact match for `/`, prefix for the rest so
+  // `/map/...` and `/neighbor/abc` keep their tab highlighted.
+  const isActive = (href) => {
+    if (!pathname) return false;
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  // Text-shadow for legibility over a bright hero — only applied while
+  // transparent. Pumped to 0.6 alpha + 4px blur (was 0.4/2px) because
+  // the hero gradient in app/page.js:264-267 is only ~10% opaque at
+  // the top, so white text was washing out over bright Unsplash crops.
+  const transparentTextShadow = transparent
+    ? { textShadow: "0 1px 4px rgba(0,0,0,0.6)" }
+    : undefined;
+
   return (
     <header
       className={[
-        "sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out h-16",
-        scrolled
-          ? "bg-background/85 backdrop-blur-md border-b border-[#e8e0d0] shadow-[0_2px_20px_rgba(46,104,83,0.06)]"
-          : "bg-background border-b border-[#e8e0d0]",
+        "sticky top-0 z-[1000] transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out h-16",
+        transparent
+          ? "bg-transparent"
+          : scrolled
+            ? "bg-background/95 backdrop-blur-md border-b border-[#e8e0d0] shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+            : "bg-background border-b border-[#e8e0d0]",
       ].join(" ")}
     >
+      {/* Local darkening gradient — only when transparent. Lives INSIDE
+          the header so legibility is guaranteed regardless of what the
+          hero image looks like behind it. (The hero overlay in
+          app/page.js is near-zero at the top, leaving white text
+          invisible on bright food shots otherwise.) Marked
+          pointer-events-none so clicks pass through to the actual nav. */}
+      {transparent && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)",
+          }}
+        />
+      )}
+
       {/* Desktop: 3-zone grid. Mobile: plain flex between. */}
-      <div className="max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
+      <div className="relative max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
         {/* ACTIONS — left on desktop (justify-self-start); hidden on mobile.
             MEH-28: exactly ONE item. Guests see ghost "כניסה"; logged-in
-            users see their name linking to /settings (logout / favorites /
-            lang toggle all live in /settings + the hamburger drawer). */}
+            users see their name linking to /settings. */}
         <div className="hidden md:flex items-center justify-self-start">
           {user ? (
             <Link
               href="/settings"
-              className="text-[13px] hover:text-primary transition"
-              style={{ color: "#6B6B6B" }}
+              className={`text-[13px] transition ${
+                transparent ? "text-white hover:text-white/80" : "hover:text-primary"
+              }`}
+              style={{ color: transparent ? undefined : "#6B6B6B", ...transparentTextShadow }}
             >
               {user.name}
             </Link>
           ) : (
             <Link
               href="/login"
-              className="text-[13px] hover:text-primary transition"
-              style={{ color: "#6B6B6B" }}
+              className={`text-[13px] transition ${
+                transparent ? "text-white hover:text-white/80" : "hover:text-primary"
+              }`}
+              style={{ color: transparent ? undefined : "#6B6B6B", ...transparentTextShadow }}
             >
               {t("nav_login")}
             </Link>
@@ -99,20 +148,36 @@ export default function Header() {
         </div>
 
         {/* NAV — center on desktop (justify-self-center); hidden on mobile. */}
-        <nav className="hidden md:flex items-center gap-6 justify-self-center">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-site-text hover:text-primary transition text-sm font-medium"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav
+          className="hidden md:flex items-center gap-6 justify-self-center"
+          aria-label="ניווט ראשי"
+        >
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.href);
+            const baseClasses = "transition text-sm pb-1 border-b-2";
+            const activeClasses = transparent
+              ? "text-white border-white font-semibold"
+              : "text-primary border-primary font-semibold";
+            const inactiveClasses = transparent
+              ? "text-white/90 border-transparent hover:text-white font-medium"
+              : "text-site-text border-transparent hover:text-primary font-medium";
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`${baseClasses} ${active ? activeClasses : inactiveClasses}`}
+                style={transparentTextShadow}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* LOGO — right on desktop (justify-self-end) and mobile (order is
-            logo first since RTL flex-between puts it at the visual right). */}
+        {/* LOGO — right on desktop (justify-self-end) and mobile (RTL
+            flex-between puts it at the visual right). When transparent
+            the dark `/logo.png` is inverted to white via CSS filter. */}
         <Link href="/" className="md:justify-self-end shrink-0">
           <Image
             src="/logo.png"
@@ -120,33 +185,45 @@ export default function Header() {
             width={106}
             height={40}
             priority
+            style={
+              transparent
+                ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
+                : undefined
+            }
           />
         </Link>
 
         {/* Mobile hamburger — left side (RTL flex-between puts it there). */}
         <button
-          className="md:hidden p-2 text-site-text"
+          className={`md:hidden p-2 ${transparent ? "text-white" : "text-site-text"}`}
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label={menuOpen ? "סגור תפריט" : "פתח תפריט"}
           aria-expanded={menuOpen}
+          style={transparentTextShadow}
         >
           {menuOpen ? <X size={24} weight="bold" /> : <List size={24} weight="bold" />}
         </button>
       </div>
 
-      {/* Mobile drawer — everything except logo + hamburger lives here. */}
+      {/* Mobile drawer — everything except logo + hamburger lives here.
+          Drawer always uses the cream background regardless of transparent
+          state, so links read correctly when expanded over the hero. */}
       {menuOpen && (
         <div className="md:hidden bg-background border-t border-[#e8e0d0] px-4 py-3 space-y-3">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block text-site-text text-base"
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`block text-base ${active ? "text-primary font-semibold" : "text-site-text"}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
 
           {showAddBusinessCta && (
             <Link
