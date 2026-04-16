@@ -13,6 +13,7 @@ import {
   GearSix,
   Sparkle,
   Star,
+  Lifebuoy,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -36,6 +37,7 @@ const NAV = [
   { href: "/admin/reports", label: "דיווחים", Icon: Warning },
   { href: "/admin/analytics", label: "אנליטיקס", Icon: ChartLineUp },
   { href: "/admin/settings", label: "הגדרות", Icon: GearSix },
+  { href: "/admin/help", label: "עזרה", Icon: Lifebuoy },
 ];
 
 export default function AdminLayout({ children }) {
