@@ -120,6 +120,40 @@ class AdminSetting(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class OutreachLead(Base):
+    """Producer outreach lead (MEH-22).
+
+    Manual list of prospective businesses an admin is reaching out to.
+    Status pipeline: new → contacted → replied → registered (or declined).
+    `prefill_token` lets an admin send a single-use registration link
+    that pre-populates the /register/producer form so the prospect's
+    only friction is choosing a password.
+
+    Soft uniqueness via `(lower(name), lower(city))` — handled at the
+    application layer in the create endpoint, not as a DB UNIQUE
+    constraint, so case-and-trim variations are caught the same way.
+    """
+    __tablename__ = "outreach_leads"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False)
+    phone = Column(String(20), nullable=True)
+    instagram = Column(String(100), nullable=True)
+    website = Column(String(200), nullable=True)
+    city = Column(String(100), nullable=True)
+    category = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    source = Column(String(50), default="manual")  # manual | claude_search (future)
+    status = Column(String(20), default="new")     # new | contacted | replied | registered | declined
+    # Prefill token — minted on demand for "הכן פרופיל". Single-use is
+    # not enforced; the token expires 30 days after mint and is rotated
+    # whenever the admin clicks the button again.
+    prefill_token = Column(String(64), unique=True, nullable=True, index=True)
+    prefill_token_expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class StaticPage(Base):
     __tablename__ = "static_pages"
 

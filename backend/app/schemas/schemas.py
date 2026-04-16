@@ -557,3 +557,58 @@ class ExperienceDetailOut(ExperienceListOut):
     rejection_reason: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-22 Outreach leads ---
+class OutreachLeadOut(BaseModel):
+    id: UUID
+    name: str
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    city: str | None = None
+    category: str | None = None
+    notes: str | None = None
+    source: str = "manual"
+    status: str = "new"
+    prefill_token: str | None = None
+    prefill_token_expires_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class OutreachLeadCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    phone: str | None = Field(None, max_length=20)
+    instagram: str | None = Field(None, max_length=100)
+    website: str | None = Field(None, max_length=200)
+    city: str | None = Field(None, max_length=100)
+    category: str | None = Field(None, max_length=100)
+    notes: str | None = None
+
+
+class OutreachLeadUpdate(BaseModel):
+    """PATCH body — any subset of fields may be omitted. Status is
+    enum-validated at the route layer."""
+    name: str | None = None
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    city: str | None = None
+    category: str | None = None
+    notes: str | None = None
+    status: str | None = None
+
+
+class OutreachPrefillResponse(BaseModel):
+    """Public response from /register/producer/prefill/{token} —
+    intentionally narrow: only what the registration form needs to
+    pre-fill. Notes + status are NOT exposed."""
+    name: str
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    city: str | None = None
+    category: str | None = None
