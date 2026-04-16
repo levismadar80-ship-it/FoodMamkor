@@ -215,9 +215,6 @@ export default function Footer() {
             marginTop: "32px",
           }}
         >
-          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
-          </p>
           <ul className="flex items-center gap-4">
             {[
               { href: "/login", label: "כניסה לחשבון" },
@@ -235,6 +232,9 @@ export default function Footer() {
               </li>
             ))}
           </ul>
+          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
+            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
+          </p>
         </div>
       </div>
     </footer>
