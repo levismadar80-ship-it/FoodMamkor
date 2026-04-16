@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import FooterSlot from "@/components/FooterSlot";
 import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
@@ -113,7 +113,7 @@ export default function RootLayout({ children }) {
           <SmoothScrollProvider>
             <Header />
             <main id="main-content" className="flex-1">{children}</main>
-            <Footer />
+            <FooterSlot />
             <BottomNav />
             <Toaster />
             <CookieBanner />

@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf } from "@phosphor-icons/react";
+import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -273,8 +274,11 @@ export default function MapPage() {
           the site header; background + backdrop-blur so content scrolls
           underneath without visual bleed. */}
       <div className="sticky top-16 z-[50] -mx-4 px-4 py-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 border-b border-border mb-4">
-        {/* City search */}
-        <div className="flex flex-col md:flex-row gap-3 mb-3 overflow-visible">
+        {/* City search + "near me" (MEH-30 #1 — moved inline here from
+            its previous position as an absolute overlay inside the map.
+            Sits next to the city search on desktop, stacks below it on
+            mobile). */}
+        <div className="flex flex-col md:flex-row md:items-end gap-3 mb-3 overflow-visible">
           <div className="w-full md:w-96">
             <CitySearch
               id="map-city-search"
@@ -285,6 +289,15 @@ export default function MapPage() {
               placeholder="חפשי עיר..."
             />
           </div>
+          <button
+            type="button"
+            onClick={() => mapApiRef.current?.goToMyLocation()}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-border text-site-text hover:border-primary hover:text-primary rounded-[10px] px-4 py-2.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
+            aria-label="מרכז מפה על המיקום שלי"
+          >
+            <Crosshair size={16} weight="duotone" className="text-primary" aria-hidden="true" />
+            קרוב אלי
+          </button>
         </div>
 
         {/* MEH-14 chips — category radio group + independent toggles.
@@ -293,7 +306,7 @@ export default function MapPage() {
             can lose inherited RTL direction on some browsers and flip the
             order so the reset sentinel lands at the left edge. */}
         <div
-          className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+          className="flex gap-2 overflow-x-auto pb-1 -mx-1 pl-1 pr-4 scrollbar-hide"
           role="toolbar"
           aria-label="סינון מפה"
           dir="rtl"
@@ -374,13 +387,15 @@ export default function MapPage() {
       {/* Map container with overlays.
           MEH-14: hide on mobile when "list" view is active.
           MEH-15 bug fix: mobile uses h-[calc(100vh-64px)] so the map fills
-          the rest of the viewport below the 64px site header (prevents the
-          Leaflet tiles from visually overlapping the header on small screens).
-          Desktop keeps the fixed 500px height since the sidebar + chips take
-          up vertical space. */}
+          the rest of the viewport below the 64px site header.
+          MEH-30 bug fix (this PR): desktop switched from a fixed 500px to
+          60vh with a 500px floor — on short/embedded viewports the old
+          fixed height could squish the map into a tiny strip at the top;
+          60vh + min-h-500 guarantees the map is always at least ~40vh
+          regardless of layout pressure from sticky search + chips above. */}
       <div
         id="map-container"
-        className={`relative h-[calc(100vh-64px)] md:h-[500px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
+        className={`relative h-[calc(100vh-64px)] min-h-[70vh] md:h-[70vh] md:min-h-[600px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
       >
         <MapComponent
           producers={filteredByCategory}
@@ -477,38 +492,122 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* docs/archive/MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer
-          Improvement #12: the drag handle was inside a flex-between row
-          (where mx-auto doesn't do anything), and the close button was
-          absolute-positioned inside that same row — leaving the handle
-          flush-left. Restructured: handle is its own centered block, X
-          is absolute relative to the dialog. */}
-      {/* Mobile bottom sheet — z-[600] per CLAUDE.md map z-index tokens.
-          Must stay BELOW map controls (zoom z-1000, search z-1000, legend
-          z-800, "קרוב אלי" z-1000) so controls remain clickable when the
-          sheet is open. pb-6 prevents content cutoff at the rounded edge. */}
-      {selectedProducer && (
-        <div
-          className="md:hidden fixed bottom-16 inset-x-3 z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 pb-6 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="פרטי העסק שנבחר"
-        >
+      {/* MEH-30 #13 — bottom sheet redesigned Airbnb/Wolt-style. Dedicated
+          inline layout (not a reused ProducerCard): image 160px on top
+          with gradient + badges + close-X, body below with name / meta /
+          rating / price / CTA. z-[600] per CLAUDE.md map z-index tokens. */}
+      {selectedProducer && (() => {
+        const p = selectedProducer;
+        const imageUrl = optimizeCloudinary(p.images?.[0]);
+        const category = p.categories?.[0];
+        const badges = [];
+        if (p.verified) badges.push("✓ מאומת");
+        if (p.is_organic) badges.push("🌿 אורגני");
+        const rating = Number(p.avg_rating || 0);
+        const showRating = rating > 0;
+        const priceLabel = p.starting_price_label;
+        const producerHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+
+        return (
           <div
-            className="w-10 h-1 bg-border rounded-full mx-auto mb-3"
-            aria-hidden="true"
-          />
-          <button
-            type="button"
-            onClick={() => setSelectedProducer(null)}
-            className="absolute top-3 left-3 z-10 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="סגור"
+            className="fixed bottom-16 inset-x-3 md:bottom-6 md:inset-x-auto md:left-6 md:right-auto md:w-[360px] z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] overflow-hidden max-h-[55vh] animate-[slide-up_0.25s_ease-out]"
+            role="dialog"
+            aria-modal="true"
+            aria-label="פרטי העסק שנבחר"
           >
-            <X size={18} weight="bold" />
-          </button>
-          <ProducerCard producer={selectedProducer} referrer="search" />
-        </div>
-      )}
+            {/* Image area — 160px with gradient overlay + badges + close button */}
+            <div className="relative w-full h-[160px]">
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl}
+                  alt={p.name || ""}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="w-full h-full"
+                  style={{ backgroundColor: "#EAF3DE" }}
+                />
+              )}
+              {imageUrl && (
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)",
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedProducer(null)}
+                className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-site-text flex items-center justify-center shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="סגור"
+              >
+                <X size={14} weight="bold" />
+              </button>
+              {badges.length > 0 && (
+                <div className="absolute bottom-2 left-2 flex gap-1.5">
+                  {badges.map((b) => (
+                    <span
+                      key={b}
+                      className="bg-white/95 text-site-text rounded-full px-2 py-0.5"
+                      style={{ fontSize: "11px", fontWeight: 500 }}
+                    >
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "12px 14px" }}>
+              <h3
+                className="font-headline font-bold text-site-text line-clamp-1"
+                style={{ fontSize: "17px" }}
+              >
+                {p.name}
+              </h3>
+              <p style={{ fontSize: "12px", color: "#6B6B6B", marginTop: 2 }}>
+                {p.city}
+                {category?.name ? ` · ${category.name}` : ""}
+              </p>
+              {showRating && (
+                <div
+                  className="flex items-center gap-1 mt-1"
+                  style={{ fontSize: "13px", color: "#8B6914" }}
+                >
+                  <Star size={14} weight="fill" aria-hidden="true" />
+                  <span>{rating.toFixed(1)}</span>
+                  <span style={{ color: "#6B6B6B" }}>
+                    ({p.reviews_count || 0} ביקורות)
+                  </span>
+                </div>
+              )}
+              {priceLabel && (
+                <p
+                  className="mt-1"
+                  style={{ fontSize: "13px", fontWeight: 700, color: "#8B6914" }}
+                >
+                  {priceLabel}
+                </p>
+              )}
+              <Link
+                href={producerHref}
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary-light transition py-2.5 rounded-[10px] font-medium"
+                style={{ fontSize: "14px" }}
+              >
+                לפרופיל המלא
+                <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Producer grid below map — filtered by committed bounds + categories.
           MEH-14: hide on mobile when "map" view is active. */}
