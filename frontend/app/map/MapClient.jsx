@@ -445,7 +445,7 @@ export default function MapPage() {
             <button
               type="button"
               onClick={() => setActiveCategoryNames(null)}
-              className="w-full text-[11px] text-primary hover:underline mt-2 pt-2 border-t border-border"
+              className="w-full text-[13px] text-primary hover:underline mt-2 pt-2 border-t border-border"
             >
               הצגי הכל
             </button>
