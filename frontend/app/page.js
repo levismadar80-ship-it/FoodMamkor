@@ -423,7 +423,7 @@ export default function HomePage() {
               />
               <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
                 {LineArt && <LineArt size={64} className="w-8 h-8 md:w-16 md:h-16" stroke="white" strokeWidth={1.75} />}
-                <h3 className="font-headline font-bold mt-2 md:mt-3 text-sm md:text-[22px]">
+                <h3 className="font-headline font-bold mt-2 md:mt-3 text-[22px]">
                   {card.name}
                 </h3>
               </div>
