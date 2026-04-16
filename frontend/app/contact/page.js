@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CheckCircle, Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 // Single source of truth for the public contact inbox shown on this page.
@@ -73,11 +74,16 @@ export default function ContactPage() {
 
           {status === "success" ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">✅</div>
+              <div className="mb-4 flex justify-center">
+                <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
+              </div>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
                 תודה! קיבלנו את הפנייה.
               </h2>
-              <p className="text-site-muted">נחזור אלייך תוך 3 ימי עסקים 🌿</p>
+              <p className="text-site-muted inline-flex items-center gap-1.5">
+                נחזור אלייך תוך 3 ימי עסקים
+                <Leaf size={14} weight="duotone" className="text-primary" aria-hidden="true" />
+              </p>
               <button
                 type="button"
                 onClick={() => setStatus("idle")}

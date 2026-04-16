@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -143,7 +144,9 @@ export default function ProducerReviews({ producerId }) {
         <p className="text-sm text-site-muted">טוענת ביקורות...</p>
       ) : reviews.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-5xl mb-2">🌿</p>
+          <div className="mb-2 flex justify-center">
+            <Leaf size={48} weight="duotone" className="text-primary/70" aria-hidden="true" />
+          </div>
           <p className="text-site-muted">עדיין אין ביקורות — היי הראשונה!</p>
         </div>
       ) : (

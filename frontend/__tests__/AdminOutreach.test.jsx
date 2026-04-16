@@ -100,8 +100,11 @@ describe("AdminOutreachPage", () => {
 
   it('"תסריט שיחה" opens the script modal', async () => {
     render(<AdminOutreachPage />);
-    await waitFor(() => screen.getByText("📞 תסריט שיחה"));
-    fireEvent.click(screen.getByText("📞 תסריט שיחה"));
+    // Phone icon replaces the 📞 emoji — probe on the text label only.
+    // "תסריט שיחה" appears twice (trigger button + modal heading) once
+    // open, so target the trigger explicitly.
+    await waitFor(() => screen.getAllByText("תסריט שיחה"));
+    fireEvent.click(screen.getAllByText("תסריט שיחה")[0]);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     // Script contains "תסריט שיחה" in the heading — use a different probe.
     expect(screen.getByText(/פתיחה חמה/)).toBeInTheDocument();

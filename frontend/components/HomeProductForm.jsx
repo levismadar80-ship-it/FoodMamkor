@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { Camera } from "@phosphor-icons/react";
+import { Camera, Warning } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 
@@ -467,7 +467,10 @@ export default function HomeProductForm({ onCreated, onCancel }) {
           )}
           {flagged && !checking && (
             <div className="rounded-[12px] p-3 text-sm" style={{ background: "#FFF9E6", border: "1px solid #F0C040", color: "#946A00" }}>
-              <p className="font-medium">⚠️ {moderation.reason || "המודעה עשויה לעבור בדיקה לפני פרסום."}</p>
+              <p className="font-medium inline-flex items-center gap-1.5">
+                <Warning size={18} weight="fill" className="text-yellow-600 shrink-0" aria-hidden="true" />
+                {moderation.reason || "המודעה עשויה לעבור בדיקה לפני פרסום."}
+              </p>
               {moderation.suggestion && <p className="mt-1 opacity-80">💡 {moderation.suggestion}</p>}
               <p className="mt-2 text-xs opacity-70">תוכלי לפרסם, אבל המוצר יעלה עם תגית &quot;בבדיקה&quot; עד שאדמין תאשר.</p>
             </div>

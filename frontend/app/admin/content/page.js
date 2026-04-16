@@ -132,7 +132,7 @@ function HiddenHomeProducts() {
     <div className="bg-white border border-border rounded-[12px] p-5">
       <h2 className="font-semibold mb-3">מוצרים ביתיים מוסתרים</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-text-secondary">אין מוצרים מוסתרים 🎉</p>
+        <p className="text-sm text-text-secondary">אין מוצרים מוסתרים</p>
       ) : (
         <ul className="space-y-2">
           {items.map((hp) => (

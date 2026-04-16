@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Heart } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
@@ -36,7 +37,10 @@ export default function FavoritesPage() {
         items={[{ href: "/", label: "בית" }, { label: "מועדפים" }]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold mb-8 text-site-text">❤️ המועדפים שלי</h1>
+      <h1 className="font-headline text-3xl font-bold mb-8 text-site-text inline-flex items-center gap-2">
+        <Heart size={28} weight="fill" className="text-red-500" aria-hidden="true" />
+        המועדפים שלי
+      </h1>
 
       {loading ? (
         <SkeletonProducerGrid count={6} />

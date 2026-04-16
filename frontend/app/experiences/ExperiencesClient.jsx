@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
@@ -135,7 +136,9 @@ export default function ExperiencesClient() {
           </p>
         ) : experiences.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-5xl mb-4">🌱</p>
+            <div className="mb-4 flex justify-center">
+              <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+            </div>
             <p className="text-site-muted">
               לא מצאנו חוויות שתואמות לסינון — עדיין
             </p>

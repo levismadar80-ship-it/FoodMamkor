@@ -395,9 +395,10 @@ export default function AboutPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/register/producer"
-              className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-semibold text-lg"
+              className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-semibold text-lg"
             >
-              הוסיפי את העסק שלך 🌿
+              הוסיפי את העסק שלך
+              <Leaf size={20} weight="duotone" aria-hidden="true" />
             </Link>
             <Link
               href="/map"

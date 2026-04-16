@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { Leaf } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
@@ -38,8 +39,7 @@ export default function ImageWithFallback({
         role="img"
         className={`flex items-center justify-center ${className}`}
         style={{
-          background:
-            "linear-gradient(135deg, #EAF3DE 0%, #c9e2d3 100%)",
+          background: "#F5F0E8",
           width: fill ? "100%" : width,
           height: fill ? "100%" : height,
           position: fill ? "absolute" : "relative",
@@ -47,7 +47,7 @@ export default function ImageWithFallback({
           ...style,
         }}
       >
-        <span aria-hidden style={{ fontSize: 40 }}>🌿</span>
+        <Leaf size={40} weight="duotone" className="text-primary/70" aria-hidden="true" />
       </div>
     );
   }

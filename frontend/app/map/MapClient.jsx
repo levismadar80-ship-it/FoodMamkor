@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MagnifyingGlass, X, MapTrifold, List as ListIcon } from "@phosphor-icons/react";
+import { MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
@@ -458,7 +458,9 @@ export default function MapPage() {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-[16px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]"
             role="status"
           >
-            <div className="text-4xl mb-3" aria-hidden="true">🌱</div>
+            <div className="mb-3 flex justify-center">
+              <Leaf size={44} weight="duotone" className="text-primary" aria-hidden="true" />
+            </div>
             <h3 className="font-headline text-lg font-bold text-site-text mb-2">
               אין עסקים באזור זה עדיין
             </h3>
@@ -559,7 +561,7 @@ export default function MapPage() {
               <MapTrifold size={44} weight="duotone" className="text-primary" />
             </div>
             <h3 className="font-headline text-xl font-bold text-site-text mb-2">
-              אין עסקים באזור המפה הנוכחי 🌱
+              אין עסקים באזור המפה הנוכחי
             </h3>
             <p className="text-site-muted mb-5 max-w-md mx-auto">
               נסי להזיז את המפה, להקטין את הזום, או לשנות את המסננים למעלה.

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -79,12 +79,12 @@ export default function LoginPage() {
             className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center"
             aria-hidden="true"
           >
-            <span className="text-3xl">🌿</span>
+            <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
           <h1 className="font-headline text-2xl font-bold text-site-text mb-1">
             כניסה למהמקור
           </h1>
-          <p className="text-site-muted text-sm">ברוכה הבאה 🌱</p>
+          <p className="text-site-muted text-sm">ברוכה הבאה</p>
         </div>
 
         {/* Email + password form — FIRST per spec */}

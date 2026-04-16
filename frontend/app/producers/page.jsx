@@ -84,7 +84,7 @@ export default async function ProducersIndexPage({ searchParams }) {
 
       {items.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-site-muted mb-4">לא מצאנו עסקים בעמוד הזה 🌱</p>
+          <p className="text-site-muted mb-4">לא מצאנו עסקים בעמוד הזה</p>
           <Link
             href="/producers"
             className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-light transition"
