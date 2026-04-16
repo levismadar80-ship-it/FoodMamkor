@@ -143,31 +143,25 @@ export default function Header() {
 
       {/* Desktop: 3-zone grid. Mobile: plain flex between. */}
       <div className="relative max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
-        {/* ACTIONS — left on desktop (justify-self-start); hidden on mobile.
-            MEH-39: guest → outlined primary pill; logged-in → circular
-            avatar with dropdown (profile / settings / dashboard /
-            admin / logout). When the header is transparent (homepage
-            hero), the pill swaps to white-outlined-white-text so it
-            reads against the dark gradient; the avatar keeps its solid
-            primary fill either way (the circle itself provides local
-            contrast regardless of backdrop). */}
-        <div className="hidden md:flex items-center justify-self-start">
-          {user ? (
-            <UserMenu
-              user={user}
-              logout={logout}
-              open={userMenuOpen}
-              setOpen={setUserMenuOpen}
-              menuRef={userMenuRef}
-              transparent={transparent}
-              textShadow={transparentTextShadow}
-            />
-          ) : (
-            <LoginPill label={t("nav_login")} transparent={transparent} />
-          )}
-        </div>
+        {/* LOGO — col 1 = visual RIGHT in RTL. Mobile: RTL flex-between
+            puts it at the visual right naturally. When transparent the
+            dark `/logo.png` is inverted to white via CSS filter. */}
+        <Link href="/" className="md:justify-self-start shrink-0">
+          <Image
+            src="/logo.png"
+            alt="מהמקור"
+            width={106}
+            height={40}
+            priority
+            style={
+              transparent
+                ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
+                : undefined
+            }
+          />
+        </Link>
 
-        {/* NAV — center on desktop (justify-self-center); hidden on mobile. */}
+        {/* NAV — col 2 = center on desktop; hidden on mobile. */}
         <nav
           className="hidden md:flex items-center gap-6 justify-self-center"
           aria-label="ניווט ראשי"
@@ -195,23 +189,29 @@ export default function Header() {
           })}
         </nav>
 
-        {/* LOGO — right on desktop (justify-self-end) and mobile (RTL
-            flex-between puts it at the visual right). When transparent
-            the dark `/logo.png` is inverted to white via CSS filter. */}
-        <Link href="/" className="md:justify-self-end shrink-0">
-          <Image
-            src="/logo.png"
-            alt="מהמקור"
-            width={106}
-            height={40}
-            priority
-            style={
-              transparent
-                ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
-                : undefined
-            }
-          />
-        </Link>
+        {/* ACTIONS — col 3 = visual LEFT in RTL; hidden on mobile.
+            MEH-39: guest → outlined primary pill; logged-in → circular
+            avatar with dropdown (profile / settings / dashboard /
+            admin / logout). When the header is transparent (homepage
+            hero), the pill swaps to white-outlined-white-text so it
+            reads against the dark gradient; the avatar keeps its solid
+            primary fill either way (the circle itself provides local
+            contrast regardless of backdrop). */}
+        <div className="hidden md:flex items-center justify-self-end">
+          {user ? (
+            <UserMenu
+              user={user}
+              logout={logout}
+              open={userMenuOpen}
+              setOpen={setUserMenuOpen}
+              menuRef={userMenuRef}
+              transparent={transparent}
+              textShadow={transparentTextShadow}
+            />
+          ) : (
+            <LoginPill label={t("nav_login")} transparent={transparent} />
+          )}
+        </div>
 
         {/* Mobile hamburger — left side (RTL flex-between puts it there). */}
         <button
