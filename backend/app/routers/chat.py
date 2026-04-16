@@ -114,7 +114,32 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 
 **שימי לב**
 - אם נשאלת על משהו שלא כתוב כאן (תקלה טכנית, החזר כספי, בעיה עם בעלת עסק) — הפני אותה לטופס יצירת הקשר שבדף "אודות" או דרך הלינק בתחתית האתר.
-- אל תתחזי לבעלת עסק או לצוות האתר — את עוזרת AI."""
+- אל תתחזי לבעלת עסק או לצוות האתר — את עוזרת AI.
+
+**פורמט התשובה**
+ענה בטקסט פשוט בלבד. אל תשתמשי ב-markdown, כוכביות (`**`), bold, כותרות עם `#`, רשימות עם `-` או `*`, או כל סימן פורמט אחר. כתבי כמו שמדברות בצ'אט — רק המילים עצמן."""
+
+
+# Strip any leftover markdown syntax from Claude's response as
+# defense-in-depth (MEH-31/32). The system prompt asks for plain text,
+# but Claude occasionally reaches for **bold** anyway, especially on
+# lists. Stripping `**` first then lone `*` keeps the visible text
+# unchanged while removing the markup that renders as literal
+# asterisks in the chat widget (which doesn't parse markdown).
+def _strip_markdown(text: str) -> str:
+    if not text:
+        return text
+    return (
+        text
+        .replace("**", "")  # bold
+        .replace("__", "")  # alt bold
+        .replace("*", "")   # lone emphasis
+        .replace("_", "")   # alt emphasis (safe: we don't use Hebrew words with _)
+        # Leading "# " heading markers at line starts — rare but defensive.
+        .replace("\n# ", "\n")
+        .replace("\n## ", "\n")
+        .replace("\n### ", "\n")
+    )
 
 
 # ---------- request/response schemas ----------
@@ -222,5 +247,9 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     if not reply:
         # Empty response is not expected but handle it gracefully.
         reply = "לא הצלחתי להבין את השאלה — אפשר לנסות לנסח אותה מחדש?"
+
+    # MEH-31/32: strip any leftover markdown so the UI (which doesn't
+    # parse it) doesn't render literal asterisks / underscores.
+    reply = _strip_markdown(reply)
 
     return ChatResponse(reply=reply)
