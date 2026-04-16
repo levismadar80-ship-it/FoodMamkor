@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star } from "@phosphor-icons/react";
+import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
@@ -274,8 +274,11 @@ export default function MapPage() {
           the site header; background + backdrop-blur so content scrolls
           underneath without visual bleed. */}
       <div className="sticky top-16 z-[50] -mx-4 px-4 py-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 border-b border-border mb-4">
-        {/* City search */}
-        <div className="flex flex-col md:flex-row gap-3 mb-3 overflow-visible">
+        {/* City search + "near me" (MEH-30 #1 — moved inline here from
+            its previous position as an absolute overlay inside the map.
+            Sits next to the city search on desktop, stacks below it on
+            mobile). */}
+        <div className="flex flex-col md:flex-row md:items-end gap-3 mb-3 overflow-visible">
           <div className="w-full md:w-96">
             <CitySearch
               id="map-city-search"
@@ -286,6 +289,15 @@ export default function MapPage() {
               placeholder="חפשי עיר..."
             />
           </div>
+          <button
+            type="button"
+            onClick={() => mapApiRef.current?.goToMyLocation()}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-border text-site-text hover:border-primary hover:text-primary rounded-[10px] px-4 py-2.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
+            aria-label="מרכז מפה על המיקום שלי"
+          >
+            <Crosshair size={16} weight="duotone" className="text-primary" aria-hidden="true" />
+            קרוב אלי
+          </button>
         </div>
 
         {/* MEH-14 chips — category radio group + independent toggles.
@@ -383,7 +395,7 @@ export default function MapPage() {
           regardless of layout pressure from sticky search + chips above. */}
       <div
         id="map-container"
-        className={`relative h-[calc(100vh-64px)] min-h-[60vh] md:h-[60vh] md:min-h-[500px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
+        className={`relative h-[calc(100vh-64px)] min-h-[70vh] md:h-[70vh] md:min-h-[600px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
       >
         <MapComponent
           producers={filteredByCategory}
@@ -498,7 +510,7 @@ export default function MapPage() {
 
         return (
           <div
-            className="md:hidden fixed bottom-16 inset-x-3 z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] overflow-hidden max-h-[55vh] animate-[slide-up_0.25s_ease-out]"
+            className="fixed bottom-16 inset-x-3 md:bottom-6 md:inset-x-auto md:left-6 md:right-auto md:w-[360px] z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] overflow-hidden max-h-[55vh] animate-[slide-up_0.25s_ease-out]"
             role="dialog"
             aria-modal="true"
             aria-label="פרטי העסק שנבחר"

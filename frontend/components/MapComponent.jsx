@@ -6,7 +6,6 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-import { Crosshair } from "@phosphor-icons/react";
 import { styleForProducer } from "@/lib/map-categories";
 
 /**
@@ -160,6 +159,35 @@ export default function MapComponent({
         if (prev) refreshMarkerIcon(prev);
         if (producerId) refreshMarkerIcon(producerId);
       },
+      // MEH-30 #1 — "near me" was an absolute overlay button inside this
+      // component. Button now lives in MapClient (inline with the city
+      // search) and calls this imperative method on success. Geolocation
+      // + the "my location" marker stay here because they operate on
+      // the internal `mapInstanceRef` and `myLocationMarkerRef`.
+      goToMyLocation: () => {
+        if (!mapInstanceRef.current || !navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            const latlng = [latitude, longitude];
+            programmaticMoveRef.current = true;
+            mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
+            if (myLocationMarkerRef.current) {
+              myLocationMarkerRef.current.setLatLng(latlng);
+            } else {
+              myLocationMarkerRef.current = L.circleMarker(latlng, {
+                radius: 8,
+                color: "#2e6853",
+                fillColor: "#2e6853",
+                fillOpacity: 0.85,
+                weight: 2,
+                interactive: true,
+              }).addTo(mapInstanceRef.current);
+            }
+          },
+          () => alert("לא הצלחנו לקבל את המיקום שלך"),
+        );
+      },
       getMap: () => mapInstanceRef.current,
     };
     registerApi(api);
@@ -310,56 +338,7 @@ export default function MapComponent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producers, visitedIds]);
 
-  // MAP_IMPROVEMENTS bug #13 — fixed: single reusable marker for "my
-  // location" instead of stacking a new one per click. Previous
-  // implementation called L.circleMarker().addTo() on every click
-  // without ever removing prior markers, leaking DOM + visual clutter.
-  const goToMyLocation = () => {
-    if (!mapInstanceRef.current || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const latlng = [latitude, longitude];
-        programmaticMoveRef.current = true;
-        mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
-
-        // Reuse the existing marker if we already dropped one; otherwise
-        // create one and cache it for next time.
-        if (myLocationMarkerRef.current) {
-          myLocationMarkerRef.current.setLatLng(latlng);
-        } else {
-          myLocationMarkerRef.current = L.circleMarker(latlng, {
-            radius: 8,
-            color: "#2e6853",
-            fillColor: "#2e6853",
-            fillOpacity: 0.85,
-            weight: 2,
-            interactive: true,
-          })
-            .addTo(mapInstanceRef.current)
-            .bindPopup("המיקום שלי");
-        }
-        myLocationMarkerRef.current.openPopup();
-      },
-      () => alert("לא הצלחנו לקבל את המיקום שלך"),
-    );
-  };
-
   return (
-    <div className="relative">
-      <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
-      {/* docs/archive/MAP_IMPROVEMENTS.md #2 — "near me" — already in place, polished
-          with Phosphor-style pill and flyTo animation above. */}
-      <button
-        type="button"
-        onClick={goToMyLocation}
-        className="absolute bottom-6 left-4 z-[1000] bg-white rounded-[10px] px-3 py-2 shadow-md hover:bg-light transition text-sm flex items-center gap-2 border border-border focus-visible:ring-2 focus-visible:ring-primary/40"
-        title="קרוב אלי"
-        aria-label="מרכז מפה על המיקום שלי"
-      >
-        <Crosshair size={16} weight="duotone" className="text-primary" aria-hidden="true" />
-        קרוב אלי
-      </button>
-    </div>
+    <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
   );
 }

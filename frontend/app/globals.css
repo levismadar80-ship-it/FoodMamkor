@@ -43,13 +43,17 @@ h1, h2, h3 {
 .leaflet-top.leaflet-right {
   z-index: 1000 !important;
 }
-/* MEH-15 + MEH-30 #3: Leaflet attribution (© OpenStreetMap) is required
-   by law and cannot be removed. Keep it subtle — small + faded — and
-   pinned to z-index:1 so it never covers the sticky site header. */
+/* MEH-15 + MEH-30 #2/#3: Leaflet attribution (© OpenStreetMap) is
+   legally required to be VISIBLE. Earlier pass pinned it to z-index:1
+   to keep it below the sticky header — which worked when the map was
+   tall enough that the attribution sat far from the header, but if the
+   map container gets squished (or on pages where it lands high in the
+   viewport), the header logo can cover it. Bump z-index to 1001 (just
+   above the header's 1000) so the attribution is never hidden. */
 .leaflet-control-attribution {
   font-size: 10px;
   opacity: 0.6;
-  z-index: 1 !important;
+  z-index: 1001 !important;
 }
 
 /* Fade-in on scroll — set initial state, hook toggles it */
