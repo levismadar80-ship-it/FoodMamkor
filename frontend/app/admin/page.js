@@ -156,7 +156,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
           {data.pending_producers.length === 0 ? (
-            <p className="text-sm text-text-secondary">אין בקשות ממתינות 🎉</p>
+            <p className="text-sm text-text-secondary">אין בקשות ממתינות</p>
           ) : (
             <ul className="space-y-2">
               {data.pending_producers.map((p) => (

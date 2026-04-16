@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { MapPin } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
@@ -308,7 +309,10 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
             <div className="text-sm space-y-2 text-site-text">
               <p className="whitespace-pre-wrap">{ex.description}</p>
               {ex.address && (
-                <p className="text-site-muted">📍 {ex.address}</p>
+                <p className="text-site-muted inline-flex items-center gap-1">
+                  <MapPin size={14} weight="duotone" className="text-primary" aria-hidden="true" />
+                  {ex.address}
+                </p>
               )}
               {ex.price_per_person != null && (
                 <p className="text-site-muted">

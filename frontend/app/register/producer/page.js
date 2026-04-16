@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
@@ -133,8 +134,9 @@ function RegisterProducerPageBody() {
 
         {/* MEH-22 — prefill banner shown when a token fetched data OK. */}
         {prefillToken && prefillApplied && (
-          <div className="bg-light text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm">
-            🌿 מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.
+          <div className="bg-light text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm inline-flex items-center gap-2">
+            <Leaf size={16} weight="duotone" aria-hidden="true" className="shrink-0" />
+            מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.
           </div>
         )}
 
@@ -443,7 +445,9 @@ function RegisterProducerPageBody() {
         {/* Step 4: Confirmation + MEH-22 referral ask */}
         {step === 4 && (
           <div className="text-center py-8">
-            <div className="text-6xl mb-4">✅</div>
+            <div className="mb-4 flex justify-center">
+              <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
+            </div>
             <h2 className="text-2xl font-bold mb-2">הבקשה נשלחה!</h2>
             <p className="text-text-secondary mb-6">
               הבקשה שלך ממתינה לאישור. נעדכן אותך ברגע שהעסק יאושר.
@@ -462,7 +466,8 @@ function RegisterProducerPageBody() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-[12px] hover:bg-[#1ea855] transition font-medium mb-3"
             >
-              📲 הזמיני שכנה להצטרף
+              <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
+              הזמיני שכנה להצטרף
             </a>
             <div>
               <button

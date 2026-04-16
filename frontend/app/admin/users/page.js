@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 export default function AdminUsersPage() {
@@ -151,7 +152,10 @@ export default function AdminUsersPage() {
                         ) : (
                           <ul className="space-y-1">
                             {favorites[u.id].map((f) => (
-                              <li key={f.producer_id}>❤️ {f.producer_name}</li>
+                              <li key={f.producer_id} className="inline-flex items-center gap-1">
+                                <Heart size={12} weight="fill" className="text-red-500" aria-hidden="true" />
+                                {f.producer_name}
+                              </li>
                             ))}
                           </ul>
                         )}

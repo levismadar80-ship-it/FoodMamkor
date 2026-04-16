@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Phone } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
@@ -148,9 +149,10 @@ export default function AdminOutreachPage() {
         <button
           type="button"
           onClick={() => setScriptOpen(true)}
-          className="text-sm text-primary hover:underline"
+          className="text-sm text-primary hover:underline inline-flex items-center gap-1.5"
         >
-          📞 תסריט שיחה
+          <Phone size={16} weight="duotone" aria-hidden="true" />
+          תסריט שיחה
         </button>
       </div>
 
@@ -473,7 +475,10 @@ function ScriptModal({ onClose, script }) {
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-[16px] p-6 max-w-lg w-full"
       >
-        <h2 className="font-headline text-xl font-bold mb-3">📞 תסריט שיחה</h2>
+        <h2 className="font-headline text-xl font-bold mb-3 inline-flex items-center gap-2">
+          <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
+          תסריט שיחה
+        </h2>
         <pre className="whitespace-pre-wrap text-sm text-site-text font-body leading-relaxed">
           {script}
         </pre>
