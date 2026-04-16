@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Cow, Leaf, Package, Seal, Truck, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
+import Pagination from "@/components/Pagination";
+import { clampPage } from "@/lib/pagination";
 
 export default function ProducersPageWrapper() {
   return (
@@ -23,6 +25,9 @@ function ProducersAdminPage() {
   const [producerSearch, setProducerSearch] = useState("");
   const [producerStatus, setProducerStatus] = useState(initialStatus);
   const [incompleteOnly, setIncompleteOnly] = useState(false);
+  // MEH-23 — client-side pagination on the admin producers table.
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
   const [importPreview, setImportPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
@@ -133,6 +138,15 @@ function ProducersAdminPage() {
   const visible = incompleteOnly
     ? annotated.filter((p) => p._completeness.priority !== "green")
     : annotated;
+  // MEH-23 — paginate the filtered list. Re-clamp whenever visible or
+  // perPage changes so a filter reducing the list doesn't leave the
+  // user stranded on an out-of-range page.
+  const totalPages = Math.max(1, Math.ceil(visible.length / perPage));
+  const safePage = clampPage(page, totalPages);
+  const pagedVisible = visible.slice(
+    (safePage - 1) * perPage,
+    safePage * perPage,
+  );
 
   return (
     <div className="space-y-5">
@@ -288,14 +302,14 @@ function ProducersAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.length === 0 && (
+              {pagedVisible.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-text-secondary">
                     {incompleteOnly ? "כל בתי העסק שלמים 🎉" : "אין בתי עסק להצגה"}
                   </td>
                 </tr>
               )}
-              {visible.map((p) => {
+              {pagedVisible.map((p) => {
                 const { missing, priority } = p._completeness;
                 const badge =
                   priority === "red" ? (
@@ -375,6 +389,21 @@ function ProducersAdminPage() {
             </tbody>
           </table>
         </div>
+        {/* MEH-23 — numbered pagination + per-page selector. */}
+        {visible.length > perPage && (
+          <div className="px-4 py-3 border-t border-border">
+            <Pagination
+              page={safePage}
+              totalPages={totalPages}
+              onChange={setPage}
+              perPage={perPage}
+              onPerPageChange={(n) => {
+                setPerPage(n);
+                setPage(1);
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

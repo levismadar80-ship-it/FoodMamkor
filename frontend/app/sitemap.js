@@ -33,6 +33,9 @@ export default async function sitemap() {
 
   // Producer pages — prefer slug URLs (SEO-friendly) when available.
   let producerPages = [];
+  // MEH-23 — also emit /producers?page=1..N so Google can walk the
+  // paginated index. 24 per page mirrors the SSR route.
+  let producerIndexPages = [];
   try {
     const res = await fetch(`${API_URL}/producers`);
     if (res.ok) {
@@ -43,6 +46,17 @@ export default async function sitemap() {
         priority: 0.9,
         changeFrequency: "weekly",
       }));
+
+      const PER_PAGE = 24;
+      const totalPages = Math.max(1, Math.ceil(producers.length / PER_PAGE));
+      for (let p = 1; p <= totalPages; p++) {
+        producerIndexPages.push({
+          url: p === 1 ? `${SITE_URL}/producers` : `${SITE_URL}/producers?page=${p}`,
+          lastModified: now,
+          priority: 0.8,
+          changeFrequency: "daily",
+        });
+      }
     }
   } catch {
     // API not available during build — skip dynamic pages
@@ -65,5 +79,5 @@ export default async function sitemap() {
     // ignore
   }
 
-  return [...staticPages, ...producerPages, ...eventPages];
+  return [...staticPages, ...producerIndexPages, ...producerPages, ...eventPages];
 }
