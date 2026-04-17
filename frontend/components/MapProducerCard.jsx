@@ -92,18 +92,16 @@ export default function MapProducerCard({ producer, active, onClick }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 mt-1.5">
-          {waPhone && (
-            <a
-              href={`https://wa.me/${waPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => { e.stopPropagation(); try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }}
-              className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center shrink-0"
-              aria-label="WhatsApp"
-            >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
-            </a>
-          )}
+          <a
+            href={waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}` : baseHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => { e.stopPropagation(); if (waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
+            className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center shrink-0"
+            aria-label="WhatsApp"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
+          </a>
           <Link
             href={baseHref}
             className="text-primary text-[13px] font-medium hover:underline"

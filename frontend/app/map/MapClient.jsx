@@ -71,6 +71,7 @@ export default function MapPage() {
   });
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [sortBy, setSortBy] = useState("default");
+  const [legendOpen, setLegendOpen] = useState(false);
   const userCity = useUserCity();
 
   // MEH-14: mobile map/list toggle. Desktop ignores this (always shows both).
@@ -494,6 +495,26 @@ export default function MapPage() {
               <CitySearch id="map-city-search-desktop" label="סנן לפי עיר" value={cityFilter} onChange={setCityFilter} onSubmit={handleCityFilter} placeholder="חפשי עיר..." />
             </div>
             {filterChipsBar}
+            {/* Legend — collapsible, closed by default, inside sidebar */}
+            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-2">
+              <summary className="text-[11px] text-site-muted tracking-wider font-body uppercase cursor-pointer hover:text-site-text transition select-none">
+                קטגוריות {legendOpen ? "▲" : "▼"}
+              </summary>
+              <div className="mt-1 space-y-0.5">
+                {CATEGORY_LEGEND.map((cat) => {
+                  const catActive = isCategoryActive(cat.name);
+                  return (
+                    <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
+                      <span className="text-xs text-site-text">{cat.emoji} {cat.name.split(",")[0]}</span>
+                    </button>
+                  );
+                })}
+                {activeCategoryNames !== null && (
+                  <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-[13px] text-primary hover:underline mt-1 pt-1 border-t border-border">הצגי הכל</button>
+                )}
+              </div>
+            </details>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex items-center justify-between mb-3">
@@ -516,21 +537,6 @@ export default function MapPage() {
         <div className="relative">
           {mapPane}
           {desktopMiniPopup}
-          <div className="hidden lg:block absolute bottom-4 left-4 z-[800] bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.1)] border border-border p-3 max-w-[200px]" role="group" aria-label="סינון לפי קטגוריה">
-            <div className="text-[11px] text-site-muted tracking-wider mb-2 font-body uppercase">קטגוריות</div>
-            {CATEGORY_LEGEND.map((cat) => {
-              const catActive = isCategoryActive(cat.name);
-              return (
-                <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
-                  <span className="text-xs text-site-text">{cat.emoji} {cat.name.split(",")[0]}</span>
-                </button>
-              );
-            })}
-            {activeCategoryNames !== null && (
-              <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-[13px] text-primary hover:underline mt-2 pt-2 border-t border-border">הצגי הכל</button>
-            )}
-          </div>
         </div>
       </div>
 

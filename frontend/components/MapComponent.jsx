@@ -365,26 +365,10 @@ export default function MapComponent({
       markersRef.current.set(p.id, { marker, producer: p });
     });
 
-    // MAP_IMPROVEMENTS #11 — fit bounds to actual producers on first load.
-    // The default view ([31.5, 34.8] zoom 8) is the whole country, which
-    // leaves most users staring at empty ocean. Fit once when data first
-    // arrives; don't re-fit on subsequent filter changes so the user's
-    // panning isn't yanked back. Guarded by programmaticMoveRef so the
-    // resulting moveend doesn't pop the "search this area" banner.
-    if (!hasFitBoundsRef.current && markersRef.current.size > 0) {
-      const latlngs = Array.from(markersRef.current.values()).map((entry) =>
-        entry.marker.getLatLng(),
-      );
-      const bounds = L.latLngBounds(latlngs);
-      if (bounds.isValid()) {
-        programmaticMoveRef.current = true;
-        mapInstanceRef.current.fitBounds(bounds, {
-          padding: [40, 40],
-          maxZoom: 12,
-        });
-      }
-      hasFitBoundsRef.current = true;
-    }
+    // MEH-58 QA: removed auto-fitBounds that overrode the initial center
+    // [31.7683, 35.2137] zoom 8 (full-country view). The fitBounds was
+    // centering on wherever the producers clustered (often northern Israel
+    // when test data was sparse), making the map look off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producers, visitedIds]);
 
