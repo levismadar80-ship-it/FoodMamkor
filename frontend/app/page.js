@@ -19,6 +19,9 @@ import FadeInSection from "@/components/FadeInSection";
 import { showToast } from "@/lib/toast";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { useUserCity } from "@/lib/use-user-city";
+import LocationModal from "@/components/LocationModal";
+import LocationBanner from "@/components/LocationBanner";
 
 const PAGE_SIZE = 8;
 
@@ -94,6 +97,8 @@ export default function HomePage() {
   const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
+  const { city: userCity, setCity: setUserCity } = useUserCity();
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
@@ -247,30 +252,18 @@ export default function HomePage() {
   };
 
   const handleNearMe = () => {
-    if (!navigator.geolocation) {
-      showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
+    if (userCity) {
+      loadProducers({ delivery_city: userCity, ...chipParams() });
+      document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-    setGeoLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        // MEH-12: cache for the session so all cards can show
-        // distance ("3.2 ק"מ ממך") without re-prompting.
-        setUserLocation(pos.coords.latitude, pos.coords.longitude);
-        loadProducers({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          radius_km: 15,
-          ...chipParams(),
-        });
-        setGeoLoading(false);
-        document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
-      },
-      () => {
-        setGeoLoading(false);
-        showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
-      },
-    );
+    setLocationModalOpen(true);
+  };
+
+  const handleCitySelected = (city) => {
+    setUserCity(city);
+    loadProducers({ delivery_city: city, ...chipParams() });
+    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const visibleProducers = producers.slice(0, visibleCount);
@@ -421,6 +414,18 @@ export default function HomePage() {
           מכל רחבי הארץ
         </p>
       </section>
+
+      {/* MEH-41: location banner — appears after 3s if no city saved */}
+      <div className="mt-6">
+        <LocationBanner hasCity={!!userCity} onOpenModal={() => setLocationModalOpen(true)} />
+      </div>
+
+      {/* MEH-41: location modal — shared between hero button + banner */}
+      <LocationModal
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelectCity={handleCitySelected}
+      />
 
       {/* =========================
           CATEGORY GRID

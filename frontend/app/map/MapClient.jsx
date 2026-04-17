@@ -8,6 +8,8 @@ import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
+import LocationModal from "@/components/LocationModal";
+import { useUserCity } from "@/lib/use-user-city";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -29,10 +31,22 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ),
 });
 
+// Rough lat/lng centers for the 4 popular cities (for map.flyTo on
+// city selection from the location modal). NOT for distance calc —
+// the Haversine SQL on the backend handles that.
+const CITY_COORDS = {
+  "תל אביב": [32.0853, 34.7818],
+  "ירושלים": [31.7683, 35.2137],
+  "חיפה": [32.7940, 34.9896],
+  "באר שבע": [31.2530, 34.7915],
+};
+
 export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cityFilter, setCityFilter] = useState("");
+  const { city: userCity, setCity: setUserCity } = useUserCity();
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
   // `mapBounds` is the map's live viewport (updates on every pan/zoom).
   // `committedBounds` is the bounds the grid is actually filtered by —
   // only updated when the user explicitly clicks "חפשי באזור זה".
@@ -87,6 +101,26 @@ export default function MapPage() {
     loadProducers();
     setVisitedIds(getRecentlyViewedIds());
   }, []);
+
+  // MEH-41: prompt for city on first /map visit when no city is saved.
+  useEffect(() => {
+    if (!userCity) {
+      const timer = setTimeout(() => setLocationModalOpen(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMapCitySelected = useCallback((city) => {
+    setUserCity(city);
+    setCityFilter(city);
+    loadProducers({ delivery_city: city });
+    const coords = CITY_COORDS[city];
+    if (coords) {
+      setTimeout(() => {
+        mapApiRef.current?.getMap()?.flyTo(coords, 12, { duration: 1.2 });
+      }, 300);
+    }
+  }, [setUserCity]);
 
   // MEH-30 follow-up: when the bottom sheet is open, mark the body so
   // CSS can hide the CookieBanner (which otherwise peeks below the
@@ -695,6 +729,13 @@ export default function MapPage() {
           </div>
         )}
       </div>
+
+      {/* MEH-41: location modal — show on first visit when no city saved */}
+      <LocationModal
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelectCity={handleMapCitySelected}
+      />
     </div>
   );
 }
