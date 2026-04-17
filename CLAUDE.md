@@ -65,6 +65,9 @@
     - [`.ai/diagrams/`](./.ai/diagrams/) — if DB schema, auth flow, or API routes changed
 12. **After every PR that touches `backend/app/routers/**`, `backend/app/models/**`, or `backend/app/auth.py` — update the `## Architecture Diagrams` section below.** These inline Mermaid diagrams live in CLAUDE.md itself so every session sees them immediately (before any fetch/read); if they drift from the code, they become actively misleading. This is in addition to rule 11's `.ai/diagrams/` requirement (which covers the long-form versions). The trigger is file-path specific — editing a non-auth backend file doesn't require a diagram update.
 13. **Context reset protocol.** When context usage hits **≥60%** or at a natural task boundary (PR merged, feature shipped): run `/session-save` to write `session-state.md` (current branch, open PR URL, todos, active decisions), then `/clear`, then `/session-resume` on next turn. Auto-compact is a last resort — it silently drops plan details. Pair with rule 7's 40% `/compact` trigger: below 40% keep working, 40–60% `/compact`, ≥60% save + `/clear`.
+14. **Prompt compression (Caveman style).** Specs → keywords + values only, no filler words. Reasoning / context → full sentences ok. Apply to all future prompts in this repo.
+    - Good: `Thumb RIGHT 88px (72px <1180). Cloudinary. Placeholder #EAF3DE.` / Bad: `The thumbnail should be positioned on the right side at 88 pixels wide.`
+    - Good: `Trust strip MAX 2. if verified → ✓+rating. if not → rating only. Skip response_time.` / Bad: `The trust strip should show a maximum of two items. If the producer is verified, show the checkmark and rating.`
 
 ## Regression prevention rules
 1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
@@ -120,7 +123,7 @@
 - `/session-resume` — read back `session-state.md` and restore the plan after `/clear`.
 
 ## How to update this file
-- Keep it ≤ 175 lines (raised from 150 in April 2026 when regression prevention rules + PR approval guide were added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
+- Keep it ≤ 180 lines (raised from 175 in April 2026 when rule 14 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
 
 ## Architecture Diagrams
