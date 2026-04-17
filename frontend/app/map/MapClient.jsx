@@ -254,12 +254,18 @@ export default function MapPage() {
     setMapMoved(false);
     const centerRadius = boundsToCenterRadius(mapBounds);
     if (centerRadius) {
-      loadProducers({
+      const params = {
         ...buildParams(),
         lat: centerRadius.lat,
         lng: centerRadius.lng,
         radius_km: centerRadius.radius_km,
-      });
+      };
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[חפשי באזור זה] GET /producers params:", params);
+      }
+      loadProducers(params);
+    } else if (process.env.NODE_ENV !== "production") {
+      console.warn("[חפשי באזור זה] mapBounds invalid:", mapBounds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
@@ -353,7 +359,7 @@ export default function MapPage() {
             can lose inherited RTL direction on some browsers and flip the
             order so the reset sentinel lands at the left edge. */}
         <div
-          className="flex gap-2 overflow-x-auto pb-1 -mx-1 pl-1 pr-4 scrollbar-hide"
+          className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide"
           role="toolbar"
           aria-label="סינון מפה"
           dir="rtl"
@@ -549,6 +555,7 @@ export default function MapPage() {
         const badges = [];
         if (p.verified) badges.push("✓ מאומת");
         if (p.is_organic) badges.push("🌿 אורגני");
+        if (p.is_kosher) badges.push("✡️ כשר");
         const rating = Number(p.avg_rating || 0);
         const showRating = rating > 0;
         const priceLabel = p.starting_price_label;
@@ -614,11 +621,11 @@ export default function MapPage() {
             <div style={{ padding: "12px 14px" }}>
               <h3
                 className="font-headline font-bold text-site-text line-clamp-1"
-                style={{ fontSize: "17px" }}
+                style={{ fontSize: "18px" }}
               >
                 {p.name}
               </h3>
-              <p style={{ fontSize: "12px", color: "#6B6B6B", marginTop: 2 }}>
+              <p style={{ fontSize: "13px", color: "#6B6B6B", marginTop: 2 }}>
                 {p.city}
                 {category?.name ? ` · ${category.name}` : ""}
               </p>

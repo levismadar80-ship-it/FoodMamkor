@@ -78,6 +78,7 @@ and the five PRs below have been backfilled.
 ---
 
 ## לוג עדכונים
+- **2026-04-17 · Map UX overhaul (4 fixes):** bottom sheet badges (כשר added), font sizes aligned (18px name, 13px city), filter chips padding widened (-mx-4 px-4), "חפשי באזור זה" debug logging added, marker touch target bumped from 32px to 44px for mobile, popupAnchor remnant removed.
 - **2026-04-08 · Additional fixes + emoji → Phosphor icons:**
   - **Fix 2 — /about parallax quote:** שונה מ-"כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת" ל-**"כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"**.
   - **Fix 4 — /map search bar overflow:** הוספתי `min-w-0` ל-container של `CitySearch` (שני מקומות: root + flex row) + ל-`<input>` עצמו, וכרטוף את הסוגר ב-`/map` ב-`<div className="w-full md:w-72">` חיצוני עם `overflow-visible` ברמת ה-filters row. סיבה: בלי `min-w-0` flex children לא מתכווצים מתחת לרוחב התוכן שלהם, והקלט היה מגלש החוצה ב-viewports צרים.

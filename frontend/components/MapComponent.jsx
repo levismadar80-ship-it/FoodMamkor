@@ -44,8 +44,8 @@ function createCategoryMarker(
   { active = false, hovered = false, visited = false } = {},
 ) {
   const { color, emoji } = styleForProducer(producer);
-  const size = active ? 44 : hovered ? 38 : 32;
-  const iconOffset = active ? 22 : hovered ? 19 : 16;
+  const size = active ? 52 : hovered ? 48 : 44;
+  const iconOffset = active ? 26 : hovered ? 24 : 22;
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.55 : 1;
   const borderColor = dimmed ? "#9ca3af" : color;
@@ -76,7 +76,7 @@ function createCategoryMarker(
     className: "mehamakor-marker-wrap",
     iconSize: [size, size],
     iconAnchor: [iconOffset, size],
-    popupAnchor: [0, -size],
+    // popupAnchor removed — marker click goes to bottom sheet, not a Leaflet popup
   });
 }
 
