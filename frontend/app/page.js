@@ -5,10 +5,13 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import { getRecentlyViewedIds } from "@/lib/recently-viewed";
+import { setUserLocation } from "@/lib/user-location";
 import { motion } from "framer-motion";
 import { Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
+import SmartSearch from "@/components/SmartSearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -66,8 +69,15 @@ export default function HomePage() {
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [searchQuery, setSearchQuery] = useState("");
+  // MEH-23 — persist visibleCount + scrollY across navigations so the
+  // "Load more" expansion isn't lost when a user opens a producer and
+  // returns via the back button. Read on mount only; subsequent changes
+  // flow through the setter below.
+  const [visibleCount, setVisibleCount] = useState(() => {
+    if (typeof window === "undefined") return PAGE_SIZE;
+    const saved = Number(window.sessionStorage?.getItem("home_visible_count"));
+    return Number.isFinite(saved) && saved >= PAGE_SIZE ? saved : PAGE_SIZE;
+  });
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -84,16 +94,54 @@ export default function HomePage() {
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
     api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
-    // Task 13: load recently viewed producers from localStorage
-    try {
-      const ids = JSON.parse(localStorage.getItem("recently_viewed") || "[]");
-      if (ids.length > 0) {
-        Promise.all(ids.map((id) => api.get(`/producers/${id}`).then((r) => r.data).catch(() => null)))
-          .then((results) => setRecentlyViewed(results.filter(Boolean)));
-      }
-    } catch {
-      // localStorage unavailable
+    // Task 13 + MEH-11: load recently viewed producer IDs from
+    // localStorage. The helper applies a 7-day TTL and gracefully
+    // ignores legacy storage shapes.
+    const ids = getRecentlyViewedIds();
+    if (ids.length > 0) {
+      Promise.all(
+        ids.map((id) =>
+          api.get(`/producers/${id}`).then((r) => r.data).catch(() => null),
+        ),
+      ).then((results) => setRecentlyViewed(results.filter(Boolean)));
     }
+  }, []);
+
+  // MEH-23 — write visibleCount + scrollY to sessionStorage whenever
+  // the user expands the list or scrolls. Cheap: debounced via the
+  // browser's scroll passive listener; storage writes are string ops.
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem("home_visible_count", String(visibleCount));
+    } catch {
+      // private mode — ignore
+    }
+  }, [visibleCount]);
+
+  // Restore scroll on mount when returning from a producer page. We
+  // defer to rAF * 2 so the grid has a chance to render the expanded
+  // visibleCount before we call scrollTo.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedY = Number(window.sessionStorage.getItem("home_scroll_y"));
+    if (!Number.isFinite(savedY) || savedY <= 0) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo(0, savedY));
+    });
+  }, []);
+
+  // Stash scrollY just before the user navigates away (pagehide fires
+  // on both bfcache + hard unload). Read-back happens on next mount.
+  useEffect(() => {
+    const stash = () => {
+      try {
+        window.sessionStorage.setItem("home_scroll_y", String(window.scrollY));
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener("pagehide", stash);
+    return () => window.removeEventListener("pagehide", stash);
   }, []);
 
   const loadProducers = (params = {}) => {
@@ -102,20 +150,14 @@ export default function HomePage() {
       .get("/producers", { params })
       .then((r) => {
         setProducers(r.data);
-        setVisibleCount(PAGE_SIZE);
+        // Only reset visibleCount when the user actually changed filters
+        // (i.e. was given `params`). The initial load and the back-from-
+        // producer load should keep the restored visibleCount.
+        if (Object.keys(params).length > 0) {
+          setVisibleCount(PAGE_SIZE);
+        }
       })
       .finally(() => setProducersLoading(false));
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const cp = chipParams();
-    if (!searchQuery.trim()) {
-      loadProducers(cp);
-    } else {
-      loadProducers({ delivery_city: searchQuery, ...cp });
-    }
-    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleCategoryCardClick = (card) => {
@@ -167,6 +209,9 @@ export default function HomePage() {
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // MEH-12: cache for the session so all cards can show
+        // distance ("3.2 ק"מ ממך") without re-prompting.
+        setUserLocation(pos.coords.latitude, pos.coords.longitude);
         loadProducers({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -250,11 +295,10 @@ export default function HomePage() {
           </motion.p>
 
           {/* Pill search */}
-          <motion.form
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            onSubmit={handleSearch}
             role="search"
             className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2 px-5 py-3"
             style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
@@ -268,25 +312,16 @@ export default function HomePage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <label htmlFor="hero-search" className="sr-only">
-              {t("search_sr_label")}
-            </label>
-            <input
-              id="hero-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+            {/* MEH-13: smart search with autocomplete. Enter-without-
+                selection routes to /search?q=... so the old city-only
+                handleSearch fallback is retired — the results page
+                handles producer + product matches together. */}
+            <SmartSearch
               placeholder={t("search_placeholder")}
-              className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+              srLabel={t("search_sr_label")}
+              className="flex-1"
             />
-            <button
-              type="submit"
-              className="sr-only"
-              aria-label="בצע חיפוש"
-            >
-              חיפוש
-            </button>
-          </motion.form>
+          </motion.div>
 
           {/* "Near me" geolocation button — task 11 */}
           <motion.div
@@ -388,7 +423,7 @@ export default function HomePage() {
               />
               <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
                 {LineArt && <LineArt size={64} className="w-8 h-8 md:w-16 md:h-16" stroke="white" strokeWidth={1.75} />}
-                <h3 className="font-headline font-bold mt-2 md:mt-3 text-sm md:text-[22px]">
+                <h3 className="font-headline font-bold mt-2 md:mt-3 text-[22px]">
                   {card.name}
                 </h3>
               </div>
@@ -463,7 +498,7 @@ export default function HomePage() {
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pb-10">
           <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
-            ביקרת לאחרונה
+            צפית לאחרונה
           </h2>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             {recentlyViewed.map((p) => {
@@ -561,6 +596,16 @@ export default function HomePage() {
           <SkeletonProducerGrid count={8} />
         ) : (
           <>
+            {/* MEH-23 — "מציגים X מתוך Y" counter above the grid. */}
+            {producers.length > 0 && (
+              <p
+                className="text-sm text-site-muted mb-3"
+                data-testid="producers-counter"
+                aria-live="polite"
+              >
+                מציגים {Math.min(visibleCount, producers.length)} מתוך {producers.length}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
               {visibleProducers.map((p, idx) => (
                 <motion.div

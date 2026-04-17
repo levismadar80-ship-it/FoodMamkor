@@ -156,7 +156,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
           {data.pending_producers.length === 0 ? (
-            <p className="text-sm text-text-secondary">אין בקשות ממתינות 🎉</p>
+            <p className="text-sm text-text-secondary">אין בקשות ממתינות</p>
           ) : (
             <ul className="space-y-2">
               {data.pending_producers.map((p) => (
@@ -376,7 +376,7 @@ function ServerHealthPanel({ health }) {
           </p>
         </div>
       </div>
-      <p className="text-[11px] text-text-secondary mt-3 leading-snug">
+      <p className="text-[13px] text-text-secondary mt-3 leading-snug">
         ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md).
       </p>
     </div>

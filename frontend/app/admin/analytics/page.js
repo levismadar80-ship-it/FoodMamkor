@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
@@ -114,7 +115,10 @@ export default function AdminAnalyticsPage() {
               {data.top_producers.map((p) => (
                 <li key={p.id} className="flex justify-between border-b border-border pb-1.5">
                   <span>{p.name}</span>
-                  <span className="text-text-secondary">{p.favorites} ❤️</span>
+                  <span className="text-text-secondary inline-flex items-center gap-1">
+                    {p.favorites}
+                    <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
+                  </span>
                 </li>
               ))}
             </ul>

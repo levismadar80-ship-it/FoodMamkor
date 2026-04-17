@@ -160,4 +160,135 @@ describe("ProducerCard", () => {
     const mainLink = links.find((l) => l.getAttribute("href")?.includes("/producer/2"));
     expect(mainLink).toBeTruthy();
   });
+
+  // ----- MEH-12 availability badge -----
+
+  it("does NOT render availability badge when status is 'available' (default)", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_status: "available" }} />,
+    );
+    expect(screen.queryByText("פתוח להזמנות")).not.toBeInTheDocument();
+  });
+
+  it("renders the 'עמוס כרגע' badge when status is 'full'", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_status: "full" }} />,
+    );
+    expect(screen.getByText("עמוס כרגע")).toBeInTheDocument();
+  });
+
+  it("renders the 'בהפסקה' badge when status is 'vacation'", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_status: "vacation" }} />,
+    );
+    expect(screen.getByText("בהפסקה")).toBeInTheDocument();
+  });
+
+  // ----- MEH-13 distance pill -----
+
+  it("does NOT render distance pill when user has not granted geolocation", () => {
+    window.sessionStorage.clear();
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, lat: 32.0853, lng: 34.7818 }}
+      />,
+    );
+    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render distance pill when producer has no lat/lng", () => {
+    window.sessionStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
+    window.sessionStorage.clear();
+  });
+
+  it("renders distance pill when both userLoc and producer coords exist", () => {
+    // Tel Aviv → Jerusalem = ~54 km
+    window.sessionStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }}
+      />,
+    );
+    const pill = screen.getByTestId("distance-pill");
+    expect(pill).toBeInTheDocument();
+    expect(pill.textContent).toMatch(/ק"מ ממך$/);
+    window.sessionStorage.clear();
+  });
+
+  // ----- MEH-17 primary-method highlight -----
+
+  it("marks the WhatsApp icon as primary when primary_contact_method='whatsapp'", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, primary_contact_method: "whatsapp" }}
+      />,
+    );
+    const whatsappLink = screen.getByLabelText("שלח הודעה בווטסאפ");
+    expect(whatsappLink).toHaveAttribute("data-primary", "true");
+    const phoneLink = screen.getByLabelText("התקשר לבית העסק");
+    expect(phoneLink).not.toHaveAttribute("data-primary");
+  });
+
+  it("marks the phone icon as primary when primary_contact_method='phone'", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, primary_contact_method: "phone" }}
+      />,
+    );
+    const phoneLink = screen.getByLabelText("התקשר לבית העסק");
+    expect(phoneLink).toHaveAttribute("data-primary", "true");
+    const whatsappLink = screen.getByLabelText("שלח הודעה בווטסאפ");
+    expect(whatsappLink).not.toHaveAttribute("data-primary");
+  });
+
+  it("renders an email icon when contact_email is set", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          contact_email: "hello@example.com",
+          primary_contact_method: "email",
+        }}
+      />,
+    );
+    const emailLink = screen.getByLabelText("שלח אימייל");
+    expect(emailLink).toHaveAttribute("href", "mailto:hello@example.com");
+    expect(emailLink).toHaveAttribute("data-primary", "true");
+  });
+
+  // ----- MEH-18 badge row -----
+
+  it("renders the unified BadgeRow with 'מאומת' when is_verified is true", () => {
+    render(<ProducerCard producer={{ ...fullProducer, is_verified: true }} />);
+    // Use the <button> inside BadgeRow (the old inline overlay was a <span>).
+    const badge = screen.getByRole("button", { name: /מאומת/ });
+    expect(badge).toHaveAttribute("data-badge", "verified");
+  });
+
+  it("truncates the badge row to max 2 on the card (priority order)", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          is_verified: true,
+          is_recommended: true,
+          days_since_created: 5,
+          delivery_count: 3,
+          products_count: 10,
+        }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /מומלץ/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /חדש/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /משלוח/ })).not.toBeInTheDocument();
+  });
 });

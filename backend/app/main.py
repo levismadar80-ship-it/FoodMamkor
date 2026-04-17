@@ -15,7 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.rate_limit import limiter
-from app.routers import admin, admin_experiences, admin_extra, auth, chat, events, experiences, favorites, home_products, marketing, producer_me, producers, recipes, reports, reviews, upload
+from app.routers import admin, admin_experiences, admin_extra, admin_outreach, auth, chat, events, experiences, favorites, home_products, marketing, producer_me, producers, recipes, reports, reviews, search, upload, users_me
 
 # Force stdout to be unbuffered so Railway's log panel shows startup
 # messages in real time. Without this, Python buffers until the process
@@ -91,6 +91,14 @@ def _migrate_columns(engine):
         # feature/producer-analytics — DAU tracking on /admin/dashboard.
         # Nullable so pre-existing users don't get backfilled to NOW().
         ("users", "last_active_at", "TIMESTAMP"),
+        # MEH-12 — durable availability status (available | full | vacation).
+        ("producers", "availability_status", "VARCHAR(20) DEFAULT 'available'"),
+        # MEH-17 — flexible contact methods. Producers pick one of
+        # whatsapp | phone | website | email as the CTA channel.
+        ("producers", "primary_contact_method", "VARCHAR(20) DEFAULT 'whatsapp'"),
+        ("producers", "contact_email", "VARCHAR(200)"),
+        # MEH-18 — manual editorial "מומלץ" badge.
+        ("producers", "is_recommended", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
@@ -284,6 +292,11 @@ app.include_router(events.router)
 app.include_router(experiences.router)
 app.include_router(admin_experiences.router)
 app.include_router(reviews.router)
+app.include_router(search.router)
+app.include_router(users_me.router)
+# MEH-22 — admin outreach + the public prefill lookup it pairs with.
+app.include_router(admin_outreach.router)
+app.include_router(admin_outreach.prefill_router)
 app.include_router(chat.router)
 
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Leaf, MapPin } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -74,7 +75,9 @@ export default function ExperienceDetailClient() {
   if (notFound || !ex) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-5xl mb-4">🌱</p>
+        <div className="mb-4 flex justify-center">
+          <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+        </div>
         <p className="text-site-muted mb-6">לא מצאנו את החוויה הזו</p>
         <Link href="/experiences" className="text-primary hover:underline">
           ← חזרה לכל החוויות
@@ -148,7 +151,7 @@ export default function ExperienceDetailClient() {
           </p>
           {ex.city && (
             <p className="flex items-center gap-2">
-              <span aria-hidden>📍</span>
+              <MapPin size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
               {ex.city}
               {ex.address && ` · ${ex.address}`}
             </p>

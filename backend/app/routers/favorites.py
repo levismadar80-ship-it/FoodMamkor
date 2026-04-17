@@ -25,7 +25,7 @@ def get_favorites(user: User = Depends(get_current_user), db: Session = Depends(
 def add_favorite(producer_id: UUID, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     existing = db.query(Favorite).filter(
         Favorite.user_id == user.id, Favorite.producer_id == producer_id

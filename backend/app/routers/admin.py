@@ -116,6 +116,9 @@ def admin_create_producer(
         instagram=data.instagram,
         website=data.website,
         whatsapp_group=data.whatsapp_group,
+        # MEH-17
+        primary_contact_method=data.primary_contact_method or "whatsapp",
+        contact_email=data.contact_email,
         slug=slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,
@@ -150,7 +153,7 @@ def admin_update_producer(
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
@@ -186,7 +189,7 @@ def toggle_producer_status(
     """Toggle approved <-> inactive (hides from public listings)."""
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.status = "inactive" if producer.status == "approved" else "approved"
     db.commit()
     return {"detail": "Status toggled", "status": producer.status}
@@ -200,7 +203,7 @@ def admin_delete_producer(
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     db.delete(producer)
     db.commit()
     return {"detail": "Producer deleted"}
@@ -255,7 +258,7 @@ def pending_producers(user: User = Depends(require_admin), db: Session = Depends
 def approve_producer(producer_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.status = "approved"
     db.commit()
 
@@ -288,7 +291,7 @@ def reject_producer(
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.status = "rejected"
     db.commit()
 

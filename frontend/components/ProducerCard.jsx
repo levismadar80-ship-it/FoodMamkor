@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Seal, Leaf, Cow } from "@phosphor-icons/react";
+import { Leaf, Cow } from "@phosphor-icons/react";
 import CategoryTag from "./CategoryTag";
+import AvailabilityBadge from "./AvailabilityBadge";
+import BadgeRow from "./BadgeRow";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone } from "@/lib/utils";
+import { useUserLocation } from "@/lib/user-location";
+import { haversineKm, formatDistance } from "@/lib/distance";
+import { getPrimaryMethod } from "@/lib/contact-method";
 
 function WhatsAppIcon({ className }) {
   return (
@@ -50,6 +55,29 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
 
   const priceLabel = producer.price_range || producer.starting_price_label;
 
+  // MEH-12: distance from the user's cached session location. Renders
+  // null when (a) the user hasn't granted geolocation yet, or
+  // (b) this producer has no lat/lng. Re-renders if the location is
+  // set mid-session via the useUserLocation hook subscription.
+  const userLoc = useUserLocation();
+  const distanceLabel =
+    userLoc && producer.lat != null && producer.lng != null
+      ? formatDistance(
+          haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+        )
+      : null;
+
+  // MEH-17: highlight the primary-method icon in the footer row. A
+  // filled primary-colored circle vs. the default transparent hover.
+  const primaryMethod = getPrimaryMethod(producer);
+  const isPrimary = (method) => primaryMethod === method;
+  const iconClassFor = (method) =>
+    `inline-flex items-center justify-center rounded-full transition ${
+      isPrimary(method)
+        ? "bg-primary text-white hover:bg-primary-light"
+        : "text-primary hover:bg-light"
+    }`;
+
   const handleRootClick = (e) => {
     if (onClick) {
       // Don't hijack clicks on child interactive elements
@@ -70,7 +98,16 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
       style={{ borderRadius: "16px" }}
     >
       <Link href={producerHref}>
-        <div className="relative w-full bg-light h-[140px] md:h-[200px]" style={{ borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+        {/* MEH-25 Pattern 2 — explicit #F5F0E8 background so the empty-
+            image state matches the spec across all card surfaces. */}
+        <div
+          className="relative w-full h-[140px] md:h-[200px]"
+          style={{
+            borderRadius: "16px 16px 0 0",
+            overflow: "hidden",
+            background: "#F5F0E8",
+          }}
+        >
           {imgSrc ? (
             <Image
               src={imgSrc}
@@ -88,12 +125,9 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               <span className="font-headline text-sm mt-1 opacity-70">מהמקור</span>
             </div>
           )}
-          {producer.is_verified && (
-            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
-              <Seal size={14} weight="fill" aria-hidden="true" />
-              מאומת
-            </span>
-          )}
+          {/* MEH-18: "מאומת" moved into the unified BadgeRow below.
+              Premium / available-today image overlays remain — they're
+              distinct semantics (plan tier + same-day flag). */}
           {producer.plan === "premium" && (
             <span className="absolute top-3 right-3 bg-accent text-white text-xs px-2 py-1 rounded-full">
               פרמיום
@@ -109,7 +143,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
 
       <div className="p-4 flex-1 flex flex-col">
         <Link href={producerHref}>
-          <h3 className="font-headline font-bold text-site-text hover:text-primary transition leading-snug truncate" style={{ fontSize: "18px" }}>
+          <h3 className="font-headline font-bold text-site-text hover:text-primary transition leading-snug line-clamp-2" style={{ fontSize: "18px" }}>
             {producer.name}
           </h3>
         </Link>
@@ -120,6 +154,28 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
             <> · {producer.categories[0].emoji} {producer.categories[0].name}</>
           )}
         </p>
+
+        {/* MEH-18 — unified badge row, max 2 on card per priority. */}
+        <div className="mt-1.5">
+          <BadgeRow producer={producer} limit={2} />
+        </div>
+
+        {/* MEH-12 — availability status (full/vacation only on cards;
+            "available" is the default so it's hidden to keep cards calm) */}
+        {producer.availability_status && producer.availability_status !== "available" && (
+          <div className="mt-1">
+            <AvailabilityBadge status={producer.availability_status} variant="card" />
+          </div>
+        )}
+
+        {/* MEH-13 — distance from user's cached session location. Hidden
+            when the user hasn't granted geolocation OR this producer has
+            no lat/lng. */}
+        {distanceLabel && (
+          <p className="text-xs text-site-muted mt-1" data-testid="distance-pill">
+            📍 {distanceLabel}
+          </p>
+        )}
 
         {producer.reviews_count > 0 && (
           <p className="text-xs text-site-muted mt-1">
@@ -170,7 +226,8 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 title="WhatsApp"
                 aria-label="שלח הודעה בווטסאפ"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center rounded-full hover:bg-light transition text-primary"
+                data-primary={isPrimary("whatsapp") ? "true" : undefined}
+                className={iconClassFor("whatsapp")}
                 style={{ width: "44px", height: "44px" }}
               >
                 <WhatsAppIcon className="w-5 h-5" />
@@ -182,15 +239,57 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
                 title="טלפון"
                 aria-label="התקשר לבית העסק"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center rounded-full hover:bg-light transition text-primary"
+                data-primary={isPrimary("phone") ? "true" : undefined}
+                className={iconClassFor("phone")}
                 style={{ width: "44px", height: "44px" }}
               >
                 <PhoneIcon className="w-5 h-5" />
               </a>
             )}
-            {producer.instagram && (
+            {producer.website?.trim() && (
               <a
-                href={`https://instagram.com/${producer.instagram}`}
+                href={
+                  producer.website.trim().startsWith("http")
+                    ? producer.website.trim()
+                    : `https://${producer.website.trim()}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                title="אתר"
+                aria-label="אתר העסק"
+                onClick={(e) => e.stopPropagation()}
+                data-primary={isPrimary("website") ? "true" : undefined}
+                className={iconClassFor("website")}
+                style={{ width: "44px", height: "44px" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </a>
+            )}
+            {producer.contact_email && (
+              <a
+                href={`mailto:${producer.contact_email}`}
+                title="אימייל"
+                aria-label="שלח אימייל"
+                onClick={(e) => e.stopPropagation()}
+                data-primary={isPrimary("email") ? "true" : undefined}
+                className={iconClassFor("email")}
+                style={{ width: "44px", height: "44px" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </a>
+            )}
+            {producer.instagram?.trim() && (
+              <a
+                // Strip leading @ defensively so `@heese_farm` stored
+                // doesn't become `https://instagram.com/@heese_farm`.
+                // Instagram accepts both but consistency is cleaner.
+                href={`https://instagram.com/${producer.instagram.trim().replace(/^@+/, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Instagram"

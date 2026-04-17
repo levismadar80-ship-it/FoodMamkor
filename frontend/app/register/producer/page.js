@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
@@ -15,13 +16,28 @@ const EMPTY_FORM = {
   producer_name: "", description: "", city: "",
   lat: null, lng: null,
   phone: "", instagram: "", website: "",
+  primary_contact_method: "whatsapp",
+  contact_email: "",
   category_ids: [],
   delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
 };
 
 export default function RegisterProducerPage() {
+  // Wrap in Suspense so useSearchParams (used for MEH-22 prefill) doesn't
+  // break App-Router static prerender.
+  return (
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">טוען טופס הרשמה...</div>}>
+      <RegisterProducerPageBody />
+    </Suspense>
+  );
+}
+
+function RegisterProducerPageBody() {
   const router = useRouter();
+  const params = useSearchParams();
+  const prefillToken = params.get("prefill");
   const [step, setStep] = useState(1);
+  const [prefillApplied, setPrefillApplied] = useState(false);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,6 +64,31 @@ export default function RegisterProducerPage() {
       // ignore
     }
   }, []);
+
+  // MEH-22 — if the URL carries ?prefill=TOKEN, fetch the admin-minted
+  // prefill payload and populate the producer-details fields. Personal
+  // account fields (email / password) stay empty on purpose — those
+  // belong to the prospect, not the admin. Runs once per token.
+  useEffect(() => {
+    if (!prefillToken || prefillApplied) return;
+    api
+      .get(`/register/producer/prefill/${prefillToken}`)
+      .then((r) => {
+        const d = r.data || {};
+        setForm((prev) => ({
+          ...prev,
+          producer_name: d.name ?? prev.producer_name,
+          phone: d.phone ?? prev.phone,
+          instagram: d.instagram ?? prev.instagram,
+          website: d.website ?? prev.website,
+          city: d.city ?? prev.city,
+        }));
+        setPrefillApplied(true);
+      })
+      .catch(() => {
+        setPrefillApplied(true);
+      });
+  }, [prefillToken, prefillApplied]);
 
   const saveDraft = (updatedForm) => {
     try {
@@ -98,6 +139,8 @@ export default function RegisterProducerPage() {
     try {
       const data = {
         ...form,
+        // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
+        contact_email: form.contact_email?.trim() || null,
         delivery_areas: form.delivery_areas
           .filter((da) => da.city)
           .map((da) => ({
@@ -149,6 +192,14 @@ export default function RegisterProducerPage() {
             <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-gray-200"}`} />
           ))}
         </div>
+
+        {/* MEH-22 — prefill banner shown when a token fetched data OK. */}
+        {prefillToken && prefillApplied && (
+          <div className="bg-light text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm inline-flex items-center gap-2">
+            <Leaf size={16} weight="duotone" aria-hidden="true" className="shrink-0" />
+            מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.
+          </div>
+        )}
 
         {/* Step 1: Account */}
         {step === 1 && (
@@ -218,6 +269,52 @@ export default function RegisterProducerPage() {
             </div>
             <input placeholder="אינסטגרם" value={form.instagram} onChange={set("instagram")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
             <input placeholder="אתר" value={form.website} onChange={set("website")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
+
+            {/* MEH-17 — primary contact method radio group + email input. */}
+            <fieldset className="border border-border rounded-[12px] p-3">
+              <legend className="px-2 text-sm font-medium">
+                איך תרצי שיצרו אתך קשר? *
+              </legend>
+              <div className="flex flex-col gap-2 mt-1">
+                {[
+                  { key: "whatsapp", label: "WhatsApp", needs: "phone" },
+                  { key: "phone", label: "טלפון", needs: "phone" },
+                  { key: "website", label: "דרך האתר", needs: "website" },
+                  { key: "email", label: "אימייל", needs: "contact_email" },
+                ].map((opt) => (
+                  <label
+                    key={opt.key}
+                    className="flex items-center gap-2 text-sm cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="primary_contact_method"
+                      value={opt.key}
+                      checked={form.primary_contact_method === opt.key}
+                      onChange={() =>
+                        setForm({ ...form, primary_contact_method: opt.key })
+                      }
+                      className="accent-primary"
+                    />
+                    {opt.label}
+                    {form.primary_contact_method === opt.key && !form[opt.needs] && (
+                      <span className="text-xs text-red-600">
+                        (חובה להזין {opt.needs === "phone" ? "טלפון" : opt.needs === "website" ? "אתר" : "אימייל"})
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <input
+              type="email"
+              placeholder="אימייל ליצירת קשר (לא מופיע בהרשמה — מופיע ללקוחות)"
+              value={form.contact_email}
+              onChange={set("contact_email")}
+              className="w-full border rounded-[12px] px-3 py-2"
+              dir="ltr"
+            />
 
             <div>
               <p className="font-medium mb-2">קטגוריות</p>
@@ -406,10 +503,12 @@ export default function RegisterProducerPage() {
           </div>
         )}
 
-        {/* Step 4: Confirmation */}
+        {/* Step 4: Confirmation + MEH-22 referral ask */}
         {step === 4 && (
           <div className="text-center py-8">
-            <div className="text-6xl mb-4" aria-hidden="true">✅</div>
+            <div className="mb-4 flex justify-center">
+              <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
+            </div>
             <h2 className="font-headline text-2xl font-bold text-site-text mb-2">הבקשה נשלחה!</h2>
             <p className="text-site-muted mb-6">
               הבקשה שלך ממתינה לאישור. נעדכן אותך ברגע שהעסק יאושר.
@@ -425,12 +524,15 @@ export default function RegisterProducerPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a
-                href="https://instagram.com/mehamekor"
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם צרכניות שמחפשות אוכל אמיתי. חשבתי עלייך, נראה לי שזה יכול להתאים גם לך. מוזמנת להירשם בחינם: https://mehamakor.online/register/producer`,
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium text-sm"
+                className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-full hover:bg-[#1ea855] transition font-medium text-sm"
               >
-                עקבי @mehamekor באינסטגרם
+                <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
+                הזמיני שכנה להצטרף
               </a>
               <button
                 onClick={() => router.push("/")}

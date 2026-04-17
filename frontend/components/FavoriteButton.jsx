@@ -1,14 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HeartStraight } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import LoginPromptModal from "./LoginPromptModal";
 
-export default function FavoriteButton({ producerId }) {
+/**
+ * FavoriteButton — save button for a producer. Visible to guests too
+ * (per MEH-8 guest-browsing spec): a guest tap opens a login-prompt
+ * modal instead of silently no-op'ing or hiding the button.
+ *
+ * Variants:
+ *   - "default" (sidebar pair with ShareButton)    — emoji heart in a 44×44 tap target
+ *   - "gallery" (absolute overlay on ImageGallery) — white circle 44px, HeartStraight icon
+ *   - "inline"  (next to <h1> in producer header)  — small heart + "שמור" text
+ *
+ * Shared behavior: load-once of /users/me/favorites (logged-in only),
+ * POST/DELETE toggle (logged-in only), toast, disabled:opacity-60
+ * while loading, aria-pressed + aria-label for accessibility.
+ */
+export default function FavoriteButton({ producerId, variant = "default" }) {
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -21,9 +38,12 @@ export default function FavoriteButton({ producerId }) {
       .catch(() => {});
   }, [user, producerId]);
 
-  if (!user) return null;
-
   const toggle = async () => {
+    // Guest: open the login modal and stop — don't hit the API.
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
     setLoading(true);
     try {
       if (favorited) {
@@ -41,16 +61,77 @@ export default function FavoriteButton({ producerId }) {
     setLoading(false);
   };
 
+  const label = favorited ? "הסר ממועדפים" : "הוסף למועדפים";
+  const commonProps = {
+    onClick: toggle,
+    disabled: loading,
+    title: label,
+    "aria-label": label,
+    "aria-pressed": favorited,
+  };
+
+  // Capture current path for the login `next=` param — evaluated at
+  // click time via the modal's own nextPath prop, so client-side
+  // navigation between producer pages stays accurate.
+  const nextPath =
+    typeof window !== "undefined"
+      ? window.location.pathname + window.location.search
+      : "/";
+
+  let button;
+  if (variant === "gallery") {
+    button = (
+      <button
+        {...commonProps}
+        className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        <HeartStraight
+          size={22}
+          weight={favorited ? "fill" : "regular"}
+          className={favorited ? "text-red-500" : "text-site-text"}
+          aria-hidden="true"
+        />
+      </button>
+    );
+  } else if (variant === "inline") {
+    button = (
+      <button
+        {...commonProps}
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          favorited
+            ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            : "bg-white text-site-text border-border hover:bg-light"
+        }`}
+      >
+        <HeartStraight
+          size={14}
+          weight={favorited ? "fill" : "regular"}
+          aria-hidden="true"
+        />
+        שמור
+      </button>
+    );
+  } else {
+    // default — back-compat emoji heart
+    button = (
+      <button
+        {...commonProps}
+        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+      >
+        {favorited ? "❤️" : "🤍"}
+      </button>
+    );
+  }
+
   return (
-    <button
-      onClick={toggle}
-      disabled={loading}
-      className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
-      title={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
-      aria-label={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
-      aria-pressed={favorited}
-    >
-      {favorited ? "❤️" : "🤍"}
-    </button>
+    <>
+      {button}
+      <LoginPromptModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        message="כדי לשמור עסקים אוהבים — היכנסי"
+        nextPath={nextPath}
+      />
+    </>
   );
 }

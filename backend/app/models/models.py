@@ -36,9 +36,19 @@ class Producer(Base):
     instagram = Column(String(100))
     website = Column(String(200))
     whatsapp_group = Column(String(300), nullable=True)  # invite link
+    # MEH-17: flexible contact methods. `primary_contact_method` decides
+    # which CTA is rendered prominently on ProducerDetail + which icon
+    # is highlighted on ProducerCard. Values: whatsapp | phone | website
+    # | email (default: whatsapp). `contact_email` is the producer's
+    # business email — distinct from the owner user's login email.
+    primary_contact_method = Column(String(20), default="whatsapp")
+    contact_email = Column(String(200), nullable=True)
     status = Column(String(20), default="pending")  # pending | approved | rejected | inactive
     images = Column(ARRAY(Text), default=[])
     is_verified = Column(Boolean, default=False)
+    # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
+    # from the "verified" trust badge — recommended ≈ editorial pick.
+    is_recommended = Column(Boolean, default=False)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(String(200), nullable=True)  # featured product for cards/map
@@ -51,6 +61,10 @@ class Producer(Base):
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     is_available_today = Column(Boolean, default=False)  # producer self-marks daily
+    # MEH-12: durable availability status (vs. the per-day is_available_today above).
+    # Values: "available" (default) | "full" | "vacation". Rendered as a
+    # colored-dot badge on ProducerCard + ProducerDetail.
+    availability_status = Column(String(20), default="available")
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
@@ -89,12 +103,54 @@ class User(Base):
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
 
+    @property
+    def is_oauth(self) -> bool:
+        """MEH-16: True when the user signed up via OAuth (no local
+        password). Consumed by UserOut → /settings to hide the
+        password-change form for accounts that have no password_hash.
+        """
+        return not self.password_hash
+
 
 class AdminSetting(Base):
     __tablename__ = "admin_settings"
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class OutreachLead(Base):
+    """Producer outreach lead (MEH-22).
+
+    Manual list of prospective businesses an admin is reaching out to.
+    Status pipeline: new → contacted → replied → registered (or declined).
+    `prefill_token` lets an admin send a single-use registration link
+    that pre-populates the /register/producer form so the prospect's
+    only friction is choosing a password.
+
+    Soft uniqueness via `(lower(name), lower(city))` — handled at the
+    application layer in the create endpoint, not as a DB UNIQUE
+    constraint, so case-and-trim variations are caught the same way.
+    """
+    __tablename__ = "outreach_leads"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False)
+    phone = Column(String(20), nullable=True)
+    instagram = Column(String(100), nullable=True)
+    website = Column(String(200), nullable=True)
+    city = Column(String(100), nullable=True)
+    category = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    source = Column(String(50), default="manual")  # manual | claude_search (future)
+    status = Column(String(20), default="new")     # new | contacted | replied | registered | declined
+    # Prefill token — minted on demand for "הכן פרופיל". Single-use is
+    # not enforced; the token expires 30 days after mint and is rotated
+    # whenever the admin clicks the button again.
+    prefill_token = Column(String(64), unique=True, nullable=True, index=True)
+    prefill_token_expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

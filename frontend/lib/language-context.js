@@ -24,8 +24,9 @@ const translations = {
     nav_admin: "אדמין",
     nav_login: "כניסה לחשבון",
     nav_logout: "התנתק",
-    nav_add_business: "הוסיפי את העסק שלך 🌿",
+    nav_add_business: "הוסיפי את העסק שלך",
     nav_mobile_label: "ניווט מובייל",
+    nav_profile: "פרופיל",
 
     // Hero
     hero_title: "אוכל אמיתי, ישר מהמקור אליך",
@@ -46,7 +47,7 @@ const translations = {
     footer_events: "אירועים",
     footer_neighbor_kitchen: "מהמטבח של השכן",
     footer_about: "אודות",
-    footer_add_business: "הוסיפי את העסק שלך 🌿",
+    footer_add_business: "הוסיפי את העסק שלך",
     footer_login: "כניסה לחשבון",
     footer_manage: "ניהול העסק",
     footer_terms: "תנאי שימוש",
@@ -76,8 +77,9 @@ const translations = {
     nav_admin: "Admin",
     nav_login: "Sign In",
     nav_logout: "Sign Out",
-    nav_add_business: "Add Your Business 🌿",
+    nav_add_business: "Add Your Business",
     nav_mobile_label: "Mobile navigation",
+    nav_profile: "Profile",
 
     // Hero
     hero_title: "Real Food, Straight From the Source",
@@ -98,7 +100,7 @@ const translations = {
     footer_events: "Events",
     footer_neighbor_kitchen: "Neighbor's Kitchen",
     footer_about: "About",
-    footer_add_business: "Add Your Business 🌿",
+    footer_add_business: "Add Your Business",
     footer_login: "Sign In",
     footer_manage: "Manage Business",
     footer_terms: "Terms of Service",

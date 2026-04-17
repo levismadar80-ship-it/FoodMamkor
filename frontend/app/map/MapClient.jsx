@@ -3,12 +3,21 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MagnifyingGlass, X, MapTrifold } from "@phosphor-icons/react";
+import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
+import { getRecentlyViewedIds } from "@/lib/recently-viewed";
+import { optimizeCloudinary } from "@/lib/cloudinary";
+import {
+  CATEGORY_CHIPS,
+  TOGGLE_CHIPS,
+  chipStateToParams,
+  resolveCategoryId,
+  boundsToCenterRadius,
+} from "@/lib/map-chips";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -48,7 +57,23 @@ export default function MapPage() {
   // docs/archive/MAP_IMPROVEMENTS.md #8 — legend = filter. `activeCategoryNames` is
   // the current inclusion set. null means "all enabled" (default).
   const [activeCategoryNames, setActiveCategoryNames] = useState(null);
-  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+
+  // MEH-14: chip state per the new spec. Exactly one category chip
+  // is active at a time ("all" is the reset sentinel); organic +
+  // has_delivery are independent toggles on top of that.
+  const [chipState, setChipState] = useState({
+    categoryKey: "all",
+    organic: false,
+    has_delivery: false,
+  });
+
+  // MEH-14: mobile map/list toggle. Desktop ignores this (always shows both).
+  const [mobileView, setMobileView] = useState("map");
+
+  // MEH-14: visited producer IDs from the recently-viewed store (MEH-11).
+  // Read once on mount — re-renders mid-session are fine because clicking
+  // a card navigates away from /map.
+  const [visitedIds, setVisitedIds] = useState([]);
 
   const mapApiRef = useRef(null);
   const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
@@ -60,6 +85,7 @@ export default function MapPage() {
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     loadProducers();
+    setVisitedIds(getRecentlyViewedIds());
   }, []);
 
   // Deep-link from /producer/:id → sessionStorage → flyTo + popup + highlight card
@@ -91,28 +117,35 @@ export default function MapPage() {
       .catch(() => setAllProducers([]));
   };
 
-  const chipParams = (overrides = {}) => {
-    const c = { ...chips, ...overrides };
-    const p = {};
-    if (c.kosher) p.kosher = true;
-    if (c.organic) p.organic = true;
-    if (c.has_delivery) p.has_delivery = true;
-    if (c.verified) p.verified = true;
-    return p;
+  // MEH-14: build the backend params from the current chip state +
+  // optional city. `overrides` lets callers swap in the not-yet-committed
+  // chip toggle without waiting for React state.
+  const buildParams = (overrideState = chipState, extras = {}) => {
+    const params = chipStateToParams(overrideState, categories);
+    if (cityFilter) params.delivery_city = cityFilter;
+    return { ...params, ...extras };
   };
 
-  const toggleChip = (key) => {
-    const next = { ...chips, [key]: !chips[key] };
-    setChips(next);
-    const params = chipParams({ [key]: !chips[key] });
-    if (cityFilter) params.delivery_city = cityFilter;
-    loadProducers(params);
+  const onCategoryChipClick = (key) => {
+    const next = { ...chipState, categoryKey: key };
+    setChipState(next);
+    loadProducers(buildParams(next));
+    // Changing category clears the bounds filter so users see all
+    // matches, not just the ones inside the previous viewport.
+    setCommittedBounds(null);
+    setMapMoved(false);
+  };
+
+  const onToggleChipClick = (key) => {
+    const next = { ...chipState, [key]: !chipState[key] };
+    setChipState(next);
+    loadProducers(buildParams(next));
+    setCommittedBounds(null);
+    setMapMoved(false);
   };
 
   const handleCityFilter = () => {
-    const params = { ...chipParams() };
-    if (cityFilter) params.delivery_city = cityFilter;
-    loadProducers(params);
+    loadProducers(buildParams());
     // When the user changes city, clear any committed bounds filter so
     // the grid shows ALL matches for the new city — not a stale viewport
     // from the previous city.
@@ -163,15 +196,26 @@ export default function MapPage() {
     setMapMoved(true);
   }, []);
 
-  // Bug #14 fix: commit the current viewport to `committedBounds` so the
-  // grid below re-filters to it. Previously this only called
-  // `loadProducers()` which refetches the full list from the backend
-  // without changing any filter state — the button was a no-op. Now the
-  // grid genuinely updates only when the user asks.
+  // MEH-14 / old bug #14: commit the current viewport AND refetch
+  // producers from the backend with lat/lng/radius_km so the list
+  // below reflects the area currently on screen. Previously the click
+  // only did a local filter, so stale initial data was never refreshed.
+  // Now it's true geo-awareness — powered by the existing Haversine
+  // SQL on /producers.
   const handleSearchThisArea = useCallback(() => {
     setCommittedBounds(mapBounds);
     setMapMoved(false);
-  }, [mapBounds]);
+    const centerRadius = boundsToCenterRadius(mapBounds);
+    if (centerRadius) {
+      loadProducers({
+        ...buildParams(),
+        lat: centerRadius.lat,
+        lng: centerRadius.lng,
+        radius_km: centerRadius.radius_km,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapBounds, chipState, categories, cityFilter]);
 
   // docs/archive/MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
   const toggleCategory = (name) => {
@@ -226,56 +270,133 @@ export default function MapPage() {
       />
       <h1 className="font-headline text-3xl font-bold mb-6 text-site-text">מפת בתי עסק</h1>
 
-      {/* Filters (top bar) — city search only. Category filter lives in
-          the legend widget overlaid on the map (docs/archive/MAP_IMPROVEMENTS.md #8).
-          FEEDBACK_FIXES fix 4: `overflow-visible` so the autocomplete
-          dropdown isn't clipped; `w-full` wrapper so the CitySearch
-          gets the full viewport width on mobile.
-          tasks_for_claude_code.md PR 2 (task 3): desktop width bumped
-          from w-72 (288px) → w-96 (384px) so longer Hebrew city names
-          like "ראשון לציון" / "מעלה אדומים" no longer truncate in the
-          input or its autocomplete dropdown. The dropdown inherits
-          `w-full` from this same wrapper so the single width change
-          fixes both. */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4 overflow-visible">
-        <div className="w-full md:w-96">
-          <CitySearch
-            id="map-city-search"
-            label="סנן לפי עיר"
-            value={cityFilter}
-            onChange={setCityFilter}
-            onSubmit={handleCityFilter}
-            placeholder="חפשי עיר..."
-          />
+      {/* MEH-14: sticky search + chips + mobile view tabs. `top-16` clears
+          the site header; background + backdrop-blur so content scrolls
+          underneath without visual bleed. */}
+      <div className="sticky top-16 z-[50] -mx-4 px-4 py-3 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75 border-b border-border mb-4">
+        {/* City search + "near me" (MEH-30 #1 — moved inline here from
+            its previous position as an absolute overlay inside the map.
+            Sits next to the city search on desktop, stacks below it on
+            mobile). */}
+        <div className="flex flex-col md:flex-row md:items-end gap-3 mb-3 overflow-visible">
+          <div className="w-full md:w-96">
+            <CitySearch
+              id="map-city-search"
+              label="סנן לפי עיר"
+              value={cityFilter}
+              onChange={setCityFilter}
+              onSubmit={handleCityFilter}
+              placeholder="חפשי עיר..."
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => mapApiRef.current?.goToMyLocation()}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-border text-site-text hover:border-primary hover:text-primary rounded-[10px] px-4 py-2.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
+            aria-label="מרכז מפה על המיקום שלי"
+          >
+            <Crosshair size={16} weight="duotone" className="text-primary" aria-hidden="true" />
+            קרוב אלי
+          </button>
+        </div>
+
+        {/* MEH-14 chips — category radio group + independent toggles.
+            MEH-15 bug fix: explicit dir="rtl" so "כל" (first in the array)
+            renders at the visual right. Without it, overflow-x containers
+            can lose inherited RTL direction on some browsers and flip the
+            order so the reset sentinel lands at the left edge. */}
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 -mx-1 pl-1 pr-4 scrollbar-hide"
+          role="toolbar"
+          aria-label="סינון מפה"
+          dir="rtl"
+        >
+          {CATEGORY_CHIPS.map((chip) => {
+            // Hide chips that don't have a matching category in the DB
+            // (except "all", which has null matches and is always shown).
+            if (chip.key !== "all" && categories.length > 0 && resolveCategoryId(chip, categories) == null) {
+              return null;
+            }
+            const active = chipState.categoryKey === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => onCategoryChipClick(chip.key)}
+                aria-pressed={active}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
+                  active
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
+                }`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+          {TOGGLE_CHIPS.map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => onToggleChipClick(chip.key)}
+              aria-pressed={!!chipState[chip.key]}
+              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
+                chipState[chip.key]
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
+        {/* MEH-14 mobile map/list toggle tabs. Desktop ignores this. */}
+        <div className="md:hidden mt-3 flex bg-white border border-border rounded-full p-1" role="tablist" aria-label="תצוגת מפה או רשימה">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobileView === "map"}
+            onClick={() => setMobileView("map")}
+            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${
+              mobileView === "map"
+                ? "bg-primary text-white"
+                : "text-site-muted hover:text-site-text"
+            }`}
+          >
+            <MapTrifold size={16} weight={mobileView === "map" ? "fill" : "duotone"} />
+            מפה
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobileView === "list"}
+            onClick={() => setMobileView("list")}
+            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${
+              mobileView === "list"
+                ? "bg-primary text-white"
+                : "text-site-muted hover:text-site-text"
+            }`}
+          >
+            <ListIcon size={16} weight={mobileView === "list" ? "fill" : "duotone"} />
+            רשימה ({visibleProducers.length})
+          </button>
         </div>
       </div>
 
-      {/* Filter chips — task 12 */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {[
-          { key: "kosher", label: "כשר", icon: "✡️" },
-          { key: "organic", label: "אורגני", icon: "🌿" },
-          { key: "has_delivery", label: "משלוח", icon: "🚚" },
-          { key: "verified", label: "מאומת בלבד", icon: "✅" },
-        ].map((chip) => (
-          <button
-            key={chip.key}
-            type="button"
-            onClick={() => toggleChip(chip.key)}
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
-              chips[chip.key]
-                ? "bg-primary text-white border-primary"
-                : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-            }`}
-          >
-            <span aria-hidden="true">{chip.icon}</span>
-            {chip.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Map container with overlays */}
-      <div id="map-container" className="relative h-[500px] mb-8">
+      {/* Map container with overlays.
+          MEH-14: hide on mobile when "list" view is active.
+          MEH-15 bug fix: mobile uses h-[calc(100vh-64px)] so the map fills
+          the rest of the viewport below the 64px site header.
+          MEH-30 bug fix (this PR): desktop switched from a fixed 500px to
+          60vh with a 500px floor — on short/embedded viewports the old
+          fixed height could squish the map into a tiny strip at the top;
+          60vh + min-h-500 guarantees the map is always at least ~40vh
+          regardless of layout pressure from sticky search + chips above. */}
+      <div
+        id="map-container"
+        className={`relative h-[calc(100vh-64px)] min-h-[70vh] md:h-[70vh] md:min-h-[600px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
+      >
         <MapComponent
           producers={filteredByCategory}
           onProducerClick={handleMarkerClick}
@@ -283,6 +404,7 @@ export default function MapPage() {
           onBoundsChange={handleBoundsChange}
           onMapMove={handleMapMove}
           registerApi={registerMapApi}
+          visitedIds={visitedIds}
         />
 
         {/* docs/archive/MAP_IMPROVEMENTS.md #1 — "search this area" floating button */}
@@ -338,7 +460,7 @@ export default function MapPage() {
             <button
               type="button"
               onClick={() => setActiveCategoryNames(null)}
-              className="w-full text-[11px] text-primary hover:underline mt-2 pt-2 border-t border-border"
+              className="w-full text-[13px] text-primary hover:underline mt-2 pt-2 border-t border-border"
             >
               הצגי הכל
             </button>
@@ -351,7 +473,9 @@ export default function MapPage() {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-[16px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]"
             role="status"
           >
-            <div className="text-4xl mb-3" aria-hidden="true">🌱</div>
+            <div className="mb-3 flex justify-center">
+              <Leaf size={44} weight="duotone" className="text-primary" aria-hidden="true" />
+            </div>
             <h3 className="font-headline text-lg font-bold text-site-text mb-2">
               אין עסקים באזור זה עדיין
             </h3>
@@ -368,41 +492,126 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* docs/archive/MAP_IMPROVEMENTS.md #7 — mobile bottom sheet for selected producer
-          Improvement #12: the drag handle was inside a flex-between row
-          (where mx-auto doesn't do anything), and the close button was
-          absolute-positioned inside that same row — leaving the handle
-          flush-left. Restructured: handle is its own centered block, X
-          is absolute relative to the dialog. */}
-      {/* Mobile bottom sheet — z-[600] per CLAUDE.md map z-index tokens.
-          Must stay BELOW map controls (zoom z-1000, search z-1000, legend
-          z-800, "קרוב אלי" z-1000) so controls remain clickable when the
-          sheet is open. pb-6 prevents content cutoff at the rounded edge. */}
-      {selectedProducer && (
-        <div
-          className="md:hidden fixed bottom-16 inset-x-3 z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] p-4 pt-3 pb-6 max-h-[55vh] overflow-auto animate-[slide-up_0.25s_ease-out]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="פרטי העסק שנבחר"
-        >
-          <div
-            className="w-10 h-1 bg-border rounded-full mx-auto mb-3"
-            aria-hidden="true"
-          />
-          <button
-            type="button"
-            onClick={() => setSelectedProducer(null)}
-            className="absolute top-3 left-3 z-10 p-1.5 rounded-full text-site-muted hover:text-site-text hover:bg-light focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="סגור"
-          >
-            <X size={18} weight="bold" />
-          </button>
-          <ProducerCard producer={selectedProducer} referrer="search" />
-        </div>
-      )}
+      {/* MEH-30 #13 — bottom sheet redesigned Airbnb/Wolt-style. Dedicated
+          inline layout (not a reused ProducerCard): image 160px on top
+          with gradient + badges + close-X, body below with name / meta /
+          rating / price / CTA. z-[600] per CLAUDE.md map z-index tokens. */}
+      {selectedProducer && (() => {
+        const p = selectedProducer;
+        const imageUrl = optimizeCloudinary(p.images?.[0]);
+        const category = p.categories?.[0];
+        const badges = [];
+        if (p.verified) badges.push("✓ מאומת");
+        if (p.is_organic) badges.push("🌿 אורגני");
+        const rating = Number(p.avg_rating || 0);
+        const showRating = rating > 0;
+        const priceLabel = p.starting_price_label;
+        const producerHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
 
-      {/* Producer grid below map — filtered by committed bounds + categories */}
-      <div>
+        return (
+          <div
+            className="fixed bottom-16 inset-x-3 md:bottom-6 md:inset-x-auto md:left-6 md:right-auto md:w-[360px] z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] overflow-hidden max-h-[55vh] animate-[slide-up_0.25s_ease-out]"
+            role="dialog"
+            aria-modal="true"
+            aria-label="פרטי העסק שנבחר"
+          >
+            {/* Image area — 160px with gradient overlay + badges + close button */}
+            <div className="relative w-full h-[160px]">
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl}
+                  alt={p.name || ""}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="w-full h-full"
+                  style={{ backgroundColor: "#EAF3DE" }}
+                />
+              )}
+              {imageUrl && (
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)",
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedProducer(null)}
+                className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-site-text flex items-center justify-center shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="סגור"
+              >
+                <X size={14} weight="bold" />
+              </button>
+              {badges.length > 0 && (
+                <div className="absolute bottom-2 left-2 flex gap-1.5">
+                  {badges.map((b) => (
+                    <span
+                      key={b}
+                      className="bg-white/95 text-site-text rounded-full px-2 py-0.5"
+                      style={{ fontSize: "11px", fontWeight: 500 }}
+                    >
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "12px 14px" }}>
+              <h3
+                className="font-headline font-bold text-site-text line-clamp-1"
+                style={{ fontSize: "17px" }}
+              >
+                {p.name}
+              </h3>
+              <p style={{ fontSize: "12px", color: "#6B6B6B", marginTop: 2 }}>
+                {p.city}
+                {category?.name ? ` · ${category.name}` : ""}
+              </p>
+              {showRating && (
+                <div
+                  className="flex items-center gap-1 mt-1"
+                  style={{ fontSize: "13px", color: "#8B6914" }}
+                >
+                  <Star size={14} weight="fill" aria-hidden="true" />
+                  <span>{rating.toFixed(1)}</span>
+                  <span style={{ color: "#6B6B6B" }}>
+                    ({p.reviews_count || 0} ביקורות)
+                  </span>
+                </div>
+              )}
+              {priceLabel && (
+                <p
+                  className="mt-1"
+                  style={{ fontSize: "13px", fontWeight: 700, color: "#8B6914" }}
+                >
+                  {priceLabel}
+                </p>
+              )}
+              <Link
+                href={producerHref}
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary-light transition py-2.5 rounded-[10px] font-medium"
+                style={{ fontSize: "14px" }}
+              >
+                לפרופיל המלא
+                <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Producer grid below map — filtered by committed bounds + categories.
+          MEH-14: hide on mobile when "map" view is active. */}
+      <div className={mobileView === "map" ? "hidden md:block" : ""}>
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h2 className="font-headline text-2xl font-bold text-site-text">
             בתי עסק{committedBounds ? " באזור" : ""} ({visibleProducers.length})
@@ -451,7 +660,7 @@ export default function MapPage() {
               <MapTrifold size={44} weight="duotone" className="text-primary" />
             </div>
             <h3 className="font-headline text-xl font-bold text-site-text mb-2">
-              אין עסקים באזור המפה הנוכחי 🌱
+              אין עסקים באזור המפה הנוכחי
             </h3>
             <p className="text-site-muted mb-5 max-w-md mx-auto">
               נסי להזיז את המפה, להקטין את הזום, או לשנות את המסננים למעלה.

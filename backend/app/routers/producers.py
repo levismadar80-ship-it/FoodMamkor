@@ -1,11 +1,34 @@
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user, get_current_user_optional
 from app.database import get_db
+
+
+def _attach_badge_fields(producer):
+    """MEH-18 — hydrate the 3 computed fields the badge system consumes.
+    Safe to call on already-loaded ORM instances. Assumes the products
+    and delivery_areas collections are already loaded (via selectinload
+    in list queries, joinedload in detail queries).
+    """
+    try:
+        producer.products_count = len(producer.products or [])
+    except Exception:
+        producer.products_count = 0
+    try:
+        producer.delivery_count = len(producer.delivery_areas or [])
+    except Exception:
+        producer.delivery_count = 0
+    if producer.created_at:
+        delta = datetime.utcnow() - producer.created_at
+        producer.days_since_created = max(0, delta.days)
+    else:
+        producer.days_since_created = None
+    return producer
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Report, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
@@ -53,6 +76,19 @@ def list_producers(
     verified: bool | None = None,
     organic: bool | None = None,
     kosher: bool | None = None,
+    # MEH-13 — free-text search over name + description, used by /search
+    # results page. Aliased as `q` in the URL to match CLAUDE.md's
+    # documented API shape, but named `search_q` internally so it doesn't
+    # shadow the `q` SQLAlchemy-query-builder local below.
+    search_q: str | None = Query(None, alias="q"),
+    # MEH-23 — offset-based pagination. Backwards-compatible: existing
+    # callers that don't pass these get the first 100 rows (prior
+    # behavior was "everything" which is fine at current scale but
+    # unbounded). Total row count is exposed via X-Total-Count header
+    # so the frontend can render "X מתוך Y" and numbered pagination.
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
     geo_search = lat is not None and lng is not None and radius_km is not None
@@ -61,7 +97,12 @@ def list_producers(
         distance_expr = _haversine_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
-            .options(joinedload(Producer.categories))
+            .options(
+                joinedload(Producer.categories),
+                # MEH-18 — batch-load the two collections the badge system counts.
+                selectinload(Producer.products),
+                selectinload(Producer.delivery_areas),
+            )
             .filter(Producer.status == "approved")
             # Haversine is undefined for NULL coords — exclude them before
             # applying the distance filter.
@@ -72,7 +113,11 @@ def list_producers(
     else:
         q = (
             db.query(Producer)
-            .options(joinedload(Producer.categories))
+            .options(
+                joinedload(Producer.categories),
+                selectinload(Producer.products),
+                selectinload(Producer.delivery_areas),
+            )
             .filter(Producer.status == "approved")
         )
 
@@ -96,6 +141,21 @@ def list_producers(
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
 
+    # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
+    if search_q and search_q.strip():
+        like = f"%{search_q.strip()}%"
+        q = q.filter(
+            (Producer.name.ilike(like)) | (Producer.description.ilike(like))
+        )
+
+    # MEH-23 — compute the total BEFORE applying limit/offset so the
+    # frontend can render "X מתוך Y" and numbered pagination. SQLAlchemy
+    # wants a fresh .count() query; doing it on the same builder works
+    # because we haven't applied ordering yet.
+    total_count = q.with_entities(func.count(Producer.id.distinct())).scalar() or 0
+    if response is not None:
+        response.headers["X-Total-Count"] = str(total_count)
+
     if geo_search:
         # A multi-entity query combined with joinedload on a collection
         # relationship (categories) can emit duplicate rows — the legacy
@@ -103,17 +163,22 @@ def list_producers(
         # De-dupe by producer id while preserving the distance-ASC order.
         seen: set = set()
         results = []
-        for producer, distance_km in q.all():
+        # Slice at the SQL layer: offset first, then limit.
+        for producer, distance_km in q.offset(offset).limit(limit).all():
             if producer.id in seen:
                 continue
             seen.add(producer.id)
             # Attach computed distance so Pydantic's from_attributes picks
             # it up in ProducerListOut.
             producer.distance_km = round(float(distance_km), 2)
+            _attach_badge_fields(producer)
             results.append(producer)
         return results
 
-    return q.all()
+    rows = q.offset(offset).limit(limit).all()
+    for p in rows:
+        _attach_badge_fields(p)
+    return rows
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
@@ -128,9 +193,11 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
     )
+    if producer:
+        _attach_badge_fields(producer)
     if not producer:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
@@ -156,7 +223,10 @@ def get_producer(
         .first()
     )
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-18 — compute badge fields from the already-loaded relationships.
+    _attach_badge_fields(producer)
 
     # Compute report_count from DB
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
@@ -195,7 +265,7 @@ def record_whatsapp_click(
     """
     exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
     if not exists:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     db.add(ProducerWhatsAppClick(producer_id=producer_id))
     db.commit()
     return {"detail": "logged"}
@@ -267,7 +337,7 @@ def follow_producer(
     the user already follows this producer."""
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="Producer not found")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     existing = (
         db.query(ProducerFollower)

@@ -28,6 +28,9 @@ class ProducerRegister(BaseModel):
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    # MEH-17: flexible contact methods.
+    primary_contact_method: str = "whatsapp"
+    contact_email: EmailStr | None = None
     category_ids: list[int] = []
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -120,6 +123,9 @@ class ProducerAdminCreate(BaseModel):
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
+    # MEH-17
+    primary_contact_method: str = "whatsapp"
+    contact_email: EmailStr | None = None
     slug: str | None = None
     top_product_name: str | None = None
     price_range: str | None = None
@@ -130,6 +136,8 @@ class ProducerAdminCreate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool = True
+    # MEH-18
+    is_recommended: bool = False
     images: list[str] = []
     category_ids: list[int] = []
     delivery_area_cities: list[str] = []  # simple comma-split list
@@ -161,6 +169,9 @@ class ProducerUpdate(BaseModel):
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
+    # MEH-17
+    primary_contact_method: str | None = None
+    contact_email: EmailStr | None = None
     slug: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
@@ -172,6 +183,8 @@ class ProducerUpdate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool | None = None
+    # MEH-18
+    is_recommended: bool | None = None
     is_available_today: bool | None = None
     images: list[str] | None = None
     status: str | None = None
@@ -200,6 +213,19 @@ class ProducerListOut(BaseModel):
     pickup_points: bool = False
     kosher: str | None = None
     is_available_today: bool = False
+    # MEH-12: durable availability status (available | full | vacation).
+    availability_status: str = "available"
+    # MEH-17: flexible contact methods.
+    primary_contact_method: str = "whatsapp"
+    contact_email: str | None = None
+    # MEH-18: manual "מומלץ" editorial pick.
+    is_recommended: bool = False
+    # MEH-18: computed-at-serialization fields — none of these are real
+    # columns. `days_since_created` is derived from created_at; counts
+    # come from the already-joinloaded relationships.
+    days_since_created: int | None = None
+    products_count: int = 0
+    delivery_count: int = 0
     avg_rating: float = 0
     reviews_count: int = 0
     images: list[str] = []
@@ -234,6 +260,10 @@ class UserOut(BaseModel):
     phone: str | None = None
     role: str
     producer_id: UUID | None = None
+    # MEH-16: whether the user signed in via OAuth. Used by /settings to
+    # hide the password-change form for OAuth-only accounts (they have
+    # no password_hash to verify against).
+    is_oauth: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -527,3 +557,58 @@ class ExperienceDetailOut(ExperienceListOut):
     rejection_reason: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-22 Outreach leads ---
+class OutreachLeadOut(BaseModel):
+    id: UUID
+    name: str
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    city: str | None = None
+    category: str | None = None
+    notes: str | None = None
+    source: str = "manual"
+    status: str = "new"
+    prefill_token: str | None = None
+    prefill_token_expires_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class OutreachLeadCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    phone: str | None = Field(None, max_length=20)
+    instagram: str | None = Field(None, max_length=100)
+    website: str | None = Field(None, max_length=200)
+    city: str | None = Field(None, max_length=100)
+    category: str | None = Field(None, max_length=100)
+    notes: str | None = None
+
+
+class OutreachLeadUpdate(BaseModel):
+    """PATCH body — any subset of fields may be omitted. Status is
+    enum-validated at the route layer."""
+    name: str | None = None
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    city: str | None = None
+    category: str | None = None
+    notes: str | None = None
+    status: str | None = None
+
+
+class OutreachPrefillResponse(BaseModel):
+    """Public response from /register/producer/prefill/{token} —
+    intentionally narrow: only what the registration form needs to
+    pre-fill. Notes + status are NOT exposed."""
+    name: str
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    city: str | None = None
+    category: str | None = None
