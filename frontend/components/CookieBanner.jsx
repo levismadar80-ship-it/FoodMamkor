@@ -46,7 +46,7 @@ export default function CookieBanner() {
             onClick={() => accept("all")}
             className="bg-light text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap"
           >
-            אני מסכימה
+            קבלי הכל
           </button>
           <button
             type="button"

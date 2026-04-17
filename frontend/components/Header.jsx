@@ -269,7 +269,7 @@ export default function Header() {
             className="text-sm text-site-muted border border-[#e8e0d0] rounded-full px-3 py-1 inline-flex items-center gap-1.5"
             aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
           >
-            <span className={lang === "he" ? "font-bold text-primary" : ""}>עב</span>
+            <span className={lang === "he" ? "font-bold text-primary" : ""}>עברית</span>
             <span className="text-border">/</span>
             <span className={lang === "en" ? "font-bold text-primary" : ""}>EN</span>
           </button>
