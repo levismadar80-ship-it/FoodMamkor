@@ -32,6 +32,14 @@ h1, h2, h3 {
   width: 100%;
   border-radius: 16px;
 }
+
+/* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet
+   is open. MapClient adds `body.sheet-open` when `selectedProducer` is
+   set; without this the cookie banner peeks below the sheet's bottom
+   edge on mobile and creates a confusing double-overlay. */
+body.sheet-open .cookie-banner {
+  display: none;
+}
 /* Map z-index token system (see CLAUDE.md § "Map z-index tokens"):
    Leaflet controls default to z-index within their own stacking context.
    Override to page-level z-index so they stay above the mobile bottom
