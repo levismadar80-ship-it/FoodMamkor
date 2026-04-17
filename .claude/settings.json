@@ -5,6 +5,17 @@
         "matcher": ".*",
         "hooks": [{"type": "command", "command": "node .claude/pre-task-check.js"}]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"⚠️  REMINDER: Send Vercel preview URL + summary to user\"'"
+          }
+        ]
+      }
     ]
   }
 }

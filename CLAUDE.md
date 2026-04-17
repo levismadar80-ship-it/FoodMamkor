@@ -90,5 +90,29 @@ npx skills add pbakaus/impeccable
 # לאחר שינויים: /audit → /polish homepage → /normalize
 ```
 
+## Rule 9 — Frontend PR Summary (חובה)
+אחרי כל PR שנוגע ב-`frontend/` — שלחי למשתמש בדיוק את הפורמט הזה:
+
+```
+בדיקי על: [Vercel preview URL]
+
+מה השתנה:
+- [שינוי 1]
+- [שינוי 2]
+- [שינוי 3]
+
+מה לבדוק:
+[ ] [בדיקה 1]
+[ ] [בדיקה 2]
+[ ] [בדיקה 3]
+```
+
+**PR לא נחשב שלם עד שנשלח הסיכום.**
+
+Never end a session after opening a PR without sending:
+1. בדיקי על: [URL]
+2. מה השתנה: (3 bullets)
+3. מה לבדוק: (checklist)
+
 ## איך לעדכן מסמך זה
 כתבי: `עדכן CLAUDE.md: [תיאור ההחלטה]`
