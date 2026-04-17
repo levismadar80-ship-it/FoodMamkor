@@ -399,7 +399,7 @@ export default function MapPage() {
           style={{ backgroundColor: "#2E4A2E" }}
           role="status"
         >
-          גלגלי את המפה · לחצי על מרקר לפרטים
+          לחצי על סמן עסק כדי לראות פרטים · גלגלי ברשימה מימין לכל העסקים
         </div>
       )}
       {mapMoved && (
@@ -427,10 +427,11 @@ export default function MapPage() {
       {visibleProducers.map((p) => (
         <div
           key={p.id}
+          id={`card-${p.id}`}
           ref={(el) => { if (el) cardRefs.current.set(p.id, el); else cardRefs.current.delete(p.id); }}
           onMouseEnter={() => handleCardMouseEnter(p.id)}
           onMouseLeave={handleCardMouseLeave}
-          className={hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px] transition" : "transition"}
+          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px]" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-[16px] bg-[#EAF3DE10]" : ""} transition`}
         >
           <MapProducerCard
             producer={p}
@@ -583,6 +584,42 @@ export default function MapPage() {
 
         {/* Bottom sheet */}
         <MapBottomSheet snap={sheetSnap} onSnapChange={setSheetSnap} count={visibleProducers.length}>
+          {/* Selected producer detail card — pinned at top of sheet */}
+          {selectedProducer && (() => {
+            const sp = selectedProducer;
+            const spImg = optimizeCloudinary(sp.images?.[0]);
+            const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;
+            const spPhone = sp.phone?.replace(/\D/g, "");
+            return (
+              <div className="mb-3 bg-white rounded-[12px] border border-primary overflow-hidden shadow-sm">
+                <div className="relative w-full h-[140px]">
+                  {spImg ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full" style={{ backgroundColor: "#EAF3DE" }} />
+                  )}
+                  {spImg && (
+                    <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
+                  )}
+                  <button type="button" onClick={() => setSelectedProducer(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-site-muted" aria-label="סגור">
+                    <X size={14} weight="bold" />
+                  </button>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "17px" }}>{sp.name}</h3>
+                  <p className="text-xs text-site-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
+                  {spPhone && (
+                    <a href={`https://wa.me/${spPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${sp.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="mt-2 w-full flex items-center justify-center gap-2 bg-[#25D366] text-white rounded-[8px] py-2.5 font-medium text-sm transition hover:bg-[#20b858]">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
+                      WhatsApp
+                    </a>
+                  )}
+                  <Link href={spHref} className="mt-1.5 block text-center text-primary text-xs font-medium hover:underline">פרופיל מלא ←</Link>
+                </div>
+              </div>
+            );
+          })()}
           {cardList}
         </MapBottomSheet>
       </div>
