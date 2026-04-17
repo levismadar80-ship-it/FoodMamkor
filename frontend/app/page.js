@@ -9,7 +9,7 @@ import { useLanguage } from "@/lib/language-context";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { setUserLocation } from "@/lib/user-location";
 import { motion } from "framer-motion";
-import { Crosshair, House, Leaf } from "@phosphor-icons/react";
+import { CaretDown, Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import SmartSearch from "@/components/SmartSearch";
@@ -320,8 +320,8 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-headline font-bold leading-tight"
-            style={{ fontSize: "clamp(42px, 6vw, 80px)", lineHeight: 1.15 }}
+            className="font-headline font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
+            style={{ lineHeight: 1.15 }}
           >
             {t("hero_title")}
           </motion.h1>
@@ -398,9 +398,7 @@ export default function HomePage() {
           style={{ bottom: "32px" }}
           aria-label="גלול לרשימת בתי העסק"
         >
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
+          <CaretDown size={28} weight="bold" aria-hidden="true" />
         </button>
       </section>
 
