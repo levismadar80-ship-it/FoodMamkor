@@ -68,6 +68,10 @@
 14. **Prompt compression (Caveman style).** Specs → keywords + values only, no filler words. Reasoning / context → full sentences ok. Apply to all future prompts in this repo.
     - Good: `Thumb RIGHT 88px (72px <1180). Cloudinary. Placeholder #EAF3DE.` / Bad: `The thumbnail should be positioned on the right side at 88 pixels wide.`
     - Good: `Trust strip MAX 2. if verified → ✓+rating. if not → rating only. Skip response_time.` / Bad: `The trust strip should show a maximum of two items. If the producer is verified, show the checkmark and rating.`
+15. **Post-merge verification (after every merge to `staging`).** Two checks, both required before closing the session:
+    - **Monitor Vercel logs 3min.** `Monitor` tool → tail Vercel deploy logs, filter on `error`. Any error surfaced → open a bug issue before ending; do not silently close.
+    - **`/loop` staging deploy health 5min.** `/loop 60s` → check Vercel deploy status + `curl -sI https://staging.mehamakor.online` expect `HTTP 200`. Stop on first success OR first error. Report outcome to user.
+    - Caveat: `Monitor` requires the MCP server advertising it to be connected; if unavailable that session, fall back to manual `curl` polling and note it in the session summary.
 
 ## Regression prevention rules
 1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
@@ -123,7 +127,7 @@
 - `/session-resume` — read back `session-state.md` and restore the plan after `/clear`.
 
 ## How to update this file
-- Keep it ≤ 180 lines (raised from 175 in April 2026 when rule 14 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
+- Keep it ≤ 185 lines (raised from 180 in April 2026 when rule 15 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
 
 ## Architecture Diagrams
