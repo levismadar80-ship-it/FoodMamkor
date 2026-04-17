@@ -183,8 +183,7 @@ export default function RegisterProducerPage() {
             </div>
 
             <p className="text-sm text-text-secondary">
-              חינם: עד 3 תמונות + הופעה במפה. פרמיום: תמונות ללא הגבלה + מוצרים + סטטיסטיקות.
-              {" "}<a href="/upgrade" className="text-secondary hover:underline">שדרגו לפרמיום</a>
+              חינם: עד 3 תמונות + הופעה במפה.
             </p>
 
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}

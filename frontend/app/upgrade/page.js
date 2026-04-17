@@ -1,11 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { useState } from "react";
+import api from "@/lib/api";
 
 export default function UpgradePage() {
-  const { user } = useAuth();
-  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    setSubmitting(true);
+    try {
+      await api.post("/newsletter", { email });
+    } catch {
+      // Non-blocking: treat as success regardless
+    }
+    setSubmitted(true);
+    setSubmitting(false);
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
@@ -33,7 +47,7 @@ export default function UpgradePage() {
           {/* Premium Plan */}
           <div className="border-2 border-secondary rounded-[12px] p-6 relative">
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs px-3 py-1 rounded-full">
-              מומלץ
+              בקרוב
             </span>
             <h3 className="font-semibold text-lg mb-1">פרמיום</h3>
             <p className="text-3xl font-bold text-secondary mb-4">בקרוב</p>
@@ -49,15 +63,33 @@ export default function UpgradePage() {
           </div>
         </div>
 
-        <p className="text-text-secondary text-sm mb-4">
-          שדרוג לפרמיום יהיה זמין בקרוב. רוצים להיות הראשונים לדעת?
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition"
-        >
-          חזרה לדף הבית
-        </button>
+        {/* Email capture */}
+        <div className="bg-light rounded-[12px] p-6">
+          <h2 className="font-bold text-lg mb-1">עדכני אותי כשפרמיום יוצא</h2>
+          <p className="text-text-secondary text-sm mb-4">נודיע לך ראשונה — ללא ספאם</p>
+          {submitted ? (
+            <p className="text-primary font-medium">נרשמת! 🌱 נעדכן אותך כשפרמיום יוצא.</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="כתובת האימייל שלך"
+                required
+                dir="ltr"
+                className="flex-1 border border-border rounded-[12px] px-4 py-2 focus:outline-none focus:border-primary text-sm"
+              />
+              <button
+                type="submit"
+                disabled={submitting}
+                className="bg-primary text-white px-6 py-2 rounded-[12px] hover:bg-primary-dark transition text-sm font-medium disabled:opacity-50"
+              >
+                {submitting ? "שולח..." : "עדכני אותי"}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
