@@ -191,7 +191,7 @@ export default function RegisterPage() {
               label="עיר"
               value={form.city}
               onChange={(val) => setForm({ ...form, city: val })}
-              placeholder="חפשי עיר..."
+              placeholder="הרצליה"
             />
           </div>
           <div>
@@ -200,7 +200,7 @@ export default function RegisterPage() {
               value={form.phone}
               onChange={set("phone")}
               onBlur={() => setPhoneTouched(true)}
-              placeholder="0501234567"
+              placeholder="050-1234567"
               aria-invalid={phoneInvalid || undefined}
               className={`w-full border rounded-[12px] px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                 phoneInvalid
@@ -252,6 +252,9 @@ export default function RegisterPage() {
               "הצטרפי"
             )}
           </button>
+          <p className="text-center mt-3 text-site-muted" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px" }}>
+            לאחר ההרשמה תישלח הודעת אימות לאימייל שלך
+          </p>
         </form>
 
         <GoogleAuthButton
