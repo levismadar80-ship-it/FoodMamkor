@@ -15,6 +15,7 @@ vi.mock("@/lib/auth-context", () => ({
 const pathnameRef = { current: "/about" };
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameRef.current,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
 const setLang = vi.fn();
@@ -54,6 +55,7 @@ vi.mock("next/image", () => ({
 vi.mock("@phosphor-icons/react", () => ({
   Heart: (props) => <span data-testid="icon-heart" {...props} />,
   List: (props) => <span data-testid="icon-hamburger" {...props} />,
+  MagnifyingGlass: (props) => <span data-testid="icon-search" {...props} />,
   X: (props) => <span data-testid="icon-close" {...props} />,
 }));
 
