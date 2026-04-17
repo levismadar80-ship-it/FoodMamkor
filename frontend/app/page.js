@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
@@ -65,10 +66,19 @@ function matchCategoryId(cards, categories) {
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const router = useRouter();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
+  const [filters, setFilters] = useState(() => {
+    if (typeof window === "undefined") return { category: "", delivery_city: "", has_delivery: false };
+    const p = new URLSearchParams(window.location.search);
+    return {
+      category: p.get("category") || "",
+      delivery_city: p.get("city") || "",
+      has_delivery: p.get("delivery") === "1",
+    };
+  });
   // MEH-23 — persist visibleCount + scrollY across navigations so the
   // "Load more" expansion isn't lost when a user opens a producer and
   // returns via the back button. Read on mount only; subsequent changes
@@ -160,6 +170,18 @@ export default function HomePage() {
     return () => window.removeEventListener("pagehide", stash);
   }, []);
 
+  const updateURL = (newFilters) => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    if (newFilters.category) p.set("category", newFilters.category);
+    else p.delete("category");
+    if (newFilters.delivery_city) p.set("city", newFilters.delivery_city);
+    else p.delete("city");
+    if (newFilters.has_delivery) p.set("delivery", "1");
+    else p.delete("delivery");
+    router.replace("?" + p.toString(), { scroll: false });
+  };
+
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
     api
@@ -179,7 +201,9 @@ export default function HomePage() {
   const handleCategoryCardClick = (card) => {
     if (!card.categoryId) return;
     const newCat = String(card.categoryId);
-    setFilters({ ...filters, category: newCat });
+    const newFilters = { ...filters, category: newCat };
+    setFilters(newFilters);
+    updateURL(newFilters);
     loadProducers({ category: newCat, ...chipParams() });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -214,6 +238,11 @@ export default function HomePage() {
     setChips(next);
     const params = chipParams({ [key]: !chips[key] });
     if (filters.category) params.category = filters.category;
+    if (key === "has_delivery") {
+      const newFilters = { ...filters, has_delivery: next.has_delivery };
+      setFilters(newFilters);
+      updateURL(newFilters);
+    }
     loadProducers(params);
   };
 
@@ -598,7 +627,9 @@ export default function HomePage() {
             )}
             <button
               onClick={() => {
-                setFilters({ ...filters, category: "" });
+                const newFilters = { ...filters, category: "" };
+                setFilters(newFilters);
+                updateURL(newFilters);
                 loadProducers(chipParams());
               }}
               className="text-sm text-primary hover:underline"
