@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -43,11 +44,27 @@ function SearchPageSkeleton() {
 
 function SearchPageBody() {
   const params = useSearchParams();
+  const router = useRouter();
   const q = (params.get("q") || "").trim();
+  const shouldFocus = params.get("focus") === "1";
+  const inputRef = useRef(null);
+  const [inputVal, setInputVal] = useState(q);
 
   const [producers, setProducers] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (shouldFocus) {
+      inputRef.current?.focus();
+    }
+  }, [shouldFocus]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const term = inputVal.trim();
+    if (term) router.push(`/search?q=${encodeURIComponent(term)}`);
+  };
 
   useEffect(() => {
     if (!q) {
@@ -79,9 +96,33 @@ function SearchPageBody() {
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-2">
+      <h1 className="font-headline text-3xl font-bold text-site-text mb-4">
         {q ? `תוצאות חיפוש עבור "${q}"` : "חיפוש"}
       </h1>
+
+      {/* Search bar */}
+      <form onSubmit={handleSearch} className="flex items-center gap-2 mb-6 max-w-xl">
+        <div className="flex-1 flex items-center gap-2 border border-border rounded-full px-4 py-2.5 bg-white focus-within:ring-2 focus-within:ring-primary/40">
+          <MagnifyingGlass size={18} color="#6B6B6B" weight="regular" aria-hidden="true" />
+          <input
+            ref={inputRef}
+            type="search"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            placeholder="חפשי ירקות טריים, בשר grass-fed..."
+            dir="rtl"
+            className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-sm"
+            aria-label="חיפוש"
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-primary text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition"
+        >
+          חפשי
+        </button>
+      </form>
+
       {!loading && q && (
         <p className="text-site-muted mb-8 text-sm">
           {totalHits === 0
