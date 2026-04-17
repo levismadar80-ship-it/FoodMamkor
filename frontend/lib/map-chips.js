@@ -21,9 +21,14 @@ export const CATEGORY_CHIPS = [
   { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם"] },
 ];
 
+// MEH-58 Phase 3: RTL order right→left. Boolean toggles are
+// independent; category is radio-group. NO "פתוחים השבוע" chip
+// (is_available_today field does not exist on producers).
 export const TOGGLE_CHIPS = [
-  { key: "organic", label: "אורגני" },
-  { key: "has_delivery", label: "משלוח" },
+  { key: "has_delivery", label: "🚚 משלוח אליי" },
+  { key: "verified", label: "✓ מאומתים" },
+  { key: "organic", label: "🌿 אורגני" },
+  { key: "grass_fed", label: "🐄 גראס פד" },
 ];
 
 /**
@@ -53,6 +58,8 @@ export function chipStateToParams(state, dbCategories) {
   }
   if (state.organic) params.organic = true;
   if (state.has_delivery) params.has_delivery = true;
+  if (state.verified) params.verified = true;
+  if (state.grass_fed) params.grass_fed = true;
   return params;
 }
 

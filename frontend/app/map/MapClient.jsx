@@ -11,6 +11,7 @@ import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import MapBottomSheet, { PEEK, HALF, FULL } from "@/components/MapBottomSheet";
+import { useUserCity, setUserCity } from "@/lib/useUserCity";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -65,7 +66,12 @@ export default function MapPage() {
     categoryKey: "all",
     organic: false,
     has_delivery: false,
+    verified: false,
+    grass_fed: false,
   });
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [sortBy, setSortBy] = useState("default");
+  const userCity = useUserCity();
 
   // MEH-14: mobile map/list toggle. Desktop ignores this (always shows both).
   const [mobileView, setMobileView] = useState("map");
@@ -173,9 +179,24 @@ export default function MapPage() {
   };
 
   const onToggleChipClick = (key) => {
+    if (key === "has_delivery" && !chipState.has_delivery && !userCity) {
+      setShowCityPicker(true);
+      return;
+    }
     const next = { ...chipState, [key]: !chipState[key] };
     setChipState(next);
     loadProducers(buildParams(next));
+    setCommittedBounds(null);
+    setMapMoved(false);
+  };
+
+  const handleCityPickerSelect = (city) => {
+    setUserCity(city);
+    setShowCityPicker(false);
+    setCityFilter(city);
+    const next = { ...chipState, has_delivery: true };
+    setChipState(next);
+    loadProducers(buildParams(next, { delivery_city: city }));
     setCommittedBounds(null);
     setMapMoved(false);
   };
@@ -469,7 +490,18 @@ export default function MapPage() {
             {filterChipsBar}
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
-            <p className="text-xs text-site-muted mb-3">{visibleProducers.length} בתי עסק</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-site-muted">{visibleProducers.length} בתי עסק</p>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="text-xs text-site-muted bg-transparent border border-border rounded-md px-2 py-1 focus:border-primary focus:outline-none"
+              >
+                <option value="default">קרוב אליי</option>
+                <option value="rating">הכי מדורגות</option>
+                <option value="newest">חדש בשוק</option>
+              </select>
+            </div>
             {cardList}
           </div>
         </div>
@@ -521,6 +553,26 @@ export default function MapPage() {
           {cardList}
         </MapBottomSheet>
       </div>
+
+      {/* MEH-58 Phase 3: city picker overlay for "משלוח אליי" chip when no city saved */}
+      {showCityPicker && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) setShowCityPicker(false); }}>
+          <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full max-w-sm p-5 relative">
+            <button type="button" onClick={() => setShowCityPicker(false)} className="absolute top-3 left-3 w-8 h-8 rounded-full hover:bg-light flex items-center justify-center text-site-muted" aria-label="סגור">
+              <X size={16} weight="bold" />
+            </button>
+            <h3 className="font-headline text-lg font-bold text-site-text mb-1">לאן לשלוח?</h3>
+            <p className="text-site-muted text-sm mb-4">בחרי עיר כדי לסנן לפי משלוח</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["תל אביב", "ירושלים", "חיפה", "באר שבע"].map((c) => (
+                <button key={c} type="button" onClick={() => handleCityPickerSelect(c)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition">{c}</button>
+              ))}
+            </div>
+            <CitySearch id="city-picker-search" label="עיר אחרת" value="" onChange={(v) => { if (v.trim()) handleCityPickerSelect(v.trim()); }} placeholder="הקלידי שם עיר..." />
+            <button type="button" onClick={() => setShowCityPicker(false)} className="w-full mt-3 text-center text-sm text-site-muted hover:text-site-text transition py-2">דלגי</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
