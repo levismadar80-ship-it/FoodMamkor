@@ -1,6 +1,10 @@
 # מהמקור — Single Source of Truth
 > עדכון: אפריל 2026 | קרא תמיד בתחילת כל שיחה
 
+## Rule 1 — Git Safety
+ענף: feature/* בלבד. לא עובדים על main או staging ישירות. PR אחד לכל משימה.
+pre-task-check.js enforces this automatically. If missing — restore before any task.
+
 ## פרויקט
 - **שם:** מהמקור (MEHAMEKOR) | mehamekor.co.il
 - **מה זה:** דירקטורי ישראלי של יצרני אוכל בריא + מוצרי טיפוח טבעיים
