@@ -9,6 +9,19 @@ import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 
+const DRAFT_KEY = "producer_registration_draft";
+
+const EMPTY_FORM = {
+  email: "", name: "", password: "",
+  producer_name: "", description: "", city: "",
+  lat: null, lng: null,
+  phone: "", instagram: "", website: "",
+  primary_contact_method: "whatsapp",
+  contact_email: "",
+  category_ids: [],
+  delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
+};
+
 export default function RegisterProducerPage() {
   // Wrap in Suspense so useSearchParams (used for MEH-22 prefill) doesn't
   // break App-Router static prerender.
@@ -28,18 +41,9 @@ function RegisterProducerPageBody() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
 
-  const [form, setForm] = useState({
-    email: "", name: "", password: "",
-    producer_name: "", description: "", city: "",
-    lat: null, lng: null,
-    phone: "", instagram: "", website: "",
-    // MEH-17 — primary contact method + business email.
-    primary_contact_method: "whatsapp",
-    contact_email: "",
-    category_ids: [],
-    delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [declaredLicenses, setDeclaredLicenses] = useState(false);
@@ -48,6 +52,17 @@ function RegisterProducerPageBody() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.producer_name || parsed.name || parsed.email) {
+          setShowDraftBanner(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   // MEH-22 — if the URL carries ?prefill=TOKEN, fetch the admin-minted
@@ -71,12 +86,36 @@ function RegisterProducerPageBody() {
         setPrefillApplied(true);
       })
       .catch(() => {
-        // 404 / expired token — silently ignore; form renders empty.
         setPrefillApplied(true);
       });
   }, [prefillToken, prefillApplied]);
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const saveDraft = (updatedForm) => {
+    try {
+      const { password, ...safe } = updatedForm;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+    } catch {
+      // ignore
+    }
+  };
+
+  const restoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        setForm((prev) => ({ ...prev, ...JSON.parse(saved) }));
+      }
+    } catch {
+      // ignore
+    }
+    setShowDraftBanner(false);
+  };
+
+  const set = (field) => (e) => {
+    const updated = { ...form, [field]: e.target.value };
+    setForm(updated);
+    saveDraft(updated);
+  };
   const toggleCategory = (id) => {
     const ids = form.category_ids.includes(id)
       ? form.category_ids.filter((c) => c !== id)
@@ -112,6 +151,7 @@ function RegisterProducerPageBody() {
       };
       const res = await api.post("/auth/register/producer", data);
       localStorage.setItem("token", res.data.access_token);
+      localStorage.removeItem(DRAFT_KEY);
       setStep(4);
     } catch (err) {
       setError(err.response?.data?.detail || "שגיאה בהרשמה");
@@ -122,8 +162,29 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="text-2xl font-bold mb-2 text-center">הוסף את העסק שלך</h1>
-        <p className="text-text-secondary text-center mb-8">הצטרפו למהמקור והגיעו לקונים שמחפשים אוכל אמיתי</p>
+        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">הוסף את העסק שלך</h1>
+        <p className="text-site-muted text-center mb-4">הצטרפו למהמקור והגיעו לקונים שמחפשים אוכל אמיתי</p>
+
+        {/* Draft restore banner */}
+        {showDraftBanner && step < 4 && (
+          <div className="bg-light border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
+            <span className="text-site-text">שמרנו טיוטה ממילוי קודם — רוצה להמשיך?</span>
+            <div className="flex gap-3">
+              <button
+                onClick={restoreDraft}
+                className="text-primary font-medium hover:underline"
+              >
+                כן, המשך
+              </button>
+              <button
+                onClick={() => setShowDraftBanner(false)}
+                className="text-site-muted hover:text-site-text"
+              >
+                לא
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Progress bar */}
         <div className="flex gap-2 mb-8">
@@ -448,31 +509,34 @@ function RegisterProducerPageBody() {
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">הבקשה נשלחה!</h2>
-            <p className="text-text-secondary mb-6">
+            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">הבקשה נשלחה!</h2>
+            <p className="text-site-muted mb-6">
               הבקשה שלך ממתינה לאישור. נעדכן אותך ברגע שהעסק יאושר.
             </p>
-
-            {/* MEH-22 — referral ask. Opens WhatsApp with a pre-written
-                invite message, nudging the new producer to bring a
-                friend. Minimal attribution — we don't track referrer
-                codes here; if we add that later this button's href
-                becomes the attribution surface. */}
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(
-                `היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם צרכניות שמחפשות אוכל אמיתי. חשבתי עלייך, נראה לי שזה יכול להתאים גם לך. מוזמנת להירשם בחינם: https://mehamakor.online/register/producer`,
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-[12px] hover:bg-[#1ea855] transition font-medium mb-3"
-            >
-              <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
-              הזמיני שכנה להצטרף
-            </a>
-            <div>
+            <div className="bg-light rounded-[16px] p-5 text-right mb-6">
+              <h3 className="font-semibold text-site-text mb-3">מה קורה עכשיו?</h3>
+              <ul className="text-sm text-site-muted space-y-2">
+                <li>✓ הצוות שלנו יבדוק את הבקשה תוך 1-2 ימי עסקים</li>
+                <li>✓ תקבלי אימייל כשהעסק יאושר</li>
+                <li>✓ אחרי האישור — העסק שלך יופיע במפה ובחיפוש</li>
+                <li>✓ תוכלי להוסיף תמונות ומוצרים מהפרופיל שלך</li>
+              </ul>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם צרכניות שמחפשות אוכל אמיתי. חשבתי עלייך, נראה לי שזה יכול להתאים גם לך. מוזמנת להירשם בחינם: https://mehamakor.online/register/producer`,
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-full hover:bg-[#1ea855] transition font-medium text-sm"
+              >
+                <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
+                הזמיני שכנה להצטרף
+              </a>
               <button
                 onClick={() => router.push("/")}
-                className="border border-border text-site-text px-6 py-2 rounded-[12px] hover:bg-light transition text-sm"
+                className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
               >
                 חזרה לדף הבית
               </button>
