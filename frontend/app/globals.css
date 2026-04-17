@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,9 +9,13 @@ html {
 }
 
 body {
-  font-family: 'Heebo', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   background-color: #eaf4ee;
   color: #1C1C1C;
+}
+
+h1, h2, h3 {
+  font-family: 'Frank Ruhl Libre', serif;
 }
 
 /* Leaflet map fixes */

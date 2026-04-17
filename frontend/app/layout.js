@@ -21,7 +21,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="he" dir="rtl">
-      <body className="font-heebo bg-background text-text-primary min-h-screen flex flex-col pb-16 md:pb-0">
+      <body className="font-body bg-background text-text-primary min-h-screen flex flex-col pb-16 md:pb-0">
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>

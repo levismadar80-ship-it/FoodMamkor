@@ -8,11 +8,11 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const publishHref = user?.role === "producer" ? "/producer/me" : "/register/producer";
+  const publishHref = user?.role === "producer" ? "/settings" : "/register/producer";
 
   const tabs = [
     { href: "/", icon: "🔍", label: "גלה", match: (p) => p === "/" || p === "/map" },
-    { href: publishHref, icon: "➕", label: "פרסם", match: (p) => p.startsWith("/register/producer") || p.startsWith("/producer/me") },
+    { href: publishHref, icon: "➕", label: "פרסם", match: (p) => p.startsWith("/register/producer") || p.startsWith("/settings") },
     { href: "/favorites", icon: "❤️", label: "מועדפים", match: (p) => p === "/favorites" },
     { href: "/messages", icon: "💬", label: "הודעות", match: (p) => p === "/messages" },
   ];

@@ -11,6 +11,7 @@ export default function FavoritesPage() {
   const router = useRouter();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -21,7 +22,7 @@ export default function FavoritesPage() {
       api
         .get("/users/me/favorites")
         .then((r) => setFavorites(r.data))
-        .catch(() => {})
+        .catch(() => setError(true))
         .finally(() => setLoading(false));
     }
   }, [user, authLoading, router]);
@@ -34,6 +35,17 @@ export default function FavoritesPage() {
 
       {loading ? (
         <p className="text-center text-text-secondary">טוען...</p>
+      ) : error ? (
+        <div className="text-center py-16">
+          <p className="text-5xl mb-4">⚠️</p>
+          <p className="text-text-secondary mb-4">שגיאה בטעינת המועדפים. אפשר לנסות שוב.</p>
+          <button
+            onClick={() => { setError(false); setLoading(true); api.get("/users/me/favorites").then((r) => setFavorites(r.data)).catch(() => setError(true)).finally(() => setLoading(false)); }}
+            className="bg-primary text-white px-6 py-2 rounded-[12px] hover:bg-primary-dark transition"
+          >
+            נסי שוב
+          </button>
+        </div>
       ) : favorites.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-5xl mb-4">🤍</p>

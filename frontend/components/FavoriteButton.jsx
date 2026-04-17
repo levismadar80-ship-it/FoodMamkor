@@ -41,7 +41,7 @@ export default function FavoriteButton({ producerId }) {
     <button
       onClick={toggle}
       disabled={loading}
-      className="text-2xl hover:scale-110 transition"
+      className="text-2xl p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition"
       title={favorited ? "הסר ממועדפים" : "הוסף למועדפים"}
     >
       {favorited ? "❤️" : "🤍"}
