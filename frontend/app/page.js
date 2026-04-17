@@ -83,6 +83,22 @@ export default function HomePage() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [showNewUserHint, setShowNewUserHint] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
+      setShowNewUserHint(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showNewUserHint) return;
+    const onStorage = () => {
+      if (localStorage.getItem("favorite_hint_shown")) setShowNewUserHint(false);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [showNewUserHint]);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
@@ -605,6 +621,15 @@ export default function HomePage() {
               >
                 מציגים {Math.min(visibleCount, producers.length)} מתוך {producers.length}
               </p>
+            )}
+            {showNewUserHint && visibleProducers.length > 0 && (
+              <div className="flex items-center gap-2 bg-light border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
+                <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+                </span>
+                לחצי ❤️ בכרטיס עסק כדי לשמור עסקים שאהבת
+              </div>
             )}
             <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
               {visibleProducers.map((p, idx) => (
