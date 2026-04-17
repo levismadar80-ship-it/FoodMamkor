@@ -54,18 +54,18 @@ function createCategoryMarker(
 ) {
   const { emoji } = styleForProducer(producer);
   const selected = active;
-  const w = selected ? 44 : 32;
-  const h = selected ? 54 : 40;
+  const w = selected ? 52 : 44;
+  const h = selected ? 65 : 55;
   const dimmed = visited && !selected && !hovered;
   const bodyFill = dimmed ? "#7aa298" : "#2e6853";
   const opacity = dimmed ? 0.4 : 1;
   const isPremium = producer.plan === "premium";
   const isVerified = producer.is_verified;
 
-  const discR = selected ? 16 : 13;
+  const discR = selected ? 19 : 18;
   const discCx = w / 2;
-  const discCy = selected ? 22 : 16;
-  const emojiSize = selected ? 17 : 13;
+  const discCy = selected ? 26 : 22;
+  const emojiSize = selected ? 20 : 17;
 
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
@@ -104,7 +104,7 @@ function createCategoryMarker(
     className: "mehamakor-marker-wrap",
     iconSize: [w, h],
     iconAnchor: [w / 2, h],
-    popupAnchor: [0, -h],
+    // popupAnchor removed — marker click goes to bottom sheet, not a Leaflet popup
   });
 }
 

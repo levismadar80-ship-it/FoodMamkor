@@ -342,7 +342,7 @@ export default function MapPage() {
   // Shared filter chips bar (used in both desktop + mobile sheet)
   const filterChipsBar = (
     <div
-      className="flex gap-2 overflow-x-auto pb-1 pl-1 pr-4 scrollbar-hide"
+      className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide"
       role="toolbar"
       aria-label="סינון מפה"
       dir="rtl"
@@ -607,8 +607,15 @@ export default function MapPage() {
                   </button>
                 </div>
                 <div className="p-3">
-                  <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "17px" }}>{sp.name}</h3>
-                  <p className="text-xs text-site-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
+                  <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "18px" }}>{sp.name}</h3>
+                  <p style={{ fontSize: "13px", color: "#6B6B6B", marginTop: 2 }}>{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
+                  {(sp.is_verified || sp.is_organic || sp.is_kosher) && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {sp.is_verified && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">✓ מאומת</span>}
+                      {sp.is_organic && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">🌿 אורגני</span>}
+                      {sp.is_kosher && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">✡️ כשר</span>}
+                    </div>
+                  )}
                   {spPhone && (
                     <a href={`https://wa.me/${spPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${sp.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="mt-2 w-full flex items-center justify-center gap-2 bg-[#25D366] text-white rounded-[8px] py-2.5 font-medium text-sm transition hover:bg-[#20b858]">
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
