@@ -88,6 +88,19 @@ export default function MapPage() {
     setVisitedIds(getRecentlyViewedIds());
   }, []);
 
+  // MEH-30 follow-up: when the bottom sheet is open, mark the body so
+  // CSS can hide the CookieBanner (which otherwise peeks below the
+  // sheet's bottom edge — see globals.css `.sheet-open` rule).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (selectedProducer) {
+      document.body.classList.add("sheet-open");
+    } else {
+      document.body.classList.remove("sheet-open");
+    }
+    return () => document.body.classList.remove("sheet-open");
+  }, [selectedProducer]);
+
   // Deep-link from /producer/:id → sessionStorage → flyTo + popup + highlight card
   useEffect(() => {
     if (allProducers.length === 0) return;
@@ -292,7 +305,7 @@ export default function MapPage() {
           <button
             type="button"
             onClick={() => mapApiRef.current?.goToMyLocation()}
-            className="inline-flex items-center justify-center gap-2 bg-white border border-border text-site-text hover:border-primary hover:text-primary rounded-[10px] px-4 py-2.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
+            className="cursor-pointer inline-flex items-center justify-center gap-2 bg-white border border-border text-site-text hover:bg-light hover:border-primary hover:text-primary active:bg-primary active:text-white rounded-[10px] px-4 py-2.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
             aria-label="מרכז מפה על המיקום שלי"
           >
             <Crosshair size={16} weight="duotone" className="text-primary" aria-hidden="true" />
@@ -324,7 +337,7 @@ export default function MapPage() {
                 type="button"
                 onClick={() => onCategoryChipClick(chip.key)}
                 aria-pressed={active}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
+                className={`whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
                   active
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
@@ -340,7 +353,7 @@ export default function MapPage() {
               type="button"
               onClick={() => onToggleChipClick(chip.key)}
               aria-pressed={!!chipState[chip.key]}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
+              className={`whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
                 chipState[chip.key]
                   ? "bg-primary text-white border-primary"
                   : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
@@ -358,7 +371,7 @@ export default function MapPage() {
             role="tab"
             aria-selected={mobileView === "map"}
             onClick={() => setMobileView("map")}
-            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${
+            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition ${
               mobileView === "map"
                 ? "bg-primary text-white"
                 : "text-site-muted hover:text-site-text"
@@ -372,7 +385,7 @@ export default function MapPage() {
             role="tab"
             aria-selected={mobileView === "list"}
             onClick={() => setMobileView("list")}
-            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${
+            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition ${
               mobileView === "list"
                 ? "bg-primary text-white"
                 : "text-site-muted hover:text-site-text"
@@ -386,16 +399,15 @@ export default function MapPage() {
 
       {/* Map container with overlays.
           MEH-14: hide on mobile when "list" view is active.
-          MEH-15 bug fix: mobile uses h-[calc(100vh-64px)] so the map fills
-          the rest of the viewport below the 64px site header.
-          MEH-30 bug fix (this PR): desktop switched from a fixed 500px to
-          60vh with a 500px floor — on short/embedded viewports the old
-          fixed height could squish the map into a tiny strip at the top;
-          60vh + min-h-500 guarantees the map is always at least ~40vh
-          regardless of layout pressure from sticky search + chips above. */}
+          MEH-30 follow-up: mobile switched from `calc(100vh-64px)` to
+          `calc(100dvh-64px)` so iOS Safari's shrinking URL bar doesn't
+          leave a scrollbar on the map. Desktop is `lg:min-h-[600px]`
+          (explicit lg: breakpoint so the floor survives any weird
+          layout pressure that's been intermittently squishing the map
+          to ~60px on wide viewports). */}
       <div
         id="map-container"
-        className={`relative h-[calc(100vh-64px)] min-h-[70vh] md:h-[70vh] md:min-h-[600px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
+        className={`relative h-[calc(100vh-64px)] h-[calc(100dvh-64px)] min-h-[70vh] md:h-[70vh] md:min-h-[600px] lg:h-[70vh] lg:min-h-[600px] mb-8 ${mobileView === "list" ? "hidden md:block" : ""}`}
       >
         <MapComponent
           producers={filteredByCategory}
@@ -510,7 +522,7 @@ export default function MapPage() {
 
         return (
           <div
-            className="fixed bottom-16 inset-x-3 md:bottom-6 md:inset-x-auto md:left-6 md:right-auto md:w-[360px] z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] overflow-hidden max-h-[55vh] animate-[slide-up_0.25s_ease-out]"
+            className="fixed bottom-16 inset-x-3 md:bottom-6 md:inset-x-auto md:right-6 md:left-auto md:w-[360px] z-[600] bg-white rounded-[20px] border border-border shadow-[0_-4px_32px_rgba(0,0,0,0.12)] overflow-hidden max-h-[55vh] animate-[slide-up_0.25s_ease-out]"
             role="dialog"
             aria-modal="true"
             aria-label="פרטי העסק שנבחר"
@@ -544,10 +556,10 @@ export default function MapPage() {
               <button
                 type="button"
                 onClick={() => setSelectedProducer(null)}
-                className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-site-text flex items-center justify-center shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="absolute top-2 left-2 w-11 h-11 rounded-full bg-white/95 hover:bg-white text-site-text flex items-center justify-center shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label="סגור"
               >
-                <X size={14} weight="bold" />
+                <X size={18} weight="bold" />
               </button>
               {badges.length > 0 && (
                 <div className="absolute bottom-2 left-2 flex gap-1.5">
@@ -610,8 +622,17 @@ export default function MapPage() {
       })()}
 
       {/* Producer grid below map — filtered by committed bounds + categories.
-          MEH-14: hide on mobile when "map" view is active. */}
-      <div className={mobileView === "map" ? "hidden md:block" : ""}>
+          MEH-14: hide on mobile when "map" view is active.
+          MEH-30 follow-up: when the bottom sheet is open on desktop, the
+          sheet (360px) anchored bottom-right overlays the first card in
+          the grid. Reserve ~320px of bottom padding while the sheet is
+          visible so the grid's last row clears the sheet. Mobile isn't
+          affected (the sheet sits above the grid thanks to z-[600] and
+          the mobile grid is full-width — the sheet overlay is expected
+          UX on small screens). */}
+      <div
+        className={`${mobileView === "map" ? "hidden md:block" : ""} ${selectedProducer ? "md:pb-[320px] transition-[padding] duration-200" : ""}`}
+      >
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h2 className="font-headline text-2xl font-bold text-site-text">
             בתי עסק{committedBounds ? " באזור" : ""} ({visibleProducers.length})

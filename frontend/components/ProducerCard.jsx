@@ -41,6 +41,19 @@ function InstagramIcon({ className }) {
 export default function ProducerCard({ producer, active, onClick, referrer }) {
   // FINAL_AUDIT: Cloudinary f_auto,q_auto — WebP/AVIF automatic delivery.
   const imgSrc = optimizeCloudinary(producer.images?.[0]);
+  // MEH-30 follow-up debug aid: the placeholder image appears when
+  // `producer.images` is empty/missing. Warn in dev so we can tell a
+  // real missing-image from a Cloudinary fetch failure. Dev-only to
+  // keep console noise off prod.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    typeof console !== "undefined" &&
+    (!Array.isArray(producer.images) || producer.images.length === 0)
+  ) {
+    console.warn(
+      `[ProducerCard] producer ${producer.id} (${producer.name || "unnamed"}) has no images — rendering placeholder`,
+    );
+  }
   // tasks_for_claude_code.md task 17: shared normalizer replaces the
   // previous inline logic that had an order-of-operations bug on inputs
   // with leading whitespace. See lib/utils.js.

@@ -265,7 +265,28 @@ export default function MapComponent({
       onMapMoveRef.current?.();
     });
 
+    // MEH-30 follow-up: Leaflet reads the container height once on
+    // `L.map()` init. If the parent was 0px at that exact moment (e.g.
+    // sticky layout above hadn't stabilized, iOS Safari URL bar was
+    // still shrinking the viewport, a parent used grid/flex that
+    // resolved later), Leaflet happily renders the map at 0–60px and
+    // never recomputes. Force a resize pass once the first frame
+    // settles + on any subsequent container resize.
+    const scheduleInvalidate = () => {
+      if (!mapInstanceRef.current) return;
+      requestAnimationFrame(() => mapInstanceRef.current?.invalidateSize());
+    };
+    scheduleInvalidate();
+    setTimeout(scheduleInvalidate, 150);
+    setTimeout(scheduleInvalidate, 500);
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined" && mapRef.current) {
+      resizeObserver = new ResizeObserver(scheduleInvalidate);
+      resizeObserver.observe(mapRef.current);
+    }
+
     return () => {
+      if (resizeObserver) resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

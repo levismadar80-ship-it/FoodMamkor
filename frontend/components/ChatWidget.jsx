@@ -177,12 +177,12 @@ export default function ChatWidget() {
   // ── Positioning (all inline — no Tailwind specificity fights) ──
   const mobileBottom = bannerUp ? 128 : 80; // bottom-32 vs bottom-20
   const launcherStyle = {
-    position: "fixed", zIndex: 1100,
+    position: "fixed", zIndex: 9999,
     right: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : mobileBottom,
   };
   const panelStyle = {
-    position: "fixed", zIndex: 1100,
+    position: "fixed", zIndex: 9999,
     bottom: isDesktop ? 24 : 0,
     right: isDesktop ? 24 : 0,
     left: isDesktop ? "auto" : 0,
