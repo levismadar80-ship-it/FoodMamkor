@@ -87,6 +87,13 @@ export default function LoginPage() {
           <p className="text-site-muted text-sm">ברוכה הבאה</p>
         </div>
 
+        {/* Value-prop strip */}
+        <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
+          <span>❤️ שמרי עסקים</span>
+          <span>⭐ דרגי</span>
+          <span>🏠 פרסמי מטבח ביתי</span>
+        </div>
+
         {/* Email + password form — FIRST per spec */}
         <form onSubmit={handleSubmit} className="space-y-3 text-right mb-5">
           <div>
@@ -166,6 +173,11 @@ export default function LoginPage() {
             {passwordValidLength && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
+            <div className="text-left mt-1">
+              <Link href="/forgot-password" className="text-xs text-site-muted hover:text-primary transition">
+                שכחת סיסמה?
+              </Link>
+            </div>
           </div>
           {error && (
             <p className="text-red-500 text-sm text-right" role="alert">
