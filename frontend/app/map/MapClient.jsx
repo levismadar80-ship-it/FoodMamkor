@@ -173,10 +173,10 @@ export default function MapPage() {
     const next = { ...chipState, categoryKey: key };
     setChipState(next);
     loadProducers(buildParams(next));
-    // Changing category clears the bounds filter so users see all
-    // matches, not just the ones inside the previous viewport.
     setCommittedBounds(null);
     setMapMoved(false);
+    setSelectedProducer(null);
+    setActiveProducerId(null);
   };
 
   const onToggleChipClick = (key) => {
@@ -189,6 +189,8 @@ export default function MapPage() {
     loadProducers(buildParams(next));
     setCommittedBounds(null);
     setMapMoved(false);
+    setSelectedProducer(null);
+    setActiveProducerId(null);
   };
 
   const handleCityPickerSelect = (city) => {
@@ -264,6 +266,11 @@ export default function MapPage() {
   // docs/archive/MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button
   const handleMapMove = useCallback(() => {
     setMapMoved(true);
+  }, []);
+
+  const handleMapCanvasClick = useCallback(() => {
+    setSelectedProducer(null);
+    setActiveProducerId(null);
   }, []);
 
   // MEH-14 / old bug #14: commit the current viewport AND refetch
@@ -382,6 +389,7 @@ export default function MapPage() {
         onProducerHover={handleMarkerHover}
         onBoundsChange={handleBoundsChange}
         onMapMove={handleMapMove}
+        onMapCanvasClick={handleMapCanvasClick}
         registerApi={registerMapApi}
         visitedIds={visitedIds}
       />
@@ -396,7 +404,7 @@ export default function MapPage() {
       )}
       {mapMoved && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
-          <button type="button" onClick={handleSearchThisArea} className="bg-white border border-border rounded-full px-5 py-2.5 text-sm font-medium shadow-[0_2px_12px_rgba(0,0,0,0.12)] hover:bg-light transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+          <button type="button" onClick={(e) => { e.stopPropagation(); handleSearchThisArea(); }} className="bg-white border border-border rounded-full px-5 py-2.5 text-sm font-medium shadow-[0_2px_12px_rgba(0,0,0,0.12)] hover:bg-light transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
             <MagnifyingGlass size={16} weight="bold" className="text-primary" />
             חפשי באזור זה
           </button>
@@ -434,8 +442,21 @@ export default function MapPage() {
       {visibleProducers.length === 0 && (
         <div className="text-center py-12">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
-          <h3 className="font-headline text-lg font-bold text-site-text mb-2">אין עסקים באזור</h3>
-          <p className="text-site-muted text-sm">נסי להזיז את המפה או לשנות מסננים.</p>
+          <h3 className="font-headline text-lg font-bold text-site-text mb-2">לא נמצאו עסקים</h3>
+          <p className="text-site-muted text-sm mb-3">נסי להזיז את המפה או לשנות מסננים.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, grass_fed: false });
+              setActiveCategoryNames(null);
+              setCommittedBounds(null);
+              setCityFilter("");
+              loadProducers();
+            }}
+            className="text-sm text-primary font-medium hover:underline"
+          >
+            אפסי סינון
+          </button>
         </div>
       )}
     </div>

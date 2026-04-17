@@ -114,6 +114,7 @@ export default function MapComponent({
   onProducerHover,
   onBoundsChange,
   onMapMove,
+  onMapCanvasClick,
   registerApi,
   // MEH-14: IDs of producers the user has already viewed (from
   // recently_viewed sessionStorage). These markers render dimmed.
@@ -150,6 +151,8 @@ export default function MapComponent({
   onProducerHoverRef.current = onProducerHover;
   const onMapMoveRef = useRef(onMapMove);
   onMapMoveRef.current = onMapMove;
+  const onMapCanvasClickRef = useRef(onMapCanvasClick);
+  onMapCanvasClickRef.current = onMapCanvasClick;
 
   // Refresh a single marker's icon based on active/hover/visited state
   const refreshMarkerIcon = (id) => {
@@ -292,6 +295,10 @@ export default function MapComponent({
         return;
       }
       onMapMoveRef.current?.();
+    });
+
+    mapInstanceRef.current.on("click", () => {
+      onMapCanvasClickRef.current?.();
     });
 
     // MEH-30 follow-up: Leaflet reads the container height once on
