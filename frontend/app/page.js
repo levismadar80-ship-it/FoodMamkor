@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ui/Toast";
+import EmptyState from "@/components/ui/EmptyState";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 
@@ -11,6 +13,7 @@ const PAGE_SIZE = 8;
 
 export default function HomePage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -66,7 +69,7 @@ export default function HomePage() {
       const r = await api.get("/home-products");
       setHomeProducts(r.data);
     } catch {
-      alert("שגיאה ביצירת המוצר");
+      toast("שגיאה ביצירת המוצר", "error");
     }
   };
 
@@ -195,7 +198,13 @@ export default function HomePage() {
           ))}
         </div>
         {producers.length === 0 && (
-          <p className="text-center text-text-secondary py-12">לא נמצאו בתי עסק. נסו לשנות את הסינון.</p>
+          <EmptyState
+            emoji="🌱"
+            title="לא מצאנו בתי עסק"
+            description="נסו לשנות את הסינון או לחפש באזור אחר"
+            ctaLabel="הצג את כולם"
+            ctaOnClick={() => loadProducers()}
+          />
         )}
         {hasMore && (
           <div className="text-center mt-8">
@@ -261,9 +270,14 @@ export default function HomePage() {
           ))}
         </div>
         {homeProducts.length === 0 && (
-          <p className="text-center text-text-secondary py-8">
-            אין עדיין מוצרים ביתיים. {user ? "היה הראשון לפרסם!" : "התחבר כדי לפרסם."}
-          </p>
+          <EmptyState
+            emoji="🏠"
+            title="אין עדיין מוצרים ביתיים"
+            description={user ? "היה הראשון לפרסם מוצר מהמטבח שלך" : "התחבר כדי לפרסם מוצר ביתי"}
+            ctaLabel={user ? "פרסם מוצר ביתי" : "התחבר"}
+            ctaHref={user ? undefined : "/login"}
+            ctaOnClick={user ? () => setShowHomeForm(true) : undefined}
+          />
         )}
       </section>
     </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function FavoritesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -34,29 +35,33 @@ export default function FavoritesPage() {
       <h1 className="text-2xl font-bold mb-8">❤️ המועדפים שלי</h1>
 
       {loading ? (
-        <p className="text-center text-text-secondary">טוען...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-[12px] overflow-hidden animate-pulse">
+              <div className="h-56 bg-border" />
+              <div className="p-4 space-y-3">
+                <div className="h-5 bg-border rounded w-3/4" />
+                <div className="h-4 bg-border rounded w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : error ? (
-        <div className="text-center py-16">
-          <p className="text-5xl mb-4">⚠️</p>
-          <p className="text-text-secondary mb-4">שגיאה בטעינת המועדפים. אפשר לנסות שוב.</p>
-          <button
-            onClick={() => { setError(false); setLoading(true); api.get("/users/me/favorites").then((r) => setFavorites(r.data)).catch(() => setError(true)).finally(() => setLoading(false)); }}
-            className="bg-primary text-white px-6 py-2 rounded-[12px] hover:bg-primary-dark transition"
-          >
-            נסי שוב
-          </button>
-        </div>
+        <EmptyState
+          emoji="⚠️"
+          title="שגיאה בטעינת המועדפים"
+          description="לא הצלחנו לטעון את הרשימה. אפשר לנסות שוב."
+          ctaLabel="נסי שוב"
+          ctaOnClick={() => { setError(false); setLoading(true); api.get("/users/me/favorites").then((r) => setFavorites(r.data)).catch(() => setError(true)).finally(() => setLoading(false)); }}
+        />
       ) : favorites.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-5xl mb-4">🤍</p>
-          <p className="text-text-secondary mb-4">עדיין לא שמרת עסקים למועדפים</p>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-primary text-white px-6 py-2 rounded-[12px] hover:bg-primary-light transition"
-          >
-            גלה בתי עסק
-          </button>
-        </div>
+        <EmptyState
+          emoji="🤍"
+          title="עדיין לא שמרת עסקים 🌿"
+          description="לחצי על ❤️ בכרטיס עסק כדי לשמור אותו כאן"
+          ctaLabel="גלי בתי עסק"
+          ctaHref="/"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {favorites.map((fav) => (

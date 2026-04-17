@@ -25,6 +25,8 @@ module.exports = {
       },
       fontFamily: {
         heebo: ["Heebo", "sans-serif"],
+        body: ["DM Sans", "sans-serif"],
+        headline: ["Frank Ruhl Libre", "serif"],
       },
     },
   },

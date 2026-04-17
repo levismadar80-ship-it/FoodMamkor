@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import CategoryTag from "./CategoryTag";
+import Tooltip from "./ui/Tooltip";
 
 export default function ProducerCard({ producer }) {
   const imgSrc = producer.images?.[0] || "https://placehold.co/400x300?text=מהמקור";
@@ -22,14 +23,18 @@ export default function ProducerCard({ producer }) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           />
           {producer.is_verified && (
-            <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full">
-              מאומת ✓
-            </span>
+            <Tooltip content="עסק שאומת על ידי צוות מהמקור — נפגשנו איתם ובדקנו את המוצרים" position="bottom">
+              <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded-full cursor-help">
+                מאומת ✓
+              </span>
+            </Tooltip>
           )}
           {producer.plan === "premium" && (
-            <span className="absolute top-3 right-3 bg-accent-warm text-white text-xs px-2 py-1 rounded-full">
-              פרמיום
-            </span>
+            <Tooltip content="בית עסק בתוכנית הפרמיום — תמיכה מורחבת ותכונות נוספות" position="bottom">
+              <span className="absolute top-3 right-3 bg-accent-warm text-white text-xs px-2 py-1 rounded-full cursor-help">
+                פרמיום
+              </span>
+            </Tooltip>
           )}
         </div>
       </Link>

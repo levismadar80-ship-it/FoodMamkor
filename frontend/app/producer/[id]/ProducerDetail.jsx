@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import EmptyState from "@/components/ui/EmptyState";
+import Tooltip from "@/components/ui/Tooltip";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -28,16 +30,33 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        טוען...
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="flex gap-4 mb-8">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex-1 h-64 bg-border rounded-[12px] animate-pulse" />
+          ))}
+        </div>
+        <div className="space-y-4">
+          <div className="h-8 bg-border rounded w-1/2 animate-pulse" />
+          <div className="h-4 bg-border rounded w-1/4 animate-pulse" />
+          <div className="h-20 bg-border rounded animate-pulse" />
+        </div>
       </div>
     );
   }
 
   if (!producer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
-        בית עסק לא נמצא
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <EmptyState
+          emoji="🔍"
+          title="בית עסק לא נמצא"
+          description="יכול להיות שהעסק הוסר או שהקישור שגוי"
+          ctaLabel="חזרה למפה"
+          ctaHref="/map"
+          secondaryLabel="גלי עסקים דומים"
+          secondaryHref="/"
+        />
       </div>
     );
   }
@@ -58,10 +77,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold">{producer.name}</h1>
             {producer.is_verified && (
-              <span className="bg-primary text-white text-xs px-3 py-1 rounded-full">מאומת ✓</span>
+              <Tooltip content="עסק שאומת על ידי צוות מהמקור — נפגשנו איתם ובדקנו את המוצרים">
+                <span className="bg-primary text-white text-xs px-3 py-1 rounded-full cursor-help">מאומת ✓</span>
+              </Tooltip>
             )}
             {producer.plan === "premium" && (
-              <span className="bg-accent-warm text-white text-xs px-3 py-1 rounded-full">פרמיום</span>
+              <Tooltip content="בית עסק בתוכנית הפרמיום — תמיכה מורחבת ותכונות נוספות">
+                <span className="bg-accent-warm text-white text-xs px-3 py-1 rounded-full cursor-help">פרמיום</span>
+              </Tooltip>
             )}
           </div>
           <p className="text-text-secondary">{producer.city}</p>

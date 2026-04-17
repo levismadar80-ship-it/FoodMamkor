@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Tooltip from "./ui/Tooltip";
 import StarRating from "./StarRating";
 import WhatsAppButton from "./WhatsAppButton";
 
@@ -17,9 +18,11 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 33vw"
         />
-        <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full">
-          ביתי 🏠
-        </span>
+        <Tooltip content="מוצר ביתי שמוכר ישירות על ידי שכן — האחריות על המוכר" position="bottom">
+          <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full cursor-help">
+            ביתי 🏠
+          </span>
+        </Tooltip>
         {product.avg_rating !== null && product.avg_rating < 3 && (
           <span className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full">
             ⚠️ דירוג נמוך

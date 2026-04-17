@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function RegisterProducerPage() {
   const router = useRouter();
+  const toast = useToast();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
@@ -170,7 +172,7 @@ export default function RegisterProducerPage() {
                         const res = await api.post("/upload/image", formData);
                         setUploadedImages([...uploadedImages, res.data.url]);
                       } catch (err) {
-                        alert(err.response?.data?.detail || "שגיאה בהעלאת תמונה");
+                        toast(err.response?.data?.detail || "שגיאה בהעלאת תמונה", "error");
                       }
                       setUploading(false);
                       e.target.value = "";

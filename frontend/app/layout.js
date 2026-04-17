@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider } from "@/components/ui/Toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
@@ -23,10 +24,12 @@ export default function RootLayout({ children }) {
     <html lang="he" dir="rtl">
       <body className="font-body bg-background text-text-primary min-h-screen flex flex-col pb-16 md:pb-0">
         <AuthProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <BottomNav />
+          <ToastProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <BottomNav />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ui/Toast";
 
 export default function SettingsPage() {
   const { user, loading: authLoading, deleteAccount } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -23,7 +25,7 @@ export default function SettingsPage() {
       await deleteAccount();
       router.push("/");
     } catch {
-      alert("שגיאה במחיקת החשבון. נסה שוב.");
+      toast("שגיאה במחיקת החשבון. נסי שוב.", "error");
     }
     setDeleting(false);
   };
