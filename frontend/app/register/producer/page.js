@@ -8,21 +8,26 @@ import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 
+const DRAFT_KEY = "producer_registration_draft";
+
+const EMPTY_FORM = {
+  email: "", name: "", password: "",
+  producer_name: "", description: "", city: "",
+  lat: null, lng: null,
+  phone: "", instagram: "", website: "",
+  category_ids: [],
+  delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
+};
+
 export default function RegisterProducerPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
 
-  const [form, setForm] = useState({
-    email: "", name: "", password: "",
-    producer_name: "", description: "", city: "",
-    lat: null, lng: null,
-    phone: "", instagram: "", website: "",
-    category_ids: [],
-    delivery_areas: [{ city: "", min_order: "", delivery_day: "" }],
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [declaredLicenses, setDeclaredLicenses] = useState(false);
@@ -31,9 +36,45 @@ export default function RegisterProducerPage() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.producer_name || parsed.name || parsed.email) {
+          setShowDraftBanner(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const saveDraft = (updatedForm) => {
+    try {
+      const { password, ...safe } = updatedForm;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+    } catch {
+      // ignore
+    }
+  };
+
+  const restoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        setForm((prev) => ({ ...prev, ...JSON.parse(saved) }));
+      }
+    } catch {
+      // ignore
+    }
+    setShowDraftBanner(false);
+  };
+
+  const set = (field) => (e) => {
+    const updated = { ...form, [field]: e.target.value };
+    setForm(updated);
+    saveDraft(updated);
+  };
   const toggleCategory = (id) => {
     const ids = form.category_ids.includes(id)
       ? form.category_ids.filter((c) => c !== id)
@@ -67,6 +108,7 @@ export default function RegisterProducerPage() {
       };
       const res = await api.post("/auth/register/producer", data);
       localStorage.setItem("token", res.data.access_token);
+      localStorage.removeItem(DRAFT_KEY);
       setStep(4);
     } catch (err) {
       setError(err.response?.data?.detail || "שגיאה בהרשמה");
@@ -77,8 +119,29 @@ export default function RegisterProducerPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="text-2xl font-bold mb-2 text-center">הוסף את העסק שלך</h1>
-        <p className="text-text-secondary text-center mb-8">הצטרפו למהמקור והגיעו לקונים שמחפשים אוכל אמיתי</p>
+        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">הוסף את העסק שלך</h1>
+        <p className="text-site-muted text-center mb-4">הצטרפו למהמקור והגיעו לקונים שמחפשים אוכל אמיתי</p>
+
+        {/* Draft restore banner */}
+        {showDraftBanner && step < 4 && (
+          <div className="bg-light border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
+            <span className="text-site-text">שמרנו טיוטה ממילוי קודם — רוצה להמשיך?</span>
+            <div className="flex gap-3">
+              <button
+                onClick={restoreDraft}
+                className="text-primary font-medium hover:underline"
+              >
+                כן, המשך
+              </button>
+              <button
+                onClick={() => setShowDraftBanner(false)}
+                className="text-site-muted hover:text-site-text"
+              >
+                לא
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Progress bar */}
         <div className="flex gap-2 mb-8">
@@ -346,17 +409,36 @@ export default function RegisterProducerPage() {
         {/* Step 4: Confirmation */}
         {step === 4 && (
           <div className="text-center py-8">
-            <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold mb-2">הבקשה נשלחה!</h2>
-            <p className="text-text-secondary mb-6">
+            <div className="text-6xl mb-4" aria-hidden="true">✅</div>
+            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">הבקשה נשלחה!</h2>
+            <p className="text-site-muted mb-6">
               הבקשה שלך ממתינה לאישור. נעדכן אותך ברגע שהעסק יאושר.
             </p>
-            <button
-              onClick={() => router.push("/")}
-              className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition"
-            >
-              חזרה לדף הבית
-            </button>
+            <div className="bg-light rounded-[16px] p-5 text-right mb-6">
+              <h3 className="font-semibold text-site-text mb-3">מה קורה עכשיו?</h3>
+              <ul className="text-sm text-site-muted space-y-2">
+                <li>✓ הצוות שלנו יבדוק את הבקשה תוך 1-2 ימי עסקים</li>
+                <li>✓ תקבלי אימייל כשהעסק יאושר</li>
+                <li>✓ אחרי האישור — העסק שלך יופיע במפה ובחיפוש</li>
+                <li>✓ תוכלי להוסיף תמונות ומוצרים מהפרופיל שלך</li>
+              </ul>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href="https://instagram.com/mehamekor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium text-sm"
+              >
+                עקבי @mehamekor באינסטגרם
+              </a>
+              <button
+                onClick={() => router.push("/")}
+                className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
+              >
+                חזרה לדף הבית
+              </button>
+            </div>
           </div>
         )}
       </div>
