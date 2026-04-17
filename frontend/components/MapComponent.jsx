@@ -32,51 +32,79 @@ import { styleForProducer } from "@/lib/map-categories";
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
 
-/** Create a teardrop divIcon, color + emoji by category.
+/**
+ * MEH-58 Phase 1 — custom SVG pin marker.
  *
- * MEH-14: when `visited` is true we dim the marker (0.55 opacity) so
- * producers the user has already browsed fade into the background.
- * Active + hovered states override dim so the current focus is always
- * crisp.
+ * Anatomy (default 32×40):
+ *   - Teardrop body: fill #2e6853
+ *   - White disc Ø26px centered in the body
+ *   - Category emoji 13px centered in the disc
+ *   - Premium ring: stroke #8B6914 2px around disc when plan=premium
+ *   - Verified ✓ badge: 9px white circle bottom-right when is_verified
+ *
+ * States:
+ *   default  → 32×40
+ *   selected → 44×54, white ring around the teardrop
+ *   visited  → opacity 0.4, body fill #7aa298
+ *   hover    → scale(1.15) via CSS transition (desktop only)
  */
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
 ) {
-  const { color, emoji } = styleForProducer(producer);
-  const size = active ? 44 : hovered ? 38 : 32;
-  const iconOffset = active ? 22 : hovered ? 19 : 16;
-  const dimmed = visited && !active && !hovered;
-  const opacity = dimmed ? 0.55 : 1;
-  const borderColor = dimmed ? "#9ca3af" : color;
+  const { emoji } = styleForProducer(producer);
+  const selected = active;
+  const w = selected ? 44 : 32;
+  const h = selected ? 54 : 40;
+  const dimmed = visited && !selected && !hovered;
+  const bodyFill = dimmed ? "#7aa298" : "#2e6853";
+  const opacity = dimmed ? 0.4 : 1;
+  const isPremium = producer.plan === "premium";
+  const isVerified = producer.is_verified;
 
-  const html = `
-    <div class="mehamakor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""} ${dimmed ? "visited" : ""}"
-         style="
-           background: ${active ? color : "white"};
-           color: ${active ? "white" : color};
-           border: 2px solid ${borderColor};
-           border-radius: 50% 50% 50% 0;
-           transform: rotate(-45deg);
-           width: ${size}px;
-           height: ${size}px;
-           display: flex; align-items: center; justify-content: center;
-           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-           opacity: ${opacity};
-           transition: all 0.18s ease-out;
-         ">
-      <span aria-hidden="true" style="transform: rotate(45deg); font-size: ${active ? 20 : 14}px;">
-        ${emoji}
-      </span>
+  const discR = selected ? 16 : 13;
+  const discCx = w / 2;
+  const discCy = selected ? 22 : 16;
+  const emojiSize = selected ? 17 : 13;
+
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <!-- teardrop body -->
+  <path d="M${w / 2} ${h} C${w / 2} ${h} 0 ${h * 0.55} 0 ${h * 0.38}
+    A${w / 2} ${w / 2} 0 1 1 ${w} ${h * 0.38}
+    C${w} ${h * 0.55} ${w / 2} ${h} ${w / 2} ${h}Z"
+    fill="${bodyFill}" />
+  ${selected ? `<path d="M${w / 2} ${h} C${w / 2} ${h} 0 ${h * 0.55} 0 ${h * 0.38}
+    A${w / 2} ${w / 2} 0 1 1 ${w} ${h * 0.38}
+    C${w} ${h * 0.55} ${w / 2} ${h} ${w / 2} ${h}Z"
+    fill="none" stroke="white" stroke-width="3" />` : ""}
+  <!-- white disc -->
+  <circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="white" />
+  ${isPremium ? `<circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="none" stroke="#8B6914" stroke-width="2" />` : ""}
+  <!-- emoji (foreignObject so we can use real Unicode glyphs) -->
+  <foreignObject x="${discCx - discR}" y="${discCy - discR}" width="${discR * 2}" height="${discR * 2}">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:${emojiSize}px;line-height:1;">
+      ${emoji}
     </div>
-  `;
+  </foreignObject>
+  ${isVerified ? `
+  <circle cx="${discCx + discR * 0.7}" cy="${discCy + discR * 0.7}" r="5.5" fill="#2e6853" stroke="white" stroke-width="1" />
+  <text x="${discCx + discR * 0.7}" y="${discCy + discR * 0.7 + 3}" text-anchor="middle" fill="white" font-size="7" font-weight="bold">✓</text>
+  ` : ""}
+</svg>`;
+
+  const wrapper = `
+    <div class="mehamakor-marker ${selected ? "selected" : ""} ${hovered ? "hovered" : ""} ${dimmed ? "visited" : ""}"
+         style="opacity:${opacity};transition:transform 0.15s ease-out,opacity 0.15s ease-out;${hovered && !selected ? "transform:scale(1.15);" : ""}">
+      ${svg}
+    </div>`;
 
   return L.divIcon({
-    html,
+    html: wrapper,
     className: "mehamakor-marker-wrap",
-    iconSize: [size, size],
-    iconAnchor: [iconOffset, size],
-    popupAnchor: [0, -size],
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h],
+    popupAnchor: [0, -h],
   });
 }
 
@@ -215,11 +243,12 @@ export default function MapComponent({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
 
-    // Cluster group for markers — docs/archive/MAP_IMPROVEMENTS.md #4
+    // MEH-58 Phase 1: cluster below zoom 11, green circle + white count.
     clusterGroupRef.current = L.markerClusterGroup({
       chunkedLoading: true,
       showCoverageOnHover: false,
       maxClusterRadius: 60,
+      disableClusteringAtZoom: 11,
       iconCreateFunction: (cluster) => {
         const count = cluster.getChildCount();
         return L.divIcon({

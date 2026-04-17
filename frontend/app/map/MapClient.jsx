@@ -74,6 +74,7 @@ export default function MapPage() {
   // Read once on mount — re-renders mid-session are fine because clicking
   // a card navigates away from /map.
   const [visitedIds, setVisitedIds] = useState([]);
+  const [showMapHint, setShowMapHint] = useState(false);
 
   const mapApiRef = useRef(null);
   const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
@@ -86,6 +87,27 @@ export default function MapPage() {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     loadProducers();
     setVisitedIds(getRecentlyViewedIds());
+  }, []);
+
+  // MEH-58 Phase 1: onboarding hint — first visit only (sessionStorage).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("map_tour_shown")) return;
+    const show = setTimeout(() => setShowMapHint(true), 3000);
+    const dismiss = setTimeout(() => {
+      setShowMapHint(false);
+      sessionStorage.setItem("map_tour_shown", "1");
+    }, 6000);
+    const onClick = () => {
+      setShowMapHint(false);
+      sessionStorage.setItem("map_tour_shown", "1");
+    };
+    window.addEventListener("click", onClick, { once: true });
+    return () => {
+      clearTimeout(show);
+      clearTimeout(dismiss);
+      window.removeEventListener("click", onClick);
+    };
   }, []);
 
   // MEH-30 follow-up: when the bottom sheet is open, mark the body so
@@ -418,6 +440,17 @@ export default function MapPage() {
           registerApi={registerMapApi}
           visitedIds={visitedIds}
         />
+
+        {/* MEH-58 Phase 1 — onboarding hint toast (first visit, top-center) */}
+        {showMapHint && (
+          <div
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-[10px] text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
+            style={{ backgroundColor: "#2E4A2E" }}
+            role="status"
+          >
+            גלגלי את המפה · לחצי על מרקר לפרטים
+          </div>
+        )}
 
         {/* docs/archive/MAP_IMPROVEMENTS.md #1 — "search this area" floating button */}
         {mapMoved && (
