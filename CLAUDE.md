@@ -145,7 +145,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 
 ## Bug Pattern Protocol (when a bug is found and fixed)
 1. **Identify the root cause** — don't just fix the symptom. Document *why* the bug happened.
-2. **Grep for siblings** — search the entire codebase for the same pattern. If the bug exists in one place, it likely exists in others (e.g., the RTL eye toggle `left-3`→`right-3` fix applied to both `/login` and `/register`).
+2. **Grep for siblings — MANDATORY before closing task.** Run `grep -r "[exact pattern that caused bug]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx"` and report findings to user before marking done. If the bug exists in one place, it likely exists in others (e.g., the RTL eye toggle `left-3`→`right-3` fix applied to both `/login` and `/register`).
 3. **Add a regression rule** — if the pattern is likely to recur, add it to "Regression prevention rules" above.
 4. **Add a test** — write a test that would have caught the bug. If no automated test is possible, add a manual test case to [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md).
 5. **Update docs** — if the fix reveals a non-obvious convention (e.g., "always use physical `right-3` for LTR input toggles in RTL pages"), document it in the relevant doc.
