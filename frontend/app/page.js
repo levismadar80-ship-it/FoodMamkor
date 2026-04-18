@@ -23,15 +23,9 @@ import { useUserCity } from "@/lib/use-user-city";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
 
 const PAGE_SIZE = 8;
-
-const HOME_TOGGLE_CHIPS = [
-  { key: "kosher", label: "כשר", icon: "✡️" },
-  { key: "organic", label: "אורגני", icon: "🌿" },
-  { key: "has_delivery", label: "משלוח", icon: "🚚" },
-  { key: "verified", label: "מאומת בלבד", icon: "✅" },
-];
 
 // OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
 // `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
@@ -217,7 +211,7 @@ export default function HomePage() {
     const newFilters = { ...filters, category: newCat };
     setFilters(newFilters);
     updateURL(newFilters);
-    loadProducers({ category: newCat, ...chipParams() });
+    loadProducers({ category: newCat, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -234,22 +228,10 @@ export default function HomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Build query params from active chips. Called by loadProducers callers
-  // and the chip toggle handler so every filter surface stays in sync.
-  const chipParams = (overrides = {}) => {
-    const c = { ...chips, ...overrides };
-    const p = {};
-    if (c.kosher) p.kosher = true;
-    if (c.organic) p.organic = true;
-    if (c.has_delivery) p.has_delivery = true;
-    if (c.verified) p.verified = true;
-    return p;
-  };
-
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    const params = chipParams({ [key]: !chips[key] });
+    const params = buildChipParams(chips, { [key]: !chips[key] });
     if (filters.category) params.category = filters.category;
     if (key === "has_delivery") {
       const newFilters = { ...filters, has_delivery: next.has_delivery };
@@ -261,7 +243,7 @@ export default function HomePage() {
 
   const handleNearMe = () => {
     if (userCity) {
-      loadProducers({ delivery_city: userCity, ...chipParams() });
+      loadProducers({ delivery_city: userCity, ...buildChipParams(chips) });
       document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -270,7 +252,7 @@ export default function HomePage() {
 
   const handleCitySelected = (city) => {
     setUserCity(city);
-    loadProducers({ delivery_city: city, ...chipParams() });
+    loadProducers({ delivery_city: city, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -607,7 +589,7 @@ export default function HomePage() {
         {/* Filter chips */}
         <ChipScrollRow
           variant="toggle"
-          chips={HOME_TOGGLE_CHIPS}
+          chips={CHIPS_CONFIG}
           activeKeys={chips}
           onChipClick={toggleChip}
           fadeBg="#F5F0E8"
@@ -616,7 +598,7 @@ export default function HomePage() {
         {Object.values(chips).some(Boolean) && (
           <p className="text-xs text-site-muted mb-4" aria-live="polite">
             מסנן לפי:{" "}
-            {HOME_TOGGLE_CHIPS.filter((c) => chips[c.key])
+            {CHIPS_CONFIG.filter((c) => chips[c.key])
               .map((c) => c.label)
               .join(" · ")}
           </p>
@@ -636,7 +618,7 @@ export default function HomePage() {
                 const newFilters = { ...filters, category: "" };
                 setFilters(newFilters);
                 updateURL(newFilters);
-                loadProducers(chipParams());
+                loadProducers(buildChipParams(chips));
               }}
               className="text-sm text-primary hover:underline"
             >
