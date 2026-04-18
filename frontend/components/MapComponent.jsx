@@ -8,6 +8,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { styleForProducer } from "@/lib/map-categories";
 import { showToast } from "@/lib/toast";
+import { CoordSchema } from "@/lib/schemas";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -186,10 +187,11 @@ export default function MapComponent({
         if (prev) refreshMarkerIcon(prev);
         refreshMarkerIcon(producerId);
         const latlng = entry.marker.getLatLng();
-        if (!latlng || isNaN(latlng.lat) || isNaN(latlng.lng)) return;
+        const coordCheck = CoordSchema.safeParse({ lat: latlng?.lat, lng: latlng?.lng });
+        if (!coordCheck.success) return;
         // Suppress the "search this area" banner on programmatic flyTo.
         programmaticMoveRef.current = true;
-        mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });
+        mapInstanceRef.current.flyTo([coordCheck.data.lat, coordCheck.data.lng], 14, { duration: 1.2 });
       },
       setHoveredProducer: (producerId) => {
         const prev = hoveredIdRef.current;
@@ -358,7 +360,7 @@ export default function MapComponent({
     producers.forEach((p) => {
       // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks:
       // skip producers without coordinates or identifying data
-      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number") return;
+      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number" || isNaN(p.lat) || isNaN(p.lng)) return;
       if (!p.id) return;
 
       const marker = L.marker([p.lat, p.lng], {

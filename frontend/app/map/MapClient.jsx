@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { GeoSearchSchema } from "@/lib/schemas";
 import MapProducerCard from "@/components/MapProducerCard";
 import CitySearch from "@/components/CitySearch";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
@@ -360,24 +361,22 @@ export default function MapPage() {
 
     const centerRadius = boundsToCenterRadius(liveBounds);
 
-    // Guard: radius_km=0 means we got a degenerate/missing viewport.
-    // The backend 500s on radius_km=0 (acos domain issue with 0-distance filter).
-    if (!centerRadius || centerRadius.radius_km < 1) {
-      showToast("הזיזי את המפה לפני החיפוש", "info");
+    // Zod validates lat/lng/radius_km before the fetch:
+    //   - radius_km < 1  → degenerate viewport (NaN/0 from hidden map)
+    //   - radius_km > 200 → backend Haversine full-table scan → 500
+    // delivery_city excluded: geo-radius = "producers physically here",
+    // delivery_city = "producers who deliver to my city" — different questions.
+    const { delivery_city: _excluded, ...chipParams } = buildParams();
+    const geoValidation = GeoSearchSchema.safeParse({
+      lat: centerRadius?.lat,
+      lng: centerRadius?.lng,
+      radius_km: centerRadius?.radius_km,
+    });
+    if (!geoValidation.success) {
+      showToast(geoValidation.error.errors[0].message, "info");
       return;
     }
-
-    // Geo-radius = "show producers physically here".
-    // delivery_city = "show producers who deliver to my city" — different question.
-    // Combining them ANDs the filters → 0 results when user pans away from their
-    // selected city. Strip delivery_city; category/verified/organic still apply.
-    const { delivery_city: _excluded, ...chipParams } = buildParams();
-    const params = {
-      ...chipParams,
-      lat: centerRadius.lat,
-      lng: centerRadius.lng,
-      radius_km: centerRadius.radius_km,
-    };
+    const params = { ...chipParams, ...geoValidation.data };
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))

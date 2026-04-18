@@ -75,6 +75,7 @@
     - **Post-merge: `/loop` staging deploy health 5min.** `/loop 60s` → check Vercel deploy status + `curl -sI https://staging.mehamakor.online` expect `HTTP 200`. Stop on first success OR first error. Report to user.
     - **Pre-code: Ultraplan for multi-phase tasks (3+ phases, e.g. MEH-58 map redesign).** Start with `/plan ultraplan [caveman spec]`. Drafts build in cloud at code.claude.com. User reviews + approves the plan before any code is written; only execute after explicit `go`. Requires Claude Code web account + GitHub repo connected.
     - Caveat: `Monitor` needs the advertising MCP server connected; if unavailable, fall back to manual `curl` polling and note it in the session summary.
+16. **Zod validation before every map API call.** Import schema from `lib/schemas.js`; call `safeParse()` before any `api.get/post` or Leaflet mutation. On failure: `showToast(error.errors[0].message, "info"); return;`. Never pass NaN, null, 0, or values > 200 to API or map functions.
 
 ## Regression prevention rules
 1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
@@ -130,7 +131,7 @@
 - `/session-resume` — read back `session-state.md` and restore the plan after `/clear`.
 
 ## How to update this file
-- Keep it ≤ 185 lines (raised from 180 in April 2026 when rule 15 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
+- Keep it ≤ 187 lines (raised from 185 in April 2026 when rule 16 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
 
 ## Architecture Diagrams
