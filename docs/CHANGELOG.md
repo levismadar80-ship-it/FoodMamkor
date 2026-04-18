@@ -35,6 +35,10 @@ about:
 
 ---
 
+## 2026-04-18 — Hero parallax redesign (feature/meh-61e-hero-redesign)
+
+- Replaced Ken Burns zoom/pan inner-div with `background-attachment: fixed` CSS parallax directly on the hero `<section>`, per DESIGN.md spec. Added `.hero-parallax` class in `globals.css`; `@media (pointer: coarse)` falls back to `scroll` for iOS Safari (which silently ignores `fixed`). Ken Burns keyframes retained — still used by ParallaxQuote, EventsClient, AboutClient, ExperiencesClient, NeighborClient.
+
 ## 2026-04-18 — ProducerCard redesign (Phases A → B → C) (claude/review-mehamakor-docs-1Mre9)
 
 - **Phase A — deletions.** Removed the 5-icon footer contact row (WhatsApp / phone / website / email / Instagram — dead code on all grid views because `ProducerListOut` never carries those fields), the duplicate organic/grass-fed/kosher/category pill row, the `פרמיום` image overlay, the "מידע נוסף" text CTA, and the separate rating row. Replaced stray inline `style={{ borderRadius… }}` with Tailwind `rounded-2xl` / `rounded-t-2xl`.

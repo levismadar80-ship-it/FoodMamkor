@@ -271,20 +271,20 @@ export default function HomePage() {
     <div>
       {/* =========================
           HERO — gardensweet.com style
-          PREMIUM_DESIGN: Ken Burns slow pan/zoom on the background image.
-          The image lives on an absolutely-positioned inner layer so the
-          animation doesn't affect the text overlay.
+          background-attachment: fixed is the CSS parallax (spec §Hero).
+          .hero-parallax sets fixed; @media (pointer: coarse) falls back
+          to scroll because iOS Safari silently ignores fixed.
           ========================= */}
-      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
-        <div
-          className="kenburns-right absolute"
-          style={{
-            inset: "-5%",
-            backgroundImage: `url(${HERO_IMAGE})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
+      <section
+        className="relative w-full hero-parallax"
+        style={{
+          height: "100vh",
+          backgroundImage: `url(${HERO_IMAGE})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         {/* Gradient overlay — dark at bottom, fading up */}
         <div
           className="absolute inset-0"
