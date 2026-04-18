@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { useUserCity } from "@/lib/useUserCity";
+import { useUserCity } from "@/lib/use-user-city";
 
 export default function MapProducerCard({ producer, active, onClick }) {
-  const userCity = useUserCity();
+  const { city: userCity } = useUserCity();
   const p = producer;
   const imgSrc = optimizeCloudinary(p.images?.[0]);
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
