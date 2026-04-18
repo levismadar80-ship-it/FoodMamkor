@@ -433,7 +433,7 @@ export default function MapPage() {
   // Shared filter chips bar (used in both desktop + mobile sheet)
   const filterChipsBar = (
     <div
-      className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide"
+      className="flex gap-2 overflow-x-auto pb-1 -mx-4 ps-4 scrollbar-hide after:content-[''] after:shrink-0 after:w-4"
       role="toolbar"
       aria-label="סינון מפה"
       dir="rtl"
