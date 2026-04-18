@@ -83,8 +83,7 @@ export default function NeighborClient() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed inset-x-4 z-[500] transition-opacity duration-500"
-          style={{ top: "80px", borderRadius: "10px", background: "#EAF3DE", color: "#2e6853", padding: "10px 16px" }}
+          className="fixed inset-x-4 z-[500] transition-opacity duration-500 top-20 rounded-[10px] bg-light text-primary py-[10px] px-4"
         >
           <p className="text-sm font-medium text-center">
             כאן שכנות מוכרות אוכל ביתי — גלגלי לגלות · לחצי על מוצר לפרטים
@@ -119,7 +118,7 @@ export default function NeighborClient() {
             style={{ fontSize: "clamp(36px, 5vw, 56px)" }}
           >
             מהמטבח של השכן
-            <House size={44} weight="duotone" color="#EAF3DE" aria-hidden="true" />
+            <House size={44} weight="duotone" className="text-light" aria-hidden="true" />
           </h1>
           <p className="font-body text-light/90 text-lg max-w-xl mx-auto">
             מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח

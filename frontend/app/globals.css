@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* WhatsApp primary CTA — single source of truth for green button styling.
+   Replaces bg-[#25D366] hover:bg-[#20b858] scattered across MapClient + ProducerDetail. */
+.btn-whatsapp {
+  @apply bg-[#25D366] hover:bg-[#20b858] text-white transition;
+}
+
 html {
   direction: rtl;
 }
