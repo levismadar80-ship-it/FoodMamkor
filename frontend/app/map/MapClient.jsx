@@ -11,7 +11,8 @@ import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import MapBottomSheet, { PEEK, HALF, FULL } from "@/components/MapBottomSheet";
-import { useUserCity, setUserCity } from "@/lib/useUserCity";
+import LocationModal from "@/components/LocationModal";
+import { useUserCity } from "@/lib/use-user-city";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -29,6 +30,16 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
     </div>
   ),
 });
+
+// MEH-41: rough lat/lng centers for the 4 popular cities used by
+// LocationModal. NOT for distance calc — the Haversine SQL on the
+// backend handles that.
+const CITY_COORDS = {
+  "תל אביב": [32.0853, 34.7818],
+  "ירושלים": [31.7683, 35.2137],
+  "חיפה": [32.7940, 34.9896],
+  "באר שבע": [31.2530, 34.7915],
+};
 
 export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);
@@ -72,7 +83,8 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [sortBy, setSortBy] = useState("default");
   const [legendOpen, setLegendOpen] = useState(false);
-  const userCity = useUserCity();
+  const { city: userCity, setCity: setUserCity } = useUserCity();
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
 
   // MEH-14: mobile map/list toggle. Desktop ignores this (always shows both).
   const [mobileView, setMobileView] = useState("map");
@@ -117,6 +129,26 @@ export default function MapPage() {
       window.removeEventListener("click", onClick);
     };
   }, []);
+
+  // MEH-41: prompt for city on first /map visit when no city is saved.
+  useEffect(() => {
+    if (!userCity) {
+      const timer = setTimeout(() => setLocationModalOpen(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMapCitySelected = useCallback((city) => {
+    setUserCity(city);
+    setCityFilter(city);
+    loadProducers({ delivery_city: city });
+    const coords = CITY_COORDS[city];
+    if (coords) {
+      setTimeout(() => {
+        mapApiRef.current?.getMap()?.flyTo(coords, 12, { duration: 1.2 });
+      }, 300);
+    }
+  }, [setUserCity]);
 
   // MEH-30 follow-up: when the bottom sheet is open, mark the body so
   // CSS can hide the CookieBanner (which otherwise peeks below the
@@ -284,12 +316,18 @@ export default function MapPage() {
     setMapMoved(false);
     const centerRadius = boundsToCenterRadius(mapBounds);
     if (centerRadius) {
-      loadProducers({
+      const params = {
         ...buildParams(),
         lat: centerRadius.lat,
         lng: centerRadius.lng,
         radius_km: centerRadius.radius_km,
-      });
+      };
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[חפשי באזור זה] GET /producers params:", params);
+      }
+      loadProducers(params);
+    } else if (process.env.NODE_ENV !== "production") {
+      console.warn("[חפשי באזור זה] mapBounds invalid:", mapBounds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
@@ -650,6 +688,13 @@ export default function MapPage() {
           </div>
         </div>
       )}
+
+      {/* MEH-41: location modal — show on first visit when no city saved */}
+      <LocationModal
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelectCity={handleMapCitySelected}
+      />
     </>
   );
 }
