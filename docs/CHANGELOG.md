@@ -43,6 +43,14 @@ about:
 - **Tests.** `__tests__/ProducerCard.test.jsx` rewritten for the new anatomy + heart (39 cases). `__tests__/badges.test.js` updated for the new 8-key priority order. `__tests__/BadgeRow.test.jsx` unchanged (passes). Two pre-existing failures on `staging` (`__tests__/mapChips.test.js` — TOGGLE_CHIPS out of sync with `lib/map-chips.js`; `__tests__/SettingsPage.test.jsx` — OAuth password card) are **not** caused by this PR and are left alone per the "no map / backend files" scope.
 - **Backend:** untouched. `npm run build` green at every phase boundary; `pytest tests/test_api.py` couldn't run in the Vercel-preview sandbox (needs live Postgres).
 
+## 2026-04-18 — Producer detail sidebar v2 (feature/meh-producer-detail-sidebar-v2)
+
+- **Initials fix:** replaced `name.slice(0,2)` with word-initial algorithm (`words[0][0]+words[1][0]`) so "גבינות הר הגולן" → "גה" not "גב".
+- **Vacation banner → slate:** changed `bg-amber-50 border-amber-300` to `bg-slate-50 border-slate-200` (neutral unavailable, not warm/sale) in both main column and sidebar; suppressed `is_available_today` chip during vacation.
+- **Sidebar declutter:** removed "צרי קשר" heading, removed `WhatsAppShareButton` (green conflict) and `MapButton` from sidebar.
+- **Main column action row:** `MapButton` + `WhatsAppShareButton` (gray outlined, "שלחי לחברה") added after inline CTA, visible at all breakpoints.
+- **Mobile highlights strip:** text labels hidden below `sm:` breakpoint (icon-only saves ~24px above the fold on 375px).
+
 ## 2026-04-18 — Producer detail page redesign (feature/meh-producer-detail-redesign)
 
 - Fixed mobile above-fold bug (`order-first` removed from `<aside>`), `is_available_today` chip (both true/false states), `short_description` subtitle, `contact_name` micro-line in main column, highlights strip (grass_fed/organic/delivery/kosher, bg #EAF3DE), and vacation banner + sidebar dim.
