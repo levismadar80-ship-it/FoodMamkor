@@ -81,6 +81,7 @@ export default function ImageGallery({ images = [], producerId = null }) {
           <button
             type="button"
             onClick={() => setCurrent((current - 1 + images.length) % images.length)}
+            // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="תמונה קודמת"
           >
@@ -89,11 +90,13 @@ export default function ImageGallery({ images = [], producerId = null }) {
           <button
             type="button"
             onClick={() => setCurrent((current + 1) % images.length)}
+            // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
             className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label="תמונה הבאה"
           >
             <span aria-hidden="true">→</span>
           </button>
+          {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
             {images.map((_, i) => (
               <button

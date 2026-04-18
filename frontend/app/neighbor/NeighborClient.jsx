@@ -229,6 +229,7 @@ export default function NeighborClient() {
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
+          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
           className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[900] bg-primary text-white px-6 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.35)] flex items-center gap-2 font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label={showForm ? "סגור טופס פרסום מוצר" : "פרסמי מוצר חדש"}
         >

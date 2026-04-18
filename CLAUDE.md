@@ -83,6 +83,7 @@
 2. **Verify key components after refactor.** After any refactor PR: verify that ProducerCard, Header, and BottomNav still import and render cleanly (no undefined variables, no missing props).
 3. **One PR = one change.** One PR = one logical change. Never bundle a refactor with a feature, or a docs change with a code change.
 4. **Mobile preview before approving UI changes.** Before approving any PR that changes visible UI: open the Vercel preview URL on mobile and check the pages most affected by the change.
+5. **RTL logical properties — never use physical directional classes.** Use `start-*`/`end-*` instead of `left-*`/`right-*`, `ms-*`/`me-*` instead of `ml-*`/`mr-*`, `ps-*`/`pe-*` instead of `pl-*`/`pr-*`. When adding ANY positional class, ask: is this directional? If yes, use the logical equivalent. **Intentional physical-property exceptions (keep as-is, add `// rtl-ok` comment):** eye-toggle buttons inside `dir="ltr"` password inputs (`right-3`), carousel prev/next arrows, `left-1/2 -translate-x-1/2` horizontal-center idiom, `pr-11 pl-4` password-input padding pair, map geographic controls (zoom, locate).
 
 ## PR approval guide
 
