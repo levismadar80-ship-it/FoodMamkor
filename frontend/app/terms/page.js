@@ -95,7 +95,7 @@ const SECTIONS = [
           נתקלת במוצר או עסק שאינו עומד בחוק או בתנאים אלה? ניתן לדווח באחת
           מהדרכים הבאות:
         </p>
-        <ul className="list-disc pr-6 space-y-2">
+        <ul className="list-disc ps-6 space-y-2">
           <li>לחיצה על כפתור &quot;דווחי&quot; בעמוד העסק או המוצר.</li>
           <li>
             פנייה ישירה לכתובת{" "}

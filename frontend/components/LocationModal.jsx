@@ -75,7 +75,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 left-3 w-9 h-9 rounded-full hover:bg-light flex items-center justify-center text-site-muted transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 start-3 w-9 h-9 rounded-full hover:bg-light flex items-center justify-center text-site-muted transition focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label="סגור"
         >
           <X size={18} weight="bold" />

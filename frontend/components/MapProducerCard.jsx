@@ -62,7 +62,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
       </div>
 
       {/* Text content — LEFT in RTL */}
-      <div className="flex-1 py-2 pl-3 min-w-0 flex flex-col justify-between">
+      <div className="flex-1 py-2 pe-3 min-w-0 flex flex-col justify-between">
         <div>
           <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "17px" }}>
             {p.name}

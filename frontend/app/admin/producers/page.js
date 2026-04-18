@@ -189,7 +189,7 @@ function ProducersAdminPage() {
         >
           <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {incompleteOnly ? "הצג הכל" : "פרטים חסרים"}
           {incompleteCount > 0 && (
-            <span className="mr-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+            <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
               {incompleteCount}
             </span>
           )}

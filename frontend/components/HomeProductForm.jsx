@@ -340,13 +340,13 @@ export default function HomeProductForm({ onCreated, onCancel }) {
                 <button
                   type="button"
                   onClick={() => removeImage(i)}
-                  className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
+                  className="absolute top-1 start-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
                   aria-label="הסירי תמונה"
                 >
                   ✕
                 </button>
                 {i === 0 && (
-                  <span className="absolute bottom-1 right-1 bg-primary text-white text-[10px] px-1 rounded">ראשית</span>
+                  <span className="absolute bottom-1 start-1 bg-primary text-white text-[10px] px-1 rounded">ראשית</span>
                 )}
               </div>
             ))}

@@ -442,7 +442,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition"
                 >
                   ✕
                 </button>

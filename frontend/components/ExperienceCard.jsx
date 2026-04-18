@@ -60,7 +60,7 @@ export default function ExperienceCard({ experience: ex }) {
           />
           {spotsBadge && (
             <span
-              className={`absolute top-3 left-3 text-xs px-2 py-1 rounded-full ${
+              className={`absolute top-3 end-3 text-xs px-2 py-1 rounded-full ${
                 ex.spots_left === 0
                   ? "bg-site-text/80 text-white"
                   : "bg-accent text-white"

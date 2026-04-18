@@ -63,7 +63,7 @@ export default function AdminHelpPage() {
               <strong>/admin</strong> — הדף הראשי. ארבע מטריקות עליונות (משתמשים,
               בתי עסק, אירועים, דיווחים פתוחים) + שורת delta שבועית מתחתיה.
             </p>
-            <ul className="list-disc pr-5 space-y-1.5 mt-2">
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
               <li>
                 <strong>Pill צהוב על &ldquo;לוח מחוונים&rdquo; ב-sidebar</strong> — כמות פריטים
                 ממתינים לאישור (בתי עסק + דיווחים + מוצרים מסומנים + חוויות).
@@ -89,7 +89,7 @@ export default function AdminHelpPage() {
           {/* ===== Producers ===== */}
           <Section id="producers" icon={Storefront} title="אישור ודחיית בתי עסק">
             <p><strong>/admin/producers</strong> — טבלה + חיפוש + ייבוא Excel.</p>
-            <ol className="list-decimal pr-5 space-y-2 mt-3">
+            <ol className="list-decimal ps-5 space-y-2 mt-3">
               <li>סנני לפי סטטוס <strong>pending</strong>.</li>
               <li>
                 לחצי על שם העסק → עמוד פרטים מלא, כולל הצהרות רישוי,
@@ -122,7 +122,7 @@ export default function AdminHelpPage() {
           {/* ===== Users ===== */}
           <Section id="users" icon={Users} title="ניהול משתמשים">
             <p><strong>/admin/users</strong> — חיפוש לפי מייל/שם, סינון לפי role.</p>
-            <ul className="list-disc pr-5 space-y-1.5 mt-2">
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
               <li><strong>role:</strong> consumer / producer / admin — שינוי מיידי, ללא אישור נוסף.</li>
               <li><strong>חסימה:</strong> login חסום מחזיר 403. המשתמש לא יודע מיד, רואה הודעה בלבד בנסיון ההתחברות הבא.</li>
               <li><strong>מועדפים:</strong> לחצי על הספירה ליד המשתמש כדי לראות את העסקים ששמרה — שימושי לאיתור פעילות חשודה.</li>
@@ -136,7 +136,7 @@ export default function AdminHelpPage() {
           {/* ===== Reviews ===== */}
           <Section id="reviews" icon={Star} title="ביקורות">
             <p><strong>/admin/reviews</strong> — כל הביקורות ברשימה אחת (חדשות קודם).</p>
-            <ul className="list-disc pr-5 space-y-1.5 mt-2">
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
               <li>סנני לפי דירוג (1–5) או חיפוש חופשי על עסק/משתמש/כותרת/טקסט.</li>
               <li>מחיקה דורשת אישור (window.confirm). אחרי מחיקה ה-
                 <code className="bg-light px-1.5 py-0.5 rounded text-xs">avg_rating</code>
@@ -149,7 +149,7 @@ export default function AdminHelpPage() {
           {/* ===== Reports ===== */}
           <Section id="reports" icon={Warning} title="דיווחים">
             <p><strong>/admin/reports</strong> — ממוין לפי דחיפות (חדש + מרובה-דיווחים קודם).</p>
-            <ul className="list-disc pr-5 space-y-1.5 mt-2">
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
               <li><strong>פתור</strong> — סגירת הדיווח, אופציונלי עם פעולה נלווית (חסימה / מחיקה).</li>
               <li><strong>השהה</strong> — משאיר פתוח אבל מעביר לתחתית הרשימה. לשימוש כשצריך לאסוף עוד מידע.</li>
               <li><strong>התעלם</strong> — סגירה בלי פעולה, לדיווחים שלא מבססים בעיה.</li>
@@ -163,7 +163,7 @@ export default function AdminHelpPage() {
           {/* ===== Experiences ===== */}
           <Section id="experiences" icon={Sparkle} title="חוויות">
             <p><strong>/admin/experiences</strong> — 5 טאבים: ממתינות / דרוש תיקון / מאושרות / נדחו / הכל.</p>
-            <ul className="list-disc pr-5 space-y-1.5 mt-2">
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
               <li>בלחיצה: אישור / דחייה / בקשת תיקון. המארחת מקבלת מייל.</li>
               <li>Haiku pre-check עובר לפני שהיא מגיעה לטאב 201Cממתינות201D — טאב 201Cדרוש תיקון201D זה כאשר ה-AI סימן אזהרה אך לא חסם.</li>
             </ul>
@@ -257,7 +257,7 @@ export default function AdminHelpPage() {
               צ&rsquo;קליסט יומי/שבועי/חודשי + אנשי קשר לחירום —
               ראה <code className="bg-light px-1.5 py-0.5 rounded">docs/ADMIN.md</code>
               (סקציה &quot;Handover checklist&quot;).
-              <Link href="/admin" className="ml-3 text-primary hover:underline">
+              <Link href="/admin" className="ms-3 text-primary hover:underline">
                 ← חזרה ללוח המחוונים
               </Link>
             </p>

@@ -42,7 +42,7 @@ const SECTIONS = [
     id: "features",
     title: "התאמות שבוצעו באתר",
     body: (
-      <ul className="list-disc pr-6 space-y-2">
+      <ul className="list-disc ps-6 space-y-2">
         <li>תמיכה מלאה ב-RTL ובקריאת מסך בעברית.</li>
         <li>ניגודיות צבעים סבירה בין טקסט לרקע.</li>
         <li>טקסטים חלופיים (alt) לתמונות משמעותיות.</li>

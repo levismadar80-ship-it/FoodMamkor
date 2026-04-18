@@ -60,7 +60,7 @@ export default function AdminReportsPage() {
             >
               {t.label}
               {count > 0 && (
-                <span className="mr-2 bg-light text-primary px-2 py-0.5 rounded-full text-xs">{count}</span>
+                <span className="me-2 bg-light text-primary px-2 py-0.5 rounded-full text-xs">{count}</span>
               )}
             </button>
           );

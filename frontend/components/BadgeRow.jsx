@@ -83,7 +83,7 @@ function Badge({ badge }) {
         <span
           role="tooltip"
           data-testid={`badge-tooltip-${badge.key}`}
-          className="absolute top-full mt-2 right-0 z-[800] bg-white border border-border rounded-[10px] shadow-lg p-3 text-xs text-site-text leading-relaxed w-52 text-right"
+          className="absolute top-full mt-2 start-0 z-[800] bg-white border border-border rounded-[10px] shadow-lg p-3 text-xs text-site-text leading-relaxed w-52 text-right"
         >
           {badge.tooltip}
         </span>
