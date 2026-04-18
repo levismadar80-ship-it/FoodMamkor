@@ -35,9 +35,10 @@ about:
 
 ---
 
-## 2026-04-18 — Hero parallax redesign (feature/meh-61e-hero-redesign)
+## 2026-04-18 — Hero spec completion (feature/meh-61e-hero-redesign)
 
 - Replaced Ken Burns zoom/pan inner-div with `background-attachment: fixed` CSS parallax directly on the hero `<section>`, per DESIGN.md spec. Added `.hero-parallax` class in `globals.css`; `@media (pointer: coarse)` falls back to `scroll` for iOS Safari (which silently ignores `fixed`). Ken Burns keyframes retained — still used by ParallaxQuote, EventsClient, AboutClient, ExperiencesClient, NeighborClient.
+- Search pill padding aligned to DESIGN.md spec (`gap-2.5 px-6 py-3.5` = 10/24/14px); added `aria-label="חיפוש בתי עסק"` on `role="search"` container; hero `<section>` gets `aria-label` for screen readers.
 
 ## 2026-04-18 — ProducerCard redesign (Phases A → B → C) (claude/review-mehamakor-docs-1Mre9)
 
