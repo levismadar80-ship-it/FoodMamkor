@@ -23,15 +23,11 @@ export default function WhatsAppShareButton({ producer, url }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] text-sm font-medium transition hover:brightness-95"
-      style={{
-        backgroundColor: "#25D366",
-        color: "white",
-      }}
+      className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] text-sm font-medium border border-[#e8e0d0] bg-white text-[#1C1A17] hover:bg-[#F5F0E8] transition"
       aria-label="שתפי את העסק בוואטסאפ"
     >
       <span aria-hidden>💬</span>
-      שתפי עם חברות
+      שלחי לחברה
     </a>
   );
 }

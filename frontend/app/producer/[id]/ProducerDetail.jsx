@@ -127,6 +127,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   const isVacation = producer.availability_status === "vacation";
 
+  const words = (producer.name || "").trim().split(/\s+/).filter(Boolean);
+  const producerInitials =
+    words.length >= 2 ? words[0][0] + words[1][0] : words[0]?.slice(0, 2) ?? "מ";
+
   const primaryCategory = producer.categories?.[0];
   const handleShowOnMap = () => {
     try {
@@ -173,7 +177,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         images={producer.images || []}
         producerId={producer.id}
         categoryEmoji={primaryCategory?.emoji ?? "🌿"}
-        producerInitials={producer.name?.slice(0, 2) ?? "מ"}
+        producerInitials={producerInitials}
       />
 
       {/* Mobile tab bar */}
@@ -235,8 +239,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               status={producer.availability_status}
               variant="detail"
             />
-            {/* Daily availability toggle — rendered on both true and false */}
-            {producer.is_available_today != null && (
+            {/* Daily availability toggle — suppressed during vacation (badge + banner already signal it) */}
+            {producer.is_available_today != null && !isVacation && (
               <span
                 className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full border ${
                   producer.is_available_today
@@ -305,33 +309,33 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex flex-wrap gap-2 mt-3">
               {producer.grass_fed && (
                 <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
-                  🌾 מרעה חופשי
+                  🌾<span className="hidden sm:inline"> מרעה חופשי</span>
                 </span>
               )}
               {producer.organic_certified && (
                 <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
-                  🌿 אורגני מוסמך
+                  🌿<span className="hidden sm:inline"> אורגני מוסמך</span>
                 </span>
               )}
               {producer.delivery_areas?.length > 0 && (
                 <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
-                  🚚 משלוח
+                  🚚<span className="hidden sm:inline"> משלוח</span>
                 </span>
               )}
               {producer.kosher && (
                 <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
-                  ✡️ כשר
+                  ✡️<span className="hidden sm:inline"> כשר</span>
                 </span>
               )}
             </div>
           )}
 
-          {/* Vacation banner — mobile main column (desktop handled in sidebar) */}
+          {/* Vacation banner — slate (neutral unavailable), not amber (which reads as sale/warning) */}
           {isVacation && (
-            <div className="mx-0 mt-3 bg-amber-50 border border-amber-300 rounded-xl p-3">
-              <p className="text-sm font-bold text-amber-800">🌿 בית עסק זה בהפסקה כרגע</p>
-              <p className="text-xs text-amber-700 mt-1">
-                ניתן להשאיר הודעה — יחזרו אליך עם חזרתם לפעילות
+            <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <p className="text-sm font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+              <p className="text-xs text-slate-500 mt-1">
+                ניתן להשאיר הודעה — יחזרו אליך בקרוב
               </p>
             </div>
           )}
@@ -356,6 +360,24 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 }
               }}
             />
+          </div>
+
+          {/* Action row — map + viral share. Shown at all breakpoints.
+              Desktop: MapButton moves here from sidebar to reduce sidebar density.
+              WhatsAppShareButton is secondary (gray outlined) to avoid green conflict with primary CTA. */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {producer.lat && producer.lng && (
+              <button
+                type="button"
+                onClick={handleShowOnMap}
+                className="flex items-center justify-center gap-2 border border-primary text-primary px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="פתח את המיקום של העסק במפה"
+              >
+                <MapTrifold size={16} weight="duotone" />
+                הצג במפה
+              </button>
+            )}
+            <WhatsAppShareButton producer={producer} url={shareUrl} />
           </div>
 
           {/* Description */}
@@ -455,12 +477,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         {/* ================= Sticky contact sidebar ================= */}
         <aside>
           <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
-            <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
-
             {/* Vacation notice in sidebar */}
             {isVacation && (
-              <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 mb-4">
-                <p className="text-xs font-bold text-amber-800">🌿 בית עסק זה בהפסקה כרגע</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+                <p className="text-xs font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
               </div>
             )}
 
@@ -580,24 +600,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 category={primaryCategory?.name}
               />
             </div>
-
-            {/* FINAL_AUDIT: WhatsApp share — the viral loop */}
-            <div className="mb-3">
-              <WhatsAppShareButton producer={producer} url={shareUrl} />
-            </div>
-
-            {/* Show on map */}
-            {producer.lat && producer.lng && (
-              <button
-                type="button"
-                onClick={handleShowOnMap}
-                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
-                aria-label="פתח את המיקום של העסק במפה"
-              >
-                <MapTrifold size={16} weight="duotone" />
-                הצג במפה
-              </button>
-            )}
             </div>{/* end vacation-dim wrapper */}
           </div>
         </aside>
