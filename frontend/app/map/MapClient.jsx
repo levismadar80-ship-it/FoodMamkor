@@ -441,6 +441,8 @@ export default function MapPage() {
           {chip.label}
         </button>
       ))}
+      {/* RTL overflow spacer — CSS padding is clipped at the border edge on the scrollable end; a shrink-0 div is the reliable fix */}
+      <div className="shrink-0 w-4" aria-hidden="true" />
     </div>
   );
 
