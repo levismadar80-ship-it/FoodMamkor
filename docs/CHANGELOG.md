@@ -708,7 +708,8 @@ SENTRY_PROJECT=mehamakor-frontend
   admin moderation, מחזור חיים מלא, ו-iOS zoom + פונטים עבריים +
   RTL + voice פמיני.
 
-## 2026-04-18 — RTL regression protection (feature/rtl-regression-protection)
+## 2026-04-18 — Session handoff system + RTL (feature/session-handoff)
 
+- **feat: session handoff system (#139)** — HANDOFF.md added to repo root (last session summary, next task, key decisions, open issues); CLAUDE.md Rule 1 updated to read HANDOFF.md first; new Rule 13 (end-of-session protocol, MANDATORY same priority as Rule 1); Rules 13–17 renumbered to 14–18; Rule 7 cross-reference updated; line cap raised to ≤ 195; MANUAL_TESTING.md gains Session Handoff section.
 - **feat: RTL regression protection** — 4-layer guard against future physical-property regressions: (1) CLAUDE.md Regression rule #5 documents the `start-*/end-*/ms-*/me-*/ps-*/pe-*` convention with the list of permanent physical exceptions; (2) `frontend/.eslintrc.json` gains `no-restricted-syntax` warn-level rule that flags `left-*/right-*/ml-*/mr-*/pl-*/pr-*` in JSX className attributes — permanent exceptions (carousel arrows, eye-toggles, centering idiom, map geo overlays) silenced with `eslint-disable-next-line -- rtl-ok` comments; (3) `frontend/e2e/rtl.spec.ts` adds 4 Playwright tests covering login eye-toggle position, modal close-button side, admin sidebar side, and ProducerCard badge placement; (4) `.github/workflows/deploy.yml` gains a `lint` job that runs `npm run lint` on every PR and push to main/staging (deploy jobs gated to push-only via `github.event_name == 'push'` guard). Pre-existing warnings (files to be fixed by PR #137 rtl-logical-properties) are "warn" not "error" so CI does not block while #137 is pending.
 
