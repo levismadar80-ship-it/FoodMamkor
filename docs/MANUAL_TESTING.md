@@ -715,6 +715,17 @@ Added with `feature/rtl-regression-protection`.
 
 ---
 
+## Session Handoff
+
+Added with `feature/session-handoff`.
+
+- [ ] Start new session → Claude reads HANDOFF.md before any other file (Rule 1 step a)
+- [ ] End of session → HANDOFF.md updated with: last PR number, current branch state, next task, any new decisions
+- [ ] `/compact` fires mid-session → HANDOFF.md updated immediately before continuing work
+- [ ] Open new session next day → "Next task" section matches what was left unfinished
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
