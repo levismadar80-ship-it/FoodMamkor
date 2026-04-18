@@ -260,8 +260,14 @@ export default function MapPage() {
     setMapMoved(false);
     const centerRadius = boundsToCenterRadius(mapBounds);
     if (centerRadius) {
+      // Geo-radius search = "show producers physically here".
+      // delivery_city = "show producers who deliver to my city" — a different
+      // question. Combining both ANDs them together and returns 0 results when
+      // the user pans away from their delivery city. Strip it here so only
+      // category/verified/organic chip filters carry over into the geo search.
+      const { delivery_city: _excluded, ...chipParams } = buildParams();
       loadProducers({
-        ...buildParams(),
+        ...chipParams,
         lat: centerRadius.lat,
         lng: centerRadius.lng,
         radius_km: centerRadius.radius_km,
