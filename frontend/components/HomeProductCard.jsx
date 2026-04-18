@@ -60,15 +60,14 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         </span>
         {product.moderation_status === "FLAGGED" && (
           <span
-            className="absolute top-3 start-3 text-xs px-2 py-1 rounded-full"
-            style={{ background: "#FFF9E6", color: "#946A00", border: "1px solid #F0C040" }}
+            className="absolute top-3 start-3 bg-light text-accent border border-accent/30 text-xs px-2 py-1 rounded-full"
             title={product.moderation_reason || "המודעה בבדיקת אדמין"}
           >
             <MagnifyingGlass size={14} weight="bold" aria-hidden="true" className="inline" /> בבדיקה
           </span>
         )}
         {product.moderation_status !== "FLAGGED" && product.avg_rating !== null && product.avg_rating < 3 && (
-          <span className="absolute top-3 start-3 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full">
+          <span className="absolute top-3 start-3 bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">
             <Warning size={14} weight="fill" aria-hidden="true" className="inline" /> דירוג נמוך
           </span>
         )}
