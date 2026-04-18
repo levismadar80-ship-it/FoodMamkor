@@ -35,6 +35,12 @@ about:
 
 ---
 
+## 2026-04-18 — RTL logical-properties audit (PR #137)
+
+- **PR #137** `feature/rtl-logical-properties` — replaced physical `left-*`/`right-*`/`ml-*`/`mr-*`/`pl-*`/`pr-*` with logical `start-*`/`end-*`/`ms-*`/`me-*`/`ps-*`/`pe-*` across 16 files. Intentional exceptions preserved: password eye toggles (dir=ltr inputs), map geographic controls, carousel arrows, centering idioms.
+
+---
+
 ## 2026-04-11 — post-restructure session (PRs #22–#33)
 
 Short-form entries for the April 11 session. The CHANGELOG-opt-out line

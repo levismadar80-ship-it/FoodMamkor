@@ -142,12 +142,12 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               Premium / available-today image overlays remain — they're
               distinct semantics (plan tier + same-day flag). */}
           {producer.plan === "premium" && (
-            <span className="absolute top-3 right-3 bg-accent text-white text-xs px-2 py-1 rounded-full">
+            <span className="absolute top-3 start-3 bg-accent text-white text-xs px-2 py-1 rounded-full">
               פרמיום
             </span>
           )}
           {producer.is_available_today && (
-            <span className="absolute bottom-3 right-3 bg-secondary text-white text-xs px-2 py-1 rounded-full font-semibold">
+            <span className="absolute bottom-3 start-3 bg-secondary text-white text-xs px-2 py-1 rounded-full font-semibold">
               זמין היום
             </span>
           )}
@@ -193,7 +193,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
         {producer.reviews_count > 0 && (
           <p className="text-xs text-site-muted mt-1">
             ⭐ {Number(producer.avg_rating).toFixed(1)}
-            <span className="mr-1">({producer.reviews_count})</span>
+            <span className="me-1">({producer.reviews_count})</span>
           </p>
         )}
 

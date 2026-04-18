@@ -730,7 +730,7 @@ export default function MapPage() {
       {showCityPicker && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) setShowCityPicker(false); }}>
           <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full max-w-sm p-5 relative">
-            <button type="button" onClick={() => setShowCityPicker(false)} className="absolute top-3 left-3 w-8 h-8 rounded-full hover:bg-light flex items-center justify-center text-site-muted" aria-label="סגור">
+            <button type="button" onClick={() => setShowCityPicker(false)} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-light flex items-center justify-center text-site-muted" aria-label="סגור">
               <X size={16} weight="bold" />
             </button>
             <h3 className="font-headline text-lg font-bold text-site-text mb-1">לאן לשלוח?</h3>

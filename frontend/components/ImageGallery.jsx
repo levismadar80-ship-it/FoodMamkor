@@ -49,7 +49,7 @@ export default function ImageGallery({ images = [], producerId = null }) {
         <Leaf size={44} weight="duotone" className="text-primary/70" aria-hidden="true" />
         <p className="text-sm font-medium">בית עסק זה טרם הוסיף תמונות</p>
         {producerId && (
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute top-3 start-3 z-10">
             <FavoriteButton producerId={producerId} variant="gallery" />
           </div>
         )}
@@ -72,7 +72,7 @@ export default function ImageGallery({ images = [], producerId = null }) {
         sizes="(max-width: 768px) 100vw, 60vw"
       />
       {producerId && (
-        <div className="absolute top-3 right-3 z-10">
+        <div className="absolute top-3 start-3 z-10">
           <FavoriteButton producerId={producerId} variant="gallery" />
         </div>
       )}

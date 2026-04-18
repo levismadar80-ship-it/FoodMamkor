@@ -21,7 +21,7 @@ const SECTIONS = [
     id: "data",
     title: "2. אילו נתונים אנו אוספות",
     body: (
-      <ul className="list-disc pr-6 space-y-2">
+      <ul className="list-disc ps-6 space-y-2">
         <li>
           <strong>פרטי זיהוי והתקשרות:</strong> שם מלא, כתובת אימייל, מספר טלפון,
           עיר מגורים.
@@ -53,7 +53,7 @@ const SECTIONS = [
     id: "why",
     title: "3. למה אנחנו אוספות את הנתונים",
     body: (
-      <ul className="list-disc pr-6 space-y-2">
+      <ul className="list-disc ps-6 space-y-2">
         <li>
           <strong>הפעלת השירות:</strong> אימות משתמשות, ניהול חשבון, הצגת עסקים,
           עיבוד הרשמות וחיבור בין קונות למוכרות.
@@ -82,7 +82,7 @@ const SECTIONS = [
           אנו משתמשות בספקי שירות חיצוניים לצורך הפעלת הפלטפורמה. כל אחד מהם
           כפוף למדיניות פרטיות משלו:
         </p>
-        <ul className="list-disc pr-6 space-y-2">
+        <ul className="list-disc ps-6 space-y-2">
           <li>
             <strong>Cloudinary</strong> — אחסון ועיבוד תמונות שהועלו על ידי
             משתמשות.
@@ -126,7 +126,7 @@ const SECTIONS = [
           </a>
           :
         </p>
-        <ul className="list-disc pr-6 space-y-2">
+        <ul className="list-disc ps-6 space-y-2">
           <li>
             <strong>זכות עיון:</strong> לבקש לעיין במידע האישי שאנו מחזיקות
             עליך.

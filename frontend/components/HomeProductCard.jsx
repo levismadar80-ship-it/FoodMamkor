@@ -54,13 +54,13 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             <span className="font-headline text-sm opacity-70">מהמטבח של השכן</span>
           </div>
         )}
-        <span className="absolute top-3 left-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+        <span className="absolute top-3 end-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
           ביתי
           <House size={14} weight="fill" aria-hidden="true" />
         </span>
         {product.moderation_status === "FLAGGED" && (
           <span
-            className="absolute top-3 right-3 text-xs px-2 py-1 rounded-full"
+            className="absolute top-3 start-3 text-xs px-2 py-1 rounded-full"
             style={{ background: "#FFF9E6", color: "#946A00", border: "1px solid #F0C040" }}
             title={product.moderation_reason || "המודעה בבדיקת אדמין"}
           >
@@ -68,7 +68,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
           </span>
         )}
         {product.moderation_status !== "FLAGGED" && product.avg_rating !== null && product.avg_rating < 3 && (
-          <span className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full">
+          <span className="absolute top-3 start-3 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full">
             <Warning size={14} weight="fill" aria-hidden="true" className="inline" /> דירוג נמוך
           </span>
         )}

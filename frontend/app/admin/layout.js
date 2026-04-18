@@ -81,7 +81,7 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen">
       {/* Dark-green sidebar — RTL, so it's on the right */}
-      <aside className="hidden md:flex fixed top-16 right-0 bottom-0 w-60 bg-primary-dark text-light flex-col z-40">
+      <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-light flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
           <p className="font-headline text-xl text-white">מהמקור Admin</p>
           <p className="text-light/60 text-xs mt-1">{user.name}</p>
@@ -146,8 +146,8 @@ export default function AdminLayout({ children }) {
         </nav>
       </div>
 
-      {/* Content — offset by sidebar width on desktop (RTL → margin-right) */}
-      <main className="flex-1 md:mr-60 min-w-0 p-5 md:p-8">
+      {/* Content — offset by sidebar width on desktop */}
+      <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
         {children}
       </main>
     </div>

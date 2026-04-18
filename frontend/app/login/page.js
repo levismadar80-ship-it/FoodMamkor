@@ -171,7 +171,7 @@ export default function LoginPage() {
             {passwordValidLength && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
-            <div className="text-left mt-1">
+            <div className="text-end mt-1">
               <Link href="/forgot-password" className="text-xs text-site-muted hover:text-primary transition">
                 שכחת סיסמה?
               </Link>
