@@ -3,22 +3,14 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
+import "leaflet-defaulticon-compatibility";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { styleForProducer } from "@/lib/map-categories";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
-
-// Prevent Leaflet's default PNG icon from ever being used. In webpack/Next.js
-// environments, _getIconUrl constructs broken paths that 404 and show orange
-// triangles. We use L.divIcon for every marker so this is purely a safety net.
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
