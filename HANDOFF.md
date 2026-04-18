@@ -5,28 +5,34 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #142 (feature/meh-two-row-filter-chips) — OPEN, draft
-Summary: Two-row filter chip layout (category + attribute) with edge-fade,
-  active-chip scroll-into-view, removable filter tags, expanded chip matches
-  to cover seed DB category names, border-top on legend collapsible.
+PR merged/opened: #144 (feature/producers-grid-client) — MERGED to staging
+Summary: PR-1 of /producers discovery redesign. Converted /producers from
+  no-filter SSR page to SSR shell + ProducersClient (client island). Added
+  4 boolean filter chips (כשר / אורגני / משלוח / מאומת), grid-cols-2 mobile
+  fix, active-filter strip with counter, 3 honest empty states. Extracted
+  buildChipParams + CHIPS_CONFIG to lib/producer-filters.js (shared between
+  homepage and ProducersClient). Resolved merge conflict with #142 (ChipScrollRow
+  landed on staging) by keeping ChipScrollRow and replacing HOME_TOGGLE_CHIPS
+  with CHIPS_CONFIG.
 
 ## Current state
-Branch: feature/meh-two-row-filter-chips
-Status: PR #142 open as draft. Awaits user approval + merge to staging.
-  After merge → start feature/meh-XX-filter-overflow (Task A: trigger chip
-  + FilterBottomSheet for 15+ chip scalability).
+Branch: feature/producers-grid-client (merged, can delete)
+Staging: PR #144 squash-merged. #142 (ChipScrollRow) also already on staging.
 
 ## Next task
-Linear issue: MEH-XX — filter overflow chip + bottom sheet
-Description: Add "סינון (N) +" trigger chip at end of category row when
-  total chips > VISIBLE_CHIP_LIMIT (=5). Opens 75vh bottom sheet with all
-  filters + "החל סינון" apply button. Branch off staging AFTER #142 merges.
-First step: Merge #142 → git checkout staging → git pull →
-  git checkout -b feature/meh-XX-filter-overflow.
+Linear issue: PR-2 — /producers "בעיר שלי" chip + ChipScrollRow integration
+Description: Now that #142 (ChipScrollRow) and #144 (ProducersClient) are on
+  staging, add "בעיר שלי" chip to ProducersClient using LocationModal (already
+  on staging from PR #130). Also swap ProducersClient's inline chip buttons for
+  ChipScrollRow (same pattern as homepage).
+First step: git checkout staging → git pull origin staging →
+  git checkout -b feature/producers-filter-pr2
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
+| CHIPS_CONFIG replaces HOME_TOGGLE_CHIPS | Single source of truth for chip definitions | April 2026 |
+| ProducersClient uses inline chip buttons (PR-1) | ChipScrollRow swap deferred to PR-2 | April 2026 |
 | /producers — build from scratch | Migrating homepage is too risky | April 2026 |
 | Analytics — Option C (lib/analytics.js) | No backend PR needed | April 2026 |
 | No sidebar on /producers | Top bar fits Israeli UX + filter count | April 2026 |
@@ -35,9 +41,7 @@ First step: Merge #142 → git checkout staging → git pull →
 | RTL: logical properties only | Physical left-*/right-* cause RTL bugs | April 2026 |
 
 ## Open PRs
-| # | Title | Status | Waiting for |
-|---|-------|--------|-------------|
-| 142 | feat: two-row filter chip layout | Draft | User approval + merge |
+None currently open.
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — awaiting decision

@@ -4,11 +4,16 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
+import ChipScrollRow from "@/components/ChipScrollRow";
+import LocationModal from "@/components/LocationModal";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
+import { useUserCity } from "@/lib/use-user-city";
 import api from "@/lib/api";
 
 const FILTER_LIMIT = 100;
+
+const CITY_CHIP = { key: "city", label: "בעיר שלי", icon: "📍" };
 
 export default function ProducersClient({
   initialItems,
@@ -18,15 +23,19 @@ export default function ProducersClient({
   perPage,
 }) {
   const [chips, setChips] = useState(CHIPS_DEFAULT);
+  const [cityFilter, setCityFilter] = useState(null);
   const [filteredItems, setFilteredItems] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const { setCity: setUserCity } = useUserCity();
 
-  const hasActiveChips = Object.values(chips).some(Boolean);
+  const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter;
   const displayItems = hasActiveChips ? (filteredItems ?? []) : initialItems;
-  const activeChips = CHIPS_CONFIG.filter((c) => chips[c.key]);
+  const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
 
-  const fetchFiltered = useCallback((chipState) => {
+  const fetchFiltered = useCallback((chipState, city) => {
     const params = buildChipParams(chipState);
+    if (city) params.delivery_city = city;
     if (Object.keys(params).length === 0) {
       setFilteredItems(null);
       return;
@@ -42,13 +51,38 @@ export default function ProducersClient({
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    fetchFiltered(next);
+    fetchFiltered(next, cityFilter);
+  };
+
+  const handleChipClick = (key) => {
+    if (key === "city") {
+      if (cityFilter) {
+        setCityFilter(null);
+        fetchFiltered(chips, null);
+      } else {
+        setLocationModalOpen(true);
+      }
+    } else {
+      toggleChip(key);
+    }
+  };
+
+  const handleCitySelected = (city) => {
+    setLocationModalOpen(false);
+    setCityFilter(city);
+    setUserCity(city);
+    fetchFiltered(chips, city);
   };
 
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
+    setCityFilter(null);
     setFilteredItems(null);
   };
+
+  const cityChip = cityFilter ? { ...CITY_CHIP, label: cityFilter } : CITY_CHIP;
+  const allChips = [...CHIPS_CONFIG, cityChip];
+  const activeKeys = { ...chips, city: !!cityFilter };
 
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
@@ -76,23 +110,14 @@ export default function ProducersClient({
       </h1>
 
       {/* Chip row */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {CHIPS_CONFIG.map((chip) => (
-          <button
-            key={chip.key}
-            type="button"
-            onClick={() => toggleChip(chip.key)}
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
-              chips[chip.key]
-                ? "bg-primary text-white border-primary"
-                : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-            }`}
-          >
-            <span aria-hidden="true">{chip.icon}</span>
-            {chip.label}
-          </button>
-        ))}
-      </div>
+      <ChipScrollRow
+        variant="toggle"
+        chips={allChips}
+        activeKeys={activeKeys}
+        onChipClick={handleChipClick}
+        fadeBg="#F5F0E8"
+        className="mb-3"
+      />
 
       {/* Active filter strip */}
       {hasActiveChips && (
@@ -100,7 +125,7 @@ export default function ProducersClient({
           <span className="text-xs text-primary font-semibold whitespace-nowrap shrink-0">
             מסנן לפי:
           </span>
-          {activeChips.map((chip) => (
+          {activeChipDefs.map((chip) => (
             <button
               key={chip.key}
               type="button"
@@ -111,6 +136,16 @@ export default function ProducersClient({
               {chip.icon} {chip.label}
             </button>
           ))}
+          {cityFilter && (
+            <button
+              type="button"
+              onClick={() => { setCityFilter(null); fetchFiltered(chips, null); }}
+              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+            >
+              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              📍 {cityFilter}
+            </button>
+          )}
           <button
             type="button"
             onClick={clearAll}
@@ -149,6 +184,12 @@ export default function ProducersClient({
           )}
         </>
       )}
+
+      <LocationModal
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelectCity={handleCitySelected}
+      />
     </>
   );
 }
