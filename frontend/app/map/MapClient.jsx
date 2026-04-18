@@ -331,29 +331,48 @@ export default function MapPage() {
     // panning (React state updates are async; getBounds() is always current).
     const leafletMap = mapApiRef.current?.getMap();
     const leafletBounds = leafletMap?.getBounds();
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[חפשי באזור זה] getBounds():", leafletBounds?.toBBoxString());
-    }
+    console.log("=== SEARCH THIS AREA ===");
+    console.log("[חפשי באזור זה] mapApiRef.current:", mapApiRef.current);
+    console.log("[חפשי באזור זה] leafletMap:", leafletMap);
+    console.log("[חפשי באזור זה] leafletBounds:", leafletBounds);
+    console.log("[חפשי באזור זה] getBounds().toBBoxString():", leafletBounds?.toBBoxString());
     const liveBounds = leafletBounds
       ? { north: leafletBounds.getNorth(), south: leafletBounds.getSouth(),
           east: leafletBounds.getEast(), west: leafletBounds.getWest() }
       : mapBounds;
+    console.log("[חפשי באזור זה] liveBounds:", JSON.stringify(liveBounds));
     setCommittedBounds(liveBounds);
     setMapMoved(false);
     const centerRadius = boundsToCenterRadius(liveBounds);
+    console.log("[חפשי באזור זה] centerRadius:", JSON.stringify(centerRadius));
     if (centerRadius) {
+      // Geo-radius search = "show producers physically here".
+      // delivery_city = "show producers who deliver to my city" — different
+      // question. Combining both ANDs them together → 0 results when the
+      // user pans away from their selected city. Strip delivery_city; let
+      // category/verified/organic chip filters carry over.
+      const { delivery_city: _excluded, ...chipParams } = buildParams();
       const params = {
-        ...buildParams(),
+        ...chipParams,
         lat: centerRadius.lat,
         lng: centerRadius.lng,
         radius_km: centerRadius.radius_km,
       };
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[חפשי באזור זה] GET /producers params:", params);
-      }
-      loadProducers(params);
-    } else if (process.env.NODE_ENV !== "production") {
-      console.warn("[חפשי באזור זה] liveBounds invalid:", liveBounds);
+      console.log("[חפשי באזור זה] params being sent:", JSON.stringify(params));
+      console.log("[חפשי באזור זה] API URL:", `/api/producers?${new URLSearchParams(params).toString()}`);
+      api
+        .get("/producers", { params })
+        .then((r) => {
+          console.log("[חפשי באזור זה] results count:", r.data?.length);
+          console.log("[חפשי באזור זה] raw response (first 2):", JSON.stringify(r.data?.slice(0, 2)));
+          setAllProducers(r.data);
+        })
+        .catch((err) => {
+          console.error("[חפשי באזור זה] API error:", err?.response?.status, err?.response?.data, err?.message);
+          setAllProducers([]);
+        });
+    } else {
+      console.warn("[חפשי באזור זה] liveBounds invalid — skipping fetch:", liveBounds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
