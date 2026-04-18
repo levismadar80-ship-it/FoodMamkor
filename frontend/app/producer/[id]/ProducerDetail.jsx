@@ -223,7 +223,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <BadgeRow producer={producer} />
             {producer.reviews_count > 0 && (
               <span
-                className="bg-[#FFF9E6] text-[#946A00] border border-[#F0C040] text-xs px-3 py-1 rounded-full"
+                className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
                 title={`${producer.reviews_count} ביקורות`}
               >
                 ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
@@ -308,22 +308,22 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
             <div className="flex flex-wrap gap-2 mt-3">
               {producer.grass_fed && (
-                <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
                   🌾<span className="hidden sm:inline"> מרעה חופשי</span>
                 </span>
               )}
               {producer.organic_certified && (
-                <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
                   🌿<span className="hidden sm:inline"> אורגני מוסמך</span>
                 </span>
               )}
               {producer.delivery_areas?.length > 0 && (
-                <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
                   🚚<span className="hidden sm:inline"> משלוח</span>
                 </span>
               )}
               {producer.kosher && (
-                <span style={{ background: "#EAF3DE", color: "#1C1A17", border: "1px solid #e8e0d0", borderRadius: "20px", fontSize: "11px", padding: "4px 10px" }}>
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
                   ✡️<span className="hidden sm:inline"> כשר</span>
                 </span>
               )}
@@ -584,7 +584,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 href={producer.whatsapp_group}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 border border-[#25D366] text-[#1a9e50] px-4 min-h-[44px] rounded-[10px] hover:bg-[#e8fdf0] transition text-sm font-medium mb-2"
+                className="w-full flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
               >
                 <WhatsappLogo size={16} weight="duotone" />
                 הצטרפי לקבוצת וואטסאפ
@@ -654,16 +654,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] font-medium text-sm transition ${
                 isVacation
-                  ? "text-white"
+                  ? "bg-[#6EAF8A] text-white"
                   : getPrimaryMethod(producer) === "whatsapp"
-                  ? "bg-[#25D366] text-white hover:bg-[#1ea855]"
+                  ? "btn-whatsapp"
                   : getPrimaryMethod(producer) === "phone"
                   ? "bg-primary text-white hover:bg-primary-light"
                   : getPrimaryMethod(producer) === "email"
                   ? "bg-primary-dark text-white hover:bg-primary"
                   : "bg-white text-site-text border border-primary hover:bg-light"
               }`}
-              style={isVacation ? { backgroundColor: "#6EAF8A" } : undefined}
             >
               {isVacation ? "שלחי הודעה — יחזרו בקרוב" : getPrimaryContactLabel(producer)}
             </a>

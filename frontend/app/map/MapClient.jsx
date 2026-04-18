@@ -504,7 +504,7 @@ export default function MapPage() {
                   : onToggleChipClick(tag.key)
               }
               aria-label={`הסירי סינון ${tag.label}`}
-              className="inline-flex items-center gap-1 rounded-[20px] bg-[#EAF3DE] text-primary px-2 py-0.5 text-[11px] hover:bg-[#dbe8c9] transition"
+              className="inline-flex items-center gap-1 rounded-[20px] bg-light text-primary px-2 py-0.5 text-[11px] hover:bg-light/80 transition"
             >
               <span aria-hidden="true">×</span>
               {tag.label}
@@ -539,8 +539,7 @@ export default function MapPage() {
       {showMapHint && (
         <div
           // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-[10px] text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
-          style={{ backgroundColor: "#2E4A2E" }}
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-[10px] bg-primary-dark text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
           role="status"
         >
           לחצי על סמן עסק כדי לראות פרטים · גלגלי ברשימה מימין לכל העסקים
@@ -577,7 +576,7 @@ export default function MapPage() {
           ref={(el) => { if (el) cardRefs.current.set(p.id, el); else cardRefs.current.delete(p.id); }}
           onMouseEnter={() => handleCardMouseEnter(p.id)}
           onMouseLeave={handleCardMouseLeave}
-          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px]" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-[16px] bg-[#EAF3DE10]" : ""} transition`}
+          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px]" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-[16px] bg-light/[6%]" : ""} transition`}
         >
           <MapProducerCard
             producer={p}
@@ -631,7 +630,7 @@ export default function MapPage() {
             {[p.categories?.[0]?.name, p.city, p.starting_price_label || p.price_range].filter(Boolean).join(" · ")}
           </p>
           {normalizePhone(p.phone) && (
-            <a href={`https://wa.me/${normalizePhone(p.phone)}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="mt-2 w-full flex items-center justify-center gap-2 bg-[#25D366] text-white rounded-[8px] py-2 font-medium text-sm transition hover:bg-[#20b858]">
+            <a href={`https://wa.me/${normalizePhone(p.phone)}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2 font-medium text-sm">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
               WhatsApp
             </a>
@@ -664,7 +663,7 @@ export default function MapPage() {
             </div>
             {filterChipsBar}
             {/* Legend — collapsible, closed by default, inside sidebar */}
-            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-3 pt-2 border-t border-[#e8e0d0]">
+            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-3 pt-2 border-t border-border">
               <summary className="text-[11px] text-site-muted tracking-wider font-body uppercase cursor-pointer hover:text-site-text transition select-none">
                 קטגוריות {legendOpen ? "▲" : "▼"}
               </summary>
@@ -743,7 +742,7 @@ export default function MapPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl" style={{ backgroundColor: "#EAF3DE" }} aria-hidden="true">🌿</div>
+                    <div className="w-full h-full flex items-center justify-center text-5xl bg-light" aria-hidden="true">🌿</div>
                   )}
                   {spImg && (
                     <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
@@ -755,7 +754,7 @@ export default function MapPage() {
                 </div>
                 <div className="p-3">
                   <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "18px" }}>{sp.name}</h3>
-                  <p style={{ fontSize: "13px", color: "#6B6B6B", marginTop: 2 }}>{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
+                  <p className="text-[13px] text-site-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
                   {(sp.is_verified || sp.is_organic || sp.is_kosher) && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {sp.is_verified && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">✓ מאומת</span>}
@@ -764,7 +763,7 @@ export default function MapPage() {
                     </div>
                   )}
                   {spPhone && (
-                    <a href={`https://wa.me/${spPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${sp.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="mt-2 w-full flex items-center justify-center gap-2 bg-[#25D366] text-white rounded-[8px] py-2.5 font-medium text-sm transition hover:bg-[#20b858]">
+                    <a href={`https://wa.me/${spPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${sp.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
                       WhatsApp
                     </a>
