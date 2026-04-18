@@ -10,6 +10,12 @@ import { styleForProducer } from "@/lib/map-categories";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
 
+// Prevent Leaflet's default PNG icon from ever being used. In webpack/Next.js
+// environments, _getIconUrl constructs broken paths that 404 and show orange
+// triangles. We use L.divIcon for every marker so this is purely a safety net.
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({ iconUrl: "", iconRetinaUrl: "", shadowUrl: "" });
+
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
  * and clustering. Covers docs/archive/MAP_IMPROVEMENTS.md items #4, #5, #6, #10.
@@ -83,12 +89,10 @@ function createCategoryMarker(
   <!-- white disc -->
   <circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="white" />
   ${isPremium ? `<circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="none" stroke="#8B6914" stroke-width="2" />` : ""}
-  <!-- emoji (foreignObject so we can use real Unicode glyphs) -->
-  <foreignObject x="${discCx - discR}" y="${discCy - discR}" width="${discR * 2}" height="${discR * 2}">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:${emojiSize}px;line-height:1;">
-      ${emoji}
-    </div>
-  </foreignObject>
+  <!-- emoji via SVG text — avoids foreignObject innerHTML parsing quirks that
+       cause the entire divIcon to throw and fall back to the default PNG icon -->
+  <text x="${discCx}" y="${discCy}" text-anchor="middle" dominant-baseline="central"
+        font-size="${emojiSize}" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">${emoji}</text>
   ${isVerified ? `
   <circle cx="${discCx + discR * 0.7}" cy="${discCy + discR * 0.7}" r="5.5" fill="#2e6853" stroke="white" stroke-width="1" />
   <text x="${discCx + discR * 0.7}" y="${discCy + discR * 0.7 + 3}" text-anchor="middle" fill="white" font-size="7" font-weight="bold">✓</text>
