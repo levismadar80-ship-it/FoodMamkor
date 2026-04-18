@@ -304,6 +304,7 @@ export default function HomePage() {
           ========================= */}
       <section
         className="relative w-full hero-parallax"
+        aria-label="דף הבית — גלי בתי עסק מקומיים"
         style={{
           height: "100vh",
           backgroundImage: `url(${HERO_IMAGE})`,
@@ -355,7 +356,8 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             role="search"
-            className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2 px-5 py-3"
+            aria-label="חיפוש בתי עסק"
+            className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2.5 px-6 py-3.5"
             style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
           >
             <svg
