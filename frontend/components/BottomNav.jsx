@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { House, MapTrifold, CookingPot, UserCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import OnboardingTip from "@/components/OnboardingTip";
+import { useOnboarding } from "@/lib/use-onboarding";
 
 /**
  * Mobile bottom nav (MEH-20 redesign) — 4 tabs.
@@ -23,6 +25,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
 
   // Profile tab is context-aware: guests → login; logged-in → settings.
   const profileHref = user ? "/settings" : "/login";
@@ -45,11 +48,36 @@ export default function BottomNav() {
       aria-label={t("nav_mobile_label")}
     >
       <ul className="grid grid-cols-4">
-        {tabs.map((tab) => {
+        {tabs.map((tab, idx) => {
           const active = tab.match(pathname || "/");
           const Icon = tab.Icon;
+          // Step 2 = map tab (idx 1); step 3 = profile tab (idx 3).
+          const isMapTab = idx === 1;
+          const isProfileTab = idx === 3;
+          const showStep2 = isMapTab && onboardStep === 2;
+          const showStep3 = isProfileTab && onboardStep === 3;
+
           return (
-            <li key={tab.labelKey}>
+            <li key={tab.labelKey} className="relative">
+              {showStep2 && (
+                <OnboardingTip
+                  show
+                  text="מפה אינטראקטיבית — גלי בתי עסק קרובים אלייך 🗺️"
+                  onDismiss={onboardDismiss}
+                  onNext={onboardAdvance}
+                  placement="above"
+                />
+              )}
+              {showStep3 && (
+                <OnboardingTip
+                  show
+                  text="הצטרפי כדי לשמור עסקים מועדפים ולדרג 💚"
+                  cta="הבנתי, סיום"
+                  onDismiss={onboardDismiss}
+                  onNext={onboardDismiss}
+                  placement="above"
+                />
+              )}
               <Link
                 href={tab.href}
                 className={`flex flex-col items-center justify-center py-2 min-h-[44px] text-[13px] transition ${
