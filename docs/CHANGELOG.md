@@ -43,6 +43,15 @@ about:
 - **Tests.** `__tests__/ProducerCard.test.jsx` rewritten for the new anatomy + heart (39 cases). `__tests__/badges.test.js` updated for the new 8-key priority order. `__tests__/BadgeRow.test.jsx` unchanged (passes). Two pre-existing failures on `staging` (`__tests__/mapChips.test.js` — TOGGLE_CHIPS out of sync with `lib/map-chips.js`; `__tests__/SettingsPage.test.jsx` — OAuth password card) are **not** caused by this PR and are left alone per the "no map / backend files" scope.
 - **Backend:** untouched. `npm run build` green at every phase boundary; `pytest tests/test_api.py` couldn't run in the Vercel-preview sandbox (needs live Postgres).
 
+## 2026-04-18 — Producer detail page redesign (feature/meh-producer-detail-redesign)
+
+- Fixed mobile above-fold bug (`order-first` removed from `<aside>`), `is_available_today` chip (both true/false states), `short_description` subtitle, `contact_name` micro-line in main column, highlights strip (grass_fed/organic/delivery/kosher, bg #EAF3DE), and vacation banner + sidebar dim.
+- Replaced hardcoded WhatsApp mobile sticky with IO-driven `StickyContactBar` (method-aware, animated, vacation state, social proof, z-[598]).
+- Removed duplicate `FavoriteButton` pills (header + sidebar) — gallery overlay is now canonical.
+- `ImageGallery`: compact placeholder `h-[120px] md:h-[180px]` with category emoji + initials, gallery dots 44px tap targets, `priority` on first image.
+- `ProducerReviews`: IO lazy-fetch (no API call until section visible), BiDi `dir="ltr"` on review dates.
+- Touch targets: `min-h-[44px]` on `FollowButton`, `ShareButton`, `WhatsAppShareButton`, map button, breadcrumb back button.
+
 ## 2026-04-18 — Two-row filter chip layout + ChipScrollRow component (feature/meh-two-row-filter-chips)
 
 - **ChipScrollRow.jsx** — new shared component; `variant="category"` (radio, one active) and `variant="toggle"` (boolean toggles); inline-start + inline-end edge-fades; RTL scroll-end spacer; `min-w-0` so row can shrink in flex parents; active chip `scrollIntoView` on mount + on activation.

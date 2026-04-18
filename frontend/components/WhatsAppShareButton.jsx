@@ -23,7 +23,7 @@ export default function WhatsAppShareButton({ producer, url }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[10px] text-sm font-medium transition hover:brightness-95"
+      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] text-sm font-medium transition hover:brightness-95"
       style={{
         backgroundColor: "#25D366",
         color: "white",
