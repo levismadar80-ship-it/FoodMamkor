@@ -20,6 +20,7 @@ export default function Toaster() {
 
   return (
     <div
+      // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
       className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col-reverse gap-2 pointer-events-none"
       role="status"
       aria-live="polite"

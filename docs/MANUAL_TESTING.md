@@ -692,6 +692,29 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 
 ---
 
+## RTL Layout Regression — logical vs. physical classes
+
+Added with `feature/rtl-regression-protection`.
+
+### Login page — eye toggle
+- [ ] `/login` — password field — eye toggle button appears on the **right** side of the input (physical right, inside `dir="ltr"` input — intentional exception)
+- [ ] Toggle shows/hides password
+
+### Modal close buttons (start-3)
+- [ ] Click favorite when logged out → LoginPromptModal opens → ✕ close button appears on the **top-right** of the modal (RTL inline-start = physical right)
+
+### Admin sidebar (start-0)
+- [ ] Log in as admin → `/admin` — sidebar appears on the **right** side; main content fills the left
+
+### ProducerCard badges (start-3)
+- [ ] Homepage — if a "פרמיום" or "זמין היום" badge appears on a card, it is in the **top-right** corner of the card image (inline-start in RTL = physical right)
+
+### ESLint CI
+- [ ] Open a PR to staging → GitHub Actions "Frontend lint" job runs and passes (exits 0 even with pre-existing warnings)
+- [ ] After PR #137 merges → run lint locally; RTL warnings should be nearly zero
+
+---
+
 ## איך לעדכן מסמך זה
 אחרי כל PR שמוסיף פיצ׳ר/עמוד חדש:
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.

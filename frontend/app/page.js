@@ -387,6 +387,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={scrollToProducers}
+          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
           className="absolute left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition-opacity scroll-hint"
           style={{ bottom: "32px" }}
           aria-label="גלול לרשימת בתי העסק"
