@@ -203,7 +203,12 @@ export default function MapPage() {
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))
-      .catch(() => setAllProducers([]));
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("[חפשי באזור זה] GET /producers failed:", err);
+        setAllProducers([]);
+        showToast("לא הצלחנו לטעון עסקים — נסי שוב", "error");
+      });
   };
 
   // MEH-14: build the backend params from the current chip state +
