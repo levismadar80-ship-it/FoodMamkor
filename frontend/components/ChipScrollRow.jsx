@@ -41,13 +41,21 @@ export default function ChipScrollRow({
       ?.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
   }
 
-  // On mount, force the scroll container to its inline-start position
-  // (scrollLeft:0 which maps to the RIGHT edge in RTL). Prevents a stale
-  // scroll offset from hiding the first chip — scrollIntoView with
-  // inline:"nearest" is a no-op when the active chip is already visible,
-  // so without this the container could stay mid-scroll after navigation.
+  // On mount — if no chip is actively filtering, pin the scroll
+  // container to its inline-start position (scrollLeft:0, which maps
+  // to the RIGHT edge in RTL). When a specific chip IS active, skip
+  // the reset and let scrollIntoView place it — avoids the
+  // instant-to-0 then smooth-scroll flicker on URL-seeded state.
+  // "all" counts as no active filter (it's the reset sentinel).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    const hasActiveFilter =
+      variant === "category"
+        ? activeKey && activeKey !== "all"
+        : Object.values(activeKeys).some(Boolean);
+    if (!hasActiveFilter) {
+      scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    }
   }, []);
 
   // Category: scroll the active chip into view when it changes. On mount
