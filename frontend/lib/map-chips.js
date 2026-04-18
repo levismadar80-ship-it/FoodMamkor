@@ -13,12 +13,16 @@
  * exist without throwing.
  */
 
+// `matches` lists every DB category.name variant the chip should resolve to.
+// Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
+// older admin-created rows — covering all known variants means the chip shows
+// whenever any of them exists, instead of silently disappearing.
 export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
-  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר"] },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות"] },
+  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר", "בשר ודגים", "בשר, עוף ודגים"] },
+  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"] },
   { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"] },
-  { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם"] },
+  { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"] },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
