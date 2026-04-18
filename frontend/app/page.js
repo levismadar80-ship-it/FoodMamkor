@@ -96,7 +96,16 @@ export default function HomePage() {
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
-  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  const [chips, setChips] = useState(() => {
+    if (typeof window === "undefined") return { kosher: false, organic: false, has_delivery: false, verified: false };
+    const p = new URLSearchParams(window.location.search);
+    return {
+      kosher: p.get("kosher") === "1",
+      organic: p.get("organic") === "1",
+      has_delivery: p.get("delivery") === "1",
+      verified: p.get("verified") === "1",
+    };
+  });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -119,11 +128,12 @@ export default function HomePage() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
-    // Apply any filters already in the URL on first load (shared/bookmarked URLs).
+    // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
     const initParams = {};
     if (filters.category) initParams.category = filters.category;
     if (filters.delivery_city) initParams.delivery_city = filters.delivery_city;
-    if (filters.has_delivery) initParams.has_delivery = true;
+    const initChipParams = buildChipParams(chips);
+    Object.assign(initParams, initChipParams);
     loadProducers(initParams);
     // Home-kitchen preview — just the 3 most recent, no filter.
     // Full browse + filter lives on /neighbor.
@@ -182,16 +192,21 @@ export default function HomePage() {
     return () => window.removeEventListener("pagehide", stash);
   }, []);
 
-  const updateURL = (newFilters) => {
+  // Rebuild the URL from the full filter + chip state. Both args are
+  // optional — omit to use current state values.
+  const updateURL = (newFilters, nextChips) => {
     if (typeof window === "undefined") return;
-    const p = new URLSearchParams(window.location.search);
-    if (newFilters.category) p.set("category", newFilters.category);
-    else p.delete("category");
-    if (newFilters.delivery_city) p.set("city", newFilters.delivery_city);
-    else p.delete("city");
-    if (newFilters.has_delivery) p.set("delivery", "1");
-    else p.delete("delivery");
-    router.replace("?" + p.toString(), { scroll: false });
+    const f = newFilters ?? filters;
+    const c = nextChips ?? chips;
+    const p = new URLSearchParams();
+    if (f.category) p.set("category", f.category);
+    if (f.delivery_city) p.set("city", f.delivery_city);
+    if (c.kosher) p.set("kosher", "1");
+    if (c.organic) p.set("organic", "1");
+    if (c.has_delivery) p.set("delivery", "1");
+    if (c.verified) p.set("verified", "1");
+    const qs = p.toString();
+    router.replace(qs ? `?${qs}` : "/", { scroll: false });
   };
 
   const loadProducers = (params = {}) => {
@@ -236,13 +251,14 @@ export default function HomePage() {
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    const params = buildChipParams(chips, { [key]: !chips[key] });
+    const params = buildChipParams(next);
     if (filters.category) params.category = filters.category;
-    if (key === "has_delivery") {
-      const newFilters = { ...filters, has_delivery: next.has_delivery };
-      setFilters(newFilters);
-      updateURL(newFilters);
-    }
+    if (filters.delivery_city) params.delivery_city = filters.delivery_city;
+    const newFilters = key === "has_delivery"
+      ? { ...filters, has_delivery: next.has_delivery }
+      : filters;
+    if (key === "has_delivery") setFilters(newFilters);
+    updateURL(newFilters, next);
     loadProducers(params);
   };
 
