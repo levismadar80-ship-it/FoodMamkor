@@ -275,7 +275,9 @@ def deactivate_home_product(
 
 
 @router.post("/{product_id}/whatsapp-click")
+@limiter.limit("10/minute")
 def log_whatsapp_click(
+    request: Request,
     product_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

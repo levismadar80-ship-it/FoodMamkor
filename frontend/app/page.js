@@ -24,6 +24,8 @@ import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
+import OnboardingTip from "@/components/OnboardingTip";
+import { useOnboarding } from "@/lib/use-onboarding";
 
 const PAGE_SIZE = 8;
 
@@ -96,11 +98,28 @@ export default function HomePage() {
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading, setGeoLoading] = useState(false);
-  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  const [chips, setChips] = useState(() => {
+    if (typeof window === "undefined") return { kosher: false, organic: false, has_delivery: false, verified: false };
+    const p = new URLSearchParams(window.location.search);
+    return {
+      kosher: p.get("kosher") === "1",
+      organic: p.get("organic") === "1",
+      has_delivery: p.get("delivery") === "1",
+      verified: p.get("verified") === "1",
+    };
+  });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
+  const [step0Visible, setStep0Visible] = useState(false);
+
+  useEffect(() => {
+    if (onboardStep !== 0) return;
+    const t = setTimeout(() => setStep0Visible(true), 2000);
+    return () => clearTimeout(t);
+  }, [onboardStep]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
@@ -119,7 +138,13 @@ export default function HomePage() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
-    loadProducers();
+    // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
+    const initParams = {};
+    if (filters.category) initParams.category = filters.category;
+    if (filters.delivery_city) initParams.delivery_city = filters.delivery_city;
+    const initChipParams = buildChipParams(chips);
+    Object.assign(initParams, initChipParams);
+    loadProducers(initParams);
     // Home-kitchen preview — just the 3 most recent, no filter.
     // Full browse + filter lives on /neighbor.
     api
@@ -177,16 +202,21 @@ export default function HomePage() {
     return () => window.removeEventListener("pagehide", stash);
   }, []);
 
-  const updateURL = (newFilters) => {
+  // Rebuild the URL from the full filter + chip state. Both args are
+  // optional — omit to use current state values.
+  const updateURL = (newFilters, nextChips) => {
     if (typeof window === "undefined") return;
-    const p = new URLSearchParams(window.location.search);
-    if (newFilters.category) p.set("category", newFilters.category);
-    else p.delete("category");
-    if (newFilters.delivery_city) p.set("city", newFilters.delivery_city);
-    else p.delete("city");
-    if (newFilters.has_delivery) p.set("delivery", "1");
-    else p.delete("delivery");
-    router.replace("?" + p.toString(), { scroll: false });
+    const f = newFilters ?? filters;
+    const c = nextChips ?? chips;
+    const p = new URLSearchParams();
+    if (f.category) p.set("category", f.category);
+    if (f.delivery_city) p.set("city", f.delivery_city);
+    if (c.kosher) p.set("kosher", "1");
+    if (c.organic) p.set("organic", "1");
+    if (c.has_delivery) p.set("delivery", "1");
+    if (c.verified) p.set("verified", "1");
+    const qs = p.toString();
+    router.replace(qs ? `?${qs}` : "/", { scroll: false });
   };
 
   const loadProducers = (params = {}) => {
@@ -231,18 +261,22 @@ export default function HomePage() {
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    const params = buildChipParams(chips, { [key]: !chips[key] });
+    const params = buildChipParams(next);
     if (filters.category) params.category = filters.category;
-    if (key === "has_delivery") {
-      const newFilters = { ...filters, has_delivery: next.has_delivery };
-      setFilters(newFilters);
-      updateURL(newFilters);
-    }
+    if (filters.delivery_city) params.delivery_city = filters.delivery_city;
+    const newFilters = key === "has_delivery"
+      ? { ...filters, has_delivery: next.has_delivery }
+      : filters;
+    if (key === "has_delivery") setFilters(newFilters);
+    updateURL(newFilters, next);
     loadProducers(params);
   };
 
   const handleNearMe = () => {
     if (userCity) {
+      const newFilters = { ...filters, delivery_city: userCity };
+      setFilters(newFilters);
+      updateURL(newFilters);
       loadProducers({ delivery_city: userCity, ...buildChipParams(chips) });
       document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
       return;
@@ -252,6 +286,9 @@ export default function HomePage() {
 
   const handleCitySelected = (city) => {
     setUserCity(city);
+    const newFilters = { ...filters, delivery_city: city };
+    setFilters(newFilters);
+    updateURL(newFilters);
     loadProducers({ delivery_city: city, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -271,20 +308,21 @@ export default function HomePage() {
     <div>
       {/* =========================
           HERO — gardensweet.com style
-          PREMIUM_DESIGN: Ken Burns slow pan/zoom on the background image.
-          The image lives on an absolutely-positioned inner layer so the
-          animation doesn't affect the text overlay.
+          background-attachment: fixed is the CSS parallax (spec §Hero).
+          .hero-parallax sets fixed; @media (pointer: coarse) falls back
+          to scroll because iOS Safari silently ignores fixed.
           ========================= */}
-      <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
-        <div
-          className="kenburns-right absolute"
-          style={{
-            inset: "-5%",
-            backgroundImage: `url(${HERO_IMAGE})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
+      <section
+        className="relative w-full hero-parallax"
+        aria-label="דף הבית — גלי בתי עסק מקומיים"
+        style={{
+          height: "100vh",
+          backgroundImage: `url(${HERO_IMAGE})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         {/* Gradient overlay — dark at bottom, fading up */}
         <div
           className="absolute inset-0"
@@ -328,7 +366,8 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             role="search"
-            className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2 px-5 py-3"
+            aria-label="חיפוש בתי עסק"
+            className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2.5 px-6 py-3.5"
             style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
           >
             <svg
@@ -586,6 +625,14 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Step 0 — producers grid tip (2s delay) */}
+        <OnboardingTip
+          show={step0Visible && onboardStep === 0}
+          text="גלי בתי עסק מקומיים — ירקות טריים, גבינות, לחם מחמצת ועוד 🌿 לחצי על כרטיס כדי לצפות בפרטים"
+          onDismiss={onboardDismiss}
+          onNext={() => { setStep0Visible(false); onboardAdvance(); }}
+        />
+
         {/* Filter chips */}
         <ChipScrollRow
           variant="toggle"
@@ -594,6 +641,13 @@ export default function HomePage() {
           onChipClick={toggleChip}
           fadeBg="#F5F0E8"
           className="mb-3"
+        />
+        {/* Step 1 — filter chips tip */}
+        <OnboardingTip
+          show={onboardStep === 1}
+          text="סנני לפי אורגני, כשר, משלוח ועוד — לחצי על אחד מהכפתורים למעלה 👆"
+          onDismiss={onboardDismiss}
+          onNext={onboardAdvance}
         />
         {Object.values(chips).some(Boolean) && (
           <p className="text-xs text-site-muted mb-4" aria-live="polite">

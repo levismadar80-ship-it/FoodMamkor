@@ -4,10 +4,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple } from "@phosphor-icons/react";
 import api from "@/lib/api";
-import { normalizePhone } from "@/lib/utils";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
-import FavoriteButton from "@/components/FavoriteButton";
 import FollowButton from "@/components/FollowButton";
 import ReportButton from "@/components/ReportButton";
 import ShareButton from "@/components/ShareButton";
@@ -19,7 +17,12 @@ import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-import { getPrimaryMethod } from "@/lib/contact-method";
+import {
+  getPrimaryMethod,
+  getPrimaryContactHref,
+  getPrimaryContactLabel,
+  isPrimaryExternal,
+} from "@/lib/contact-method";
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -38,6 +41,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   const sectionRefs = useRef({});
   const tabBarRef = useRef(null);
+  const reviewsContainerRef = useRef(null);
+  const inlineCTARef = useRef(null);
+  const [reviewsVisible, setReviewsVisible] = useState(false);
+  const [isBarVisible, setIsBarVisible] = useState(false);
 
   const scrollToSection = useCallback((key) => {
     setActiveTab(key);
@@ -58,6 +65,36 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       .catch(() => setProducer(null))
       .finally(() => setLoading(false));
   }, [params.id, fetchPath, initialProducer]);
+
+  // StickyContactBar trigger: show bar when inline CTA exits viewport.
+  useEffect(() => {
+    const el = inlineCTARef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setIsBarVisible(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [producer?.id]);
+
+  // Lazy-mount reviews: only fetch when the section scrolls into view.
+  // rootMargin 300px pre-loads just before the user reaches the fold.
+  useEffect(() => {
+    const el = reviewsContainerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setReviewsVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [producer?.id]);
 
   // Task 13: save to recently viewed in localStorage. Storage shape +
   // 7-day TTL live in lib/recently-viewed.js (MEH-11) so the homepage
@@ -88,12 +125,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       ? `${window.location.origin}${producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}`
       : "";
 
-  const primaryCategory = producer.categories?.[0];
-  // tasks_for_claude_code.md task 17: shared normalizer replaces the
-  // previous inline logic that had an order-of-operations bug on inputs
-  // with leading whitespace. See lib/utils.js.
-  const whatsappNumber = normalizePhone(producer.phone) || null;
+  const isVacation = producer.availability_status === "vacation";
 
+  const words = (producer.name || "").trim().split(/\s+/).filter(Boolean);
+  const producerInitials =
+    words.length >= 2 ? words[0][0] + words[1][0] : words[0]?.slice(0, 2) ?? "מ";
+
+  const primaryCategory = producer.categories?.[0];
   const handleShowOnMap = () => {
     try {
       sessionStorage.setItem(
@@ -127,7 +165,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded px-1"
           aria-label="חזרה לעמוד הקודם"
         >
           ← חזרה
@@ -135,7 +173,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       </div>
 
       {/* Gallery */}
-      <ImageGallery images={producer.images || []} producerId={producer.id} />
+      <ImageGallery
+        images={producer.images || []}
+        producerId={producer.id}
+        categoryEmoji={primaryCategory?.emoji ?? "🌿"}
+        producerInitials={producerInitials}
+      />
 
       {/* Mobile tab bar */}
       <nav
@@ -176,12 +219,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <h1 className="font-headline text-4xl font-bold text-site-text">
               {producer.name}
             </h1>
-            <FavoriteButton producerId={producer.id} variant="inline" />
             {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
             <BadgeRow producer={producer} />
             {producer.reviews_count > 0 && (
               <span
-                className="bg-[#FFF9E6] text-[#946A00] border border-[#F0C040] text-xs px-3 py-1 rounded-full"
+                className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
                 title={`${producer.reviews_count} ביקורות`}
               >
                 ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
@@ -192,16 +234,43 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 פרמיום
               </span>
             )}
-            {/* MEH-12 — durable availability status (all three variants
-                shown on the detail page so guests see "פתוח להזמנות"
-                prominently where it matters most) */}
+            {/* MEH-12 — durable availability status */}
             <AvailabilityBadge
               status={producer.availability_status}
               variant="detail"
             />
+            {/* Daily availability toggle — suppressed during vacation (badge + banner already signal it) */}
+            {producer.is_available_today != null && !isVacation && (
+              <span
+                className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full border ${
+                  producer.is_available_today
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-gray-50 border-gray-200 text-gray-600"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    producer.is_available_today ? "bg-[#4cb08b]" : "bg-gray-400"
+                  }`}
+                />
+                {producer.is_available_today ? "זמינה היום" : "לא זמינה היום"}
+              </span>
+            )}
           </div>
 
-          <p className="text-site-muted text-sm flex items-center gap-1.5 mb-3">
+          {producer.short_description && (
+            <p className="text-sm md:text-base text-site-muted line-clamp-1 mt-1">
+              {producer.short_description}
+            </p>
+          )}
+
+          {producer.contact_name && (
+            <p className="text-[12px] text-site-muted mt-0.5">
+              מאחורי העסק: {producer.contact_name}
+            </p>
+          )}
+
+          <p className="text-site-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
             <MapPin size={14} weight="duotone" />
             {producer.city}
             {primaryCategory && (
@@ -235,6 +304,82 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </div>
           )}
 
+          {/* Highlights strip — grass_fed / organic / delivery / kosher */}
+          {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {producer.grass_fed && (
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+                  🌾<span className="hidden sm:inline"> מרעה חופשי</span>
+                </span>
+              )}
+              {producer.organic_certified && (
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+                  🌿<span className="hidden sm:inline"> אורגני מוסמך</span>
+                </span>
+              )}
+              {producer.delivery_areas?.length > 0 && (
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+                  🚚<span className="hidden sm:inline"> משלוח</span>
+                </span>
+              )}
+              {producer.kosher && (
+                <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+                  ✡️<span className="hidden sm:inline"> כשר</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Vacation banner — slate (neutral unavailable), not amber (which reads as sale/warning) */}
+          {isVacation && (
+            <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <p className="text-sm font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+              <p className="text-xs text-slate-500 mt-1">
+                ניתן להשאיר הודעה — יחזרו אליך בקרוב
+              </p>
+            </div>
+          )}
+
+          {/* Mobile inline CTA — IO trigger for StickyContactBar.
+              ref={inlineCTARef}: when this exits viewport, the sticky bar slides in.
+              md:hidden — desktop sidebar already has the CTA. */}
+          <div ref={inlineCTARef} className="md:hidden mt-4">
+            <PrimaryContactButton
+              producer={producer}
+              onClick={() => {
+                if (
+                  getPrimaryMethod(producer) === "whatsapp" &&
+                  typeof navigator !== "undefined" &&
+                  navigator.sendBeacon
+                ) {
+                  try {
+                    navigator.sendBeacon(`/api/producers/${producer.id}/whatsapp-click`);
+                  } catch {
+                    // tracking is best-effort
+                  }
+                }
+              }}
+            />
+          </div>
+
+          {/* Action row — map + viral share. Shown at all breakpoints.
+              Desktop: MapButton moves here from sidebar to reduce sidebar density.
+              WhatsAppShareButton is secondary (gray outlined) to avoid green conflict with primary CTA. */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {producer.lat && producer.lng && (
+              <button
+                type="button"
+                onClick={handleShowOnMap}
+                className="flex items-center justify-center gap-2 border border-primary text-primary px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label="פתח את המיקום של העסק במפה"
+              >
+                <MapTrifold size={16} weight="duotone" />
+                הצג במפה
+              </button>
+            )}
+            <WhatsAppShareButton producer={producer} url={shareUrl} />
+          </div>
+
           {/* Description */}
           {producer.description && (
             <section className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
@@ -244,6 +389,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               </p>
             </section>
           )}
+
+          {/* Events section — see feature/meh-XX-producer-events */}
 
           {/* Products (premium only) */}
           {producer.products?.length > 0 && (
@@ -315,16 +462,30 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <ReportButton producerId={producer.id} />
           </div>
 
-          {/* Reviews */}
-          <div ref={(el) => { sectionRefs.current.reviews = el; }}>
-            <ProducerReviews producerId={producer.id} />
+          {/* Reviews — IO-lazy: only mounts the fetch when the section
+              scrolls within 300px of the viewport (saves ~300ms on 3G) */}
+          <div
+            ref={(el) => {
+              sectionRefs.current.reviews = el;
+              reviewsContainerRef.current = el;
+            }}
+          >
+            {reviewsVisible && <ProducerReviews producerId={producer.id} />}
           </div>
         </div>
 
         {/* ================= Sticky contact sidebar ================= */}
-        <aside className="order-first lg:order-last">
+        <aside>
           <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
-            <h3 className="font-headline text-xl font-bold text-site-text mb-5">צרי קשר</h3>
+            {/* Vacation notice in sidebar */}
+            {isVacation && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+                <p className="text-xs font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+              </div>
+            )}
+
+            {/* Dim contact content when on vacation — pointer-events-auto keeps clicking possible */}
+            <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
 
             {/* MEH-17: primary CTA follows producer.primary_contact_method.
                 WhatsApp still pings the analytics beacon on click so the
@@ -417,61 +578,97 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <FollowButton producerId={producer.id} />
             </div>
 
-            {/* Favorites + Share row.
-                Bug-fix: use variant="inline" so desktop shows the
-                HeartStraight icon + "שמור" text instead of a bare emoji
-                heart with no label. The outer border wrapper was removed
-                because the inline variant renders its own bordered pill. */}
-            <div className="flex gap-2 mb-3 items-stretch">
-              <div className="flex-1 flex justify-center">
-                <FavoriteButton producerId={producer.id} variant="inline" />
-              </div>
-              <div className="flex-1">
-                <ShareButton
-                  url={shareUrl}
-                  title={producer.name}
-                  description={producer.description}
-                  city={producer.city}
-                  category={primaryCategory?.name}
-                />
-              </div>
-            </div>
-
-            {/* FINAL_AUDIT: WhatsApp share — the viral loop */}
-            <div className="mb-3">
-              <WhatsAppShareButton producer={producer} url={shareUrl} />
-            </div>
-
-            {/* Show on map */}
-            {producer.lat && producer.lng && (
-              <button
-                type="button"
-                onClick={handleShowOnMap}
-                className="w-full flex items-center justify-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
-                aria-label="פתח את המיקום של העסק במפה"
+            {/* WhatsApp group invite link — only shown when the producer has set one */}
+            {producer.whatsapp_group && (
+              <a
+                href={producer.whatsapp_group}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
               >
-                <MapTrifold size={16} weight="duotone" />
-                הצג במפה
-              </button>
+                <WhatsappLogo size={16} weight="duotone" />
+                הצטרפי לקבוצת וואטסאפ
+              </a>
             )}
+
+            <div className="mb-3">
+              <ShareButton
+                url={shareUrl}
+                title={producer.name}
+                description={producer.description}
+                city={producer.city}
+                category={primaryCategory?.name}
+              />
+            </div>
+            </div>{/* end vacation-dim wrapper */}
           </div>
         </aside>
       </div>
 
-      {/* Sticky WhatsApp CTA — mobile only */}
-      {whatsappNumber && (
-        <div className="md:hidden fixed bottom-20 inset-x-0 z-40 px-4 pb-2">
-          <a
-            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${producer.name}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-[12px] shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:bg-[#1ea855] transition font-medium text-base"
-          >
-            <WhatsappLogo size={22} weight="fill" />
-            שלחי הודעה בוואטסאפ
-          </a>
+      {/* StickyContactBar — mobile only, IO-driven, always mounted.
+          Animates via CSS transform so no layout shift on enter/exit.
+          z-[598]: below CookieBanner (z-[599]) + BottomNav (z-[1000]).
+          On first visit CookieBanner overlaps — correct UX. */}
+      <div
+        className="md:hidden fixed bottom-16 inset-x-0 z-[598]"
+        style={{
+          transform: isBarVisible ? "translateY(0)" : "translateY(100%)",
+          transition: isBarVisible ? "transform 200ms ease-out" : "transform 150ms ease-in",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          background: "white",
+          borderTop: "1px solid #DDD5C8",
+          boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+          opacity: isVacation ? 0.85 : 1,
+        }}
+        aria-hidden={!isBarVisible}
+      >
+        <div className="flex items-center gap-3 px-4 py-3">
+          {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
+          {isVacation ? (
+            <span className="text-[11px] text-site-muted shrink-0">🌿 בהפסקה</span>
+          ) : producer.reviews_count >= 3 ? (
+            <div className="shrink-0 text-[11px] text-site-muted leading-tight">
+              <div className="font-bold text-[#8B6914]">
+                ⭐ {Number(producer.avg_rating).toFixed(1)}
+              </div>
+              <div>{producer.reviews_count} ביקורות</div>
+            </div>
+          ) : null}
+          {/* Primary CTA */}
+          {getPrimaryContactHref(producer) && (
+            <a
+              href={getPrimaryContactHref(producer)}
+              {...(isPrimaryExternal(producer)
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
+              onClick={() => {
+                if (getPrimaryMethod(producer) === "whatsapp" &&
+                    typeof navigator !== "undefined" &&
+                    navigator.sendBeacon) {
+                  try {
+                    navigator.sendBeacon(`/api/producers/${producer.id}/whatsapp-click`);
+                  } catch {
+                    // tracking is best-effort
+                  }
+                }
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] font-medium text-sm transition ${
+                isVacation
+                  ? "bg-[#6EAF8A] text-white"
+                  : getPrimaryMethod(producer) === "whatsapp"
+                  ? "btn-whatsapp"
+                  : getPrimaryMethod(producer) === "phone"
+                  ? "bg-primary text-white hover:bg-primary-light"
+                  : getPrimaryMethod(producer) === "email"
+                  ? "bg-primary-dark text-white hover:bg-primary"
+                  : "bg-white text-site-text border border-primary hover:bg-light"
+              }`}
+            >
+              {isVacation ? "שלחי הודעה — יחזרו בקרוב" : getPrimaryContactLabel(producer)}
+            </a>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

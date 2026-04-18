@@ -66,7 +66,9 @@ def _haversine_km(lat: float, lng: float):
 
 
 @router.get("/producers", response_model=list[ProducerListOut])
+@limiter.limit("120/minute")
 def list_producers(
+    request: Request,
     lat: float | None = None,
     lng: float | None = None,
     radius_km: float | None = None,
@@ -76,6 +78,12 @@ def list_producers(
     verified: bool | None = None,
     organic: bool | None = None,
     kosher: bool | None = None,
+    # Producer city filter (producer's own city, not delivery area).
+    city: str | None = None,
+    is_available_today: bool | None = None,
+    grass_fed: bool | None = None,
+    # Sort for non-geo results. "newest" (default) or "rating".
+    sort: str | None = None,
     # MEH-13 — free-text search over name + description, used by /search
     # results page. Aliased as `q` in the URL to match CLAUDE.md's
     # documented API shape, but named `search_q` internally so it doesn't
@@ -129,6 +137,9 @@ def list_producers(
             .filter(_haversine_km(lat, lng) <= radius_km)
         )
     else:
+        order = (
+            Producer.avg_rating.desc(), Producer.reviews_count.desc()
+        ) if sort == "rating" else (Producer.created_at.desc(),)
         q = (
             db.query(Producer)
             .options(
@@ -137,6 +148,7 @@ def list_producers(
                 selectinload(Producer.delivery_areas),
             )
             .filter(Producer.status == "approved")
+            .order_by(*order)
         )
         count_q = (
             db.query(func.count(Producer.id.distinct()))
@@ -170,6 +182,18 @@ def list_producers(
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
         count_q = count_q.filter(Producer.delivery_areas.any())
+
+    if city:
+        q = q.filter(func.lower(Producer.city) == city.lower())
+        count_q = count_q.filter(func.lower(Producer.city) == city.lower())
+
+    if is_available_today is not None:
+        q = q.filter(Producer.is_available_today == is_available_today)
+        count_q = count_q.filter(Producer.is_available_today == is_available_today)
+
+    if grass_fed is not None:
+        q = q.filter(Producer.grass_fed == grass_fed)
+        count_q = count_q.filter(Producer.grass_fed == grass_fed)
 
     # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
     if search_q and search_q.strip():
@@ -233,6 +257,7 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
 
 
 @router.get("/producers/{producer_id}", response_model=ProducerDetailOut)
+@limiter.limit("120/minute")
 def get_producer(
     producer_id: UUID,
     request: Request,

@@ -5,48 +5,75 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #144 (feature/producers-grid-client) — MERGED to staging
-Summary: PR-1 of /producers discovery redesign. Converted /producers from
-  no-filter SSR page to SSR shell + ProducersClient (client island). Added
-  4 boolean filter chips (כשר / אורגני / משלוח / מאומת), grid-cols-2 mobile
-  fix, active-filter strip with counter, 3 honest empty states. Extracted
-  buildChipParams + CHIPS_CONFIG to lib/producer-filters.js (shared between
-  homepage and ProducersClient). Resolved merge conflict with #142 (ChipScrollRow
-  landed on staging) by keeping ChipScrollRow and replacing HOME_TOGGLE_CHIPS
-  with CHIPS_CONFIG.
+PR merged/opened: #165 (feature/claude-md-rule16-worktrees) — MERGED to staging
+                 #166 (feature/meh-94-design-token-sweep) — MERGED to staging
+Summary:
+  PR #165: CLAUDE.md Rule 16 (git worktrees for parallel features) + .gitignore
+    (.claude/worktrees/). Old rules 16→17, 17→18, 18→19.
+  PR #166: MEH-94 + design token sweep across 5 files:
+    - HomeProductCard: low-rating badge yellow→slate-neutral (MEH-94)
+    - globals.css: .btn-whatsapp utility (single source for WA green)
+    - MapClient (8 fixes), ProducerDetail (7 fixes), NeighborClient (2 fixes)
+    - 13 inline hex instances → Tailwind tokens (bg-light, bg-primary-dark,
+      border-border, text-site-muted, etc.)
+    - WA group link: green outline → gray outline per HANDOFF decision
+
+  Previous session PRs (same date, earlier):
+  PR #164 (design-review workflow install + full site audit)
 
 ## Current state
-Branch: feature/producers-grid-client (merged, can delete)
-Staging: PR #144 squash-merged. #142 (ChipScrollRow) also already on staging.
+Branch: staging (clean, all PRs squash-merged)
+Staging HEAD: 708afc9
 
 ## Next task
-Linear issue: PR-2 — /producers "בעיר שלי" chip + ChipScrollRow integration
-Description: Now that #142 (ChipScrollRow) and #144 (ProducersClient) are on
-  staging, add "בעיר שלי" chip to ProducersClient using LocationModal (already
-  on staging from PR #130). Also swap ProducersClient's inline chip buttons for
-  ChipScrollRow (same pattern as homepage).
-First step: git checkout staging → git pull origin staging →
-  git checkout -b feature/producers-filter-pr2
+Design-review workflow installed. Candidate next tasks (confirm with user):
+  - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
+  - Contact-click analytics endpoint
+  - Lightbox for gallery images
+  - Events section on producer detail page (feature/meh-XX-producer-events slot)
+  - availability_return_date schema change (v2 backend)
+
+First step: confirm which task → git checkout staging → git pull → git checkout -b feature/[description]
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
+| Design-review workflow installed | OneRedOak template customized for mehamakor brand | April 2026 |
+| CLAUDE.md Rule 16: git worktrees | Parallel features → worktrees not stash; rules 16→17→18→19 | April 2026 |
+| .btn-whatsapp utility class | Single source for WA green (#25D366) across MapClient + ProducerDetail | April 2026 |
 | CHIPS_CONFIG replaces HOME_TOGGLE_CHIPS | Single source of truth for chip definitions | April 2026 |
-| ProducersClient uses inline chip buttons (PR-1) | ChipScrollRow swap deferred to PR-2 | April 2026 |
+| ProducersClient uses ChipScrollRow (done) | Inline chips swapped for ChipScrollRow | April 2026 |
 | /producers — build from scratch | Migrating homepage is too risky | April 2026 |
 | Analytics — Option C (lib/analytics.js) | No backend PR needed | April 2026 |
 | No sidebar on /producers | Top bar fits Israeli UX + filter count | April 2026 |
 | Placeholder: category emoji + initials | Better identity than leaf icon | April 2026 |
 | ProducerCard: remove 5-icon footer | 0/12 benchmarks show inline contact row | April 2026 |
 | RTL: logical properties only | Physical left-*/right-* cause RTL bugs | April 2026 |
+| Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
+| Worktree commits must come from main repo | Signing server rejects /tmp worktree paths | April 2026 |
+| Sidebar: no "צרי קשר" header | Primary CTA speaks for itself | April 2026 |
+| WA share button: gray outlined | Avoids green conflict with primary WA CTA | April 2026 |
+| Vacation banner: slate not amber | Neutral unavailable vs warm/sale semantics | April 2026 |
+| ParallaxQuote uses Ken Burns (not fixed) | "Fixed feels dated" — deliberate choice | April 2026 |
+| Onboarding: module singleton, no Context | Simpler than wrapping layout in a Provider | April 2026 |
 
 ## Open PRs
-None currently open.
+None.
 
 ## Known issues (not yet filed)
-- Phase 3 text-right sweep on forms — awaiting decision
-- /producers sort param needs backend PR (Phase 2)
-- ProducerCard heart/favorite — Phase C not yet implemented
+- Phase 3 text-right sweep on forms — partially done in PR #162
+  (register/producer only); register/page.js + other forms still TBD
+- ProducerCard heart/favorite — Phase C not yet implemented (post-login replay)
+- git worktree + signing server: /tmp worktrees can't sign commits; must apply
+  patch in main repo. Workaround: save diff, remove worktree, checkout branch
+  in main repo, apply patch, commit.
+- Map WhatsApp CTA: phone now in ProducerListOut (PR #162) so buttons can
+  surface, but old producer records without phone still skip the button.
+  Verify in production after staging redeploy.
+- Linear bot naming conflict: MEH-62/63/64/65 in Linear are CLAUDE.md rule
+  docs, not these PRs. Linkback is cosmetic only, no impact.
+- Design audit token-drift findings: FIXED in PR #166. All inline hex instances
+  replaced with Tailwind tokens. No remaining token-drift items from audit.
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)

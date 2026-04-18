@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
 from app.database import get_db
+from app.rate_limit import limiter
 from app.models import (
     Favorite,
     HomeProduct,
@@ -40,7 +41,9 @@ def get_my_producer(user: User = Depends(require_producer), db: Session = Depend
 
 
 @router.put("", response_model=ProducerDetailOut)
+@limiter.limit("30/hour")
 def update_my_producer(
+    request: Request,
     data: ProducerUpdate,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
@@ -49,8 +52,17 @@ def update_my_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    _PRODUCER_WRITABLE_FIELDS = {
+        "name", "contact_name", "description", "short_description", "city",
+        "lat", "lng", "phone", "instagram", "website", "whatsapp_group",
+        "primary_contact_method", "contact_email", "slug", "top_product_name",
+        "starting_price_label", "price_range", "grass_fed", "organic_certified",
+        "has_delivery", "pickup_points", "kosher", "is_available_today",
+        "images", "category_ids", "delivery_area_cities",
+    }
     for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(producer, field, value)
+        if field in _PRODUCER_WRITABLE_FIELDS:
+            setattr(producer, field, value)
 
     db.commit()
     db.refresh(producer)
@@ -58,7 +70,9 @@ def update_my_producer(
 
 
 @router.post("/availability")
+@limiter.limit("20/hour")
 def toggle_availability(
+    request: Request,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):

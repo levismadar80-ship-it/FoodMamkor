@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -26,15 +26,30 @@ export default function ProducerReviews({ producerId }) {
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const sectionRef = useRef(null);
 
+  // IO lazy-fetch: only call the reviews API when this section is visible.
+  // Prevents a network request on every page load for users who never scroll.
   useEffect(() => {
     if (!producerId) return;
-    setLoading(true);
-    api
-      .get("/reviews", { params: { producer_id: producerId } })
-      .then((r) => setReviews(r.data))
-      .catch(() => setReviews([]))
-      .finally(() => setLoading(false));
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          io.disconnect();
+          setLoading(true);
+          api
+            .get("/reviews", { params: { producer_id: producerId } })
+            .then((r) => setReviews(r.data))
+            .catch(() => setReviews([]))
+            .finally(() => setLoading(false));
+        }
+      },
+      { threshold: 0.1 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, [producerId]);
 
   // Pre-fill form if the current user has already reviewed
@@ -79,7 +94,7 @@ export default function ProducerReviews({ producerId }) {
   const myReview = user ? reviews.find((r) => r.user_id === user.id) : null;
 
   return (
-    <section className="mt-12 pt-8 border-t border-border">
+    <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
       <h2 className="font-headline text-2xl font-bold text-site-text mb-6">ביקורות לקוחות</h2>
 
       {/* Write form — signed-in users only */}
@@ -161,10 +176,12 @@ export default function ProducerReviews({ producerId }) {
                     </span>
                   ))}
                 </div>
-                <span className="text-xs text-site-muted">
-                  {review.user_name || "אנונימית"}
+                <span className="text-xs text-site-muted flex items-center gap-1">
+                  <span>{review.user_name || "אנונימית"}</span>
                   {review.created_at && (
-                    <> · {new Date(review.created_at).toLocaleDateString("he-IL")}</>
+                    <span dir="ltr">
+                      · {new Date(review.created_at).toLocaleDateString("he-IL")}
+                    </span>
                   )}
                 </span>
               </div>

@@ -479,6 +479,40 @@ POST /api/contact     { name, email, message } → שלח מייל לאדמין 
 
 ---
 
+## Producer Detail Page — עיצוב (feature/meh-producer-detail-redesign, 2026-04-18)
+
+### עמודות
+
+- **Mobile**: עמוד ראשי (main column) קודם, `<aside>` שני. אין `order-` classes — DOM order הוא הסדר.
+- **Desktop** (`lg:grid-cols-[1fr_320px]`): RTL grid — main column ימין, sidebar שמאל. `lg:sticky lg:top-24` ב-sidebar.
+
+### Gallery placeholder (ללא תמונות)
+
+- גובה: `h-[120px] md:h-[180px]`, רקע `#F5F0E8`
+- מרכז: emoji קטגוריה (48px) + 2 אותיות ראשונות שם העסק (14px bold, `#2e6853` opacity-60)
+- כאשר יש תמונות: `h-52` (208px), `priority={true}` על התמונה הראשונה
+
+### StickyContactBar (mobile only)
+
+- `fixed bottom-16 inset-x-0 z-[598]` — מתחת ל-CookieBanner (z-[599]) ו-BottomNav (z-[1000])
+- IO trigger: `inlineCTARef` — כשה-CTA יוצא מה-viewport → הבר נכנסת (translateY 0, 200ms ease-out)
+- כשה-CTA חוזר → הבר יוצאת (translateY 100%, 150ms ease-in)
+- `paddingBottom: env(safe-area-inset-bottom, 0px)` לתמיכה ב-iPhone notch
+- **Vacation state**: CTA בצבע `#6EAF8A`, label → "שלחי הודעה — יחזרו בקרוב", opacity 0.85
+
+### Vacation UI
+
+- Main column: `bg-amber-50 border border-amber-300 rounded-xl p-3` banner עם "🌿 בית עסק זה בהפסקה כרגע"
+- Sidebar: `opacity-50 pointer-events-auto` עטיפה מעל כל תוכן ה-contact
+
+### Highlights strip
+
+- תנאי: אחד מהשדות `grass_fed / organic_certified / delivery_areas.length > 0 / kosher` הוא truthy
+- סגנון chip: `background #EAF3DE, color #1C1A17, border 1px solid #e8e0d0, border-radius 20px, font-size 11px, padding 4px 10px`
+- Label מיפוי: grass_fed → "🌾 מרעה חופשי", organic_certified → "🌿 אורגני מוסמך", delivery → "🚚 משלוח", kosher → "✡️ כשר"
+
+---
+
 ## אחרי כל שינויי עיצוב — הרץ:
 ```bash
 npx skills add pbakaus/impeccable

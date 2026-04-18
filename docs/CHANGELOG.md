@@ -35,6 +35,20 @@ about:
 
 ---
 
+## 2026-04-18 — First-visit onboarding tour (feature/meh-61a-onboarding)
+
+- `lib/use-onboarding.js` — module-level singleton (no Context) with localStorage persistence (7-day expiry); all callers share state via a subscriber Set.
+- `components/OnboardingTip.jsx` — dismissible tooltip bubble (RTL, Framer Motion animate-in/out, "×" close + CTA button, `placement="inline"` for homepage / `placement="above"` for BottomNav).
+- Step 0 (producers grid): inline tip, 2s delay, text "גלי בתי עסק מקומיים..."; dismissed → advance to step 1.
+- Step 1 (chip filters): inline tip below ChipScrollRow, text "סנני לפי אורגני, כשר, משלוח..."; dismissed → advance to step 2.
+- Step 2 (map tab): absolute tip above BottomNav map tab, text "מפה אינטראקטיבית..."; dismissed → advance to step 3.
+- Step 3 (profile tab): absolute tip above profile tab, "הבנתי, סיום" CTA → dismiss (tour complete).
+
+## 2026-04-18 — Hero spec completion (feature/meh-61e-hero-redesign)
+
+- Replaced Ken Burns zoom/pan inner-div with `background-attachment: fixed` CSS parallax directly on the hero `<section>`, per DESIGN.md spec. Added `.hero-parallax` class in `globals.css`; `@media (pointer: coarse)` falls back to `scroll` for iOS Safari (which silently ignores `fixed`). Ken Burns keyframes retained — still used by ParallaxQuote, EventsClient, AboutClient, ExperiencesClient, NeighborClient.
+- Search pill padding aligned to DESIGN.md spec (`gap-2.5 px-6 py-3.5` = 10/24/14px); added `aria-label="חיפוש בתי עסק"` on `role="search"` container; hero `<section>` gets `aria-label` for screen readers.
+
 ## 2026-04-18 — ProducerCard redesign (Phases A → B → C) (claude/review-mehamakor-docs-1Mre9)
 
 - **Phase A — deletions.** Removed the 5-icon footer contact row (WhatsApp / phone / website / email / Instagram — dead code on all grid views because `ProducerListOut` never carries those fields), the duplicate organic/grass-fed/kosher/category pill row, the `פרמיום` image overlay, the "מידע נוסף" text CTA, and the separate rating row. Replaced stray inline `style={{ borderRadius… }}` with Tailwind `rounded-2xl` / `rounded-t-2xl`.
@@ -42,6 +56,23 @@ about:
 - **Phase C — heart + post-login replay.** New `CardHeart` button at `top-3 start-3` on the image (logical start = right-side in Hebrew RTL per project convention). Logged-in flow: POST `/users/me/favorites/{id}` with optimistic fill, reverts + error toast on failure; reads initial state from a new `lib/favorites-cache.js` module that fetches `/users/me/favorites` once per session and fans out updates via a subscribe callback (no N+1 on a 24-card grid). Logged-out flow: fills heart locally, enqueues a `favorite:{id}` entry via `lib/post-login-action.js` into sessionStorage, and fires a snackbar `showToast("שמרתי — התחברי …", "info", 5000, { action: { label: "התחברי", href: "/login?next=…" } })`. `showToast` + `Toaster` extended to render an optional underlined action link alongside the message. `AuthContext` drains the pending action after every successful `login / register / loginWithGoogle / loginWithApple` (shared `afterLogin` helper), clears the cache on `logout` + `deleteAccount`, and hydrates the favorites cache on session boot. Heart is hidden when `user.producer_id === producer.id` (own-card edge case). `stopPropagation` + `aria-pressed` wired.
 - **Tests.** `__tests__/ProducerCard.test.jsx` rewritten for the new anatomy + heart (39 cases). `__tests__/badges.test.js` updated for the new 8-key priority order. `__tests__/BadgeRow.test.jsx` unchanged (passes). Two pre-existing failures on `staging` (`__tests__/mapChips.test.js` — TOGGLE_CHIPS out of sync with `lib/map-chips.js`; `__tests__/SettingsPage.test.jsx` — OAuth password card) are **not** caused by this PR and are left alone per the "no map / backend files" scope.
 - **Backend:** untouched. `npm run build` green at every phase boundary; `pytest tests/test_api.py` couldn't run in the Vercel-preview sandbox (needs live Postgres).
+
+## 2026-04-18 — Producer detail sidebar v2 (feature/meh-producer-detail-sidebar-v2)
+
+- **Initials fix:** replaced `name.slice(0,2)` with word-initial algorithm (`words[0][0]+words[1][0]`) so "גבינות הר הגולן" → "גה" not "גב".
+- **Vacation banner → slate:** changed `bg-amber-50 border-amber-300` to `bg-slate-50 border-slate-200` (neutral unavailable, not warm/sale) in both main column and sidebar; suppressed `is_available_today` chip during vacation.
+- **Sidebar declutter:** removed "צרי קשר" heading, removed `WhatsAppShareButton` (green conflict) and `MapButton` from sidebar.
+- **Main column action row:** `MapButton` + `WhatsAppShareButton` (gray outlined, "שלחי לחברה") added after inline CTA, visible at all breakpoints.
+- **Mobile highlights strip:** text labels hidden below `sm:` breakpoint (icon-only saves ~24px above the fold on 375px).
+
+## 2026-04-18 — Producer detail page redesign (feature/meh-producer-detail-redesign)
+
+- Fixed mobile above-fold bug (`order-first` removed from `<aside>`), `is_available_today` chip (both true/false states), `short_description` subtitle, `contact_name` micro-line in main column, highlights strip (grass_fed/organic/delivery/kosher, bg #EAF3DE), and vacation banner + sidebar dim.
+- Replaced hardcoded WhatsApp mobile sticky with IO-driven `StickyContactBar` (method-aware, animated, vacation state, social proof, z-[598]).
+- Removed duplicate `FavoriteButton` pills (header + sidebar) — gallery overlay is now canonical.
+- `ImageGallery`: compact placeholder `h-[120px] md:h-[180px]` with category emoji + initials, gallery dots 44px tap targets, `priority` on first image.
+- `ProducerReviews`: IO lazy-fetch (no API call until section visible), BiDi `dir="ltr"` on review dates.
+- Touch targets: `min-h-[44px]` on `FollowButton`, `ShareButton`, `WhatsAppShareButton`, map button, breadcrumb back button.
 
 ## 2026-04-18 — Two-row filter chip layout + ChipScrollRow component (feature/meh-two-row-filter-chips)
 
