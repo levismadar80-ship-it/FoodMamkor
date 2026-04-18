@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import MapProducerCard from "@/components/MapProducerCard";
 import CitySearch from "@/components/CitySearch";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
@@ -97,6 +98,11 @@ export default function MapPage() {
   const [sheetSnap, setSheetSnap] = useState(PEEK);
 
   const mapApiRef = useRef(null);
+  // Direct ref to the Leaflet map instance. Both desktop + mobile MapComponents
+  // set this via the `mapRef` prop, but the VISIBLE map always wins because the
+  // hidden container (display:none, 0×0) produces degenerate bounds — we validate
+  // below before using them.
+  const mapRef = useRef(null);
   const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
 
   const registerMapApi = useCallback((api) => {
@@ -326,54 +332,49 @@ export default function MapPage() {
   // Now it's true geo-awareness — powered by the existing Haversine
   // SQL on /producers.
   const handleSearchThisArea = useCallback(() => {
-    // Use the live Leaflet viewport rather than the React-state mapBounds,
-    // which can be one render behind when the user clicks immediately after
-    // panning (React state updates are async; getBounds() is always current).
-    const leafletMap = mapApiRef.current?.getMap();
-    const leafletBounds = leafletMap?.getBounds();
-    console.log("=== SEARCH THIS AREA ===");
-    console.log("[חפשי באזור זה] mapApiRef.current:", mapApiRef.current);
-    console.log("[חפשי באזור זה] leafletMap:", leafletMap);
-    console.log("[חפשי באזור זה] leafletBounds:", leafletBounds);
-    console.log("[חפשי באזור זה] getBounds().toBBoxString():", leafletBounds?.toBBoxString());
-    const liveBounds = leafletBounds
-      ? { north: leafletBounds.getNorth(), south: leafletBounds.getSouth(),
-          east: leafletBounds.getEast(), west: leafletBounds.getWest() }
+    // `mapPane` renders in two places (desktop + mobile CSS slots). Both mount
+    // a MapComponent that calls mapRef.current = leafletInstance. The HIDDEN
+    // container (display:none, 0×0 px) produces degenerate bounds where
+    // north===south and east===west. Detect this and fall back to `mapBounds`
+    // (React state), which is only updated by real user-initiated moveend events
+    // on the VISIBLE map — so after any pan it holds the correct viewport.
+    const rawBounds = mapRef.current?.getBounds();
+    const boundsAreValid =
+      rawBounds &&
+      rawBounds.getNorth() !== rawBounds.getSouth() &&
+      rawBounds.getEast() !== rawBounds.getWest();
+    const liveBounds = boundsAreValid
+      ? { north: rawBounds.getNorth(), south: rawBounds.getSouth(),
+          east: rawBounds.getEast(), west: rawBounds.getWest() }
       : mapBounds;
-    console.log("[חפשי באזור זה] liveBounds:", JSON.stringify(liveBounds));
+
     setCommittedBounds(liveBounds);
     setMapMoved(false);
+
     const centerRadius = boundsToCenterRadius(liveBounds);
-    console.log("[חפשי באזור זה] centerRadius:", JSON.stringify(centerRadius));
-    if (centerRadius) {
-      // Geo-radius search = "show producers physically here".
-      // delivery_city = "show producers who deliver to my city" — different
-      // question. Combining both ANDs them together → 0 results when the
-      // user pans away from their selected city. Strip delivery_city; let
-      // category/verified/organic chip filters carry over.
-      const { delivery_city: _excluded, ...chipParams } = buildParams();
-      const params = {
-        ...chipParams,
-        lat: centerRadius.lat,
-        lng: centerRadius.lng,
-        radius_km: centerRadius.radius_km,
-      };
-      console.log("[חפשי באזור זה] params being sent:", JSON.stringify(params));
-      console.log("[חפשי באזור זה] API URL:", `/api/producers?${new URLSearchParams(params).toString()}`);
-      api
-        .get("/producers", { params })
-        .then((r) => {
-          console.log("[חפשי באזור זה] results count:", r.data?.length);
-          console.log("[חפשי באזור זה] raw response (first 2):", JSON.stringify(r.data?.slice(0, 2)));
-          setAllProducers(r.data);
-        })
-        .catch((err) => {
-          console.error("[חפשי באזור זה] API error:", err?.response?.status, err?.response?.data, err?.message);
-          setAllProducers([]);
-        });
-    } else {
-      console.warn("[חפשי באזור זה] liveBounds invalid — skipping fetch:", liveBounds);
+
+    // Guard: radius_km=0 means we got a degenerate/missing viewport.
+    // The backend 500s on radius_km=0 (acos domain issue with 0-distance filter).
+    if (!centerRadius || centerRadius.radius_km < 1) {
+      showToast("הזיזי את המפה לפני החיפוש", "info");
+      return;
     }
+
+    // Geo-radius = "show producers physically here".
+    // delivery_city = "show producers who deliver to my city" — different question.
+    // Combining them ANDs the filters → 0 results when user pans away from their
+    // selected city. Strip delivery_city; category/verified/organic still apply.
+    const { delivery_city: _excluded, ...chipParams } = buildParams();
+    const params = {
+      ...chipParams,
+      lat: centerRadius.lat,
+      lng: centerRadius.lng,
+      radius_km: centerRadius.radius_km,
+    };
+    api
+      .get("/producers", { params })
+      .then((r) => setAllProducers(r.data))
+      .catch(() => setAllProducers([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
 
@@ -476,6 +477,7 @@ export default function MapPage() {
         onMapMove={handleMapMove}
         onMapCanvasClick={handleMapCanvasClick}
         registerApi={registerMapApi}
+        mapRef={mapRef}
         visitedIds={visitedIds}
       />
       {showMapHint && (

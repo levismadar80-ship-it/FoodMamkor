@@ -117,6 +117,12 @@ export default function MapComponent({
   onMapMove,
   onMapCanvasClick,
   registerApi,
+  // Caller-owned ref that receives the live Leaflet map instance. Used by
+  // MapClient to call getBounds() directly without going through the API
+  // abstraction. Both desktop + mobile MapComponents set this; the VISIBLE
+  // one wins because the hidden container produces degenerate bounds (detected
+  // in MapClient before use).
+  mapRef: parentMapRef = null,
   // MEH-14: IDs of producers the user has already viewed (from
   // recently_viewed sessionStorage). These markers render dimmed.
   visitedIds = null,
@@ -125,7 +131,7 @@ export default function MapComponent({
     visitedIds instanceof Set
       ? visitedIds
       : new Set(Array.isArray(visitedIds) ? visitedIds : []);
-  const mapRef = useRef(null);
+  const containerRef = useRef(null); // DOM node for L.map()
   const mapInstanceRef = useRef(null);
   const clusterGroupRef = useRef(null);
   const markersRef = useRef(new Map()); // producer.id → { marker, producer }
@@ -233,9 +239,9 @@ export default function MapComponent({
 
   // Initialize the map once
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!containerRef.current || mapInstanceRef.current) return;
 
-    mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView(
+    mapInstanceRef.current = L.map(containerRef.current, { zoomControl: true }).setView(
       // Default view — Jerusalem at zoom 8 so the whole country fits
       // comfortably on mobile. Previously [31.5, 34.8] (off-coast of
       // Ashdod) which on narrow viewports panned the camera enough to
@@ -317,10 +323,13 @@ export default function MapComponent({
     setTimeout(scheduleInvalidate, 150);
     setTimeout(scheduleInvalidate, 500);
     let resizeObserver = null;
-    if (typeof ResizeObserver !== "undefined" && mapRef.current) {
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
       resizeObserver = new ResizeObserver(scheduleInvalidate);
-      resizeObserver.observe(mapRef.current);
+      resizeObserver.observe(containerRef.current);
     }
+    // Expose the Leaflet instance to the caller-owned ref AFTER the map is
+    // fully set up so getBounds() returns a real viewport.
+    if (parentMapRef) parentMapRef.current = mapInstanceRef.current;
 
     return () => {
       if (resizeObserver) resizeObserver.disconnect();
@@ -381,6 +390,6 @@ export default function MapComponent({
   }, [producers, visitedIds]);
 
   return (
-    <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
+    <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
   );
 }
