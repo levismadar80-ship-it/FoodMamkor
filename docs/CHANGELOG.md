@@ -35,6 +35,14 @@ about:
 
 ---
 
+## 2026-04-18 — Two-row filter chip layout + ChipScrollRow component (feature/meh-two-row-filter-chips)
+
+- **ChipScrollRow.jsx** — new shared component; `variant="category"` (radio, one active) and `variant="toggle"` (boolean toggles); inline-end edge-fade + RTL scroll-end spacer.
+- **MapClient.jsx** — split single chip row into category row + toggle row; active-filter summary line below ("מסנן לפי: ...") when any filter is active.
+- **page.js** — replaced inline toggle chip div with `<ChipScrollRow variant="toggle">`; added summary line above producers grid when chips active.
+
+---
+
 ## 2026-04-18 — RTL logical-properties audit (PR #137)
 
 - **PR #137** `feature/rtl-logical-properties` — replaced physical `left-*`/`right-*`/`ml-*`/`mr-*`/`pl-*`/`pr-*` with logical `start-*`/`end-*`/`ms-*`/`me-*`/`ps-*`/`pe-*` across 16 files. Intentional exceptions preserved: password eye toggles (dir=ltr inputs), map geographic controls, carousel arrows, centering idioms.
