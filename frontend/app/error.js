@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Global error boundary (LAUNCH_CHECKLIST week 3).
@@ -12,8 +13,8 @@ import Link from "next/link";
  */
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
-    // Log to stderr in dev; in production this would send to Sentry.
-    if (typeof console !== "undefined") {
+    Sentry.captureException(error);
+    if (process.env.NODE_ENV === "development") {
       console.error("[global error]", error);
     }
   }, [error]);
