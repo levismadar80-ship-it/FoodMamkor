@@ -373,10 +373,17 @@ export default function MapPage() {
       radius_km: centerRadius?.radius_km,
     });
     if (!geoValidation.success) {
-      showToast(geoValidation.error.errors[0].message, "info");
+      // Zod v4: issues (not errors). Fall back to a generic Hebrew message
+      // if the shape ever changes again.
+      const msg = geoValidation.error.issues?.[0]?.message || "חיפוש לא תקין";
+      showToast(msg, "info");
       return;
     }
     const params = { ...chipParams, ...geoValidation.data };
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.log("[חפשי באזור זה] GET /producers", params);
+    }
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))

@@ -17,15 +17,17 @@ export const ProducerSchema = z.object({
 });
 
 // Geo search params sent to GET /producers.
-// radius_km is capped at 200 to prevent Haversine full-table scans that
-// currently 500 on the backend for very zoomed-out viewports.
+// radius_km is capped at 50 to prevent Haversine full-table scans that
+// 500 on the backend for very zoomed-out viewports (≥70 km observed).
+// boundsToCenterRadius() already clamps at the source; this schema is a
+// belt-and-braces safety net in case a future caller bypasses it.
 export const GeoSearchSchema = z.object({
   lat: z.number().finite(),
   lng: z.number().finite(),
   radius_km: z
     .number()
     .min(1, "הזיזי את המפה לפני החיפוש")
-    .max(200, "הקטיני את מרחק החיפוש — אזור גדול מדי"),
+    .max(50, "הקטיני את מרחק החיפוש — אזור גדול מדי"),
 });
 
 // Validated coords before any Leaflet flyTo / marker creation call.

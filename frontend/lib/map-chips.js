@@ -96,7 +96,10 @@ export function boundsToCenterRadius(bounds) {
       Math.cos(toRad(bounds.north)) *
       Math.sin(dLng / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  // Round up so the fetched ring just covers the viewport.
-  const radius_km = Math.ceil(EARTH_RADIUS_KM * c);
+  // Round up so the fetched ring just covers the viewport. Clamp at 50 km:
+  // the backend Haversine-in-SQL path full-scans the producers table and
+  // 500s on very large radii (≥70 km observed). 50 km still covers the
+  // largest realistic "zoomed-out Israel" viewport without the timeout.
+  const radius_km = Math.min(50, Math.ceil(EARTH_RADIUS_KM * c));
   return { lat, lng, radius_km };
 }
