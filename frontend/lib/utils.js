@@ -55,9 +55,9 @@ export function normalizePhone(phone) {
   // Step 1: strip all non-digit characters in one pass.
   const digits = String(phone).replace(/\D/g, "");
   // Step 2: Israeli local format (leading 0) → international.
-  if (digits.startsWith("0")) {
-    return "972" + digits.slice(1);
-  }
-  // Step 3: already international or raw digits — return as-is.
-  return digits;
+  const normalized = digits.startsWith("0") ? "972" + digits.slice(1) : digits;
+  // Step 3: validate Israeli mobile — must be 972 + prefix [5-9] + 8 digits.
+  // Rejects truncated/extra digits (e.g. "9725012345678" has 13 digits → invalid).
+  if (!/^972[5-9]\d{8}$/.test(normalized)) return "";
+  return normalized;
 }

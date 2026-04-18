@@ -6,14 +6,16 @@ import api from "@/lib/api";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tests, setTests] = useState({});
 
   useEffect(() => {
-    api.get("/admin/settings").then((r) => setSettings(r.data));
+    api.get("/admin/settings").then((r) => setSettings(r.data)).catch(() => setLoadError(true));
   }, []);
 
+  if (loadError) return <div className="text-red-600 text-sm">שגיאה בטעינת הגדרות — נסי לרענן את הדף.</div>;
   if (!settings) return <div className="text-text-secondary">טוען...</div>;
 
   const update = (k, v) => {

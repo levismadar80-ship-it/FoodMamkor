@@ -49,8 +49,17 @@ def update_my_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    _PRODUCER_WRITABLE_FIELDS = {
+        "name", "contact_name", "description", "short_description", "city",
+        "lat", "lng", "phone", "instagram", "website", "whatsapp_group",
+        "primary_contact_method", "contact_email", "slug", "top_product_name",
+        "starting_price_label", "price_range", "grass_fed", "organic_certified",
+        "has_delivery", "pickup_points", "kosher", "is_available_today",
+        "images", "category_ids", "delivery_area_cities",
+    }
     for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(producer, field, value)
+        if field in _PRODUCER_WRITABLE_FIELDS:
+            setattr(producer, field, value)
 
     db.commit()
     db.refresh(producer)
