@@ -22,6 +22,7 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 import { useUserCity } from "@/lib/use-user-city";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
+import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
 
 const PAGE_SIZE = 8;
 
@@ -209,7 +210,7 @@ export default function HomePage() {
     const newFilters = { ...filters, category: newCat };
     setFilters(newFilters);
     updateURL(newFilters);
-    loadProducers({ category: newCat, ...chipParams() });
+    loadProducers({ category: newCat, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -226,22 +227,10 @@ export default function HomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Build query params from active chips. Called by loadProducers callers
-  // and the chip toggle handler so every filter surface stays in sync.
-  const chipParams = (overrides = {}) => {
-    const c = { ...chips, ...overrides };
-    const p = {};
-    if (c.kosher) p.kosher = true;
-    if (c.organic) p.organic = true;
-    if (c.has_delivery) p.has_delivery = true;
-    if (c.verified) p.verified = true;
-    return p;
-  };
-
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    const params = chipParams({ [key]: !chips[key] });
+    const params = buildChipParams(chips, { [key]: !chips[key] });
     if (filters.category) params.category = filters.category;
     if (key === "has_delivery") {
       const newFilters = { ...filters, has_delivery: next.has_delivery };
@@ -253,7 +242,7 @@ export default function HomePage() {
 
   const handleNearMe = () => {
     if (userCity) {
-      loadProducers({ delivery_city: userCity, ...chipParams() });
+      loadProducers({ delivery_city: userCity, ...buildChipParams(chips) });
       document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
@@ -262,7 +251,7 @@ export default function HomePage() {
 
   const handleCitySelected = (city) => {
     setUserCity(city);
-    loadProducers({ delivery_city: city, ...chipParams() });
+    loadProducers({ delivery_city: city, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -598,12 +587,7 @@ export default function HomePage() {
 
         {/* Filter chips — task 12 */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 ps-1 scrollbar-hide after:content-[''] after:shrink-0 after:w-4">
-          {[
-            { key: "kosher", label: "כשר", icon: "✡️" },
-            { key: "organic", label: "אורגני", icon: "🌿" },
-            { key: "has_delivery", label: "משלוח", icon: "🚚" },
-            { key: "verified", label: "מאומת בלבד", icon: "✅" },
-          ].map((chip) => (
+          {CHIPS_CONFIG.map((chip) => (
             <button
               key={chip.key}
               type="button"
@@ -634,7 +618,7 @@ export default function HomePage() {
                 const newFilters = { ...filters, category: "" };
                 setFilters(newFilters);
                 updateURL(newFilters);
-                loadProducers(chipParams());
+                loadProducers(buildChipParams(chips));
               }}
               className="text-sm text-primary hover:underline"
             >
