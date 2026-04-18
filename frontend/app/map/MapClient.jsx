@@ -468,8 +468,11 @@ export default function MapPage() {
           {chip.label}
         </button>
       ))}
-      {/* RTL overflow spacer — CSS padding is clipped at the border edge on the scrollable end; a shrink-0 div is the reliable fix */}
-      <div className="shrink-0 w-4" aria-hidden="true" />
+      {/* RTL overflow spacer — CSS padding-inline-end is clipped on overflow-x
+          containers, so a shrink-0 flex child is the reliable way to reserve
+          space past the last chip. Bumped to w-8 (32px) because w-4 (16px)
+          still cropped the אורגני chip edge on narrow mobile viewports. */}
+      <div className="shrink-0 w-8" aria-hidden="true" />
     </div>
   );
 
