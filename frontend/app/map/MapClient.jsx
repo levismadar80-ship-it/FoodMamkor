@@ -15,6 +15,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import MapBottomSheet, { PEEK, HALF, FULL } from "@/components/MapBottomSheet";
 import LocationModal from "@/components/LocationModal";
 import { useUserCity } from "@/lib/use-user-city";
+import ChipScrollRow from "@/components/ChipScrollRow";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -430,49 +431,51 @@ export default function MapPage() {
     });
   }, [filteredByCategory, committedBounds]);
 
-  // Shared filter chips bar (used in both desktop + mobile sheet)
+  // Category chips visible in the current DB (hidden if no matching category loaded yet)
+  const visibleCategoryChips = useMemo(
+    () =>
+      categories.length > 0
+        ? CATEGORY_CHIPS.filter(
+            (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
+          )
+        : CATEGORY_CHIPS,
+    [categories],
+  );
+
+  // Labels of currently active filters — drives summary line below chip rows
+  const activeFilterLabels = useMemo(() => {
+    const labels = [];
+    if (chipState.categoryKey && chipState.categoryKey !== "all") {
+      const cat = CATEGORY_CHIPS.find((c) => c.key === chipState.categoryKey);
+      if (cat) labels.push(cat.label);
+    }
+    TOGGLE_CHIPS.forEach((c) => {
+      if (chipState[c.key]) labels.push(c.label);
+    });
+    return labels;
+  }, [chipState]);
+
+  // Shared filter chips bar (used in both desktop sidebar + mobile sticky bar)
   const filterChipsBar = (
-    <div
-      className="flex gap-2 overflow-x-auto pb-1 -mx-4 ps-4 scrollbar-hide after:content-[''] after:shrink-0 after:w-4"
-      role="toolbar"
-      aria-label="סינון מפה"
-      dir="rtl"
-    >
-      {CATEGORY_CHIPS.map((chip) => {
-        if (chip.key !== "all" && categories.length > 0 && resolveCategoryId(chip, categories) == null) return null;
-        const active = chipState.categoryKey === chip.key;
-        return (
-          <button
-            key={chip.key}
-            type="button"
-            onClick={() => onCategoryChipClick(chip.key)}
-            aria-pressed={active}
-            className={`whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
-              active ? "bg-primary text-white border-primary" : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-            }`}
-          >
-            {chip.label}
-          </button>
-        );
-      })}
-      {TOGGLE_CHIPS.map((chip) => (
-        <button
-          key={chip.key}
-          type="button"
-          onClick={() => onToggleChipClick(chip.key)}
-          aria-pressed={!!chipState[chip.key]}
-          className={`whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
-            chipState[chip.key] ? "bg-primary text-white border-primary" : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-          }`}
-        >
-          {chip.label}
-        </button>
-      ))}
-      {/* RTL overflow spacer — CSS padding-inline-end is clipped on overflow-x
-          containers, so a shrink-0 flex child is the reliable way to reserve
-          space past the last chip. Bumped to w-8 (32px) because w-4 (16px)
-          still cropped the אורגני chip edge on narrow mobile viewports. */}
-      <div className="shrink-0 w-8" aria-hidden="true" />
+    <div dir="rtl">
+      <ChipScrollRow
+        variant="category"
+        chips={visibleCategoryChips}
+        activeKey={chipState.categoryKey}
+        onChipClick={onCategoryChipClick}
+      />
+      <ChipScrollRow
+        variant="toggle"
+        chips={TOGGLE_CHIPS}
+        activeKeys={chipState}
+        onChipClick={onToggleChipClick}
+        className="mt-2"
+      />
+      {activeFilterLabels.length > 0 && (
+        <p className="text-xs text-site-muted mt-2 pb-1" aria-live="polite">
+          מסנן לפי: {activeFilterLabels.join(" · ")}
+        </p>
+      )}
     </div>
   );
 

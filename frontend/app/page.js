@@ -22,8 +22,16 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 import { useUserCity } from "@/lib/use-user-city";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
+import ChipScrollRow from "@/components/ChipScrollRow";
 
 const PAGE_SIZE = 8;
+
+const HOME_TOGGLE_CHIPS = [
+  { key: "kosher", label: "כשר", icon: "✡️" },
+  { key: "organic", label: "אורגני", icon: "🌿" },
+  { key: "has_delivery", label: "משלוח", icon: "🚚" },
+  { key: "verified", label: "מאומת בלבד", icon: "✅" },
+];
 
 // OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
 // `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
@@ -596,29 +604,23 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Filter chips — task 12 */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 ps-1 scrollbar-hide after:content-[''] after:shrink-0 after:w-4">
-          {[
-            { key: "kosher", label: "כשר", icon: "✡️" },
-            { key: "organic", label: "אורגני", icon: "🌿" },
-            { key: "has_delivery", label: "משלוח", icon: "🚚" },
-            { key: "verified", label: "מאומת בלבד", icon: "✅" },
-          ].map((chip) => (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => toggleChip(chip.key)}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
-                chips[chip.key]
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-              }`}
-            >
-              <span aria-hidden="true">{chip.icon}</span>
-              {chip.label}
-            </button>
-          ))}
-        </div>
+        {/* Filter chips */}
+        <ChipScrollRow
+          variant="toggle"
+          chips={HOME_TOGGLE_CHIPS}
+          activeKeys={chips}
+          onChipClick={toggleChip}
+          fadeBg="#F5F0E8"
+          className="mb-3"
+        />
+        {Object.values(chips).some(Boolean) && (
+          <p className="text-xs text-site-muted mb-4" aria-live="polite">
+            מסנן לפי:{" "}
+            {HOME_TOGGLE_CHIPS.filter((c) => chips[c.key])
+              .map((c) => c.label)
+              .join(" · ")}
+          </p>
+        )}
 
         {filters.category && (
           <div className="mb-6 flex items-center gap-2">
