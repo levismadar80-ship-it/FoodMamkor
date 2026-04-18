@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -9,11 +10,21 @@ import LocationModal from "@/components/LocationModal";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
 import { useUserCity } from "@/lib/use-user-city";
+import { getRecentlyViewedIds } from "@/lib/recently-viewed";
+import { trackEvent } from "@/lib/analytics";
 import api from "@/lib/api";
 
 const FILTER_LIMIT = 100;
 
 const CITY_CHIP = { key: "city", label: "בעיר שלי", icon: "📍" };
+
+function initChipsFromParams(searchParams) {
+  const result = { ...CHIPS_DEFAULT };
+  for (const chip of CHIPS_CONFIG) {
+    if (searchParams.get(chip.key) === "1") result[chip.key] = true;
+  }
+  return result;
+}
 
 export default function ProducersClient({
   initialItems,
@@ -22,16 +33,33 @@ export default function ProducersClient({
   totalPages,
   perPage,
 }) {
-  const [chips, setChips] = useState(CHIPS_DEFAULT);
-  const [cityFilter, setCityFilter] = useState(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
+  const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
   const [filteredItems, setFilteredItems] = useState(null);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const { setCity: setUserCity } = useUserCity();
+  const mountFetched = useRef(false);
 
   const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter;
   const displayItems = hasActiveChips ? (filteredItems ?? []) : initialItems;
   const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
+
+  const syncUrl = useCallback(
+    (chipState, city) => {
+      const params = new URLSearchParams();
+      for (const chip of CHIPS_CONFIG) {
+        if (chipState[chip.key]) params.set(chip.key, "1");
+      }
+      if (city) params.set("city", city);
+      const qs = params.toString();
+      router.replace(qs ? `/producers?${qs}` : "/producers", { scroll: false });
+    },
+    [router],
+  );
 
   const fetchFiltered = useCallback((chipState, city) => {
     const params = buildChipParams(chipState);
@@ -43,21 +71,36 @@ export default function ProducersClient({
     setLoading(true);
     api
       .get("/producers", { params: { ...params, limit: FILTER_LIMIT, offset: 0 } })
-      .then((r) => setFilteredItems(Array.isArray(r.data) ? r.data : []))
+      .then((r) => {
+        const items = Array.isArray(r.data) ? r.data : [];
+        setFilteredItems(items);
+        trackEvent("producers_filter_results", { count: items.length });
+      })
       .catch(() => setFilteredItems([]))
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch on mount if URL already has active chips (shared link / back-nav).
+  useEffect(() => {
+    if (mountFetched.current) return;
+    mountFetched.current = true;
+    const anyActive = Object.values(chips).some(Boolean) || !!cityFilter;
+    if (anyActive) fetchFiltered(chips, cityFilter);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
+    syncUrl(next, cityFilter);
     fetchFiltered(next, cityFilter);
+    trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
   const handleChipClick = (key) => {
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
+        syncUrl(chips, null);
         fetchFiltered(chips, null);
       } else {
         setLocationModalOpen(true);
@@ -71,13 +114,17 @@ export default function ProducersClient({
     setLocationModalOpen(false);
     setCityFilter(city);
     setUserCity(city);
+    syncUrl(chips, city);
     fetchFiltered(chips, city);
+    trackEvent("producers_city_filter", { city });
   };
 
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
     setFilteredItems(null);
+    syncUrl(CHIPS_DEFAULT, null);
+    trackEvent("producers_clear_all");
   };
 
   const cityChip = cityFilter ? { ...CITY_CHIP, label: cityFilter } : CITY_CHIP;
@@ -109,6 +156,9 @@ export default function ProducersClient({
         כל בתי העסק
       </h1>
 
+      {/* Recently viewed strip */}
+      <RecentlyViewedStrip />
+
       {/* Chip row */}
       <ChipScrollRow
         variant="toggle"
@@ -139,7 +189,11 @@ export default function ProducersClient({
           {cityFilter && (
             <button
               type="button"
-              onClick={() => { setCityFilter(null); fetchFiltered(chips, null); }}
+              onClick={() => {
+                setCityFilter(null);
+                syncUrl(chips, null);
+                fetchFiltered(chips, null);
+              }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-[10px] font-bold">×</span>
@@ -191,6 +245,42 @@ export default function ProducersClient({
         onSelectCity={handleCitySelected}
       />
     </>
+  );
+}
+
+function RecentlyViewedStrip() {
+  const [producers, setProducers] = useState([]);
+
+  useEffect(() => {
+    const ids = getRecentlyViewedIds();
+    if (!ids.length) return;
+    Promise.all(
+      ids.map((id) =>
+        api
+          .get(`/producers/${id}`)
+          .then((r) => r.data)
+          .catch(() => null),
+      ),
+    ).then((results) => setProducers(results.filter(Boolean)));
+  }, []);
+
+  if (!producers.length) return null;
+
+  return (
+    <section aria-label="ביקרת לאחרונה" className="mb-5">
+      <p className="text-xs font-semibold text-site-muted mb-2 px-0.5">ביקרת לאחרונה</p>
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+        {producers.map((p) => (
+          <Link
+            key={p.id}
+            href={p.slug ? `/${p.slug}` : `/producer/${p.id}`}
+            className="shrink-0 flex items-center bg-white border border-border rounded-full px-3 py-1.5 text-sm text-site-text hover:border-primary hover:text-primary transition whitespace-nowrap"
+          >
+            {p.name}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
