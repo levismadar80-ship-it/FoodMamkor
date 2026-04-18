@@ -5,48 +5,44 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #159 (feature/meh-62-security-deps) — MERGED to staging
-                 #160 (feature/meh-63-critical-correctness) — MERGED to staging
-                 #161 (feature/meh-64-rate-limits) — MERGED to staging
-                 #162 (feature/meh-65-polish) — MERGED to staging
+PR merged/opened: #164 (feature/design-review-workflow) — MERGED to staging
 Summary:
-  Bug-hunt audit cycle complete (4 PRs shipped):
-  PR #159 (PR-A security): python-jose 3.3.0→3.4.0 (CVE-2024-33663/33664),
-    python-multipart 0.0.9→0.0.18 (CVE-2024-53981), next 14.2.15→14.2.35
-    (CVE-2025-29927 middleware bypass).
-  PR #160 (PR-B correctness): admin/settings .catch()+error state;
-    producer_me PUT field allowlist (strips admin_notes/is_verified/
-    is_recommended/status); normalizePhone adds ^972[5-9]\d{8}$ validation;
-    MapClient uses normalizePhone() instead of raw .replace(/\D/g, "").
-  PR #161 (PR-C rate limits): 10 endpoints — GET /producers (120/min),
-    GET /producers/{id} (120/min), GET /auth/me (60/min), DELETE /auth/me
-    (3/hr), POST /producers/{id}/report (5/hr), PUT /producers/me (30/hr),
-    POST /producers/me/availability (20/hr), POST /home-products/{id}/
-    whatsapp-click (10/min), POST /upload/image (20/hr), POST /recipes (10/hr).
-  PR #162 (PR-D polish): phone added to ProducerListOut (unblocks map WA
-    buttons); register/producer form uses ps-*/pe-* logical properties;
-    print() → logger.debug/info/warning in auth.py + admin.py (22 calls).
+  Installed /design-review workflow (OneRedOak/claude-code-workflows) customized
+  for מהמקור. Tooling-only; no app code touched.
+  - .claude/commands/design-review.md (slash command)
+  - .claude/agents/design-review.md (subagent, Playwright-enabled)
+  - .claude/commands/design-review/design-principles.md (mehamakor brand tokens,
+    RTL rules, component rules, Hebrew copy rules, triage matrix)
+  Ran full site audit on 8 components. Theme of findings: token drift (inline
+  hex values bypassing Tailwind design system) — RTL, tap targets, and Hebrew
+  copy are all solid.
+
+  Previous session PRs (2026-04-18 earlier):
+  PR #159–#162 (bug-hunt audit cycle, see prior HANDOFF entry in git log)
+  PR #163 (HANDOFF.md update)
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 7f67964
+Staging HEAD: 65e2e08
 
 ## Next task
-Audit cycle complete. Candidate next tasks (confirm with user):
+Design-review workflow installed. Candidate next tasks (confirm with user):
+  - Fix design audit findings (token drift sweep — inline hex → Tailwind tokens,
+    HomeProductCard yellow badge → slate, WA green utility class):
+    ProducerDetail.jsx:311-326, MapClient.jsx:507/543/580/618/634,
+    HomeProductCard.jsx:71, NeighborClient.jsx:87, ProducerDetail.jsx:758
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
   - Events section on producer detail page (feature/meh-XX-producer-events slot)
   - availability_return_date schema change (v2 backend)
-  - Linear MEH-62/63/64/65 naming conflict cleanup: our branch names reused
-    Linear issue numbers that were already assigned to CLAUDE.md rule docs.
-    Linkback bot auto-linked PRs to wrong issues. Low priority.
 
 First step: confirm which task → git checkout staging → git pull → git checkout -b feature/[description]
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
+| Design-review workflow installed | OneRedOak template customized for mehamakor brand | April 2026 |
 | CHIPS_CONFIG replaces HOME_TOGGLE_CHIPS | Single source of truth for chip definitions | April 2026 |
 | ProducersClient uses ChipScrollRow (done) | Inline chips swapped for ChipScrollRow | April 2026 |
 | /producers — build from scratch | Migrating homepage is too risky | April 2026 |
@@ -78,6 +74,10 @@ None.
   Verify in production after staging redeploy.
 - Linear bot naming conflict: MEH-62/63/64/65 in Linear are CLAUDE.md rule
   docs, not these PRs. Linkback is cosmetic only, no impact.
+- Design audit token-drift findings (PR #164): inline hex values in
+  ProducerDetail.jsx:311-326/758, MapClient.jsx:507/543/580/618/634,
+  HomeProductCard.jsx:71 (yellow badge → slate), NeighborClient.jsx:87.
+  Not yet filed as Linear issues. Batch-fix PR suggested as next task.
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)
