@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import ProducersClient from "@/components/ProducersClient";
+import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 
 /**
@@ -58,13 +60,15 @@ export default async function ProducersIndexPage({ searchParams }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <ProducersClient
-        initialItems={items}
-        initialTotal={total}
-        initialPage={page}
-        totalPages={totalPages}
-        perPage={PER_PAGE}
-      />
+      <Suspense fallback={<SkeletonProducerGrid count={8} />}>
+        <ProducersClient
+          initialItems={items}
+          initialTotal={total}
+          initialPage={page}
+          totalPages={totalPages}
+          perPage={PER_PAGE}
+        />
+      </Suspense>
     </div>
   );
 }

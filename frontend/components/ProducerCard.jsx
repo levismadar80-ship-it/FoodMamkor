@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Leaf,
   HeartStraight,
   WhatsappLogo,
   Phone,
@@ -26,6 +25,15 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
+
+function producerInitials(name) {
+  return (name || "")
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0] || "")
+    .join("")
+    .slice(0, 2);
+}
 
 // Decorative footer hint for the producer's preferred contact channel.
 // The list DTO doesn't carry phone/website so a link would often dead-
@@ -216,11 +224,15 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               />
             ) : (
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center text-primary"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-light"
                 aria-label={`${producer.name} — תמונה חסרה`}
               >
-                <Leaf size={72} weight="duotone" aria-hidden="true" />
-                <span className="font-headline text-sm mt-1 opacity-70">מהמקור</span>
+                <span className="text-5xl leading-none" aria-hidden="true">
+                  {producer.categories?.[0]?.emoji || "🌿"}
+                </span>
+                <span className="font-headline text-base font-bold text-primary mt-2 opacity-80">
+                  {producerInitials(producer.name)}
+                </span>
               </div>
             )}
           </div>
