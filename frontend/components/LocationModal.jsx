@@ -121,7 +121,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-[10px] font-medium transition hover:bg-primary-light disabled:opacity-60 mb-3"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
-          {geoLoading ? "מחפשת..." : "קרובות אליי"}
+          {geoLoading ? "מחפשת..." : "קרובים אליי"}
         </button>
 
         <button

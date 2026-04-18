@@ -131,12 +131,19 @@ export default function MapPage() {
   }, []);
 
   // MEH-41: prompt for city on first /map visit when no city is saved.
+  // Depends on userCity so the effect re-runs when use-user-city hydrates
+  // from localStorage (which initialises to null, then sets the real value
+  // in its own useEffect). Without the dependency the 800ms timer fires
+  // even when a city IS already saved — stale closure on null.
+  const locationModalFiredRef = useRef(false);
   useEffect(() => {
-    if (!userCity) {
-      const timer = setTimeout(() => setLocationModalOpen(true), 800);
-      return () => clearTimeout(timer);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (locationModalFiredRef.current || userCity) return;
+    const timer = setTimeout(() => {
+      locationModalFiredRef.current = true;
+      setLocationModalOpen(true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [userCity]);
 
   const handleMapCitySelected = useCallback((city) => {
     setUserCity(city);
@@ -312,9 +319,21 @@ export default function MapPage() {
   // Now it's true geo-awareness — powered by the existing Haversine
   // SQL on /producers.
   const handleSearchThisArea = useCallback(() => {
-    setCommittedBounds(mapBounds);
+    // Use the live Leaflet viewport rather than the React-state mapBounds,
+    // which can be one render behind when the user clicks immediately after
+    // panning (React state updates are async; getBounds() is always current).
+    const leafletMap = mapApiRef.current?.getMap();
+    const leafletBounds = leafletMap?.getBounds();
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[חפשי באזור זה] getBounds():", leafletBounds?.toBBoxString());
+    }
+    const liveBounds = leafletBounds
+      ? { north: leafletBounds.getNorth(), south: leafletBounds.getSouth(),
+          east: leafletBounds.getEast(), west: leafletBounds.getWest() }
+      : mapBounds;
+    setCommittedBounds(liveBounds);
     setMapMoved(false);
-    const centerRadius = boundsToCenterRadius(mapBounds);
+    const centerRadius = boundsToCenterRadius(liveBounds);
     if (centerRadius) {
       const params = {
         ...buildParams(),
@@ -327,7 +346,7 @@ export default function MapPage() {
       }
       loadProducers(params);
     } else if (process.env.NODE_ENV !== "production") {
-      console.warn("[חפשי באזור זה] mapBounds invalid:", mapBounds);
+      console.warn("[חפשי באזור זה] liveBounds invalid:", liveBounds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
@@ -519,9 +538,10 @@ export default function MapPage() {
               <X size={14} weight="bold" />
             </button>
           </div>
-          <p className="text-xs text-site-muted mt-0.5">{p.city}{p.categories?.[0]?.name ? ` · ${p.categories[0].name}` : ""}</p>
+          <p className="text-xs text-site-muted mt-0.5">
+            {[p.categories?.[0]?.name, p.city, p.starting_price_label || p.price_range].filter(Boolean).join(" · ")}
+          </p>
           <div className="flex items-center gap-2 mt-2">
-            <Link href={producerHref} className="flex-1 text-center bg-primary text-white text-sm font-medium py-1.5 rounded-[8px] hover:bg-primary-light transition">פרופיל מלא ←</Link>
             {p.phone && (
               <a href={`https://wa.me/${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center shrink-0" aria-label="WhatsApp">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
@@ -660,7 +680,6 @@ export default function MapPage() {
                       WhatsApp
                     </a>
                   )}
-                  <Link href={spHref} className="mt-1.5 block text-center text-primary text-xs font-medium hover:underline">פרופיל מלא ←</Link>
                 </div>
               </div>
             );
