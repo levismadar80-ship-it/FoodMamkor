@@ -5,17 +5,24 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #139 (feature/session-handoff)
-Summary: Added session handoff system + RTL regression protection.
+PR merged/opened: #142 (feature/meh-two-row-filter-chips) — OPEN, draft
+Summary: Two-row filter chip layout (category + attribute) with edge-fade,
+  active-chip scroll-into-view, removable filter tags, expanded chip matches
+  to cover seed DB category names, border-top on legend collapsible.
 
 ## Current state
-Branch: staging (clean after this PR)
-Status: RTL fixes merged. Producers page redesign pending.
+Branch: feature/meh-two-row-filter-chips
+Status: PR #142 open as draft. Awaits user approval + merge to staging.
+  After merge → start feature/meh-XX-filter-overflow (Task A: trigger chip
+  + FilterBottomSheet for 15+ chip scalability).
 
 ## Next task
-Linear issue: MEH-XX — /producers page redesign
-Description: Build ProducersClient.jsx from scratch (not migrate from homepage).
-First step: Read audit findings from previous session, then implement Phase 1.
+Linear issue: MEH-XX — filter overflow chip + bottom sheet
+Description: Add "סינון (N) +" trigger chip at end of category row when
+  total chips > VISIBLE_CHIP_LIMIT (=5). Opens 75vh bottom sheet with all
+  filters + "החל סינון" apply button. Branch off staging AFTER #142 merges.
+First step: Merge #142 → git checkout staging → git pull →
+  git checkout -b feature/meh-XX-filter-overflow.
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -30,7 +37,7 @@ First step: Read audit findings from previous session, then implement Phase 1.
 ## Open PRs
 | # | Title | Status | Waiting for |
 |---|-------|--------|-------------|
-| — | — | — | — |
+| 142 | feat: two-row filter chip layout | Draft | User approval + merge |
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — awaiting decision

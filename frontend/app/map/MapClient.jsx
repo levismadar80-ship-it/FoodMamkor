@@ -245,6 +245,22 @@ export default function MapPage() {
     setMapMoved(false);
   };
 
+  const resetAllFilters = () => {
+    const next = {
+      categoryKey: "all",
+      organic: false,
+      has_delivery: false,
+      verified: false,
+      grass_fed: false,
+    };
+    setChipState(next);
+    loadProducers(buildParams(next));
+    setCommittedBounds(null);
+    setMapMoved(false);
+    setSelectedProducer(null);
+    setActiveProducerId(null);
+  };
+
   const handleCityFilter = () => {
     loadProducers(buildParams());
     // When the user changes city, clear any committed bounds filter so
@@ -442,22 +458,22 @@ export default function MapPage() {
     [categories],
   );
 
-  // Labels of currently active filters — drives summary line below chip rows
-  const activeFilterLabels = useMemo(() => {
-    const labels = [];
+  // Active filters — each tag carries the key needed to remove it.
+  const activeFilterTags = useMemo(() => {
+    const tags = [];
     if (chipState.categoryKey && chipState.categoryKey !== "all") {
       const cat = CATEGORY_CHIPS.find((c) => c.key === chipState.categoryKey);
-      if (cat) labels.push(cat.label);
+      if (cat) tags.push({ kind: "category", key: cat.key, label: cat.label });
     }
     TOGGLE_CHIPS.forEach((c) => {
-      if (chipState[c.key]) labels.push(c.label);
+      if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
     });
-    return labels;
+    return tags;
   }, [chipState]);
 
   // Shared filter chips bar (used in both desktop sidebar + mobile sticky bar)
   const filterChipsBar = (
-    <div dir="rtl">
+    <div dir="rtl" className="min-w-0">
       <ChipScrollRow
         variant="category"
         chips={visibleCategoryChips}
@@ -471,10 +487,35 @@ export default function MapPage() {
         onChipClick={onToggleChipClick}
         className="mt-2"
       />
-      {activeFilterLabels.length > 0 && (
-        <p className="text-xs text-site-muted mt-2 pb-1" aria-live="polite">
-          מסנן לפי: {activeFilterLabels.join(" · ")}
-        </p>
+      {activeFilterTags.length > 0 && (
+        <div
+          className="mt-2 flex flex-wrap items-center gap-1.5"
+          aria-live="polite"
+        >
+          {activeFilterTags.map((tag) => (
+            <button
+              key={`${tag.kind}:${tag.key}`}
+              type="button"
+              onClick={() =>
+                tag.kind === "category"
+                  ? onCategoryChipClick("all")
+                  : onToggleChipClick(tag.key)
+              }
+              aria-label={`הסירי סינון ${tag.label}`}
+              className="inline-flex items-center gap-1 rounded-[20px] bg-[#EAF3DE] text-primary px-2 py-0.5 text-[11px] hover:bg-[#dbe8c9] transition"
+            >
+              <span aria-hidden="true">×</span>
+              {tag.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={resetAllFilters}
+            className="text-primary text-[11px] no-underline hover:opacity-80 transition"
+          >
+            × נקי הכל
+          </button>
+        </div>
       )}
     </div>
   );
@@ -621,7 +662,7 @@ export default function MapPage() {
             </div>
             {filterChipsBar}
             {/* Legend — collapsible, closed by default, inside sidebar */}
-            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-2">
+            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-3 pt-2 border-t border-[#e8e0d0]">
               <summary className="text-[11px] text-site-muted tracking-wider font-body uppercase cursor-pointer hover:text-site-text transition select-none">
                 קטגוריות {legendOpen ? "▲" : "▼"}
               </summary>

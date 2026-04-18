@@ -37,8 +37,9 @@ about:
 
 ## 2026-04-18 — Two-row filter chip layout + ChipScrollRow component (feature/meh-two-row-filter-chips)
 
-- **ChipScrollRow.jsx** — new shared component; `variant="category"` (radio, one active) and `variant="toggle"` (boolean toggles); inline-end edge-fade + RTL scroll-end spacer.
-- **MapClient.jsx** — split single chip row into category row + toggle row; active-filter summary line below ("מסנן לפי: ...") when any filter is active.
+- **ChipScrollRow.jsx** — new shared component; `variant="category"` (radio, one active) and `variant="toggle"` (boolean toggles); inline-start + inline-end edge-fades; RTL scroll-end spacer; `min-w-0` so row can shrink in flex parents; active chip `scrollIntoView` on mount + on activation.
+- **MapClient.jsx** — split single chip row into category row + toggle row; active-filter tag chips (bg #EAF3DE, color #2e6853, each with × to remove) + "× נקי הכל" reset link below; border-top separator added to "קטגוריות" legend collapsible.
+- **map-chips.js** — expanded `CATEGORY_CHIPS.matches` to include seed DB names ("בשר ודגים", "לחמים ואפייה", etc.) so chips stay visible across DB naming variants.
 - **page.js** — replaced inline toggle chip div with `<ChipScrollRow variant="toggle">`; added summary line above producers grid when chips active.
 
 ---
