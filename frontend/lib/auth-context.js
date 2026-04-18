@@ -2,8 +2,41 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "./api";
+import {
+  clearPendingAction,
+  readPendingAction,
+} from "./post-login-action";
+import { showToast } from "./toast";
+import {
+  ensureFavoritesLoaded,
+  resetFavoritesCache,
+  setFavoritedLocal,
+} from "./favorites-cache";
 
 const AuthContext = createContext(null);
+
+/**
+ * Drain the post-login action queue. Runs after every successful
+ * authentication path (password login, register, Google, Apple) so a
+ * guest "save" tap replays exactly once. Failures are swallowed — the
+ * action is best-effort, never blocking the login flow.
+ */
+async function replayPostLoginAction() {
+  const pending = readPendingAction();
+  if (!pending) return;
+  clearPendingAction();
+  if (pending.verb === "favorite" && pending.payload) {
+    try {
+      await api.post(`/users/me/favorites/${pending.payload}`);
+      setFavoritedLocal(pending.payload, true);
+      showToast("נשמר למועדפים ❤️");
+    } catch {
+      // Best-effort — if the API rejects we don't re-show the heart;
+      // the next mount will read the real favorite state from the
+      // cache after ensureFavoritesLoaded resolves.
+    }
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -14,7 +47,10 @@ export function AuthProvider({ children }) {
     if (token) {
       api
         .get("/auth/me")
-        .then((res) => setUser(res.data))
+        .then((res) => {
+          setUser(res.data);
+          ensureFavoritesLoaded();
+        })
         .catch(() => {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
@@ -25,48 +61,53 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const afterLogin = async (me) => {
+    setUser(me);
+    ensureFavoritesLoaded();
+    await replayPostLoginAction();
+    return me;
+  };
+
   const login = async (email, password) => {
     const res = await api.post("/auth/login", { email, password });
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
-    setUser(me.data);
-    return me.data;
+    return afterLogin(me.data);
   };
 
   const register = async (data) => {
     const res = await api.post("/auth/register", data);
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
-    setUser(me.data);
-    return me.data;
+    return afterLogin(me.data);
   };
 
   const loginWithGoogle = async (idToken) => {
     const res = await api.post("/auth/google", { id_token: idToken });
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
-    setUser(me.data);
-    return me.data;
+    return afterLogin(me.data);
   };
 
   const loginWithApple = async (idToken, name) => {
     const res = await api.post("/auth/apple", { id_token: idToken, name });
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
-    setUser(me.data);
-    return me.data;
+    return afterLogin(me.data);
   };
 
   const deleteAccount = async () => {
     await api.delete("/auth/me");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    resetFavoritesCache();
     setUser(null);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    resetFavoritesCache();
     setUser(null);
   };
 

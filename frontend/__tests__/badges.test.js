@@ -7,11 +7,14 @@ import {
 } from "@/lib/badges";
 
 describe("BADGE_PRIORITY", () => {
-  it("matches the spec order: verified > recommended > new > delivery > products", () => {
+  it("matches the Phase B fold order", () => {
     expect(BADGE_PRIORITY).toEqual([
       "verified",
       "recommended",
       "new",
+      "organic",
+      "grass_fed",
+      "kosher",
       "delivery",
       "products",
     ]);
@@ -28,6 +31,9 @@ describe("allBadges", () => {
         delivery_count: 0,
         has_delivery: false,
         products_count: 0,
+        organic_certified: false,
+        grass_fed: false,
+        kosher: null,
       }),
     ).toEqual([]);
   });
@@ -53,6 +59,22 @@ describe("allBadges", () => {
     expect(allBadges({ days_since_created: 31 }).map((b) => b.key)).toEqual([]);
   });
 
+  it("organic — when organic_certified is true", () => {
+    expect(allBadges({ organic_certified: true }).map((b) => b.key)).toEqual(["organic"]);
+  });
+
+  it("grass_fed — when grass_fed is true", () => {
+    expect(allBadges({ grass_fed: true }).map((b) => b.key)).toEqual(["grass_fed"]);
+  });
+
+  it("kosher — when kosher is a non-empty string", () => {
+    expect(allBadges({ kosher: "חלבי" }).map((b) => b.key)).toEqual(["kosher"]);
+    expect(allBadges({ kosher: "כשר למהדרין" }).map((b) => b.key)).toEqual(["kosher"]);
+    expect(allBadges({ kosher: "" }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({ kosher: "   " }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({ kosher: null }).map((b) => b.key)).toEqual([]);
+  });
+
   it("delivery — via delivery_count > 0", () => {
     expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
   });
@@ -71,9 +93,11 @@ describe("allBadges", () => {
 
   it("returns badges in priority order regardless of field order", () => {
     const badges = allBadges({
-      // Earned in a reverse-priority order to make sure we sort, not follow input.
       products_count: 10,
       has_delivery: true,
+      kosher: "חלבי",
+      grass_fed: true,
+      organic_certified: true,
       days_since_created: 5,
       is_recommended: true,
       is_verified: true,
@@ -82,6 +106,9 @@ describe("allBadges", () => {
       "verified",
       "recommended",
       "new",
+      "organic",
+      "grass_fed",
+      "kosher",
       "delivery",
       "products",
     ]);
@@ -127,6 +154,16 @@ describe("topBadges", () => {
     expect(topBadges(producer, 0)).toEqual([]);
     expect(topBadges(producer, -3)).toEqual([]);
   });
+
+  it("picks organic over delivery when both earned and limit=2 with verified", () => {
+    // verified (priority 0) + organic (priority 3) win over delivery (priority 6)
+    const p = {
+      is_verified: true,
+      organic_certified: true,
+      has_delivery: true,
+    };
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "organic"]);
+  });
 });
 
 describe("badgeCount", () => {
@@ -140,5 +177,15 @@ describe("badgeCount", () => {
         products_count: 7,
       }),
     ).toBe(5);
+  });
+
+  it("counts the new Phase B badges", () => {
+    expect(
+      badgeCount({
+        organic_certified: true,
+        grass_fed: true,
+        kosher: "חלבי",
+      }),
+    ).toBe(3);
   });
 });
