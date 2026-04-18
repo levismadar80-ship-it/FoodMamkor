@@ -15,6 +15,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import MapBottomSheet, { PEEK, HALF, FULL } from "@/components/MapBottomSheet";
 import LocationModal from "@/components/LocationModal";
 import { useUserCity } from "@/lib/use-user-city";
+import ChipScrollRow from "@/components/ChipScrollRow";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
@@ -244,6 +245,22 @@ export default function MapPage() {
     setMapMoved(false);
   };
 
+  const resetAllFilters = () => {
+    const next = {
+      categoryKey: "all",
+      organic: false,
+      has_delivery: false,
+      verified: false,
+      grass_fed: false,
+    };
+    setChipState(next);
+    loadProducers(buildParams(next));
+    setCommittedBounds(null);
+    setMapMoved(false);
+    setSelectedProducer(null);
+    setActiveProducerId(null);
+  };
+
   const handleCityFilter = () => {
     loadProducers(buildParams());
     // When the user changes city, clear any committed bounds filter so
@@ -430,49 +447,77 @@ export default function MapPage() {
     });
   }, [filteredByCategory, committedBounds]);
 
-  // Shared filter chips bar (used in both desktop + mobile sheet)
+  // Category chips visible in the current DB (hidden if no matching category loaded yet)
+  const visibleCategoryChips = useMemo(
+    () =>
+      categories.length > 0
+        ? CATEGORY_CHIPS.filter(
+            (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
+          )
+        : CATEGORY_CHIPS,
+    [categories],
+  );
+
+  // Active filters — each tag carries the key needed to remove it.
+  const activeFilterTags = useMemo(() => {
+    const tags = [];
+    if (chipState.categoryKey && chipState.categoryKey !== "all") {
+      const cat = CATEGORY_CHIPS.find((c) => c.key === chipState.categoryKey);
+      if (cat) tags.push({ kind: "category", key: cat.key, label: cat.label });
+    }
+    TOGGLE_CHIPS.forEach((c) => {
+      if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
+    });
+    return tags;
+  }, [chipState]);
+
+  // Shared filter chips bar (used in both desktop sidebar + mobile sticky bar)
   const filterChipsBar = (
-    <div
-      className="flex gap-2 overflow-x-auto pb-1 -mx-4 ps-4 scrollbar-hide after:content-[''] after:shrink-0 after:w-4"
-      role="toolbar"
-      aria-label="סינון מפה"
-      dir="rtl"
-    >
-      {CATEGORY_CHIPS.map((chip) => {
-        if (chip.key !== "all" && categories.length > 0 && resolveCategoryId(chip, categories) == null) return null;
-        const active = chipState.categoryKey === chip.key;
-        return (
-          <button
-            key={chip.key}
-            type="button"
-            onClick={() => onCategoryChipClick(chip.key)}
-            aria-pressed={active}
-            className={`whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
-              active ? "bg-primary text-white border-primary" : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-            }`}
-          >
-            {chip.label}
-          </button>
-        );
-      })}
-      {TOGGLE_CHIPS.map((chip) => (
-        <button
-          key={chip.key}
-          type="button"
-          onClick={() => onToggleChipClick(chip.key)}
-          aria-pressed={!!chipState[chip.key]}
-          className={`whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
-            chipState[chip.key] ? "bg-primary text-white border-primary" : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-          }`}
+    <div dir="rtl" className="min-w-0">
+      <ChipScrollRow
+        variant="category"
+        chips={visibleCategoryChips}
+        activeKey={chipState.categoryKey}
+        onChipClick={onCategoryChipClick}
+      />
+      <ChipScrollRow
+        variant="toggle"
+        chips={TOGGLE_CHIPS}
+        activeKeys={chipState}
+        onChipClick={onToggleChipClick}
+        className="mt-2"
+      />
+      {activeFilterTags.length > 0 && (
+        <div
+          dir="rtl"
+          className="mt-2 flex flex-wrap items-center gap-1.5"
+          aria-live="polite"
         >
-          {chip.label}
-        </button>
-      ))}
-      {/* RTL overflow spacer — CSS padding-inline-end is clipped on overflow-x
-          containers, so a shrink-0 flex child is the reliable way to reserve
-          space past the last chip. Bumped to w-8 (32px) because w-4 (16px)
-          still cropped the אורגני chip edge on narrow mobile viewports. */}
-      <div className="shrink-0 w-8" aria-hidden="true" />
+          {activeFilterTags.map((tag) => (
+            <button
+              key={`${tag.kind}:${tag.key}`}
+              type="button"
+              onClick={() =>
+                tag.kind === "category"
+                  ? onCategoryChipClick("all")
+                  : onToggleChipClick(tag.key)
+              }
+              aria-label={`הסירי סינון ${tag.label}`}
+              className="inline-flex items-center gap-1 rounded-[20px] bg-[#EAF3DE] text-primary px-2 py-0.5 text-[11px] hover:bg-[#dbe8c9] transition"
+            >
+              <span aria-hidden="true">×</span>
+              {tag.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={resetAllFilters}
+            className="text-primary text-[11px] no-underline hover:opacity-80 transition"
+          >
+            × נקי הכל
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -618,7 +663,7 @@ export default function MapPage() {
             </div>
             {filterChipsBar}
             {/* Legend — collapsible, closed by default, inside sidebar */}
-            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-2">
+            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-3 pt-2 border-t border-[#e8e0d0]">
               <summary className="text-[11px] text-site-muted tracking-wider font-body uppercase cursor-pointer hover:text-site-text transition select-none">
                 קטגוריות {legendOpen ? "▲" : "▼"}
               </summary>
