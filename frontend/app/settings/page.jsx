@@ -246,8 +246,8 @@ function SecurityTab() {
     <div className="space-y-6" role="tabpanel" aria-label="אבטחה">
       {isOAuth ? (
         <div className="bg-white border border-border rounded-[16px] p-6 text-sm text-site-muted">
-          התחברת באמצעות OAuth (Google / Apple) — ניהול הסיסמה מתבצע בשירות
-          המקורי. אין סיסמה מקומית לשנות.
+          התחברת דרך Google / Apple — שינוי סיסמה מתבצע שם.
+          אין סיסמה מקומית לשנות.
         </div>
       ) : (
         <PasswordChangeCard changePassword={changePassword} />
@@ -300,7 +300,7 @@ function PasswordChangeCard({ changePassword }) {
     } catch (err) {
       const detail = err?.response?.data?.detail;
       if (detail === "SET_PASSWORD_UNSUPPORTED") {
-        setError("לא ניתן לשנות סיסמה — חשבון OAuth.");
+        setError("לא ניתן לשנות סיסמה — התחברת דרך Google / Apple.");
       } else {
         setError(detail || "לא הצלחנו לעדכן. נסי שוב.");
       }
@@ -427,7 +427,7 @@ function DangerZone({ deleteAccount, router }) {
               מחיקת חשבון
             </h3>
             <p className="text-sm text-site-muted mb-3">
-              פעולה זו בלתי הפיכה. הקלידי <strong>מחק</strong> כדי לאשר.
+              פעולה זו בלתי הפיכה — כל הנתונים (מועדפים, דירוגים, עסק) יימחקו לצמיתות. הקלידי <strong>מחק</strong> כדי לאשר.
             </p>
             <input
               type="text"

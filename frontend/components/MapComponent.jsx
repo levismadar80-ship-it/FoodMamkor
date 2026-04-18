@@ -7,6 +7,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { styleForProducer } from "@/lib/map-categories";
+import { showToast } from "@/lib/toast";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -216,7 +217,7 @@ export default function MapComponent({
               }).addTo(mapInstanceRef.current);
             }
           },
-          () => alert("לא הצלחנו לקבל את המיקום שלך"),
+          () => showToast("לא הצלחנו לקבל את המיקום שלך", "error"),
         );
       },
       getMap: () => mapInstanceRef.current,
