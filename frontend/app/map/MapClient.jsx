@@ -302,9 +302,16 @@ export default function MapPage() {
     mapApiRef.current?.setHoveredProducer(null);
   }, []);
 
-  // docs/archive/MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button
+  // docs/archive/MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button.
+  // Also dismisses the onboarding hint immediately: panning means the user
+  // has already engaged with the map so the hint is no longer useful, and
+  // both elements share top-4 left-1/2 — letting them stack is confusing.
   const handleMapMove = useCallback(() => {
     setMapMoved(true);
+    if (typeof window !== "undefined" && !sessionStorage.getItem("map_tour_shown")) {
+      setShowMapHint(false);
+      sessionStorage.setItem("map_tour_shown", "1");
+    }
   }, []);
 
   const handleMapCanvasClick = useCallback(() => {
@@ -452,7 +459,7 @@ export default function MapPage() {
       />
       {showMapHint && (
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-[10px] text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-[10px] text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
           style={{ backgroundColor: "#2E4A2E" }}
           role="status"
         >
