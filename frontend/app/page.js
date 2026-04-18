@@ -119,7 +119,12 @@ export default function HomePage() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
-    loadProducers();
+    // Apply any filters already in the URL on first load (shared/bookmarked URLs).
+    const initParams = {};
+    if (filters.category) initParams.category = filters.category;
+    if (filters.delivery_city) initParams.delivery_city = filters.delivery_city;
+    if (filters.has_delivery) initParams.has_delivery = true;
+    loadProducers(initParams);
     // Home-kitchen preview — just the 3 most recent, no filter.
     // Full browse + filter lives on /neighbor.
     api
@@ -243,6 +248,9 @@ export default function HomePage() {
 
   const handleNearMe = () => {
     if (userCity) {
+      const newFilters = { ...filters, delivery_city: userCity };
+      setFilters(newFilters);
+      updateURL(newFilters);
       loadProducers({ delivery_city: userCity, ...buildChipParams(chips) });
       document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
       return;
@@ -252,6 +260,9 @@ export default function HomePage() {
 
   const handleCitySelected = (city) => {
     setUserCity(city);
+    const newFilters = { ...filters, delivery_city: city };
+    setFilters(newFilters);
+    updateURL(newFilters);
     loadProducers({ delivery_city: city, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
