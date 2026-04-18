@@ -163,7 +163,8 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-def get_me(user: User = Depends(get_current_user)):
+@limiter.limit("60/minute")
+def get_me(request: Request, user: User = Depends(get_current_user)):
     return user
 
 
@@ -201,7 +202,8 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
 
 
 @router.delete("/me")
-def delete_account(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("3/hour")
+def delete_account(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Delete user account and all associated data. Required by Apple App Store Guidelines."""
     user_email = user.email
     user_name = user.name
