@@ -492,6 +492,7 @@ export default function MapPage() {
       />
       {showMapHint && (
         <div
+          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
           className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-[10px] text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
           style={{ backgroundColor: "#2E4A2E" }}
           role="status"
@@ -500,6 +501,7 @@ export default function MapPage() {
         </div>
       )}
       {mapMoved && (
+        // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
           <button type="button" onClick={(e) => { e.stopPropagation(); handleSearchThisArea(); }} className="bg-white border border-border rounded-full px-5 py-2.5 text-sm font-medium shadow-[0_2px_12px_rgba(0,0,0,0.12)] hover:bg-light transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
             <MagnifyingGlass size={16} weight="bold" className="text-primary" />
@@ -508,6 +510,7 @@ export default function MapPage() {
         </div>
       )}
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
+        // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-[16px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]" role="status">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline text-lg font-bold text-site-text mb-2">אין עסקים באזור זה עדיין</h3>
@@ -565,6 +568,7 @@ export default function MapPage() {
     const p = selectedProducer;
     const imageUrl = optimizeCloudinary(p.images?.[0]);
     return (
+      // eslint-disable-next-line no-restricted-syntax -- rtl-ok: map overlay, physically pinned to corner
       <div className="absolute bottom-4 right-4 z-[600] bg-white rounded-[16px] border border-border shadow-[0_4px_24px_rgba(0,0,0,0.12)] w-[300px] overflow-hidden">
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -698,6 +702,7 @@ export default function MapPage() {
                   {spImg && (
                     <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
                   )}
+                  {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: map overlay close button, physically positioned */}
                   <button type="button" onClick={() => setSelectedProducer(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-site-muted" aria-label="סגור">
                     <X size={14} weight="bold" />
                   </button>
