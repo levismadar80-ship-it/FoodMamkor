@@ -5,32 +5,28 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #164 (feature/design-review-workflow) — MERGED to staging
+PR merged/opened: #165 (feature/claude-md-rule16-worktrees) — MERGED to staging
+                 #166 (feature/meh-94-design-token-sweep) — MERGED to staging
 Summary:
-  Installed /design-review workflow (OneRedOak/claude-code-workflows) customized
-  for מהמקור. Tooling-only; no app code touched.
-  - .claude/commands/design-review.md (slash command)
-  - .claude/agents/design-review.md (subagent, Playwright-enabled)
-  - .claude/commands/design-review/design-principles.md (mehamakor brand tokens,
-    RTL rules, component rules, Hebrew copy rules, triage matrix)
-  Ran full site audit on 8 components. Theme of findings: token drift (inline
-  hex values bypassing Tailwind design system) — RTL, tap targets, and Hebrew
-  copy are all solid.
+  PR #165: CLAUDE.md Rule 16 (git worktrees for parallel features) + .gitignore
+    (.claude/worktrees/). Old rules 16→17, 17→18, 18→19.
+  PR #166: MEH-94 + design token sweep across 5 files:
+    - HomeProductCard: low-rating badge yellow→slate-neutral (MEH-94)
+    - globals.css: .btn-whatsapp utility (single source for WA green)
+    - MapClient (8 fixes), ProducerDetail (7 fixes), NeighborClient (2 fixes)
+    - 13 inline hex instances → Tailwind tokens (bg-light, bg-primary-dark,
+      border-border, text-site-muted, etc.)
+    - WA group link: green outline → gray outline per HANDOFF decision
 
-  Previous session PRs (2026-04-18 earlier):
-  PR #159–#162 (bug-hunt audit cycle, see prior HANDOFF entry in git log)
-  PR #163 (HANDOFF.md update)
+  Previous session PRs (same date, earlier):
+  PR #164 (design-review workflow install + full site audit)
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 65e2e08
+Staging HEAD: 708afc9
 
 ## Next task
 Design-review workflow installed. Candidate next tasks (confirm with user):
-  - Fix design audit findings (token drift sweep — inline hex → Tailwind tokens,
-    HomeProductCard yellow badge → slate, WA green utility class):
-    ProducerDetail.jsx:311-326, MapClient.jsx:507/543/580/618/634,
-    HomeProductCard.jsx:71, NeighborClient.jsx:87, ProducerDetail.jsx:758
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
@@ -43,6 +39,8 @@ First step: confirm which task → git checkout staging → git pull → git che
 | Decision | Reason | Date |
 |----------|--------|------|
 | Design-review workflow installed | OneRedOak template customized for mehamakor brand | April 2026 |
+| CLAUDE.md Rule 16: git worktrees | Parallel features → worktrees not stash; rules 16→17→18→19 | April 2026 |
+| .btn-whatsapp utility class | Single source for WA green (#25D366) across MapClient + ProducerDetail | April 2026 |
 | CHIPS_CONFIG replaces HOME_TOGGLE_CHIPS | Single source of truth for chip definitions | April 2026 |
 | ProducersClient uses ChipScrollRow (done) | Inline chips swapped for ChipScrollRow | April 2026 |
 | /producers — build from scratch | Migrating homepage is too risky | April 2026 |
@@ -74,10 +72,8 @@ None.
   Verify in production after staging redeploy.
 - Linear bot naming conflict: MEH-62/63/64/65 in Linear are CLAUDE.md rule
   docs, not these PRs. Linkback is cosmetic only, no impact.
-- Design audit token-drift findings (PR #164): inline hex values in
-  ProducerDetail.jsx:311-326/758, MapClient.jsx:507/543/580/618/634,
-  HomeProductCard.jsx:71 (yellow badge → slate), NeighborClient.jsx:87.
-  Not yet filed as Linear issues. Batch-fix PR suggested as next task.
+- Design audit token-drift findings: FIXED in PR #166. All inline hex instances
+  replaced with Tailwind tokens. No remaining token-drift items from audit.
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)
