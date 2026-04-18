@@ -23,7 +23,7 @@ import api from "@/lib/api";
 
 const OPENING_MESSAGE = {
   role: "assistant",
-  content: "היי 🌿 אני העוזרת של מהמקור. אפשר לשאול אותי איך נרשמים, איך מוצאים בתי עסק, או איך מפרסמים מוצר ביתי. מה תרצי לדעת?",
+  content: "היי 🌿 אני כאן לעזור! אפשר לשאול אותי איך נרשמים, איך מוצאים בתי עסק, או איך מפרסמים מוצר ביתי. מה תרצי לדעת?",
 };
 
 // Suggested prompts — restructured April 2026 (feature/chatbot-plain-hebrew-v2)
@@ -205,7 +205,7 @@ export default function ChatWidget() {
           "flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
-        aria-label={open ? "סגרי את העוזרת" : "פתחי את העוזרת של מהמקור"}
+        aria-label={open ? "סגרי את הצ׳אט" : "שאלי אותנו"}
         aria-expanded={open}
       >
         {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
@@ -225,7 +225,7 @@ export default function ChatWidget() {
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
-              <span className="font-headline font-bold text-base">העוזרת של מהמקור</span>
+              <span className="font-headline font-bold text-base">שאלי אותנו</span>
             </div>
             <button
               type="button"
