@@ -40,22 +40,6 @@ h1, h2, h3 {
 body.sheet-open .cookie-banner {
   display: none;
 }
-/* Ported from PR #88 bug #1: Leaflet tooltip z-index per CLAUDE.md
-   map-token system (tooltips:500 — between markers:400 and bottom-sheet:600).
-   Was bleeding through the page-level search bar and sheet because
-   Leaflet defaults to ~700 inside its own stacking context. */
-.leaflet-tooltip,
-.leaflet-tooltip-pane {
-  z-index: 500 !important;
-}
-/* Ported from PR #88 bug #5: when the mobile bottom sheet is open,
-   hide hover tooltips so they don't overlap the sheet content. Reuses
-   the existing `body.sheet-open` class (set by MapClient whenever
-   `selectedProducer` is non-null). */
-body.sheet-open .leaflet-tooltip,
-body.sheet-open .leaflet-tooltip-pane {
-  display: none !important;
-}
 /* Map z-index token system (see CLAUDE.md § "Map z-index tokens"):
    Leaflet controls default to z-index within their own stacking context.
    Override to page-level z-index so they stay above the mobile bottom
@@ -100,11 +84,15 @@ body.sheet-open .leaflet-tooltip-pane {
   display: none;
 }
 
-/* Custom Leaflet marker wrapper — tooltip/popup styles removed per
-   MEH-30 #8 (marker click opens the bottom sheet directly). */
+/* MEH-58 Phase 1 — custom SVG pin markers. */
 .mehamakor-marker-wrap {
   background: transparent !important;
   border: none !important;
+}
+@media (hover: hover) {
+  .mehamakor-marker:not(.selected):not(.visited):hover {
+    transform: scale(1.15);
+  }
 }
 .mehamakor-cluster {
   background: transparent !important;

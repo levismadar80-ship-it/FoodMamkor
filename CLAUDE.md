@@ -76,6 +76,7 @@
     - **Pre-code: Ultraplan for multi-phase tasks (3+ phases, e.g. MEH-58 map redesign).** Start with `/plan ultraplan [caveman spec]`. Drafts build in cloud at code.claude.com. User reviews + approves the plan before any code is written; only execute after explicit `go`. Requires Claude Code web account + GitHub repo connected.
     - Caveat: `Monitor` needs the advertising MCP server connected; if unavailable, fall back to manual `curl` polling and note it in the session summary.
 16. **One branch per feature (frontend + backend together).** Solo project rule: frontend and backend changes for the same feature go on ONE branch. Before opening any new branch: `gh pr list --state open` — if open PR exists for same feature → add fix to that branch, not a new one. If fix discovered during feature work → add to feature branch directly (same PR), one commit: `fix: [description]`. Only open separate branch when fix is completely unrelated to any open PR, or hotfix on production while feature branch is in review. Never: open backend PR + separate frontend PR for same feature; open new branch for bug discovered during existing feature work; leave related fixes on different branches requiring later merging.
+17. **Zod validation before every map API call.** Import schema from `lib/schemas.js`; call `safeParse()` before any `api.get/post` or Leaflet mutation. On failure: `showToast(error.issues[0].message, "info"); return;`. Never pass NaN, null, 0, or values > 50 to API or map functions.
 
 ## Regression prevention rules
 1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
@@ -131,7 +132,7 @@
 - `/session-resume` — read back `session-state.md` and restore the plan after `/clear`.
 
 ## How to update this file
-- Keep it ≤ 185 lines (raised from 180 in April 2026 when rule 15 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
+- Keep it ≤ 187 lines (raised from 185 in April 2026 when rule 16 was added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
 
 ## Architecture Diagrams
