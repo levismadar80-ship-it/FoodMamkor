@@ -7,6 +7,7 @@
 Date: 2026-04-18
 PR merged/opened: #165 (feature/claude-md-rule16-worktrees) — MERGED to staging
                  #166 (feature/meh-94-design-token-sweep) — MERGED to staging
+                 #167 (staging → main release, PRs #147–#166) — MERGED to main
 Summary:
   PR #165: CLAUDE.md Rule 16 (git worktrees for parallel features) + .gitignore
     (.claude/worktrees/). Old rules 16→17, 17→18, 18→19.
@@ -22,8 +23,9 @@ Summary:
   PR #164 (design-review workflow install + full site audit)
 
 ## Current state
-Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 708afc9
+Branch: staging (clean, in sync with main)
+Staging HEAD: 7b1c10b
+Main HEAD: e42127e (production release — all PRs #147–#166)
 
 ## Next task
 Design-review workflow installed. Candidate next tasks (confirm with user):
