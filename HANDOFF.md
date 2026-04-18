@@ -5,28 +5,33 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #148 (feature/meh-60-producers-frontend-polish) — DRAFT open
-                 #149 (feature/meh-61-producers-backend-sort) — DRAFT open
-Summary: Two parallel PRs for /producers discovery page polish.
-  PR #148 (frontend): URL param sync (useSearchParams + router.replace in
-    ProducersClient so filters persist in URL / back-button / shareable links),
-    Suspense boundary on producers page.jsx (required for useSearchParams),
-    category emoji + initials placeholder in ProducerCard (replaces Leaf icon),
-    lib/analytics.js Option-C stub (console.log dev, no-op prod) + 4 trackEvent
-    call sites, RecentlyViewedStrip component (localStorage pills above chip bar).
-  PR #149 (backend): GET /producers — default ORDER BY created_at DESC for non-geo
-    path (was undefined order), sort=rating param (avg_rating DESC), new filter
-    params: city (producer's own city), is_available_today, grass_fed.
-    Updated docs/DATA.md.
+PR merged/opened: #150 (feature/meh-producer-detail-sidebar-v2) — MERGED to staging
+  Also open (previous session): #148 (feature/meh-60-producers-frontend-polish) — DRAFT
+                                #149 (feature/meh-61-producers-backend-sort) — DRAFT
+Summary: Producer detail sidebar v2 — visual audit follow-up (5 changes):
+  1. Initials fix: word-initial algorithm (words[0][0]+words[1][0]) replaces
+     slice(0,2). "גבינות הר הגולן" → "גה" not "גב" (which means back/spine).
+  2. Vacation banner: amber → slate (neutral unavailable, not warm/sale).
+     is_available_today chip suppressed during vacation.
+  3. Sidebar declutter: removed "צרי קשר" header, WhatsAppShareButton (green
+     conflict), and MapButton. Sidebar now: primary CTA → 2-tile contact grid
+     → FollowButton → WA group link → ShareButton.
+  4. Main column action row: MapButton + WhatsAppShareButton (gray outlined,
+     "שלחי לחברה") added after inline CTA, visible at all breakpoints.
+  5. Mobile highlights strip: icon-only below sm: breakpoint (~24px fold saving).
+Summary of previous session PRs (#148, #149):
+  PR #148 (frontend): URL param sync, Suspense boundary, category emoji + initials
+    in ProducerCard, lib/analytics.js Option-C stub, RecentlyViewedStrip component.
+  PR #149 (backend): GET /producers default ORDER BY created_at DESC, sort=rating
+    param, city/is_available_today/grass_fed filter params. Updated docs/DATA.md.
 
 ## Current state
-Branch: feature/meh-61-producers-backend-sort (main repo checkout after PR B work)
-  feature/meh-60-producers-frontend-polish — pushed, PR #148 open (draft), lint ✅
-  feature/meh-61-producers-backend-sort — pushed, PR #149 open (draft), lint queued
+Branch: feature/meh-producer-detail-sidebar-v2 (merged, can delete)
+Staging: PR #150 squash-merged (98b96385). PRs #148 and #149 still open as drafts.
 
 ## Next task
-Both PRs need user review + Vercel preview check before merging to staging.
-Linear issue MEH-61 describes Wave 3 (5 features, separate PRs each):
+PRs #148 and #149 need user review + Vercel preview check before merging to staging.
+After those: Wave 3 (Linear MEH-61), 5 features, separate PRs each:
   1. First-visit onboarding tours (useFirstVisit hook, 4 locations)
   2. Global search in Header (desktop MagnifyingGlass icon → /search?focus=1)
   3. URL-param filter persistence on homepage
@@ -50,6 +55,9 @@ Do NOT start until user says go.
 | RTL: logical properties only | Physical left-*/right-* cause RTL bugs | April 2026 |
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 | Worktree for parallel PRs but sign from main | Signing server rejects /tmp paths | April 2026 |
+| Sidebar: no "צרי קשר" header | Primary CTA speaks for itself | April 2026 |
+| WA share button: gray outlined | Avoids green conflict with primary WA CTA | April 2026 |
+| Vacation banner: slate not amber | Neutral unavailable vs warm/sale semantics | April 2026 |
 
 ## Open PRs
 - #148 feature/meh-60-producers-frontend-polish → staging (draft, lint ✅, Vercel building)
