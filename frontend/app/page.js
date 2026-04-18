@@ -500,7 +500,7 @@ export default function HomePage() {
           <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
             צפית לאחרונה
           </h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
             {recentlyViewed.map((p) => {
               const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
               const imgSrc = p.images?.[0];
@@ -548,7 +548,7 @@ export default function HomePage() {
         </div>
 
         {/* Filter chips — task 12 */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 ps-1 scrollbar-hide after:content-[''] after:shrink-0 after:w-4">
           {[
             { key: "kosher", label: "כשר", icon: "✡️" },
             { key: "organic", label: "אורגני", icon: "🌿" },

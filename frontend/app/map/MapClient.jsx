@@ -306,7 +306,7 @@ export default function MapPage() {
             can lose inherited RTL direction on some browsers and flip the
             order so the reset sentinel lands at the left edge. */}
         <div
-          className="flex gap-2 overflow-x-auto pb-1 -mx-1 pl-1 pr-4 scrollbar-hide"
+          className="flex gap-2 overflow-x-auto pb-1 -mx-1 ps-1 scrollbar-hide after:content-[''] after:shrink-0 after:w-4"
           role="toolbar"
           aria-label="סינון מפה"
           dir="rtl"
