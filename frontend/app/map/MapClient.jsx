@@ -33,16 +33,6 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ),
 });
 
-// MEH-41: rough lat/lng centers for the 4 popular cities used by
-// LocationModal. NOT for distance calc — the Haversine SQL on the
-// backend handles that.
-const CITY_COORDS = {
-  "תל אביב": [32.0853, 34.7818],
-  "ירושלים": [31.7683, 35.2137],
-  "חיפה": [32.7940, 34.9896],
-  "באר שבע": [31.2530, 34.7915],
-};
-
 export default function MapPage() {
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -156,12 +146,11 @@ export default function MapPage() {
     setUserCity(city);
     setCityFilter(city);
     loadProducers({ delivery_city: city });
-    const coords = CITY_COORDS[city];
-    if (coords) {
-      setTimeout(() => {
-        mapApiRef.current?.getMap()?.flyTo(coords, 12, { duration: 1.2 });
-      }, 300);
-    }
+    // NOTE: deliberately no flyTo here. The initial view must stay anchored at
+    // [31.7683, 35.2137] zoom 8 (country-wide) — LocationModal only filters
+    // the producer list by delivery_city, it doesn't pan the map. Users who
+    // want to zoom into their city use the "קרוב אליי" (goToMyLocation)
+    // button or pan manually.
   }, [setUserCity]);
 
   // MEH-30 follow-up: when the bottom sheet is open, mark the body so
@@ -572,7 +561,6 @@ export default function MapPage() {
   const desktopMiniPopup = selectedProducer && (() => {
     const p = selectedProducer;
     const imageUrl = optimizeCloudinary(p.images?.[0]);
-    const producerHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
     return (
       <div className="absolute bottom-4 right-4 z-[600] bg-white rounded-[16px] border border-border shadow-[0_4px_24px_rgba(0,0,0,0.12)] w-[300px] overflow-hidden">
         {imageUrl && (
@@ -589,13 +577,12 @@ export default function MapPage() {
           <p className="text-xs text-site-muted mt-0.5">
             {[p.categories?.[0]?.name, p.city, p.starting_price_label || p.price_range].filter(Boolean).join(" · ")}
           </p>
-          <div className="flex items-center gap-2 mt-2">
-            {p.phone && (
-              <a href={`https://wa.me/${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center shrink-0" aria-label="WhatsApp">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
-              </a>
-            )}
-          </div>
+          {p.phone && (
+            <a href={`https://wa.me/${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="mt-2 w-full flex items-center justify-center gap-2 bg-[#25D366] text-white rounded-[8px] py-2 font-medium text-sm transition hover:bg-[#20b858]">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
+              WhatsApp
+            </a>
+          )}
         </div>
       </div>
     );
@@ -703,7 +690,7 @@ export default function MapPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full" style={{ backgroundColor: "#EAF3DE" }} />
+                    <div className="w-full h-full flex items-center justify-center text-5xl" style={{ backgroundColor: "#EAF3DE" }} aria-hidden="true">🌿</div>
                   )}
                   {spImg && (
                     <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
