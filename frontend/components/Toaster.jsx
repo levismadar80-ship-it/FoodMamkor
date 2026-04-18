@@ -30,7 +30,7 @@ export default function Toaster() {
         <div
           key={t.id}
           className={[
-            "pointer-events-auto px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium",
+            "pointer-events-auto px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium flex items-center gap-3",
             "animate-[toast-in_200ms_ease-out]",
             t.type === "error"
               ? "bg-red-600 text-white"
@@ -39,7 +39,16 @@ export default function Toaster() {
                 : "bg-primary text-white",
           ].join(" ")}
         >
-          {t.message}
+          <span>{t.message}</span>
+          {t.action && (
+            <a
+              href={t.action.href}
+              className="underline underline-offset-2 font-semibold whitespace-nowrap hover:opacity-90"
+              data-testid="toast-action"
+            >
+              {t.action.label}
+            </a>
+          )}
         </div>
       ))}
       <style jsx>{`

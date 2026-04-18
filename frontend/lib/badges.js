@@ -1,15 +1,18 @@
 /**
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *
- * Five badges:
- *   verified    (manual) — producer.is_verified
- *   recommended (manual) — producer.is_recommended
- *   new         (auto)   — producer.days_since_created <= 30
- *   delivery    (auto)   — producer.has_delivery OR delivery_count > 0
- *   products    (auto)   — producer.products_count >= 3
+ * Badges (Phase B fold, April 2026):
+ *   verified    (manual)  — producer.is_verified
+ *   recommended (manual)  — producer.is_recommended
+ *   new         (auto)    — producer.days_since_created <= 30
+ *   organic     (manual)  — producer.organic_certified
+ *   grass_fed   (manual)  — producer.grass_fed
+ *   kosher      (manual)  — producer.kosher (any non-empty string)
+ *   delivery    (auto)    — producer.has_delivery OR delivery_count > 0
+ *   products    (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > new > delivery > products
+ *   verified > recommended > new > organic > grass_fed > kosher > delivery > products
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -34,6 +37,24 @@ export const BADGE_CONFIG = {
     tooltip: "העסק הצטרף אלינו בחודש האחרון.",
     color: "secondary",
   },
+  organic: {
+    key: "organic",
+    label: "אורגני",
+    tooltip: "בית העסק מחזיק בתעודת אורגני בתוקף.",
+    color: "muted",
+  },
+  grass_fed: {
+    key: "grass_fed",
+    label: "גראס פד",
+    tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
+    color: "muted",
+  },
+  kosher: {
+    key: "kosher",
+    label: "כשר",
+    tooltip: "המוצרים תחת השגחת כשרות.",
+    color: "muted",
+  },
   delivery: {
     key: "delivery",
     label: "משלוח",
@@ -53,6 +74,9 @@ export const BADGE_PRIORITY = [
   "verified",
   "recommended",
   "new",
+  "organic",
+  "grass_fed",
+  "kosher",
   "delivery",
   "products",
 ];
@@ -73,6 +97,12 @@ function earnsBadge(producer, key) {
         producer.days_since_created >= 0 &&
         producer.days_since_created <= NEW_DAYS
       );
+    case "organic":
+      return !!producer.organic_certified;
+    case "grass_fed":
+      return !!producer.grass_fed;
+    case "kosher":
+      return typeof producer.kosher === "string" && producer.kosher.trim().length > 0;
     case "delivery":
       return (
         !!producer.has_delivery ||

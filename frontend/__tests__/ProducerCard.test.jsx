@@ -1,8 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
 
-// Mock next/link — render as <a>
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
     <a href={href} {...props}>
@@ -11,66 +10,94 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// Mock next/image — render as <img>
 vi.mock("next/image", () => ({
-  default: ({ src, alt, ...props }) => <img src={src} alt={alt} />,
+  default: ({ src, alt }) => <img src={src} alt={alt} />,
 }));
 
-// Mock Cloudinary optimizer — pass through
 vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (url) => url || null,
 }));
 
-// Mock normalizePhone — simple passthrough
-vi.mock("@/lib/utils", () => ({
-  normalizePhone: (phone) => (phone ? phone.replace(/^0/, "972") : ""),
+// ---- Heart / auth wiring: mock-all-the-things so each test can set state ----
+const { authState, apiMock, toastSpy, enqueueSpy, favCache } = vi.hoisted(() => ({
+  authState: { user: null },
+  apiMock: {
+    post: vi.fn(),
+    delete: vi.fn(),
+  },
+  toastSpy: vi.fn(),
+  enqueueSpy: vi.fn(),
+  favCache: { ids: new Set() },
 }));
 
-// Mock Phosphor icons
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => authState,
+}));
+
+vi.mock("@/lib/api", () => ({
+  default: apiMock,
+}));
+
+vi.mock("@/lib/toast", () => ({
+  showToast: (...args) => toastSpy(...args),
+}));
+
+vi.mock("@/lib/post-login-action", () => ({
+  enqueueFavoriteOnLogin: (...args) => enqueueSpy(...args),
+}));
+
+vi.mock("@/lib/favorites-cache", () => ({
+  ensureFavoritesLoaded: () => Promise.resolve(favCache.ids),
+  isFavorited: (id) => favCache.ids.has(id),
+  setFavoritedLocal: (id, value) => {
+    if (value) favCache.ids.add(id);
+    else favCache.ids.delete(id);
+  },
+  subscribeFavorites: () => () => {},
+}));
+
+// Phosphor icons — render as identifiable spans
 vi.mock("@phosphor-icons/react", () => ({
-  Seal: (props) => <span data-testid="seal-icon" {...props} />,
   Leaf: (props) => <span data-testid="leaf-icon" {...props} />,
-  Cow: (props) => <span data-testid="cow-icon" {...props} />,
-}));
-
-// Mock CategoryTag
-vi.mock("@/components/CategoryTag", () => ({
-  default: ({ category }) => <span data-testid="category-tag">{category.name}</span>,
+  HeartStraight: ({ weight, ...props }) => (
+    <span data-testid="icon-heart" data-weight={weight} {...props} />
+  ),
+  WhatsappLogo: (props) => <span data-testid="icon-whatsapp" {...props} />,
+  Phone: (props) => <span data-testid="icon-phone" {...props} />,
+  Globe: (props) => <span data-testid="icon-globe" {...props} />,
+  EnvelopeSimple: (props) => <span data-testid="icon-email" {...props} />,
 }));
 
 const fullProducer = {
-  id: 1,
+  id: "producer-1",
   name: "חוות השקמה",
   slug: "havat-hashikma",
   city: "רחובות",
-  phone: "0501234567",
-  instagram: "havat_hashikma",
   images: ["https://example.com/photo.jpg"],
   is_verified: true,
-  plan: "premium",
   is_available_today: true,
   reviews_count: 12,
   avg_rating: 4.5,
+  short_description: "גבינות עיזים וכבשים, כולן מחלב טרי.",
   top_product_name: "גבינת עיזים מיושנת",
   organic_certified: true,
   grass_fed: true,
   kosher: "חלבי",
   price_range: "₪40-80",
+  primary_contact_method: "whatsapp",
   categories: [{ id: 1, name: "חלב וגבינות", emoji: "🥛" }],
 };
 
 const minimalProducer = {
-  id: 2,
+  id: "producer-2",
   name: "חנות פשוטה",
   city: "תל אביב",
-  phone: null,
-  instagram: null,
   images: [],
   is_verified: false,
-  plan: null,
   is_available_today: false,
   reviews_count: 0,
   avg_rating: null,
+  short_description: null,
   top_product_name: null,
   organic_certified: false,
   grass_fed: false,
@@ -80,71 +107,209 @@ const minimalProducer = {
   categories: [],
 };
 
-describe("ProducerCard", () => {
-  it("renders with all fields populated", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    expect(screen.getByText("חוות השקמה")).toBeInTheDocument();
-    expect(screen.getByText("מאומת")).toBeInTheDocument();
-    expect(screen.getByText("פרמיום")).toBeInTheDocument();
-    expect(screen.getByText("זמין היום")).toBeInTheDocument();
-    expect(screen.getByText("גבינת עיזים מיושנת")).toBeInTheDocument();
-    expect(screen.getByText("אורגני")).toBeInTheDocument();
-    expect(screen.getByText("גראס פד")).toBeInTheDocument();
-    expect(screen.getByText(/חלבי/)).toBeInTheDocument();
-    expect(screen.getByText("₪40-80")).toBeInTheDocument();
-  });
+beforeEach(() => {
+  authState.user = null;
+  apiMock.post.mockReset().mockResolvedValue({ data: {} });
+  apiMock.delete.mockReset().mockResolvedValue({ data: {} });
+  toastSpy.mockClear();
+  enqueueSpy.mockClear();
+  favCache.ids = new Set();
+  window.sessionStorage.clear();
+});
 
-  it("does NOT render phone button when phone is null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByLabelText("התקשר לבית העסק")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render instagram button when instagram is null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByLabelText("עמוד אינסטגרם")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render WhatsApp button when phone is null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByLabelText("שלח הודעה בווטסאפ")).not.toBeInTheDocument();
-  });
-
-  it("renders verified badge only when is_verified=true", () => {
-    const { rerender } = render(<ProducerCard producer={fullProducer} />);
-    expect(screen.getByText("מאומת")).toBeInTheDocument();
-
-    rerender(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByText("מאומת")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render premium badge when plan is not premium", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByText("פרמיום")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render availability badge when is_available_today is false", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByText("זמין היום")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render reviews when reviews_count is 0", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByText(/⭐/)).not.toBeInTheDocument();
-  });
-
-  it("does NOT render top product when top_product_name is null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByText("גבינת עיזים מיושנת")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render price when price_range and starting_price_label are null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
+describe("ProducerCard — Phase B anatomy", () => {
+  it("renders the producer image with 4:3 / 1:1 responsive wrapper", () => {
+    const { container } = render(<ProducerCard producer={fullProducer} />);
+    const imageWrapper = container.querySelector(".aspect-square.lg\\:aspect-\\[4\\/3\\]");
+    expect(imageWrapper).toBeTruthy();
   });
 
   it("renders fallback placeholder when images array is empty", () => {
     render(<ProducerCard producer={minimalProducer} />);
     expect(screen.getByText("מהמקור")).toBeInTheDocument();
+  });
+
+  it("never renders the premium image overlay", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByText("פרמיום")).not.toBeInTheDocument();
+  });
+
+  it("never renders the 'זמין היום' pill overlay (folded into dot)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByText("זמין היום")).not.toBeInTheDocument();
+  });
+
+  it("never renders the legacy contact-icon row", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByLabelText("שלח הודעה בווטסאפ")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("התקשר לבית העסק")).not.toBeInTheDocument();
+  });
+
+  it("never renders the inline text CTA", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByText("מידע נוסף")).not.toBeInTheDocument();
+    expect(screen.queryByText(/גלי עוד/)).not.toBeInTheDocument();
+  });
+
+  it("renders a single primary-method hint icon on the footer end", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const hint = screen.getByTestId("primary-method-hint");
+    expect(hint).toHaveAttribute("data-method", "whatsapp");
+    expect(hint.querySelector('[data-testid="icon-whatsapp"]')).toBeTruthy();
+  });
+
+  it("switches the primary-method icon when the method changes", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, primary_contact_method: "phone" }} />,
+    );
+    const hint = screen.getByTestId("primary-method-hint");
+    expect(hint).toHaveAttribute("data-method", "phone");
+    expect(hint.querySelector('[data-testid="icon-phone"]')).toBeTruthy();
+  });
+
+  it("truncates the price label (narrow max-width)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const price = screen.getByText("₪40-80");
+    expect(price.className).toMatch(/max-w-/);
+  });
+
+  it("hides price when both price_range and starting_price_label are null", () => {
+    render(<ProducerCard producer={minimalProducer} />);
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
+  });
+
+  it("folds rating into the name row when reviews_count >= 3", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const rating = screen.getByTestId("card-rating");
+    expect(rating).toHaveAttribute("dir", "ltr");
+    expect(rating.textContent).toBe("★ 4.5 · 12");
+  });
+
+  it("hides rating entirely when reviews_count < 3", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, reviews_count: 2, avg_rating: 5 }} />,
+    );
+    expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
+  });
+
+  it("hides rating when avg_rating is null even if reviews_count is high", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, reviews_count: 10, avg_rating: null }} />,
+    );
+    expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
+  });
+
+  it("renders a green dot when is_available_today=true", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const dot = screen.getByTestId("availability-dot");
+    expect(dot).toHaveAttribute("data-status", "available-today");
+    expect(dot.style.backgroundColor).toMatch(/rgb\(76, 176, 139\)/);
+  });
+
+  it("renders an orange dot when availability_status='vacation' (overrides is_available_today)", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          is_available_today: true,
+          availability_status: "vacation",
+        }}
+      />,
+    );
+    const dot = screen.getByTestId("availability-dot");
+    expect(dot).toHaveAttribute("data-status", "vacation");
+    expect(dot.style.backgroundColor).toMatch(/rgb\(239, 159, 39\)/);
+  });
+
+  it("renders no dot when producer is not available and not on vacation", () => {
+    render(<ProducerCard producer={minimalProducer} />);
+    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
+  });
+
+  it("always shows the city", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.getByText(/רחובות/)).toBeInTheDocument();
+  });
+
+  it("does NOT render distance when user has no geolocation", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, lat: 32.0853, lng: 34.7818 }} />,
+    );
+    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
+  });
+
+  it("renders distance inline in the location line when coords exist on both sides", () => {
+    window.sessionStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
+    );
+    render(
+      <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
+    );
+    const distance = screen.getByTestId("distance-pill");
+    expect(distance.textContent).toMatch(/ק"מ ממך$/);
+    expect(distance).toHaveAttribute("dir", "ltr");
+  });
+
+  it("prefers short_description over top_product_name", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const desc = screen.getByTestId("card-description");
+    expect(desc.textContent).toMatch(/גבינות עיזים/);
+  });
+
+  it("falls back to top_product_name when short_description is null", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, short_description: null }} />,
+    );
+    const desc = screen.getByTestId("card-description");
+    expect(desc.textContent).toBe("גבינת עיזים מיושנת");
+  });
+
+  it("hides the description row when both fields are null", () => {
+    render(<ProducerCard producer={minimalProducer} />);
+    expect(screen.queryByTestId("card-description")).not.toBeInTheDocument();
+  });
+
+  it("soft-truncates descriptions past 80 chars with an ellipsis", () => {
+    const long = "תיאור ארוך מאוד שממשיך וממשיך וממשיך ועוד ועוד ועוד ועוד ועוד ועוד ועוד ועוד ועוד ועוד";
+    render(<ProducerCard producer={{ ...fullProducer, short_description: long }} />);
+    const desc = screen.getByTestId("card-description");
+    expect(desc.textContent).toMatch(/…$/);
+    expect(desc.textContent.length).toBeLessThanOrEqual(81);
+  });
+
+  it("renders the verified badge via BadgeRow when is_verified=true", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const badge = screen.getByRole("button", { name: /מאומת/ });
+    expect(badge).toHaveAttribute("data-badge", "verified");
+  });
+
+  it("truncates the badge row to max 2 by priority (verified > recommended wins)", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          is_verified: true,
+          is_recommended: true,
+          days_since_created: 5,
+          organic_certified: true,
+        }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /מומלץ/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^חדש/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
+  });
+
+  it("promotes organic/grass_fed/kosher into the unified pill row", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /אורגני/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /גראס פד/ })).toBeInTheDocument();
   });
 
   it("uses slug for href when available", () => {
@@ -157,138 +322,113 @@ describe("ProducerCard", () => {
   it("falls back to /producer/:id when no slug", () => {
     render(<ProducerCard producer={{ ...minimalProducer, slug: undefined }} />);
     const links = screen.getAllByRole("link");
-    const mainLink = links.find((l) => l.getAttribute("href")?.includes("/producer/2"));
+    const mainLink = links.find((l) => l.getAttribute("href")?.includes("/producer/"));
     expect(mainLink).toBeTruthy();
   });
 
-  // ----- MEH-12 availability badge -----
-
-  it("does NOT render availability badge when status is 'available' (default)", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_status: "available" }} />,
-    );
-    expect(screen.queryByText("פתוח להזמנות")).not.toBeInTheDocument();
+  it("appends ?from=referrer to both image and title links", () => {
+    render(<ProducerCard producer={fullProducer} referrer="home" />);
+    const tagged = screen
+      .getAllByRole("link")
+      .filter((l) => l.getAttribute("href")?.includes("?from=home"));
+    expect(tagged.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("renders the 'עמוס כרגע' badge when status is 'full'", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_status: "full" }} />,
-    );
-    expect(screen.getByText("עמוס כרגע")).toBeInTheDocument();
+  it("calls onClick when the card body is tapped outside interactive children", () => {
+    const onClick = vi.fn();
+    render(<ProducerCard producer={fullProducer} onClick={onClick} active={false} />);
+    const desc = screen.getByTestId("card-description");
+    desc.click();
+    expect(onClick).toHaveBeenCalledWith(fullProducer);
   });
 
-  it("renders the 'בהפסקה' badge when status is 'vacation'", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_status: "vacation" }} />,
-    );
-    expect(screen.getByText("בהפסקה")).toBeInTheDocument();
+  it("applies active ring classes when active=true", () => {
+    const { container } = render(<ProducerCard producer={fullProducer} active={true} />);
+    const article = container.querySelector("article");
+    expect(article.className).toMatch(/ring-primary/);
+    expect(article.className).toMatch(/border-primary/);
   });
+});
 
-  // ----- MEH-13 distance pill -----
-
-  it("does NOT render distance pill when user has not granted geolocation", () => {
-    window.sessionStorage.clear();
-    render(
-      <ProducerCard
-        producer={{ ...fullProducer, lat: 32.0853, lng: 34.7818 }}
-      />,
-    );
-    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
-  });
-
-  it("does NOT render distance pill when producer has no lat/lng", () => {
-    window.sessionStorage.setItem(
-      "user_location",
-      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
-    );
+describe("ProducerCard — heart (Phase C)", () => {
+  it("renders an unfilled heart for guests", () => {
     render(<ProducerCard producer={fullProducer} />);
-    expect(screen.queryByTestId("distance-pill")).not.toBeInTheDocument();
-    window.sessionStorage.clear();
+    const heart = screen.getByTestId("card-heart");
+    expect(heart).toHaveAttribute("aria-pressed", "false");
+    const icon = heart.querySelector('[data-testid="icon-heart"]');
+    expect(icon).toHaveAttribute("data-weight", "regular");
   });
 
-  it("renders distance pill when both userLoc and producer coords exist", () => {
-    // Tel Aviv → Jerusalem = ~54 km
-    window.sessionStorage.setItem(
-      "user_location",
-      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
-    );
-    render(
-      <ProducerCard
-        producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }}
-      />,
-    );
-    const pill = screen.getByTestId("distance-pill");
-    expect(pill).toBeInTheDocument();
-    expect(pill.textContent).toMatch(/ק"מ ממך$/);
-    window.sessionStorage.clear();
+  it("guest tap: fills heart, enqueues favorite, shows snackbar with התחברי link", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const heart = screen.getByTestId("card-heart");
+    fireEvent.click(heart);
+    expect(heart).toHaveAttribute("aria-pressed", "true");
+    expect(enqueueSpy).toHaveBeenCalledWith("producer-1");
+    expect(toastSpy).toHaveBeenCalled();
+    const [msg, type, duration, opts] = toastSpy.mock.calls[0];
+    expect(msg).toMatch(/שמרתי/);
+    expect(type).toBe("info");
+    expect(opts.action.label).toBe("התחברי");
+    expect(opts.action.href).toMatch(/^\/login\?next=/);
   });
 
-  // ----- MEH-17 primary-method highlight -----
-
-  it("marks the WhatsApp icon as primary when primary_contact_method='whatsapp'", () => {
-    render(
-      <ProducerCard
-        producer={{ ...fullProducer, primary_contact_method: "whatsapp" }}
-      />,
-    );
-    const whatsappLink = screen.getByLabelText("שלח הודעה בווטסאפ");
-    expect(whatsappLink).toHaveAttribute("data-primary", "true");
-    const phoneLink = screen.getByLabelText("התקשר לבית העסק");
-    expect(phoneLink).not.toHaveAttribute("data-primary");
+  it("guest tap does NOT hit the API", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    fireEvent.click(screen.getByTestId("card-heart"));
+    expect(apiMock.post).not.toHaveBeenCalled();
+    expect(apiMock.delete).not.toHaveBeenCalled();
   });
 
-  it("marks the phone icon as primary when primary_contact_method='phone'", () => {
-    render(
-      <ProducerCard
-        producer={{ ...fullProducer, primary_contact_method: "phone" }}
-      />,
+  it("authed tap: POSTs favorite and fills optimistically", async () => {
+    authState.user = { id: "u1", producer_id: null };
+    render(<ProducerCard producer={fullProducer} />);
+    const heart = screen.getByTestId("card-heart");
+    fireEvent.click(heart);
+    expect(heart).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(apiMock.post).toHaveBeenCalledWith("/users/me/favorites/producer-1"),
     );
-    const phoneLink = screen.getByLabelText("התקשר לבית העסק");
-    expect(phoneLink).toHaveAttribute("data-primary", "true");
-    const whatsappLink = screen.getByLabelText("שלח הודעה בווטסאפ");
-    expect(whatsappLink).not.toHaveAttribute("data-primary");
   });
 
-  it("renders an email icon when contact_email is set", () => {
-    render(
-      <ProducerCard
-        producer={{
-          ...fullProducer,
-          contact_email: "hello@example.com",
-          primary_contact_method: "email",
-        }}
-      />,
+  it("authed second tap: DELETEs favorite (unfill)", async () => {
+    authState.user = { id: "u1", producer_id: null };
+    favCache.ids.add("producer-1");
+    render(<ProducerCard producer={fullProducer} />);
+    const heart = await screen.findByTestId("card-heart");
+    // Wait for the ensureFavoritesLoaded effect to flush.
+    await waitFor(() => expect(heart).toHaveAttribute("aria-pressed", "true"));
+    fireEvent.click(heart);
+    expect(heart).toHaveAttribute("aria-pressed", "false");
+    await waitFor(() =>
+      expect(apiMock.delete).toHaveBeenCalledWith("/users/me/favorites/producer-1"),
     );
-    const emailLink = screen.getByLabelText("שלח אימייל");
-    expect(emailLink).toHaveAttribute("href", "mailto:hello@example.com");
-    expect(emailLink).toHaveAttribute("data-primary", "true");
   });
 
-  // ----- MEH-18 badge row -----
-
-  it("renders the unified BadgeRow with 'מאומת' when is_verified is true", () => {
-    render(<ProducerCard producer={{ ...fullProducer, is_verified: true }} />);
-    // Use the <button> inside BadgeRow (the old inline overlay was a <span>).
-    const badge = screen.getByRole("button", { name: /מאומת/ });
-    expect(badge).toHaveAttribute("data-badge", "verified");
+  it("authed tap reverts on API error", async () => {
+    authState.user = { id: "u1", producer_id: null };
+    apiMock.post.mockRejectedValueOnce(new Error("fail"));
+    render(<ProducerCard producer={fullProducer} />);
+    const heart = screen.getByTestId("card-heart");
+    fireEvent.click(heart);
+    expect(heart).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(heart).toHaveAttribute("aria-pressed", "false"));
+    expect(toastSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/השתבש/),
+      "error",
+    );
   });
 
-  it("truncates the badge row to max 2 on the card (priority order)", () => {
-    render(
-      <ProducerCard
-        producer={{
-          ...fullProducer,
-          is_verified: true,
-          is_recommended: true,
-          days_since_created: 5,
-          delivery_count: 3,
-          products_count: 10,
-        }}
-      />,
-    );
-    expect(screen.getByRole("button", { name: /מאומת/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /מומלץ/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /חדש/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /משלוח/ })).not.toBeInTheDocument();
+  it("hides the heart when the viewer is the producer's owner", () => {
+    authState.user = { id: "u1", producer_id: "producer-1" };
+    render(<ProducerCard producer={fullProducer} />);
+    expect(screen.queryByTestId("card-heart")).not.toBeInTheDocument();
+  });
+
+  it("heart click does not bubble to card onClick", () => {
+    const onClick = vi.fn();
+    render(<ProducerCard producer={fullProducer} onClick={onClick} />);
+    fireEvent.click(screen.getByTestId("card-heart"));
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

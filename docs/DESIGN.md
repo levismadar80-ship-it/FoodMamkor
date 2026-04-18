@@ -267,11 +267,16 @@ URL: `https://images.unsplash.com/[photo-id]?w=600&fit=crop&auto=format`
 
 ## כרטיסיית עסק (ProducerCard)
 
+> Redesigned April 2026 (Phases A → B → C). Entire card is the navigation
+> target; the heart is the only secondary action. No inline contact icons
+> — `ProducerListOut` doesn't carry `phone` / `website` / `instagram`, so
+> a row of 5 icons was dead code on every grid view.
+
 ```css
 .producer-card {
   background: #F5F0E8;
   border: 1px solid #e8e0d0;
-  border-radius: 16px;
+  border-radius: 16px;   /* Tailwind rounded-2xl */
   overflow: hidden;
   transition: box-shadow 0.2s, transform 0.2s;
 }
@@ -281,30 +286,49 @@ URL: `https://images.unsplash.com/[photo-id]?w=600&fit=crop&auto=format`
 }
 ```
 
-מבנה פנימי:
-```
-תמונה עליונה:
-  height: 200px | object-fit: cover | width: 100%
-  border-radius: 16px 16px 0 0
+**Anatomy**
 
-גוף הכרטיסייה (padding 16px):
-  שם עסק: Frank Ruhl Libre, 18px, #1C1A17, font-weight 700
-  עיר + קטגוריה: DM Sans, 13px, #6b6b6b
-  badges (flex wrap, gap 6px, margin-top 8px):
-    background: #EAF3DE | color: #2e6853
-    border-radius: 20px | padding: 3px 10px | font-size: 12px
-    [ 🌿 אורגני ] [ 🐄 גראס פד ] [ ✅ מאומת ] [ ✡️ כשר ]
-
-תחתית (padding 12px 16px, border-top: 1px solid #e8e0d0):
-  flex, justify-between, align-items center
-  מחיר: DM Sans, #8B6914, font-weight 600
-  אייקוני קשר: WhatsApp | טלפון | Instagram (24px, #2e6853)
-  כפתור "מידע נוסף":
-    border: 1px solid #2e6853 | color: #2e6853
-    border-radius: 8px | padding: 6px 14px
-    background: transparent | font-size: 13px
-    hover: background #2e6853, color white
 ```
+image (aspect-square on mobile → lg:aspect-[4/3]):
+  object-cover object-center
+  Cloudinary: c_fill,g_auto,ar_4:3 — saliency-aware smart crop
+  top-3 start-3 overlay: ♡ heart button (white circle 44×44,
+    HeartStraight icon, aria-pressed, z-10)
+
+body (p-4, flex-col, flex-1):
+  name row (flex justify-between items-baseline):
+    ── h3 Frank Ruhl Libre 18px bold #1C1A17, 2-line clamp
+    ── rating span (dir="ltr", shrink-0): ★ 4.8 · 12
+       shown only when reviews_count >= 3 AND avg_rating > 0
+
+  location line (13px #6b6b6b, flex items-center gap-1.5):
+    ● dot 8×8 (green #4cb08b = available_today, orange #EF9F27 = vacation)
+    {city}[ · {distance dir="ltr"}]
+
+  description line (14px #1C1A17/85, line-clamp-1):
+    short_description → top_product_name (80-char soft cap, then "…")
+    entire row hidden when both null
+
+  BadgeRow(producer, limit=2) — max 2 pills by priority:
+    verified > recommended > new > organic > grass_fed > kosher > delivery > products
+
+  footer (mt-auto pt-3 flex justify-between — no border-top):
+    start: price label (max-w-[120px] truncate, #8B6914, 600)
+    end:   primary_contact_method hint icon (decorative, 18px)
+```
+
+**Heart button contract**
+- Logged-in tap → optimistic fill → `POST /users/me/favorites/{id}` → revert + error toast on failure.
+- Logged-out tap → local fill + `sessionStorage["post_login_action"] = "favorite:{id}"` → snackbar toast with `התחברי` link (`/login?next=…`). `AuthContext.afterLogin` drains the pending action on next sign-in.
+- Hidden when `user.producer_id === producer.id` (producer viewing own card).
+- Uses `start-3` physical-RTL convention (project enforces logical properties via `no-restricted-syntax`).
+
+**What's explicitly NOT on the card (moved to detail)**
+- Contact icon row (WhatsApp / phone / website / email / Instagram).
+- "פרמיום" plan overlay.
+- "גלי עוד" / "מידע נוסף" text CTA.
+- "זמין היום" pill overlay (folded into the location-line dot).
+- Rating when `reviews_count < 3` (gate avoids misleadingly authoritative "★ 5.0 · 1" lines).
 
 ---
 

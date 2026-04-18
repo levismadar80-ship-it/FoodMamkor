@@ -557,17 +557,23 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] `cd frontend && npx vitest run --reporter=verbose` — all 33 tests pass
 - [ ] Stop hook runs vitest automatically on every task completion
 
-### ProducerCard (13 tests)
-- [ ] Renders all fields when fully populated
-- [ ] Hides phone/instagram/WhatsApp buttons when those fields are null
-- [ ] Verified badge only when is_verified=true
-- [ ] Premium badge only when plan="premium"
-- [ ] Availability badge only when is_available_today=true
-- [ ] No reviews line when reviews_count=0
-- [ ] No top product when top_product_name=null
-- [ ] No price when price_range and starting_price_label are null
-- [ ] Image placeholder when images array is empty
-- [ ] Uses slug for href when available, falls back to /producer/:id
+### ProducerCard — Phase A → B → C redesign (2026-04-18)
+- [ ] **Anatomy** — image (1:1 mobile, 4:3 desktop) → name row with inline `★ rating · count` → location dot + city + distance → description line → max-2 pill row → footer (price + primary-method hint). No contact-icon row. No CTA link.
+- [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
+- [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
+- [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
+- [ ] **Availability dot** — `is_available_today=true` → green; `availability_status="vacation"` → orange (overrides even if `is_available_today=true`); neither → no dot.
+- [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
+- [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
+- [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
+- [ ] **Heart — guest flow** — tap heart while logged out → heart fills red, snackbar appears with "שמרתי — התחברי לראות את כל המועדפים שלך" and a `התחברי` link. Tap link → `/login?next=<current-url>`. After login, snackbar "נשמר למועדפים ❤️" appears and the favorite is persisted server-side.
+- [ ] **Heart — authed flow** — tap heart while logged in → heart fills, `POST /users/me/favorites/{id}` fires, toast "נשמר למועדפים ❤️". Tap again → unfills, `DELETE` fires, toast "הוסר מהמועדפים".
+- [ ] **Heart — error revert** — disable network, tap heart → heart fills then reverts, error toast "משהו השתבש, נסי שוב".
+- [ ] **Heart — own-card hide** — as a logged-in producer, navigate to a page showing your own producer card (e.g. `/favorites` if you favorited yourself, or admin → producers index). Heart is absent.
+- [ ] **Heart — click doesn't navigate** — tapping the heart does NOT open the producer detail page.
+- [ ] **RTL** — heart sits at `top-3 start-3` (physical right in Hebrew). Rating + distance numerics stay LTR via `dir="ltr"` spans, no parentheses flipping.
+- [ ] **onClick preserved** — on `/map`, tapping a card body (outside heart / Link) still pans the map.
+- [ ] **Skeleton** — while `producers` loads, `SkeletonProducerGrid` renders the exact-same anatomy (square→4:3 image + body rows + footer row) with shimmer. No CLS jump when real cards arrive.
 
 ### HomeProductCard (16 tests)
 - [ ] Renders image when available, placeholder when null
