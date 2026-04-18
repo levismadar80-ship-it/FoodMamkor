@@ -27,6 +27,12 @@ export default function ChipScrollRow({
 
   return (
     <div className={`relative ${className}`} dir="rtl">
+      {/* Inline-start (right in RTL) fade — signals row is scrollable */}
+      <div
+        className="pointer-events-none absolute inset-y-0 start-0 w-8 z-10"
+        style={{ background: `linear-gradient(to left, ${fadeBg}, transparent)` }}
+        aria-hidden="true"
+      />
       {/* Inline-end (left in RTL) fade — signals more chips off-screen */}
       <div
         className="pointer-events-none absolute inset-y-0 end-0 w-8 z-10"
