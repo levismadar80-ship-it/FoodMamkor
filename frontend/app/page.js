@@ -24,6 +24,8 @@ import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
+import OnboardingTip from "@/components/OnboardingTip";
+import { useOnboarding } from "@/lib/use-onboarding";
 
 const PAGE_SIZE = 8;
 
@@ -110,6 +112,14 @@ export default function HomePage() {
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
+  const [step0Visible, setStep0Visible] = useState(false);
+
+  useEffect(() => {
+    if (onboardStep !== 0) return;
+    const t = setTimeout(() => setStep0Visible(true), 2000);
+    return () => clearTimeout(t);
+  }, [onboardStep]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
@@ -615,6 +625,14 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Step 0 — producers grid tip (2s delay) */}
+        <OnboardingTip
+          show={step0Visible && onboardStep === 0}
+          text="גלי בתי עסק מקומיים — ירקות טריים, גבינות, לחם מחמצת ועוד 🌿 לחצי על כרטיס כדי לצפות בפרטים"
+          onDismiss={onboardDismiss}
+          onNext={() => { setStep0Visible(false); onboardAdvance(); }}
+        />
+
         {/* Filter chips */}
         <ChipScrollRow
           variant="toggle"
@@ -623,6 +641,13 @@ export default function HomePage() {
           onChipClick={toggleChip}
           fadeBg="#F5F0E8"
           className="mb-3"
+        />
+        {/* Step 1 — filter chips tip */}
+        <OnboardingTip
+          show={onboardStep === 1}
+          text="סנני לפי אורגני, כשר, משלוח ועוד — לחצי על אחד מהכפתורים למעלה 👆"
+          onDismiss={onboardDismiss}
+          onNext={onboardAdvance}
         />
         {Object.values(chips).some(Boolean) && (
           <p className="text-xs text-site-muted mb-4" aria-live="polite">

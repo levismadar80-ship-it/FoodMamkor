@@ -35,6 +35,15 @@ about:
 
 ---
 
+## 2026-04-18 — First-visit onboarding tour (feature/meh-61a-onboarding)
+
+- `lib/use-onboarding.js` — module-level singleton (no Context) with localStorage persistence (7-day expiry); all callers share state via a subscriber Set.
+- `components/OnboardingTip.jsx` — dismissible tooltip bubble (RTL, Framer Motion animate-in/out, "×" close + CTA button, `placement="inline"` for homepage / `placement="above"` for BottomNav).
+- Step 0 (producers grid): inline tip, 2s delay, text "גלי בתי עסק מקומיים..."; dismissed → advance to step 1.
+- Step 1 (chip filters): inline tip below ChipScrollRow, text "סנני לפי אורגני, כשר, משלוח..."; dismissed → advance to step 2.
+- Step 2 (map tab): absolute tip above BottomNav map tab, text "מפה אינטראקטיבית..."; dismissed → advance to step 3.
+- Step 3 (profile tab): absolute tip above profile tab, "הבנתי, סיום" CTA → dismiss (tour complete).
+
 ## 2026-04-18 — Hero spec completion (feature/meh-61e-hero-redesign)
 
 - Replaced Ken Burns zoom/pan inner-div with `background-attachment: fixed` CSS parallax directly on the hero `<section>`, per DESIGN.md spec. Added `.hero-parallax` class in `globals.css`; `@media (pointer: coarse)` falls back to `scroll` for iOS Safari (which silently ignores `fixed`). Ken Burns keyframes retained — still used by ParallaxQuote, EventsClient, AboutClient, ExperiencesClient, NeighborClient.
