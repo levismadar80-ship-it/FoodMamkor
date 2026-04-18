@@ -205,7 +205,7 @@ function RegisterProducerPageBody() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">1. פרטי חשבון</h2>
-            <input placeholder="שם מלא *" value={form.name} onChange={set("name")} className="w-full border rounded-[12px] px-3 py-2 text-right" dir="rtl" />
+            <input placeholder="שם מלא *" value={form.name} onChange={set("name")} className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right" dir="rtl" />
             <input type="email" placeholder="אימייל *" value={form.email} onChange={set("email")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" />
             <div>
               <input type="password" placeholder="סיסמה *" value={form.password} onChange={set("password")} className="w-full border rounded-[12px] px-3 py-2" dir="ltr" minLength={8} />
@@ -240,8 +240,8 @@ function RegisterProducerPageBody() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
-            <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] px-3 py-2 text-right" dir="rtl" />
-            <textarea placeholder="תיאור העסק" value={form.description} onChange={set("description")} className="w-full border rounded-[12px] px-3 py-2 resize-none h-24 text-right" dir="rtl" />
+            <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right" dir="rtl" />
+            <textarea placeholder="תיאור העסק" value={form.description} onChange={set("description")} className="w-full border rounded-[12px] ps-3 pe-3 py-2 resize-none h-24 text-right" dir="rtl" />
             <CitySearch
               id="producer-register-city"
               label="עיר"

@@ -1,7 +1,10 @@
+import logging
 import re
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+
+logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
@@ -468,7 +471,7 @@ def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)
 def _send_notification_email(to_email: str, subject: str, body: str):
     """Send email notification."""
     if not settings.smtp_user:
-        print(f"[EMAIL] Would send to {to_email}: {subject}")
+        logger.debug(f"[EMAIL] Would send to {to_email}: {subject}")
         return
 
     try:
@@ -484,15 +487,15 @@ def _send_notification_email(to_email: str, subject: str, body: str):
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg)
-        print(f"[EMAIL] Sent to {to_email}")
+        logger.info(f"[EMAIL] Sent to {to_email}")
     except Exception as e:
-        print(f"[EMAIL] Failed to send to {to_email}: {e}")
+        logger.warning(f"[EMAIL] Failed to send to {to_email}: {e}")
 
 
 def _send_whatsapp(to: str, body: str):
     """Send WhatsApp notification via Twilio."""
     if not settings.twilio_account_sid or not settings.twilio_auth_token:
-        print(f"[WHATSAPP] Would send to {to}: {body}")
+        logger.debug(f"[WHATSAPP] Would send to {to}: {body}")
         return
 
     try:
@@ -504,6 +507,6 @@ def _send_whatsapp(to: str, body: str):
             from_=f"whatsapp:{settings.twilio_whatsapp_from}",
             to=f"whatsapp:{to}",
         )
-        print(f"[WHATSAPP] Sent to {to}")
+        logger.info(f"[WHATSAPP] Sent to {to}")
     except Exception as e:
-        print(f"[WHATSAPP] Failed to send to {to}: {e}")
+        logger.warning(f"[WHATSAPP] Failed to send to {to}: {e}")

@@ -1,5 +1,9 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.config import settings
@@ -229,7 +233,7 @@ def _send_welcome_email(email: str, name: str, role: str = "consumer"):
     Fire-and-forget: SMTP failures never block the registration response.
     """
     if not settings.smtp_user:
-        print(f"[EMAIL] Would send welcome email to {email} (role={role})")
+        logger.debug(f"[EMAIL] Would send welcome email to {email} (role={role})")
         return
 
     consumer_body = (
@@ -273,16 +277,16 @@ def _send_welcome_email(email: str, name: str, role: str = "consumer"):
             server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg)
         # Log only the email prefix per security policy (never full address in logs)
-        print(f"[EMAIL] Welcome email sent to {email.split('@')[0]}***")
+        logger.info(f"[EMAIL] Welcome email sent to {email.split('@')[0]}***")
     except Exception as e:
         # Never block registration on email failure
-        print(f"[EMAIL] Welcome email failed: {e}")
+        logger.warning(f"[EMAIL] Welcome email failed: {e}")
 
 
 def _send_deletion_email(email: str, name: str):
     """Send account deletion confirmation email."""
     if not settings.smtp_user:
-        print(f"[EMAIL] Would send deletion confirmation to {email}")
+        logger.debug(f"[EMAIL] Would send deletion confirmation to {email}")
         return
     try:
         import smtplib
@@ -304,15 +308,15 @@ def _send_deletion_email(email: str, name: str):
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg)
-        print(f"[EMAIL] Deletion confirmation sent to {email}")
+        logger.info(f"[EMAIL] Deletion confirmation sent to {email}")
     except Exception as e:
-        print(f"[EMAIL] Failed to send deletion confirmation: {e}")
+        logger.warning(f"[EMAIL] Failed to send deletion confirmation: {e}")
 
 
 def _verify_apple_token(id_token: str) -> dict | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
-        print("[APPLE AUTH] No client ID configured, skipping verification")
+        logger.debug("[APPLE AUTH] No client ID configured, skipping verification")
         return None
     try:
         import jwt as pyjwt
@@ -339,7 +343,7 @@ def _verify_apple_token(id_token: str) -> dict | None:
         )
         return payload
     except Exception as e:
-        print(f"[APPLE AUTH] Verification failed: {e}")
+        logger.warning(f"[APPLE AUTH] Verification failed: {e}")
         return None
 
 
@@ -347,7 +351,7 @@ def _verify_google_token(id_token: str) -> dict | None:
     """Verify Google ID token and return user info."""
     if not settings.google_client_id:
         # Fallback for development: decode without verification
-        print("[GOOGLE AUTH] No client ID configured, skipping verification")
+        logger.debug("[GOOGLE AUTH] No client ID configured, skipping verification")
         return None
     try:
         from google.oauth2 import id_token as google_id_token
@@ -358,7 +362,7 @@ def _verify_google_token(id_token: str) -> dict | None:
         )
         return info
     except Exception as e:
-        print(f"[GOOGLE AUTH] Verification failed: {e}")
+        logger.warning(f"[GOOGLE AUTH] Verification failed: {e}")
         return None
 
 
@@ -378,11 +382,11 @@ def _notify_admin_new_producer(producer: Producer):
                 from_=settings.twilio_whatsapp_from,
                 to=settings.admin_whatsapp_to,
             )
-            print(f"[WHATSAPP] Notification sent to admin")
+            logger.info(f"[WHATSAPP] Notification sent to admin")
         except Exception as e:
-            print(f"[WHATSAPP] Failed: {e}")
+            logger.warning(f"[WHATSAPP] Failed: {e}")
     else:
-        print(f"[WHATSAPP] Would send: {message}")
+        logger.debug(f"[WHATSAPP] Would send: {message}")
 
     # Email
     if settings.smtp_user and settings.admin_email:
@@ -399,8 +403,8 @@ def _notify_admin_new_producer(producer: Producer):
                 server.starttls()
                 server.login(settings.smtp_user, settings.smtp_password)
                 server.send_message(msg)
-            print(f"[EMAIL] Notification sent to admin")
+            logger.info(f"[EMAIL] Notification sent to admin")
         except Exception as e:
-            print(f"[EMAIL] Failed: {e}")
+            logger.warning(f"[EMAIL] Failed: {e}")
     else:
-        print(f"[EMAIL] Would send notification about {producer.name}")
+        logger.debug(f"[EMAIL] Would send notification about {producer.name}")

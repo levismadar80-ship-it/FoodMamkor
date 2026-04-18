@@ -218,6 +218,7 @@ class ProducerListOut(BaseModel):
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
+    phone: str | None = None
     # MEH-18: manual "מומלץ" editorial pick.
     is_recommended: bool = False
     # MEH-18: computed-at-serialization fields — none of these are real
