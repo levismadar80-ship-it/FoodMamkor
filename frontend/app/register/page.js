@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -88,10 +88,33 @@ export default function RegisterPage() {
     (!form.phone || validateIsraeliPhone(form.phone)) &&
     agreedToTerms;
 
+  const googleConfigured =
+    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const appleConfigured =
+    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+  const oauthAvailable = googleConfigured || appleConfigured;
+
   return (
-    <div className="max-w-md mx-auto px-4 py-16">
-      <div className="bg-white rounded-[12px] p-8">
-        <h1 className="font-headline text-3xl font-bold mb-6 text-center">הצטרפי לקהילה</h1>
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
+        {/* Brand mark + heading */}
+        <div className="mb-6">
+          <div
+            className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
+          </div>
+          <h1 className="font-headline text-2xl font-bold text-site-text mb-1">הצטרפי לקהילה</h1>
+          <p className="text-site-muted text-sm">ברוכה הבאה למהמקור 🌿</p>
+        </div>
+
+        {/* Value-prop strip */}
+        <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
+          <span>🗺️ גלי יצרנים</span>
+          <span>❤️ שמרי מועדפים</span>
+          <span>⭐ דרגי ושתפי</span>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -228,7 +251,7 @@ export default function RegisterPage() {
               required
             />
             <span className="leading-relaxed">
-              קראתי ואני מסכימ/ה{" "}
+              קראתי ואני מסכימה{" "}
               <a href="/terms" target="_blank" className="text-primary hover:underline">
                 לתנאי השימוש
               </a>{" "}
@@ -258,14 +281,32 @@ export default function RegisterPage() {
           </p>
         </form>
 
-        <GoogleAuthButton
-          onSuccess={() => router.push("/")}
-          onError={(msg) => setError(msg)}
-        />
-        <AppleAuthButton
-          onSuccess={() => router.push("/")}
-          onError={(msg) => setError(msg)}
-        />
+        {oauthAvailable && (
+          <>
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-white text-site-muted">או</span>
+              </div>
+            </div>
+            <div className="space-y-2.5">
+              {googleConfigured && (
+                <GoogleAuthButton
+                  onSuccess={() => router.push("/")}
+                  onError={(msg) => setError(msg)}
+                />
+              )}
+              {appleConfigured && (
+                <AppleAuthButton
+                  onSuccess={() => router.push("/")}
+                  onError={(msg) => setError(msg)}
+                />
+              )}
+            </div>
+          </>
+        )}
 
         <p className="text-center text-sm text-site-muted mt-6">
           יש לך כבר חשבון?{" "}
