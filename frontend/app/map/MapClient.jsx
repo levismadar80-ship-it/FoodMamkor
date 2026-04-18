@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import ProducerCard from "@/components/ProducerCard";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -161,7 +162,12 @@ export default function MapPage() {
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))
-      .catch(() => setAllProducers([]));
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("[חפשי באזור זה] GET /producers failed:", err);
+        setAllProducers([]);
+        showToast("לא הצלחנו לטעון עסקים — נסי שוב", "error");
+      });
   };
 
   // MEH-14: build the backend params from the current chip state +

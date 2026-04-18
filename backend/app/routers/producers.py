@@ -93,6 +93,17 @@ def list_producers(
 ):
     geo_search = lat is not None and lng is not None and radius_km is not None
 
+    # Build two parallel queries:
+    #   q       — the full SELECT (Producer + eager-loaded relationships,
+    #             plus distance_expr in geo mode; carries joinedload options
+    #             and ORDER BY distance_km).
+    #   count_q — a bare `SELECT COUNT(DISTINCT producer.id)`; NO joinedload,
+    #             NO order_by, NO extra SELECT entities.
+    # Earlier this function did `q.with_entities(func.count(...))`, which
+    # dragged joinedload + order_by artifacts into the count SQL and made
+    # Postgres reject the query with a 500 on every geo search. Keep the
+    # two queries separate and apply each filter/join to BOTH so the total
+    # count stays consistent with the page slice.
     if geo_search:
         distance_expr = _haversine_km(lat, lng).label("distance_km")
         q = (
@@ -110,6 +121,13 @@ def list_producers(
             .filter(distance_expr <= radius_km)
             .order_by(distance_expr.asc())
         )
+        count_q = (
+            db.query(func.count(Producer.id.distinct()))
+            .select_from(Producer)
+            .filter(Producer.status == "approved")
+            .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
+            .filter(_haversine_km(lat, lng) <= radius_km)
+        )
     else:
         q = (
             db.query(Producer)
@@ -120,39 +138,49 @@ def list_producers(
             )
             .filter(Producer.status == "approved")
         )
+        count_q = (
+            db.query(func.count(Producer.id.distinct()))
+            .select_from(Producer)
+            .filter(Producer.status == "approved")
+        )
 
     if verified is not None:
         q = q.filter(Producer.is_verified == verified)
+        count_q = count_q.filter(Producer.is_verified == verified)
 
     if organic is not None:
         q = q.filter(Producer.organic_certified == organic)
+        count_q = count_q.filter(Producer.organic_certified == organic)
 
     if kosher is not None:
         if kosher:
             q = q.filter(Producer.kosher.isnot(None), Producer.kosher != "")
+            count_q = count_q.filter(Producer.kosher.isnot(None), Producer.kosher != "")
         else:
             q = q.filter((Producer.kosher.is_(None)) | (Producer.kosher == ""))
+            count_q = count_q.filter((Producer.kosher.is_(None)) | (Producer.kosher == ""))
 
     if category is not None:
         q = q.join(ProducerCategory).filter(ProducerCategory.category_id == category)
+        count_q = count_q.join(ProducerCategory).filter(ProducerCategory.category_id == category)
 
     if delivery_city:
         q = q.join(DeliveryArea).filter(func.lower(DeliveryArea.city) == delivery_city.lower())
+        count_q = count_q.join(DeliveryArea).filter(func.lower(DeliveryArea.city) == delivery_city.lower())
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
+        count_q = count_q.filter(Producer.delivery_areas.any())
 
     # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
     if search_q and search_q.strip():
         like = f"%{search_q.strip()}%"
-        q = q.filter(
-            (Producer.name.ilike(like)) | (Producer.description.ilike(like))
-        )
+        name_or_desc = (Producer.name.ilike(like)) | (Producer.description.ilike(like))
+        q = q.filter(name_or_desc)
+        count_q = count_q.filter(name_or_desc)
 
-    # MEH-23 — compute the total BEFORE applying limit/offset so the
-    # frontend can render "X מתוך Y" and numbered pagination. SQLAlchemy
-    # wants a fresh .count() query; doing it on the same builder works
-    # because we haven't applied ordering yet.
-    total_count = q.with_entities(func.count(Producer.id.distinct())).scalar() or 0
+    # MEH-23 — total BEFORE applying limit/offset so the frontend can render
+    # "X מתוך Y" and numbered pagination.
+    total_count = count_q.scalar() or 0
     if response is not None:
         response.headers["X-Total-Count"] = str(total_count)
 

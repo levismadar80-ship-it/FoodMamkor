@@ -13,4 +13,6 @@ test-results/
 # service worker's behavior is fully driven by next.config.js's
 # next-pwa runtime caching rules, which ARE tracked.
 public/sw.js
+public/sw.js.map
 public/workbox-*.js
+public/workbox-*.js.map
