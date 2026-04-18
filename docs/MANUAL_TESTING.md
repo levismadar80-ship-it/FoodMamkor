@@ -6,6 +6,24 @@
 
 ---
 
+## Producer Detail Page (feature/meh-producer-detail-redesign, 2026-04-18)
+
+- [ ] Mobile 375px: producer name visible above fold without scrolling — פתחי דף עסק ב-DevTools מובייל 375px → h1 נראה מבלי לגלול
+- [ ] Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם
+- [ ] Mobile: scroll past CTA → sticky bar slides in — גלולי מתחת לכפתור → StickyContactBar מגלשת מלמטה
+- [ ] Mobile: scroll back to CTA → sticky bar slides out — גלולי חזרה למעלה → הבר נעלמת
+- [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
+- [ ] No images: category emoji + initials placeholder (not leaf) — עסק ללא תמונות → placeholder 120px עם emoji + 2 אותיות ראשונות
+- [ ] With images: first image loads eagerly — פתחי Network tab → `images[0]` נטען עם `priority` (preload link בhead)
+- [ ] Desktop: no duplicate PrimaryContactButton — ב-lg viewport → CTA רק בsidebar, לא בcolumn הראשי
+- [ ] Reviews: not fetched until section scrolls into view — פתחי Network tab → אין בקשה ל-`/reviews` בטעינה; מופיעה רק כשגוללים לביקורות
+- [ ] Gallery dots: 44px tap targets on mobile — Inspect element → כל dot button `min-h-[44px] min-w-[44px]`
+- [ ] Review dates: display correctly in RTL — ביקורת עם תאריך → התאריך מוצג ב-`dir="ltr"` (לא הפוך)
+- [ ] contact_name shows in main column — עסק עם contact_name → "מאחורי העסק: [שם]" מתחת ל-short_description
+- [ ] highlights strip shows correct chips — grass_fed=true → 🌾 מרעה חופשי; delivery_areas non-empty → 🚚 משלוח
+
+---
+
 ## Legal pages (אפריל 2026)
 
 - [ ] /privacy — פתחי בדפדפן — מכיל "תיקון 13" ושם Cloudinary/Google

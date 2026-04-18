@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Leaf } from "@phosphor-icons/react";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 
-export default function ImageGallery({ images = [], producerId = null }) {
+export default function ImageGallery({ images = [], producerId = null, categoryEmoji = null, producerInitials = "" }) {
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -37,17 +36,26 @@ export default function ImageGallery({ images = [], producerId = null }) {
   }, [images.length]);
 
   if (!images.length) {
-    // MEH-25 Pattern 2: empty-image placeholder spec — warm cream
-    // background, max-height 280px so it doesn't dominate, and a
-    // Hebrew caption instead of just a leaf emoji.
     return (
       <div
-        className="relative w-full min-h-[200px] max-h-[280px] rounded-[12px] flex flex-col items-center justify-center gap-3 text-site-muted"
-        style={{ background: "#F5F0E8", height: "min(280px, 50vw)" }}
+        className="relative w-full h-[120px] md:h-[180px] rounded-[12px] flex flex-col items-center justify-center gap-2 text-site-muted"
+        style={{ background: "#F5F0E8" }}
         data-testid="gallery-empty-state"
       >
-        <Leaf size={44} weight="duotone" className="text-primary/70" aria-hidden="true" />
-        <p className="text-sm font-medium">בית עסק זה טרם הוסיף תמונות</p>
+        <div className="flex items-center gap-2">
+          {categoryEmoji && (
+            <span className="text-5xl" aria-hidden="true">{categoryEmoji}</span>
+          )}
+          {producerInitials && (
+            <span
+              className="text-sm font-bold"
+              style={{ color: "#2e6853", opacity: 0.6 }}
+              aria-hidden="true"
+            >
+              {producerInitials}
+            </span>
+          )}
+        </div>
         {producerId && (
           <div className="absolute top-3 start-3 z-10">
             <FavoriteButton producerId={producerId} variant="gallery" />
@@ -59,7 +67,7 @@ export default function ImageGallery({ images = [], producerId = null }) {
 
   return (
     <div
-      className="relative h-64 md:h-96 rounded-[12px] overflow-hidden bg-gray-100"
+      className="relative h-52 rounded-[12px] overflow-hidden bg-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -68,6 +76,7 @@ export default function ImageGallery({ images = [], producerId = null }) {
         src={images[current]}
         alt={`תמונה ${current + 1}`}
         fill
+        priority={current === 0}
         className="object-cover"
         sizes="(max-width: 768px) 100vw, 60vw"
       />
@@ -97,16 +106,22 @@ export default function ImageGallery({ images = [], producerId = null }) {
             <span aria-hidden="true">→</span>
           </button>
           {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
             {images.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setCurrent(i)}
-                className={`w-3 h-3 rounded-full transition focus-visible:ring-2 focus-visible:ring-primary/40 ${i === current ? "bg-white" : "bg-white/50 hover:bg-white/80"}`}
+                className="w-11 h-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
                 aria-label={`עבור לתמונה ${i + 1}`}
                 aria-current={i === current ? "true" : undefined}
-              />
+              >
+                <span
+                  className={`block w-2.5 h-2.5 rounded-full transition pointer-events-none ${
+                    i === current ? "bg-white" : "bg-white/50 hover:bg-white/80"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </>

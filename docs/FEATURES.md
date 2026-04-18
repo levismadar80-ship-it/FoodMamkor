@@ -35,6 +35,11 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Mobile bottom-sheet for selected producer | `MapClient.jsx` |
 | ✅ | v1 | Category legend = filter (toggleable) | `MapClient.jsx` |
 | ✅ | v1 | Producer detail page with sticky contact sidebar | `frontend/app/[slug]/page.js`, `producer/[id]/ProducerDetail.jsx` |
+| ✅ | v1 | Producer detail — mobile column order fixed (name above fold), inline mobile CTA, IO StickyContactBar | `producer/[id]/ProducerDetail.jsx` |
+| ✅ | v1 | Producer detail — short_description subtitle + contact_name micro-line | `producer/[id]/ProducerDetail.jsx` |
+| ✅ | v1 | Producer detail — highlights strip (grass_fed/organic/delivery/kosher chips) | `producer/[id]/ProducerDetail.jsx` |
+| ✅ | v1 | Producer detail — vacation banner + sidebar dim + sticky bar vacation state | `producer/[id]/ProducerDetail.jsx` |
+| ✅ | v1 | ImageGallery compact placeholder (emoji+initials, h-120px) | `frontend/components/ImageGallery.jsx` |
 | ✅ | v1 | Producer reviews + star ratings (1 review per user, upsert) | `frontend/components/ProducerReviews.jsx` |
 | ✅ | v1 | Image gallery with keyboard nav + 44px touch targets | `frontend/components/ImageGallery.jsx` |
 | ✅ | v1 | Slug-based producer URLs (`/cow-farm-name`) | `frontend/app/[slug]/page.js` |
