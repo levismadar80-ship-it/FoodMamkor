@@ -52,7 +52,7 @@ export default function FavoritesPage() {
             🌿
           </div>
           <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
-            עדיין לא שמרת עסקים 🌿
+            עדיין לא שמרת בתי עסק 🌿
           </h2>
           <p className="text-site-muted mb-6 max-w-md mx-auto">
             לחצי על הלב בכרטיסיית עסק כדי לשמור אותו כאן לגישה מהירה.

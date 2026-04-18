@@ -325,7 +325,7 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               href={producerHref}
               className="border border-primary text-primary text-[13px] font-medium hover:bg-primary hover:text-white transition rounded-[12px] px-4 py-2"
             >
-              מידע נוסף
+              לפרופיל המלא
             </Link>
           </div>
         </div>

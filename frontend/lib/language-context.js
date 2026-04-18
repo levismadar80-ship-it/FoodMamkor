@@ -64,7 +64,7 @@ const translations = {
 
     // Main CTAs
     cta_show_on_map: "הצג במפה",
-    cta_more_info: "מידע נוסף",
+    cta_more_info: "לפרופיל המלא",
   },
   en: {
     // Header + BottomNav

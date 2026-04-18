@@ -126,7 +126,7 @@ function SearchPageBody() {
       {!loading && q && (
         <p className="text-site-muted mb-8 text-sm">
           {totalHits === 0
-            ? "לא מצאנו התאמות — נסי ביטוי אחר 🌱"
+            ? "לא מצאנו התאמות — נסי מילה אחרת או גלי לפי קטגוריות 🌱"
             : `${totalHits} תוצאות`}
         </p>
       )}
@@ -200,7 +200,7 @@ function SearchPageBody() {
                 🌿
               </div>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
-                לא מצאנו התאמות 🌱
+                לא מצאנו התאמות — נסי מילה אחרת 🌱
               </h2>
               <p className="text-site-muted mb-6 max-w-md mx-auto">
                 נסי לשנות את החיפוש או לעיין בקטגוריות בדף הבית.
