@@ -146,9 +146,21 @@ body.sheet-open .cookie-banner {
    docs/archive/PREMIUM_DESIGN.md
    ============================================================= */
 
-/* Ken Burns — slow parallax zoom/pan on hero + parallax dividers.
-   Two directions so adjacent sections don't drift in lock-step.
-   Disabled for prefers-reduced-motion. */
+/* Hero parallax: fixed attachment creates the depth effect on desktop.
+   Coarse-pointer (touch) devices fall back to scroll — iOS Safari ignores
+   background-attachment: fixed and would otherwise render a cropped freeze. */
+.hero-parallax {
+  background-attachment: fixed;
+}
+@media (pointer: coarse) {
+  .hero-parallax {
+    background-attachment: scroll;
+  }
+}
+
+/* Ken Burns — slow parallax zoom/pan on parallax dividers (ParallaxQuote,
+   EventsClient hero, etc.). Two directions so adjacent sections don't
+   drift in lock-step. Disabled for prefers-reduced-motion. */
 @keyframes kenburns-right {
   0%   { transform: scale(1) translate(0%, 0%); }
   100% { transform: scale(1.08) translate(-2%, -1%); }
