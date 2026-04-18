@@ -186,6 +186,7 @@ export default function MapComponent({
         if (prev) refreshMarkerIcon(prev);
         refreshMarkerIcon(producerId);
         const latlng = entry.marker.getLatLng();
+        if (!latlng || isNaN(latlng.lat) || isNaN(latlng.lng)) return;
         // Suppress the "search this area" banner on programmatic flyTo.
         programmaticMoveRef.current = true;
         mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });

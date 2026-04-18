@@ -338,14 +338,21 @@ export default function MapPage() {
     // north===south and east===west. Detect this and fall back to `mapBounds`
     // (React state), which is only updated by real user-initiated moveend events
     // on the VISIBLE map — so after any pan it holds the correct viewport.
+    // Use NE/SW corner accessors (same data as getNorth/etc, but Leaflet's
+    // canonical viewport API). A hidden (display:none, 0×0 px) container makes
+    // getBounds() collapse to a single point → ne.lat === sw.lat. Detect and
+    // fall back to mapBounds (React state), which is set only by real moveend
+    // events from the VISIBLE map.
     const rawBounds = mapRef.current?.getBounds();
+    const ne = rawBounds?.getNorthEast();
+    const sw = rawBounds?.getSouthWest();
     const boundsAreValid =
-      rawBounds &&
-      rawBounds.getNorth() !== rawBounds.getSouth() &&
-      rawBounds.getEast() !== rawBounds.getWest();
+      ne && sw &&
+      !isNaN(ne.lat) && !isNaN(ne.lng) &&
+      !isNaN(sw.lat) && !isNaN(sw.lng) &&
+      (ne.lat !== sw.lat || ne.lng !== sw.lng);
     const liveBounds = boundsAreValid
-      ? { north: rawBounds.getNorth(), south: rawBounds.getSouth(),
-          east: rawBounds.getEast(), west: rawBounds.getWest() }
+      ? { north: ne.lat, south: sw.lat, east: ne.lng, west: sw.lng }
       : mapBounds;
 
     setCommittedBounds(liveBounds);
