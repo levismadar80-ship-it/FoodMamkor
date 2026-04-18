@@ -5,41 +5,53 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #148 (feature/meh-60-producers-frontend-polish) — MERGED to staging
-                 #149 (feature/meh-61-producers-backend-sort) — MERGED to staging
-                 #150 (feature/meh-producer-detail-sidebar-v2) — MERGED to staging
+PR merged/opened: #154 (feature/meh-61b-header-search) — MERGED to staging
+                 #155 (feature/meh-61c-url-filter-persistence) — MERGED to staging
+                 #156 (feature/meh-61d-login-improvements) — MERGED to staging
+                 #157 (feature/meh-61e-hero-redesign) — OPEN draft, awaiting review
 Summary:
-  PR #148 (frontend): URL param sync (useSearchParams + router.replace in
-    ProducersClient — filters persist in URL / back-button / shareable links),
-    Suspense boundary on producers page.jsx, category emoji + initials placeholder
-    in ProducerCard (replaces Leaf icon), lib/analytics.js Option-C stub
-    (console.log dev, no-op prod) + 4 trackEvent call sites,
-    RecentlyViewedStrip component (localStorage pills above chip bar).
-  PR #149 (backend): GET /producers — default ORDER BY created_at DESC for
-    non-geo path (was undefined order), sort=rating param (avg_rating DESC),
-    new filter params: city (producer's own city), is_available_today, grass_fed.
-    Updated docs/DATA.md.
-  PR #150 (producer detail sidebar v2): word-initial initials fix (גבינות הר הגולן
-    → "גה" not "גב"), vacation banner amber→slate, is_available_today chip
-    suppressed on vacation, sidebar declutter (removed header/"צרי קשר"/WA share
-    button/MapButton), main column action row (MapButton + gray WA share),
-    highlights strip icon-only below sm:.
+  Wave 3 (MEH-61) fully complete:
+  PR #154 (61b): mobile search icon in Header between logo and hamburger;
+    "/" keyboard shortcut → /search?focus=1 (guards against active input fields).
+  PR #155 (61c): chips state init from URL params on homepage; updateURL
+    rebuilt to write all state (category, city, kosher, organic, delivery, verified)
+    on every toggle; initial load merges chip params into API call.
+  PR #156 (61d): register page — brand mark (Leaf icon), heading "הצטרפי לקהילה",
+    value-prop strip (🗺️❤️⭐), OAuth wrapped in guard with "— או —" divider,
+    PasswordStrength component, per-field onBlur validation + eye toggle.
+  PR #157 (61e): search pill padding aligned to DESIGN.md spec (gap-2.5 px-6 py-3.5);
+    aria-label on hero <section> and role="search" container.
 
 ## Current state
-Branch: staging (clean, all three PRs squash-merged)
-Staging HEAD: 1fc2d2d (HANDOFF conflict resolution on top of d44eade/#149)
+Branch: feature/meh-61e-hero-redesign (PR #157 open draft)
+Staging: clean after PRs #154 #155 #156 merged.
 
 ## Next task
-Linear issue: MEH-61 Wave 3 — 5 features, one PR each (in priority order):
-  1. First-visit onboarding tours (useFirstVisit hook, 4 locations)
-  2. Global search in Header (desktop MagnifyingGlass → /search?focus=1)
-  3. URL-param filter persistence on homepage (category, city, delivery)
-  4. Login/register page improvements (forgot-password, value-prop strip, placeholders)
-  5. Hero redesign (100vh full-bleed, parallax, DESIGN.md spec — do last)
+MEH-61a — First-visit onboarding tours (deferred, last in Wave 3 priority):
+  - useFirstVisit hook (localStorage flag, resets after 7 days)
+  - 4 tooltip locations: producers grid, chip filters, map tab, profile tab
+  - "x" dismiss + "הבנתי" CTA on each tooltip
+  - Stagger: show first tooltip after 2s, each subsequent after user dismisses previous
 
-First step: confirm which Wave 3 feature to start → git checkout staging →
-  git pull origin staging → git checkout -b feature/meh-6X-[description]
-Do NOT start until user confirms which feature.
+After #157 is approved → git checkout staging → git pull → git checkout -b feature/meh-61a-onboarding
+
+## Key decisions (don't revisit)
+| Decision | Reason | Date |
+|----------|--------|------|
+| CHIPS_CONFIG replaces HOME_TOGGLE_CHIPS | Single source of truth for chip definitions | April 2026 |
+| ProducersClient uses ChipScrollRow (done) | Inline chips swapped for ChipScrollRow | April 2026 |
+| /producers — build from scratch | Migrating homepage is too risky | April 2026 |
+| Analytics — Option C (lib/analytics.js) | No backend PR needed | April 2026 |
+| No sidebar on /producers | Top bar fits Israeli UX + filter count | April 2026 |
+| Placeholder: category emoji + initials | Better identity than leaf icon | April 2026 |
+| ProducerCard: remove 5-icon footer | 0/12 benchmarks show inline contact row | April 2026 |
+| RTL: logical properties only | Physical left-*/right-* cause RTL bugs | April 2026 |
+| Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
+| Worktree commits must come from main repo | Signing server rejects /tmp worktree paths | April 2026 |
+| Sidebar: no "צרי קשר" header | Primary CTA speaks for itself | April 2026 |
+| WA share button: gray outlined | Avoids green conflict with primary WA CTA | April 2026 |
+| Vacation banner: slate not amber | Neutral unavailable vs warm/sale semantics | April 2026 |
+| ParallaxQuote uses Ken Burns (not fixed) | "Fixed feels dated" — deliberate choice | April 2026 |
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
