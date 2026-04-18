@@ -344,7 +344,7 @@ function RegisterProducerPageBody() {
                     <button
                       type="button"
                       onClick={() => setUploadedImages(uploadedImages.filter((_, j) => j !== i))}
-                      className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
+                      className="absolute top-1 start-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
                     >
                       ✕
                     </button>

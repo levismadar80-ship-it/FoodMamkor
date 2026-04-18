@@ -73,7 +73,7 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label="סגרי חלונית"
-          className="absolute top-3 right-3 text-site-muted hover:text-site-text transition p-1 rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 start-3 text-site-muted hover:text-site-text transition p-1 rounded focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
