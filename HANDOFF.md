@@ -5,48 +5,62 @@
 
 ## Last session
 Date: 2026-04-18
-PR merged/opened: #144 (feature/producers-grid-client) — MERGED to staging
-Summary: PR-1 of /producers discovery redesign. Converted /producers from
-  no-filter SSR page to SSR shell + ProducersClient (client island). Added
-  4 boolean filter chips (כשר / אורגני / משלוח / מאומת), grid-cols-2 mobile
-  fix, active-filter strip with counter, 3 honest empty states. Extracted
-  buildChipParams + CHIPS_CONFIG to lib/producer-filters.js (shared between
-  homepage and ProducersClient). Resolved merge conflict with #142 (ChipScrollRow
-  landed on staging) by keeping ChipScrollRow and replacing HOME_TOGGLE_CHIPS
-  with CHIPS_CONFIG.
+PR merged/opened: #148 (feature/meh-60-producers-frontend-polish) — DRAFT open
+                 #149 (feature/meh-61-producers-backend-sort) — DRAFT open
+Summary: Two parallel PRs for /producers discovery page polish.
+  PR #148 (frontend): URL param sync (useSearchParams + router.replace in
+    ProducersClient so filters persist in URL / back-button / shareable links),
+    Suspense boundary on producers page.jsx (required for useSearchParams),
+    category emoji + initials placeholder in ProducerCard (replaces Leaf icon),
+    lib/analytics.js Option-C stub (console.log dev, no-op prod) + 4 trackEvent
+    call sites, RecentlyViewedStrip component (localStorage pills above chip bar).
+  PR #149 (backend): GET /producers — default ORDER BY created_at DESC for non-geo
+    path (was undefined order), sort=rating param (avg_rating DESC), new filter
+    params: city (producer's own city), is_available_today, grass_fed.
+    Updated docs/DATA.md.
 
 ## Current state
-Branch: feature/producers-grid-client (merged, can delete)
-Staging: PR #144 squash-merged. #142 (ChipScrollRow) also already on staging.
+Branch: feature/meh-61-producers-backend-sort (main repo checkout after PR B work)
+  feature/meh-60-producers-frontend-polish — pushed, PR #148 open (draft), lint ✅
+  feature/meh-61-producers-backend-sort — pushed, PR #149 open (draft), lint queued
 
 ## Next task
-Linear issue: PR-2 — /producers "בעיר שלי" chip + ChipScrollRow integration
-Description: Now that #142 (ChipScrollRow) and #144 (ProducersClient) are on
-  staging, add "בעיר שלי" chip to ProducersClient using LocationModal (already
-  on staging from PR #130). Also swap ProducersClient's inline chip buttons for
-  ChipScrollRow (same pattern as homepage).
-First step: git checkout staging → git pull origin staging →
-  git checkout -b feature/producers-filter-pr2
+Both PRs need user review + Vercel preview check before merging to staging.
+Linear issue MEH-61 describes Wave 3 (5 features, separate PRs each):
+  1. First-visit onboarding tours (useFirstVisit hook, 4 locations)
+  2. Global search in Header (desktop MagnifyingGlass icon → /search?focus=1)
+  3. URL-param filter persistence on homepage
+  4. Login/register page improvements
+  5. Hero redesign (100vh full-bleed, parallax, DESIGN.md spec — do last)
+
+First step for Wave 3: confirm user wants to proceed → git checkout staging →
+  git pull origin staging → git checkout -b feature/meh-6X-[description]
+Do NOT start until user says go.
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
 | CHIPS_CONFIG replaces HOME_TOGGLE_CHIPS | Single source of truth for chip definitions | April 2026 |
-| ProducersClient uses inline chip buttons (PR-1) | ChipScrollRow swap deferred to PR-2 | April 2026 |
+| ProducersClient uses ChipScrollRow (PR-2 done) | Inline chips swapped for ChipScrollRow | April 2026 |
 | /producers — build from scratch | Migrating homepage is too risky | April 2026 |
 | Analytics — Option C (lib/analytics.js) | No backend PR needed | April 2026 |
 | No sidebar on /producers | Top bar fits Israeli UX + filter count | April 2026 |
 | Placeholder: category emoji + initials | Better identity than leaf icon | April 2026 |
 | ProducerCard: remove 5-icon footer | 0/12 benchmarks show inline contact row | April 2026 |
 | RTL: logical properties only | Physical left-*/right-* cause RTL bugs | April 2026 |
+| Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
+| Worktree for parallel PRs but sign from main | Signing server rejects /tmp paths | April 2026 |
 
 ## Open PRs
-None currently open.
+- #148 feature/meh-60-producers-frontend-polish → staging (draft, lint ✅, Vercel building)
+- #149 feature/meh-61-producers-backend-sort → staging (draft, lint queued, Vercel building)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — awaiting decision
-- /producers sort param needs backend PR (Phase 2)
 - ProducerCard heart/favorite — Phase C not yet implemented
+- git worktree + signing server: /tmp worktrees can't sign commits; must apply
+  patch in main repo. Workaround: save diff, remove worktree, checkout branch
+  in main repo, apply patch, commit. Add to regression notes if this recurs.
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)
