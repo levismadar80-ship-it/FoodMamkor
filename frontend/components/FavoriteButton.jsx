@@ -53,7 +53,12 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
       } else {
         await api.post(`/users/me/favorites/${producerId}`);
         setFavorited(true);
-        showToast("נשמר למועדפים ❤️");
+        if (!localStorage.getItem("favorite_hint_shown")) {
+          localStorage.setItem("favorite_hint_shown", "1");
+          showToast('נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית', "success", 4000);
+        } else {
+          showToast("נשמר למועדפים ❤️");
+        }
       }
     } catch {
       showToast("משהו השתבש, נסי שוב", "error");

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
-import { Heart, List, X } from "@phosphor-icons/react";
+import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
 
 /**
  * Header (MEH-29 sticky / active / transparent) — layered on top of the
@@ -39,6 +39,7 @@ export default function Header() {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -197,7 +198,15 @@ export default function Header() {
             reads against the dark gradient; the avatar keeps its solid
             primary fill either way (the circle itself provides local
             contrast regardless of backdrop). */}
-        <div className="hidden md:flex items-center justify-self-end">
+        <div className="hidden md:flex items-center gap-3 justify-self-end">
+          {/* Search trigger — desktop only */}
+          <button
+            onClick={() => router.push("/search?focus=1")}
+            aria-label="חיפוש"
+            className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition"
+          >
+            <MagnifyingGlass size={20} color="#6B6B6B" weight="regular" aria-hidden="true" />
+          </button>
           {user ? (
             <UserMenu
               user={user}
@@ -260,7 +269,7 @@ export default function Header() {
             className="text-sm text-site-muted border border-[#e8e0d0] rounded-full px-3 py-1 inline-flex items-center gap-1.5"
             aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
           >
-            <span className={lang === "he" ? "font-bold text-primary" : ""}>עב</span>
+            <span className={lang === "he" ? "font-bold text-primary" : ""}>עברית</span>
             <span className="text-border">/</span>
             <span className={lang === "en" ? "font-bold text-primary" : ""}>EN</span>
           </button>

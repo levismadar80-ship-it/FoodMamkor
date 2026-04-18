@@ -13,17 +13,26 @@
  * exist without throwing.
  */
 
+// `matches` lists every DB category.name variant the chip should resolve to.
+// Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
+// older admin-created rows — covering all known variants means the chip shows
+// whenever any of them exists, instead of silently disappearing.
 export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
-  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר"] },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות"] },
+  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר", "בשר ודגים", "בשר, עוף ודגים"] },
+  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"] },
   { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"] },
-  { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם"] },
+  { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"] },
 ];
 
+// MEH-58 Phase 3: RTL order right→left. Boolean toggles are
+// independent; category is radio-group. NO "פתוחים השבוע" chip
+// (is_available_today field does not exist on producers).
 export const TOGGLE_CHIPS = [
-  { key: "organic", label: "אורגני" },
-  { key: "has_delivery", label: "משלוח" },
+  { key: "has_delivery", label: "🚚 משלוח אליי" },
+  { key: "verified", label: "✓ מאומתים" },
+  { key: "organic", label: "🌿 אורגני" },
+  { key: "grass_fed", label: "🐄 גראס פד" },
 ];
 
 /**
@@ -53,6 +62,8 @@ export function chipStateToParams(state, dbCategories) {
   }
   if (state.organic) params.organic = true;
   if (state.has_delivery) params.has_delivery = true;
+  if (state.verified) params.verified = true;
+  if (state.grass_fed) params.grass_fed = true;
   return params;
 }
 
@@ -89,7 +100,10 @@ export function boundsToCenterRadius(bounds) {
       Math.cos(toRad(bounds.north)) *
       Math.sin(dLng / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  // Round up so the fetched ring just covers the viewport.
-  const radius_km = Math.ceil(EARTH_RADIUS_KM * c);
+  // Round up so the fetched ring just covers the viewport. Clamp at 50 km:
+  // the backend Haversine-in-SQL path full-scans the producers table and
+  // 500s on very large radii (≥70 km observed). 50 km still covers the
+  // largest realistic "zoomed-out Israel" viewport without the timeout.
+  const radius_km = Math.min(50, Math.ceil(EARTH_RADIUS_KM * c));
   return { lat, lng, radius_km };
 }

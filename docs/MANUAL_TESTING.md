@@ -46,6 +46,30 @@
 
 ---
 
+## Filter chips — two-row layout (feature/meh-two-row-filter-chips, אפריל 2026)
+
+### /map — mobile (375px)
+- [ ] פתחי /map בחלון 375px — שורת קטגוריות מוצגת (כל · בשר ועוף · ...) ושורת תכונות מוצגת מתחתיה (🚚 משלוח אליי · ✓ מאומתים · ...)
+- [ ] שתי שורות — edge-fade משני הצדדים (ימין + שמאל)
+- [ ] גללי בשורת הקטגוריות שמאלה — גריד נגלל, הצ'יפ הראשון לא נכרת (סיום עם w-8 spacer)
+- [ ] לחצי על "לחם ומאפה" (הצ'יפ בקצה שמאל) — הצ'יפ נצבע bg-primary **ומתגלל אוטומטית לתוך ה-viewport** (scrollIntoView)
+- [ ] לחצי על "בשר ועוף" — הצ'יפ נצבע bg-primary; תחת שורת התכונות מופיע tag ירוק "× בשר ועוף" + קישור "× נקי הכל"
+- [ ] לחצי על "🌿 אורגני" — tag נוסף "× 🌿 אורגני" מופיע ליד הקודם
+- [ ] לחצי על × בתוך ה-tag "× בשר ועוף" — הסינון מוסר, הצ'יפ "בשר ועוף" כבה, "כל" שוב פעיל
+- [ ] לחצי על "× נקי הכל" — כל הסינונים מאופסים, אזור ה-tags נעלם
+- [ ] בדיקת responsive — פתחי ב-375 / 430 / 768 / 1024 / 1280px — בכל גודל אין צ'יפ שנכרת ללא fade נראה, הצ'יפ הפעיל תמיד גלוי
+
+### /map — desktop
+- [ ] פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל
+
+### דף הבית — filters מעל גריד היצרנים
+- [ ] פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל
+- [ ] לחצי "אורגני" — הצ'יפ נצבע; שורת סיכום "מסנן לפי: אורגני" מופיעה מעל הגריד
+- [ ] הפעילי 2 צ'יפים — הסיכום מציג את שניהם מופרדים ב-·
+- [ ] כבי את כל הצ'יפים — שורת הסיכום נעלמת
+
+---
+
 ## Analytics — Producer + Admin dashboards (feature/producer-analytics, April 2026)
 
 ### Tracking infrastructure
@@ -533,17 +557,23 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] `cd frontend && npx vitest run --reporter=verbose` — all 33 tests pass
 - [ ] Stop hook runs vitest automatically on every task completion
 
-### ProducerCard (13 tests)
-- [ ] Renders all fields when fully populated
-- [ ] Hides phone/instagram/WhatsApp buttons when those fields are null
-- [ ] Verified badge only when is_verified=true
-- [ ] Premium badge only when plan="premium"
-- [ ] Availability badge only when is_available_today=true
-- [ ] No reviews line when reviews_count=0
-- [ ] No top product when top_product_name=null
-- [ ] No price when price_range and starting_price_label are null
-- [ ] Image placeholder when images array is empty
-- [ ] Uses slug for href when available, falls back to /producer/:id
+### ProducerCard — Phase A → B → C redesign (2026-04-18)
+- [ ] **Anatomy** — image (1:1 mobile, 4:3 desktop) → name row with inline `★ rating · count` → location dot + city + distance → description line → max-2 pill row → footer (price + primary-method hint). No contact-icon row. No CTA link.
+- [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
+- [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
+- [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
+- [ ] **Availability dot** — `is_available_today=true` → green; `availability_status="vacation"` → orange (overrides even if `is_available_today=true`); neither → no dot.
+- [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
+- [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
+- [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
+- [ ] **Heart — guest flow** — tap heart while logged out → heart fills red, snackbar appears with "שמרתי — התחברי לראות את כל המועדפים שלך" and a `התחברי` link. Tap link → `/login?next=<current-url>`. After login, snackbar "נשמר למועדפים ❤️" appears and the favorite is persisted server-side.
+- [ ] **Heart — authed flow** — tap heart while logged in → heart fills, `POST /users/me/favorites/{id}` fires, toast "נשמר למועדפים ❤️". Tap again → unfills, `DELETE` fires, toast "הוסר מהמועדפים".
+- [ ] **Heart — error revert** — disable network, tap heart → heart fills then reverts, error toast "משהו השתבש, נסי שוב".
+- [ ] **Heart — own-card hide** — as a logged-in producer, navigate to a page showing your own producer card (e.g. `/favorites` if you favorited yourself, or admin → producers index). Heart is absent.
+- [ ] **Heart — click doesn't navigate** — tapping the heart does NOT open the producer detail page.
+- [ ] **RTL** — heart sits at `top-3 start-3` (physical right in Hebrew). Rating + distance numerics stay LTR via `dir="ltr"` spans, no parentheses flipping.
+- [ ] **onClick preserved** — on `/map`, tapping a card body (outside heart / Link) still pans the map.
+- [ ] **Skeleton** — while `producers` loads, `SkeletonProducerGrid` renders the exact-same anatomy (square→4:3 image + body rows + footer row) with shimmer. No CLS jump when real cards arrive.
 
 ### HomeProductCard (16 tests)
 - [ ] Renders image when available, placeholder when null
@@ -689,6 +719,40 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] "הצגי הכל" button still clears city filter
 - [ ] Mobile floating CTA button still works
 - [ ] Disclaimer banner still visible above the grid
+
+---
+
+## RTL Layout Regression — logical vs. physical classes
+
+Added with `feature/rtl-regression-protection`.
+
+### Login page — eye toggle
+- [ ] `/login` — password field — eye toggle button appears on the **right** side of the input (physical right, inside `dir="ltr"` input — intentional exception)
+- [ ] Toggle shows/hides password
+
+### Modal close buttons (start-3)
+- [ ] Click favorite when logged out → LoginPromptModal opens → ✕ close button appears on the **top-right** of the modal (RTL inline-start = physical right)
+
+### Admin sidebar (start-0)
+- [ ] Log in as admin → `/admin` — sidebar appears on the **right** side; main content fills the left
+
+### ProducerCard badges (start-3)
+- [ ] Homepage — if a "פרמיום" or "זמין היום" badge appears on a card, it is in the **top-right** corner of the card image (inline-start in RTL = physical right)
+
+### ESLint CI
+- [ ] Open a PR to staging → GitHub Actions "Frontend lint" job runs and passes (exits 0 even with pre-existing warnings)
+- [ ] After PR #137 merges → run lint locally; RTL warnings should be nearly zero
+
+---
+
+## Session Handoff
+
+Added with `feature/session-handoff`.
+
+- [ ] Start new session → Claude reads HANDOFF.md before any other file (Rule 1 step a)
+- [ ] End of session → HANDOFF.md updated with: last PR number, current branch state, next task, any new decisions
+- [ ] `/compact` fires mid-session → HANDOFF.md updated immediately before continuing work
+- [ ] Open new session next day → "Next task" section matches what was left unfinished
 
 ---
 

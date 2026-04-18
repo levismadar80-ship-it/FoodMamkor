@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { setUserLocation } from "@/lib/user-location";
 import { motion } from "framer-motion";
-import { Crosshair, House, Leaf } from "@phosphor-icons/react";
+import { CaretDown, Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import SmartSearch from "@/components/SmartSearch";
@@ -18,6 +19,11 @@ import FadeInSection from "@/components/FadeInSection";
 import { showToast } from "@/lib/toast";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
+import { useUserCity } from "@/lib/use-user-city";
+import LocationModal from "@/components/LocationModal";
+import LocationBanner from "@/components/LocationBanner";
+import ChipScrollRow from "@/components/ChipScrollRow";
+import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
 
 const PAGE_SIZE = 8;
 
@@ -65,10 +71,19 @@ function matchCategoryId(cards, categories) {
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const router = useRouter();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
+  const [filters, setFilters] = useState(() => {
+    if (typeof window === "undefined") return { category: "", delivery_city: "", has_delivery: false };
+    const p = new URLSearchParams(window.location.search);
+    return {
+      category: p.get("category") || "",
+      delivery_city: p.get("city") || "",
+      has_delivery: p.get("delivery") === "1",
+    };
+  });
   // MEH-23 — persist visibleCount + scrollY across navigations so the
   // "Load more" expansion isn't lost when a user opens a producer and
   // returns via the back button. Read on mount only; subsequent changes
@@ -83,6 +98,24 @@ export default function HomePage() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [showNewUserHint, setShowNewUserHint] = useState(false);
+  const { city: userCity, setCity: setUserCity } = useUserCity();
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
+      setShowNewUserHint(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showNewUserHint) return;
+    const onStorage = () => {
+      if (localStorage.getItem("favorite_hint_shown")) setShowNewUserHint(false);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [showNewUserHint]);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
@@ -144,6 +177,18 @@ export default function HomePage() {
     return () => window.removeEventListener("pagehide", stash);
   }, []);
 
+  const updateURL = (newFilters) => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    if (newFilters.category) p.set("category", newFilters.category);
+    else p.delete("category");
+    if (newFilters.delivery_city) p.set("city", newFilters.delivery_city);
+    else p.delete("city");
+    if (newFilters.has_delivery) p.set("delivery", "1");
+    else p.delete("delivery");
+    router.replace("?" + p.toString(), { scroll: false });
+  };
+
   const loadProducers = (params = {}) => {
     setProducersLoading(true);
     api
@@ -163,8 +208,10 @@ export default function HomePage() {
   const handleCategoryCardClick = (card) => {
     if (!card.categoryId) return;
     const newCat = String(card.categoryId);
-    setFilters({ ...filters, category: newCat });
-    loadProducers({ category: newCat, ...chipParams() });
+    const newFilters = { ...filters, category: newCat };
+    setFilters(newFilters);
+    updateURL(newFilters);
+    loadProducers({ category: newCat, ...buildChipParams(chips) });
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -181,51 +228,32 @@ export default function HomePage() {
     document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Build query params from active chips. Called by loadProducers callers
-  // and the chip toggle handler so every filter surface stays in sync.
-  const chipParams = (overrides = {}) => {
-    const c = { ...chips, ...overrides };
-    const p = {};
-    if (c.kosher) p.kosher = true;
-    if (c.organic) p.organic = true;
-    if (c.has_delivery) p.has_delivery = true;
-    if (c.verified) p.verified = true;
-    return p;
-  };
-
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    const params = chipParams({ [key]: !chips[key] });
+    const params = buildChipParams(chips, { [key]: !chips[key] });
     if (filters.category) params.category = filters.category;
+    if (key === "has_delivery") {
+      const newFilters = { ...filters, has_delivery: next.has_delivery };
+      setFilters(newFilters);
+      updateURL(newFilters);
+    }
     loadProducers(params);
   };
 
   const handleNearMe = () => {
-    if (!navigator.geolocation) {
-      showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
+    if (userCity) {
+      loadProducers({ delivery_city: userCity, ...buildChipParams(chips) });
+      document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-    setGeoLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        // MEH-12: cache for the session so all cards can show
-        // distance ("3.2 ק"מ ממך") without re-prompting.
-        setUserLocation(pos.coords.latitude, pos.coords.longitude);
-        loadProducers({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          radius_km: 15,
-          ...chipParams(),
-        });
-        setGeoLoading(false);
-        document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
-      },
-      () => {
-        setGeoLoading(false);
-        showToast("אפשרי גישה למיקום בהגדרות הדפדפן", "error");
-      },
-    );
+    setLocationModalOpen(true);
+  };
+
+  const handleCitySelected = (city) => {
+    setUserCity(city);
+    loadProducers({ delivery_city: city, ...buildChipParams(chips) });
+    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const visibleProducers = producers.slice(0, visibleCount);
@@ -275,8 +303,8 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-headline font-bold leading-tight"
-            style={{ fontSize: "clamp(42px, 6vw, 80px)", lineHeight: 1.15 }}
+            className="font-headline font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
+            style={{ lineHeight: 1.15 }}
           >
             {t("hero_title")}
           </motion.h1>
@@ -349,13 +377,12 @@ export default function HomePage() {
         <button
           type="button"
           onClick={scrollToProducers}
+          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
           className="absolute left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition-opacity scroll-hint"
           style={{ bottom: "32px" }}
           aria-label="גלול לרשימת בתי העסק"
         >
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
+          <CaretDown size={28} weight="bold" aria-hidden="true" />
         </button>
       </section>
 
@@ -378,6 +405,18 @@ export default function HomePage() {
           מכל רחבי הארץ
         </p>
       </section>
+
+      {/* MEH-41: location banner — appears after 3s if no city saved */}
+      <div className="mt-6">
+        <LocationBanner hasCity={!!userCity} onOpenModal={() => setLocationModalOpen(true)} />
+      </div>
+
+      {/* MEH-41: location modal — shared between hero button + banner */}
+      <LocationModal
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelectCity={handleCitySelected}
+      />
 
       {/* =========================
           CATEGORY GRID
@@ -500,7 +539,7 @@ export default function HomePage() {
           <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
             צפית לאחרונה
           </h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
             {recentlyViewed.map((p) => {
               const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
               const imgSrc = p.images?.[0];
@@ -547,29 +586,23 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Filter chips — task 12 */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-          {[
-            { key: "kosher", label: "כשר", icon: "✡️" },
-            { key: "organic", label: "אורגני", icon: "🌿" },
-            { key: "has_delivery", label: "משלוח", icon: "🚚" },
-            { key: "verified", label: "מאומת בלבד", icon: "✅" },
-          ].map((chip) => (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => toggleChip(chip.key)}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition shrink-0 ${
-                chips[chip.key]
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
-              }`}
-            >
-              <span aria-hidden="true">{chip.icon}</span>
-              {chip.label}
-            </button>
-          ))}
-        </div>
+        {/* Filter chips */}
+        <ChipScrollRow
+          variant="toggle"
+          chips={CHIPS_CONFIG}
+          activeKeys={chips}
+          onChipClick={toggleChip}
+          fadeBg="#F5F0E8"
+          className="mb-3"
+        />
+        {Object.values(chips).some(Boolean) && (
+          <p className="text-xs text-site-muted mb-4" aria-live="polite">
+            מסנן לפי:{" "}
+            {CHIPS_CONFIG.filter((c) => chips[c.key])
+              .map((c) => c.label)
+              .join(" · ")}
+          </p>
+        )}
 
         {filters.category && (
           <div className="mb-6 flex items-center gap-2">
@@ -582,8 +615,10 @@ export default function HomePage() {
             )}
             <button
               onClick={() => {
-                setFilters({ ...filters, category: "" });
-                loadProducers(chipParams());
+                const newFilters = { ...filters, category: "" };
+                setFilters(newFilters);
+                updateURL(newFilters);
+                loadProducers(buildChipParams(chips));
               }}
               className="text-sm text-primary hover:underline"
             >
@@ -605,6 +640,15 @@ export default function HomePage() {
               >
                 מציגים {Math.min(visibleCount, producers.length)} מתוך {producers.length}
               </p>
+            )}
+            {showNewUserHint && visibleProducers.length > 0 && (
+              <div className="flex items-center gap-2 bg-light border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
+                <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+                </span>
+                לחצי ❤️ בכרטיס עסק כדי לשמור עסקים שאהבת
+              </div>
             )}
             <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
               {visibleProducers.map((p, idx) => (

@@ -48,6 +48,7 @@ export default function UpgradePage() {
 
           {/* Premium Plan */}
           <div className="border-2 border-secondary rounded-[16px] p-6 relative">
+            {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs px-3 py-1 rounded-full">
               מומלץ
             </span>

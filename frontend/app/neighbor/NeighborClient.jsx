@@ -10,6 +10,7 @@ import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { showToast } from "@/lib/toast";
+import { useFirstVisit } from "@/lib/useFirstVisit";
 
 /**
  * /neighbor page — dedicated browse view for "מהמטבח של השכן".
@@ -31,6 +32,16 @@ export default function NeighborClient() {
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const isFirstVisit = useFirstVisit("neighbor_tour");
+  const [bannerVisible, setBannerVisible] = useState(false);
+
+  useEffect(() => {
+    if (isFirstVisit) {
+      setBannerVisible(true);
+      const t = setTimeout(() => setBannerVisible(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [isFirstVisit]);
 
   const loadListings = useCallback(() => {
     setLoading(true);
@@ -67,6 +78,20 @@ export default function NeighborClient() {
 
   return (
     <div>
+      {/* First-visit tour banner */}
+      {bannerVisible && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-4 z-[500] transition-opacity duration-500"
+          style={{ top: "80px", borderRadius: "10px", background: "#EAF3DE", color: "#2e6853", padding: "10px 16px" }}
+        >
+          <p className="text-sm font-medium text-center">
+            כאן שכנות מוכרות אוכל ביתי — גלגלי לגלות · לחצי על מוצר לפרטים
+          </p>
+        </div>
+      )}
+
       {/* ================= Hero =================
           PREMIUM_DESIGN: Ken Burns background image behind the title —
           kitchen/cooking photo from Unsplash. */}
@@ -204,6 +229,7 @@ export default function NeighborClient() {
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
+          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
           className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[900] bg-primary text-white px-6 py-3 rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.35)] flex items-center gap-2 font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label={showForm ? "סגור טופס פרסום מוצר" : "פרסמי מוצר חדש"}
         >

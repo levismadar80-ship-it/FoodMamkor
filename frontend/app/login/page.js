@@ -87,10 +87,17 @@ export default function LoginPage() {
           <p className="text-site-muted text-sm">ברוכה הבאה</p>
         </div>
 
+        {/* Value-prop strip */}
+        <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
+          <span>❤️ שמרי עסקים</span>
+          <span>⭐ דרגי</span>
+          <span>🏠 פרסמי מטבח ביתי</span>
+        </div>
+
         {/* Email + password form — FIRST per spec */}
         <form onSubmit={handleSubmit} className="space-y-3 text-right mb-5">
           <div>
-            <label htmlFor="login-email" className="sr-only">
+            <label htmlFor="login-email" className="block text-sm font-medium mb-1 text-right">
               אימייל
             </label>
             <input
@@ -100,9 +107,8 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               onBlur={() => setEmailTouched(true)}
               required
-              placeholder="האימייל שלך"
               aria-invalid={emailInvalid || undefined}
-              className={`w-full border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+              className={`w-full border rounded-[10px] px-4 py-3 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
@@ -119,7 +125,7 @@ export default function LoginPage() {
             )}
           </div>
           <div>
-            <label htmlFor="login-password" className="sr-only">
+            <label htmlFor="login-password" className="block text-sm font-medium mb-1 text-right">
               סיסמה
             </label>
             {/* Eye toggle — positioned at the END of the LTR password
@@ -134,9 +140,8 @@ export default function LoginPage() {
                 onBlur={() => setPasswordTouched(true)}
                 required
                 minLength={8}
-                placeholder="סיסמה (לפחות 8 תווים)"
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[10px] pr-11 pl-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                className={`w-full border rounded-[10px] pr-11 pl-4 py-3 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                   passwordInvalid
                     ? "border-red-400"
                     : passwordValidLength
@@ -148,6 +153,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
+                // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
                 aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
                 aria-pressed={showPassword}
@@ -166,6 +172,11 @@ export default function LoginPage() {
             {passwordValidLength && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
+            <div className="text-end mt-1">
+              <Link href="/forgot-password" className="text-xs text-site-muted hover:text-primary transition">
+                שכחת סיסמה?
+              </Link>
+            </div>
           </div>
           {error && (
             <p className="text-red-500 text-sm text-right" role="alert">

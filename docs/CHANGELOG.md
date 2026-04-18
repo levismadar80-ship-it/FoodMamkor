@@ -35,6 +35,29 @@ about:
 
 ---
 
+## 2026-04-18 — ProducerCard redesign (Phases A → B → C) (claude/review-mehamakor-docs-1Mre9)
+
+- **Phase A — deletions.** Removed the 5-icon footer contact row (WhatsApp / phone / website / email / Instagram — dead code on all grid views because `ProducerListOut` never carries those fields), the duplicate organic/grass-fed/kosher/category pill row, the `פרמיום` image overlay, the "מידע נוסף" text CTA, and the separate rating row. Replaced stray inline `style={{ borderRadius… }}` with Tailwind `rounded-2xl` / `rounded-t-2xl`.
+- **Phase B — structure.** Image is `aspect-square` on mobile, `lg:aspect-[4/3]` on desktop; `optimizeCloudinary(url, { aspectRatio: "4:3" })` now emits `c_fill,g_auto,ar_4:3` so portrait source images smart-crop on faces/saliency instead of losing heads. Rating folded into the name row as `★ 4.5 · 12` with `dir="ltr"`, gated to `reviews_count >= 3`. Location line gets a 8px availability dot (green = `is_available_today`, orange = `availability_status === "vacation"` which overrides) and inline distance. Description row uses `short_description → top_product_name` fallback with an 80-char soft cap, hidden entirely when both null. Organic / grass-fed / kosher folded into `BADGE_PRIORITY` (new order: verified > recommended > new > organic > grass_fed > kosher > delivery > products) so `topBadges(producer, 2)` is the single source of truth for pills. Footer = truncated price label + primary-method icon hint (decorative, not a link — the card is the CTA). Leaf fallback bumped to 72px. `SkeletonProducerCard` rewritten to match the new anatomy so Lighthouse CLS doesn't regress. Preserved: `onClick` root handler (used by `/map`), `active` ring, `?from={referrer}` on both image + title Links.
+- **Phase C — heart + post-login replay.** New `CardHeart` button at `top-3 start-3` on the image (logical start = right-side in Hebrew RTL per project convention). Logged-in flow: POST `/users/me/favorites/{id}` with optimistic fill, reverts + error toast on failure; reads initial state from a new `lib/favorites-cache.js` module that fetches `/users/me/favorites` once per session and fans out updates via a subscribe callback (no N+1 on a 24-card grid). Logged-out flow: fills heart locally, enqueues a `favorite:{id}` entry via `lib/post-login-action.js` into sessionStorage, and fires a snackbar `showToast("שמרתי — התחברי …", "info", 5000, { action: { label: "התחברי", href: "/login?next=…" } })`. `showToast` + `Toaster` extended to render an optional underlined action link alongside the message. `AuthContext` drains the pending action after every successful `login / register / loginWithGoogle / loginWithApple` (shared `afterLogin` helper), clears the cache on `logout` + `deleteAccount`, and hydrates the favorites cache on session boot. Heart is hidden when `user.producer_id === producer.id` (own-card edge case). `stopPropagation` + `aria-pressed` wired.
+- **Tests.** `__tests__/ProducerCard.test.jsx` rewritten for the new anatomy + heart (39 cases). `__tests__/badges.test.js` updated for the new 8-key priority order. `__tests__/BadgeRow.test.jsx` unchanged (passes). Two pre-existing failures on `staging` (`__tests__/mapChips.test.js` — TOGGLE_CHIPS out of sync with `lib/map-chips.js`; `__tests__/SettingsPage.test.jsx` — OAuth password card) are **not** caused by this PR and are left alone per the "no map / backend files" scope.
+- **Backend:** untouched. `npm run build` green at every phase boundary; `pytest tests/test_api.py` couldn't run in the Vercel-preview sandbox (needs live Postgres).
+
+## 2026-04-18 — Two-row filter chip layout + ChipScrollRow component (feature/meh-two-row-filter-chips)
+
+- **ChipScrollRow.jsx** — new shared component; `variant="category"` (radio, one active) and `variant="toggle"` (boolean toggles); inline-start + inline-end edge-fades; RTL scroll-end spacer; `min-w-0` so row can shrink in flex parents; active chip `scrollIntoView` on mount + on activation.
+- **MapClient.jsx** — split single chip row into category row + toggle row; active-filter tag chips (bg #EAF3DE, color #2e6853, each with × to remove) + "× נקי הכל" reset link below; border-top separator added to "קטגוריות" legend collapsible.
+- **map-chips.js** — expanded `CATEGORY_CHIPS.matches` to include seed DB names ("בשר ודגים", "לחמים ואפייה", etc.) so chips stay visible across DB naming variants.
+- **page.js** — replaced inline toggle chip div with `<ChipScrollRow variant="toggle">`; added summary line above producers grid when chips active.
+
+---
+
+## 2026-04-18 — RTL logical-properties audit (PR #137)
+
+- **PR #137** `feature/rtl-logical-properties` — replaced physical `left-*`/`right-*`/`ml-*`/`mr-*`/`pl-*`/`pr-*` with logical `start-*`/`end-*`/`ms-*`/`me-*`/`ps-*`/`pe-*` across 16 files. Intentional exceptions preserved: password eye toggles (dir=ltr inputs), map geographic controls, carousel arrows, centering idioms.
+
+---
+
 ## 2026-04-11 — post-restructure session (PRs #22–#33)
 
 Short-form entries for the April 11 session. The CHANGELOG-opt-out line
@@ -701,4 +724,9 @@ SENTRY_PROJECT=mehamakor-frontend
   ידני שמכסה הגשה, Claude live feedback, privacy של הכתובת, tabs,
   admin moderation, מחזור חיים מלא, ו-iOS zoom + פונטים עבריים +
   RTL + voice פמיני.
+
+## 2026-04-18 — Session handoff system + RTL (feature/session-handoff)
+
+- **feat: session handoff system (#139)** — HANDOFF.md added to repo root (last session summary, next task, key decisions, open issues); CLAUDE.md Rule 1 updated to read HANDOFF.md first; new Rule 13 (end-of-session protocol, MANDATORY same priority as Rule 1); Rules 13–17 renumbered to 14–18; Rule 7 cross-reference updated; line cap raised to ≤ 195; MANUAL_TESTING.md gains Session Handoff section.
+- **feat: RTL regression protection** — 4-layer guard against future physical-property regressions: (1) CLAUDE.md Regression rule #5 documents the `start-*/end-*/ms-*/me-*/ps-*/pe-*` convention with the list of permanent physical exceptions; (2) `frontend/.eslintrc.json` gains `no-restricted-syntax` warn-level rule that flags `left-*/right-*/ml-*/mr-*/pl-*/pr-*` in JSX className attributes — permanent exceptions (carousel arrows, eye-toggles, centering idiom, map geo overlays) silenced with `eslint-disable-next-line -- rtl-ok` comments; (3) `frontend/e2e/rtl.spec.ts` adds 4 Playwright tests covering login eye-toggle position, modal close-button side, admin sidebar side, and ProducerCard badge placement; (4) `.github/workflows/deploy.yml` gains a `lint` job that runs `npm run lint` on every PR and push to main/staging (deploy jobs gated to push-only via `github.event_name == 'push'` guard). Pre-existing warnings (files to be fixed by PR #137 rtl-logical-properties) are "warn" not "error" so CI does not block while #137 is pending.
 

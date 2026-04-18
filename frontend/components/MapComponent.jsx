@@ -3,10 +3,14 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
+import "leaflet-defaulticon-compatibility";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { styleForProducer } from "@/lib/map-categories";
+import { showToast } from "@/lib/toast";
+import { CoordSchema } from "@/lib/schemas";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -32,51 +36,77 @@ import { styleForProducer } from "@/lib/map-categories";
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
 
-/** Create a teardrop divIcon, color + emoji by category.
+/**
+ * MEH-58 Phase 1 — custom SVG pin marker.
  *
- * MEH-14: when `visited` is true we dim the marker (0.55 opacity) so
- * producers the user has already browsed fade into the background.
- * Active + hovered states override dim so the current focus is always
- * crisp.
+ * Anatomy (default 32×40):
+ *   - Teardrop body: fill #2e6853
+ *   - White disc Ø26px centered in the body
+ *   - Category emoji 13px centered in the disc
+ *   - Premium ring: stroke #8B6914 2px around disc when plan=premium
+ *   - Verified ✓ badge: 9px white circle bottom-right when is_verified
+ *
+ * States:
+ *   default  → 32×40
+ *   selected → 44×54, white ring around the teardrop
+ *   visited  → opacity 0.4, body fill #7aa298
+ *   hover    → scale(1.15) via CSS transition (desktop only)
  */
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
 ) {
-  const { color, emoji } = styleForProducer(producer);
-  const size = active ? 44 : hovered ? 38 : 32;
-  const iconOffset = active ? 22 : hovered ? 19 : 16;
-  const dimmed = visited && !active && !hovered;
-  const opacity = dimmed ? 0.55 : 1;
-  const borderColor = dimmed ? "#9ca3af" : color;
+  const { emoji } = styleForProducer(producer);
+  const selected = active;
+  const w = selected ? 52 : 44;
+  const h = selected ? 65 : 55;
+  const dimmed = visited && !selected && !hovered;
+  const bodyFill = dimmed ? "#7aa298" : "#2e6853";
+  const opacity = dimmed ? 0.4 : 1;
+  const isPremium = producer.plan === "premium";
+  const isVerified = producer.is_verified;
 
-  const html = `
-    <div class="mehamakor-marker ${active ? "active" : ""} ${hovered ? "hovered" : ""} ${dimmed ? "visited" : ""}"
-         style="
-           background: ${active ? color : "white"};
-           color: ${active ? "white" : color};
-           border: 2px solid ${borderColor};
-           border-radius: 50% 50% 50% 0;
-           transform: rotate(-45deg);
-           width: ${size}px;
-           height: ${size}px;
-           display: flex; align-items: center; justify-content: center;
-           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-           opacity: ${opacity};
-           transition: all 0.18s ease-out;
-         ">
-      <span aria-hidden="true" style="transform: rotate(45deg); font-size: ${active ? 20 : 14}px;">
-        ${emoji}
-      </span>
-    </div>
-  `;
+  const discR = selected ? 19 : 18;
+  const discCx = w / 2;
+  const discCy = selected ? 26 : 22;
+  const emojiSize = selected ? 20 : 17;
+
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <!-- teardrop body -->
+  <path d="M${w / 2} ${h} C${w / 2} ${h} 0 ${h * 0.55} 0 ${h * 0.38}
+    A${w / 2} ${w / 2} 0 1 1 ${w} ${h * 0.38}
+    C${w} ${h * 0.55} ${w / 2} ${h} ${w / 2} ${h}Z"
+    fill="${bodyFill}" />
+  ${selected ? `<path d="M${w / 2} ${h} C${w / 2} ${h} 0 ${h * 0.55} 0 ${h * 0.38}
+    A${w / 2} ${w / 2} 0 1 1 ${w} ${h * 0.38}
+    C${w} ${h * 0.55} ${w / 2} ${h} ${w / 2} ${h}Z"
+    fill="none" stroke="white" stroke-width="3" />` : ""}
+  <!-- white disc -->
+  <circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="white" />
+  ${isPremium ? `<circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="none" stroke="#8B6914" stroke-width="2" />` : ""}
+  <!-- emoji via SVG text — avoids foreignObject innerHTML parsing quirks that
+       cause the entire divIcon to throw and fall back to the default PNG icon -->
+  <text x="${discCx}" y="${discCy}" text-anchor="middle" dominant-baseline="central"
+        font-size="${emojiSize}" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">${emoji}</text>
+  ${isVerified ? `
+  <circle cx="${discCx + discR * 0.7}" cy="${discCy + discR * 0.7}" r="5.5" fill="#2e6853" stroke="white" stroke-width="1" />
+  <text x="${discCx + discR * 0.7}" y="${discCy + discR * 0.7 + 3}" text-anchor="middle" fill="white" font-size="7" font-weight="bold">✓</text>
+  ` : ""}
+</svg>`;
+
+  const wrapper = `
+    <div class="mehamakor-marker ${selected ? "selected" : ""} ${hovered ? "hovered" : ""} ${dimmed ? "visited" : ""}"
+         style="opacity:${opacity};transition:transform 0.15s ease-out,opacity 0.15s ease-out;${hovered && !selected ? "transform:scale(1.15);" : ""}">
+      ${svg}
+    </div>`;
 
   return L.divIcon({
-    html,
+    html: wrapper,
     className: "mehamakor-marker-wrap",
-    iconSize: [size, size],
-    iconAnchor: [iconOffset, size],
-    popupAnchor: [0, -size],
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h],
+    // popupAnchor removed — marker click goes to bottom sheet, not a Leaflet popup
   });
 }
 
@@ -86,7 +116,14 @@ export default function MapComponent({
   onProducerHover,
   onBoundsChange,
   onMapMove,
+  onMapCanvasClick,
   registerApi,
+  // Caller-owned ref that receives the live Leaflet map instance. Used by
+  // MapClient to call getBounds() directly without going through the API
+  // abstraction. Both desktop + mobile MapComponents set this; the VISIBLE
+  // one wins because the hidden container produces degenerate bounds (detected
+  // in MapClient before use).
+  mapRef: parentMapRef = null,
   // MEH-14: IDs of producers the user has already viewed (from
   // recently_viewed sessionStorage). These markers render dimmed.
   visitedIds = null,
@@ -95,7 +132,7 @@ export default function MapComponent({
     visitedIds instanceof Set
       ? visitedIds
       : new Set(Array.isArray(visitedIds) ? visitedIds : []);
-  const mapRef = useRef(null);
+  const containerRef = useRef(null); // DOM node for L.map()
   const mapInstanceRef = useRef(null);
   const clusterGroupRef = useRef(null);
   const markersRef = useRef(new Map()); // producer.id → { marker, producer }
@@ -122,6 +159,8 @@ export default function MapComponent({
   onProducerHoverRef.current = onProducerHover;
   const onMapMoveRef = useRef(onMapMove);
   onMapMoveRef.current = onMapMove;
+  const onMapCanvasClickRef = useRef(onMapCanvasClick);
+  onMapCanvasClickRef.current = onMapCanvasClick;
 
   // Refresh a single marker's icon based on active/hover/visited state
   const refreshMarkerIcon = (id) => {
@@ -148,9 +187,11 @@ export default function MapComponent({
         if (prev) refreshMarkerIcon(prev);
         refreshMarkerIcon(producerId);
         const latlng = entry.marker.getLatLng();
+        const coordCheck = CoordSchema.safeParse({ lat: latlng?.lat, lng: latlng?.lng });
+        if (!coordCheck.success) return;
         // Suppress the "search this area" banner on programmatic flyTo.
         programmaticMoveRef.current = true;
-        mapInstanceRef.current.flyTo(latlng, 14, { duration: 1.2 });
+        mapInstanceRef.current.flyTo([coordCheck.data.lat, coordCheck.data.lng], 14, { duration: 1.2 });
       },
       setHoveredProducer: (producerId) => {
         const prev = hoveredIdRef.current;
@@ -185,7 +226,7 @@ export default function MapComponent({
               }).addTo(mapInstanceRef.current);
             }
           },
-          () => alert("לא הצלחנו לקבל את המיקום שלך"),
+          () => showToast("לא הצלחנו לקבל את המיקום שלך", "error"),
         );
       },
       getMap: () => mapInstanceRef.current,
@@ -201,9 +242,9 @@ export default function MapComponent({
 
   // Initialize the map once
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!containerRef.current || mapInstanceRef.current) return;
 
-    mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView(
+    mapInstanceRef.current = L.map(containerRef.current, { zoomControl: true }).setView(
       // Default view — Jerusalem at zoom 8 so the whole country fits
       // comfortably on mobile. Previously [31.5, 34.8] (off-coast of
       // Ashdod) which on narrow viewports panned the camera enough to
@@ -215,11 +256,12 @@ export default function MapComponent({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
 
-    // Cluster group for markers — docs/archive/MAP_IMPROVEMENTS.md #4
+    // MEH-58 Phase 1: cluster below zoom 11, green circle + white count.
     clusterGroupRef.current = L.markerClusterGroup({
       chunkedLoading: true,
       showCoverageOnHover: false,
       maxClusterRadius: 60,
+      disableClusteringAtZoom: 11,
       iconCreateFunction: (cluster) => {
         const count = cluster.getChildCount();
         return L.divIcon({
@@ -265,7 +307,35 @@ export default function MapComponent({
       onMapMoveRef.current?.();
     });
 
+    mapInstanceRef.current.on("click", () => {
+      onMapCanvasClickRef.current?.();
+    });
+
+    // MEH-30 follow-up: Leaflet reads the container height once on
+    // `L.map()` init. If the parent was 0px at that exact moment (e.g.
+    // sticky layout above hadn't stabilized, iOS Safari URL bar was
+    // still shrinking the viewport, a parent used grid/flex that
+    // resolved later), Leaflet happily renders the map at 0–60px and
+    // never recomputes. Force a resize pass once the first frame
+    // settles + on any subsequent container resize.
+    const scheduleInvalidate = () => {
+      if (!mapInstanceRef.current) return;
+      requestAnimationFrame(() => mapInstanceRef.current?.invalidateSize());
+    };
+    scheduleInvalidate();
+    setTimeout(scheduleInvalidate, 150);
+    setTimeout(scheduleInvalidate, 500);
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+      resizeObserver = new ResizeObserver(scheduleInvalidate);
+      resizeObserver.observe(containerRef.current);
+    }
+    // Expose the Leaflet instance to the caller-owned ref AFTER the map is
+    // fully set up so getBounds() returns a real viewport.
+    if (parentMapRef) parentMapRef.current = mapInstanceRef.current;
+
     return () => {
+      if (resizeObserver) resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -290,7 +360,7 @@ export default function MapComponent({
     producers.forEach((p) => {
       // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks:
       // skip producers without coordinates or identifying data
-      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number") return;
+      if (!p || typeof p.lat !== "number" || typeof p.lng !== "number" || isNaN(p.lat) || isNaN(p.lng)) return;
       if (!p.id) return;
 
       const marker = L.marker([p.lat, p.lng], {
@@ -315,30 +385,14 @@ export default function MapComponent({
       markersRef.current.set(p.id, { marker, producer: p });
     });
 
-    // MAP_IMPROVEMENTS #11 — fit bounds to actual producers on first load.
-    // The default view ([31.5, 34.8] zoom 8) is the whole country, which
-    // leaves most users staring at empty ocean. Fit once when data first
-    // arrives; don't re-fit on subsequent filter changes so the user's
-    // panning isn't yanked back. Guarded by programmaticMoveRef so the
-    // resulting moveend doesn't pop the "search this area" banner.
-    if (!hasFitBoundsRef.current && markersRef.current.size > 0) {
-      const latlngs = Array.from(markersRef.current.values()).map((entry) =>
-        entry.marker.getLatLng(),
-      );
-      const bounds = L.latLngBounds(latlngs);
-      if (bounds.isValid()) {
-        programmaticMoveRef.current = true;
-        mapInstanceRef.current.fitBounds(bounds, {
-          padding: [40, 40],
-          maxZoom: 12,
-        });
-      }
-      hasFitBoundsRef.current = true;
-    }
+    // MEH-58 QA: removed auto-fitBounds that overrode the initial center
+    // [31.7683, 35.2137] zoom 8 (full-country view). The fitBounds was
+    // centering on wherever the producers clustered (often northern Israel
+    // when test data was sparse), making the map look off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producers, visitedIds]);
 
   return (
-    <div ref={mapRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
+    <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
   );
 }

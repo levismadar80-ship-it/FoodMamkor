@@ -49,6 +49,8 @@ name: Deploy
 on:
   push:
     branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
   workflow_dispatch:
 
 # Cancel any in-flight run if a new push lands while we're still calling
@@ -61,11 +63,41 @@ concurrency:
 
 jobs:
   # ──────────────────────────────────────────────────────────────────
+  # LINT — runs on every PR and every push to main/staging.
+  # Uses "warn" severity so pre-existing RTL violations don't block
+  # CI while PR #137 (rtl-logical-properties) is being merged in.
+  # Upgrade to "error" after #137 lands and all warnings are resolved.
+  # ──────────────────────────────────────────────────────────────────
+  lint:
+    name: Frontend lint (RTL + Next.js rules)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # ──────────────────────────────────────────────────────────────────
   # PRODUCTION — runs on push to main
   # ──────────────────────────────────────────────────────────────────
   production:
     name: Trigger Railway production redeploy
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -122,7 +154,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   staging:
     name: Trigger Railway staging redeploy
-    if: github.ref == 'refs/heads/staging'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

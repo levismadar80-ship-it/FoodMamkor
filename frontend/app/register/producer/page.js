@@ -223,7 +223,7 @@ function RegisterProducerPageBody() {
                   return;
                 }
                 if (!passwordValid(form.password)) {
-                  setStepError("הסיסמה לא עומדת בדרישות");
+                  setStepError("הסיסמה חייבת להכיל לפחות 8 תווים, אות גדולה ומספר");
                   return;
                 }
                 setStepError("");
@@ -344,7 +344,7 @@ function RegisterProducerPageBody() {
                     <button
                       type="button"
                       onClick={() => setUploadedImages(uploadedImages.filter((_, j) => j !== i))}
-                      className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
+                      className="absolute top-1 start-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center"
                     >
                       ✕
                     </button>
@@ -386,7 +386,7 @@ function RegisterProducerPageBody() {
 
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
             <div className="flex gap-3">
-              <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">← חזור</button>
+              <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
               <button
                 onClick={() => {
                   if (!form.producer_name || !form.city) {
@@ -484,7 +484,7 @@ function RegisterProducerPageBody() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="text-text-secondary">← חזור</button>
+              <button onClick={() => setStep(2)} className="text-text-secondary">שלב קודם</button>
               <button
                 onClick={handleSubmit}
                 disabled={loading || !agreedToTerms || !declaredLicenses}

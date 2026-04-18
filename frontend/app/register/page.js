@@ -127,7 +127,7 @@ export default function RegisterPage() {
               onBlur={() => setEmailTouched(true)}
               required
               aria-invalid={emailInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 transition ${
+              className={`w-full border rounded-[12px] px-3 py-2 text-right transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                 required
                 minLength={8}
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[12px] pr-11 pl-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
+                className={`w-full border rounded-[12px] pr-11 pl-3 py-2 text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                   passwordInvalid
                     ? "border-red-400"
                     : passwordValidLength
@@ -167,6 +167,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
+                // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
                 aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
                 aria-pressed={showPassword}
@@ -191,7 +192,7 @@ export default function RegisterPage() {
               label="עיר"
               value={form.city}
               onChange={(val) => setForm({ ...form, city: val })}
-              placeholder="חפשי עיר..."
+              placeholder="הרצליה"
             />
           </div>
           <div>
@@ -200,7 +201,7 @@ export default function RegisterPage() {
               value={form.phone}
               onChange={set("phone")}
               onBlur={() => setPhoneTouched(true)}
-              placeholder="0501234567"
+              placeholder="050-1234567"
               aria-invalid={phoneInvalid || undefined}
               className={`w-full border rounded-[12px] px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
                 phoneInvalid
@@ -252,6 +253,9 @@ export default function RegisterPage() {
               "הצטרפי"
             )}
           </button>
+          <p className="text-center mt-3 text-site-muted" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px" }}>
+            לאחר ההרשמה תישלח הודעת אימות לאימייל שלך
+          </p>
         </form>
 
         <GoogleAuthButton
