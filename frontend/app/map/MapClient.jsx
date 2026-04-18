@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine } from "@phosphor-icons/react";
+import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine, SquaresFour } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { GeoSearchSchema } from "@/lib/schemas";
@@ -77,6 +77,16 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [sortBy, setSortBy] = useState("default");
   const [legendOpen, setLegendOpen] = useState(false);
+  const legendRef = useRef(null);
+
+  useEffect(() => {
+    if (!legendOpen) return;
+    const onClick = (e) => {
+      if (legendRef.current && !legendRef.current.contains(e.target)) setLegendOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [legendOpen]);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
 
@@ -576,6 +586,37 @@ export default function MapPage() {
           <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-light transition">הוסיפי עסק +</Link>
         </div>
       )}
+
+      {/* Collapsible category legend — desktop only; mobile sees emoji on markers */}
+      <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[1000]">
+        {legendOpen && (
+          <div className="mb-2 bg-white border border-border rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] p-2 min-w-[180px]" role="group" aria-label="קטגוריות">
+            <div className="space-y-0.5">
+              {CATEGORY_LEGEND.map((cat) => {
+                const catActive = isCategoryActive(cat.name);
+                return (
+                  <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
+                    <span className="text-xs text-site-text">{cat.emoji} {cat.name.split(",")[0]}</span>
+                  </button>
+                );
+              })}
+              {activeCategoryNames !== null && (
+                <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-[13px] text-primary hover:underline mt-1 pt-1 border-t border-border">הצגי הכל</button>
+              )}
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setLegendOpen((v) => !v)}
+          aria-label="קטגוריות"
+          aria-expanded={legendOpen}
+          className="w-8 h-8 rounded-full bg-white border border-[#e5e7eb] shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center justify-center hover:bg-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <SquaresFour size={16} weight="bold" className="text-site-text" />
+        </button>
+      </div>
     </div>
   );
 
@@ -675,26 +716,6 @@ export default function MapPage() {
               <CitySearch id="map-city-search-desktop" label="סנן לפי עיר" value={cityFilter} onChange={setCityFilter} onSubmit={handleCityFilter} placeholder="חפשי עיר..." />
             </div>
             {filterChipsBar}
-            {/* Legend — collapsible, closed by default, inside sidebar */}
-            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-3 pt-2 border-t border-border">
-              <summary className="text-[11px] text-site-muted tracking-wider font-body uppercase cursor-pointer hover:text-site-text transition select-none">
-                קטגוריות {legendOpen ? "▲" : "▼"}
-              </summary>
-              <div className="mt-1 space-y-0.5">
-                {CATEGORY_LEGEND.map((cat) => {
-                  const catActive = isCategoryActive(cat.name);
-                  return (
-                    <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
-                      <span className="text-xs text-site-text">{cat.name.split(",")[0]}</span>
-                    </button>
-                  );
-                })}
-                {activeCategoryNames !== null && (
-                  <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-[13px] text-primary hover:underline mt-1 pt-1 border-t border-border">הצגי הכל</button>
-                )}
-              </div>
-            </details>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex items-center justify-between mb-3">
