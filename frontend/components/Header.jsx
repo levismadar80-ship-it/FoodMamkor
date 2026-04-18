@@ -85,6 +85,20 @@ export default function Header() {
     };
   }, []);
 
+  // Press "/" anywhere outside an input to open the search page.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "/") return;
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      if (document.activeElement?.isContentEditable) return;
+      e.preventDefault();
+      router.push("/search?focus=1");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [router]);
+
   const isProducer = user?.role === "producer";
   const showAddBusinessCta = !isProducer;
 
@@ -222,16 +236,26 @@ export default function Header() {
           )}
         </div>
 
-        {/* Mobile hamburger — left side (RTL flex-between puts it there). */}
-        <button
-          className={`md:hidden p-2 ${transparent ? "text-white" : "text-site-text"}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label={menuOpen ? "סגור תפריט" : "פתח תפריט"}
-          aria-expanded={menuOpen}
-          style={transparentTextShadow}
-        >
-          {menuOpen ? <X size={24} weight="bold" /> : <List size={24} weight="bold" />}
-        </button>
+        {/* Mobile search + hamburger — left side (RTL flex-between). */}
+        <div className="md:hidden flex items-center gap-1">
+          <button
+            onClick={() => router.push("/search?focus=1")}
+            aria-label="חיפוש"
+            className={`p-2 ${transparent ? "text-white" : "text-site-muted"}`}
+            style={transparentTextShadow}
+          >
+            <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
+          </button>
+          <button
+            className={`p-2 ${transparent ? "text-white" : "text-site-text"}`}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? "סגור תפריט" : "פתח תפריט"}
+            aria-expanded={menuOpen}
+            style={transparentTextShadow}
+          >
+            {menuOpen ? <X size={24} weight="bold" /> : <List size={24} weight="bold" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer — everything except logo + hamburger lives here.
