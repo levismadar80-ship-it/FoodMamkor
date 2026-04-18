@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
 from app.database import get_db
+from app.rate_limit import limiter
 from app.models import (
     Favorite,
     HomeProduct,
@@ -40,7 +41,9 @@ def get_my_producer(user: User = Depends(require_producer), db: Session = Depend
 
 
 @router.put("", response_model=ProducerDetailOut)
+@limiter.limit("30/hour")
 def update_my_producer(
+    request: Request,
     data: ProducerUpdate,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
@@ -67,7 +70,9 @@ def update_my_producer(
 
 
 @router.post("/availability")
+@limiter.limit("20/hour")
 def toggle_availability(
+    request: Request,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):

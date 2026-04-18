@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Recipe, RecipeIngredient, User
+from app.rate_limit import limiter
 from app.schemas.schemas import RecipeCreate, RecipeOut
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -33,7 +34,9 @@ def get_recipe(recipe_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=RecipeOut, status_code=201)
+@limiter.limit("10/hour")
 def create_recipe(
+    request: Request,
     data: RecipeCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

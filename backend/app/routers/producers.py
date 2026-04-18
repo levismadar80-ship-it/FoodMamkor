@@ -66,7 +66,9 @@ def _haversine_km(lat: float, lng: float):
 
 
 @router.get("/producers", response_model=list[ProducerListOut])
+@limiter.limit("120/minute")
 def list_producers(
+    request: Request,
     lat: float | None = None,
     lng: float | None = None,
     radius_km: float | None = None,
@@ -255,6 +257,7 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
 
 
 @router.get("/producers/{producer_id}", response_model=ProducerDetailOut)
+@limiter.limit("120/minute")
 def get_producer(
     producer_id: UUID,
     request: Request,

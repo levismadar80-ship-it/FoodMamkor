@@ -1,19 +1,22 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_admin
 from app.database import get_db
 from app.models import Producer, Report, User
+from app.rate_limit import limiter
 from app.schemas.schemas import ReportCreate, ReportOut
 
 router = APIRouter(tags=["reports"])
 
 
 @router.post("/producers/{producer_id}/report", status_code=201)
+@limiter.limit("5/hour")
 def report_producer(
+    request: Request,
     producer_id: UUID,
     data: ReportCreate,
     user: User = Depends(get_current_user),
