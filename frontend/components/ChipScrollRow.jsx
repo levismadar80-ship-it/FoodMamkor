@@ -28,6 +28,7 @@ export default function ChipScrollRow({
   className = "",
 }) {
   const chipRefs = useRef(new Map());
+  const scrollRef = useRef(null);
   const prevActiveKeysRef = useRef(null);
 
   function isActive(chip) {
@@ -40,7 +41,18 @@ export default function ChipScrollRow({
       ?.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
   }
 
-  // Category: scroll the active chip into view on mount + whenever it changes.
+  // On mount, force the scroll container to its inline-start position
+  // (scrollLeft:0 which maps to the RIGHT edge in RTL). Prevents a stale
+  // scroll offset from hiding the first chip — scrollIntoView with
+  // inline:"nearest" is a no-op when the active chip is already visible,
+  // so without this the container could stay mid-scroll after navigation.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+  }, []);
+
+  // Category: scroll the active chip into view when it changes. On mount
+  // the useEffect above already pins to scrollLeft:0; only pull a
+  // non-first chip into view on later changes.
   useEffect(() => {
     if (variant !== "category" || !activeKey) return;
     scrollChipIntoView(activeKey);
@@ -61,9 +73,10 @@ export default function ChipScrollRow({
 
   return (
     <div className={`relative min-w-0 ${className}`} dir="rtl">
-      {/* Inline-start (right in RTL) fade — signals row is scrollable */}
+      {/* Inline-start (right in RTL) fade — slim so the first chip isn't
+          hidden underneath. Purpose is a scroll hint, not a mask. */}
       <div
-        className="pointer-events-none absolute inset-y-0 start-0 w-8 z-10"
+        className="pointer-events-none absolute inset-y-0 start-0 w-3 z-10"
         style={{ background: `linear-gradient(to left, ${fadeBg}, transparent)` }}
         aria-hidden="true"
       />
@@ -74,7 +87,8 @@ export default function ChipScrollRow({
         aria-hidden="true"
       />
       <div
-        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0"
+        ref={scrollRef}
+        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-4"
         role={variant === "category" ? "radiogroup" : "toolbar"}
         aria-label={variant === "category" ? "סינון לפי קטגוריה" : "סינון לפי תכונה"}
       >

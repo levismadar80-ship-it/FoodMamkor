@@ -489,6 +489,7 @@ export default function MapPage() {
       />
       {activeFilterTags.length > 0 && (
         <div
+          dir="rtl"
           className="mt-2 flex flex-wrap items-center gap-1.5"
           aria-live="polite"
         >
