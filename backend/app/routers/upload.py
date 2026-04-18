@@ -11,12 +11,13 @@ This version:
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
+from app.rate_limit import limiter
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/upload", tags=["upload"])
@@ -41,7 +42,9 @@ def _sniff_image_type(header: bytes) -> str | None:
 
 
 @router.post("/image")
+@limiter.limit("20/hour")
 async def upload_image(
+    request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
