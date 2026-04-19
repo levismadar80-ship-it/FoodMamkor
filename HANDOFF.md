@@ -5,24 +5,24 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #173 (feature/fix-csp-google-gsi-style) — MERGED to staging
+PR merged/opened: #174 (feature/meh-48-whatsapp-question-chips) — MERGED to staging
 Summary:
-  PR #173: CSP fix — add accounts.google.com to style-src.
-    - Fixes "violates Content Security Policy: style-src" console error on /login
-    - COOP not set anywhere; no change needed for OAuth popup postMessage
-    - docs/CHANGELOG.md + docs/MANUAL_TESTING.md updated
+  PR #174: MEH-48 — pre-filled WhatsApp question chips on producer detail.
+    - New WhatsAppQuestionChips component above main CTA (mobile + desktop)
+    - 4 chips: availability, ordering, city delivery, price per kg
+    - Dynamic city + producer name substitution; only shows when phone exists
 
   Previous session PRs (same date, earlier):
-  #172 MEH-46 footer RTL fixes + newsletter button
-  #171 admin role management, #170 MEH-47 BottomNav
+  #173 CSP fix (accounts.google.com in style-src)
+  #172 MEH-46 footer RTL, #171 admin role management, #170 MEH-47 BottomNav
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 819ab5d
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#173)
+Staging HEAD: db27c38
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#174)
 
 ## Next task
-CSP fix shipped. Candidate next tasks (confirm with user):
+MEH-48 shipped. Candidate next tasks (confirm with user):
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
