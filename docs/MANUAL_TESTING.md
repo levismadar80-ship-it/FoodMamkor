@@ -779,3 +779,11 @@ Added with `feature/session-handoff`.
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
 2. שימרי את הבדיקות קצרות — פעולה אחת, תוצאה אחת.
 3. סמני ✅ רק אחרי שרצה הבדיקה על staging/production.
+
+---
+
+## Google OAuth / CSP (fix #173, 2026-04-19)
+
+- [ ] /login — open DevTools Console → zero CSP violations when page loads
+- [ ] /login — click "כניסה עם Google" → Google popup opens and completes without postMessage error
+- [ ] /login — Network tab → `accounts.google.com/gsi/style` loads with status 200 (not blocked)
