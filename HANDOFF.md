@@ -1,20 +1,22 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-18
+> Last updated: 2026-04-19
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #168 (feature/infinite-scroll-producers) — MERGED to staging
-                 #169 (feature/meh-40-hide-empty-neighbor-section) — MERGED to staging
+PR merged/opened: #170 (feature/meh-47-bottomnav-smart-auth) — MERGED to staging
 Summary:
-  PR #168: Infinite scroll on /producers — IntersectionObserver replaces
-    pagination; PAGE_SIZE=24; live counter; branded spinner; end-of-list
-    message; SEO ServerPageLinks kept as fallback. No visible change until
-    catalog > 24 items.
-  PR #169: MEH-40 — hide "מהמטבח של השכן" homepage section entirely when
-    homeProducts=[]. Entire <section> wrapped in homeProducts.length > 0 &&;
-    empty-state paragraph removed.
+  PR #170: MEH-47 — BottomNav smart auth slot.
+    - Replaced static "כניסה לחשבון" tab with dynamic profile slot
+    - Logged-in: avatar photo (28px circle) or initials on bg #2e6853
+    - Guest: UserCircle icon → /login
+    - Producer role: routes to /producer/dashboard (was /settings)
+    - Active match extended to /producer/dashboard
+    - min-h-[56px] + env(safe-area-inset-bottom) for iOS clearance
+
+  Previous session PRs (2026-04-19, earlier):
+  #168 infinite scroll on /producers, #169 MEH-40 hide empty neighbor section
 
   Previous session PRs (2026-04-18):
   #165 CLAUDE.md Rule 16 + .gitignore, #166 MEH-94 design token sweep,
@@ -22,28 +24,11 @@ Summary:
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 9ef24bc
-Summary:
-  PR #165: CLAUDE.md Rule 16 (git worktrees for parallel features) + .gitignore
-    (.claude/worktrees/). Old rules 16→17, 17→18, 18→19.
-  PR #166: MEH-94 + design token sweep across 5 files:
-    - HomeProductCard: low-rating badge yellow→slate-neutral (MEH-94)
-    - globals.css: .btn-whatsapp utility (single source for WA green)
-    - MapClient (8 fixes), ProducerDetail (7 fixes), NeighborClient (2 fixes)
-    - 13 inline hex instances → Tailwind tokens (bg-light, bg-primary-dark,
-      border-border, text-site-muted, etc.)
-    - WA group link: green outline → gray outline per HANDOFF decision
-
-  Previous session PRs (same date, earlier):
-  PR #164 (design-review workflow install + full site audit)
-
-## Current state
-Branch: staging (clean, in sync with main)
-Staging HEAD: 7b1c10b
-Main HEAD: e42127e (production release — all PRs #147–#166)
+Staging HEAD: a57d2e4
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#170)
 
 ## Next task
-Infinite scroll + MEH-40 shipped. Candidate next tasks (confirm with user):
+MEH-47 shipped. Candidate next tasks (confirm with user):
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
