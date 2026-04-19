@@ -37,6 +37,7 @@ export default function AdminDashboard() {
     { label: "ממתינים לאישור",   value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
     { label: "משתמשים רשומים",   value: s.total_users,         Icon: Users, href: "/admin/users" },
     { label: "מוצרים ביתיים",     value: s.total_home_products, Icon: CookingPot, href: "/admin/content" },
+    { label: "קבוצות רכש",       value: "›",                   Icon: Package, href: "/admin/group-buys" },
   ];
 
   // Simple inline SVG line chart for monthly producers

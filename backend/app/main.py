@@ -15,7 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.rate_limit import limiter
-from app.routers import admin, admin_experiences, admin_extra, admin_outreach, auth, chat, events, experiences, favorites, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
+from app.routers import admin, admin_experiences, admin_extra, admin_outreach, auth, chat, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
 
 # Force stdout to be unbuffered so Railway's log panel shows startup
 # messages in real time. Without this, Python buffers until the process
@@ -305,6 +305,8 @@ app.include_router(admin_outreach.router)
 app.include_router(admin_outreach.prefill_router)
 app.include_router(chat.router)
 app.include_router(referrals.router)
+app.include_router(group_buys.router)
+app.include_router(group_buys.admin_router)
 
 
 @app.get("/")

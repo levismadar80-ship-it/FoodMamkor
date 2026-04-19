@@ -5,35 +5,35 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #175 (feature/meh-49-referral-loop) — MERGED to staging
+PR merged/opened: #176 (feature/meh-52-group-buy) — OPEN, awaiting review
 Summary:
-  PR #175: MEH-49 — T+24h WhatsApp rating + referral loop.
-    - referral_code column on users + ReferralClick table + migration
-    - POST /referral/claim endpoint (idempotent, auth-required)
-    - All 4 User() creation paths auto-generate 8-char referral_code
-    - rating_dispatcher: appends referral URL to T+24h message
-    - /ref/[code] landing page (localStorage save + redirect)
-    - /register: referral badge + claim after registration
-    - ProducerDetail: "שתפי וקבלי 10%" chip for logged-in users
+  PR #176: MEH-52 — קבוצת רכש MVP (group buy with commit counter + price unlock).
+    - GroupBuy + GroupBuyCommit models (auto-created via create_all, no migration needed)
+    - GET/POST /group-buys, GET/POST/DELETE /group-buys/{id}/commit (producer + public)
+    - GET/PATCH /admin/group-buys admin endpoints (separate admin_router)
+    - Auto-funds when commits reach min_participants; reverts if cancelled below threshold
+    - /group-buys list page — cards with progress bar, city/status filter
+    - /group-buys/[id] detail — commit form, 30s live polling, confetti on fund, WA share
+    - /producer/dashboard/group-buys — my group buys tab + inline create form
+    - /admin/group-buys — status management table
+    - Quick-link cards added to producer dashboard + admin dashboard
 
-  Previous session PRs (same date, earlier):
-  #174 MEH-48 WhatsApp question chips
-  #173 CSP fix, #172 MEH-46 footer, #171 admin roles, #170 MEH-47
+  Previous session: #175 MEH-49 referral loop (MERGED)
 
 ## Current state
-Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: e5ebd02
+Branch: feature/meh-52-group-buy (PR #176 open, Vercel building)
+Staging HEAD: cd4d8fe
 Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#175)
 
 ## Next task
-Referral loop shipped. Candidate next tasks (confirm with user):
+After PR #176 merges:
   - Admin analytics: add referral count per producer (skipped from MEH-49 scope)
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
   - Events section on producer detail page
   - availability_return_date schema change (v2 backend)
 
-First step: confirm which task → git checkout staging → git pull → git checkout -b feature/[description]
+First step: approve PR #176 → merge → git checkout staging → git pull → next feature
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -58,7 +58,7 @@ First step: confirm which task → git checkout staging → git pull → git che
 | Onboarding: module singleton, no Context | Simpler than wrapping layout in a Provider | April 2026 |
 
 ## Open PRs
-None.
+#176 — MEH-52 קבוצת רכש MVP (feature/meh-52-group-buy) — awaiting review + Vercel preview
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162

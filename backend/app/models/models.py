@@ -595,3 +595,61 @@ class ReferralClick(Base):
         index=True,
     )
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class GroupBuy(Base):
+    """MEH-52: group purchase with commit counter and price unlock."""
+
+    __tablename__ = "group_buys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    product_name = Column(String(200), nullable=False)
+    unit = Column(String(50), nullable=True)
+    price_per_unit_regular = Column(Numeric(10, 2), nullable=False)
+    price_per_unit_group = Column(Numeric(10, 2), nullable=False)
+    min_participants = Column(Integer, nullable=False)
+    max_participants = Column(Integer, nullable=True)
+    deadline = Column(DateTime, nullable=False)
+    city = Column(String(100), nullable=True)
+    # open | funded | cancelled | fulfilled
+    status = Column(String(20), default="open", nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    producer = relationship("Producer", backref="group_buys")
+    commits = relationship("GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan")
+
+
+class GroupBuyCommit(Base):
+    """MEH-52: a user's commitment to join a group buy."""
+
+    __tablename__ = "group_buy_commits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_buy_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("group_buys.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    quantity = Column(Integer, default=1, nullable=False)
+    phone = Column(String(30), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),)
+
+    group_buy = relationship("GroupBuy", back_populates="commits")
+    user = relationship("User", backref="group_buy_commits")
