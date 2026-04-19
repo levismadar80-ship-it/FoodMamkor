@@ -6,6 +6,45 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
+function VanityLinkCard({ slug }) {
+  const url = `https://mehamakor.online/p/${slug}`;
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const waText = encodeURIComponent(`הפרופיל שלי במהמקור: ${url}`);
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5 mb-6">
+      <p className="text-sm font-medium text-site-text mb-2">🔗 הלינק שלי</p>
+      <div className="flex items-center gap-2 bg-light rounded-[10px] px-3 py-2 mb-3">
+        <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={copy}
+          className="flex-1 text-sm border border-border rounded-[8px] px-3 py-1.5 hover:border-primary transition"
+        >
+          {copied ? "✅ הועתק!" : "העתיקי לינק"}
+        </button>
+        <a
+          href={`https://wa.me/?text=${waText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 text-sm text-center border border-[#25D366] text-[#25D366] rounded-[8px] px-3 py-1.5 hover:bg-[#25D366]/5 transition"
+        >
+          שתפי בוואטסאפ
+        </a>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Producer dashboard — feature/producer-analytics.
  *
@@ -110,6 +149,11 @@ export default function ProducerDashboardPage() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm text-yellow-800">
           🌿 פרופיל העסק שלך ממתין לאישור
         </div>
+      )}
+
+      {/* MEH-53: Vanity URL card */}
+      {producer.slug && (
+        <VanityLinkCard slug={producer.slug} />
       )}
 
       {/* Today's availability — hero action */}

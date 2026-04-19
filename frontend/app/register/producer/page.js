@@ -11,6 +11,15 @@ import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/valida
 
 const DRAFT_KEY = "producer_registration_draft";
 
+function slugifyPreview(text) {
+  if (!text) return "";
+  let s = text.trim().toLowerCase();
+  s = s.replace(/\s+/g, "-");
+  s = s.replace(/[^\w\u0590-\u05FF-]/g, "");
+  s = s.replace(/-+/g, "-").replace(/^-|-$/g, "");
+  return s.slice(0, 40) || "...";
+}
+
 const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", city: "",
@@ -240,7 +249,14 @@ function RegisterProducerPageBody() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
-            <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right" dir="rtl" />
+            <div>
+              <input placeholder="שם העסק *" value={form.producer_name} onChange={set("producer_name")} className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right" dir="rtl" />
+              {form.producer_name.trim() && (
+                <p className="text-xs text-site-muted mt-1 text-start" dir="ltr">
+                  🔗 mehamakor.online/p/<span className="text-primary font-mono">{slugifyPreview(form.producer_name)}</span>
+                </p>
+              )}
+            </div>
             <textarea placeholder="תיאור העסק" value={form.description} onChange={set("description")} className="w-full border rounded-[12px] ps-3 pe-3 py-2 resize-none h-24 text-right" dir="rtl" />
             <CitySearch
               id="producer-register-city"
