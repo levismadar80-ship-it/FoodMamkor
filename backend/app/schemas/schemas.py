@@ -614,3 +614,60 @@ class OutreachPrefillResponse(BaseModel):
     website: str | None = None
     city: str | None = None
     category: str | None = None
+
+
+# --- MEH-52 Group Buys ---
+class GroupBuyCommitOut(BaseModel):
+    id: UUID
+    group_buy_id: UUID
+    user_id: UUID
+    quantity: int
+    phone: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GroupBuyOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    producer_name: str | None = None
+    title: str
+    description: str | None = None
+    product_name: str
+    unit: str | None = None
+    price_per_unit_regular: Decimal
+    price_per_unit_group: Decimal
+    min_participants: int
+    max_participants: int | None = None
+    deadline: datetime
+    city: str | None = None
+    status: str
+    commits_count: int = 0
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GroupBuyDetail(GroupBuyOut):
+    """Full detail — includes whether the current user has committed."""
+    user_committed: bool = False
+    user_commit: GroupBuyCommitOut | None = None
+
+
+class GroupBuyCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=200)
+    description: str | None = None
+    product_name: str = Field(..., min_length=1, max_length=200)
+    unit: str | None = Field(None, max_length=50)
+    price_per_unit_regular: Decimal = Field(..., gt=0)
+    price_per_unit_group: Decimal = Field(..., gt=0)
+    min_participants: int = Field(..., ge=2)
+    max_participants: int | None = Field(None, ge=2)
+    deadline: datetime
+    city: str | None = Field(None, max_length=100)
+
+
+class GroupBuyCommitRequest(BaseModel):
+    quantity: int = Field(1, ge=1, le=100)
+    phone: str | None = Field(None, max_length=30)
