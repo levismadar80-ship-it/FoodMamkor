@@ -73,14 +73,6 @@ export default function Footer() {
             padding: "12px 24px",
           }}
         >
-          <div className="text-center sm:text-right">
-            <p className="font-headline text-white" style={{ fontSize: "14px" }}>
-              יש לך עסק מזון מקומי?
-            </p>
-            <p style={{ fontSize: "11px", color: "#9ab89a" }}>
-              הצטרפי לאלפי בעלות עסק במהמקור
-            </p>
-          </div>
           <Link
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60"
@@ -94,6 +86,14 @@ export default function Footer() {
             הוסיפי את העסק שלך
             <ArrowLeft size={14} weight="bold" aria-hidden="true" />
           </Link>
+          <div className="text-center sm:text-start">
+            <p className="font-headline text-white" style={{ fontSize: "14px" }}>
+              יש לך עסק מזון מקומי?
+            </p>
+            <p style={{ fontSize: "11px", color: "#9ab89a" }}>
+              הצטרפי לאלפי בעלות עסק במהמקור
+            </p>
+          </div>
         </div>
 
         {/* ================= 3-column body ================= */}
@@ -182,7 +182,7 @@ export default function Footer() {
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-[#EAF3DE] text-[#2E4A2E] px-5 py-2 rounded-[8px] hover:bg-white transition font-medium disabled:opacity-60"
+                className="bg-[#4cb08b] text-white px-5 py-2 rounded-[8px] hover:opacity-90 transition font-medium disabled:opacity-60"
               >
                 {status === "loading" ? (
                   <span className="inline-flex items-center gap-2">
@@ -215,6 +215,9 @@ export default function Footer() {
             marginTop: "32px",
           }}
         >
+          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
+            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
+          </p>
           <ul className="flex items-center gap-4">
             {[
               { href: "/login", label: "כניסה לחשבון" },
@@ -232,9 +235,6 @@ export default function Footer() {
               </li>
             ))}
           </ul>
-          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
-          </p>
         </div>
       </div>
     </footer>
