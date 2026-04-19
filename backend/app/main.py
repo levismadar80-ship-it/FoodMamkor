@@ -319,6 +319,27 @@ def get_vapid_public_key():
     return {"public_key": settings.vapid_public_key or ""}
 
 
+@app.get("/holiday-mode")
+def get_holiday_mode():
+    """Return admin holiday override settings for the frontend banner."""
+    from app.database import SessionLocal
+    from app.models.models import AdminSetting
+    db = None
+    try:
+        db = SessionLocal()
+        rows = db.query(AdminSetting).filter(
+            AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
+        ).all()
+        kv = {r.key: r.value for r in rows}
+        return {
+            "enabled": kv.get("holiday_override_enabled", "false").lower() == "true",
+            "key": kv.get("holiday_override_key", "") or "",
+        }
+    finally:
+        if db is not None:
+            db.close()
+
+
 @app.get("/")
 def root():
     return {"message": "מהמקור API - ברוכים הבאים"}
