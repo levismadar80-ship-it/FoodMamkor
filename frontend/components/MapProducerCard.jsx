@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
+import { styleForProducer } from "@/lib/map-categories";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const { city: userCity } = useUserCity();
@@ -14,6 +15,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const isVerified = p.is_verified;
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
+  const { color: categoryColor } = styleForProducer(p);
 
   const deliveryMatch = userCity && Array.isArray(p.delivery_areas)
     ? p.delivery_areas.find((d) => d.city === userCity)
@@ -59,6 +61,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
         ) : (
           <div className="w-full h-full flex items-center justify-center text-2xl" aria-hidden="true">🌿</div>
         )}
+        {/* Category color dot — bottom-end corner of thumbnail */}
+        <span
+          className="absolute bottom-1 end-1 w-2.5 h-2.5 rounded-full border-[1.5px] border-white pointer-events-none"
+          style={{ background: categoryColor }}
+          aria-hidden="true"
+        />
       </div>
 
       {/* Text content — LEFT in RTL */}
@@ -67,9 +75,15 @@ export default function MapProducerCard({ producer, active, onClick }) {
           <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "17px" }}>
             {p.name}
           </h3>
-          {(category?.name || priceLabel) && (
+          {/* Category name in muted, price in Cormorant italic gold — separate lines */}
+          {category?.name && (
             <p className="text-site-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
-              {category?.name}{category?.name && priceLabel ? " · " : ""}{priceLabel}
+              {category.name}
+            </p>
+          )}
+          {priceLabel && (
+            <p className="font-english italic line-clamp-1 mt-0.5" style={{ fontSize: "13px", color: "#8B6914" }}>
+              {priceLabel}
             </p>
           )}
         </div>
