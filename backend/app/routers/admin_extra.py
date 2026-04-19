@@ -30,6 +30,8 @@ from app.services.analytics import server_health
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
+SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
+
 
 # ============================================================
 # USERS
@@ -102,6 +104,10 @@ def update_user_role(
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    if target.email == SUPER_ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי")
+    if target.id == user.id and data.role != "admin":
+        raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
     target.role = data.role
     db.commit()
     return {"detail": "Role updated", "role": target.role}

@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+
+const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
 export default function AdminUsersPage() {
+  const { user: me } = useAuth();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [expanded, setExpanded] = useState(null);
   const [favorites, setFavorites] = useState({});
+  const [confirm, setConfirm] = useState(null); // { userId, userName, action: "promote"|"demote" }
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     load();
@@ -23,9 +29,15 @@ export default function AdminUsersPage() {
     api.get("/admin/users", { params }).then((r) => setUsers(r.data)).catch(() => setUsers([]));
   };
 
-  const updateRole = async (id, newRole) => {
-    await api.put(`/admin/users/${id}/role`, { role: newRole });
-    load();
+  const applyRole = async (id, newRole) => {
+    setBusy(true);
+    try {
+      await api.put(`/admin/users/${id}/role`, { role: newRole });
+      load();
+    } finally {
+      setBusy(false);
+      setConfirm(null);
+    }
   };
 
   const toggleBlock = async (id) => {
@@ -45,15 +57,8 @@ export default function AdminUsersPage() {
     }
   };
 
-  const roleBadge = (r) => {
-    const map = {
-      admin: { label: "אדמין", cls: "bg-primary text-white" },
-      producer: { label: "בית עסק", cls: "bg-secondary text-white" },
-      consumer: { label: "צרכן", cls: "bg-gray-100 text-gray-700" },
-    };
-    const m = map[r] || { label: r, cls: "bg-gray-100" };
-    return <span className={`text-xs px-2 py-1 rounded-full ${m.cls}`}>{m.label}</span>;
-  };
+  const isSuperAdmin = (u) => u.email === SUPER_ADMIN_EMAIL;
+  const isMe = (u) => me && u.id === me.id;
 
   return (
     <div className="space-y-5">
@@ -112,15 +117,56 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3 text-text-secondary text-xs">{u.email}</td>
                     <td className="px-4 py-3 text-text-secondary">{u.city || "—"}</td>
                     <td className="px-4 py-3">
-                      <select
-                        value={u.role}
-                        onChange={(e) => updateRole(u.id, e.target.value)}
-                        className="text-xs border border-border rounded px-2 py-1 bg-white"
-                      >
-                        <option value="consumer">צרכן</option>
-                        <option value="producer">בית עסק</option>
-                        <option value="admin">אדמין</option>
-                      </select>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Role badge */}
+                        {u.role === "admin" ? (
+                          isSuperAdmin(u) ? (
+                            <>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
+                                אדמין
+                              </span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#8B6914] font-medium">
+                                מוגן
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
+                              אדמין
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                            {u.role === "producer" ? "בית עסק" : "צרכן"}
+                          </span>
+                        )}
+
+                        {/* Promote button — show when not already admin */}
+                        {u.role !== "admin" && (
+                          <button
+                            onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "promote" })}
+                            className="text-xs px-2 py-0.5 rounded border border-[#2e6853] text-[#2e6853] hover:bg-[#EAF3DE] transition"
+                          >
+                            העלי לאדמין
+                          </button>
+                        )}
+
+                        {/* Demote button — hidden for super-admin and self */}
+                        {u.role === "admin" && !isSuperAdmin(u) && !isMe(u) && (
+                          <button
+                            onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "demote" })}
+                            className="text-xs px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
+                          >
+                            הסירי הרשאות
+                          </button>
+                        )}
+
+                        {/* Tooltip for protected super-admin row */}
+                        {isSuperAdmin(u) && (
+                          <span className="text-xs text-text-secondary" title="לא ניתן להסיר הרשאות מהאדמין הראשי">
+                            🔒
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-text-secondary text-xs">
                       <button onClick={() => toggleExpand(u)} className="hover:text-primary hover:underline">
@@ -168,6 +214,40 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {/* Confirmation modal */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4">
+            <p className="font-medium text-base">
+              {confirm.action === "promote"
+                ? `את בטוחה שברצונך להעניק הרשאות אדמין ל${confirm.userName}?`
+                : `את בטוחה שברצונך להסיר הרשאות אדמין מ${confirm.userName}?`}
+            </p>
+            <div className="flex gap-3 justify-start">
+              <button
+                disabled={busy}
+                onClick={() =>
+                  applyRole(confirm.userId, confirm.action === "promote" ? "admin" : "consumer")
+                }
+                className={`px-4 py-2 rounded-[10px] text-sm font-medium text-white transition ${
+                  confirm.action === "promote"
+                    ? "bg-[#2e6853] hover:bg-[#2E4A2E]"
+                    : "bg-red-600 hover:bg-red-700"
+                } disabled:opacity-50`}
+              >
+                {busy ? "..." : "אישור"}
+              </button>
+              <button
+                onClick={() => setConfirm(null)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-text-secondary hover:bg-gray-50 transition"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
