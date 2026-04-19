@@ -5,7 +5,7 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #177 (feature/meh-53-vanity-url-story-card) — OPEN, awaiting review
+PR merged/opened: #177 (feature/meh-53-vanity-url-story-card) — MERGED to staging
 Summary:
   PR #177: MEH-53 — Producer vanity URL + Instagram story card generator.
     - /p/[slug] redirect page (→ canonical /[slug]); "p" added to RESERVED
@@ -21,9 +21,9 @@ Summary:
   Previous session: #176 MEH-52 group buy (MERGED to staging)
 
 ## Current state
-Branch: feature/meh-53-vanity-url-story-card (PR #177 open, CI running)
-Staging HEAD: aebc3a9 (after #176 merge)
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#176)
+Branch: staging (clean, all PRs squash-merged)
+Staging HEAD: bfff1c9
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#177)
 
 ## Next task
 After PR #177 merges:
@@ -58,7 +58,7 @@ First step: approve PR #177 → merge → git checkout staging → git pull → 
 | Onboarding: module singleton, no Context | Simpler than wrapping layout in a Provider | April 2026 |
 
 ## Open PRs
-#177 — MEH-53 Vanity URL + story card (feature/meh-53-vanity-url-story-card) — awaiting review
+None.
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
