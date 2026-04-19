@@ -5,30 +5,25 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #170 (feature/meh-47-bottomnav-smart-auth) — MERGED to staging
+PR merged/opened: #171 (feature/meh-admin-role-management) — MERGED to staging
 Summary:
-  PR #170: MEH-47 — BottomNav smart auth slot.
-    - Replaced static "כניסה לחשבון" tab with dynamic profile slot
-    - Logged-in: avatar photo (28px circle) or initials on bg #2e6853
-    - Guest: UserCircle icon → /login
-    - Producer role: routes to /producer/dashboard (was /settings)
-    - Active match extended to /producer/dashboard
-    - min-h-[56px] + env(safe-area-inset-bottom) for iOS clearance
+  PR #171: Admin role management on /admin/users.
+    - Replace role <select> with explicit "העלי לאדמין" / "הסירי הרשאות" buttons
+    - Confirmation modal with Hebrew text before applying role change
+    - "אדמין" badge (green #EAF3DE/#2e6853) + "מוגן" badge (gold) for super-admin
+    - Hide demote button for super-admin (levismadar80@gmail.com) and own row
+    - Backend: SUPER_ADMIN_EMAIL constant + 403 guards in update_user_role
 
-  Previous session PRs (2026-04-19, earlier):
-  #168 infinite scroll on /producers, #169 MEH-40 hide empty neighbor section
-
-  Previous session PRs (2026-04-18):
-  #165 CLAUDE.md Rule 16 + .gitignore, #166 MEH-94 design token sweep,
-  #167 staging→main release
+  Previous session PRs (same date, earlier):
+  #170 MEH-47 BottomNav smart auth slot
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: a57d2e4
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#170)
+Staging HEAD: 30069d7
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#171)
 
 ## Next task
-MEH-47 shipped. Candidate next tasks (confirm with user):
+Admin role management shipped. Candidate next tasks (confirm with user):
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
