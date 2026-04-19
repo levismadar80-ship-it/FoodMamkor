@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -11,6 +12,10 @@ from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
 from app.rate_limit import limiter
+
+
+def _gen_referral_code() -> str:
+    return uuid.uuid4().hex[:8]
 from app.schemas.schemas import (
     AppleAuthRequest,
     GoogleAuthRequest,
@@ -37,6 +42,7 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
         city=data.city,
         phone=data.phone,
         role="consumer",
+        referral_code=_gen_referral_code(),
     )
     db.add(user)
     db.commit()
@@ -108,6 +114,7 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
         phone=data.phone,
         role="producer",
         producer_id=producer.id,
+        referral_code=_gen_referral_code(),
     )
     db.add(user)
     db.commit()
@@ -147,6 +154,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
                 name=name,
                 google_id=google_id,
                 role="consumer",
+                referral_code=_gen_referral_code(),
             )
             db.add(user)
             db.commit()
@@ -197,6 +205,7 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
+                referral_code=_gen_referral_code(),
             )
             db.add(user)
             db.commit()

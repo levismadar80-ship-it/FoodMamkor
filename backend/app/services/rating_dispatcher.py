@@ -98,6 +98,12 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
         f"היי! קנית מ{seller_name} ({product_title})? איך היה?\n"
         f"דרגי כאן 👇\n{rate_url}"
     )
+    # MEH-49: append referral link if the buyer has a referral code.
+    if buyer.referral_code:
+        ref_url = f"https://mehamakor.co.il/ref/{buyer.referral_code}"
+        body += (
+            f"\n\nאהבת? שתפי חברה והיא תקבל 10% הנחה בהזמנה הראשונה:\n{ref_url}"
+        )
 
     from twilio.rest import Client
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
@@ -11,6 +11,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import { validateIsraeliPhone, validateEmail } from "@/lib/validators";
+import api from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,6 +20,17 @@ export default function RegisterPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState(null);
+
+  // MEH-49: detect referral code from localStorage (set by /ref/[code] landing page)
+  useEffect(() => {
+    try {
+      const code = localStorage.getItem("referral_code");
+      if (code) setReferralCode(code);
+    } catch {
+      // private browsing — ignore
+    }
+  }, []);
   // tasks_for_claude_code.md tasks 7+8 — per-field touched state for
   // onBlur inline validation + eye toggle for password visibility.
   const [nameTouched, setNameTouched] = useState(false);
@@ -54,6 +66,15 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form);
+      // MEH-49: claim referral after successful registration (best-effort)
+      if (referralCode) {
+        try {
+          await api.post("/referral/claim", { code: referralCode });
+          localStorage.removeItem("referral_code");
+        } catch {
+          // referral claim is non-blocking
+        }
+      }
       router.push("/");
     } catch (err) {
       setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
@@ -115,6 +136,13 @@ export default function RegisterPage() {
           <span>❤️ שמרי מועדפים</span>
           <span>⭐ דרגי ושתפי</span>
         </div>
+
+        {/* MEH-49: referral discount badge */}
+        {referralCode && (
+          <div className="mb-4 rounded-[10px] bg-[#EAF3DE] border border-[#2e6853]/20 px-4 py-2 text-sm text-[#2e6853] font-medium">
+            הגעת דרך חברה 🌿 10% הנחה בהזמנה הראשונה
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

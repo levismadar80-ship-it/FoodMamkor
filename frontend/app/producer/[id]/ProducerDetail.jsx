@@ -16,6 +16,7 @@ import BadgeRow from "@/components/BadgeRow";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import { useAuth } from "@/lib/auth-context";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import {
@@ -36,6 +37,7 @@ import {
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
   const [activeTab, setActiveTab] = useState("about");
@@ -380,6 +382,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               </button>
             )}
             <WhatsAppShareButton producer={producer} url={shareUrl} />
+            {/* MEH-49: referral chip — only for logged-in users with a referral code */}
+            {user?.referral_code && (
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/${user.referral_code}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium"
+              >
+                שתפי וקבלי 10% 🌿
+              </a>
+            )}
           </div>
 
           {/* Description */}
