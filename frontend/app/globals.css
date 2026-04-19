@@ -38,6 +38,11 @@ h1, h2, h3 {
   width: 100%;
   border-radius: 16px;
 }
+/* Warm map tiles — reduces the cold blue of OpenStreetMap to match the
+   site's cream/forest palette. Matches design system v2 specification. */
+.leaflet-tile-pane {
+  filter: saturate(0.7) brightness(1.05) sepia(0.1);
+}
 
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet
    is open. MapClient adds `body.sheet-open` when `selectedProducer` is
