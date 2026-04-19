@@ -5,25 +5,24 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #171 (feature/meh-admin-role-management) — MERGED to staging
+PR merged/opened: #172 (feature/meh-46-footer-rtl) — MERGED to staging
 Summary:
-  PR #171: Admin role management on /admin/users.
-    - Replace role <select> with explicit "העלי לאדמין" / "הסירי הרשאות" buttons
-    - Confirmation modal with Hebrew text before applying role change
-    - "אדמין" badge (green #EAF3DE/#2e6853) + "מוגן" badge (gold) for super-admin
-    - Hide demote button for super-admin (levismadar80@gmail.com) and own row
-    - Backend: SUPER_ADMIN_EMAIL constant + 403 guards in update_user_role
+  PR #172: MEH-46 — Footer RTL layout fixes + newsletter button color.
+    - CTA row: button swapped to right side, text to left side
+    - Copyright bar: links swapped to right side, © text to left side
+    - Newsletter "הצטרפי" button: cream #EAF3DE → #4cb08b with white text
 
   Previous session PRs (same date, earlier):
+  #171 admin role management (promote/demote + super-admin guard)
   #170 MEH-47 BottomNav smart auth slot
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 30069d7
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#171)
+Staging HEAD: 56c4220
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#172)
 
 ## Next task
-Admin role management shipped. Candidate next tasks (confirm with user):
+Footer RTL shipped. Candidate next tasks (confirm with user):
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
