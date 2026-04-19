@@ -99,6 +99,9 @@ class User(Base):
     # counts on the /admin/dashboard. Nullable for pre-existing users who
     # haven't made a request yet after this column was added.
     last_active_at = Column(DateTime, nullable=True, index=True)
+    # MEH-49: referral code — unique 8-char code generated at registration.
+    # Used to build /ref/{code} links that credit the referrer.
+    referral_code = Column(String(20), unique=True, nullable=True, index=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
@@ -571,3 +574,24 @@ class ProducerWhatsAppClick(Base):
         index=True,
     )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class ReferralClick(Base):
+    """MEH-49: tracks when a referee registers via a referrer's /ref/{code} link."""
+
+    __tablename__ = "referral_clicks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    referrer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    referee_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

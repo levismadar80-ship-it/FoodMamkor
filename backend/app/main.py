@@ -15,7 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.rate_limit import limiter
-from app.routers import admin, admin_experiences, admin_extra, admin_outreach, auth, chat, events, experiences, favorites, home_products, marketing, producer_me, producers, recipes, reports, reviews, search, upload, users_me
+from app.routers import admin, admin_experiences, admin_extra, admin_outreach, auth, chat, events, experiences, favorites, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
 
 # Force stdout to be unbuffered so Railway's log panel shows startup
 # messages in real time. Without this, Python buffers until the process
@@ -99,6 +99,8 @@ def _migrate_columns(engine):
         ("producers", "contact_email", "VARCHAR(200)"),
         # MEH-18 — manual editorial "מומלץ" badge.
         ("producers", "is_recommended", "BOOLEAN DEFAULT FALSE"),
+        # MEH-49 — referral code (unique short code per user).
+        ("users", "referral_code", "VARCHAR(20)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
@@ -108,6 +110,10 @@ def _migrate_columns(engine):
         # Unique index on slug (allow nulls)
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_producers_slug ON producers (slug) WHERE slug IS NOT NULL"
+        ))
+        # MEH-49: unique index on referral_code (allow nulls for pre-existing users)
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code) WHERE referral_code IS NOT NULL"
         ))
         # Make password_hash nullable for Google OAuth users
         conn.execute(text(
@@ -298,6 +304,7 @@ app.include_router(users_me.router)
 app.include_router(admin_outreach.router)
 app.include_router(admin_outreach.prefill_router)
 app.include_router(chat.router)
+app.include_router(referrals.router)
 
 
 @app.get("/")

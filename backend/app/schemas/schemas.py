@@ -265,6 +265,7 @@ class UserOut(BaseModel):
     # hide the password-change form for OAuth-only accounts (they have
     # no password_hash to verify against).
     is_oauth: bool = False
+    referral_code: str | None = None
 
     model_config = {"from_attributes": True}
 
