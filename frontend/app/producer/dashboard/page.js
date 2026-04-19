@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { getUpcomingHoliday } from "@/lib/holidays";
 
 function VanityLinkCard({ slug }) {
   const url = `https://mehamakor.online/p/${slug}`;
@@ -150,6 +151,30 @@ export default function ProducerDashboardPage() {
           🌿 פרופיל העסק שלך ממתין לאישור
         </div>
       )}
+
+      {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
+      {(() => {
+        const h = getUpcomingHoliday();
+        if (!h) return null;
+        return (
+          <div
+            className="rounded-[16px] p-4 mb-6 text-sm flex items-start gap-3"
+            style={{ backgroundColor: h.color + "15", border: `1.5px solid ${h.color}35` }}
+          >
+            <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
+            <div>
+              <p className="font-semibold text-site-text">{h.dashboardHint}</p>
+              <Link
+                href="/producer/dashboard/products/new"
+                className="text-xs mt-1 inline-block hover:underline"
+                style={{ color: h.color }}
+              >
+                עדכני את הקטלוג ←
+              </Link>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MEH-53: Vanity URL card */}
       {producer.slug && (

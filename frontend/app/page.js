@@ -26,6 +26,7 @@ import ChipScrollRow from "@/components/ChipScrollRow";
 import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useOnboarding } from "@/lib/use-onboarding";
+import HolidayBanner from "@/components/HolidayBanner";
 
 const PAGE_SIZE = 8;
 
@@ -456,6 +457,11 @@ export default function HomePage() {
         onClose={() => setLocationModalOpen(false)}
         onSelectCity={handleCitySelected}
       />
+
+      {/* MEH-55: holiday banner — visible 7 days before and during a holiday */}
+      <div className="mt-4">
+        <HolidayBanner />
+      </div>
 
       {/* =========================
           CATEGORY GRID
