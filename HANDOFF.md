@@ -4,10 +4,25 @@
 > Last updated: 2026-04-18
 
 ## Last session
-Date: 2026-04-18
-PR merged/opened: #165 (feature/claude-md-rule16-worktrees) — MERGED to staging
-                 #166 (feature/meh-94-design-token-sweep) — MERGED to staging
-                 #167 (staging → main release, PRs #147–#166) — MERGED to main
+Date: 2026-04-19
+PR merged/opened: #168 (feature/infinite-scroll-producers) — MERGED to staging
+                 #169 (feature/meh-40-hide-empty-neighbor-section) — MERGED to staging
+Summary:
+  PR #168: Infinite scroll on /producers — IntersectionObserver replaces
+    pagination; PAGE_SIZE=24; live counter; branded spinner; end-of-list
+    message; SEO ServerPageLinks kept as fallback. No visible change until
+    catalog > 24 items.
+  PR #169: MEH-40 — hide "מהמטבח של השכן" homepage section entirely when
+    homeProducts=[]. Entire <section> wrapped in homeProducts.length > 0 &&;
+    empty-state paragraph removed.
+
+  Previous session PRs (2026-04-18):
+  #165 CLAUDE.md Rule 16 + .gitignore, #166 MEH-94 design token sweep,
+  #167 staging→main release
+
+## Current state
+Branch: staging (clean, all PRs squash-merged)
+Staging HEAD: 9ef24bc
 Summary:
   PR #165: CLAUDE.md Rule 16 (git worktrees for parallel features) + .gitignore
     (.claude/worktrees/). Old rules 16→17, 17→18, 18→19.
@@ -28,7 +43,7 @@ Staging HEAD: 7b1c10b
 Main HEAD: e42127e (production release — all PRs #147–#166)
 
 ## Next task
-Design-review workflow installed. Candidate next tasks (confirm with user):
+Infinite scroll + MEH-40 shipped. Candidate next tasks (confirm with user):
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
