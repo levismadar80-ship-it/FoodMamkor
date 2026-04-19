@@ -17,6 +17,7 @@ import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import {
   getPrimaryMethod,
   getPrimaryContactHref,
@@ -344,6 +345,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               ref={inlineCTARef}: when this exits viewport, the sticky bar slides in.
               md:hidden — desktop sidebar already has the CTA. */}
           <div ref={inlineCTARef} className="md:hidden mt-4">
+            <WhatsAppQuestionChips producer={producer} />
             <PrimaryContactButton
               producer={producer}
               onClick={() => {
@@ -490,6 +492,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {/* MEH-17: primary CTA follows producer.primary_contact_method.
                 WhatsApp still pings the analytics beacon on click so the
                 existing producer-dashboard metric keeps working. */}
+            <WhatsAppQuestionChips producer={producer} />
             <PrimaryContactButton
               producer={producer}
               onClick={() => {
