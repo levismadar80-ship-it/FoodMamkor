@@ -91,6 +91,37 @@ export default function AdminSettingsPage() {
         </Field>
       </div>
 
+      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+        <h2 className="font-semibold">חלון חג</h2>
+        <p className="text-xs text-text-secondary">הפעלי ידנית כדי לבדוק את הבאנר בדשבורד ובעמוד הבית לפני החג.</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">חלון חג פעיל</span>
+          <button
+            role="switch"
+            aria-checked={settings.holiday_override_enabled === "true"}
+            onClick={() => update("holiday_override_enabled", settings.holiday_override_enabled === "true" ? "false" : "true")}
+            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.holiday_override_enabled === "true" ? "bg-primary" : "bg-gray-200"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        <Field label="מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)">
+          <select
+            value={settings.holiday_override_key || ""}
+            onChange={(e) => update("holiday_override_key", e.target.value)}
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          >
+            <option value="">— ללא עקיפה —</option>
+            <option value="pesach">פסח</option>
+            <option value="shavuot">שבועות</option>
+            <option value="rosh_hashana">ראש השנה</option>
+            <option value="sukkot">סוכות</option>
+            <option value="chanuka">חנוכה</option>
+            <option value="tu_bishvat">ט״ו בשבט</option>
+          </select>
+        </Field>
+      </div>
+
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
         <h2 className="font-semibold">בדיקות חיבור</h2>
         {["twilio", "cloudinary"].map((name) => (

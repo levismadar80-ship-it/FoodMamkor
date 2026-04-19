@@ -367,6 +367,8 @@ DEFAULT_SETTINGS = {
     "admin_whatsapp": "",
     "freemium_premium_price": "0",
     "freemium_free_image_limit": "3",
+    "holiday_override_enabled": "false",
+    "holiday_override_key": "",
 }
 
 
