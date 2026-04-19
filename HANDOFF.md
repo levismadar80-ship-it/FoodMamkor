@@ -5,39 +5,46 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #177 (feature/meh-53-vanity-url-story-card) — MERGED to staging
+PR merged/opened: #178 (feature/meh-54-favorite-alerts) — OPEN (draft)
 Summary:
-  PR #177: MEH-53 — Producer vanity URL + Instagram story card generator.
-    - /p/[slug] redirect page (→ canonical /[slug]); "p" added to RESERVED
-    - register/producer step 2: live slug preview "mehamakor.online/p/[slug]"
-    - Producer dashboard: "הלינק שלי" card — copy + WhatsApp share
-    - StoryCardCanvas component: 1080×1920 Canvas API, dark-green bg, circle image,
-      Frank Ruhl Libre name, DM Sans city/category/URL, מהמקור logo + CTA
-    - Admin producers list: 📸 סטורי button per approved producer → inline panel
-    - Download JPEG / Copy caption / Save to Cloudinary
-    - POST /admin/producers/{id}/story-card endpoint (base64 → Cloudinary)
-    - producers.story_card_url column + migration
+  PR #178: MEH-54 — "הודעי לי כש..." favorite alerts + PWA push notifications.
+    - DB: favorite_alerts table (user_id, producer_id, notify_new_event,
+      notify_new_product, notify_delivery_area, push_subscription JSON,
+      whatsapp_opt_in). UniqueConstraint per (user, producer) pair.
+    - Backend: GET/PUT /users/me/favorites/{id}/alerts; GET /push-vapid-key;
+      fire_alerts() BackgroundTasks helper (push + Twilio WA); pywebpush added.
+    - POST /events hooks → fires notify_new_event to opted-in users.
+    - PUT /producers/me: fixed delivery_area_cities (was silently no-op'd via
+      setattr); fires notify_delivery_area when new cities added.
+    - Frontend: worker/index.js SW push handlers (bundled via next-pwa
+      customWorkerDir); lib/push.js subscribe util; AlertPrefsPanel component;
+      FavoriteButton shows AlertPrefsPanel inline after first-time favorite;
+      /favorites: 🔔 bell per card opens AlertPrefsPanel.
 
-  Previous session: #176 MEH-52 group buy (MERGED to staging)
+  Previous: #177 MEH-53 vanity URL + story card (MERGED to staging)
+  Previous: #176 MEH-52 group buy (MERGED to staging)
 
 ## Current state
-Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: bfff1c9
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#177)
+Branch: feature/meh-54-favorite-alerts (open PR #178 — draft)
+Staging HEAD: 144e8d4 (after MEH-53 handoff commit)
+Main HEAD: e42127e (production release — staging ahead by #168–#177)
 
 ## Next task
-After PR #177 merges:
+After PR #178 is approved + merged:
   - Admin analytics: add referral count per producer (skipped from MEH-49 scope)
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
   - Events section on producer detail page
   - availability_return_date schema change (v2 backend)
 
-First step: approve PR #177 → merge → git checkout staging → git pull → next feature
+First step: review PR #178 → approve → merge → git checkout staging → git pull → next feature
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
+| MEH-54: FavoriteAlert separate from ProducerFollower | ProducerFollower = bookmarks; FavoriteAlert = granular per-type alerts | April 2026 |
+| MEH-54: fail-open for push (no VAPID keys = no-op) | Consistent with AI fail-open rule; WA still works independently | April 2026 |
+| MEH-54: delivery_area_cities fix in producer_me.py | Was silently ignored via setattr; now uses _apply_delivery_cities() like admin | April 2026 |
 | Design-review workflow installed | OneRedOak template customized for mehamakor brand | April 2026 |
 | CLAUDE.md Rule 16: git worktrees | Parallel features → worktrees not stash; rules 16→17→18→19 | April 2026 |
 | .btn-whatsapp utility class | Single source for WA green (#25D366) across MapClient + ProducerDetail | April 2026 |
@@ -58,7 +65,7 @@ First step: approve PR #177 → merge → git checkout staging → git pull → 
 | Onboarding: module singleton, no Context | Simpler than wrapping layout in a Provider | April 2026 |
 
 ## Open PRs
-None.
+- #178: feature/meh-54-favorite-alerts — MEH-54 alerts (draft, awaiting review)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
@@ -74,6 +81,8 @@ None.
   docs, not these PRs. Linkback is cosmetic only, no impact.
 - Design audit token-drift findings: FIXED in PR #166. All inline hex instances
   replaced with Tailwind tokens. No remaining token-drift items from audit.
+- MEH-54 VAPID keys: VAPID_PRIVATE_KEY + VAPID_PUBLIC_KEY must be set in
+  Railway env for push to work. Generate with pywebpush. Fail-open until set.
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)

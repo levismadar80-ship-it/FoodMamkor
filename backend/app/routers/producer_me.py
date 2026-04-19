@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, date
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -9,6 +9,7 @@ from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
 from app.models import (
+    DeliveryArea,
     Favorite,
     HomeProduct,
     Producer,
@@ -40,11 +41,20 @@ def get_my_producer(user: User = Depends(require_producer), db: Session = Depend
     return producer
 
 
+def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
+    """Replace all delivery areas for this producer with the given city list."""
+    db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
+    for city in cities:
+        if city:
+            db.add(DeliveryArea(producer_id=producer.id, city=city))
+
+
 @router.put("", response_model=ProducerDetailOut)
 @limiter.limit("30/hour")
 def update_my_producer(
     request: Request,
     data: ProducerUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -58,14 +68,44 @@ def update_my_producer(
         "primary_contact_method", "contact_email", "slug", "top_product_name",
         "starting_price_label", "price_range", "grass_fed", "organic_certified",
         "has_delivery", "pickup_points", "kosher", "is_available_today",
-        "images", "category_ids", "delivery_area_cities",
+        "images",
     }
-    for field, value in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+    category_ids = payload.pop("category_ids", None)
+    delivery_cities = payload.pop("delivery_area_cities", None)
+
+    for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
 
+    # Handle delivery area cities (replaces existing areas like admin endpoint)
+    new_cities: list[str] = []
+    if delivery_cities is not None:
+        existing_cities = {da.city for da in producer.delivery_areas} if producer.delivery_areas else set()
+        _apply_delivery_cities(db, producer, delivery_cities)
+        new_cities = [c for c in delivery_cities if c and c not in existing_cities]
+
+    # Handle category updates
+    if category_ids is not None:
+        from app.models import Category
+        from app.models.models import ProducerCategory
+        db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
+        for cid in category_ids:
+            db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+
     db.commit()
     db.refresh(producer)
+
+    # MEH-54: fire delivery area alerts for newly added cities
+    if new_cities:
+        from app.routers.alerts import fire_alerts
+        background_tasks.add_task(
+            fire_alerts, db, producer.id, "delivery_area",
+            f"🚚 משלוחים חדשים: {producer.name}",
+            f"עכשיו מגיעים גם ל: {', '.join(new_cities)}",
+            f"/producer/{producer.id}",
+        )
+
     return producer
 
 

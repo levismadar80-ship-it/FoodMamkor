@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import LoginPromptModal from "./LoginPromptModal";
+import AlertPrefsPanel from "./AlertPrefsPanel";
 
 /**
  * FavoriteButton — save button for a producer. Visible to guests too
@@ -20,12 +21,15 @@ import LoginPromptModal from "./LoginPromptModal";
  * Shared behavior: load-once of /users/me/favorites (logged-in only),
  * POST/DELETE toggle (logged-in only), toast, disabled:opacity-60
  * while loading, aria-pressed + aria-label for accessibility.
+ *
+ * MEH-54: after favoriting, shows AlertPrefsPanel inline (default + inline variants).
  */
-export default function FavoriteButton({ producerId, variant = "default" }) {
+export default function FavoriteButton({ producerId, producerName = "", variant = "default" }) {
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAlertPanel, setShowAlertPanel] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -49,10 +53,12 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
       if (favorited) {
         await api.delete(`/users/me/favorites/${producerId}`);
         setFavorited(false);
+        setShowAlertPanel(false);
         showToast("הוסר מהמועדפים");
       } else {
         await api.post(`/users/me/favorites/${producerId}`);
         setFavorited(true);
+        if (variant !== "gallery") setShowAlertPanel(true);
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
           showToast('נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית', "success", 4000);
@@ -131,6 +137,15 @@ export default function FavoriteButton({ producerId, variant = "default" }) {
   return (
     <>
       {button}
+      {showAlertPanel && favorited && user && (
+        <div className="mt-3">
+          <AlertPrefsPanel
+            producerId={producerId}
+            producerName={producerName}
+            onClose={() => setShowAlertPanel(false)}
+          />
+        </div>
+      )}
       <LoginPromptModal
         open={showLoginModal}
         onClose={() => setShowLoginModal(false)}

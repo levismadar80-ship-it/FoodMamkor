@@ -220,6 +220,34 @@ class Favorite(Base):
     producer = relationship("Producer", back_populates="favorited_by")
 
 
+class FavoriteAlert(Base):
+    """MEH-54: per-producer alert preferences for favorited producers.
+
+    One row per (user, producer) pair — UNIQUE enforced at DB level.
+    Each bool controls whether that alert type fires for this user+producer.
+    push_subscription stores the Web Push API subscription JSON
+    ({endpoint, keys: {p256dh, auth}}); nullable when push not granted.
+    """
+    __tablename__ = "favorite_alerts"
+    __table_args__ = (
+        UniqueConstraint("user_id", "producer_id", name="uq_favorite_alert_per_producer"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    notify_new_product = Column(Boolean, default=True)
+    notify_new_event = Column(Boolean, default=True)
+    notify_delivery_area = Column(Boolean, default=True)
+    push_subscription = Column(JSON, nullable=True)
+    whatsapp_opt_in = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+    producer = relationship("Producer")
+
+
 class ProducerFollower(Base):
     """docs/archive/FEEDBACK_FIXES.md new feature — follow a producer to get notified
     about new products / back-in-stock events. Distinct from Favorite:

@@ -1,6 +1,9 @@
 const withPWA = require("next-pwa")({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
+  // MEH-54: custom service worker code (push event handlers).
+  // next-pwa bundles worker/index.js and importScripts it in the generated sw.js.
+  customWorkerDir: "worker",
 });
 
 // When deployed to a Vercel preview URL (not production, not local dev),
