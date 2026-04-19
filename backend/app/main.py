@@ -101,6 +101,8 @@ def _migrate_columns(engine):
         ("producers", "is_recommended", "BOOLEAN DEFAULT FALSE"),
         # MEH-49 — referral code (unique short code per user).
         ("users", "referral_code", "VARCHAR(20)"),
+        # MEH-53 — Instagram story card URL (Cloudinary).
+        ("producers", "story_card_url", "VARCHAR(500)"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:

@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // fetch attempts in case of edge cases / direct calls.
 const RESERVED = new Set([
   "about", "admin", "favorites", "login", "map",
-  "producer", "rate", "register", "settings", "terms",
+  "p", "producer", "rate", "register", "settings", "terms",
   "upgrade", "messages", "discover", "publish",
   "api", "_next", "favicon.ico", "manifest.json",
   "robots.txt", "sitemap.xml", "sw.js",

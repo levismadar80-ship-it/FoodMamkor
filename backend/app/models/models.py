@@ -49,6 +49,8 @@ class Producer(Base):
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
+    # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
+    story_card_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(String(200), nullable=True)  # featured product for cards/map

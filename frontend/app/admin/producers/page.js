@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Cow, Leaf, Package, Seal, Truck, Warning } from "@phosphor-icons/react";
@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import Pagination from "@/components/Pagination";
 import { clampPage } from "@/lib/pagination";
+import StoryCardCanvas from "@/components/StoryCardCanvas";
 
 export default function ProducersPageWrapper() {
   return (
@@ -31,6 +32,8 @@ function ProducersAdminPage() {
   const [importPreview, setImportPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
+  // MEH-53: which producer's story-card panel is open
+  const [storyCardOpenId, setStoryCardOpenId] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -338,7 +341,8 @@ function ProducersAdminPage() {
                     </span>
                   );
                 return (
-                <tr key={p.id} className="border-t hover:bg-background/50">
+                <React.Fragment key={p.id}>
+                <tr className="border-t hover:bg-background/50">
                   <td className="px-4 py-3 font-medium">
                     <div className="flex items-center gap-2">
                       {badge}
@@ -359,7 +363,7 @@ function ProducersAdminPage() {
                   </td>
                   <td className="px-4 py-3">{statusBadge(p.status)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
                       {p.status === "pending" && (
                         <button onClick={() => quickApprove(p.id)} className="text-primary hover:underline text-xs font-medium">
                           ✓ אשר
@@ -378,12 +382,36 @@ function ProducersAdminPage() {
                           {p.status === "approved" ? "השהה" : "הפעל"}
                         </button>
                       )}
+                      {p.status === "approved" && p.slug && (
+                        <button
+                          onClick={() => setStoryCardOpenId((prev) => prev === p.id ? null : p.id)}
+                          className="text-[#4cb08b] hover:underline text-xs"
+                          title="צור כרטיס אינסטגרם"
+                        >
+                          📸 סטורי
+                        </button>
+                      )}
                       <button onClick={() => deleteProducer(p.id, p.name)} className="text-red-600 hover:underline text-xs">
                         מחק
                       </button>
                     </div>
                   </td>
                 </tr>
+                {storyCardOpenId === p.id && (
+                  <tr>
+                    <td colSpan={6} className="px-6 pb-5 bg-background/60">
+                      <StoryCardCanvas
+                        producer={p}
+                        onUploaded={(url) => {
+                          setProducers((prev) =>
+                            prev.map((pr) => pr.id === p.id ? { ...pr, story_card_url: url } : pr)
+                          );
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
                 );
               })}
             </tbody>

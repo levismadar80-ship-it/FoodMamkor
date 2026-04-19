@@ -5,35 +5,35 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #176 (feature/meh-52-group-buy) — OPEN, awaiting review
+PR merged/opened: #177 (feature/meh-53-vanity-url-story-card) — OPEN, awaiting review
 Summary:
-  PR #176: MEH-52 — קבוצת רכש MVP (group buy with commit counter + price unlock).
-    - GroupBuy + GroupBuyCommit models (auto-created via create_all, no migration needed)
-    - GET/POST /group-buys, GET/POST/DELETE /group-buys/{id}/commit (producer + public)
-    - GET/PATCH /admin/group-buys admin endpoints (separate admin_router)
-    - Auto-funds when commits reach min_participants; reverts if cancelled below threshold
-    - /group-buys list page — cards with progress bar, city/status filter
-    - /group-buys/[id] detail — commit form, 30s live polling, confetti on fund, WA share
-    - /producer/dashboard/group-buys — my group buys tab + inline create form
-    - /admin/group-buys — status management table
-    - Quick-link cards added to producer dashboard + admin dashboard
+  PR #177: MEH-53 — Producer vanity URL + Instagram story card generator.
+    - /p/[slug] redirect page (→ canonical /[slug]); "p" added to RESERVED
+    - register/producer step 2: live slug preview "mehamakor.online/p/[slug]"
+    - Producer dashboard: "הלינק שלי" card — copy + WhatsApp share
+    - StoryCardCanvas component: 1080×1920 Canvas API, dark-green bg, circle image,
+      Frank Ruhl Libre name, DM Sans city/category/URL, מהמקור logo + CTA
+    - Admin producers list: 📸 סטורי button per approved producer → inline panel
+    - Download JPEG / Copy caption / Save to Cloudinary
+    - POST /admin/producers/{id}/story-card endpoint (base64 → Cloudinary)
+    - producers.story_card_url column + migration
 
-  Previous session: #175 MEH-49 referral loop (MERGED)
+  Previous session: #176 MEH-52 group buy (MERGED to staging)
 
 ## Current state
-Branch: feature/meh-52-group-buy (PR #176 open, Vercel building)
-Staging HEAD: cd4d8fe
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#175)
+Branch: feature/meh-53-vanity-url-story-card (PR #177 open, CI running)
+Staging HEAD: aebc3a9 (after #176 merge)
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#176)
 
 ## Next task
-After PR #176 merges:
+After PR #177 merges:
   - Admin analytics: add referral count per producer (skipped from MEH-49 scope)
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
   - Events section on producer detail page
   - availability_return_date schema change (v2 backend)
 
-First step: approve PR #176 → merge → git checkout staging → git pull → next feature
+First step: approve PR #177 → merge → git checkout staging → git pull → next feature
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -58,7 +58,7 @@ First step: approve PR #176 → merge → git checkout staging → git pull → 
 | Onboarding: module singleton, no Context | Simpler than wrapping layout in a Provider | April 2026 |
 
 ## Open PRs
-#176 — MEH-52 קבוצת רכש MVP (feature/meh-52-group-buy) — awaiting review + Vercel preview
+#177 — MEH-53 Vanity URL + story card (feature/meh-53-vanity-url-story-card) — awaiting review
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162

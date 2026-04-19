@@ -455,6 +455,64 @@ def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Sess
     return {"detail": "Recipe rejected"}
 
 
+# --- MEH-53: Instagram story card ---
+
+class StoryCardUploadRequest(BaseModel):
+    image_data: str  # base64-encoded JPEG data URI: "data:image/jpeg;base64,..."
+
+
+@router.post("/producers/{producer_id}/story-card")
+def upload_story_card(
+    producer_id: UUID,
+    body: StoryCardUploadRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Accept base64 JPEG canvas export, upload to Cloudinary, persist URL."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # Strip the data-URI prefix to get raw base64
+    data_uri = body.image_data
+    if "," in data_uri:
+        data_uri = data_uri.split(",", 1)[1]
+
+    import base64
+    try:
+        raw = base64.b64decode(data_uri)
+    except Exception:
+        raise HTTPException(status_code=400, detail="נתוני תמונה לא תקינים")
+
+    if not settings.cloudinary_cloud_name:
+        # Dev fallback
+        return {"url": f"/placeholder-image.png?id={producer_id}", "saved": False}
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            raw,
+            folder=f"mehamakor/producers/{producer_id}",
+            public_id="story-card",
+            resource_type="image",
+            overwrite=True,
+            format="jpg",
+        )
+        url = result["secure_url"]
+        producer.story_card_url = url
+        db.commit()
+        return {"url": url, "saved": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
 # --- Stats ---
 @router.get("/stats")
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
