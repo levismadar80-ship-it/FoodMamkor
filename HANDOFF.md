@@ -5,24 +5,24 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #172 (feature/meh-46-footer-rtl) — MERGED to staging
+PR merged/opened: #173 (feature/fix-csp-google-gsi-style) — MERGED to staging
 Summary:
-  PR #172: MEH-46 — Footer RTL layout fixes + newsletter button color.
-    - CTA row: button swapped to right side, text to left side
-    - Copyright bar: links swapped to right side, © text to left side
-    - Newsletter "הצטרפי" button: cream #EAF3DE → #4cb08b with white text
+  PR #173: CSP fix — add accounts.google.com to style-src.
+    - Fixes "violates Content Security Policy: style-src" console error on /login
+    - COOP not set anywhere; no change needed for OAuth popup postMessage
+    - docs/CHANGELOG.md + docs/MANUAL_TESTING.md updated
 
   Previous session PRs (same date, earlier):
-  #171 admin role management (promote/demote + super-admin guard)
-  #170 MEH-47 BottomNav smart auth slot
+  #172 MEH-46 footer RTL fixes + newsletter button
+  #171 admin role management, #170 MEH-47 BottomNav
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: 56c4220
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#172)
+Staging HEAD: 819ab5d
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#173)
 
 ## Next task
-Footer RTL shipped. Candidate next tasks (confirm with user):
+CSP fix shipped. Candidate next tasks (confirm with user):
   - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
   - Contact-click analytics endpoint
   - Lightbox for gallery images
