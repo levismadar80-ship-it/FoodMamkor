@@ -71,6 +71,13 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-4-6"
 
+    # MEH-54: VAPID keys for Web Push notifications. Generate with:
+    #   python -c "from py_vapid import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem().decode()); print(v.public_key.public_bytes_raw().hex())"
+    # Leave empty to disable push (fail-open — alerts still send via WhatsApp if opted in).
+    vapid_private_key: str = ""
+    vapid_public_key: str = ""
+    vapid_subject: str = "mailto:admin@mehamakor.online"
+
     class Config:
         env_file = ".env"
         # Read JWT_SECRET_KEY env var into .secret_key (the more canonical name).

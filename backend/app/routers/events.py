@@ -10,7 +10,7 @@ DELETE /events/{id}              delete (owner only)
 from datetime import date, datetime, time
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
 
@@ -174,6 +174,7 @@ def get_event(event_id: UUID, db: Session = Depends(get_db)):
 @router.post("/events", response_model=EventOut, status_code=201)
 def create_event(
     data: EventCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -212,6 +213,17 @@ def create_event(
         .filter(Event.id == event.id)
         .first()
     )
+
+    # MEH-54: notify favoriting users who opted in for new-event alerts
+    from app.routers.alerts import fire_alerts
+    producer_name = event.producer.name if event.producer else ""
+    background_tasks.add_task(
+        fire_alerts, db, user.producer_id, "new_event",
+        f"🎉 אירוע חדש: {data.title}",
+        f"{producer_name} — {data.city or ''}\n{data.event_date}",
+        f"/events/{event.id}",
+    )
+
     return _serialize(event)
 
 
