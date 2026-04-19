@@ -673,7 +673,7 @@ export default function MapPage() {
                   return (
                     <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
                       <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
-                      <span className="text-xs text-site-text">{cat.emoji} {cat.name.split(",")[0]}</span>
+                      <span className="text-xs text-site-text">{cat.name.split(",")[0]}</span>
                     </button>
                   );
                 })}
