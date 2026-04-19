@@ -15,6 +15,7 @@ import { trackEvent } from "@/lib/analytics";
 import api from "@/lib/api";
 
 const FILTER_LIMIT = 100;
+const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
 
 const CITY_CHIP = { key: "city", label: "בעיר שלי", icon: "📍" };
 
@@ -44,8 +45,17 @@ export default function ProducersClient({
   const { setCity: setUserCity } = useUserCity();
   const mountFetched = useRef(false);
 
+  // Infinite scroll state (unfiltered mode only)
+  const [appendItems, setAppendItems] = useState([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialPage < totalPages);
+  const [nextPage, setNextPage] = useState(initialPage + 1);
+  const sentinelRef = useRef(null);
+
   const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter;
-  const displayItems = hasActiveChips ? (filteredItems ?? []) : initialItems;
+  const displayItems = hasActiveChips
+    ? (filteredItems ?? [])
+    : [...initialItems, ...appendItems];
   const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
 
   const syncUrl = useCallback(
@@ -79,6 +89,35 @@ export default function ProducersClient({
       .catch(() => setFilteredItems([]))
       .finally(() => setLoading(false));
   }, []);
+
+  const loadNextPage = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    api
+      .get("/producers", {
+        params: { limit: PAGE_SIZE, offset: (nextPage - 1) * PAGE_SIZE },
+      })
+      .then((r) => {
+        const items = Array.isArray(r.data) ? r.data : [];
+        setAppendItems((prev) => [...prev, ...items]);
+        if (items.length < PAGE_SIZE) setHasMore(false);
+        else setNextPage((p) => p + 1);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [loadingMore, hasMore, nextPage]);
+
+  // IntersectionObserver — fires when the sentinel enters the viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || hasActiveChips) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadNextPage(); },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, hasActiveChips, loadNextPage]);
 
   // Fetch on mount if URL already has active chips (shared link / back-nav).
   useEffect(() => {
@@ -141,9 +180,10 @@ export default function ProducersClient({
   const counterText = (() => {
     if (!showGrid) return null;
     if (hasActiveChips) return `נמצאו ${filteredItems?.length ?? 0} בתי עסק`;
-    const start = (initialPage - 1) * perPage + 1;
-    const end = Math.min(initialPage * perPage, initialTotal);
-    return `מציגים ${start}–${end} מתוך ${initialTotal}`;
+    const loaded = initialItems.length + appendItems.length;
+    return loaded >= initialTotal
+      ? `כל ${initialTotal} בתי העסק`
+      : `מציגות ${loaded} מתוך ${initialTotal} בתי עסק`;
   })();
 
   return (
@@ -233,8 +273,32 @@ export default function ProducersClient({
               <ProducerCard key={p.id} producer={p} referrer="producers-index" />
             ))}
           </div>
-          {!hasActiveChips && totalPages > 1 && (
-            <ServerPageLinks page={initialPage} totalPages={totalPages} />
+
+          {/* Infinite scroll — unfiltered mode only */}
+          {!hasActiveChips && (
+            <>
+              {/* Sentinel: observer triggers loadNextPage when this enters viewport */}
+              <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+              {loadingMore && (
+                <div className="flex justify-center py-8">
+                  <div
+                    className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
+                    role="status"
+                    aria-label="טוענת עוד בתי עסק"
+                  />
+                </div>
+              )}
+              {!hasMore && appendItems.length > 0 && (
+                <p className="text-center text-site-muted text-sm py-8">
+                  הצגנו את כל {initialTotal} בתי העסק 🌿
+                </p>
+              )}
+              {/* SEO fallback — shown when JS pagination is still the only option
+                  (e.g. user landed directly on page N via URL) */}
+              {!hasMore && appendItems.length === 0 && totalPages > 1 && (
+                <ServerPageLinks page={initialPage} totalPages={totalPages} />
+              )}
+            </>
           )}
         </>
       )}
