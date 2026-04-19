@@ -224,6 +224,13 @@ export default function ProducerDashboardPage() {
           <p className="font-headline text-lg font-bold mb-1">הצג את העסק באתר</p>
           <p className="text-sm text-site-muted">כך לקוחות רואות אותו</p>
         </Link>
+        <Link
+          href="/producer/dashboard/group-buys"
+          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+        >
+          <p className="font-headline text-lg font-bold mb-1">קבוצות הרכש שלי</p>
+          <p className="text-sm text-site-muted">נהלי קבוצות רכש ופתחי חדשות</p>
+        </Link>
       </div>
     </div>
   );
