@@ -5,28 +5,32 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #174 (feature/meh-48-whatsapp-question-chips) — MERGED to staging
+PR merged/opened: #175 (feature/meh-49-referral-loop) — MERGED to staging
 Summary:
-  PR #174: MEH-48 — pre-filled WhatsApp question chips on producer detail.
-    - New WhatsAppQuestionChips component above main CTA (mobile + desktop)
-    - 4 chips: availability, ordering, city delivery, price per kg
-    - Dynamic city + producer name substitution; only shows when phone exists
+  PR #175: MEH-49 — T+24h WhatsApp rating + referral loop.
+    - referral_code column on users + ReferralClick table + migration
+    - POST /referral/claim endpoint (idempotent, auth-required)
+    - All 4 User() creation paths auto-generate 8-char referral_code
+    - rating_dispatcher: appends referral URL to T+24h message
+    - /ref/[code] landing page (localStorage save + redirect)
+    - /register: referral badge + claim after registration
+    - ProducerDetail: "שתפי וקבלי 10%" chip for logged-in users
 
   Previous session PRs (same date, earlier):
-  #173 CSP fix (accounts.google.com in style-src)
-  #172 MEH-46 footer RTL, #171 admin role management, #170 MEH-47 BottomNav
+  #174 MEH-48 WhatsApp question chips
+  #173 CSP fix, #172 MEH-46 footer, #171 admin roles, #170 MEH-47
 
 ## Current state
 Branch: staging (clean, all PRs squash-merged)
-Staging HEAD: db27c38
-Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#174)
+Staging HEAD: e5ebd02
+Main HEAD: e42127e (production release — all PRs #147–#166; staging ahead by #168–#175)
 
 ## Next task
-MEH-48 shipped. Candidate next tasks (confirm with user):
-  - ProducerCard heart/favorite Phase C (post-login replay — known issue below)
-  - Contact-click analytics endpoint
+Referral loop shipped. Candidate next tasks (confirm with user):
+  - Admin analytics: add referral count per producer (skipped from MEH-49 scope)
+  - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
-  - Events section on producer detail page (feature/meh-XX-producer-events slot)
+  - Events section on producer detail page
   - availability_return_date schema change (v2 backend)
 
 First step: confirm which task → git checkout staging → git pull → git checkout -b feature/[description]
