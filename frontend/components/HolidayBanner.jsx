@@ -47,7 +47,8 @@ export default function HolidayBanner() {
 
   return (
     <div
-      role="banner"
+      role="region"
+      aria-label="הודעת חג"
       className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >

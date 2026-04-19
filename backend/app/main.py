@@ -324,8 +324,9 @@ def get_holiday_mode():
     """Return admin holiday override settings for the frontend banner."""
     from app.database import SessionLocal
     from app.models.models import AdminSetting
-    db = SessionLocal()
+    db = None
     try:
+        db = SessionLocal()
         rows = db.query(AdminSetting).filter(
             AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
         ).all()
@@ -335,7 +336,8 @@ def get_holiday_mode():
             "key": kv.get("holiday_override_key", "") or "",
         }
     finally:
-        db.close()
+        if db is not None:
+            db.close()
 
 
 @app.get("/")

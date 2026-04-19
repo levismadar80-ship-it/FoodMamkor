@@ -165,7 +165,7 @@ export default function ProducerDashboardPage() {
             <div>
               <p className="font-semibold text-site-text">{h.dashboardHint}</p>
               <Link
-                href="/producer/dashboard/products/new"
+                href="/producer/dashboard"
                 className="text-xs mt-1 inline-block hover:underline"
                 style={{ color: h.color }}
               >
