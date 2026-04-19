@@ -248,6 +248,8 @@ class ProducerDetailOut(ProducerListOut):
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
     created_at: datetime
+    # MEH-53: Instagram story card URL (Cloudinary).
+    story_card_url: str | None = None
 
     model_config = {"from_attributes": True}
 
