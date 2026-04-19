@@ -804,9 +804,9 @@ export default function HomePage() {
 
       {/* =========================
           מהמטבח של השכן — preview (max 3)
-          Full browse lives at /neighbor. The full-section version used
-          to live here but we split it out so the homepage stays tight.
+          Full browse lives at /neighbor. Hidden entirely when no products exist.
           ========================= */}
+      {homeProducts.length > 0 && (
       <section
         id="home-kitchen"
         className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
@@ -827,28 +827,17 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {homeProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {homeProducts.slice(0, 3).map((hp) => (
-              <HomeProductCard
-                key={hp.id}
-                product={hp}
-                onWhatsAppClick={() => handleWhatsAppClick(hp.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-site-muted py-8">
-            {user
-              ? "אין עדיין מוצרים ביתיים."
-              : "אין עדיין מוצרים ביתיים. התחברי כדי לפרסם."}
-            {" "}
-            <Link href="/neighbor" className="text-primary hover:underline">
-              הצטרפי למהמטבח של השכן →
-            </Link>
-          </p>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {homeProducts.slice(0, 3).map((hp) => (
+            <HomeProductCard
+              key={hp.id}
+              product={hp}
+              onWhatsAppClick={() => handleWhatsAppClick(hp.id)}
+            />
+          ))}
+        </div>
       </section>
+      )}
 
       {/* =========================
           PARALLAX DIVIDER 2 (PREMIUM_DESIGN)
