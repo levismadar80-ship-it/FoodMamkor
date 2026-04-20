@@ -358,6 +358,10 @@ DEFAULT_SETTINGS = {
     "admin_whatsapp": "",
     "freemium_premium_price": "0",
     "freemium_free_image_limit": "3",
+    "auto_inactive_days": "180",
+    "activity_check_interval": "90",
+    "low_rating_threshold": "2.0",
+    "report_auto_suspend_count": "3",
 }
 
 

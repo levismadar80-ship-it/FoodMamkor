@@ -1,9 +1,12 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import admin, admin_extra, auth, favorites, home_products, marketing, producer_me, producers, recipes, reports, upload
+
+logger = logging.getLogger("scheduler")
 
 
 def _migrate_columns(engine):
@@ -71,7 +74,29 @@ async def lifespan(app: FastAPI):
     from seed_data import seed
 
     seed()
+
+    # Start scheduler (fail-open: never crash on scheduler issues)
+    scheduler = None
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+        from app.services.scheduled_jobs import check_inactive_producers, check_kashrut_expiry
+
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(check_inactive_producers, "cron", hour=3, minute=0, id="inactive_producers")
+        scheduler.add_job(check_kashrut_expiry, "cron", hour=3, minute=30, id="kashrut_expiry")
+        scheduler.start()
+        logger.info("Scheduler started with 2 jobs: inactive_producers (03:00), kashrut_expiry (03:30)")
+    except Exception as e:
+        logger.error("Failed to start scheduler: %s", e)
+
     yield
+
+    if scheduler:
+        try:
+            scheduler.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 app = FastAPI(title="מהמקור - MeHaMakor API", version="1.0.0", lifespan=lifespan)

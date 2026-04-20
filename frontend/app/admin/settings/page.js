@@ -88,6 +88,47 @@ export default function AdminSettingsPage() {
         </Field>
       </div>
 
+      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+        <h2 className="font-semibold">כללי אוטומציה</h2>
+        <Field label="ימים עד סימון עסק כלא פעיל">
+          <input
+            type="number"
+            value={settings.auto_inactive_days || ""}
+            onChange={(e) => update("auto_inactive_days", e.target.value)}
+            className="w-full border border-border rounded-[12px] px-3 py-2"
+            placeholder="180"
+          />
+        </Field>
+        <Field label="מרווח בדיקת פעילות (ימים)">
+          <input
+            type="number"
+            value={settings.activity_check_interval || ""}
+            onChange={(e) => update("activity_check_interval", e.target.value)}
+            className="w-full border border-border rounded-[12px] px-3 py-2"
+            placeholder="90"
+          />
+        </Field>
+        <Field label="סף דירוג נמוך (ממוצע מינימלי)">
+          <input
+            type="number"
+            step="0.1"
+            value={settings.low_rating_threshold || ""}
+            onChange={(e) => update("low_rating_threshold", e.target.value)}
+            className="w-full border border-border rounded-[12px] px-3 py-2"
+            placeholder="2.0"
+          />
+        </Field>
+        <Field label="מספר דיווחים להשעיה אוטומטית">
+          <input
+            type="number"
+            value={settings.report_auto_suspend_count || ""}
+            onChange={(e) => update("report_auto_suspend_count", e.target.value)}
+            className="w-full border border-border rounded-[12px] px-3 py-2"
+            placeholder="3"
+          />
+        </Field>
+      </div>
+
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
         <h2 className="font-semibold">בדיקות חיבור</h2>
         {["twilio", "cloudinary"].map((name) => (
