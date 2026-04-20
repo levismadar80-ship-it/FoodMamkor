@@ -791,7 +791,8 @@ export default function HomePage() {
           ========================= */}
       <ParallaxQuote
         image={PARALLAX_IMAGE_1}
-        quote="כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
+        quote="אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור."
+        attribution="— ספיר, מייסדת מהמקור"
         overlayOpacity={0.6}
         height="400px"
       />
