@@ -352,7 +352,7 @@ def root():
     return {"message": "מהמקור API - ברוכים הבאים"}
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     """
     Lightweight health endpoint used by Railway's healthcheck. Must NOT
