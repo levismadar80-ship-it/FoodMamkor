@@ -20,3 +20,9 @@ body {
   width: 100%;
   border-radius: 12px;
 }
+
+/* Prevent third-party widgets from hiding cursor */
+[class*="widget"], [id*="chat"], [id*="tawk"], [id*="crisp"] {
+  cursor: auto !important;
+  pointer-events: auto !important;
+}
