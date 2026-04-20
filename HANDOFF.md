@@ -5,43 +5,53 @@
 
 ## Last session
 Date: 2026-04-19
-PR merged/opened: #178 (feature/meh-54-favorite-alerts) — OPEN (draft)
+PR merged/opened: #180 + #181 — MERGED to staging
 Summary:
-  PR #178: MEH-54 — "הודעי לי כש..." favorite alerts + PWA push notifications.
-    - DB: favorite_alerts table (user_id, producer_id, notify_new_event,
-      notify_new_product, notify_delivery_area, push_subscription JSON,
-      whatsapp_opt_in). UniqueConstraint per (user, producer) pair.
-    - Backend: GET/PUT /users/me/favorites/{id}/alerts; GET /push-vapid-key;
-      fire_alerts() BackgroundTasks helper (push + Twilio WA); pywebpush added.
-    - POST /events hooks → fires notify_new_event to opted-in users.
-    - PUT /producers/me: fixed delivery_area_cities (was silently no-op'd via
-      setattr); fires notify_delivery_area when new cities added.
-    - Frontend: worker/index.js SW push handlers (bundled via next-pwa
-      customWorkerDir); lib/push.js subscribe util; AlertPrefsPanel component;
-      FavoriteButton shows AlertPrefsPanel inline after first-time favorite;
-      /favorites: 🔔 bell per card opens AlertPrefsPanel.
+  PR #180: feat(map): circle pins with Phosphor icons — design system v2
+    - map-categories.js: replaced `emoji` field with Phosphor `icon` component +
+      `iconName` string. Icons: Cow, Plant, Cheese, Bread, JarLabel, FlowerTulip, Leaf.
+    - MapComponent.jsx: new `createCategoryMarker` — 28/36px circle divIcon, white
+      Phosphor icon inside, verified badge (✓, 10px, border-white), combined box-shadow
+      string (active glow + premium gold ring), opacity:0.4 for visited/dimmed.
+    - MapClient.jsx: removed `{cat.emoji}` from legend display.
 
-  Previous: #177 MEH-53 vanity URL + story card (MERGED to staging)
-  Previous: #176 MEH-52 group buy (MERGED to staging)
+  PR #181: feat(map): tile warmth + price gold + category dot
+    - globals.css: `.leaflet-tile-pane { filter: saturate(0.7) brightness(1.05) sepia(0.1); }`
+    - MapProducerCard.jsx: category color dot (bottom-end corner of thumbnail, 10px,
+      border-white, aria-hidden); price label split to own line in Cormorant Garamond
+      italic gold (#8B6914), category name on preceding line in site-muted 12px.
+
+  Previous: #179 MEH-55 holiday timeline (MERGED to staging)
+  Previous: #178 MEH-54 favorite alerts (MERGED to staging)
 
 ## Current state
-Branch: feature/meh-54-favorite-alerts (open PR #178 — draft)
-Staging HEAD: 144e8d4 (after MEH-53 handoff commit)
-Main HEAD: e42127e (production release — staging ahead by #168–#177)
+Branch: staging (clean — both PRs squash-merged)
+Staging HEAD: 62678c7 (feat(map): tile warmth + price gold + category dot #181)
+Main HEAD: e42127e (production release — staging ahead by #168–#181)
 
 ## Next task
-After PR #178 is approved + merged:
-  - Admin analytics: add referral count per producer (skipped from MEH-49 scope)
-  - ProducerCard heart/favorite Phase C (post-login replay)
-  - Lightbox for gallery images
-  - Events section on producer detail page
-  - availability_return_date schema change (v2 backend)
+Candidate tasks (in rough priority order):
+  1. Admin analytics: add referral count per producer (skipped from MEH-49 scope)
+  2. ProducerCard heart/favorite Phase C (post-login replay)
+  3. Lightbox for gallery images
+  4. Events section on producer detail page
+  5. availability_return_date schema change (v2 backend)
 
-First step: review PR #178 → approve → merge → git checkout staging → git pull → next feature
+Deferred from design bundle (do NOT start without explicit user confirmation):
+  - Item 4: New homepage editorial sections (EditorialBreath, MeetAProducer, HowItWorks,
+    revised Hero, revised CategoryGrid)
+  - Item 5: Botanical logo mark for Header/Layout
+
+First step: pick a task from the candidate list above, branch from staging:
+  git checkout staging && git pull origin staging && git checkout -b feature/meh-XX-description
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
+| Map pins: circle divIcon (not teardrop) | Design system v2 — consistent with benchmark apps | April 2026 |
+| Phosphor icons in divIcon via renderToStaticMarkup | Only valid approach — MapComponent is ssr:false | April 2026 |
+| Combined box-shadow string (not cascading) | CSS cascade: last box-shadow wins; must merge into one value | April 2026 |
+| Tile warmth in globals.css (not MapComponent) | .leaflet-tile-pane only exists inside Leaflet — safe global scope | April 2026 |
 | MEH-54: FavoriteAlert separate from ProducerFollower | ProducerFollower = bookmarks; FavoriteAlert = granular per-type alerts | April 2026 |
 | MEH-54: fail-open for push (no VAPID keys = no-op) | Consistent with AI fail-open rule; WA still works independently | April 2026 |
 | MEH-54: delivery_area_cities fix in producer_me.py | Was silently ignored via setattr; now uses _apply_delivery_cities() like admin | April 2026 |
@@ -65,7 +75,7 @@ First step: review PR #178 → approve → merge → git checkout staging → gi
 | Onboarding: module singleton, no Context | Simpler than wrapping layout in a Provider | April 2026 |
 
 ## Open PRs
-- #178: feature/meh-54-favorite-alerts — MEH-54 alerts (draft, awaiting review)
+None (all recent PRs merged to staging)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
