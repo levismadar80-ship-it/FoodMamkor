@@ -19,6 +19,7 @@ from app.models import (
     ContactMessage,
     Favorite,
     HomeProduct,
+    NewsletterSubscriber,
     Producer,
     Report,
     StaticPage,
@@ -432,6 +433,9 @@ def get_dashboard(
         "hidden_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_hidden.is_(True)).scalar() or 0,
         "open_reports": db.query(func.count(Report.id)).scalar() or 0,
         "unread_contact_count": db.query(func.count(ContactMessage.id)).filter(ContactMessage.is_read.is_(False)).scalar() or 0,
+        "newsletter_count": db.query(func.count(NewsletterSubscriber.id)).scalar() or 0,
+        "premium_count": db.query(func.count(Producer.id)).filter(Producer.plan == "premium").scalar() or 0,
+        "free_count": db.query(func.count(Producer.id)).filter(Producer.plan == "free", Producer.status == "approved").scalar() or 0,
     }
 
     pending = (
@@ -554,3 +558,63 @@ def delete_contact_message(
     db.delete(msg)
     db.commit()
     return {"detail": "Message deleted"}
+
+
+# ============================================================
+# NEWSLETTER SUBSCRIBERS
+# ============================================================
+
+
+class NewsletterOut(BaseModel):
+    id: UUID
+    email: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+@router.get("/newsletter", response_model=list[NewsletterOut])
+def list_newsletter_subscribers(
+    search: str | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    q = db.query(NewsletterSubscriber)
+    if search:
+        q = q.filter(NewsletterSubscriber.email.ilike(f"%{search}%"))
+    return q.order_by(NewsletterSubscriber.created_at.desc()).limit(500).all()
+
+
+@router.get("/newsletter/export")
+def export_newsletter(
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    from fastapi.responses import Response
+
+    subscribers = db.query(NewsletterSubscriber).order_by(NewsletterSubscriber.created_at.desc()).all()
+    lines = ["email,created_at"]
+    for sub in subscribers:
+        dt = sub.created_at.isoformat() if sub.created_at else ""
+        lines.append(f"{sub.email},{dt}")
+    csv_content = "\ufeff" + "\n".join(lines)
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="newsletter_{today}.csv"'},
+    )
+
+
+@router.delete("/newsletter/{subscriber_id}")
+def delete_newsletter_subscriber(
+    subscriber_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    sub = db.query(NewsletterSubscriber).filter(NewsletterSubscriber.id == subscriber_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+    db.delete(sub)
+    db.commit()
+    return {"detail": "Subscriber removed"}

@@ -193,6 +193,14 @@ class ContactMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class NewsletterSubscriber(Base):
+    __tablename__ = "newsletter_subscribers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(200), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class HomeProduct(Base):
     __tablename__ = "home_products"
 

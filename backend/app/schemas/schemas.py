@@ -172,6 +172,7 @@ class ProducerUpdate(BaseModel):
     kosher: str | None = None
     admin_notes: str | None = None
     is_verified: bool | None = None
+    plan: str | None = None
     images: list[str] | None = None
     status: str | None = None
     category_ids: list[int] | None = None

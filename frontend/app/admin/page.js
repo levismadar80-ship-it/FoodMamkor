@@ -25,8 +25,8 @@ export default function AdminDashboard() {
   const cards = [
     { label: "סה״כ בתי עסק",      value: s.total_producers,     icon: "🏪", href: "/admin/producers" },
     { label: "ממתינים לאישור",   value: s.pending_producers,   icon: "⏳", href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
-    { label: "משתמשים רשומים",   value: s.total_users,         icon: "👥", href: "/admin/users" },
-    { label: "פניות חדשות",       value: s.unread_contact_count || 0, icon: "📬", href: "/admin/contact", warn: (s.unread_contact_count || 0) > 0 },
+    { label: "נרשמות לניוזלטר",   value: s.newsletter_count || 0, icon: "📧", href: "/admin/newsletter" },
+    { label: "עסקים פרמיום",       value: s.premium_count || 0,  icon: "⭐", href: "/admin/producers?plan=premium" },
   ];
 
   // Simple inline SVG line chart for monthly producers

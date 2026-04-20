@@ -44,6 +44,11 @@ function ProducersAdminPage() {
     loadAllProducers();
   };
 
+  const upgradePlan = async (id) => {
+    await api.put(`/admin/producers/${id}`, { plan: "premium" });
+    loadAllProducers();
+  };
+
   const toggleStatus = async (id) => {
     await api.post(`/admin/producers/${id}/toggle-status`);
     loadAllProducers();
@@ -333,7 +338,12 @@ function ProducersAdminPage() {
                   <td className="px-4 py-3 text-text-secondary">{p.city || "—"}</td>
                   <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
                   <td className="px-4 py-3 text-xs">
-                    <div className="flex gap-1 flex-wrap">
+                    <div className="flex gap-1 flex-wrap items-center">
+                      {p.plan === "premium" ? (
+                        <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-primary text-white">פרמיום</span>
+                      ) : (
+                        <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-700">חינם</span>
+                      )}
                       {p.is_verified && <span title="מאומת">✅</span>}
                       {p.organic_certified && <span title="אורגני מוסמך">🌿</span>}
                       {p.grass_fed && <span title="גראס פד">🐄</span>}
@@ -357,6 +367,11 @@ function ProducersAdminPage() {
                         <Link href={`/${p.slug}`} target="_blank" className="text-text-secondary hover:text-primary text-xs">
                           צפה
                         </Link>
+                      )}
+                      {p.plan === "free" && p.status === "approved" && (
+                        <button onClick={() => upgradePlan(p.id)} className="text-primary hover:underline text-xs font-medium">
+                          שדרגי לפרמיום
+                        </button>
                       )}
                       {(p.status === "approved" || p.status === "inactive") && (
                         <button onClick={() => toggleStatus(p.id)} className="text-text-secondary hover:text-primary text-xs">

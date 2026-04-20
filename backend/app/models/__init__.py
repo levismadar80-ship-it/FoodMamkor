@@ -7,6 +7,7 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    NewsletterSubscriber,
     Producer,
     ProducerCategory,
     Product,
@@ -34,4 +35,5 @@ __all__ = [
     "AdminSetting",
     "StaticPage",
     "ContactMessage",
+    "NewsletterSubscriber",
 ]

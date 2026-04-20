@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/users",      label: "משתמשים",     icon: "👥" },
   { href: "/admin/content",    label: "תוכן",        icon: "📝" },
   { href: "/admin/contact",    label: "פניות",       icon: "📬", badgeKey: "unread_contact_count" },
+  { href: "/admin/newsletter", label: "ניוזלטר",     icon: "📧" },
   { href: "/admin/reports",    label: "דיווחים",     icon: "🚨" },
   { href: "/admin/analytics",  label: "אנליטיקס",    icon: "📈" },
   { href: "/admin/settings",   label: "הגדרות",      icon: "⚙️" },

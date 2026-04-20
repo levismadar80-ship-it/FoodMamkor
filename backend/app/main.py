@@ -59,6 +59,14 @@ def _migrate_columns(engine):
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """))
+        # Newsletter subscribers table
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                email VARCHAR(200) UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
         conn.commit()
 
 
