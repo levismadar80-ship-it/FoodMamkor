@@ -10,6 +10,7 @@ import CookieBanner from "@/components/CookieBanner";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidget from "@/components/ChatWidget";
+import InstallPrompt from "@/components/InstallPrompt";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
@@ -79,6 +80,12 @@ export const metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+  // iOS Safari: launch in standalone mode (no browser chrome) when added to Home Screen.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "מהמקור",
+  },
 };
 
 export const viewport = {
@@ -123,6 +130,7 @@ export default function RootLayout({ children }) {
             {/* AI Q&A bot — desktop only, floating bottom-left.
                 Self-hides on mobile via `hidden md:flex`. */}
             <ChatWidget />
+            <InstallPrompt />
           </SmoothScrollProvider>
           </LanguageProvider>
         </AuthProvider>
