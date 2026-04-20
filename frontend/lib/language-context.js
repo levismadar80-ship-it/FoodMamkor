@@ -30,7 +30,7 @@ const translations = {
 
     // Hero
     hero_title: "אוכל אמיתי, ישר מהמקור אליך",
-    hero_subtitle: "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית",
+    hero_subtitle: "בתי עסק מקומיים, כולם במקום אחד.",
     search_placeholder: "חפשי ירקות טריים, בשר grass-fed...",
     search_sr_label: "חיפוש בתי עסק וערים",
     search_submit: "חיפוש",
@@ -83,7 +83,7 @@ const translations = {
 
     // Hero
     hero_title: "Real Food, Straight From the Source",
-    hero_subtitle: "Local producers, small farms & home cooks near you",
+    hero_subtitle: "Local businesses, all in one place.",
     search_placeholder: "Search fresh veggies, grass-fed beef...",
     search_sr_label: "Search businesses and cities",
     search_submit: "Search",

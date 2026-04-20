@@ -19,7 +19,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
-  "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
+  "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
 // FINAL_AUDIT: OG image lives in /public/og-image.jpg (1200×630 recommended).
 const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 

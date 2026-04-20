@@ -161,7 +161,7 @@ def create_group_buy(
 ):
     producer = db.query(Producer).filter(Producer.id == current_user.producer_id).first()
     if not producer:
-        raise HTTPException(status_code=404, detail="יצרן לא נמצא")
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     if producer.status != "approved":
         raise HTTPException(status_code=403, detail="רק יצרנים מאושרים יכולים לפתוח קבוצת רכש")
 

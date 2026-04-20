@@ -110,7 +110,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-sm leading-relaxed max-w-xs mb-4" style={{ color: "#EAF3DE" }}>
-              ישר מהמקור אליך — בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית.
+              ישר מהמקור אליך — בתי עסק מקומיים, כולם במקום אחד.
             </p>
             <a
               href="https://www.instagram.com/meha_makor"
