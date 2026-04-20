@@ -10,8 +10,10 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    KashrutBadgeRequest,
     NewsletterSubscriber,
     OutreachLead,
+    PhoneOtpToken,
     Producer,
     ProducerCategory,
     ProducerFollower,
@@ -52,4 +54,6 @@ __all__ = [
     "ProducerPageView",
     "ProducerWhatsAppClick",
     "OutreachLead",
+    "PhoneOtpToken",
+    "KashrutBadgeRequest",
 ]

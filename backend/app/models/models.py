@@ -72,6 +72,12 @@ class Producer(Base):
     reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
+    # MEH-51: trust ladder + kashrut badges
+    phone_verified = Column(Boolean, default=False)
+    ambassador = Column(Boolean, default=False)
+    kashrut_badges = Column(ARRAY(Text), default=[])
+    kashrut_verified_at = Column(DateTime, nullable=True)
+    kashrut_expires_at = Column(DateTime, nullable=True)
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
@@ -683,3 +689,51 @@ class GroupBuyCommit(Base):
 
     group_buy = relationship("GroupBuy", back_populates="commits")
     user = relationship("User", backref="group_buy_commits")
+
+
+class PhoneOtpToken(Base):
+    """MEH-51: one-time WhatsApp OTP for phone verification."""
+
+    __tablename__ = "phone_otp_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    phone = Column(String(30), nullable=False)
+    code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    producer = relationship("Producer", backref="otp_tokens")
+
+
+class KashrutBadgeRequest(Base):
+    """MEH-51: producer uploads cert → admin approves → badge activates."""
+
+    __tablename__ = "kashrut_badge_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    badge_code = Column(String(50), nullable=False)
+    cert_url = Column(Text, nullable=True)
+    status = Column(String(20), default="pending", nullable=False)  # pending|approved|rejected
+    reviewed_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    producer = relationship("Producer", backref="kashrut_requests")
+    reviewer = relationship("User", backref="kashrut_reviews")
