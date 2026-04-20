@@ -54,11 +54,6 @@ const translations = {
     footer_privacy: "מדיניות פרטיות",
     footer_accessibility: "הצהרת נגישות",
     footer_contact: "יצירת קשר",
-    footer_newsletter_title: "הישארי מעודכנת",
-    footer_newsletter_subtitle: "מוצרים חדשים, אירועים ועסקים ישר לתיבה שלך.",
-    footer_newsletter_placeholder: "האימייל שלך",
-    footer_newsletter_submit: "הצטרפי",
-    footer_newsletter_loading: "מצטרפת...",
     footer_copyright: "מהמקור. כל הזכויות שמורות.",
     footer_made_with_love: "נעשה באהבה בישראל 🌿",
 
@@ -107,11 +102,6 @@ const translations = {
     footer_privacy: "Privacy Policy",
     footer_accessibility: "Accessibility",
     footer_contact: "Contact Us",
-    footer_newsletter_title: "Stay Updated",
-    footer_newsletter_subtitle: "New products, events and businesses straight to your inbox.",
-    footer_newsletter_placeholder: "Your email",
-    footer_newsletter_submit: "Subscribe",
-    footer_newsletter_loading: "Subscribing...",
     footer_copyright: "Mehamakor. All rights reserved.",
     footer_made_with_love: "Made with love in Israel 🌿",
 
