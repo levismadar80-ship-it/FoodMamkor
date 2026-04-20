@@ -79,7 +79,7 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
 
 @router.get("/producers", response_model=list[ProducerDetailOut])
 def list_producers(
-    status: str | None = Query(None, pattern="^(pending|approved|rejected|inactive|all)$"),
+    status: str | None = Query(None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"),
     search: str | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -90,7 +90,10 @@ def list_producers(
         joinedload(Producer.delivery_areas),
     )
     if status and status != "all":
-        q = q.filter(Producer.status == status)
+        if status == "pending":
+            q = q.filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        else:
+            q = q.filter(Producer.status == status)
     if search:
         like = f"%{search}%"
         q = q.filter((Producer.name.ilike(like)) | (Producer.city.ilike(like)))
@@ -251,7 +254,7 @@ def pending_producers(user: User = Depends(require_admin), db: Session = Depends
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
         )
-        .filter(Producer.status == "pending")
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .all()
     )
@@ -518,7 +521,7 @@ def upload_story_card(
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return {
         "total_producers": db.query(Producer).count(),
-        "pending_producers": db.query(Producer).filter(Producer.status == "pending").count(),
+        "pending_producers": db.query(Producer).filter(Producer.status.in_(["pending", "pending_whatsapp"])).count(),
         "approved_producers": db.query(Producer).filter(Producer.status == "approved").count(),
         "total_users": db.query(User).count(),
         "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),

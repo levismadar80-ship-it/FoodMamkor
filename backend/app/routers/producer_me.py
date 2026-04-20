@@ -497,3 +497,27 @@ def request_kashrut_badge(
     out = KashrutRequestOut.model_validate(req)
     out.producer_name = producer.name
     return out
+
+
+# ---------------------------------------------------------------------------
+# MEH-56: AI bio generator
+# ---------------------------------------------------------------------------
+
+class BioGenerateIn(BaseModel):
+    source: str = Field(..., min_length=1, max_length=500)
+
+
+@router.post("/bio/generate")
+@limiter.limit("5/hour")
+def generate_bio_endpoint(
+    request: Request,
+    body: BioGenerateIn,
+    user: User = Depends(require_producer),
+):
+    """Generate a Hebrew ≤150-char business bio via Claude Haiku.
+    Accepts an Instagram handle, URL, or free text.
+    Fail-open: returns {"bio": ""} when AI is unavailable.
+    """
+    from app.services.bio_generator import generate_bio
+    bio = generate_bio(body.source)
+    return {"bio": bio}

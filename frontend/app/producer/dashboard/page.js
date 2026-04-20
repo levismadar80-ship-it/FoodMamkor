@@ -65,6 +65,7 @@ export default function ProducerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -73,10 +74,9 @@ export default function ProducerDashboardPage() {
       router.push("/login");
       return;
     }
-    // Fire both in parallel — dashboard first (drives the hero) and
-    // analytics second (drives the stat cards and charts).
     api.get("/producers/me/dashboard").then((r) => setData(r.data)).catch(() => setData(null));
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
+    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
 
   const toggleAvailability = async () => {
@@ -149,6 +149,18 @@ export default function ProducerDashboardPage() {
       {producer.status === "pending" && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm text-yellow-800">
           🌿 פרופיל העסק שלך ממתין לאישור
+        </div>
+      )}
+
+      {producer.status === "pending_whatsapp" && (
+        <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
+          <p className="font-semibold text-primary mb-1">🌿 ברוכה הבאה! כמעט שם.</p>
+          <p className="text-site-muted mb-3">
+            השלימי את הפרופיל כדי להאיץ את הסקירה — פרופילים מלאים מאושרים מהר יותר.
+          </p>
+          <Link href="/settings" className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition">
+            השלימי פרופיל ←
+          </Link>
         </div>
       )}
 
@@ -301,6 +313,14 @@ export default function ProducerDashboardPage() {
           <p className="text-sm text-site-muted">נהלי קבוצות רכש ופתחי חדשות</p>
         </Link>
       </div>
+
+      {/* Profile completion checklist + AI bio */}
+      {profile && (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ProfileCompletionCard profile={profile} />
+          <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
+        </div>
+      )}
     </div>
   );
 }
@@ -515,5 +535,147 @@ function TopCitiesBarChart({ data }) {
         );
       })}
     </ul>
+  );
+}
+
+// ============================================================
+// MEH-56: Profile completion checklist
+// ============================================================
+
+const COMPLETION_ITEMS = [
+  { key: "image",     label: "תמונת פרופיל",        weight: 20, check: (p) => (p.images?.length ?? 0) > 0 },
+  { key: "desc",      label: "תיאור עסק",            weight: 15, check: (p) => !!p.description },
+  { key: "city",      label: "עיר",                  weight: 10, check: (p) => !!p.city },
+  { key: "category",  label: "קטגוריה",              weight: 10, check: (p) => (p.categories?.length ?? 0) > 0 },
+  { key: "phone",     label: "טלפון מאומת",          weight: 20, check: (p) => !!p.phone_verified },
+  { key: "delivery",  label: "אזור משלוח",           weight: 15, check: (p) => (p.delivery_areas?.length ?? 0) > 0 },
+  { key: "social",    label: "אינסטגרם / אתר",       weight: 10, check: (p) => !!(p.instagram || p.website) },
+];
+
+function ProfileCompletionCard({ profile }) {
+  const completed = COMPLETION_ITEMS.filter((item) => item.check(profile));
+  const pct = completed.reduce((sum, item) => sum + item.weight, 0);
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-headline text-base font-bold">השלמת פרופיל</h2>
+        <span className="text-primary font-bold text-lg">{pct}%</span>
+      </div>
+      <div className="h-2 bg-light rounded-full overflow-hidden mb-4">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <ul className="space-y-2">
+        {COMPLETION_ITEMS.map((item) => {
+          const done = item.check(profile);
+          return (
+            <li key={item.key} className="flex items-center justify-between text-sm">
+              <span className={`flex items-center gap-2 ${done ? "text-site-text" : "text-site-muted"}`}>
+                <span aria-hidden="true">{done ? "✓" : "○"}</span>
+                {item.label}
+              </span>
+              {!done && (
+                <span className="text-xs text-secondary font-medium">+{item.weight}% נראות</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-56: AI bio writer panel
+// ============================================================
+
+function BioPanelCard({ profile, onSave }) {
+  const [source, setSource] = useState(profile.instagram || "");
+  const [generatedBio, setGeneratedBio] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const generate = async () => {
+    if (!source.trim()) return;
+    setLoading(true);
+    setError("");
+    setGeneratedBio("");
+    setSaved(false);
+    try {
+      const r = await api.post("/producers/me/bio/generate", { source: source.trim() });
+      setGeneratedBio(r.data.bio || "");
+      if (!r.data.bio) setError("לא הצלחנו לייצר ביו — נסי שוב עם טקסט אחר");
+    } catch {
+      setError("שגיאה ביצירת הביו — נסי שוב");
+    }
+    setLoading(false);
+  };
+
+  const saveBio = async () => {
+    if (!generatedBio) return;
+    setSaving(true);
+    try {
+      await api.put("/producers/me", { description: generatedBio });
+      onSave(generatedBio);
+      setSaved(true);
+    } catch {
+      setError("שגיאה בשמירת הביו");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline text-base font-bold mb-1">✍️ ביו AI</h2>
+      <p className="text-xs text-site-muted mb-3">
+        הכניסי שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.
+      </p>
+
+      <textarea
+        value={source}
+        onChange={(e) => { setSource(e.target.value); setSaved(false); setGeneratedBio(""); }}
+        placeholder="@handle / קישור אינסטגרם / תיאור חופשי"
+        className="w-full border border-border rounded-[10px] px-3 py-2 text-sm resize-none h-16"
+        dir="ltr"
+        maxLength={500}
+      />
+
+      <button
+        onClick={generate}
+        disabled={loading || !source.trim()}
+        className="w-full mt-2 bg-secondary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-secondary-light transition"
+      >
+        {loading ? "יוצרת..." : "צרי ביו"}
+      </button>
+
+      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+
+      {generatedBio && (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={generatedBio}
+            onChange={(e) => setGeneratedBio(e.target.value.slice(0, 150))}
+            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-16"
+            dir="rtl"
+            maxLength={150}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-site-muted">{generatedBio.length}/150</span>
+            <button
+              onClick={saveBio}
+              disabled={saving}
+              className="bg-primary text-white px-4 py-1.5 rounded-[8px] text-xs font-medium disabled:opacity-50 hover:bg-primary-dark transition"
+            >
+              {saving ? "שומרת..." : saved ? "✓ נשמר" : "שמרי ביו"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
