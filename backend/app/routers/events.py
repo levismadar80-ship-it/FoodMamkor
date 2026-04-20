@@ -119,6 +119,7 @@ def list_events(
     category: str | None = None,
     from_date: date | None = None,
     to_date: date | None = None,
+    producer_id: UUID | None = None,
     db: Session = Depends(get_db),
 ):
     q = (
@@ -126,6 +127,8 @@ def list_events(
         .options(joinedload(Event.producer))
         .filter(Event.is_active.is_(True))
     )
+    if producer_id:
+        q = q.filter(Event.producer_id == producer_id)
     if city:
         q = q.filter(Event.city == city)
     if category:

@@ -50,6 +50,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const inlineCTARef = useRef(null);
   const [reviewsVisible, setReviewsVisible] = useState(false);
   const [isBarVisible, setIsBarVisible] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [showAllEvents, setShowAllEvents] = useState(false);
 
   const scrollToSection = useCallback((key) => {
     setActiveTab(key);
@@ -107,6 +109,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   useEffect(() => {
     if (!producer?.id) return;
     pushRecentlyViewed(producer.id);
+  }, [producer?.id]);
+
+  useEffect(() => {
+    if (!producer?.id) return;
+    api
+      .get(`/events?producer_id=${producer.id}`)
+      .then((r) => setEvents(r.data || []))
+      .catch(() => setEvents([]));
   }, [producer?.id]);
 
   if (loading) {
@@ -420,7 +430,67 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </section>
           )}
 
-          {/* Events section — see feature/meh-XX-producer-events */}
+          {/* Events section */}
+          {events.length > 0 && (
+            <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">אירועים קרובים</h2>
+              <div className="space-y-3">
+                {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
+                  const dateStr = new Date(ev.event_date).toLocaleDateString("he-IL", {
+                    weekday: "short", day: "numeric", month: "long",
+                  });
+                  const timeStr = ev.event_time
+                    ? ev.event_time.slice(0, 5)
+                    : null;
+                  return (
+                    <div
+                      key={ev.id}
+                      className="bg-white rounded-[12px] border border-border p-4 flex gap-4"
+                    >
+                      {ev.image_url && (
+                        <img
+                          src={ev.image_url}
+                          alt={ev.title}
+                          className="w-16 h-16 rounded-[8px] object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-site-text leading-snug">{ev.title}</p>
+                        <p className="text-sm text-site-muted mt-0.5">
+                          {dateStr}{timeStr && ` · ${timeStr}`}
+                          {ev.city && ` · ${ev.city}`}
+                        </p>
+                        {ev.price > 0 && (
+                          <p className="text-sm text-accent font-medium mt-1">₪{ev.price}</p>
+                        )}
+                        {ev.price === 0 && (
+                          <p className="text-sm text-primary font-medium mt-1">חינם</p>
+                        )}
+                        {ev.registration_url && (
+                          <a
+                            href={ev.registration_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block mt-2 text-xs text-primary underline hover:text-primary-dark"
+                          >
+                            הרשמה לאירוע →
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {events.length > 3 && !showAllEvents && (
+                <button
+                  onClick={() => setShowAllEvents(true)}
+                  className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
+                >
+                  הצג את כל {events.length} האירועים
+                </button>
+              )}
+            </section>
+          )}
 
           {/* Products (premium only) */}
           {producer.products?.length > 0 && (
