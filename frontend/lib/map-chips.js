@@ -29,10 +29,13 @@ export const CATEGORY_CHIPS = [
 // independent; category is radio-group. NO "פתוחים השבוע" chip
 // (is_available_today field does not exist on producers).
 export const TOGGLE_CHIPS = [
-  { key: "has_delivery", label: "🚚 משלוח אליי" },
-  { key: "verified", label: "✓ מאומתים" },
-  { key: "organic", label: "🌿 אורגני" },
-  { key: "grass_fed", label: "🐄 גראס פד" },
+  { key: "has_delivery",  label: "🚚 משלוח אליי" },
+  { key: "verified",      label: "✓ מאומתים" },
+  { key: "organic",       label: "🌿 אורגני" },
+  { key: "grass_fed",     label: "🐄 גראס פד" },
+  { key: "gluten_free",   label: "🌾 ללא גלוטן" },
+  { key: "vegan",         label: "🥦 טבעוני" },
+  { key: "lactose_free",  label: "🥛 ללא לקטוז" },
 ];
 
 /**
@@ -64,6 +67,9 @@ export function chipStateToParams(state, dbCategories) {
   if (state.has_delivery) params.has_delivery = true;
   if (state.verified) params.verified = true;
   if (state.grass_fed) params.grass_fed = true;
+  if (state.gluten_free) params.gluten_free = true;
+  if (state.vegan) params.vegan = true;
+  if (state.lactose_free) params.lactose_free = true;
   return params;
 }
 
