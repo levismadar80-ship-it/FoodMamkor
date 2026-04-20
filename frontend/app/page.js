@@ -27,6 +27,8 @@ import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useOnboarding } from "@/lib/use-onboarding";
 import HolidayBanner from "@/components/HolidayBanner";
+import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
+import { isFridayMode } from "@/lib/friday-mode";
 
 const PAGE_SIZE = 8;
 
@@ -115,12 +117,19 @@ export default function HomePage() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
   const [step0Visible, setStep0Visible] = useState(false);
+  const [fridayMode, setFridayMode] = useState(false);
 
   useEffect(() => {
     if (onboardStep !== 0) return;
     const t = setTimeout(() => setStep0Visible(true), 2000);
     return () => clearTimeout(t);
   }, [onboardStep]);
+
+  useEffect(() => {
+    setFridayMode(isFridayMode());
+    const tid = setInterval(() => setFridayMode(isFridayMode()), 60 * 1000);
+    return () => clearInterval(tid);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
@@ -358,7 +367,7 @@ export default function HomePage() {
               textTransform: "uppercase",
             }}
           >
-            {t("hero_subtitle")}
+            {fridayMode ? "שישי הגיע 🛒 מה הולך על שולחן השבת שלך?" : t("hero_subtitle")}
           </motion.p>
 
           {/* Pill search */}
@@ -425,6 +434,9 @@ export default function HomePage() {
           <CaretDown size={28} weight="bold" aria-hidden="true" />
         </button>
       </section>
+
+      {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only */}
+      {fridayMode && <FridayDeliveryStrip city={userCity} />}
 
       {/* =========================
           SOCIAL PROOF BAR
@@ -719,7 +731,7 @@ export default function HomePage() {
                   viewport={{ once: true, amount: 0.1 }}
                   transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
-                  <ProducerCard producer={p} referrer="home" />
+                  <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
                 </motion.div>
               ))}
             </div>
@@ -766,7 +778,7 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
             {newestProducers.map((p) => (
-              <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" />
+              <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" fridayMode={fridayMode} />
             ))}
           </div>
         </section>
