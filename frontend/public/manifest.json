@@ -4,7 +4,7 @@
   "description": "אוכל אמיתי, ישר מהמקור אליך",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#eaf4ee",
+  "background_color": "#F5F0E8",
   "theme_color": "#2e6853",
   "dir": "rtl",
   "lang": "he",

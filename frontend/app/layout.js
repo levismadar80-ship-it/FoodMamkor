@@ -79,6 +79,12 @@ export const metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+  // iOS Safari: launch in standalone mode (no browser chrome) when added to Home Screen.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "מהמקור",
+  },
 };
 
 export const viewport = {
