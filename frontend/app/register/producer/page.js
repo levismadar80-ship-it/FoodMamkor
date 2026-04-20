@@ -58,6 +58,12 @@ function RegisterProducerPageBody() {
   const [declaredLicenses, setDeclaredLicenses] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+  // MEH-51: phone verification state (step 4)
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -161,7 +167,7 @@ function RegisterProducerPageBody() {
       const res = await api.post("/auth/register/producer", data);
       localStorage.setItem("token", res.data.access_token);
       localStorage.removeItem(DRAFT_KEY);
-      setStep(4);
+      setStep(form.phone ? 4 : 5);
     } catch (err) {
       setError(err.response?.data?.detail || "שגיאה בהרשמה");
     }
@@ -195,12 +201,14 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
-        {/* Progress bar */}
-        <div className="flex gap-2 mb-8">
-          {[1, 2, 3, 4].map((s) => (
-            <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-gray-200"}`} />
-          ))}
-        </div>
+        {/* Progress bar — 5 steps when phone present, hide on confirmation */}
+        {step < 5 && (
+          <div className="flex gap-2 mb-8">
+            {[1, 2, 3, 4].map((s) => (
+              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-gray-200"}`} />
+            ))}
+          </div>
+        )}
 
         {/* MEH-22 — prefill banner shown when a token fetched data OK. */}
         {prefillToken && prefillApplied && (
@@ -519,8 +527,98 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
-        {/* Step 4: Confirmation + MEH-22 referral ask */}
+        {/* Step 4: Phone verification — MEH-51 */}
         {step === 4 && (
+          <div className="space-y-5">
+            <h2 className="font-semibold text-lg">4. אימות מספר טלפון</h2>
+            <p className="text-sm text-site-muted">
+              נשלח קוד חד-פעמי ל-WhatsApp של{" "}
+              <span className="font-medium text-site-text">{form.phone}</span>{" "}
+              לאימות שהמספר שייך לך.
+            </p>
+
+            {otpVerified ? (
+              <div className="flex items-center gap-2 text-primary text-sm font-medium bg-primary/5 rounded-[12px] px-4 py-3">
+                ✅ המספר אומת בהצלחה
+              </div>
+            ) : (
+              <>
+                {!otpSent ? (
+                  <button
+                    onClick={async () => {
+                      setOtpLoading(true);
+                      setOtpError("");
+                      try {
+                        await api.post("/producers/me/verify-phone");
+                        setOtpSent(true);
+                      } catch (e) {
+                        setOtpError(e.response?.data?.detail || "שגיאה בשליחת הקוד");
+                      }
+                      setOtpLoading(false);
+                    }}
+                    disabled={otpLoading}
+                    className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition disabled:opacity-50"
+                  >
+                    {otpLoading ? "שולחת..." : "שלחי לי קוד"}
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-site-muted">הכניסי את הקוד שקיבלת ב-WhatsApp:</p>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="123456"
+                      className="w-full border rounded-[12px] px-4 py-3 text-center text-xl tracking-widest"
+                      dir="ltr"
+                    />
+                    <button
+                      onClick={async () => {
+                        setOtpLoading(true);
+                        setOtpError("");
+                        try {
+                          await api.post("/producers/me/verify-phone/confirm", { code: otpCode });
+                          setOtpVerified(true);
+                        } catch (e) {
+                          setOtpError(e.response?.data?.detail || "קוד שגוי");
+                        }
+                        setOtpLoading(false);
+                      }}
+                      disabled={otpLoading || otpCode.length !== 6}
+                      className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition disabled:opacity-50"
+                    >
+                      {otpLoading ? "בודקת..." : "אמתי"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {otpError && <p className="text-red-500 text-sm">{otpError}</p>}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setStep(5)}
+                className="text-site-muted text-sm hover:underline"
+              >
+                אאמת מאוחר יותר
+              </button>
+              {otpVerified && (
+                <button
+                  onClick={() => setStep(5)}
+                  className="flex-1 bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition"
+                >
+                  המשך ←
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Confirmation + MEH-22 referral ask */}
+        {step === 5 && (
           <div className="text-center py-8">
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />

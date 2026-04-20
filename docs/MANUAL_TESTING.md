@@ -1,6 +1,29 @@
 # מהמקור — Manual Testing Checklist
 > עדכון: אפריל 2026 | מתעדכן אחרי כל PR
 
+---
+
+## MEH-51 — Trust Ladder + Kashrut Badges (PR #183)
+
+- [ ] ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard צריכה להציג badge ירוק
+- [ ] ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge
+- [ ] ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill
+- [ ] ProducerDetail: TrustBadge shows next to name in header badge row
+- [ ] ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut_badges=["badatz"]` בDB → strip עם "בדצ׳ה" מופיע
+- [ ] KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים קדימה → "⚠️ תעודה פגה בקרוב"
+- [ ] KashrutBadgeStrip: no strip rendered when kashrut_badges empty (no regression to kosher text)
+- [ ] /register/producer: phone verification step 4 appears after submit if producer has phone
+- [ ] /register/producer: "שלחי לי קוד" button → POST /producers/me/verify-phone (check Twilio logs or check DB phone_otp_tokens)
+- [ ] /register/producer: correct OTP code → phone_verified=true in DB
+- [ ] /register/producer: wrong OTP code → "קוד שגוי או פג תוקף" error message
+- [ ] /register/producer: "אאמת מאוחר יותר" → skips to confirmation (step 5)
+- [ ] /admin/kashrut: page loads with pending requests list — צרי בקשה דרך POST /producers/me/kashrut-request → מופיעה בטבלה
+- [ ] /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set
+- [ ] /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB
+- [ ] /admin/kashrut: filter by status (pending/approved/rejected)
+- [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response
+- [ ] Rate limiting: 3 OTP sends per 10 min per producer, 5 confirms per minute
+
 רשימת בדיקות ידניות על הסביבה החיה לפני שחרור לפרודקשן.
 פורמט: `[ ] Test — איך לבדוק — תוצאה מצופה`
 

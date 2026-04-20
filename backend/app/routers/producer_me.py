@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, date
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -18,8 +19,22 @@ from app.models import (
     ProducerWhatsAppClick,
     User,
 )
-from app.models.models import HomeProductWhatsAppClick
-from app.schemas.schemas import ProducerDetailOut, ProducerUpdate
+import logging
+import os
+import secrets
+import string
+
+from app.models.models import HomeProductWhatsAppClick, PhoneOtpToken, KashrutBadgeRequest
+from app.schemas.schemas import (
+    ProducerDetailOut,
+    ProducerUpdate,
+    KashrutRequestCreate,
+    KashrutRequestOut,
+    OtpConfirmIn,
+)
+from app.services.trust_tier import VALID_BADGE_CODES
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/producers/me", tags=["producer-management"])
 
@@ -341,3 +356,144 @@ def producer_analytics(
         "views_by_day": views_by_day,
         "top_cities": top_cities,
     }
+
+
+# ---------------------------------------------------------------------------
+# MEH-51: Phone verification (WhatsApp OTP)
+# ---------------------------------------------------------------------------
+
+def _send_whatsapp_otp(phone: str, code: str) -> bool:
+    """Send a 6-digit OTP via Twilio WhatsApp. Fail-open: returns False if
+    creds are missing — caller logs and still returns HTTP 200."""
+    sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    token = os.environ.get("TWILIO_AUTH_TOKEN")
+    from_wa = os.environ.get("TWILIO_WHATSAPP_FROM")
+    if not (sid and token and from_wa):
+        log.warning("MEH-51: Twilio creds missing — OTP not sent (fail-open)")
+        return False
+    try:
+        from twilio.rest import Client
+        Client(sid, token).messages.create(
+            from_=from_wa,
+            to=f"whatsapp:{phone}",
+            body=f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות.",
+        )
+        return True
+    except Exception as e:
+        log.warning("MEH-51: Twilio send failed: %s", e)
+        return False
+
+
+@router.post("/verify-phone", status_code=200)
+@limiter.limit("3/10minute")
+def send_phone_otp(
+    request: Request,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if not producer.phone:
+        raise HTTPException(status_code=400, detail="לא נמצא מספר טלפון בפרופיל")
+    if producer.phone_verified:
+        return {"detail": "הטלפון כבר מאומת"}
+
+    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    expires = datetime.utcnow() + timedelta(minutes=10)
+
+    # Invalidate any previous unused tokens for this producer
+    db.query(PhoneOtpToken).filter(
+        PhoneOtpToken.producer_id == producer.id,
+        PhoneOtpToken.used == False,
+    ).update({"used": True})
+
+    db.add(PhoneOtpToken(
+        producer_id=producer.id,
+        phone=producer.phone,
+        code=code,
+        expires_at=expires,
+    ))
+    db.commit()
+
+    _send_whatsapp_otp(producer.phone, code)
+    return {"detail": "קוד נשלח"}
+
+
+@router.post("/verify-phone/confirm", status_code=200)
+@limiter.limit("5/minute")
+def confirm_phone_otp(
+    request: Request,
+    body: OtpConfirmIn,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if producer.phone_verified:
+        return {"detail": "הטלפון כבר מאומת"}
+
+    token = (
+        db.query(PhoneOtpToken)
+        .filter(
+            PhoneOtpToken.producer_id == producer.id,
+            PhoneOtpToken.code == body.code,
+            PhoneOtpToken.used == False,
+            PhoneOtpToken.expires_at > datetime.utcnow(),
+        )
+        .first()
+    )
+    if not token:
+        raise HTTPException(status_code=400, detail="קוד שגוי או פג תוקף")
+
+    token.used = True
+    producer.phone_verified = True
+    db.commit()
+    return {"detail": "הטלפון אומת בהצלחה"}
+
+
+# ---------------------------------------------------------------------------
+# MEH-51: Kashrut badge requests
+# ---------------------------------------------------------------------------
+
+@router.post("/kashrut-request", response_model=KashrutRequestOut, status_code=201)
+@limiter.limit("10/hour")
+def request_kashrut_badge(
+    request: Request,
+    body: KashrutRequestCreate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    if body.badge_code not in VALID_BADGE_CODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"קוד badge לא תקין. ערכים מותרים: {', '.join(sorted(VALID_BADGE_CODES))}",
+        )
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    existing = (
+        db.query(KashrutBadgeRequest)
+        .filter(
+            KashrutBadgeRequest.producer_id == producer.id,
+            KashrutBadgeRequest.badge_code == body.badge_code,
+            KashrutBadgeRequest.status == "pending",
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="בקשה לbadge זה כבר ממתינה לאישור")
+
+    req = KashrutBadgeRequest(
+        producer_id=producer.id,
+        badge_code=body.badge_code,
+        cert_url=body.cert_url,
+    )
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    out = KashrutRequestOut.model_validate(req)
+    out.producer_name = producer.name
+    return out

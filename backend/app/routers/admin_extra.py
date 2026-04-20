@@ -26,6 +26,7 @@ from app.models import (
     StaticPage,
     User,
 )
+from app.models.models import KashrutBadgeRequest
 from app.services.analytics import server_health
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
@@ -447,8 +448,14 @@ def get_dashboard(
         .scalar()
         or 0
     )
+    pending_kashrut_requests = (
+        db.query(func.count(KashrutBadgeRequest.id))
+        .filter(KashrutBadgeRequest.status == "pending")
+        .scalar()
+        or 0
+    )
     pending_moderation_count = int(
-        pending_producers + open_reports + flagged_home_products + pending_experiences
+        pending_producers + open_reports + flagged_home_products + pending_experiences + pending_kashrut_requests
     )
 
     stats = {
@@ -465,6 +472,7 @@ def get_dashboard(
         "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
         "flagged_home_products": int(flagged_home_products),
         "pending_experiences": int(pending_experiences),
+        "pending_kashrut_requests": int(pending_kashrut_requests),
         "pending_moderation_count": pending_moderation_count,
     }
 

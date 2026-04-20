@@ -15,7 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.rate_limit import limiter
-from app.routers import admin, admin_experiences, admin_extra, admin_outreach, alerts, auth, chat, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
+from app.routers import admin, admin_experiences, admin_extra, admin_kashrut, admin_outreach, alerts, auth, chat, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
 
 # Force stdout to be unbuffered so Railway's log panel shows startup
 # messages in real time. Without this, Python buffers until the process
@@ -103,6 +103,12 @@ def _migrate_columns(engine):
         ("users", "referral_code", "VARCHAR(20)"),
         # MEH-53 — Instagram story card URL (Cloudinary).
         ("producers", "story_card_url", "VARCHAR(500)"),
+        # MEH-51 — trust ladder + kashrut badges
+        ("producers", "phone_verified", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "ambassador", "BOOLEAN DEFAULT FALSE"),
+        ("producers", "kashrut_badges", "TEXT[] DEFAULT '{}'"),
+        ("producers", "kashrut_verified_at", "TIMESTAMP"),
+        ("producers", "kashrut_expires_at", "TIMESTAMP"),
     ]
     with engine.connect() as conn:
         for table, column, col_type in migrations:
@@ -310,6 +316,7 @@ app.include_router(referrals.router)
 app.include_router(group_buys.router)
 app.include_router(group_buys.admin_router)
 app.include_router(alerts.router)
+app.include_router(admin_kashrut.router)  # MEH-51
 
 
 @app.get("/push-vapid-key")

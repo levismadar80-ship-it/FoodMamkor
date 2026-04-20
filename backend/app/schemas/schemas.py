@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 # --- Auth ---
@@ -234,6 +234,19 @@ class ProducerListOut(BaseModel):
     # Populated by /producers only when ?lat=&lng=&radius_km= are passed.
     # Computed via Haversine SQL — not a real column.
     distance_km: float | None = None
+    # MEH-51: trust ladder — computed at serialization, not stored.
+    trust_tier: int = 1
+    phone_verified: bool = False
+    ambassador: bool = False
+    kashrut_badges: list[str] = []
+    kashrut_verified_at: datetime | None = None
+    kashrut_expires_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def _compute_trust_tier(self):
+        from app.services.trust_tier import compute_trust_tier
+        self.trust_tier = compute_trust_tier(self)
+        return self
 
     model_config = {"from_attributes": True}
 
@@ -252,6 +265,48 @@ class ProducerDetailOut(ProducerListOut):
     story_card_url: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-51: Kashrut badge requests ---
+class KashrutRequestCreate(BaseModel):
+    badge_code: str
+    cert_url: str | None = None
+
+    @field_validator("cert_url")
+    @classmethod
+    def _validate_cert_url(cls, v):
+        if v is not None and not v.startswith(("https://", "http://")):
+            raise ValueError("cert_url חייב להתחיל ב-https:// או http://")
+        return v
+
+
+class KashrutRequestOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    badge_code: str
+    cert_url: str | None = None
+    status: str
+    notes: str | None = None
+    created_at: datetime
+    producer_name: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class KashrutApproveIn(BaseModel):
+    pass
+
+
+class KashrutRejectIn(BaseModel):
+    notes: str | None = None
+
+
+class OtpConfirmIn(BaseModel):
+    code: str
+
+
+class SetAmbassadorIn(BaseModel):
+    ambassador: bool
 
 
 # --- User ---

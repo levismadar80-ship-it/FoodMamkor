@@ -2,17 +2,18 @@
 > קרא קובץ זה כשעובדים על /admin או בדיקות
 
 ## מבנה האדמין
-sidebar קבוע ב: `frontend/app/admin/layout.js` — 8 דפים
+sidebar קבוע ב: `frontend/app/admin/layout.js` — 9 דפים
 
 | דף | URL | תוכן |
 |----|-----|-------|
 | Dashboard | /admin | 4 ראשיים + 4 משניים + התראות + גרף עסקים חדשים 6 חודשים + ערים מובילות + DAU 30 יום + לוח בריאות שרת + פעילות (ראה "אנליטיקס על /admin") |
-| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר |
+| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר + Toggle שגרירה (approved בלבד) |
 | משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
 | אנליטיקס | /admin/analytics | גרפים + heat map + top producers |
 | חוויות | /admin/experiences | מיתון חוויות — 5 טאבים (ממתינות לאישור / דרוש תיקון / מאושרות / נדחו / הכל) + כפתורי אישור/דחייה/בקשת שינויים + התראת מייל למארח |
+| כשרות | /admin/kashrut | טבלת בקשות badge + אישור/דחייה + הערות דחייה. Badge צהוב ב-sidebar כשיש בקשות ממתינות |
 | הגדרות | /admin/settings | אימייל/WhatsApp אדמין + freemium + בדיקת Twilio/Cloudinary |
 
 ## Backend
@@ -76,10 +77,28 @@ npx playwright test             # E2E
 - נטען ב-`frontend/app/admin/layout.js` כ-fetch ל-`/admin/dashboard` בכל
   שינוי של `pathname`, כך שהמספר מתעדכן כשעוברים בין דפי admin.
 - הסכום: `pending_producers + open_reports + flagged_home_products +
-  pending_experiences` (הארבע המטריצות פתוחות בנפרד ב-stats dict).
+  pending_experiences + pending_kashrut_requests`.
 - מופיע כ-pill צהוב (`bg-yellow-400 text-yellow-900`) על הניווט "לוח
-  מחוונים" בלבד, רק כשהספירה > 0. כל הערך מוצג מתחת ל-stat cards של
-  ה-alerts המפורטת (pending producers / open reports / flagged).
+  מחוונים" (הסכום הכולל) ועל "כשרות" (pending_kashrut_requests בלבד).
+  רק כשהספירה > 0.
+
+## Trust Ladder — MEH-51 (April 2026)
+
+5 רמות אמון מחושבות real-time ב-`compute_trust_tier()` (לא מאוחסן ב-DB).
+
+| Tier | תנאי | תגית UI |
+|------|-------|---------|
+| 1 | כל עסק | (אין תגית) |
+| 2 | phone_verified = true | אפור |
+| 3 | is_verified = true (admin manual) | ירוק ראשי |
+| 4 | reviews_count ≥ 10 AND avg_rating ≥ 4.5 | ענבר |
+| 5 | ambassador = true (admin manual) | ירוק כהה |
+
+**Kashrut badges** — 8 קודים תקפים: `rabanut, badatz, chalak, mehadrin, organic-kosher, shmitta, kilayim, artisan-dairy`.
+בקשה מבית עסק → `POST /producers/me/kashrut-request`. אדמין מאשרת/דוחה ב-`/admin/kashrut`.
+
+**Ambassador toggle** — זמין ב-`/admin/producers` (כפתור "☆ שגריר") לבתי עסק עם `status = approved` בלבד.
+`POST /admin/producers/{id}/set-ambassador` מחזיר 400 אם `status != approved`.
 
 **POST /producers/{id}/whatsapp-click** — anonymous, rate-limited 10/min per IP.
 הקליינט (`WhatsAppButton.jsx` + inline `<a>` ב-`ProducerDetail.jsx`) יורה

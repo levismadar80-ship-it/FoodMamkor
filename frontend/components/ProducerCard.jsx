@@ -11,6 +11,7 @@ import {
   EnvelopeSimple,
 } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
+import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
@@ -297,8 +298,11 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           </p>
         )}
 
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <BadgeRow producer={producer} limit={2} />
+          {(producer.trust_tier ?? 1) >= 3 && (
+            <TrustBadge tier={producer.trust_tier} compact />
+          )}
         </div>
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
