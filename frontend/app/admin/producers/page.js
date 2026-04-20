@@ -64,6 +64,11 @@ function ProducersAdminPage() {
     loadAllProducers();
   };
 
+  const toggleAmbassador = async (id, current) => {
+    await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
+    loadAllProducers();
+  };
+
   const exportExcel = () => {
     // Build CSV from current visible rows (BOM for Excel UTF-8)
     const headers = ["שם", "עיר", "טלפון", "אינסטגרם", "אתר", "סטטוס", "slug"];
@@ -380,6 +385,15 @@ function ProducersAdminPage() {
                       {(p.status === "approved" || p.status === "inactive") && (
                         <button onClick={() => toggleStatus(p.id)} className="text-text-secondary hover:text-primary text-xs">
                           {p.status === "approved" ? "השהה" : "הפעל"}
+                        </button>
+                      )}
+                      {p.status === "approved" && (
+                        <button
+                          onClick={() => toggleAmbassador(p.id, p.ambassador)}
+                          className={`text-xs ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-site-muted hover:text-primary"}`}
+                          title={p.ambassador ? "הסר תפקיד שגרירה" : "הגדר כשגרירה"}
+                        >
+                          {p.ambassador ? "⭐ שגרירה" : "☆ שגריר"}
                         </button>
                       )}
                       {p.status === "approved" && p.slug && (

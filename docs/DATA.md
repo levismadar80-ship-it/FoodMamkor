@@ -69,7 +69,30 @@ producers (
   has_delivery bool, pickup_points bool,
   admin_notes, is_available_today bool,
   avg_rating float, reviews_count int,
-  created_at, last_active_at
+  created_at, last_active_at,
+  -- MEH-51: trust ladder + kashrut
+  phone_verified bool default false,
+  ambassador bool default false,
+  kashrut_badges text[] default '{}',
+  kashrut_verified_at timestamp nullable,
+  kashrut_expires_at timestamp nullable
+)
+
+-- MEH-51: one-time WhatsApp OTP for phone verification
+phone_otp_tokens (
+  id uuid PK, producer_id FK,
+  phone varchar, code varchar(6),
+  expires_at timestamp, used bool default false, created_at
+)
+
+-- MEH-51: producer uploads cert → admin approves → badge activates
+kashrut_badge_requests (
+  id uuid PK, producer_id FK,
+  badge_code varchar,           -- rabanut|badatz|chalak|mehadrin|organic-kosher|shmitta|kilayim|grass-fed|raw-dairy
+  cert_url text nullable,
+  status varchar default 'pending',  -- pending|approved|rejected
+  reviewed_by FK → users nullable,
+  notes text, created_at
 )
 
 users (
@@ -302,6 +325,9 @@ GET    /users/me/following                        auth
 # Producer-self (role=producer)
 GET    /producers/me                              producer
 PUT    /producers/me                              producer
+POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
+POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
+POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
 POST   /producers/me/availability                 producer  — toggle is_available_today
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
@@ -410,6 +436,10 @@ POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
 POST   /admin/producers/{id}/approve           admin — emails + WhatsApp
+POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
+GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
+POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
+POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
 POST   /admin/producers/{id}/reject            admin — with reason
 POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 

@@ -13,6 +13,8 @@ import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
+import TrustBadge from "@/components/TrustBadge";
+import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
@@ -224,6 +226,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </h1>
             {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
             <BadgeRow producer={producer} />
+            {/* MEH-51: trust tier badge */}
+            <TrustBadge tier={producer.trust_tier} />
             {producer.reviews_count > 0 && (
               <span
                 className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
@@ -330,6 +334,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   ✡️<span className="hidden sm:inline"> כשר</span>
                 </span>
               )}
+            </div>
+          )}
+
+          {/* MEH-51: kashrut badge strip (rendered even when kosher text exists — additive) */}
+          {producer.kashrut_badges?.length > 0 && (
+            <div className="mt-3">
+              <KashrutBadgeStrip
+                badges={producer.kashrut_badges}
+                verified_at={producer.kashrut_verified_at}
+                expires_at={producer.kashrut_expires_at}
+              />
             </div>
           )}
 
