@@ -16,6 +16,7 @@ from app.database import get_db
 from app.models import (
     AdminSetting,
     Category,
+    ContactMessage,
     Favorite,
     HomeProduct,
     Producer,
@@ -426,6 +427,7 @@ def get_dashboard(
         "total_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_active.is_(True)).scalar() or 0,
         "hidden_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_hidden.is_(True)).scalar() or 0,
         "open_reports": db.query(func.count(Report.id)).scalar() or 0,
+        "unread_contact_count": db.query(func.count(ContactMessage.id)).filter(ContactMessage.is_read.is_(False)).scalar() or 0,
     }
 
     pending = (
@@ -484,3 +486,67 @@ def get_dashboard(
         "monthly_producers": months,
         "map_points": map_points,
     }
+
+
+# ============================================================
+# CONTACT MESSAGES
+# ============================================================
+
+
+class ContactOut(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    message: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+@router.get("/contact", response_model=list[ContactOut])
+def list_contact_messages(
+    is_read: bool | None = None,
+    search: str | None = None,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    q = db.query(ContactMessage)
+    if is_read is not None:
+        q = q.filter(ContactMessage.is_read == is_read)
+    if search:
+        like = f"%{search}%"
+        q = q.filter(
+            (ContactMessage.name.ilike(like))
+            | (ContactMessage.email.ilike(like))
+            | (ContactMessage.message.ilike(like))
+        )
+    return q.order_by(ContactMessage.created_at.desc()).limit(200).all()
+
+
+@router.post("/contact/{message_id}/mark-read")
+def mark_contact_read(
+    message_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    msg = db.query(ContactMessage).filter(ContactMessage.id == message_id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    msg.is_read = True
+    db.commit()
+    return {"detail": "Marked as read"}
+
+
+@router.delete("/contact/{message_id}")
+def delete_contact_message(
+    message_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    msg = db.query(ContactMessage).filter(ContactMessage.id == message_id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    db.delete(msg)
+    db.commit()
+    return {"detail": "Message deleted"}

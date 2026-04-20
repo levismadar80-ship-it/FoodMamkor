@@ -26,7 +26,7 @@ export default function AdminDashboard() {
     { label: "סה״כ בתי עסק",      value: s.total_producers,     icon: "🏪", href: "/admin/producers" },
     { label: "ממתינים לאישור",   value: s.pending_producers,   icon: "⏳", href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
     { label: "משתמשים רשומים",   value: s.total_users,         icon: "👥", href: "/admin/users" },
-    { label: "מוצרים ביתיים",     value: s.total_home_products, icon: "🥕", href: "/admin/content" },
+    { label: "פניות חדשות",       value: s.unread_contact_count || 0, icon: "📬", href: "/admin/contact", warn: (s.unread_contact_count || 0) > 0 },
   ];
 
   // Simple inline SVG line chart for monthly producers
@@ -70,7 +70,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Alerts */}
-      {(s.pending_producers > 0 || s.open_reports > 0 || s.hidden_home_products > 0) && (
+      {(s.pending_producers > 0 || s.open_reports > 0 || s.hidden_home_products > 0 || (s.unread_contact_count || 0) > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {s.pending_producers > 0 && (
             <Link
@@ -105,6 +105,18 @@ export default function AdminDashboard() {
               <div>
                 <p className="font-medium text-sm">{s.hidden_home_products} מוצרים ביתיים מוסתרים</p>
                 <p className="text-xs text-text-secondary">לבדיקה</p>
+              </div>
+            </Link>
+          )}
+          {(s.unread_contact_count || 0) > 0 && (
+            <Link
+              href="/admin/contact"
+              className="bg-blue-50 border border-blue-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-blue-100 transition"
+            >
+              <span className="text-2xl">📬</span>
+              <div>
+                <p className="font-medium text-sm">{s.unread_contact_count} פניות שלא נקראו</p>
+                <p className="text-xs text-text-secondary">לצפייה</p>
               </div>
             </Link>
           )}

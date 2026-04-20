@@ -1,6 +1,7 @@
 from app.models.models import (
     AdminSetting,
     Category,
+    ContactMessage,
     DeliveryArea,
     Favorite,
     HomeProduct,
@@ -32,4 +33,5 @@ __all__ = [
     "HomeProductRating",
     "AdminSetting",
     "StaticPage",
+    "ContactMessage",
 ]

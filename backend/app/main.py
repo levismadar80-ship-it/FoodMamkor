@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import admin, admin_extra, auth, favorites, home_products, producer_me, producers, recipes, reports, upload
+from app.routers import admin, admin_extra, auth, favorites, home_products, marketing, producer_me, producers, recipes, reports, upload
 
 
 def _migrate_columns(engine):
@@ -45,6 +45,17 @@ def _migrate_columns(engine):
         conn.execute(text(
             "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
         ))
+        # Contact messages table
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS contact_messages (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name VARCHAR(200) NOT NULL,
+                email VARCHAR(200) NOT NULL,
+                message TEXT NOT NULL,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
         conn.commit()
 
 
@@ -83,6 +94,7 @@ app.include_router(recipes.router)
 app.include_router(home_products.router)
 app.include_router(reports.router)
 app.include_router(upload.router)
+app.include_router(marketing.router)
 
 
 @app.get("/")
