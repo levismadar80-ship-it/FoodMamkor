@@ -277,7 +277,7 @@ export default function ProducerDashboardPage() {
 
       {/* Analytics stat cards */}
       {analytics ? (
-        <AnalyticsSection analytics={analytics} />
+        <AnalyticsSection analytics={analytics} profile={profile} />
       ) : (
         <p className="text-sm text-site-muted mb-8">טוענת סטטיסטיקות...</p>
       )}
@@ -314,10 +314,9 @@ export default function ProducerDashboardPage() {
         </Link>
       </div>
 
-      {/* Profile completion checklist + AI bio */}
+      {/* AI bio */}
       {profile && (
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProfileCompletionCard profile={profile} />
+        <div className="mt-8">
           <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
         </div>
       )}
@@ -329,7 +328,7 @@ export default function ProducerDashboardPage() {
 // Analytics section: stat cards + charts
 // ============================================================
 
-function AnalyticsSection({ analytics }) {
+function AnalyticsSection({ analytics, profile }) {
   const {
     profile_views,
     search_appearances,
@@ -341,10 +340,62 @@ function AnalyticsSection({ analytics }) {
     home_products_count,
     views_by_day,
     top_cities,
+    rank_in_city,
+    conversion_rate,
+    profile_strength,
+    weekly_trend,
   } = analytics;
+
+  const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
+  const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-site-muted";
+  const trendLabel = weekly_trend === "up" ? "עלייה השבוע" : weekly_trend === "down" ? "ירידה השבוע" : "יציב";
+
+  const eligibleForWeekly = profile_strength >= 80 && rank_in_city != null && rank_in_city <= 3;
 
   return (
     <div className="space-y-8 mb-10">
+      {/* MEH-57: Hero 4-stat bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">דירוג בעיר</p>
+          <p className="font-headline text-3xl font-bold text-primary">
+            {rank_in_city != null ? `#${rank_in_city}` : "—"}
+          </p>
+          <p className="text-xs text-site-muted mt-1">לפי צפיות (30 יום)</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">המרה לווטסאפ</p>
+          <p className="font-headline text-3xl font-bold text-primary">{conversion_rate}%</p>
+          <p className="text-xs text-site-muted mt-1">מצפיות ל-30 יום</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">חוזק פרופיל</p>
+          <p className="font-headline text-3xl font-bold text-primary">{profile_strength}%</p>
+          <p className="text-xs text-site-muted mt-1">השלמת פרטים</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">מגמה שבועית</p>
+          <p className={`font-headline text-3xl font-bold ${trendColor}`}>{trendIcon}</p>
+          <p className="text-xs text-site-muted mt-1">{trendLabel}</p>
+        </div>
+      </div>
+
+      {/* MEH-57: "יצרנית השבוע" eligibility badge */}
+      {eligibleForWeekly && (
+        <div className="bg-primary/8 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
+          <span className="text-2xl" aria-hidden="true">🌟</span>
+          <div>
+            <p className="font-semibold text-primary text-sm">את מועמדת לתואר יצרנית השבוע!</p>
+            <p className="text-xs text-site-muted">פרופיל חזק + דירוג גבוה בעיר — הצוות שלנו יבחר בקרוב.</p>
+          </div>
+        </div>
+      )}
+
+      {/* MEH-57: Profile strength meter */}
+      {profile && (
+        <ProfileStrengthCard profile={profile} analytics={analytics} />
+      )}
+
       {/* Row 1: windowed metric cards (profile / search / whatsapp) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <WindowedMetricCard
@@ -539,27 +590,25 @@ function TopCitiesBarChart({ data }) {
 }
 
 // ============================================================
-// MEH-56: Profile completion checklist
+// MEH-57: Profile strength checklist (6-item, matches backend scoring)
 // ============================================================
 
-const COMPLETION_ITEMS = [
-  { key: "image",     label: "תמונת פרופיל",        weight: 20, check: (p) => (p.images?.length ?? 0) > 0 },
-  { key: "desc",      label: "תיאור עסק",            weight: 15, check: (p) => !!p.description },
-  { key: "city",      label: "עיר",                  weight: 10, check: (p) => !!p.city },
-  { key: "category",  label: "קטגוריה",              weight: 10, check: (p) => (p.categories?.length ?? 0) > 0 },
-  { key: "phone",     label: "טלפון מאומת",          weight: 20, check: (p) => !!p.phone_verified },
-  { key: "delivery",  label: "אזור משלוח",           weight: 15, check: (p) => (p.delivery_areas?.length ?? 0) > 0 },
-  { key: "social",    label: "אינסטגרם / אתר",       weight: 10, check: (p) => !!(p.instagram || p.website) },
+const STRENGTH_ITEMS = [
+  { key: "image",    label: "תמונת פרופיל",          weight: 15, check: (p, a) => (p?.images?.length ?? 0) > 0 },
+  { key: "desc",     label: "תיאור עסק (50+ תווים)", weight: 20, check: (p, a) => (p?.description?.trim?.()?.length ?? 0) >= 50 },
+  { key: "product",  label: "מוצר פעיל במטבח",       weight: 25, check: (p, a) => (a?.home_products_count ?? 0) > 0 },
+  { key: "delivery", label: "אזור משלוח",             weight: 10, check: (p, a) => (p?.delivery_areas?.length ?? 0) > 0 },
+  { key: "review",   label: "ביקורת ראשונה",          weight: 15, check: (p, a) => (a?.total_reviews ?? 0) > 0 },
+  { key: "phone",    label: "טלפון מאומת",            weight: 15, check: (p, a) => !!p?.phone_verified },
 ];
 
-function ProfileCompletionCard({ profile }) {
-  const completed = COMPLETION_ITEMS.filter((item) => item.check(profile));
-  const pct = completed.reduce((sum, item) => sum + item.weight, 0);
+function ProfileStrengthCard({ profile, analytics }) {
+  const pct = analytics?.profile_strength ?? 0;
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-headline text-base font-bold">השלמת פרופיל</h2>
+        <h2 className="font-headline text-base font-bold">חוזק פרופיל</h2>
         <span className="text-primary font-bold text-lg">{pct}%</span>
       </div>
       <div className="h-2 bg-light rounded-full overflow-hidden mb-4">
@@ -569,8 +618,8 @@ function ProfileCompletionCard({ profile }) {
         />
       </div>
       <ul className="space-y-2">
-        {COMPLETION_ITEMS.map((item) => {
-          const done = item.check(profile);
+        {STRENGTH_ITEMS.map((item) => {
+          const done = item.check(profile, analytics);
           return (
             <li key={item.key} className="flex items-center justify-between text-sm">
               <span className={`flex items-center gap-2 ${done ? "text-site-text" : "text-site-muted"}`}>
@@ -578,7 +627,7 @@ function ProfileCompletionCard({ profile }) {
                 {item.label}
               </span>
               {!done && (
-                <span className="text-xs text-secondary font-medium">+{item.weight}% נראות</span>
+                <span className="text-xs text-secondary font-medium">+{item.weight}%</span>
               )}
             </li>
           );

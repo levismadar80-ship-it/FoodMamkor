@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
@@ -344,6 +344,82 @@ def producer_analytics(
     )
     top_cities = [{"city": row.city, "count": int(row.count)} for row in top_city_rows]
 
+    # MEH-57 ── rank_in_city: 1-based rank among approved producers in same
+    # city ordered by 30d views descending. None when producer has no city.
+    cutoff_30d = datetime.utcnow() - timedelta(days=30)
+    if producer.city:
+        city_ranks = (
+            db.query(
+                Producer.id,
+                func.count(ProducerPageView.id).label("views"),
+            )
+            .outerjoin(
+                ProducerPageView,
+                and_(
+                    ProducerPageView.producer_id == Producer.id,
+                    ProducerPageView.created_at >= cutoff_30d,
+                ),
+            )
+            .filter(Producer.city == producer.city, Producer.status == "approved")
+            .group_by(Producer.id)
+            .order_by(func.count(ProducerPageView.id).desc())
+            .all()
+        )
+        rank_in_city = next(
+            (i + 1 for i, row in enumerate(city_ranks) if row.id == pid), None
+        )
+    else:
+        rank_in_city = None
+
+    # MEH-57 ── conversion_rate: whatsapp clicks / profile views × 100 (30d).
+    conversion_rate = (
+        round(whatsapp_clicks["last_30d"] / profile_views["last_30d"] * 100, 1)
+        if profile_views["last_30d"] > 0
+        else 0.0
+    )
+
+    # MEH-57 ── profile_strength: 0-100 score from 6-item checklist.
+    has_delivery_area = (
+        db.query(func.count(DeliveryArea.id))
+        .filter(DeliveryArea.producer_id == pid)
+        .scalar()
+        or 0
+    ) > 0
+    strength_score = sum([
+        15 if (producer.images or []) else 0,
+        20 if (producer.description or "").strip() and len((producer.description or "").strip()) >= 50 else 0,
+        25 if int(home_products_count) > 0 else 0,
+        10 if has_delivery_area else 0,
+        15 if int(total_reviews) > 0 else 0,
+        15 if producer.phone_verified else 0,
+    ])
+    profile_strength = int(strength_score)
+
+    # MEH-57 ── weekly_trend: compare last 7d views vs previous 7d (days 14→7).
+    now = datetime.utcnow()
+    prev_start = now - timedelta(days=14)
+    prev_end = now - timedelta(days=7)
+    prev_7d_views = int(
+        db.query(func.count(ProducerPageView.id))
+        .filter(
+            ProducerPageView.producer_id == pid,
+            ProducerPageView.created_at >= prev_start,
+            ProducerPageView.created_at < prev_end,
+        )
+        .scalar()
+        or 0
+    )
+    last_7d = profile_views["last_7d"]
+    if last_7d == 0 and prev_7d_views == 0:
+        weekly_trend = "stable"
+    elif prev_7d_views == 0:
+        weekly_trend = "up"
+    elif last_7d == 0:
+        weekly_trend = "down"
+    else:
+        change = (last_7d - prev_7d_views) / prev_7d_views
+        weekly_trend = "up" if change > 0.10 else "down" if change < -0.10 else "stable"
+
     return {
         "profile_views": profile_views,
         "search_appearances": search_appearances,
@@ -355,6 +431,10 @@ def producer_analytics(
         "home_products_count": int(home_products_count),
         "views_by_day": views_by_day,
         "top_cities": top_cities,
+        "rank_in_city": rank_in_city,
+        "conversion_rate": conversion_rate,
+        "profile_strength": profile_strength,
+        "weekly_trend": weekly_trend,
     }
 
 
