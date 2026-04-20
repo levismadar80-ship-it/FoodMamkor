@@ -21,7 +21,7 @@ from app.models import (
 )
 import logging
 import os
-import random
+import secrets
 import string
 
 from app.models.models import HomeProductWhatsAppClick, PhoneOtpToken, KashrutBadgeRequest
@@ -399,7 +399,7 @@ def send_phone_otp(
     if producer.phone_verified:
         return {"detail": "הטלפון כבר מאומת"}
 
-    code = "".join(random.choices(string.digits, k=6))
+    code = "".join(secrets.choice(string.digits) for _ in range(6))
     expires = datetime.utcnow() + timedelta(minutes=10)
 
     # Invalidate any previous unused tokens for this producer
@@ -416,12 +416,14 @@ def send_phone_otp(
     ))
     db.commit()
 
-    sent = _send_whatsapp_otp(producer.phone, code)
-    return {"detail": "קוד נשלח" if sent else "קוד נוצר (Twilio לא מוגדר — דיבאג בלבד)"}
+    _send_whatsapp_otp(producer.phone, code)
+    return {"detail": "קוד נשלח"}
 
 
 @router.post("/verify-phone/confirm", status_code=200)
+@limiter.limit("5/minute")
 def confirm_phone_otp(
+    request: Request,
     body: OtpConfirmIn,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
@@ -492,4 +494,6 @@ def request_kashrut_badge(
     db.add(req)
     db.commit()
     db.refresh(req)
-    return {**req.__dict__, "producer_name": producer.name}
+    out = KashrutRequestOut.model_validate(req)
+    out.producer_name = producer.name
+    return out

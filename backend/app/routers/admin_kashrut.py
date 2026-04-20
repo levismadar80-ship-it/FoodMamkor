@@ -32,10 +32,12 @@ def list_kashrut_requests(
         .order_by(KashrutBadgeRequest.created_at.asc())
         .all()
     )
-    return [
-        {**r.__dict__, "producer_name": r.producer.name if r.producer else None}
-        for r in rows
-    ]
+    results = []
+    for r in rows:
+        out = KashrutRequestOut.model_validate(r)
+        out.producer_name = r.producer.name if r.producer else None
+        results.append(out)
+    return results
 
 
 @router.post("/kashrut/{request_id}/approve")
@@ -59,9 +61,15 @@ def approve_kashrut_request(
         badges.append(req.badge_code)
         producer.kashrut_badges = badges
 
+    # Only set timestamps when this is the FIRST approved badge; subsequent
+    # badge approvals extend the expiry to keep the latest renewal date.
     now = datetime.utcnow()
-    producer.kashrut_verified_at = now
-    producer.kashrut_expires_at = now + timedelta(days=365)
+    if producer.kashrut_expires_at is None or producer.kashrut_expires_at < now:
+        producer.kashrut_verified_at = now
+        producer.kashrut_expires_at = now + timedelta(days=365)
+    else:
+        # Extend by 1 year from latest expiry so cert chains don't shrink.
+        producer.kashrut_expires_at = producer.kashrut_expires_at + timedelta(days=365)
 
     req.status = "approved"
     req.reviewed_by = user.id
@@ -99,6 +107,8 @@ def set_ambassador(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if producer.ambassador == body.ambassador:
+        return {"detail": "ללא שינוי", "ambassador": producer.ambassador}
     producer.ambassador = body.ambassador
     db.commit()
     return {"detail": "עודכן", "ambassador": producer.ambassador}

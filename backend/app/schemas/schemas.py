@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 # --- Auth ---
@@ -271,6 +271,13 @@ class ProducerDetailOut(ProducerListOut):
 class KashrutRequestCreate(BaseModel):
     badge_code: str
     cert_url: str | None = None
+
+    @field_validator("cert_url")
+    @classmethod
+    def _validate_cert_url(cls, v):
+        if v is not None and not v.startswith(("https://", "http://")):
+            raise ValueError("cert_url חייב להתחיל ב-https:// או http://")
+        return v
 
 
 class KashrutRequestOut(BaseModel):
