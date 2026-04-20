@@ -160,7 +160,7 @@ function CardHeart({ producer }) {
   );
 }
 
-export default function ProducerCard({ producer, active, onClick, referrer }) {
+export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false }) {
   const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
@@ -302,6 +302,11 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           <BadgeRow producer={producer} limit={2} />
           {(producer.trust_tier ?? 1) >= 3 && (
             <TrustBadge tier={producer.trust_tier} compact />
+          )}
+          {fridayMode && producer.is_available_today && (
+            <span className="inline-flex items-center rounded-full bg-secondary/10 border border-secondary/30 text-secondary px-2 py-0.5 text-[11px] font-semibold">
+              🛒 מגיעה היום
+            </span>
           )}
         </div>
 
