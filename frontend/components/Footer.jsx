@@ -156,15 +156,12 @@ export default function Footer() {
           {/* Column 3 — Newsletter */}
           <div>
             <h3
-              className="font-headline text-white mb-1"
+              className="font-headline text-white mb-4"
               style={{ fontSize: "16px" }}
             >
-              הישארי מעודכנת
+              אוכל טוב לא שומרים לעצמנו.
             </h3>
-            <p className="mb-4" style={{ fontSize: "12px", color: "#9ab89a" }}>
-              מוצרים חדשים ועסקים ישר לתיבה
-            </p>
-            <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
+            <form onSubmit={handleSubscribe} className="relative">
               <label htmlFor="footer-newsletter-email" className="sr-only">
                 אימייל לניוזלטר
               </label>
@@ -175,23 +172,17 @@ export default function Footer() {
                 dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="האימייל שלך"
-                className="bg-transparent text-white placeholder:text-white/50 rounded-[8px] px-4 py-2 outline-none focus:border-white focus-visible:ring-2 focus-visible:ring-white/40"
-                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
+                placeholder="האימייל שלך, בבקשה"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-8"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-[#4cb08b] text-white px-5 py-2 rounded-[8px] hover:opacity-90 transition font-medium disabled:opacity-60"
+                aria-label="שלחי"
+                className="absolute end-0 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition disabled:opacity-40"
               >
-                {status === "loading" ? (
-                  <span className="inline-flex items-center gap-2">
-                    <ButtonSpinner />
-                    מצטרפת...
-                  </span>
-                ) : (
-                  "הצטרפי"
-                )}
+                {status === "loading" ? <ButtonSpinner /> : "→"}
               </button>
             </form>
             {message && (

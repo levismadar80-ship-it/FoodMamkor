@@ -13,12 +13,14 @@
  * Props:
  *   - image: Unsplash URL
  *   - quote: Hebrew string
+ *   - attribution: optional attribution line (e.g. "— ספיר, מייסדת מהמקור")
  *   - overlayOpacity: 0..1 (default 0.6)
  *   - height: CSS value (default 400px)
  */
 export default function ParallaxQuote({
   image,
   quote,
+  attribution,
   overlayOpacity = 0.6,
   height = "400px",
 }) {
@@ -41,12 +43,19 @@ export default function ParallaxQuote({
         className="absolute inset-0 flex items-center justify-center px-6"
         style={{ backgroundColor: `rgba(46, 74, 46, ${overlayOpacity})` }}
       >
-        <blockquote
-          className="font-headline text-white text-center italic max-w-4xl leading-tight"
-          style={{ fontSize: "clamp(24px, 4vw, 48px)" }}
-        >
-          &ldquo;{quote}&rdquo;
-        </blockquote>
+        <div className="text-center max-w-4xl">
+          <blockquote
+            className="font-headline text-white italic leading-tight"
+            style={{ fontSize: "clamp(24px, 4vw, 48px)" }}
+          >
+            &ldquo;{quote}&rdquo;
+          </blockquote>
+          {attribution && (
+            <p className="mt-4 text-white/75 font-body" style={{ fontSize: "clamp(14px, 1.5vw, 18px)" }}>
+              {attribution}
+            </p>
+          )}
+        </div>
       </div>
     </section>
   );
