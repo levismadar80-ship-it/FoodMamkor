@@ -89,6 +89,9 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
         website=data.website,
         primary_contact_method=method,
         contact_email=data.contact_email,
+        gluten_free=data.gluten_free,
+        vegan=data.vegan,
+        lactose_free=data.lactose_free,
         status="pending_whatsapp",
     )
     db.add(producer)
