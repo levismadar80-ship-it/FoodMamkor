@@ -348,45 +348,47 @@ function AnalyticsSection({ analytics, profile }) {
 
   const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
   const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-site-muted";
-  const trendLabel = weekly_trend === "up" ? "עלייה השבוע" : weekly_trend === "down" ? "ירידה השבוע" : "יציב";
+  const cityName = profile?.city ? ` ב${profile.city}` : "";
+  const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
 
-  const eligibleForWeekly = profile_strength >= 80 && rank_in_city != null && rank_in_city <= 3;
+  const eligibleForWeekly = profile_strength >= 80 && rank_in_city === 1;
 
   return (
     <div className="space-y-8 mb-10">
       {/* MEH-57: Hero 4-stat bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">דירוג בעיר</p>
-          <p className="font-headline text-3xl font-bold text-primary">
-            {rank_in_city != null ? `#${rank_in_city}` : "—"}
+          <p className="text-xs text-site-muted mb-1">צפיות השבוע</p>
+          <p className={`font-headline text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
+            {profile_views?.last_7d ?? 0}
+            <span className={`text-lg font-semibold ${trendColor}`}>{trendIcon}</span>
           </p>
-          <p className="text-xs text-site-muted mt-1">לפי צפיות (30 יום)</p>
+          <p className="text-xs text-site-muted mt-1">7 הימים האחרונים</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">המרה לווטסאפ</p>
+          <p className="text-xs text-site-muted mb-1">לחיצות ווטסאפ</p>
+          <p className="font-headline text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
+          <p className="text-xs text-site-muted mt-1">7 הימים האחרונים</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">המרה %</p>
           <p className="font-headline text-3xl font-bold text-primary">{conversion_rate}%</p>
-          <p className="text-xs text-site-muted mt-1">מצפיות ל-30 יום</p>
+          <p className="text-xs text-site-muted mt-1">צפייה → ווטסאפ (30 יום)</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">חוזק פרופיל</p>
-          <p className="font-headline text-3xl font-bold text-primary">{profile_strength}%</p>
-          <p className="text-xs text-site-muted mt-1">השלמת פרטים</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">מגמה שבועית</p>
-          <p className={`font-headline text-3xl font-bold ${trendColor}`}>{trendIcon}</p>
-          <p className="text-xs text-site-muted mt-1">{trendLabel}</p>
+          <p className="text-xs text-site-muted mb-1">דירוג בעיר</p>
+          <p className="font-headline text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
+          <p className="text-xs text-site-muted mt-1">לפי צפיות (30 יום)</p>
         </div>
       </div>
 
       {/* MEH-57: "יצרנית השבוע" eligibility badge */}
       {eligibleForWeekly && (
-        <div className="bg-primary/8 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
+        <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🌟</span>
           <div>
-            <p className="font-semibold text-primary text-sm">את מועמדת לתואר יצרנית השבוע!</p>
-            <p className="text-xs text-site-muted">פרופיל חזק + דירוג גבוה בעיר — הצוות שלנו יבחר בקרוב.</p>
+            <p className="font-semibold text-primary text-sm">את מועמדת ליצרנית השבוע 🌟 צרי קשר עם הצוות</p>
+            <p className="text-xs text-site-muted">דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!</p>
           </div>
         </div>
       )}
@@ -602,15 +604,23 @@ const STRENGTH_ITEMS = [
   { key: "phone",    label: "טלפון מאומת",            weight: 15, check: (p, a) => !!p?.phone_verified },
 ];
 
+function _strengthLabel(pct) {
+  if (pct <= 40) return "הפרופיל שלך חלש — לקוחות לא רואות אותך";
+  if (pct <= 70) return "בסדר, אבל יש מה לשפר";
+  if (pct <= 90) return "פרופיל חזק 💪";
+  return "פרופיל מושלם ⭐";
+}
+
 function ProfileStrengthCard({ profile, analytics }) {
   const pct = analytics?.profile_strength ?? 0;
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-1">
         <h2 className="font-headline text-base font-bold">חוזק פרופיל</h2>
         <span className="text-primary font-bold text-lg">{pct}%</span>
       </div>
+      <p className="text-xs text-site-muted mb-3">{_strengthLabel(pct)}</p>
       <div className="h-2 bg-light rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-primary rounded-full transition-all duration-500"
