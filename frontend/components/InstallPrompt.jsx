@@ -16,7 +16,15 @@ function isStandalone() {
 }
 
 function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function lsGet(key, fallback) {
+  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+
+function lsSet(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* private mode — ignore */ }
 }
 
 export default function InstallPrompt() {
@@ -27,12 +35,12 @@ export default function InstallPrompt() {
   useEffect(() => {
     if (isStandalone()) return; // already installed — never show
 
-    const dismissedUntil = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    const dismissedUntil = Number(lsGet(DISMISS_KEY, "0"));
     if (Date.now() < dismissedUntil) return;
 
     // Increment visit counter; only show on 2nd+ visit
-    const visits = Number(localStorage.getItem(VISIT_KEY) || 0) + 1;
-    localStorage.setItem(VISIT_KEY, String(visits));
+    const visits = Number(lsGet(VISIT_KEY, "0")) + 1;
+    lsSet(VISIT_KEY, String(visits));
     if (visits < 2) return;
 
     const iosDevice = isIOS();
@@ -65,7 +73,7 @@ export default function InstallPrompt() {
       promptRef.current = null;
       setShow(false);
       if (outcome === "dismissed") {
-        localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_MS));
+        lsSet(DISMISS_KEY, String(Date.now() + DISMISS_MS));
       }
     } else {
       setShow(false);
@@ -74,7 +82,7 @@ export default function InstallPrompt() {
 
   const handleDismiss = () => {
     setShow(false);
-    localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_MS));
+    lsSet(DISMISS_KEY, String(Date.now() + DISMISS_MS));
   };
 
   if (!show) return null;
