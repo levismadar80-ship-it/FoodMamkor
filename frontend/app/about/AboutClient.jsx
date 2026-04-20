@@ -175,6 +175,7 @@ export default function AboutPage() {
                 onClick={() => setOpenTip(openTip === i ? null : i)}
                 className="w-full flex items-center justify-between gap-4 px-6 py-4 text-right font-medium text-site-text hover:bg-background transition"
                 aria-expanded={openTip === i}
+                aria-controls={`tip-panel-${i}`}
               >
                 <span>{tip.q}</span>
                 {openTip === i ? (
@@ -184,7 +185,7 @@ export default function AboutPage() {
                 )}
               </button>
               {openTip === i && (
-                <div className="px-6 pb-5 pt-4 text-site-text/85 leading-relaxed border-t border-border">
+                <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-site-text/85 leading-relaxed border-t border-border">
                   {tip.a}
                 </div>
               )}
@@ -261,7 +262,7 @@ export default function AboutPage() {
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="font-headline text-4xl font-bold text-site-text mb-3">דברי איתנו</h2>
           <p className="text-site-muted font-body text-base mb-10">
-            שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכם
+            שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן
           </p>
 
           <form onSubmit={handleContact} className="space-y-4 text-right">
