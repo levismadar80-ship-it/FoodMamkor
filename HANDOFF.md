@@ -5,9 +5,9 @@
 
 ## Last session
 Date: 2026-04-20
-PR merged/opened: #183 (feature/meh-51-trust-ladder) — OPEN (draft)
+PR merged/opened: #183 (feature/meh-51-trust-ladder) — MERGED to staging
 Summary:
-  PR #183: MEH-51 — kashrut multi-badge + 5-tier trust ladder
+  PR #183: MEH-51 — kashrut multi-badge + 5-tier trust ladder (MERGED)
     - DB: phone_verified, ambassador, kashrut_badges[], kashrut_verified_at/expires_at
       on producers; phone_otp_tokens table; kashrut_badge_requests table.
     - Backend: trust_tier = real-time via compute_trust_tier() in services/trust_tier.py
@@ -16,11 +16,18 @@ Summary:
     - POST /producers/me/verify-phone/confirm (5/min rate limit)
     - POST /producers/me/kashrut-request (badge_code + cert_url)
     - GET/POST /admin/kashrut (review table + approve/reject)
-    - POST /admin/producers/{id}/set-ambassador
-    - TrustBadge.jsx (tier 2-5 pills) + KashrutBadgeStrip.jsx
+    - POST /admin/producers/{id}/set-ambassador (400 if status != approved)
+    - GET /admin/dashboard: pending_kashrut_requests in stats + pending_moderation_count
+    - TrustBadge.jsx (tier 2-5 pills) + KashrutBadgeStrip.jsx (richer tooltips)
     - ProducerCard + ProducerDetail: badges shown
     - /register/producer: step 4 phone verification (skippable)
-    - /admin/kashrut: review table + reject modal
+    - /admin/kashrut: review table + reject modal + instructional header
+    - /admin/producers: ambassador toggle (approved only, ☆/⭐)
+    - /admin/layout.js: kashrut nav badge (yellow pill when pending > 0)
+    - Badge codes (8): rabanut, badatz, chalak, mehadrin, organic-kosher,
+      shmitta, kilayim, artisan-dairy
+      (grass-fed removed; raw-dairy → artisan-dairy "מוצרי חלב מהחווה")
+    - Tests: 22/22 test_trust_ladder.py green
     - Adversarial review fixed 6 issues before merge:
       random→secrets, rate limit on confirm, __dict__ anti-pattern,
       expiry overwrite logic, Twilio info leak, cert_url validation
@@ -30,12 +37,11 @@ Summary:
   Previous: #180 circle pins with Phosphor icons (MERGED to staging)
 
 ## Current state
-Branch: feature/meh-51-trust-ladder (open PR #183 — draft)
-Staging HEAD: e43695f (HANDOFF.md after PR #181)
-Main HEAD: e42127e (production release — staging ahead by #168–#182)
+Branch: staging
+Staging HEAD: d4e6e99 (MEH-51 trust ladder — merged)
+Main HEAD: e42127e (production release — staging ahead by #168–#183)
 
 ## Next task
-After PR #183 is approved + merged:
   1. Admin analytics: add referral count per producer (skipped from MEH-49 scope)
   2. ProducerCard heart/favorite Phase C (post-login replay)
   3. Lightbox for gallery images
@@ -46,7 +52,7 @@ Deferred from design bundle (do NOT start without explicit user confirmation):
   - Item 4: New homepage editorial sections (EditorialBreath, MeetAProducer, HowItWorks)
   - Item 5: Botanical logo mark for Header/Layout
 
-First step: approve PR #183 → merge → git checkout staging → git pull → pick next task
+First step: git checkout staging → git pull → pick next task
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -56,6 +62,8 @@ First step: approve PR #183 → merge → git checkout staging → git pull → 
 | MEH-51: kashrut_badges[] additive to producers.kosher | No regression; both coexist | April 2026 |
 | MEH-51: ambassador = admin-manual toggle only | Trust tier 5 is editorial, not algorithmic | April 2026 |
 | MEH-51: OTP uses secrets.choice (not random) | Security: random is predictable | April 2026 |
+| MEH-51: artisan-dairy replaces raw-dairy; grass-fed removed | Refined spec — 8 valid badge codes | April 2026 |
+| MEH-51: set-ambassador returns 400 if status != approved | Guard against tier-5 on inactive producers | April 2026 |
 | Map pins: circle divIcon (not teardrop) | Design system v2 — consistent with benchmark apps | April 2026 |
 | Combined box-shadow string (not cascading) | CSS cascade: last box-shadow wins | April 2026 |
 | Tile warmth in globals.css (not MapComponent) | .leaflet-tile-pane only exists inside Leaflet | April 2026 |
@@ -66,7 +74,7 @@ First step: approve PR #183 → merge → git checkout staging → git pull → 
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- #183: feature/meh-51-trust-ladder — MEH-51 trust ladder + kashrut (draft, awaiting review)
+None (all merged to staging)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
