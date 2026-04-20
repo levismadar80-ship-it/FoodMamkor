@@ -8,7 +8,7 @@ Coverage:
   settings, analytics, page editing
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
-from app.models.models import AdminSetting, ContactMessage, Producer, StaticPage
+from app.models.models import AdminSetting, ContactMessage, Producer, ProducerWhatsAppClick, StaticPage
 from conftest import auth_header, make_category, make_producer, make_user
 
 
@@ -654,3 +654,58 @@ class TestContact:
         resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
+
+
+# ---------- WhatsApp Click Tracking ----------
+
+class TestWhatsAppClickTracking:
+    """POST /producers/{id}/whatsapp-click — anonymous + optional-auth tracking.
+
+    Verifies:
+    - Anonymous click records a row with user_id=None
+    - Authenticated click records a row with the correct user_id
+    - Unknown producer returns 404
+    - Dashboard endpoint counts the last-7d clicks correctly
+    """
+
+    def test_anonymous_click_records_row(self, client, db):
+        p = make_producer(db)
+        resp = client.post(f"/producers/{p.id}/whatsapp-click")
+        assert resp.status_code == 200
+        row = db.query(ProducerWhatsAppClick).first()
+        assert row is not None
+        assert row.producer_id == p.id
+        assert row.user_id is None
+
+    def test_authenticated_click_records_user_id(self, client, db):
+        p = make_producer(db)
+        user = make_user(db, email="clicker@test.com")
+        resp = client.post(
+            f"/producers/{p.id}/whatsapp-click",
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        row = db.query(ProducerWhatsAppClick).first()
+        assert row is not None
+        assert row.user_id == user.id
+
+    def test_unknown_producer_returns_404(self, client):
+        resp = client.post(
+            "/producers/00000000-0000-0000-0000-000000000000/whatsapp-click"
+        )
+        assert resp.status_code == 404
+
+    def test_dashboard_counts_weekly_clicks(self, client, db):
+        """whatsapp_clicks_week reflects rows recorded in the last 7 days."""
+        p = make_producer(db)
+        user = make_user(db, email="prod@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        # Record 3 clicks
+        for _ in range(3):
+            client.post(f"/producers/{p.id}/whatsapp-click")
+
+        resp = client.get("/producers/me/dashboard", headers=auth_header(user))
+        assert resp.status_code == 200
+        assert resp.json()["whatsapp_clicks_week"] == 3

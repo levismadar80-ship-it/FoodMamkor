@@ -112,8 +112,23 @@ def _migrate_columns(engine):
         ("producers", "kashrut_badges", "TEXT[] DEFAULT '{}'"),
         ("producers", "kashrut_verified_at", "TIMESTAMP"),
         ("producers", "kashrut_expires_at", "TIMESTAMP"),
+        # whatsapp click user attribution (was anonymous-only at first)
+        ("producer_whatsapp_clicks", "user_id", "UUID REFERENCES users(id) ON DELETE SET NULL"),
     ]
     with engine.connect() as conn:
+        # Ensure the table itself exists for Railway DBs older than the model.
+        # create_all() handles new tables on a fresh deploy, but if the table
+        # was introduced after initial setup this guard covers the gap.
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS producer_whatsapp_clicks (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                producer_id UUID NOT NULL REFERENCES producers(id) ON DELETE CASCADE,
+                user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                clicked_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+            """
+        ))
         for table, column, col_type in migrations:
             conn.execute(text(
                 f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
