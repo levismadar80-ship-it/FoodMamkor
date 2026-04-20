@@ -2,7 +2,7 @@
 
 VALID_BADGE_CODES = frozenset({
     "rabanut", "badatz", "chalak", "mehadrin",
-    "organic-kosher", "shmitta", "kilayim", "grass-fed", "raw-dairy",
+    "organic-kosher", "shmitta", "kilayim", "artisan-dairy",
 })
 
 

@@ -62,9 +62,12 @@ def test_tier5_supersedes_all():
 
 
 def test_valid_badge_codes_not_empty():
-    assert len(VALID_BADGE_CODES) >= 9
+    assert len(VALID_BADGE_CODES) == 8
     assert "rabanut" in VALID_BADGE_CODES
     assert "badatz" in VALID_BADGE_CODES
+    assert "artisan-dairy" in VALID_BADGE_CODES
+    assert "grass-fed" not in VALID_BADGE_CODES
+    assert "raw-dairy" not in VALID_BADGE_CODES
 
 
 # ---------------------------------------------------------------------------

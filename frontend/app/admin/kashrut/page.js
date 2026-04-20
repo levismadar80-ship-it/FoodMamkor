@@ -12,8 +12,7 @@ const BADGE_LABELS = {
   "organic-kosher": "אורגני כשר",
   shmitta: "שמיטה",
   kilayim: "ללא כלאיים",
-  "grass-fed": "עשב טבעי",
-  "raw-dairy": "חלב גולמי",
+  "artisan-dairy": "מוצרי חלב מהחווה",
 };
 
 function formatDate(iso) {
@@ -76,8 +75,13 @@ export default function AdminKashrutPage() {
 
   return (
     <div dir="rtl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold font-headline text-site-text">אישור תעודות כשרות</h1>
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold font-headline text-site-text mb-1">אישור תעודות כשרות</h1>
+        <p className="text-sm text-site-muted">
+          בתי עסק מבקשות תעודות כשרות דרך הדשבורד שלהן. בדקי את קישור התעודה לפני אישור.
+        </p>
+      </div>
+      <div className="mb-6">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}

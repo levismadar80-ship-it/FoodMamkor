@@ -1,15 +1,14 @@
 "use client";
 
 const BADGE_META = {
-  rabanut:        { label: "כשר מרבנות",   authority: "rabanut.org.il" },
-  badatz:         { label: 'בדצ"ה',         authority: "badatz.co.il" },
-  chalak:         { label: "חלק",           authority: null },
-  mehadrin:       { label: "מהדרין",        authority: null },
-  "organic-kosher": { label: "אורגני כשר", authority: null },
-  shmitta:        { label: "שמיטה",         authority: null },
-  kilayim:        { label: "ללא כלאיים",    authority: null },
-  "grass-fed":    { label: "עשב טבעי",     authority: null },
-  "raw-dairy":    { label: "חלב גולמי",    authority: null },
+  rabanut:        { label: "כשר מרבנות",        tooltip: "כשרות בפיקוח הרבנות המקומית" },
+  badatz:         { label: 'בדצ"ה',              tooltip: 'כשרות מהדרין בפיקוח בית דין צדק' },
+  chalak:         { label: "חלק",                tooltip: "בשר חלק לפי המסורת הספרדית" },
+  mehadrin:       { label: "מהדרין",             tooltip: "כשרות מהדרין ברמת הידור גבוהה" },
+  "organic-kosher": { label: "אורגני כשר",       tooltip: "גידול אורגני מוסמך + כשרות" },
+  shmitta:        { label: "שמיטה",              tooltip: "תוצרת שנת השמיטה בהכשר מיוחד" },
+  kilayim:        { label: "ללא כלאיים",         tooltip: "ללא הרכבה אסורה בין מינים" },
+  "artisan-dairy": { label: "מוצרי חלב מהחווה", tooltip: "חלב ומוצריו ישירות מהחווה, כשר" },
 };
 
 function daysUntil(dateStr) {
@@ -33,13 +32,7 @@ export default function KashrutBadgeStrip({ badges, verified_at, expires_at }) {
       {badges.map((code) => {
         const meta = BADGE_META[code];
         if (!meta) return null;
-        const tooltip = [
-          meta.label,
-          meta.authority ? `מוכר על ידי ${meta.authority}` : null,
-          expiryText,
-        ]
-          .filter(Boolean)
-          .join(" · ");
+        const tooltip = [meta.tooltip, expiryText].filter(Boolean).join(" · ");
 
         return (
           <span

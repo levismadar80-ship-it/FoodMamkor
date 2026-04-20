@@ -107,6 +107,8 @@ def set_ambassador(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if body.ambassador and producer.status != "approved":
+        raise HTTPException(status_code=400, detail="ניתן להגדיר שגריר רק לבית עסק פעיל")
     if producer.ambassador == body.ambassador:
         return {"detail": "ללא שינוי", "ambassador": producer.ambassador}
     producer.ambassador = body.ambassador
