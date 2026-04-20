@@ -14,6 +14,9 @@ describe("BADGE_PRIORITY", () => {
       "new",
       "organic",
       "grass_fed",
+      "gluten_free",
+      "vegan",
+      "lactose_free",
       "kosher",
       "delivery",
       "products",
@@ -33,6 +36,9 @@ describe("allBadges", () => {
         products_count: 0,
         organic_certified: false,
         grass_fed: false,
+        gluten_free: false,
+        vegan: false,
+        lactose_free: false,
         kosher: null,
       }),
     ).toEqual([]);
@@ -67,6 +73,18 @@ describe("allBadges", () => {
     expect(allBadges({ grass_fed: true }).map((b) => b.key)).toEqual(["grass_fed"]);
   });
 
+  it("gluten_free — when gluten_free is true", () => {
+    expect(allBadges({ gluten_free: true }).map((b) => b.key)).toEqual(["gluten_free"]);
+  });
+
+  it("vegan — when vegan is true", () => {
+    expect(allBadges({ vegan: true }).map((b) => b.key)).toEqual(["vegan"]);
+  });
+
+  it("lactose_free — when lactose_free is true", () => {
+    expect(allBadges({ lactose_free: true }).map((b) => b.key)).toEqual(["lactose_free"]);
+  });
+
   it("kosher — when kosher is a non-empty string", () => {
     expect(allBadges({ kosher: "חלבי" }).map((b) => b.key)).toEqual(["kosher"]);
     expect(allBadges({ kosher: "כשר למהדרין" }).map((b) => b.key)).toEqual(["kosher"]);
@@ -97,6 +115,9 @@ describe("allBadges", () => {
       has_delivery: true,
       kosher: "חלבי",
       grass_fed: true,
+      gluten_free: true,
+      vegan: true,
+      lactose_free: true,
       organic_certified: true,
       days_since_created: 5,
       is_recommended: true,
@@ -108,6 +129,9 @@ describe("allBadges", () => {
       "new",
       "organic",
       "grass_fed",
+      "gluten_free",
+      "vegan",
+      "lactose_free",
       "kosher",
       "delivery",
       "products",
@@ -185,6 +209,16 @@ describe("badgeCount", () => {
         organic_certified: true,
         grass_fed: true,
         kosher: "חלבי",
+      }),
+    ).toBe(3);
+  });
+
+  it("counts the dietary label badges", () => {
+    expect(
+      badgeCount({
+        gluten_free: true,
+        vegan: true,
+        lactose_free: true,
       }),
     ).toBe(3);
   });

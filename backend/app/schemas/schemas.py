@@ -32,6 +32,9 @@ class ProducerRegister(BaseModel):
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
     category_ids: list[int] = []
+    gluten_free: bool = False
+    vegan: bool = False
+    lactose_free: bool = False
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
@@ -131,6 +134,9 @@ class ProducerAdminCreate(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
+    gluten_free: bool = False
+    vegan: bool = False
+    lactose_free: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
@@ -178,6 +184,9 @@ class ProducerUpdate(BaseModel):
     price_range: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
+    gluten_free: bool | None = None
+    vegan: bool | None = None
+    lactose_free: bool | None = None
     has_delivery: bool | None = None
     pickup_points: bool | None = None
     kosher: str | None = None
@@ -209,6 +218,9 @@ class ProducerListOut(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
+    gluten_free: bool = False
+    vegan: bool = False
+    lactose_free: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None

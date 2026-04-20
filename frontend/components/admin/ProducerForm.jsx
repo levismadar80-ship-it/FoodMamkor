@@ -32,6 +32,9 @@ const EMPTY = {
   kosher: "",
   grass_fed: false,
   organic_certified: false,
+  gluten_free: false,
+  vegan: false,
+  lactose_free: false,
   is_verified: true,
   // MEH-18
   is_recommended: false,
@@ -318,6 +321,33 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className="w-4 h-4 accent-primary"
             />
             <Cow size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> גראס פד
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.gluten_free}
+              onChange={(e) => update("gluten_free", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🌾 ללא גלוטן
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.vegan}
+              onChange={(e) => update("vegan", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🥦 טבעוני
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.lactose_free}
+              onChange={(e) => update("lactose_free", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🥛 ללא לקטוז
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input

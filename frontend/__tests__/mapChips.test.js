@@ -27,8 +27,15 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(labels).toContain("לחם ומאפה");
   });
 
-  it("toggle chips are organic + delivery", () => {
-    expect(TOGGLE_CHIPS.map((c) => c.key)).toEqual(["organic", "has_delivery"]);
+  it("includes all expected toggle chip keys", () => {
+    const keys = TOGGLE_CHIPS.map((c) => c.key);
+    expect(keys).toContain("has_delivery");
+    expect(keys).toContain("verified");
+    expect(keys).toContain("organic");
+    expect(keys).toContain("grass_fed");
+    expect(keys).toContain("gluten_free");
+    expect(keys).toContain("vegan");
+    expect(keys).toContain("lactose_free");
   });
 });
 

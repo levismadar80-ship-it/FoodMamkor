@@ -1,13 +1,19 @@
 export const CHIPS_CONFIG = [
-  { key: "kosher",       label: "כשר",        icon: "✡️" },
-  { key: "organic",      label: "אורגני",      icon: "🌿" },
-  { key: "has_delivery", label: "משלוח",       icon: "🚚" },
-  { key: "verified",     label: "מאומת בלבד",  icon: "✅" },
+  { key: "kosher",        label: "כשר",         icon: "✡️" },
+  { key: "organic",       label: "אורגני",       icon: "🌿" },
+  { key: "gluten_free",   label: "ללא גלוטן",    icon: "🌾" },
+  { key: "vegan",         label: "טבעוני",       icon: "🥦" },
+  { key: "lactose_free",  label: "ללא לקטוז",    icon: "🥛" },
+  { key: "has_delivery",  label: "משלוח",        icon: "🚚" },
+  { key: "verified",      label: "מאומת בלבד",   icon: "✅" },
 ];
 
 export const CHIPS_DEFAULT = {
   kosher: false,
   organic: false,
+  gluten_free: false,
+  vegan: false,
+  lactose_free: false,
   has_delivery: false,
   verified: false,
 };
@@ -17,6 +23,9 @@ export function buildChipParams(chips, overrides = {}) {
   const p = {};
   if (c.kosher) p.kosher = true;
   if (c.organic) p.organic = true;
+  if (c.gluten_free) p.gluten_free = true;
+  if (c.vegan) p.vegan = true;
+  if (c.lactose_free) p.lactose_free = true;
   if (c.has_delivery) p.has_delivery = true;
   if (c.verified) p.verified = true;
   return p;

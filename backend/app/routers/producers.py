@@ -82,6 +82,9 @@ def list_producers(
     city: str | None = None,
     is_available_today: bool | None = None,
     grass_fed: bool | None = None,
+    gluten_free: bool | None = None,
+    vegan: bool | None = None,
+    lactose_free: bool | None = None,
     # Sort for non-geo results. "newest" (default) or "rating".
     sort: str | None = None,
     # MEH-13 — free-text search over name + description, used by /search
@@ -194,6 +197,18 @@ def list_producers(
     if grass_fed is not None:
         q = q.filter(Producer.grass_fed == grass_fed)
         count_q = count_q.filter(Producer.grass_fed == grass_fed)
+
+    if gluten_free is not None:
+        q = q.filter(Producer.gluten_free == gluten_free)
+        count_q = count_q.filter(Producer.gluten_free == gluten_free)
+
+    if vegan is not None:
+        q = q.filter(Producer.vegan == vegan)
+        count_q = count_q.filter(Producer.vegan == vegan)
+
+    if lactose_free is not None:
+        q = q.filter(Producer.lactose_free == lactose_free)
+        count_q = count_q.filter(Producer.lactose_free == lactose_free)
 
     # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
     if search_q and search_q.strip():

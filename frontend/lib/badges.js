@@ -2,17 +2,20 @@
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *
  * Badges (Phase B fold, April 2026):
- *   verified    (manual)  — producer.is_verified
- *   recommended (manual)  — producer.is_recommended
- *   new         (auto)    — producer.days_since_created <= 30
- *   organic     (manual)  — producer.organic_certified
- *   grass_fed   (manual)  — producer.grass_fed
- *   kosher      (manual)  — producer.kosher (any non-empty string)
- *   delivery    (auto)    — producer.has_delivery OR delivery_count > 0
- *   products    (auto)    — producer.products_count >= 3
+ *   verified     (manual)  — producer.is_verified
+ *   recommended  (manual)  — producer.is_recommended
+ *   new          (auto)    — producer.days_since_created <= 30
+ *   organic      (manual)  — producer.organic_certified
+ *   grass_fed    (manual)  — producer.grass_fed
+ *   gluten_free  (manual)  — producer.gluten_free
+ *   vegan        (manual)  — producer.vegan
+ *   lactose_free (manual)  — producer.lactose_free
+ *   kosher       (manual)  — producer.kosher (any non-empty string)
+ *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0
+ *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > new > organic > grass_fed > kosher > delivery > products
+ *   verified > recommended > new > organic > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -49,6 +52,24 @@ export const BADGE_CONFIG = {
     tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
     color: "muted",
   },
+  gluten_free: {
+    key: "gluten_free",
+    label: "ללא גלוטן",
+    tooltip: "המוצרים מתאימים לאנשים עם צליאק או רגישות לגלוטן.",
+    color: "muted",
+  },
+  vegan: {
+    key: "vegan",
+    label: "טבעוני",
+    tooltip: "כל המוצרים טבעוניים — ללא כל מרכיב מן החי.",
+    color: "muted",
+  },
+  lactose_free: {
+    key: "lactose_free",
+    label: "ללא לקטוז",
+    tooltip: "המוצרים מתאימים לאנשים עם אי-סבילות ללקטוז.",
+    color: "muted",
+  },
   kosher: {
     key: "kosher",
     label: "כשר",
@@ -76,6 +97,9 @@ export const BADGE_PRIORITY = [
   "new",
   "organic",
   "grass_fed",
+  "gluten_free",
+  "vegan",
+  "lactose_free",
   "kosher",
   "delivery",
   "products",
@@ -101,6 +125,12 @@ function earnsBadge(producer, key) {
       return !!producer.organic_certified;
     case "grass_fed":
       return !!producer.grass_fed;
+    case "gluten_free":
+      return !!producer.gluten_free;
+    case "vegan":
+      return !!producer.vegan;
+    case "lactose_free":
+      return !!producer.lactose_free;
     case "kosher":
       return typeof producer.kosher === "string" && producer.kosher.trim().length > 0;
     case "delivery":
