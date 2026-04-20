@@ -133,6 +133,7 @@ function ProducersAdminPage() {
     const map = {
       approved: { label: "פעיל", cls: "bg-primary text-white" },
       pending: { label: "ממתין", cls: "bg-yellow-100 text-yellow-800" },
+      pending_whatsapp: { label: "ממתין — וואטסאפ", cls: "bg-orange-100 text-orange-800" },
       rejected: { label: "נדחה", cls: "bg-red-100 text-red-700" },
       inactive: { label: "מושהה", cls: "bg-gray-200 text-gray-700" },
     };

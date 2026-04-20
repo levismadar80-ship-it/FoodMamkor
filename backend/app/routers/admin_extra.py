@@ -434,7 +434,7 @@ def get_dashboard(
 
     # feature/producer-analytics: pending moderation is the sum across
     # four queues. Individual counts stay available for the alert cards.
-    pending_producers = db.query(func.count(Producer.id)).filter(Producer.status == "pending").scalar() or 0
+    pending_producers = db.query(func.count(Producer.id)).filter(Producer.status.in_(["pending", "pending_whatsapp"])).scalar() or 0
     open_reports = db.query(func.count(Report.id)).scalar() or 0
     flagged_home_products = (
         db.query(func.count(HomeProduct.id))
@@ -478,7 +478,7 @@ def get_dashboard(
 
     pending = (
         db.query(Producer)
-        .filter(Producer.status == "pending")
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .limit(5)
         .all()

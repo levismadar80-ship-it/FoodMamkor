@@ -89,7 +89,7 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
         website=data.website,
         primary_contact_method=method,
         contact_email=data.contact_email,
-        status="pending",
+        status="pending_whatsapp",
     )
     db.add(producer)
     db.flush()
@@ -121,6 +121,7 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
     db.refresh(user)
 
     _notify_admin_new_producer(producer)
+    _notify_producer_registered(producer)
     # LAUNCH_CHECKLIST week 3 — welcome email (business variant)
     _send_welcome_email(user.email, user.name, role="producer")
 
@@ -373,6 +374,31 @@ def _verify_google_token(id_token: str) -> dict | None:
     except Exception as e:
         logger.warning(f"[GOOGLE AUTH] Verification failed: {e}")
         return None
+
+
+def _notify_producer_registered(producer: Producer):
+    """Send WhatsApp welcome + profile-completion link to the new producer."""
+    if not (producer.phone and settings.twilio_account_sid and settings.twilio_whatsapp_from):
+        return
+    phone = producer.phone.replace("-", "").strip()
+    if not phone.startswith("+"):
+        phone = "+972" + phone.lstrip("0")
+    message = (
+        f"ברוכה הבאה למהמקור! 🌿\n"
+        f"העסק '{producer.name}' נרשם בהצלחה.\n"
+        f"השלימי את הפרופיל כדי שלקוחות יוכלו למצוא אותך:\n"
+        f"{settings.frontend_url}/producer/dashboard"
+    )
+    try:
+        from twilio.rest import Client
+        Client(settings.twilio_account_sid, settings.twilio_auth_token).messages.create(
+            body=message,
+            from_=settings.twilio_whatsapp_from,
+            to=f"whatsapp:{phone}",
+        )
+        logger.info("[WHATSAPP] Producer welcome sent")
+    except Exception as e:
+        logger.warning(f"[WHATSAPP] Producer welcome failed: {e}")
 
 
 def _notify_admin_new_producer(producer: Producer):

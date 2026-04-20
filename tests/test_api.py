@@ -328,6 +328,97 @@ class TestAdminFlows:
         assert page.body == "אוכל אמיתי"
 
 
+# ---------- MEH-56: WhatsApp onboarding + bio ----------
+
+class TestMeh56WhatsAppOnboarding:
+    """Registration produces pending_whatsapp status; admin sees it as pending."""
+
+    def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
+        # Stub out Twilio and email so no network calls
+        import app.routers.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "_notify_admin_new_producer", lambda p: None)
+        monkeypatch.setattr(auth_mod, "_notify_producer_registered", lambda p: None)
+        monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
+
+        resp = client.post("/auth/register/producer", json={
+            "email": "farm56@test.com",
+            "name": "Farmer",
+            "password": "Pass1234!",
+            "producer_name": "חוות הבדיקה",
+            "phone": "0501234567",
+            "category_ids": [],
+            "primary_contact_method": "whatsapp",
+        })
+        assert resp.status_code == 200
+        from app.models.models import Producer
+        p = db.query(Producer).filter(Producer.name == "חוות הבדיקה").first()
+        assert p is not None
+        assert p.status == "pending_whatsapp"
+
+    def test_admin_pending_endpoint_includes_pending_whatsapp(self, client, db):
+        make_producer(db, name="Classic Pending", status="pending")
+        make_producer(db, name="WA Pending", status="pending_whatsapp")
+        from conftest import make_user
+        admin = make_user(db, email="admin56@test.com", role="admin")
+        resp = client.get("/admin/producers/pending", headers=auth_header(admin))
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "Classic Pending" in names
+        assert "WA Pending" in names
+
+    def test_admin_list_pending_filter_includes_pending_whatsapp(self, client, db):
+        make_producer(db, name="WA2", status="pending_whatsapp")
+        admin = make_user(db, email="admin56b@test.com", role="admin")
+        resp = client.get("/admin/producers", params={"status": "pending"}, headers=auth_header(admin))
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "WA2" in names
+
+
+class TestMeh56BioGenerator:
+    """POST /producers/me/bio/generate — fail-open when no API key."""
+
+    def test_bio_generate_returns_empty_without_api_key(self, client, db, monkeypatch):
+        from app import config
+        monkeypatch.setattr(config.settings, "anthropic_api_key", "")
+        # Also reset the cached client in bio_generator
+        import app.services.bio_generator as bg
+        bg._client = None
+
+        from conftest import make_user, auth_header
+        from app.models.models import Producer
+        p = make_producer(db, name="ביו חוות")
+        user = make_user(db, email="biouser@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/bio/generate",
+            json={"source": "organic farm in the Galilee"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["bio"] == ""
+
+    def test_bio_generate_requires_auth(self, client):
+        resp = client.post("/producers/me/bio/generate", json={"source": "test"})
+        assert resp.status_code == 401
+
+    def test_bio_generate_rejects_empty_source(self, client, db):
+        from conftest import make_user
+        from app.models.models import Producer
+        p = make_producer(db, name="ביו2")
+        user = make_user(db, email="biouser2@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+        resp = client.post(
+            "/producers/me/bio/generate",
+            json={"source": ""},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+
 # ---------- Contact ----------
 
 class TestContact:
