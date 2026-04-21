@@ -53,26 +53,36 @@ jobs:
 
       - name: Wait for Vercel preview deployment
         id: preview
+        # shell: bash {0} — removes the default -eo pipefail flags so a jq
+        # empty-result (exit 5) or a transient gh api error doesn't abort the
+        # whole script; we handle errors manually with || fallbacks.
+        shell: bash {0}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           REPO: ${{ github.repository }}
-        # Poll GitHub Deployments API (20 × 15s = 5 min max).
-        # Vercel creates a GitHub Deployment for each PR commit; we wait
-        # until its status transitions to "success" and then extract the
-        # environment_url (the preview URL) from the deployment status.
         run: |
-          echo "Polling for Vercel preview deployment (SHA: $HEAD_SHA)..."
-          for i in $(seq 1 20); do
-            # Fetch all deployments for this SHA (may be empty while Vercel boots)
-            STATUSES_URL=$(gh api "repos/$REPO/deployments?sha=$HEAD_SHA&per_page=20" \
-              --jq '[.[] | .statuses_url] | first // ""' 2>/dev/null || echo "")
+          echo "Polling GitHub Deployments API for Vercel preview…"
+          echo "repo=$REPO  sha=$HEAD_SHA"
+
+          for attempt in $(seq 1 20); do
+            echo "--- attempt $attempt/20 ---"
+
+            # Fetch recent deployments; fall back to empty array on error
+            DEPLOYS=$(gh api "repos/$REPO/deployments?per_page=50" 2>/dev/null) || DEPLOYS="[]"
+
+            # Locate the deployment whose SHA matches this commit
+            STATUSES_URL=$(echo "$DEPLOYS" | \
+              jq -r --arg sha "$HEAD_SHA" \
+              '[.[] | select(.sha == $sha)] | first | .statuses_url // ""' 2>/dev/null) || STATUSES_URL=""
+
+            echo "  statuses_url=$STATUSES_URL"
 
             if [ -n "$STATUSES_URL" ] && [ "$STATUSES_URL" != "null" ]; then
-              STATE=$(gh api "$STATUSES_URL" --jq '.[0].state // "pending"' 2>/dev/null || echo "pending")
-              ENV_URL=$(gh api "$STATUSES_URL" --jq '.[0].environment_url // ""' 2>/dev/null || echo "")
-
-              echo "Attempt $i/20: state=$STATE env_url=$ENV_URL"
+              STATUSES=$(gh api "$STATUSES_URL" 2>/dev/null) || STATUSES="[]"
+              STATE=$(echo "$STATUSES" | jq -r '.[0].state // "pending"' 2>/dev/null) || STATE="pending"
+              ENV_URL=$(echo "$STATUSES" | jq -r '.[0].environment_url // ""' 2>/dev/null) || ENV_URL=""
+              echo "  state=$STATE  environment_url=$ENV_URL"
 
               if [ "$STATE" = "success" ] && [ -n "$ENV_URL" ] && [ "$ENV_URL" != "null" ]; then
                 echo "url=$ENV_URL" >> "$GITHUB_OUTPUT"
@@ -80,11 +90,13 @@ jobs:
                 exit 0
               fi
             else
-              echo "Attempt $i/20: no deployment found yet for SHA $HEAD_SHA"
+              echo "  No deployment found for SHA $HEAD_SHA yet"
             fi
-            sleep 15
+
+            [ "$attempt" -lt 20 ] && sleep 15
           done
-          echo "Timed out waiting for Vercel preview deployment after 5 minutes"
+
+          echo "Timed out — no successful Vercel deployment found after 5 minutes"
           exit 1
 
       - name: Run E2E tests
