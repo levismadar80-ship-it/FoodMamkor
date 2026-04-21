@@ -5,7 +5,8 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #136 (map legend collapsible) — MERGED to staging (SHA fa50ad0)
+PR merged/opened: #200 (MEH-129 CLAUDE.md execution principles) — OPEN draft, awaiting review
+                 #136 (map legend collapsible) — MERGED to staging (SHA fa50ad0)
                  #159 (MEH-62 security deps) — MERGED to staging (SHA 894dc49)
                  #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
 Summary:
@@ -77,8 +78,9 @@ First step: decide which open PR to review/merge next — ask user.
 - #199: MEH-99 smart search — MERGED to staging 2026-04-21
 - #198: feature/meh-78-map-bugs — MEH-78 map bugs — MERGED to staging 2026-04-21
 - #184, #186: stale HANDOFF PRs — CLOSED 2026-04-21 (no merge needed)
+- #200: MEH-129 CLAUDE.md execution principles — OPEN draft (awaiting review/merge)
 - #136: map legend collapsible — MERGED to staging 2026-04-21
-- No open PRs remaining
+- No other open PRs
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162

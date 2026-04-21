@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-21 — MEH-129: CLAUDE.md execution principles §7–13 — Lazy Edit, Atomic Edits, Skeptic Mode, File:Line Evidence, Numbered Plan First, Narrated Actions, Real Imports Only (#200)
+
 ## 2026-04-21 — map legend collapsible — floating SquaresFour button on map canvas, click-outside close, z-800, rtl-ok (#136)
 
 ## 2026-04-21 — MEH-62: security deps — python-jose 3.4.0, python-multipart 0.0.18, next 14.2.35 — CVE-2024-33663/33664, CVE-2024-53981, CVE-2025-29927 (#159)
