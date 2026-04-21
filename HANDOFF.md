@@ -5,7 +5,7 @@
 
 ## Last session
 Date: 2026-04-21
-PRs merged: #212 (MEH-139 email readonly) + #213 (MEH-143 role upgrade)
+PRs merged: #212 (MEH-139 email readonly) + #213 (MEH-143 role upgrade) + #214 (MEH-138 profile photo)
 Summary:
   PR #212: settings email field permanently read-only; isOAuth detection in ProfileTab
   PR #213: role upgrade — existing consumer adds producer to same account
@@ -19,6 +19,14 @@ Summary:
     - get_current_user_optional: re-raises 403 for blocked users (adversarial-review fix)
     - Upgrade guard checks producer_id OR is_producer
     - 5 new tests + is_producer assertion on new-registration test
+  PR #214: profile photo upload + Google OAuth sync
+    - users.avatar_url column (VARCHAR, migration in _migrate_columns)
+    - POST /upload/avatar — magic-byte validated, 400px face-crop, 10/hour, no freemium gate
+    - PATCH /users/me + UserOut now include avatar_url
+    - Google OAuth: saves picture field on create; backfills on return login if null
+    - /settings ProfileTab: avatar circle → clickable label + spinner overlay
+    - Header + BottomNav: user.avatar → user.avatar_url
+    - 2 new tests
 
 Previous session context (already on staging):
   PR #210: MEH-128 Vibe Coding Responsibility system (pre-edit-guard.js, central-components)
@@ -29,12 +37,11 @@ Previous session context (already on staging):
 
 ## Current state
 Branch: staging
-Staging HEAD: c4e9b17 (MEH-143 role upgrade squash #213)
+Staging HEAD: 84c480b (MEH-138 profile photo squash #214)
 Main HEAD: e42127e (production release — staging ahead)
 
 ## Next task
   Candidates from backlog:
-  - MEH-138: profile photo upload + Google OAuth sync (branch not yet created)
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
   - Events section on homepage
