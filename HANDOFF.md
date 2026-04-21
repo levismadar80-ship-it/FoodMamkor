@@ -29,18 +29,27 @@ Previous session context (already on staging):
   Human action completed: RESEND_API_KEY added to Railway (staging + production) ✅
   PR #204: MEH-142 audit closed — too far behind staging
 
+## This session (2026-04-21 continuation)
+PRs merged this session: #220 (Playwright CI fixes) + #228 (email-exists 30/min) + #231 (rate limit audit) + #233 (startup env warnings)
+  PR #220: spec 01 h1→h1,h2 + spec 02 data-testid="hero-search-submit" — Playwright green
+  PR #228: GET /auth/email-exists rate limit 5/min → 30/min
+  PR #231: GET /auth/me 60/min → 120/min; POST /verify-phone/confirm 5/min → 3/min
+  PR #233: lifespan startup WARNING if ADMIN_EMAIL / RESEND_API_KEY / TWILIO_ACCOUNT_SID unset
+
 ## Current state
 Branch: staging
-Staging HEAD: 6c5d4ba (fix: email-exists rate limit 30/min — PR #228)
-Main HEAD: e42127e (production release — staging significantly ahead, needs promotion)
+Staging HEAD: 5ab56cb (feat: startup env var warnings — PR #233)
+Main HEAD: e42127e (production is many commits behind — needs promotion)
 
 ## Open PRs
-- #220 `feature/playwright-fix-spec-02` → staging | Playwright CI fixes (spec 01 h1→h1,h2 + spec 02 data-testid) | CI re-running, pending merge
-  - Once #220 merges, re-queue CI on waiting PRs: #215, #216, #217, #218, #219
+None.
+
+## PRs #215–#219 — ready to re-queue CI
+Playwright fix is now on staging. These PRs (MEH-142 batch) can have CI re-run.
 
 ## Next task
-  Candidates from backlog:
-  - Promote staging → main (production) — staging is many commits ahead; production still missing /auth/email-exists
+  - Re-queue CI on PRs #215, #216, #217, #218, #219
+  - Promote staging → main when ready
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
   - Events section on homepage
