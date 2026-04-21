@@ -2,11 +2,12 @@ import logging
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-from app.auth import create_access_token, get_current_user, hash_password, verify_password
+from app.auth import create_access_token, get_current_user, get_current_user_optional, hash_password, verify_password
 from app.config import settings
 from app.services.email import send_email
 from app.database import get_db
@@ -55,12 +56,36 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
 
 @router.post("/register/producer", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2
-def register_producer(request: Request, data: ProducerRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(
-            status_code=409,
-            detail="האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך.",
-        )
+def register_producer(
+    request: Request,
+    data: ProducerRegister,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: "User | None" = Depends(get_current_user_optional),
+):
+    # MEH-143: two paths — upgrade (logged-in) vs new registration (anonymous).
+    upgrade_path = current_user is not None
+
+    if upgrade_path:
+        # Upgrading an existing account — ignore any email/name/password in body.
+        user = current_user
+        # Check both: producer_id (current link) and is_producer (durable flag).
+        # is_producer stays True even if an admin manually clears producer_id,
+        # preventing silent re-registration without an explicit admin reset.
+        if user.producer_id or user.is_producer:
+            raise HTTPException(status_code=409, detail="כבר יש לך עסק רשום בחשבון זה")
+    else:
+        # New registration — email, name, password are required.
+        if not data.email or not data.name or not data.password:
+            raise HTTPException(
+                status_code=422,
+                detail="אימייל, שם וסיסמה הם שדות חובה",
+            )
+        if db.query(User).filter(User.email == data.email).first():
+            raise HTTPException(
+                status_code=409,
+                detail="האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך.",
+            )
 
     # MEH-17: validate primary contact method has its required field filled.
     method = (data.primary_contact_method or "whatsapp").strip().lower()
@@ -114,18 +139,27 @@ def register_producer(request: Request, data: ProducerRegister, background_tasks
             delivery_day=da.delivery_day,
         ))
 
-    user = User(
-        email=data.email,
-        name=data.name,
-        password_hash=hash_password(data.password),
-        phone=data.phone,
-        role="producer",
-        producer_id=producer.id,
-        referral_code=_gen_referral_code(),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    if upgrade_path:
+        # Link producer to existing user, upgrade role + flag.
+        user.producer_id = producer.id
+        user.role = "producer"
+        user.is_producer = True
+        db.commit()
+        db.refresh(user)
+    else:
+        user = User(
+            email=data.email,
+            name=data.name,
+            password_hash=hash_password(data.password),
+            phone=data.phone,
+            role="producer",
+            producer_id=producer.id,
+            is_producer=True,
+            referral_code=_gen_referral_code(),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     # Capture producer primitives NOW — expire_on_commit=True means ORM
     # attributes are expired after commit, and FastAPI closes the session
@@ -138,9 +172,19 @@ def register_producer(request: Request, data: ProducerRegister, background_tasks
     # All notifications run after the 200 is sent — never block the response.
     background_tasks.add_task(_notify_admin_new_producer, p_name, p_city)
     background_tasks.add_task(_notify_producer_registered, p_name, p_phone)
-    background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
+    if not upgrade_path:
+        background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
     return Token(access_token=create_access_token(user.id))
+
+
+@router.get("/email-exists")
+@limiter.limit("5/minute")
+def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db)):
+    """MEH-143: non-auth check so the producer register form can warn
+    before submit that the email belongs to an existing consumer account."""
+    exists = db.query(User).filter(User.email == email).first() is not None
+    return {"exists": exists}
 
 
 @router.post("/google", response_model=Token)

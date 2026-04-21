@@ -83,7 +83,10 @@ def get_current_user_optional(
         return None
     try:
         return get_current_user(token=token, db=db)
-    except HTTPException:
+    except HTTPException as exc:
+        # Blocked users must never be treated as anonymous — re-raise 403.
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            raise
         return None
 
 

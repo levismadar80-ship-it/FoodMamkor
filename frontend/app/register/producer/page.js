@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
+import { useAuth } from "@/lib/auth-context";
 
 const DRAFT_KEY = "producer_registration_draft";
 
@@ -31,7 +32,15 @@ function RegisterProducerPageBody() {
   const router = useRouter();
   const params = useSearchParams();
   const prefillToken = params.get("prefill");
-  const [step, setStep] = useState(1);
+  const { user, loading: authLoading, refreshUser } = useAuth();
+  // MEH-143: if already logged in, skip account-creation step.
+  const isUpgrade = !!user;
+  // Initialize step from localStorage token so there's no flicker — auth
+  // context loads async, but the token presence is synchronous.
+  const [step, setStep] = useState(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("token")) return 2;
+    return 1;
+  });
   const [prefillApplied, setPrefillApplied] = useState(false);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
@@ -40,6 +49,12 @@ function RegisterProducerPageBody() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [emailExistsWarning, setEmailExistsWarning] = useState("");
+
+  // Sync step when auth resolves (user may load after initial render).
+  useEffect(() => {
+    if (isUpgrade && step === 1) setStep(2);
+  }, [isUpgrade]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -99,14 +114,27 @@ function RegisterProducerPageBody() {
     }));
   };
 
+  const handleEmailBlur = async () => {
+    if (!form.email || !validateEmail(form.email)) return;
+    try {
+      const res = await api.get(`/auth/email-exists?email=${encodeURIComponent(form.email)}`);
+      if (res.data?.exists) {
+        setEmailExistsWarning(
+          "האימייל הזה כבר רשום. התחברי לחשבון שלך — ותוכלי להוסיף עסק ישירות מדף ההרשמה."
+        );
+      } else {
+        setEmailExistsWarning("");
+      }
+    } catch {
+      setEmailExistsWarning("");
+    }
+  };
+
   const handleSubmit = async () => {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/auth/register/producer", {
-        email: form.email,
-        name: form.name,
-        password: form.password,
+      const body = {
         producer_name: form.producer_name,
         phone: form.phone,
         category_ids: form.category_ids,
@@ -114,15 +142,28 @@ function RegisterProducerPageBody() {
         vegan: form.vegan,
         lactose_free: form.lactose_free,
         primary_contact_method: "whatsapp",
-      });
+      };
+      // MEH-143: logged-in users upgrade; account fields not needed.
+      if (!isUpgrade) {
+        body.email = form.email;
+        body.name = form.name;
+        body.password = form.password;
+      }
+      const res = await api.post("/auth/register/producer", body);
       localStorage.setItem("token", res.data.access_token);
       localStorage.removeItem(DRAFT_KEY);
+      // Refresh auth context so user.role reflects the upgrade immediately.
+      await refreshUser();
       setStep(3);
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
       if (status === 409) {
-        setError("האימייל הזה כבר רשום. התחברי לחשבון שלך ותוכלי להוסיף עסק מהדשבורד.");
+        setError(
+          isUpgrade
+            ? "כבר יש לך עסק רשום בחשבון זה."
+            : "האימייל הזה כבר רשום. התחברי לחשבון שלך ותוכלי להוסיף עסק מהדשבורד."
+        );
       } else {
         setError(detail || "שגיאת תקשורת — נסי שוב.");
       }
@@ -131,11 +172,28 @@ function RegisterProducerPageBody() {
     }
   };
 
+  // Don't show step 1 (account form) until we know whether user is logged in —
+  // prevents the flash of email/password inputs for already-authenticated users.
+  if (authLoading && step === 1) {
+    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">טוען...</div>;
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
         <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">הוסיפי את העסק שלך</h1>
         <p className="text-site-muted text-center mb-4">הצטרפי למהמקור והגיעי לקונות שמחפשות אוכל אמיתי</p>
+
+        {/* MEH-143: logged-in upgrade banner */}
+        {isUpgrade && step < 3 && (
+          <div className="bg-light border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-site-text flex items-start gap-2">
+            <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+            <span>
+              את מחוברת כ<strong>{user.name}</strong> ({user.email}).
+              {" "}העסק יתווסף לחשבון הקיים שלך.
+            </span>
+          </div>
+        )}
 
         {showDraftBanner && step < 3 && (
           <div className="bg-light border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
@@ -147,7 +205,7 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
-        {step < 3 && (
+        {step < 3 && !isUpgrade && (
           <div className="flex gap-2 mb-8">
             {[1, 2].map((s) => (
               <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-gray-200"}`} />
@@ -178,9 +236,22 @@ function RegisterProducerPageBody() {
               placeholder="אימייל *"
               value={form.email}
               onChange={set("email")}
+              onBlur={handleEmailBlur}
               className="w-full border rounded-[12px] px-3 py-2"
               dir="ltr"
             />
+            {emailExistsWarning && (
+              <p className="text-amber-600 text-xs mt-1">
+                יש לך כבר חשבון במהמקור.{" "}
+                <a
+                  href={`/login?redirect=${encodeURIComponent("/register/producer")}`}
+                  className="underline font-medium hover:text-amber-700"
+                >
+                  התחברי ←
+                </a>
+                {" "}והוסיפי את העסק שלך
+              </p>
+            )}
             <div>
               <input
                 type="password"
@@ -329,7 +400,9 @@ function RegisterProducerPageBody() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
-              <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
+              {!isUpgrade && (
+                <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
+              )}
               <button
                 onClick={() => {
                   if (!form.producer_name) {
