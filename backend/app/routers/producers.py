@@ -297,7 +297,8 @@ def list_producers(
 
 
 @router.get("/producers/count")
-def producers_count(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def producers_count(request: Request, db: Session = Depends(get_db)):
     """MEH-159 — lightweight total count for keeping pagination fresh client-side."""
     count = db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar() or 0
     return {"count": count}

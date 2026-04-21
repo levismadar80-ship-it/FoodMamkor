@@ -109,7 +109,7 @@ export default function ProducersClient({
         setAppendItems((prev) => [...prev, ...items]);
         // MEH-159: sync total from fresh header on every page load.
         const freshTotal = Number(r.headers["x-total-count"]);
-        if (!Number.isNaN(freshTotal) && freshTotal > 0) setLiveTotal(freshTotal);
+        if (!Number.isNaN(freshTotal) && freshTotal >= 0) setLiveTotal(freshTotal);
         if (items.length < PAGE_SIZE) setHasMore(false);
         else setNextPage((p) => p + 1);
       })
