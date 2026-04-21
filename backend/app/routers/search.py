@@ -66,7 +66,7 @@ def _empty() -> SearchOut:
 @limiter.limit("60/minute")
 def smart_search(
     request: Request,
-    q: str = Query("", max_length=100),
+    q: str = Query("", max_length=200),
     limit: int = Query(8, ge=1, le=20),
     db: Session = Depends(get_db),
 ):
