@@ -39,9 +39,17 @@ h1, h2, h3 {
   border-radius: 16px;
 }
 /* Warm map tiles — reduces the cold blue of OpenStreetMap to match the
-   site's cream/forest palette. Matches design system v2 specification. */
+   site's cream/forest palette. Matches design system v2 specification.
+   saturate(0.85): gentle desaturation so tiles look warm without bleeding
+   into marker colors. Sepia removed — it was desaturating the overall
+   viewport enough to make colored category markers look gray/muted. */
 .leaflet-tile-pane {
-  filter: saturate(0.7) brightness(1.05) sepia(0.1);
+  filter: saturate(0.85) brightness(1.02);
+}
+/* Defensive: ensure no filter ever reaches the marker pane (e.g. if a
+   future Tailwind utility accidentally cascades into Leaflet's DOM). */
+.leaflet-marker-pane {
+  filter: none;
 }
 
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet

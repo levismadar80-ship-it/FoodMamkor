@@ -99,7 +99,20 @@ export default function MapPage() {
   const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
 
   const registerMapApi = useCallback((api) => {
+    if (!api) return;
+    // `mapPane` renders in BOTH the desktop layout (hidden lg:grid) and the
+    // mobile layout (lg:hidden). On desktop the mobile container has zero
+    // dimensions (display:none); skip it so mapApiRef always points to the
+    // map the user can actually see. On mobile the desktop container is
+    // hidden and gets skipped instead.
+    const container = api.getContainer?.();
+    if (container) {
+      const { width, height } = container.getBoundingClientRect();
+      if (width === 0 && height === 0) return;
+    }
     mapApiRef.current = api;
+    // Keep mapRef in sync with the same visible map instance.
+    mapRef.current = api.getMap?.() ?? null;
   }, []);
 
   useEffect(() => {
