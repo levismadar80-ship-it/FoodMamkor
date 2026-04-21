@@ -23,6 +23,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_admin
@@ -194,8 +195,25 @@ def create_review(
             body=data.body,
         )
         db.add(review)
-        db.commit()
-        db.refresh(review)
+        try:
+            db.commit()
+            db.refresh(review)
+        except IntegrityError:
+            # Concurrent double-submit inserted the same (producer, user) row.
+            # Rollback and fall through to an UPDATE on the now-existing row.
+            db.rollback()
+            review = (
+                db.query(ProducerReview)
+                .filter(
+                    ProducerReview.producer_id == data.producer_id,
+                    ProducerReview.user_id == user.id,
+                )
+                .first()
+            )
+            review.stars = data.stars
+            review.title = data.title
+            review.body = data.body
+            db.commit()
 
     _recompute_producer_rating(data.producer_id, db)
     # Reload with user relation for serialization

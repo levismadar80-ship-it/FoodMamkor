@@ -91,7 +91,7 @@ def list_producers(
     # results page. Aliased as `q` in the URL to match CLAUDE.md's
     # documented API shape, but named `search_q` internally so it doesn't
     # shadow the `q` SQLAlchemy-query-builder local below.
-    search_q: str | None = Query(None, alias="q"),
+    search_q: str | None = Query(None, alias="q", max_length=200),
     # MEH-23 — offset-based pagination. Backwards-compatible: existing
     # callers that don't pass these get the first 100 rows (prior
     # behavior was "everything" which is fine at current scale but
