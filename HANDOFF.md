@@ -5,48 +5,50 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #198 (feature/meh-78-map-bugs) — OPEN (draft, awaiting Vercel preview)
+PR merged/opened: #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
 Summary:
-  PR #198: MEH-78 map bugs — 3 fixes in 3 files (MapComponent, MapClient, globals.css)
-    - Bug 1 (map center Golan/Syria): dual-map render — `mapPane` JSX const used
-      in BOTH `hidden lg:grid` (desktop) and `lg:hidden` (mobile) slots mounts two
-      independent MapComponent instances. The mobile map registered SECOND, always
-      overwriting `mapApiRef.current` + `parentMapRef.current`. On desktop, all
-      imperative calls (goToMyLocation, focusProducer, getBounds) went to the
-      hidden mobile map. Fix: `registerMapApi` now calls `api.getContainer()
-      .getBoundingClientRect()` and skips if width===0&&height===0. Same guard
-      added to `parentMapRef.current` in the map init effect.
-    - Bug 2 (faded/gray markers): `.leaflet-tile-pane { filter: saturate(0.7)
-      brightness(1.05) sepia(0.1) }` was desaturating+tinting the viewport
-      enough to make category-colored markers look muted. Changed to
-      `saturate(0.85) brightness(1.02)` (sepia removed). Added `filter: none`
-      on `.leaflet-marker-pane` as defensive rule.
-    - Bug 3 (NaN flyTo crash): added `isNaN` guard in `goToMyLocation` before
-      `mapInstanceRef.current.flyTo(latlng, ...)`. All three flyTo call sites
-      now guarded: focusProducer via CoordSchema.safeParse, goToMyLocation via
-      isNaN check, setView via hardcoded Jerusalem coords.
-    - Build ✅, lint ✅ (warnings only, all pre-existing), Vercel building
+  PR #199: MEH-99 smart search
+    - GET /search: cross-field ILIKE across producers (name+desc), products (name+desc),
+      cities (producer.city + delivery_areas.city), categories — grouped SearchOut response
+    - GET /search/trending: top 5 queries with results_count>0, 1hr in-memory cache
+    - HeroSearch component: 300ms debounce, AbortController, keyboard nav, ARIA combobox,
+      recent searches (localStorage mehamakor_recent_searches, max 5), trending fallback
+    - /producers?q= filter: ProducersClient searchQ state, "תוצאות עבור: X" heading,
+      active-filter chip, search empty state with category pills, highlightMatch utility
+    - highlightMatch.js: regex-safe, returns <mark> elements with bg-transparent font-bold
+    - search_queries analytics table (created by _migrate_columns in main.py)
+    - ILIKE wildcard escaping fixed in producers.py (%, _, \ escaped before pattern build)
+    - Adversarial review (pre-merge): 1 BLOCK fixed — missing @limiter.limit on
+      GET /search/trending; 3 advisory issues also fixed (unused exists import removed,
+      wildcard escaping, unused SmartSearch import in page.js)
+    - tests/test_search.py: 8 tests covering name/city/category/product, pending exclusion,
+      case-insensitive, exact-name-first, zero-result logging, X-Total-Count
+    - Build ✅, lint ✅
 
-  Previous: #196 (WhatsApp click tracking) + #197 (producer reviews) — MERGED
+  Previous: #198 (MEH-78 map bugs) — MERGED to staging
 
 ## Current state
-Branch: feature/meh-78-map-bugs (open PR #198, draft)
-Staging HEAD: e0d69ef (WhatsApp click tracking — last merged)
+Branch: staging
+Staging HEAD: 3833645 (MEH-99 smart search — squash merge of #199)
 Main HEAD: e42127e (production release — staging ahead by multiple PRs)
 
 ## Next task
-  After PR #198 is approved and merged to staging:
-  1. Deferred:
-     - Admin analytics: referral count per producer
-     - ProducerCard heart/favorite Phase C (post-login replay)
-     - Lightbox for gallery images
-     - Events section on producer detail page
+  Open PRs as of 2026-04-21 (run `gh pr list --state open` for current state):
+  - #136: map legend collapsible (feature branch)
+  - #159: security deps update
+  - #184, #186: stale handoff updates (may be closeable)
+
+  Deferred:
+  - Admin analytics: referral count per producer
+  - ProducerCard heart/favorite Phase C (post-login replay)
+  - Lightbox for gallery images
+  - Events section on producer detail page
 
   Deferred from design bundle (do NOT start without explicit user confirmation):
   - Item 4: New homepage editorial sections (EditorialBreath, MeetAProducer, HowItWorks)
   - Item 5: Botanical logo mark for Header/Layout
 
-First step: await PR #198 approval, then merge to staging.
+First step: decide which open PR to review/merge next — ask user.
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -69,7 +71,9 @@ First step: await PR #198 approval, then merge to staging.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- #198: feature/meh-78-map-bugs — MEH-78 map bugs (draft, Vercel building)
+- #199: MEH-99 smart search — MERGED to staging 2026-04-21
+- #198: feature/meh-78-map-bugs — MEH-78 map bugs — MERGED to staging 2026-04-21
+- See `gh pr list --state open` for remaining open PRs (#136, #159, #184, #186 may still be open)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
