@@ -160,9 +160,15 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
     if not user:
         user = db.query(User).filter(User.email == email).first()
         if user:
-            # Link existing account to Google
-            user.google_id = google_id
-            db.commit()
+            # SECURITY: prevent silent account takeover — if the email is already
+            # registered via password (or a different OAuth provider), refuse to
+            # link without explicit user action. An attacker who obtains a Google
+            # token for victim@example.com would otherwise fully hijack the account.
+            if not user.google_id:
+                raise HTTPException(
+                    status_code=409,
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                )
         else:
             # Create new user
             user = User(
@@ -213,8 +219,13 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
     if not user:
         user = db.query(User).filter(User.email == email).first()
         if user:
-            user.apple_id = apple_id
-            db.commit()
+            # SECURITY: same takeover guard as Google — refuse silent link if the
+            # account was registered via a different method (password or another OAuth).
+            if not user.apple_id:
+                raise HTTPException(
+                    status_code=409,
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                )
         else:
             user = User(
                 email=email,

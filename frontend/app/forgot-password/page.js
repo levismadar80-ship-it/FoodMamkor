@@ -15,12 +15,14 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await api.post("/auth/forgot-password", { email });
+      setSubmitted(true);
     } catch {
-      // Endpoint may not exist yet — fail-open, always show success
+      // Endpoint not yet implemented — show honest contact message instead of
+      // fake success that would leave the user waiting for an email that never arrives.
+      setSubmitted("contact");
     } finally {
       setLoading(false);
     }
-    setSubmitted(true);
   };
 
   return (
@@ -32,12 +34,22 @@ export default function ForgotPasswordPage() {
         <h1 className="font-headline text-2xl font-bold text-site-text mb-1">איפוס סיסמה</h1>
         <p className="text-site-muted text-sm mb-6">נשלח לך קישור לאיפוס סיסמה לאימייל</p>
 
-        {submitted ? (
+        {submitted === true ? (
           <div className="bg-light border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
             <p className="font-medium mb-1">✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס</p>
             <p className="text-site-muted text-xs mt-2">
               לא קיבלת? צרי קשר:{" "}
               <a href="mailto:levismadar80@gmail.com" className="text-primary hover:underline">
+                levismadar80@gmail.com
+              </a>
+            </p>
+          </div>
+        ) : submitted === "contact" ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-[12px] px-5 py-4 text-amber-800 text-sm">
+            <p className="font-medium mb-1">שחזור סיסמה בקרוב</p>
+            <p className="text-xs mt-2">
+              לעזרה מיידית, צרי קשר:{" "}
+              <a href="mailto:levismadar80@gmail.com" className="underline font-medium">
                 levismadar80@gmail.com
               </a>
             </p>

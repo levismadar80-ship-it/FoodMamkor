@@ -60,6 +60,7 @@ def notify_host_approved(host_email: str, title: str, experience_id: str) -> Non
 def notify_host_changes_requested(
     host_email: str, title: str, experience_id: str, feedback: str
 ) -> None:
+    feedback = feedback.replace("\r", "").replace("\n", " ")
     subject = f'מהמקור — נדרשים שינויים בחוויה "{title}"'
     body = (
         f"שלום,\n\n"
@@ -74,6 +75,7 @@ def notify_host_changes_requested(
 
 
 def notify_host_rejected(host_email: str, title: str, reason: str) -> None:
+    reason = reason.replace("\r", "").replace("\n", " ") if reason else reason
     subject = f'מהמקור — עדכון לגבי החוויה "{title}"'
     reason_line = f"\nסיבה: {reason}\n" if reason else ""
     body = (
