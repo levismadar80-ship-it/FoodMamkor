@@ -144,3 +144,27 @@ class TestSmartSearchAutocomplete:
         body = resp.json()
         assert body["producers"] == []
         assert body["categories"] == []
+
+
+class TestSearchDoSProtection:
+    """MEH-145 — search query max_length=200 prevents DoS via oversized input."""
+
+    def test_producers_q_over_limit_returns_422(self, client):
+        long_q = "א" * 201
+        resp = client.get(f"/producers?q={long_q}")
+        assert resp.status_code == 422
+
+    def test_producers_q_at_limit_is_accepted(self, client):
+        long_q = "א" * 200
+        resp = client.get(f"/producers?q={long_q}")
+        assert resp.status_code == 200
+
+    def test_search_autocomplete_over_limit_returns_422(self, client):
+        long_q = "א" * 201
+        resp = client.get(f"/search?q={long_q}")
+        assert resp.status_code == 422
+
+    def test_search_autocomplete_at_limit_is_accepted(self, client):
+        long_q = "א" * 200
+        resp = client.get(f"/search?q={long_q}")
+        assert resp.status_code == 200
