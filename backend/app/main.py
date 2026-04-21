@@ -114,6 +114,8 @@ def _migrate_columns(engine):
         ("producers", "kashrut_expires_at", "TIMESTAMP"),
         # whatsapp click user attribution (was anonymous-only at first)
         ("producer_whatsapp_clicks", "user_id", "UUID REFERENCES users(id) ON DELETE SET NULL"),
+        # MEH-143 — role upgrade: existing user adds a producer profile.
+        ("users", "is_producer", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.

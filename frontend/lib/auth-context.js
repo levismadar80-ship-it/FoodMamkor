@@ -125,6 +125,17 @@ export function AuthProvider({ children }) {
     await api.patch("/users/me/password", { current_password, new_password });
   };
 
+  // MEH-143 — after a role upgrade the stored token changes; re-read
+  // /auth/me so context reflects the new role immediately.
+  const refreshUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data);
+    } catch {}
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -138,6 +149,7 @@ export function AuthProvider({ children }) {
         logout,
         updateProfile,
         changePassword,
+        refreshUser,
       }}
     >
       {children}
