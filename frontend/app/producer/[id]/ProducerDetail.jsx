@@ -387,6 +387,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     // tracking is best-effort
                   }
                 }
+                // Mark that this user has contacted via WhatsApp — unlocks review form
+                try {
+                  localStorage.setItem(`wa_clicked_${producer.id}`, "1");
+                } catch {}
               }}
             />
           </div>
@@ -607,6 +611,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     // tracking is best-effort
                   }
                 }
+                // Mark that this user has contacted via WhatsApp — unlocks review form
+                try {
+                  localStorage.setItem(`wa_clicked_${producer.id}`, "1");
+                } catch {}
               }}
             />
 

@@ -8,7 +8,7 @@ Coverage:
   settings, analytics, page editing
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
-from app.models.models import AdminSetting, ContactMessage, Producer, ProducerWhatsAppClick, StaticPage
+from app.models.models import AdminSetting, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
 from conftest import auth_header, make_category, make_producer, make_user
 
 
@@ -709,3 +709,124 @@ class TestWhatsAppClickTracking:
         resp = client.get("/producers/me/dashboard", headers=auth_header(user))
         assert resp.status_code == 200
         assert resp.json()["whatsapp_clicks_week"] == 3
+
+
+# ---------- Producer Reviews ----------
+
+class TestProducerReviews:
+    """POST /producers/{id}/reviews — WhatsApp gate, moderation, pagination.
+
+    Gate rule: first-time reviewer must have a ProducerWhatsAppClick row
+    with user_id matching the caller. Existing reviewers (updating) bypass
+    the gate.
+    """
+
+    def _make_click(self, db, producer, user):
+        """Helper: insert a whatsapp click row for a user+producer pair."""
+        click = ProducerWhatsAppClick(
+            producer_id=producer.id,
+            user_id=user.id,
+        )
+        db.add(click)
+        db.commit()
+        return click
+
+    def test_get_reviews_empty(self, client, db):
+        p = make_producer(db)
+        resp = client.get(f"/producers/{p.id}/reviews")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["reviews"] == []
+        assert body["total"] == 0
+        assert body["page"] == 1
+        assert body["pages"] == 1
+
+    def test_post_review_requires_whatsapp_click(self, client, db):
+        """No prior WhatsApp click → 403."""
+        p = make_producer(db)
+        user = make_user(db, email="norclick@test.com")
+        resp = client.post(
+            f"/producers/{p.id}/reviews",
+            json={"stars": 5, "title": "מצוין", "body": None},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 403
+
+    def test_post_review_allowed_after_whatsapp_click(self, client, db):
+        """User who clicked WhatsApp → 201, review stored."""
+        p = make_producer(db)
+        user = make_user(db, email="clicker@test.com")
+        self._make_click(db, p, user)
+
+        resp = client.post(
+            f"/producers/{p.id}/reviews",
+            json={"stars": 4, "title": "טעים מאוד", "body": "המוצר ברמה גבוהה"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        assert resp.json()["stars"] == 4
+
+        review = db.query(ProducerReview).first()
+        assert review is not None
+        assert review.user_id == user.id
+
+    def test_post_review_update_bypasses_gate(self, client, db):
+        """User updating an existing review doesn't need a new click."""
+        p = make_producer(db)
+        user = make_user(db, email="updater@test.com")
+        # Create a review directly in DB (as if they had clicked before)
+        db.add(ProducerReview(
+            producer_id=p.id,
+            user_id=user.id,
+            stars=3,
+            body="OK",
+        ))
+        db.commit()
+
+        # No click row but can still update existing review
+        resp = client.post(
+            f"/producers/{p.id}/reviews",
+            json={"stars": 5, "title": "עדכון", "body": "עכשיו יותר טוב"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        assert resp.json()["stars"] == 5
+
+    def test_get_reviews_pagination(self, client, db):
+        """12 reviews → 2 pages; page 1 returns 10, page 2 returns 2."""
+        p = make_producer(db)
+        for i in range(12):
+            u = make_user(db, email=f"rev{i}@test.com")
+            db.add(ProducerReview(producer_id=p.id, user_id=u.id, stars=5))
+        db.commit()
+
+        p1 = client.get(f"/producers/{p.id}/reviews", params={"page": 1}).json()
+        assert len(p1["reviews"]) == 10
+        assert p1["total"] == 12
+        assert p1["pages"] == 2
+
+        p2 = client.get(f"/producers/{p.id}/reviews", params={"page": 2}).json()
+        assert len(p2["reviews"]) == 2
+
+    def test_avg_rating_updated_after_review(self, client, db):
+        """Producer avg_rating is recomputed after each review."""
+        p = make_producer(db)
+        for stars, email in [(4, "r1@test.com"), (2, "r2@test.com")]:
+            u = make_user(db, email=email)
+            db.add(ProducerReview(producer_id=p.id, user_id=u.id, stars=stars))
+        db.commit()
+
+        from app.routers.reviews import _recompute_producer_rating
+        from app.database import SessionLocal
+        with SessionLocal() as s:
+            _recompute_producer_rating(p.id, s)
+
+        db.expire(p)
+        db.refresh(p)
+        assert abs(p.avg_rating - 3.0) < 0.01
+        assert p.reviews_count == 2
+
+    def test_post_review_requires_auth(self, client, db):
+        p = make_producer(db)
+        resp = client.post(f"/producers/{p.id}/reviews", json={"stars": 5})
+        assert resp.status_code == 401
