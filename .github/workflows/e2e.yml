@@ -5,21 +5,20 @@ name: E2E Tests
 # shared staging environment — so a broken PR shows red, not green.
 #
 # Flow:
-#   1. Wait for Vercel to finish deploying the PR preview (up to 5min)
-#   2. Extract the preview URL from GitHub Deployments API
+#   1. Poll GitHub Deployments API until Vercel preview is "success" (up to 5 min)
+#   2. Extract environment_url from the deployment status
 #   3. Run Playwright with TEST_URL pointing at that URL
 #   4. Upload HTML report as artifact on failure
 #
 # Required secrets: none beyond the auto-provided GITHUB_TOKEN.
-# Vercel connects via its GitHub integration; we read the deployment
-# status through the standard GitHub Deployments API.
+# Vercel connects via its GitHub integration; deployments appear in
+# GET /repos/{owner}/{repo}/deployments for the PR head SHA.
 
 on:
   pull_request:
     branches: [staging, main]
 
-# patrickedqvist/wait-for-vercel-preview reads GitHub Deployments API.
-# deployments: read is not included in the default restricted token — grant it explicitly.
+# deployments: read — needed to poll GitHub Deployments API for Vercel preview URL
 permissions:
   contents: read
   deployments: read
@@ -53,12 +52,40 @@ jobs:
         working-directory: frontend
 
       - name: Wait for Vercel preview deployment
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
         id: preview
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 300
-          check_interval: 15
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+        # Poll GitHub Deployments API (20 × 15s = 5 min max).
+        # Vercel creates a GitHub Deployment for each PR commit; we wait
+        # until its status transitions to "success" and then extract the
+        # environment_url (the preview URL) from the deployment status.
+        run: |
+          echo "Polling for Vercel preview deployment (SHA: $HEAD_SHA)..."
+          for i in $(seq 1 20); do
+            # Fetch all deployments for this SHA (may be empty while Vercel boots)
+            STATUSES_URL=$(gh api "repos/$REPO/deployments?sha=$HEAD_SHA&per_page=20" \
+              --jq '[.[] | .statuses_url] | first // ""' 2>/dev/null || echo "")
+
+            if [ -n "$STATUSES_URL" ] && [ "$STATUSES_URL" != "null" ]; then
+              STATE=$(gh api "$STATUSES_URL" --jq '.[0].state // "pending"' 2>/dev/null || echo "pending")
+              ENV_URL=$(gh api "$STATUSES_URL" --jq '.[0].environment_url // ""' 2>/dev/null || echo "")
+
+              echo "Attempt $i/20: state=$STATE env_url=$ENV_URL"
+
+              if [ "$STATE" = "success" ] && [ -n "$ENV_URL" ] && [ "$ENV_URL" != "null" ]; then
+                echo "url=$ENV_URL" >> "$GITHUB_OUTPUT"
+                echo "Preview URL: $ENV_URL"
+                exit 0
+              fi
+            else
+              echo "Attempt $i/20: no deployment found yet for SHA $HEAD_SHA"
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for Vercel preview deployment after 5 minutes"
+          exit 1
 
       - name: Run E2E tests
         run: npx playwright test
