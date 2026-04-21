@@ -52,28 +52,32 @@ export default function ProducersClient({
   const [nextPage, setNextPage] = useState(initialPage + 1);
   const sentinelRef = useRef(null);
 
-  const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter;
+  const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
+
+  const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
     : [...initialItems, ...appendItems];
   const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
 
   const syncUrl = useCallback(
-    (chipState, city) => {
+    (chipState, city, q) => {
       const params = new URLSearchParams();
       for (const chip of CHIPS_CONFIG) {
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
       if (city) params.set("city", city);
+      if (q) params.set("q", q);
       const qs = params.toString();
       router.replace(qs ? `/producers?${qs}` : "/producers", { scroll: false });
     },
     [router],
   );
 
-  const fetchFiltered = useCallback((chipState, city) => {
+  const fetchFiltered = useCallback((chipState, city, q) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
+    if (q) params.q = q;
     if (Object.keys(params).length === 0) {
       setFilteredItems(null);
       return;
@@ -119,19 +123,19 @@ export default function ProducersClient({
     return () => observer.disconnect();
   }, [hasMore, hasActiveChips, loadNextPage]);
 
-  // Fetch on mount if URL already has active chips (shared link / back-nav).
+  // Fetch on mount if URL already has active chips/search (shared link / back-nav).
   useEffect(() => {
     if (mountFetched.current) return;
     mountFetched.current = true;
-    const anyActive = Object.values(chips).some(Boolean) || !!cityFilter;
-    if (anyActive) fetchFiltered(chips, cityFilter);
+    const anyActive = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
+    if (anyActive) fetchFiltered(chips, cityFilter, searchQ);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    syncUrl(next, cityFilter);
-    fetchFiltered(next, cityFilter);
+    syncUrl(next, cityFilter, searchQ);
+    fetchFiltered(next, cityFilter, searchQ);
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
@@ -139,8 +143,8 @@ export default function ProducersClient({
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
-        syncUrl(chips, null);
-        fetchFiltered(chips, null);
+        syncUrl(chips, null, searchQ);
+        fetchFiltered(chips, null, searchQ);
       } else {
         setLocationModalOpen(true);
       }
@@ -153,16 +157,17 @@ export default function ProducersClient({
     setLocationModalOpen(false);
     setCityFilter(city);
     setUserCity(city);
-    syncUrl(chips, city);
-    fetchFiltered(chips, city);
+    syncUrl(chips, city, searchQ);
+    fetchFiltered(chips, city, searchQ);
     trackEvent("producers_city_filter", { city });
   };
 
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
+    setSearchQ("");
     setFilteredItems(null);
-    syncUrl(CHIPS_DEFAULT, null);
+    syncUrl(CHIPS_DEFAULT, null, "");
     trackEvent("producers_clear_all");
   };
 
@@ -189,11 +194,24 @@ export default function ProducersClient({
   return (
     <>
       <Breadcrumb
-        items={[{ href: "/", label: "בית" }, { label: "כל בתי העסק" }]}
+        items={[
+          { href: "/", label: "בית" },
+          searchQ
+            ? { href: "/producers", label: "כל בתי העסק" }
+            : { label: "כל בתי העסק" },
+          ...(searchQ ? [{ label: `חיפוש: ${searchQ}` }] : []),
+        ]}
         className="mb-4"
       />
       <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
-        כל בתי העסק
+        {searchQ ? (
+          <>
+            תוצאות עבור:{" "}
+            <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
+          </>
+        ) : (
+          "כל בתי העסק"
+        )}
       </h1>
 
       {/* Recently viewed strip */}
@@ -231,13 +249,27 @@ export default function ProducersClient({
               type="button"
               onClick={() => {
                 setCityFilter(null);
-                syncUrl(chips, null);
-                fetchFiltered(chips, null);
+                syncUrl(chips, null, searchQ);
+                fetchFiltered(chips, null, searchQ);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-[10px] font-bold">×</span>
               📍 {cityFilter}
+            </button>
+          )}
+          {searchQ && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQ("");
+                syncUrl(chips, cityFilter, "");
+                fetchFiltered(chips, cityFilter, "");
+              }}
+              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+            >
+              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              🔍 {searchQ}
             </button>
           )}
           <button
@@ -261,7 +293,7 @@ export default function ProducersClient({
       {loading ? (
         <SkeletonProducerGrid count={8} />
       ) : showFilterEmpty ? (
-        <FilterEmptyState onClear={clearAll} />
+        <FilterEmptyState onClear={clearAll} searchQ={searchQ} />
       ) : showPageOverflow ? (
         <PageOverflowState />
       ) : showCatalogEmpty ? (
@@ -270,7 +302,12 @@ export default function ProducersClient({
         <>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
             {displayItems.map((p) => (
-              <ProducerCard key={p.id} producer={p} referrer="producers-index" />
+              <ProducerCard
+                key={p.id}
+                producer={p}
+                referrer="producers-index"
+                highlightQuery={searchQ || undefined}
+              />
             ))}
           </div>
 
@@ -348,19 +385,36 @@ function RecentlyViewedStrip() {
   );
 }
 
-function FilterEmptyState({ onClear }) {
+function FilterEmptyState({ onClear, searchQ }) {
   return (
     <div className="text-center py-16">
       <div
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-light mb-4"
         aria-hidden="true"
       >
-        <span className="text-2xl">🌱</span>
+        <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
       </div>
       <h2 className="font-headline text-xl font-bold text-site-text mb-2">
-        לא מצאנו בתי עסק שמתאימים לסינון הזה
+        {searchQ
+          ? `לא מצאנו בתי עסק עבור "${searchQ}"`
+          : "לא מצאנו בתי עסק שמתאימים לסינון הזה"}
       </h2>
-      <p className="text-site-muted text-sm mb-6">נסי להסיר אחד מהסינונים</p>
+      <p className="text-site-muted text-sm mb-6">
+        {searchQ ? "נסי מילה אחרת או גלי לפי קטגוריה" : "נסי להסיר אחד מהסינונים"}
+      </p>
+      {searchQ && (
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {["בשר", "גבינה", "לחם", "ירקות", "שמן", "דבש"].map((cat) => (
+            <Link
+              key={cat}
+              href={`/producers?q=${encodeURIComponent(cat)}`}
+              className="bg-white border border-border text-site-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
+            >
+              {cat}
+            </Link>
+          ))}
+        </div>
+      )}
       <button
         type="button"
         onClick={onClear}

@@ -13,6 +13,7 @@ import {
 import BadgeRow from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { getPrimaryMethod } from "@/lib/contact-method";
@@ -160,7 +161,7 @@ function CardHeart({ producer }) {
   );
 }
 
-export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false }) {
+export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
@@ -245,7 +246,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         <div className="flex items-baseline gap-2 justify-between">
           <Link href={producerHref} className="block flex-1 min-w-0">
             <h3 className="font-headline font-bold text-[18px] text-site-text hover:text-primary transition leading-snug line-clamp-2">
-              {producer.name}
+              {highlightQuery
+                ? highlightMatch(producer.name, highlightQuery)
+                : producer.name}
             </h3>
           </Link>
           {hasRating && (
