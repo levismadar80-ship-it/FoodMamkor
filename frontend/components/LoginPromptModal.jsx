@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X } from "@phosphor-icons/react";
+import { useFocusReturn } from "@/lib/use-focus-return";
 
 /**
  * LoginPromptModal — lightweight modal that nudges guests toward /login
@@ -29,6 +30,9 @@ export default function LoginPromptModal({
   nextPath = "/",
 }) {
   const primaryRef = useRef(null);
+
+  // Capture trigger before CTA-focus effect runs (effect order matters).
+  useFocusReturn(open);
 
   // Esc to close + focus primary CTA on open + lock body scroll.
   useEffect(() => {

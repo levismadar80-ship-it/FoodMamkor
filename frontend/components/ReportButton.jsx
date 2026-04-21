@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { useFocusReturn } from "@/lib/use-focus-return";
 
 export default function ReportButton({ producerId }) {
   const { user } = useAuth();
@@ -10,6 +11,8 @@ export default function ReportButton({ producerId }) {
   const [reason, setReason] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  useFocusReturn(showModal);
 
   if (!user) return null;
 
@@ -35,7 +38,12 @@ export default function ReportButton({ producerId }) {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[12px] p-6 max-w-md w-full">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-dialog-title"
+            className="bg-white rounded-[12px] p-6 max-w-md w-full"
+          >
             {submitted ? (
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">תודה על הדיווח</p>
@@ -49,7 +57,7 @@ export default function ReportButton({ producerId }) {
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <h3 className="text-lg font-semibold mb-4">דווח על עסק</h3>
+                <h3 id="report-dialog-title" className="text-lg font-semibold mb-4">דווח על עסק</h3>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
