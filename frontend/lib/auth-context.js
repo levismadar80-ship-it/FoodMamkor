@@ -61,6 +61,24 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // MEH-156: listen for JWT expiry events fired by the API interceptor.
+  // setUser/resetFavoritesCache/showToast are all stable refs — empty deps is correct.
+  useEffect(() => {
+    const handle = () => {
+      resetFavoritesCache();
+      setUser(null);
+      const redirect = encodeURIComponent(window.location.pathname);
+      showToast(
+        "פג תוקף ההתחברות — נא להתחבר מחדש",
+        "info",
+        5000,
+        { action: { label: "התחברי", href: `/login?redirect=${redirect}` } },
+      );
+    };
+    window.addEventListener("auth:expired", handle);
+    return () => window.removeEventListener("auth:expired", handle);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const afterLogin = async (me) => {
     setUser(me);
     ensureFavoritesLoaded();

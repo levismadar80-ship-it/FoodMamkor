@@ -22,8 +22,14 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     if (status === 401 && typeof window !== "undefined") {
+      const hadToken = !!localStorage.getItem("token");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      // Only fire when a token existed — distinguishes "session expired"
+      // from "unauthenticated request with no token".
+      if (hadToken) {
+        window.dispatchEvent(new CustomEvent("auth:expired"));
+      }
     }
     if (status >= 500 || !error.response) {
       Sentry.captureException(error, {
