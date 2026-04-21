@@ -23,6 +23,16 @@
             "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *backend/*) echo \"⚠️ Reminder: read docs/DATA.md before making backend changes. It contains the DB schema and API contract.\" >&2 ;; esac; exit 0"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "_comment": "Central component guard (MEH-128): warns when editing high-risk files. Warning-only, always exits 0. See docs/CENTRAL_COMPONENTS.md.",
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/pre-edit-guard.js\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
