@@ -1161,3 +1161,53 @@ class TestVacationBadgeClear:
         )
         assert resp.status_code == 200
         assert resp.json()["vacation_until"] is None
+
+
+class TestMojibakeDetection:
+    """MEH-154 — Excel import rejects mojibake'd Hebrew (UTF-8 decoded as Latin-1)."""
+
+    # Helpers — raw rows as openpyxl would deliver them (cells already extracted).
+    # Columns: name, contact, phone, instagram, website, wa_group, _unused, city, cat, ...
+    def _good_row(self, name="חוות הגליל"):
+        return [name, "שרה כהן", "0521234567", None, None, None, None, "חיפה", "בשר", None,
+                None, None, None, "תיאור", None, None, None, None, None, None, None, None, None]
+
+    def _mojibake_row(self, name="×©×××"):
+        # × (U+00D7) is the Latin-1 misread of the UTF-8 lead byte 0xD7 for Hebrew.
+        return [name, None, "0521111111", None, None, None, None, "×××", None, None,
+                None, None, None, None, None, None, None, None, None, None, None, None, None]
+
+    def test_good_hebrew_passes_parse(self):
+        from app.services.producer_import import parse_row
+        result = parse_row(self._good_row(), row_number=2)
+        assert not result.mojibake
+        assert not any("קידוד" in e for e in result.errors)
+
+    def test_mojibake_name_flagged(self):
+        from app.services.producer_import import parse_row
+        # U+00D7 in the name should be detected as mojibake.
+        result = parse_row(self._mojibake_row(name="ס×××ø"), row_number=2)
+        assert result.mojibake
+        assert any("קידוד לא תקין" in e for e in result.errors)
+
+    def test_mojibake_in_city_field_flagged(self):
+        from app.services.producer_import import parse_row
+        row = self._good_row()
+        row[7] = "×××"  # city column with mojibake
+        result = parse_row(row, row_number=2)
+        assert result.mojibake
+
+    def test_import_rows_batch_rejected_on_mojibake(self, db):
+        from app.services.producer_import import import_rows
+        rows = [self._good_row(), self._mojibake_row(name="ס××ø")]
+        result = import_rows(db, rows, dry_run=False)
+        assert result.get("batch_rejected") is True
+        assert result["imported"] == 0
+        assert "קידוד לא תקין" in result["batch_error"]
+
+    def test_import_rows_clean_batch_succeeds(self, db):
+        from app.services.producer_import import import_rows
+        rows = [self._good_row(name="מאפיית הדר")]
+        result = import_rows(db, rows, dry_run=True)
+        assert result.get("batch_rejected") is None
+        assert result["imported"] == 1
