@@ -9,9 +9,12 @@ This version:
   3. Uses a UUID for Cloudinary's public_id (not the user-supplied filename)
   4. Tells Cloudinary resource_type="image" which adds a server-side check
 """
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+
+log = logging.getLogger("app.upload")
 
 from app.auth import get_current_user
 from app.config import settings
@@ -79,7 +82,7 @@ async def upload_image(
         if producer and producer.plan == "free" and producer.images and len(producer.images) >= 3:
             raise HTTPException(
                 status_code=403,
-                detail="Free plan allows up to 3 images. Upgrade to premium for unlimited.",
+                detail="חשבון החינם מוגבל ל-3 תמונות. שדרגי לפרמיום להעלאה ללא הגבלה.",
             )
 
     if not settings.cloudinary_cloud_name:
@@ -110,7 +113,8 @@ async def upload_image(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        log.error("Cloudinary upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע")
 
 
 @router.post("/avatar")
@@ -163,4 +167,5 @@ async def upload_avatar(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        log.error("Cloudinary upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע")
