@@ -88,6 +88,7 @@ class TestAuth:
         user = db.query(User).filter(User.email == "producer@test.com").first()
         assert user is not None
         assert user.role == "producer"
+        assert user.is_producer is True  # MEH-143: durable flag set on new registration too
         producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
         assert producer is not None
         assert producer.status == "pending_whatsapp"
@@ -116,6 +117,76 @@ class TestAuth:
             })
         assert resp.status_code == 200
         assert resp.json()["access_token"]
+
+    # --- MEH-143: role-upgrade (existing consumer adds a producer) ---
+
+    def test_logged_in_user_can_upgrade_to_producer(self, client, db):
+        """Authenticated consumer → POST without email/name/password → 200 + producer created."""
+        from app.models.models import User, Producer
+        user = make_user(db, email="consumer@upgrade.com", role="consumer")
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                "producer_name": "חוות השדרוג",
+                "phone": "0521234567",
+                "category_ids": [],
+                "primary_contact_method": "whatsapp",
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]
+        db.expire_all()
+        upgraded = db.query(User).filter(User.id == user.id).first()
+        assert upgraded.role == "producer"
+        assert upgraded.is_producer is True
+        assert upgraded.producer_id is not None
+
+    def test_upgrade_twice_returns_409(self, client, db):
+        """A user who already has a producer cannot register another."""
+        user = make_user(db, email="already@producer.com", role="producer")
+        # Give the user a linked producer
+        from app.models.models import Producer
+        producer = Producer(name="קיים", status="pending_whatsapp")
+        db.add(producer)
+        db.flush()
+        user.producer_id = producer.id
+        db.commit()
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                "producer_name": "חוות שנייה",
+                "phone": "0521234567",
+                "category_ids": [],
+                "primary_contact_method": "whatsapp",
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 409
+
+    def test_email_exists_endpoint_returns_true(self, client, db):
+        make_user(db, email="taken@test.com")
+        resp = client.get("/auth/email-exists?email=taken@test.com")
+        assert resp.status_code == 200
+        assert resp.json()["exists"] is True
+
+    def test_email_exists_endpoint_returns_false(self, client):
+        resp = client.get("/auth/email-exists?email=free@test.com")
+        assert resp.status_code == 200
+        assert resp.json()["exists"] is False
+
+    def test_anonymous_registration_still_requires_account_fields(self, client):
+        """Unauthenticated POST without email/name/password → 422."""
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                "producer_name": "חוות אנונימית",
+                "phone": "0521234567",
+                "category_ids": [],
+                "primary_contact_method": "whatsapp",
+            },
+        )
+        assert resp.status_code == 422
 
 
 # ---------- Producers ----------

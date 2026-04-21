@@ -15,10 +15,12 @@ class UserRegister(BaseModel):
 
 
 class ProducerRegister(BaseModel):
-    # User account
-    email: EmailStr
-    name: str
-    password: str
+    # User account — optional when upgrading an already-authenticated user
+    # (MEH-143). Required for new (unauthenticated) registrations; the
+    # router validates and raises 422 when they are absent in that case.
+    email: EmailStr | None = None
+    name: str | None = None
+    password: str | None = None
     # Producer details
     producer_name: str
     description: str | None = None
@@ -334,6 +336,8 @@ class UserOut(BaseModel):
     # hide the password-change form for OAuth-only accounts (they have
     # no password_hash to verify against).
     is_oauth: bool = False
+    # MEH-143: True once the user has a linked producer profile.
+    is_producer: bool = False
     referral_code: str | None = None
 
     model_config = {"from_attributes": True}

@@ -113,6 +113,9 @@ class User(Base):
     # MEH-49: referral code — unique 8-char code generated at registration.
     # Used to build /ref/{code} links that credit the referrer.
     referral_code = Column(String(20), unique=True, nullable=True, index=True)
+    # MEH-143: one account / multiple roles. True once the user has ever
+    # registered a producer, even if role is later changed by admin.
+    is_producer = Column(Boolean, default=False)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")

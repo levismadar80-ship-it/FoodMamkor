@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
@@ -23,7 +23,17 @@ import { validateEmail } from "@/lib/validators";
  * The previous version had OAuth on top. Flipping the order per spec.
  */
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-12 text-center text-site-muted">טוען...</div>}>
+      <LoginPageBody />
+    </Suspense>
+  );
+}
+
+function LoginPageBody() {
   const router = useRouter();
+  const params = useSearchParams();
+  const redirectTo = params.get("redirect") || "/";
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +54,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push("/");
+      router.push(redirectTo);
     } catch (err) {
       setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
     } finally {
@@ -215,13 +225,13 @@ export default function LoginPage() {
             <div className="space-y-2.5">
               {googleConfigured && (
                 <GoogleAuthButton
-                  onSuccess={() => router.push("/")}
+                  onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
-                  onSuccess={() => router.push("/")}
+                  onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
