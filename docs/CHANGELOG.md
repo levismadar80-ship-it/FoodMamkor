@@ -12,6 +12,10 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-21 — MEH-143: role upgrade — existing consumer can add producer to same account; POST /auth/register/producer detects JWT for upgrade path; GET /auth/email-exists with EmailStr + 5/min; User.is_producer durable flag; auth context refreshUser(); login page respects ?redirect= (#213)
+
+## 2026-04-21 — MEH-139: settings email field made permanently read-only; isOAuth detection in ProfileTab; email removed from PATCH payload (#212)
+
 ## 2026-04-21 — MEH-162: 4 security BLOCKs fixed — OAuth account-takeover IDOR (409 on silent link), file upload OOM (10MB cap), email header injection in experience_notifications, /forgot-password honest UI instead of fake success
 
 ## 2026-04-21 — MEH-XXX: SMTP → Resend migration — all 6 smtplib call sites replaced with shared `services/email.py` (Resend HTTP API); removes SMTP_HOST/PORT/USER/PASSWORD from config; Railway egress firewall no longer blocks email delivery
