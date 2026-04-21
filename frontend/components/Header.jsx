@@ -380,8 +380,8 @@ function LoginPill({ label, transparent }) {
  *     primary circle, white 14px/600.
  *
  * Dropdown items (in order):
- *   1. הפרופיל שלי  → /settings
- *   2. הגדרות       → /settings
+ *   1. הפרופיל שלי  → /producer/dashboard (producers) | /settings?tab=profile (consumers)
+ *   2. הגדרות       → /settings?tab=security
  *   3. לוח הבקרה שלי → /producer/dashboard  (producers only)
  *   4. ממשק אדמין   → /admin                 (admins only)
  *   5. divider
@@ -399,8 +399,8 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
   const isAdmin = user.role === "admin";
 
   const items = [
-    { href: "/settings", label: "הפרופיל שלי" },
-    { href: "/settings", label: "הגדרות" },
+    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: "הפרופיל שלי" },
+    { href: "/settings?tab=security", label: "הגדרות" },
     ...(isProducer ? [{ href: "/producer/dashboard", label: "לוח הבקרה שלי" }] : []),
     ...(isAdmin ? [{ href: "/admin", label: "ממשק אדמין" }] : []),
   ];
