@@ -83,11 +83,11 @@ export default function AboutPage() {
       <section className="bg-background section-y">
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-            {/* Founder photo placeholder — TODO: replace with real photo */}
+            {/* Founder photo — real photo tracked in MEH-188 */}
             <div className="flex justify-center md:justify-start order-1">
               <div
                 className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-full bg-light flex items-center justify-center border-4 border-primary/10 overflow-hidden shadow-[0_8px_32px_rgba(46,104,83,0.12)]"
-                aria-label="תמונה של ספיר (placeholder)"
+                aria-label="תמונה של ספיר, מייסדת מהמקור"
               >
                 <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
               </div>
@@ -194,7 +194,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== Section 5 — Testimonials placeholder ======== */}
+      {/* ======== Section 5 — Testimonials ======== */}
       <section className="bg-background section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="font-headline text-3xl font-bold mb-4 text-site-text">
