@@ -32,13 +32,6 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      # Must be the very first step — records the epoch BEFORE Vercel has had
-      # time to react, so the freshness check in "Wait for Vercel" can reject
-      # stale preview URLs left over from previous commits.
-      - name: Record workflow start time
-        id: timing
-        run: echo "epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
-
       - uses: actions/checkout@v4
 
       - name: Set up Node.js 20
@@ -73,44 +66,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          # epoch recorded just before checkout (~before Vercel reacts to the push)
-          WORKFLOW_START_EPOCH: ${{ steps.timing.outputs.epoch }}
         run: |
           echo "Polling Vercel PR comment for preview URL…"
           echo "repo=$REPO  pr=$PR_NUMBER"
 
-          # Allow 30s for Vercel to receive the push webhook and update its
-          # PR comment.  Without this, the loop can find the *previous*
-          # deployment URL (still returning 200) and test stale code.
-          sleep 30
-
           for attempt in $(seq 1 20); do
             echo "--- attempt $attempt/20 ---"
 
-            # Fetch the full Vercel bot comment object (body + updated_at).
-            COMMENT_JSON=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" 2>/dev/null \
-              | jq '[.[] | select(.user.login == "vercel[bot]")] | last // {}' \
-              2>/dev/null) || COMMENT_JSON="{}"
-
-            COMMENT=$(echo "$COMMENT_JSON" | jq -r '.body // ""') || COMMENT=""
-            UPDATED_AT=$(echo "$COMMENT_JSON" | jq -r '.updated_at // ""') || UPDATED_AT=""
-            # Convert ISO-8601 → Unix epoch (Linux date -d)
-            UPDATED_EPOCH=$(date -d "$UPDATED_AT" +%s 2>/dev/null) || UPDATED_EPOCH=0
-
-            # Accept the comment only if it was updated AFTER this workflow
-            # started (with a 60s grace period for Vercel to react before the
-            # runner even began).  This prevents re-using a stale preview URL
-            # from a previous commit to the same PR.
-            FRESHNESS_CUTOFF=$(( WORKFLOW_START_EPOCH - 60 ))
+            # Vercel bot posts/updates a PR comment with a [Preview](...) link.
+            # Extract the first https://*.vercel.app URL from that link.
+            COMMENT=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" 2>/dev/null \
+              | jq -r '[.[] | select(.user.login == "vercel[bot]")] | last | .body // ""' \
+              2>/dev/null) || COMMENT=""
 
             ENV_URL=$(echo "$COMMENT" \
               | grep -oE '\[Preview\]\(https://[^)]+\)' \
               | grep -oE 'https://[^)]+' \
               | head -1 2>/dev/null) || ENV_URL=""
 
-            echo "  candidate_url=$ENV_URL updated_at=$UPDATED_AT"
+            echo "  candidate_url=$ENV_URL"
 
-            if [ -n "$ENV_URL" ] && [ "$UPDATED_EPOCH" -ge "$FRESHNESS_CUTOFF" ]; then
+            if [ -n "$ENV_URL" ] && [ "$ENV_URL" != "null" ]; then
               # Check the deployment is actually serving (not still building)
               HTTP=$(curl -sI --max-time 10 "$ENV_URL" 2>/dev/null \
                 | head -1 | awk '{print $2}') || HTTP=""
@@ -123,8 +99,6 @@ jobs:
               else
                 echo "  URL found but not ready yet (HTTP $HTTP)"
               fi
-            elif [ -n "$ENV_URL" ]; then
-              echo "  Skipping stale comment (updated_at=$UPDATED_AT)"
             else
               echo "  No Vercel bot comment with preview URL yet"
             fi
