@@ -218,6 +218,10 @@ export default function MapComponent({
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
+            if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+              showToast("המיקום שהתקבל אינו תקין", "error");
+              return;
+            }
             const latlng = [latitude, longitude];
             programmaticMoveRef.current = true;
             mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
@@ -238,6 +242,10 @@ export default function MapComponent({
         );
       },
       getMap: () => mapInstanceRef.current,
+      // Used by MapClient.registerMapApi to skip hidden (0×0) containers
+      // so the mobile map (display:none on desktop) never overwrites the
+      // visible desktop map's API reference, and vice-versa on mobile.
+      getContainer: () => containerRef.current,
     };
     registerApi(api);
     return () => registerApi(null);
@@ -338,9 +346,14 @@ export default function MapComponent({
       resizeObserver = new ResizeObserver(scheduleInvalidate);
       resizeObserver.observe(containerRef.current);
     }
-    // Expose the Leaflet instance to the caller-owned ref AFTER the map is
-    // fully set up so getBounds() returns a real viewport.
-    if (parentMapRef) parentMapRef.current = mapInstanceRef.current;
+    // Expose the Leaflet instance to the caller-owned ref only when this
+    // container is visible (non-zero size). On desktop the mobile map lives
+    // inside a display:none element — let it win parentMapRef would give
+    // MapClient a degenerate 0×0 Leaflet instance for getBounds() calls.
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (parentMapRef && rect && (rect.width > 0 || rect.height > 0)) {
+      parentMapRef.current = mapInstanceRef.current;
+    }
 
     return () => {
       if (resizeObserver) resizeObserver.disconnect();

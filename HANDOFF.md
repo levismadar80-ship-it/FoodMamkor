@@ -5,57 +5,54 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #196 (feature/meh-whatsapp-click-tracking) — MERGED to staging
+PR merged/opened: #198 (feature/meh-78-map-bugs) — OPEN (draft, awaiting Vercel preview)
 Summary:
-  PR #196: WhatsApp click tracking fix — whatsapp_clicks_week showed 0
-    - Root cause: producer_whatsapp_clicks table missing in older Railway DBs
-      (model added after initial DB init; create_all never ran for this table)
-    - Fix 1: _migrate_columns() now runs CREATE TABLE IF NOT EXISTS
-      producer_whatsapp_clicks before the column-level ALTER TABLE loop
-    - Fix 2: ProducerWhatsAppClick model gains user_id (nullable UUID FK → users)
-      so authenticated clicks are attributed; endpoint accepts optional JWT
-    - pytest: TestWhatsAppClickTracking (4 cases) — anonymous click, authed
-      click with user_id, 404 on unknown producer, dashboard week count
-    - Build ✅, lint ✅, Vercel preview ✅
+  PR #198: MEH-78 map bugs — 3 fixes in 3 files (MapComponent, MapClient, globals.css)
+    - Bug 1 (map center Golan/Syria): dual-map render — `mapPane` JSX const used
+      in BOTH `hidden lg:grid` (desktop) and `lg:hidden` (mobile) slots mounts two
+      independent MapComponent instances. The mobile map registered SECOND, always
+      overwriting `mapApiRef.current` + `parentMapRef.current`. On desktop, all
+      imperative calls (goToMyLocation, focusProducer, getBounds) went to the
+      hidden mobile map. Fix: `registerMapApi` now calls `api.getContainer()
+      .getBoundingClientRect()` and skips if width===0&&height===0. Same guard
+      added to `parentMapRef.current` in the map init effect.
+    - Bug 2 (faded/gray markers): `.leaflet-tile-pane { filter: saturate(0.7)
+      brightness(1.05) sepia(0.1) }` was desaturating+tinting the viewport
+      enough to make category-colored markers look muted. Changed to
+      `saturate(0.85) brightness(1.02)` (sepia removed). Added `filter: none`
+      on `.leaflet-marker-pane` as defensive rule.
+    - Bug 3 (NaN flyTo crash): added `isNaN` guard in `goToMyLocation` before
+      `mapInstanceRef.current.flyTo(latlng, ...)`. All three flyTo call sites
+      now guarded: focusProducer via CoordSchema.safeParse, goToMyLocation via
+      isNaN check, setView via hardcoded Jerusalem coords.
+    - Build ✅, lint ✅ (warnings only, all pre-existing), Vercel building
 
-  PRs #193–#195: MEH-116 full site copy refresh (MERGED to staging)
-    - Banned phrases swept: מגדלים קטנים, שכנות שמבשלות, אוכל אמיתי, יצרן→בעל עסק
-    - About page full rewrite (Sapir story, accordion tips, testimonials placeholder)
-    - ParallaxQuote attribution prop, Footer newsletter redesign
-    - Chatbot system prompt updated; auth.py welcome email updated
-
-  Previous: #187 MEH-56 async WhatsApp onboarding (MERGED to staging)
+  Previous: #196 (WhatsApp click tracking) + #197 (producer reviews) — MERGED
 
 ## Current state
-Branch: feature/meh-whatsapp-click-tracking (merged) — now on staging
-Staging HEAD: e0d69ef (WhatsApp click tracking fix — just merged #196)
+Branch: feature/meh-78-map-bugs (open PR #198, draft)
+Staging HEAD: e0d69ef (WhatsApp click tracking — last merged)
 Main HEAD: e42127e (production release — staging ahead by multiple PRs)
 
 ## Next task
-  Producer reviews system (see spec in last user message):
-    - DB: producer_reviews table (UNIQUE per user+producer, rating 1–5, body TEXT)
-    - Backend: POST /producers/{id}/reviews (gated: must have clicked WhatsApp),
-      GET /producers/{id}/reviews (paginated 10), avg_rating + reviews_count update
-    - Frontend: review form on producer detail (post-WhatsApp click), star display,
-      badge on ProducerCard (≥3 reviews)
-    - Trust: auth required, one review per producer per user, Haiku moderation
-  First step: git checkout staging → git checkout -b feature/producer-reviews
+  After PR #198 is approved and merged to staging:
+  1. Deferred:
+     - Admin analytics: referral count per producer
+     - ProducerCard heart/favorite Phase C (post-login replay)
+     - Lightbox for gallery images
+     - Events section on producer detail page
 
-  Deferred:
-  1. Admin analytics: referral count per producer
-  2. ProducerCard heart/favorite Phase C (post-login replay)
-  3. Lightbox for gallery images
-  4. Events section on producer detail page
-
-Deferred from design bundle (do NOT start without explicit user confirmation):
+  Deferred from design bundle (do NOT start without explicit user confirmation):
   - Item 4: New homepage editorial sections (EditorialBreath, MeetAProducer, HowItWorks)
   - Item 5: Botanical logo mark for Header/Layout
 
-First step: git checkout staging → git pull → pick next task
+First step: await PR #198 approval, then merge to staging.
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
 |----------|--------|------|
+| MEH-78: mapPane dual-instance fix via BoundingClientRect | At effect time, display:none containers have 0 dimensions — reliable, no extra prop | April 2026 |
+| MEH-78: sepia removed from tile filter | Was desaturating the global viewport, making markers look muted | April 2026 |
 | MEH-56: status=pending_whatsapp (not pending) | Distinguishes minimal-form signups; both shown in admin pending queue | April 2026 |
 | MEH-56: IG scrape via public meta (no OAuth) | v1 scope; OAuth too complex; fail-open to free text | April 2026 |
 | MEH-56: completion checklist frontend-only | All fields in GET /producers/me; no new backend needed | April 2026 |
@@ -72,7 +69,7 @@ First step: git checkout staging → git pull → pick next task
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-None (all merged to staging)
+- #198: feature/meh-78-map-bugs — MEH-78 map bugs (draft, Vercel building)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
@@ -85,6 +82,10 @@ None (all merged to staging)
   for reliable delivery when app is closed.
 - MEH-56 Instagram scrape: Instagram throttles bots — scrape may fail for most handles.
   Users fall back to free-text input which still works via Haiku.
+- MEH-78 viewport resize: `mapApiRef.current` is set once on mount based on container
+  visibility. If user resizes from desktop→mobile (or vice-versa) without a page
+  reload, the registered API may point to the wrong map. Acceptable for v1 — full
+  fix requires ResizeObserver-driven re-registration (v2 path).
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)
