@@ -5,34 +5,26 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #200 (MEH-129 CLAUDE.md execution principles) — MERGED to staging (SHA 50cc2b5)
+PR merged/opened: #202 (MEH-95/96 WhatsApp colour tokens) — MERGED to staging (SHA ccd8fc8)
+                 #200 (MEH-129 CLAUDE.md execution principles) — MERGED to staging (SHA 50cc2b5)
                  #136 (map legend collapsible) — MERGED to staging (SHA fa50ad0)
                  #159 (MEH-62 security deps) — MERGED to staging (SHA 894dc49)
                  #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
 Summary:
-  PR #199: MEH-99 smart search
-    - GET /search: cross-field ILIKE across producers (name+desc), products (name+desc),
-      cities (producer.city + delivery_areas.city), categories — grouped SearchOut response
-    - GET /search/trending: top 5 queries with results_count>0, 1hr in-memory cache
-    - HeroSearch component: 300ms debounce, AbortController, keyboard nav, ARIA combobox,
-      recent searches (localStorage mehamakor_recent_searches, max 5), trending fallback
-    - /producers?q= filter: ProducersClient searchQ state, "תוצאות עבור: X" heading,
-      active-filter chip, search empty state with category pills, highlightMatch utility
-    - highlightMatch.js: regex-safe, returns <mark> elements with bg-transparent font-bold
-    - search_queries analytics table (created by _migrate_columns in main.py)
-    - ILIKE wildcard escaping fixed in producers.py (%, _, \ escaped before pattern build)
-    - Adversarial review (pre-merge): 1 BLOCK fixed — missing @limiter.limit on
-      GET /search/trending; 3 advisory issues also fixed (unused exists import removed,
-      wildcard escaping, unused SmartSearch import in page.js)
-    - tests/test_search.py: 8 tests covering name/city/category/product, pending exclusion,
-      case-insensitive, exact-name-first, zero-result logging, X-Total-Count
-    - Build ✅, lint ✅
+  PR #202: MEH-95/96 WhatsApp colour tokens
+    - Added .btn-whatsapp, .btn-whatsapp-outline, .bg-whatsapp utilities to globals.css
+    - Replaced all 7 inline #25D366 occurrences (PrimaryContactButton, WhatsAppButton,
+      admin/outreach, register/producer, GroupBuyDetailClient, producer/dashboard,
+      MapProducerCard)
+    - grep -rn '25D366' frontend/ returns only globals.css ✅
+    - Adversarial review: no BLOCKs; one advisory (duplicate focus ring) — non-issue in context
+    - Build ✅, Vercel preview ✅
 
-  Previous: #198 (MEH-78 map bugs) — MERGED to staging
+  Previous: #199 (MEH-99 smart search) — MERGED to staging
 
 ## Current state
 Branch: staging
-Staging HEAD: 3833645 (MEH-99 smart search — squash merge of #199)
+Staging HEAD: ccd8fc8 (MEH-95/96 WhatsApp colour tokens — squash merge of #202)
 Main HEAD: e42127e (production release — staging ahead by multiple PRs)
 
 ## Next task
@@ -74,11 +66,12 @@ First step: decide which open PR to review/merge next — ask user.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
+- #202: MEH-95/96 WhatsApp colour tokens — MERGED to staging 2026-04-21
+- #200: MEH-129 CLAUDE.md execution principles — MERGED to staging 2026-04-21
 - #159: MEH-62 security deps — MERGED to staging 2026-04-21
 - #199: MEH-99 smart search — MERGED to staging 2026-04-21
 - #198: feature/meh-78-map-bugs — MEH-78 map bugs — MERGED to staging 2026-04-21
 - #184, #186: stale HANDOFF PRs — CLOSED 2026-04-21 (no merge needed)
-- #200: MEH-129 CLAUDE.md execution principles — MERGED to staging 2026-04-21
 - #136: map legend collapsible — MERGED to staging 2026-04-21
 - No other open PRs
 
