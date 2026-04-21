@@ -5,7 +5,7 @@
 
 ## Last session
 Date: 2026-04-21
-PRs merged: #210 (MEH-128 vibe coding responsibility)
+PRs merged: #210 (MEH-128 vibe coding responsibility) + #203 (MEH-126 Playwright E2E)
 Summary:
   PR #210: MEH-128 Vibe Coding Responsibility system
     - .claude/pre-edit-guard.js: PreToolUse hook warns on central component edits (exits 0)
@@ -13,15 +13,20 @@ Summary:
     - docs/CENTRAL_COMPONENTS.md: 4-step protocol + risk table by category
     - docs/EMERGENCY_OVERRIDE.md: valid skip scenarios + emergency-log.json format
     - .github/pull_request_template.md: Central Component Checklist section added
-    - CLAUDE.md: compact Vibe Coding Guardrails section (244 lines, within cap)
+    - CLAUDE.md: compact Vibe Coding Guardrails section + Resend locked decision
     - tests/test_api.py: monkeypatch lambda arity fixed for BackgroundTasks signatures
+  PR #203: MEH-126 Playwright E2E infrastructure
+    - .github/workflows/e2e.yml: CI workflow targeting Vercel preview URL
+    - 5 flow specs: home, search, producer detail, WhatsApp click, map navigation
+    - data-testid additions: HeroSearch, WhatsAppButton, MapComponent.__MAP_CENTER__
+    - docs/TESTING.md: E2E section added
   Human action completed: RESEND_API_KEY added to Railway (staging + production)
-  Housekeeping: PR #203 (MEH-126 E2E) + PR #204 (MEH-142 audit) closed — too far behind staging
+  Housekeeping: PR #204 (MEH-142 audit) closed — too far behind staging
   ROADMAP.md: 3 backlog items added (ProducerCard Phase C, Lightbox, Events homepage)
 
 ## Current state
 Branch: staging
-Staging HEAD: 11807b2 (HANDOFF post-PR #207 Resend migration)
+Staging HEAD: 60f7dec (MEH-126 Playwright E2E squash #203)
 Main HEAD: e42127e (production release — staging ahead)
 
 ## Next task
@@ -58,7 +63,7 @@ First step: ask user which to tackle next.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- None as of 2026-04-21
+- PR #204: MEH-142 edge cases audit (docs-only) — closed 2026-04-21, too far behind staging
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
