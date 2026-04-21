@@ -126,12 +126,17 @@ def register_producer(request: Request, data: ProducerRegister, background_tasks
     db.commit()
     db.refresh(user)
 
+    # Capture producer primitives NOW — expire_on_commit=True means ORM
+    # attributes are expired after commit, and FastAPI closes the session
+    # before background tasks run. Passing the ORM object directly would
+    # raise DetachedInstanceError when the background task accesses .name etc.
+    p_name = producer.name
+    p_city = producer.city
+    p_phone = producer.phone
+
     # All notifications run after the 200 is sent — never block the response.
-    # Previously these were synchronous calls; if SMTP/Twilio hung they caused
-    # the proxy (Vercel 30s) to time out, return 502, and orphan the created
-    # user+producer row (registration succeeded in DB but frontend saw failure).
-    background_tasks.add_task(_notify_admin_new_producer, producer)
-    background_tasks.add_task(_notify_producer_registered, producer)
+    background_tasks.add_task(_notify_admin_new_producer, p_name, p_city)
+    background_tasks.add_task(_notify_producer_registered, p_name, p_phone)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
     return Token(access_token=create_access_token(user.id))
@@ -385,16 +390,16 @@ def _verify_google_token(id_token: str) -> dict | None:
         return None
 
 
-def _notify_producer_registered(producer: Producer):
+def _notify_producer_registered(name: str, phone: str | None):
     """Send WhatsApp welcome + profile-completion link to the new producer."""
-    if not (producer.phone and settings.twilio_account_sid and settings.twilio_whatsapp_from):
+    if not (phone and settings.twilio_account_sid and settings.twilio_whatsapp_from):
         return
-    phone = producer.phone.replace("-", "").strip()
+    phone = phone.replace("-", "").strip()
     if not phone.startswith("+"):
         phone = "+972" + phone.lstrip("0")
     message = (
         f"ברוכה הבאה למהמקור! 🌿\n"
-        f"העסק '{producer.name}' נרשם בהצלחה.\n"
+        f"העסק '{name}' נרשם בהצלחה.\n"
         f"השלימי את הפרופיל כדי שלקוחות יוכלו למצוא אותך:\n"
         f"{settings.frontend_url}/producer/dashboard"
     )
@@ -410,10 +415,10 @@ def _notify_producer_registered(producer: Producer):
         logger.warning(f"[WHATSAPP] Producer welcome failed: {e}")
 
 
-def _notify_admin_new_producer(producer: Producer):
+def _notify_admin_new_producer(name: str, city: str | None):
     """Send WhatsApp + email notification to admin about new producer."""
     message = (
-        f"יצרן חדש: {producer.name} - {producer.city or 'לא צוין'}\n"
+        f"יצרן חדש: {name} - {city or 'לא צוין'}\n"
         f"לאישור: {settings.frontend_url}/admin"
     )
     # WhatsApp via Twilio

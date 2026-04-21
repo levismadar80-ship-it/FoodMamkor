@@ -220,7 +220,7 @@ function RegisterProducerPageBody() {
 
         {/* Step 2: Business basics */}
         {step === 2 && (
-          <fieldset disabled={loading} className="space-y-4">
+          <div className="space-y-4">
             <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
             <p className="text-sm text-site-muted">
               3 שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.
@@ -364,7 +364,7 @@ function RegisterProducerPageBody() {
                 )}
               </button>
             </div>
-          </fieldset>
+          </div>
         )}
 
         {/* Step 3: Confirmation */}
