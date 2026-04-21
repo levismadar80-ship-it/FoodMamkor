@@ -176,6 +176,30 @@ def _migrate_columns(engine):
         conn.execute(text(
             "CREATE INDEX IF NOT EXISTS idx_producers_name ON producers USING gin(to_tsvector('simple', name))"
         ))
+        # MEH-148: rename any existing producer whose slug collides with a reserved route.
+        from app.slug_utils import RESERVED_SLUGS
+        reserved_list = ", ".join(f"'{s}'" for s in RESERVED_SLUGS)
+        rows = conn.execute(text(
+            f"SELECT id, slug FROM producers WHERE slug IN ({reserved_list})"
+        )).fetchall()
+        for row in rows:
+            old_slug = row[1]
+            counter = 2
+            new_slug = f"{old_slug}-{counter}"
+            while True:
+                taken = conn.execute(
+                    text("SELECT 1 FROM producers WHERE slug = :s AND id != :id"),
+                    {"s": new_slug, "id": str(row[0])},
+                ).first()
+                if not taken:
+                    break
+                counter += 1
+                new_slug = f"{old_slug}-{counter}"
+            conn.execute(
+                text("UPDATE producers SET slug = :new WHERE id = :id"),
+                {"new": new_slug, "id": str(row[0])},
+            )
+            log.warning("[MEH-148] renamed reserved slug '%s' → '%s' for producer %s", old_slug, new_slug, row[0])
         conn.commit()
 
 
