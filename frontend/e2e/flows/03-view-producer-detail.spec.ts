@@ -13,8 +13,8 @@ test.describe("Producer detail", () => {
     await expect(firstCard).toBeVisible({ timeout: 15_000 });
 
     await firstCard.click();
-    // Detail pages live at /producer/:id or /p/:slug
-    await page.waitForURL(/\/producer\/|\/p\//, { timeout: 10_000 });
+    // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
+    await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 10_000 });
 
     await expect(page.locator("h1").first()).toBeVisible();
     // Either the unified PrimaryContactButton or a standalone WhatsApp button
