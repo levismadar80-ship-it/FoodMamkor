@@ -5,35 +5,30 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #202 (MEH-95/96 WhatsApp colour tokens) — MERGED to staging (SHA ccd8fc8)
-                 #200 (MEH-129 CLAUDE.md execution principles) — MERGED to staging (SHA 50cc2b5)
-                 #136 (map legend collapsible) — MERGED to staging (SHA fa50ad0)
-                 #159 (MEH-62 security deps) — MERGED to staging (SHA 894dc49)
-                 #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
+PR merged/opened: #201 (PR quality gate) — MERGED to staging (SHA f838500)
 Summary:
-  PR #202: MEH-95/96 WhatsApp colour tokens
-    - Added .btn-whatsapp, .btn-whatsapp-outline, .bg-whatsapp utilities to globals.css
-    - Replaced all 7 inline #25D366 occurrences (PrimaryContactButton, WhatsAppButton,
-      admin/outreach, register/producer, GroupBuyDetailClient, producer/dashboard,
-      MapProducerCard)
-    - grep -rn '25D366' frontend/ returns only globals.css ✅
-    - Adversarial review: no BLOCKs; one advisory (duplicate focus ring) — non-issue in context
-    - Build ✅, Vercel preview ✅
+  PR #201: 3-layer PR quality gate
+    - .github/pull_request_template.md: Type checkboxes, CI + manual checklists
+    - .github/workflows/pr-checks.yml: build (Next.js) + pytest + adversarial-review jobs
+    - tests/conftest.py: added _reset_rate_limiter autouse fixture — SlowAPIMiddleware checks
+      rate limits before Pydantic validation, so even 422-bound requests burn quota; the
+      12 POST /contact tests exhaust the 5/hour limit without the reset
+    - backend/app/auth.py: fixed get_current_user to reject blocked users with 403 — previously
+      blocked users could still use valid JWTs on all authenticated endpoints (only /auth/login
+      had the is_blocked check). Root cause found by running the full test suite locally.
+    - docs/DEPLOYMENT.md: documented exact CI check names for GitHub branch protection setup
+    - Build ✅, all 57 pytest tests pass ✅
 
-  Previous: #199 (MEH-99 smart search) — MERGED to staging
+  Previous: #202 (MEH-95/96 WhatsApp colour tokens) — MERGED to staging 2026-04-21
 
 ## Current state
 Branch: staging
-Staging HEAD: ccd8fc8 (MEH-95/96 WhatsApp colour tokens — squash merge of #202)
+Staging HEAD: f838500 (PR quality gate — squash merge of #201)
 Main HEAD: e42127e (production release — staging ahead by multiple PRs)
 
 ## Next task
-  Open PRs as of 2026-04-21 (run `gh pr list --state open` for current state):
-  - #136: map legend collapsible (feature branch)
-  - #159: security deps update
-  - #184, #186: stale handoff updates (may be closeable)
-
-  Deferred:
+  No open PRs. Ask user what to work on next.
+  Candidates from backlog:
   - Admin analytics: referral count per producer
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
@@ -66,14 +61,7 @@ First step: decide which open PR to review/merge next — ask user.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- #202: MEH-95/96 WhatsApp colour tokens — MERGED to staging 2026-04-21
-- #200: MEH-129 CLAUDE.md execution principles — MERGED to staging 2026-04-21
-- #159: MEH-62 security deps — MERGED to staging 2026-04-21
-- #199: MEH-99 smart search — MERGED to staging 2026-04-21
-- #198: feature/meh-78-map-bugs — MEH-78 map bugs — MERGED to staging 2026-04-21
-- #184, #186: stale HANDOFF PRs — CLOSED 2026-04-21 (no merge needed)
-- #136: map legend collapsible — MERGED to staging 2026-04-21
-- No other open PRs
+- No open PRs as of 2026-04-21
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
