@@ -241,7 +241,16 @@ function RegisterProducerPageBody() {
               dir="ltr"
             />
             {emailExistsWarning && (
-              <p className="text-amber-600 text-xs mt-1">{emailExistsWarning}</p>
+              <p className="text-amber-600 text-xs mt-1">
+                יש לך כבר חשבון במהמקור.{" "}
+                <a
+                  href={`/login?redirect=${encodeURIComponent("/register/producer")}`}
+                  className="underline font-medium hover:text-amber-700"
+                >
+                  התחברי ←
+                </a>
+                {" "}והוסיפי את העסק שלך
+              </p>
             )}
             <div>
               <input
