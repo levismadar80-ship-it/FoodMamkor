@@ -18,6 +18,12 @@ on:
   pull_request:
     branches: [staging, main]
 
+# patrickedqvist/wait-for-vercel-preview reads GitHub Deployments API.
+# deployments: read is not included in the default restricted token — grant it explicitly.
+permissions:
+  contents: read
+  deployments: read
+
 concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true

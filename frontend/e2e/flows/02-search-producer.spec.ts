@@ -7,6 +7,8 @@ test.describe("Search", () => {
     await expect(searchInput).toBeVisible();
 
     await searchInput.fill("חלב");
+    // Wait past the 300ms debounce so the dropdown doesn't intercept Enter
+    await page.waitForTimeout(350);
     await searchInput.press("Enter");
 
     // Should land on /producers (with or without query string)
