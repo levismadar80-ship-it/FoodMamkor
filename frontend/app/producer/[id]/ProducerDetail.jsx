@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple, Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
@@ -249,6 +249,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {producer.plan === "premium" && (
               <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">
                 פרמיום
+              </span>
+            )}
+            {(producer.favorites_count ?? 0) >= 5 && (
+              <span className="inline-flex items-center gap-1 text-[13px] text-site-muted">
+                <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
+                {producer.favorites_count} שמרו את העסק הזה
               </span>
             )}
             {/* MEH-12 — durable availability status */}
