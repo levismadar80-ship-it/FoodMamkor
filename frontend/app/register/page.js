@@ -78,8 +78,9 @@ export default function RegisterPage() {
       router.push("/");
     } catch (err) {
       setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });

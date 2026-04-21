@@ -47,8 +47,9 @@ export default function LoginPage() {
       router.push("/");
     } catch (err) {
       setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const googleConfigured =

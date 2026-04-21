@@ -119,9 +119,16 @@ function RegisterProducerPageBody() {
       localStorage.removeItem(DRAFT_KEY);
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.detail || "שגיאה בהרשמה");
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 409) {
+        setError("האימייל הזה כבר רשום. התחברי לחשבון שלך ותוכלי להוסיף עסק מהדשבורד.");
+      } else {
+        setError(detail || "שגיאת תקשורת — נסי שוב.");
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

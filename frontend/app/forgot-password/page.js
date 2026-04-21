@@ -17,9 +17,10 @@ export default function ForgotPasswordPage() {
       await api.post("/auth/forgot-password", { email });
     } catch {
       // Endpoint may not exist yet — fail-open, always show success
+    } finally {
+      setLoading(false);
     }
     setSubmitted(true);
-    setLoading(false);
   };
 
   return (
