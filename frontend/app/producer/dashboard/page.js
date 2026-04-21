@@ -147,8 +147,32 @@ export default function ProducerDashboardPage() {
       </p>
 
       {producer.status === "pending" && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm text-yellow-800">
-          🌿 פרופיל העסק שלך ממתין לאישור
+        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
+          <p className="font-semibold text-yellow-800 mb-1">🌿 הפרופיל שלך בסקירה</p>
+          <p className="text-yellow-700 mb-3">
+            הצוות שלנו בודק את הפרטים — לרוב לוקח עד 3 ימי עסקים. פרופילים מלאים מאושרים מהר יותר.
+          </p>
+          <Link
+            href="/settings"
+            className="inline-block bg-yellow-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-yellow-800 transition"
+          >
+            השלימי פרופיל ←
+          </Link>
+        </div>
+      )}
+
+      {producer.status === "rejected" && (
+        <div className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm" role="alert">
+          <p className="font-semibold text-red-800 mb-1">⚠️ הבקשה לא אושרה</p>
+          <p className="text-red-700 mb-3">
+            צרי קשר איתנו לפרטים נוספים ולבדיקה מחדש.
+          </p>
+          <Link
+            href="/contact"
+            className="inline-block bg-red-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-red-800 transition"
+          >
+            צרי קשר ←
+          </Link>
         </div>
       )}
 
