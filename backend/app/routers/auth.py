@@ -249,7 +249,7 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-@limiter.limit("60/minute")
+@limiter.limit("120/minute")
 def get_me(request: Request, user: User = Depends(get_current_user)):
     return user
 
