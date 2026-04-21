@@ -268,6 +268,8 @@ export default function MapComponent({
       [31.7683, 35.2137],
       8,
     );
+    // Expose initial center for E2E tests (05-map-navigation.spec.ts)
+    if (typeof window !== "undefined") window.__MAP_CENTER__ = [31.7683, 35.2137];
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);

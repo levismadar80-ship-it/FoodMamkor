@@ -243,6 +243,7 @@ export default function HomePage() {
           setVisibleCount(PAGE_SIZE);
         }
       })
+      .catch(() => {})
       .finally(() => setProducersLoading(false));
   };
 

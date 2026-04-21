@@ -3,6 +3,71 @@
 
 ---
 
+## Playwright E2E (MEH-126) — תשתית אוטומטית
+
+### הרצה מקומית
+
+```bash
+cd frontend
+
+# Against local dev server (start it first):
+npm run dev          # terminal 1 — http://localhost:3000
+npm run test:e2e     # terminal 2
+
+# Against any deployed URL:
+TEST_URL=https://staging.mehamakor.online npm run test:e2e
+
+# View HTML report (generated only in CI or on failure):
+npm run test:e2e:report
+```
+
+### מבנה קבצים
+
+```
+frontend/e2e/
+  flows/                        ← 5 critical-path flows (MEH-126)
+    01-home-load.spec.ts          homepage h1 + hero-search + zero JS errors
+    02-search-producer.spec.ts    hero search → /producers?q=
+    03-view-producer-detail.spec.ts  click card → detail h1 + CTA
+    04-whatsapp-click.spec.ts     WA CTA click → analytics beacon fires
+    05-map-navigation.spec.ts     /map loads + centered on Israel
+  rtl.spec.ts                   ← RTL layout regression (existing)
+  screenshots.spec.ts           ← Visual smoke + issue reporter (existing)
+```
+
+### CI — GitHub Actions (e2e.yml)
+
+Triggers on every PR targeting `staging` or `main`. Tests run against the **Vercel preview URL** for that PR — not shared staging. Flow:
+
+1. Wait for Vercel deployment to complete (up to 5 min via `patrickedqvist/wait-for-vercel-preview`)
+2. Set `TEST_URL` to the preview URL
+3. Run `playwright test` (Chromium, desktop + mobile)
+4. Upload `playwright-report/` artifact on failure
+
+No extra secrets needed — only the auto-provided `GITHUB_TOKEN`.
+
+### Adding a new test
+
+1. Create `frontend/e2e/flows/NN-my-feature.spec.ts`
+2. Use `data-testid` attributes, not CSS classes (they survive refactors)
+3. Keep each test under 30 seconds
+4. Use `page.route(...)` to block external navigations (WhatsApp, OAuth, etc.)
+5. If the test needs a logged-in user, use Playwright `storageState` fixture (v2 path)
+
+### data-testid inventory (E2E-relevant)
+
+| testid | component | notes |
+|--------|-----------|-------|
+| `hero-search` | HeroSearch.jsx | search input |
+| `producer-card` | ProducerCard.jsx | card link |
+| `primary-contact-button` | PrimaryContactButton.jsx | has `data-method` attr |
+| `whatsapp-cta` | WhatsAppButton.jsx | standalone WA button |
+| `hero-search-dropdown` | HeroSearch.jsx | combobox listbox |
+| `availability-badge` | AvailabilityBadge.jsx | |
+| `smart-search-dropdown` | SmartSearch.jsx | |
+
+---
+
 ## לפני הכל — התקן כלי בדיקות
 
 ```bash

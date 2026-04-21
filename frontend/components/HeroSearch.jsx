@@ -212,6 +212,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       <input
         ref={inputRef}
         id="hero-search-input"
+        data-testid="hero-search"
         type="text"
         value={value}
         onChange={(e) => {
