@@ -588,7 +588,8 @@ export default function MapPage() {
       )}
 
       {/* Collapsible category legend — desktop only; mobile sees emoji on markers */}
-      <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[1000]">
+      {/* rtl-ok: map overlay, physical left = map-canvas start */}
+      <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[800]">
         {legendOpen && (
           <div className="mb-2 bg-white border border-border rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] p-2 min-w-[180px]" role="group" aria-label="קטגוריות">
             <div className="space-y-0.5">
