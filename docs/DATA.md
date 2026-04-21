@@ -41,6 +41,7 @@
 | 19 | `contact_messages` | /about contact form submissions | `ContactMessage` |
 | 20 | `admin_settings` | Key-value admin config | `AdminSetting` |
 | 21 | `static_pages` | Editable slug-based content (about, terms) | `StaticPage` |
+| 22 | `search_queries` | Analytics log of every smart-search query (MEH-99) | _(raw SQL, no ORM model)_ |
 
 Auto-created on boot via `Base.metadata.create_all(engine)` +
 `_migrate_columns()` in `backend/app/main.py`. The initial seed DDL
@@ -262,6 +263,19 @@ producer_whatsapp_clicks (
 -- authenticated request, throttled to at most 1 write per 5 minutes
 -- per user. Feeds /admin/dashboard daily_active_users chart.
 users.last_active_at timestamp NULL
+```
+
+### Search analytics (MEH-99)
+
+```sql
+-- One row per /search call. results_count=0 rows surface in trending suppression.
+-- Table created by _migrate_columns() in main.py; no ORM model.
+search_queries (
+  id uuid PK DEFAULT gen_random_uuid(),
+  query text NOT NULL,
+  results_count integer NOT NULL DEFAULT 0,
+  searched_at timestamp NOT NULL DEFAULT NOW()
+)
 ```
 
 ### Marketing + admin + content
@@ -524,6 +538,16 @@ POST /contact                    public — { name, email, message } → contact
                                  or raises, the submission is still persisted.
                                  rate-limited 5/hour per IP
 GET  /cities                     public — deduped producer+listing city list
+```
+
+### Search (`app/routers/search.py` — MEH-99)
+
+```
+GET  /search            public — q (max 100 chars), limit (1–20, default 8)
+                                 returns { producers, products, cities, categories }
+                                 rate-limited 60/minute per IP
+GET  /search/trending   public — top 5 queries with results_count>0, cached 1hr
+                                 rate-limited 30/minute per IP
 ```
 
 ### Chat widget (`app/routers/chat.py`)

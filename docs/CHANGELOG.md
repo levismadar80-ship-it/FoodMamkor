@@ -12,6 +12,12 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-21 — MEH-99: smart search — cross-field /producers?q=, HeroSearch, recent/trending dropdown, highlightMatch, search_queries analytics, ILIKE wildcard escaping fix (#199)
+
+## 2026-04-21 — MEH-78: map bugs — dual-map registration fix, desaturated marker fix, NaN flyTo guard (#198)
+
+---
+
 ## Topical index — April 2026 sessions
 
 All 34 entries below were committed on **2026-04-08** during the intense
