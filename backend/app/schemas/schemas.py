@@ -756,3 +756,28 @@ class GroupBuyCreate(BaseModel):
 class GroupBuyCommitRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
     phone: str | None = Field(None, max_length=30)
+
+
+# MEH-141: category request flow
+class CategoryRequestCreate(BaseModel):
+    requested_name: str = Field(..., min_length=1, max_length=100)
+    examples: str | None = Field(None, max_length=300)
+    producer_id: UUID | None = None
+
+
+class CategoryRequestOut(BaseModel):
+    id: UUID
+    requested_name: str
+    examples: str | None = None
+    producer_id: UUID | None = None
+    status: str
+    admin_notes: str | None = None
+    created_at: datetime
+    reviewed_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class CategoryRequestUpdate(BaseModel):
+    status: str = Field(..., pattern="^(pending|approved|rejected|merged)$")
+    admin_notes: str | None = None

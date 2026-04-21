@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
+import CategoryRequestModal from "@/components/CategoryRequestModal";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
@@ -50,6 +51,7 @@ function RegisterProducerPageBody() {
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [emailExistsWarning, setEmailExistsWarning] = useState("");
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -344,6 +346,13 @@ function RegisterProducerPageBody() {
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowCategoryModal(true)}
+                className="mt-2 text-sm text-primary/70 underline hover:text-primary transition"
+              >
+                לא רואה את הקטגוריה שלך? ספרי לנו ←
+              </button>
             </div>
 
             {/* Dietary labels */}
@@ -439,6 +448,12 @@ function RegisterProducerPageBody() {
             </div>
           </div>
         )}
+
+      <CategoryRequestModal
+        open={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        producerId={null}
+      />
 
         {/* Step 3: Confirmation */}
         {step === 3 && (

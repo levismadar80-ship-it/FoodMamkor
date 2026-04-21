@@ -756,3 +756,25 @@ class KashrutBadgeRequest(Base):
 
     producer = relationship("Producer", backref="kashrut_requests")
     reviewer = relationship("User", backref="kashrut_reviews")
+
+
+class CategoryRequest(Base):
+    """MEH-141: producer signals a missing category during registration."""
+
+    __tablename__ = "category_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    requested_name = Column(String(100), nullable=False)
+    examples = Column(Text, nullable=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    admin_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
+
+    producer = relationship("Producer", backref="category_requests")
