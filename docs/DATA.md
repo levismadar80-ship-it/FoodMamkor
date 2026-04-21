@@ -564,7 +564,7 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 
 ---
 
-## Notifications (Twilio + SMTP)
+## Notifications (Twilio + Resend)
 
 | Trigger | Channel | Target | File |
 |---|---|---|---|
@@ -579,9 +579,12 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 | Contact form | Email | Admin | `marketing.py` |
 | 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
 
-All SMTP + Twilio sends are **best-effort** — missing env vars or send
+All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
 break the underlying flow.
+
+Email is sent via `app/services/email.py` → Resend HTTP API (HTTPS/443).
+Railway blocks SMTP ports (25/465/587); `smtplib` was removed in full.
 
 ---
 
@@ -598,7 +601,7 @@ Integrations:
 - `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`
 - `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`
 - `TWILIO_ACCOUNT_SID` / `_AUTH_TOKEN` / `_WHATSAPP_FROM` / `ADMIN_WHATSAPP_TO`
-- `SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `ADMIN_EMAIL`
+- `RESEND_API_KEY` — Resend.com API key; `ADMIN_EMAIL` — notification recipient; `CONTACT_EMAIL` — public contact form recipient (falls back to `ADMIN_EMAIL`)
 - `ANTHROPIC_MODEL` (defaults to `claude-opus-4-6`)
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.

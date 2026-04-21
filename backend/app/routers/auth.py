@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.config import settings
+from app.services.email import send_email
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
@@ -253,13 +254,6 @@ def delete_account(request: Request, user: User = Depends(get_current_user), db:
 
 
 def _send_welcome_email(email: str, name: str, role: str = "consumer"):
-    """LAUNCH_CHECKLIST week 3 — send welcome email after registration.
-    Fire-and-forget: SMTP failures never block the registration response.
-    """
-    if not settings.smtp_user:
-        logger.debug(f"[EMAIL] Would send welcome email to {email} (role={role})")
-        return
-
     consumer_body = (
         f"שלום {name},\n\n"
         f"ברוכה הבאה למהמקור! 🌿\n\n"
@@ -272,7 +266,6 @@ def _send_welcome_email(email: str, name: str, role: str = "consumer"):
         f"אם יש שאלות — פשוט תגיבי למייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-
     producer_body = (
         f"שלום {name},\n\n"
         f"ברוכה הבאה למהמקור! 🌿\n\n"
@@ -283,58 +276,19 @@ def _send_welcome_email(email: str, name: str, role: str = "consumer"):
         f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-
     body = producer_body if role == "producer" else consumer_body
-    subject = "ברוכה הבאה למהמקור 🌿"
-
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = settings.smtp_user
-        msg["To"] = email
-
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
-        # Log only the email prefix per security policy (never full address in logs)
-        logger.info(f"[EMAIL] Welcome email sent to {email.split('@')[0]}***")
-    except Exception as e:
-        # Never block registration on email failure
-        logger.warning(f"[EMAIL] Welcome email failed: {e}")
+    send_email(email, "ברוכה הבאה למהמקור 🌿", body)
 
 
 def _send_deletion_email(email: str, name: str):
-    """Send account deletion confirmation email."""
-    if not settings.smtp_user:
-        logger.debug(f"[EMAIL] Would send deletion confirmation to {email}")
-        return
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-
-        body = (
-            f"שלום {name},\n\n"
-            f"החשבון שלך במהמקור נמחק בהצלחה.\n"
-            f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
-            f"אם לא ביקשת למחוק את החשבון, צור איתנו קשר מיידית.\n\n"
-            f"בברכה,\nצוות מהמקור"
-        )
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = "מהמקור - החשבון שלך נמחק"
-        msg["From"] = settings.smtp_user
-        msg["To"] = email
-
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
-        logger.info(f"[EMAIL] Deletion confirmation sent to {email}")
-    except Exception as e:
-        logger.warning(f"[EMAIL] Failed to send deletion confirmation: {e}")
+    body = (
+        f"שלום {name},\n\n"
+        f"החשבון שלך במהמקור נמחק בהצלחה.\n"
+        f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
+        f"אם לא ביקשת למחוק את החשבון, צור איתנו קשר מיידית.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    send_email(email, "מהמקור - החשבון שלך נמחק", body)
 
 
 def _verify_apple_token(id_token: str) -> dict | None:
@@ -438,22 +392,5 @@ def _notify_admin_new_producer(name: str, city: str | None):
         logger.debug(f"[WHATSAPP] Would send: {message}")
 
     # Email
-    if settings.smtp_user and settings.admin_email:
-        try:
-            import smtplib
-            from email.mime.text import MIMEText
-
-            msg = MIMEText(message, "plain", "utf-8")
-            msg["Subject"] = f"מהמקור - יצרן חדש: {producer.name}"
-            msg["From"] = settings.smtp_user
-            msg["To"] = settings.admin_email
-
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-                server.send_message(msg)
-            logger.info(f"[EMAIL] Notification sent to admin")
-        except Exception as e:
-            logger.warning(f"[EMAIL] Failed: {e}")
-    else:
-        logger.debug(f"[EMAIL] Would send notification about {producer.name}")
+    if settings.admin_email:
+        send_email(settings.admin_email, f"מהמקור - יצרן חדש: {name}", message)

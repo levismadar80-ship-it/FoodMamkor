@@ -100,10 +100,9 @@ class TestAuth:
         assert "התחברי לחשבון שלך" in resp.json()["detail"]
 
     def test_register_producer_email_failure_still_succeeds(self, client, db):
-        """SMTP failure must never block the 200 response (fire-and-forget)."""
+        """Email delivery failure must never block the 200 response (fire-and-forget)."""
         from unittest.mock import patch
-        import smtplib
-        with patch("smtplib.SMTP", side_effect=smtplib.SMTPException("SMTP down")):
+        with patch("app.routers.auth.send_email", side_effect=Exception("Resend down")):
             resp = client.post("/auth/register/producer", json={
                 **self.VALID_PRODUCER_REG,
                 "email": "producer2@test.com",
@@ -553,116 +552,58 @@ class TestContact:
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
 
-    # ----- Email delivery (SMTP) -----
+    # ----- Email delivery (Resend) -----
 
     def test_submit_contact_sends_email_to_contact_email(
         self, client, db, monkeypatch
     ):
-        """When CONTACT_EMAIL + SMTP are configured, an email is sent to
-        CONTACT_EMAIL with name/email/message in the body."""
+        """When CONTACT_EMAIL is set, email routes to it with correct body."""
         from app import config
-        from app.routers import marketing
+        from unittest.mock import patch
 
-        monkeypatch.setattr(config.settings, "smtp_user", "bot@example.com")
-        monkeypatch.setattr(config.settings, "smtp_password", "secret")
+        monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
         monkeypatch.setattr(
             config.settings, "contact_email", "contactmehamakor.online@gmail.com"
         )
 
-        sent = {}
+        with patch("app.services.email.send_email") as mock_send:
+            resp = client.post("/contact", json=self.VALID_PAYLOAD)
 
-        class FakeSMTP:
-            def __init__(self, host, port):
-                sent["host"] = host
-                sent["port"] = port
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args):
-                return False
-
-            def starttls(self):
-                pass
-
-            def login(self, user, password):
-                sent["login"] = (user, password)
-
-            def send_message(self, msg):
-                sent["to"] = msg["To"]
-                sent["from"] = msg["From"]
-                sent["subject"] = msg["Subject"]
-                sent["body"] = msg.get_payload(decode=True).decode("utf-8")
-
-        import smtplib
-        monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
-        # Also patch the late-imported name inside the router module, if any.
-        monkeypatch.setattr(marketing, "smtplib", smtplib, raising=False)
-
-        resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
-
-        assert sent.get("to") == "contactmehamakor.online@gmail.com"
-        assert sent.get("from") == "bot@example.com"
-        assert "רות כהן" in sent.get("body", "")
-        assert "ruth@example.com" in sent.get("body", "")
-        assert "להוסיף יצרן חדש" in sent.get("body", "")
-        # And DB row still created
+        mock_send.assert_called_once()
+        to, subject, body = mock_send.call_args[0]
+        assert to == "contactmehamakor.online@gmail.com"
+        assert "רות כהן" in body
+        assert "ruth@example.com" in body
+        assert "להוסיף יצרן חדש" in body
         assert db.query(ContactMessage).count() == 1
 
     def test_submit_contact_falls_back_to_admin_email(
         self, client, db, monkeypatch
     ):
-        """If CONTACT_EMAIL is empty but ADMIN_EMAIL is set, the email
-        is routed to ADMIN_EMAIL (backwards-compat with pre-existing
-        SMTP config)."""
+        """If CONTACT_EMAIL is empty but ADMIN_EMAIL is set, email routes to ADMIN_EMAIL."""
         from app import config
+        from unittest.mock import patch
 
-        monkeypatch.setattr(config.settings, "smtp_user", "bot@example.com")
-        monkeypatch.setattr(config.settings, "smtp_password", "secret")
+        monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
         monkeypatch.setattr(config.settings, "contact_email", "")
-        monkeypatch.setattr(
-            config.settings, "admin_email", "levismadar80@gmail.com"
-        )
+        monkeypatch.setattr(config.settings, "admin_email", "levismadar80@gmail.com")
 
-        sent = {}
+        with patch("app.services.email.send_email") as mock_send:
+            resp = client.post("/contact", json=self.VALID_PAYLOAD)
 
-        class FakeSMTP:
-            def __init__(self, host, port):
-                pass
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args):
-                return False
-
-            def starttls(self):
-                pass
-
-            def login(self, *a, **k):
-                pass
-
-            def send_message(self, msg):
-                sent["to"] = msg["To"]
-
-        import smtplib
-        monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
-
-        resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
-        assert sent.get("to") == "levismadar80@gmail.com"
+        to, *_ = mock_send.call_args[0]
+        assert to == "levismadar80@gmail.com"
 
     # ----- Fail-open -----
 
-    def test_submit_contact_fail_open_when_smtp_missing(
+    def test_submit_contact_fail_open_when_no_recipient(
         self, client, db, monkeypatch
     ):
-        """SMTP unconfigured → 200, DB row still saved, no crash."""
+        """No recipient configured → 200, DB row still saved, no crash."""
         from app import config
 
-        monkeypatch.setattr(config.settings, "smtp_user", "")
-        monkeypatch.setattr(config.settings, "smtp_password", "")
         monkeypatch.setattr(config.settings, "contact_email", "")
         monkeypatch.setattr(config.settings, "admin_email", "")
 
@@ -670,33 +611,21 @@ class TestContact:
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
 
-    def test_submit_contact_fail_open_on_smtp_exception(
+    def test_submit_contact_fail_open_on_send_error(
         self, client, db, monkeypatch
     ):
-        """SMTP raises → 200, DB row still saved, no crash (AI-fail-open
-        ethos extended to SMTP per CLAUDE.md key locked decisions)."""
+        """Resend API raises → 200, DB row still saved (fail-open inside send_email)."""
         from app import config
+        from unittest.mock import patch
 
-        monkeypatch.setattr(config.settings, "smtp_user", "bot@example.com")
-        monkeypatch.setattr(config.settings, "smtp_password", "secret")
+        monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
         monkeypatch.setattr(
             config.settings, "contact_email", "contactmehamakor.online@gmail.com"
         )
 
-        class ExplodingSMTP:
-            def __init__(self, *a, **k):
-                raise OSError("SMTP server unreachable")
+        with patch("resend.Emails.send", side_effect=Exception("network error")):
+            resp = client.post("/contact", json=self.VALID_PAYLOAD)
 
-            def __enter__(self):
-                raise OSError("SMTP server unreachable")
-
-            def __exit__(self, *a):
-                return False
-
-        import smtplib
-        monkeypatch.setattr(smtplib, "SMTP", ExplodingSMTP)
-
-        resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
 
