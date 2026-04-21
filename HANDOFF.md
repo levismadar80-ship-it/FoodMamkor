@@ -5,7 +5,8 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #159 (MEH-62 security deps) — MERGED to staging (SHA 894dc49)
+PR merged/opened: #136 (map legend collapsible) — MERGED to staging (SHA fa50ad0)
+                 #159 (MEH-62 security deps) — MERGED to staging (SHA 894dc49)
                  #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
 Summary:
   PR #199: MEH-99 smart search
@@ -76,7 +77,8 @@ First step: decide which open PR to review/merge next — ask user.
 - #199: MEH-99 smart search — MERGED to staging 2026-04-21
 - #198: feature/meh-78-map-bugs — MEH-78 map bugs — MERGED to staging 2026-04-21
 - #184, #186: stale HANDOFF PRs — CLOSED 2026-04-21 (no merge needed)
-- Remaining open: #136 (map legend collapsible)
+- #136: map legend collapsible — MERGED to staging 2026-04-21
+- No open PRs remaining
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
