@@ -69,7 +69,7 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
       rel="noopener noreferrer"
       onClick={handleClick}
       aria-disabled={pending || undefined}
-      className={`inline-flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-[12px] hover:bg-[#1ea855] transition text-sm w-full justify-center font-medium focus-visible:ring-2 focus-visible:ring-[#25D366]/40 ${
+      className={`btn-whatsapp inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm w-full justify-center font-medium ${
         pending ? "opacity-70 pointer-events-none" : ""
       }`}
     >
