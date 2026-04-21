@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Crosshair, X } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
+import { useFocusReturn } from "@/lib/use-focus-return";
 
 const POPULAR_CITIES = ["תל אביב", "ירושלים", "חיפה", "באר שבע"];
 
@@ -10,6 +11,8 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   const [searchValue, setSearchValue] = useState("");
   const [geoLoading, setGeoLoading] = useState(false);
   const overlayRef = useRef(null);
+
+  useFocusReturn(open);
 
   useEffect(() => {
     if (!open) return;
