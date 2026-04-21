@@ -239,3 +239,6 @@ graph LR
   Prod["👤 require_producer"] --> R8["/producers/me/{dashboard, analytics, availability}"]
   Adm["🛡️ require_admin"] --> R9["/admin/dashboard, /producers, /experiences"]
 ```
+
+## Vibe Coding Guardrails (MEH-128)
+`.claude/pre-edit-guard.js` (PreToolUse hook) warns (non-blocking) on edits to central components. Before shipping: follow the 4-step protocol in [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md). Emergency skips must be logged per [docs/EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md).
