@@ -50,6 +50,9 @@ export default function ProducersClient({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialPage < totalPages);
   const [nextPage, setNextPage] = useState(initialPage + 1);
+
+  // MEH-159: live total so the counter stays accurate after admin deletes.
+  const [liveTotal, setLiveTotal] = useState(initialTotal);
   const sentinelRef = useRef(null);
 
   const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
@@ -104,6 +107,9 @@ export default function ProducersClient({
       .then((r) => {
         const items = Array.isArray(r.data) ? r.data : [];
         setAppendItems((prev) => [...prev, ...items]);
+        // MEH-159: sync total from fresh header on every page load.
+        const freshTotal = Number(r.headers["x-total-count"]);
+        if (!Number.isNaN(freshTotal) && freshTotal > 0) setLiveTotal(freshTotal);
         if (items.length < PAGE_SIZE) setHasMore(false);
         else setNextPage((p) => p + 1);
       })
@@ -129,6 +135,20 @@ export default function ProducersClient({
     mountFetched.current = true;
     const anyActive = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
     if (anyActive) fetchFiltered(chips, cityFilter, searchQ);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-159: revalidate total on tab focus so the counter stays fresh if
+  // producers were deleted while the user had the tab in the background.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      api.get("/producers/count").then((r) => {
+        const n = Number(r.data?.count);
+        if (!Number.isNaN(n) && n >= 0) setLiveTotal(n);
+      }).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleChip = (key) => {
@@ -178,17 +198,19 @@ export default function ProducersClient({
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
-    !hasActiveChips && initialItems.length === 0 && initialTotal > 0;
-  const showCatalogEmpty = !hasActiveChips && initialTotal === 0;
+    !hasActiveChips && initialItems.length === 0 && liveTotal > 0;
+  const showCatalogEmpty = !hasActiveChips && liveTotal === 0;
   const showGrid = !loading && !showFilterEmpty && !showPageOverflow && !showCatalogEmpty;
 
   const counterText = (() => {
     if (!showGrid) return null;
     if (hasActiveChips) return `נמצאו ${filteredItems?.length ?? 0} בתי עסק`;
     const loaded = initialItems.length + appendItems.length;
-    return loaded >= initialTotal
-      ? `כל ${initialTotal} בתי העסק`
-      : `מציגות ${loaded} מתוך ${initialTotal} בתי עסק`;
+    // MEH-159: use liveTotal (refreshed on scroll + tab focus) so the counter
+    // stays correct after admin deletes producers mid-session.
+    return loaded >= liveTotal
+      ? `כל ${liveTotal} בתי העסק`
+      : `מציגות ${loaded} מתוך ${liveTotal} בתי עסק`;
   })();
 
   return (
@@ -327,7 +349,7 @@ export default function ProducersClient({
               )}
               {!hasMore && appendItems.length > 0 && (
                 <p className="text-center text-site-muted text-sm py-8">
-                  הצגנו את כל {initialTotal} בתי העסק 🌿
+                  הצגנו את כל {liveTotal} בתי העסק 🌿
                 </p>
               )}
               {/* SEO fallback — shown when JS pagination is still the only option

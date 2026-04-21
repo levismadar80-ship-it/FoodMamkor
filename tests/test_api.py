@@ -1211,3 +1211,26 @@ class TestMojibakeDetection:
         result = import_rows(db, rows, dry_run=True)
         assert result.get("batch_rejected") is None
         assert result["imported"] == 1
+
+
+class TestProducersCount:
+    """MEH-159 — GET /producers/count returns fresh total for pagination."""
+
+    def test_count_endpoint_returns_json(self, client, db):
+        resp = client.get("/producers/count")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "count" in body
+        assert isinstance(body["count"], int)
+
+    def test_count_reflects_approved_producers(self, client, db):
+        before = client.get("/producers/count").json()["count"]
+        p = make_producer(db, status="approved")
+        after = client.get("/producers/count").json()["count"]
+        assert after == before + 1
+
+    def test_pending_producer_excluded_from_count(self, client, db):
+        before = client.get("/producers/count").json()["count"]
+        make_producer(db, status="pending")
+        after = client.get("/producers/count").json()["count"]
+        assert after == before  # pending not counted
