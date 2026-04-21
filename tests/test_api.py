@@ -381,8 +381,8 @@ class TestMeh56WhatsAppOnboarding:
     def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
         # Stub out Twilio and email so no network calls
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "_notify_admin_new_producer", lambda p: None)
-        monkeypatch.setattr(auth_mod, "_notify_producer_registered", lambda p: None)
+        monkeypatch.setattr(auth_mod, "_notify_admin_new_producer", lambda name, city: None)
+        monkeypatch.setattr(auth_mod, "_notify_producer_registered", lambda name, phone: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
         resp = client.post("/auth/register/producer", json={
