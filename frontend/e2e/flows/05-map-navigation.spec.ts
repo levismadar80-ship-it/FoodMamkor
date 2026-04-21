@@ -2,6 +2,10 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Map", () => {
   test("map page loads and centers on Israel", async ({ page }) => {
+    // Leaflet is ssr:false — chunk download + React mount takes up to ~30s on
+    // cold Vercel preview. Override the global 30s test timeout so the
+    // waitForSelector below has room to breathe.
+    test.setTimeout(60_000);
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
     // MapComponent is ssr:false — dynamic import must complete before Leaflet
