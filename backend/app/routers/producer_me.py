@@ -172,6 +172,7 @@ AVAILABILITY_STATUSES = {"available", "full", "vacation"}
 
 class AvailabilityStatusUpdate(BaseModel):
     status: str = Field(..., description="available | full | vacation")
+    vacation_until: date | None = Field(None, description="Optional return date (vacation only)")
 
 
 @router.post("/availability-status")
@@ -189,9 +190,13 @@ def set_availability_status(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.availability_status = data.status
+    producer.vacation_until = data.vacation_until if data.status == "vacation" else None
     producer.last_active_at = datetime.utcnow()
     db.commit()
-    return {"availability_status": producer.availability_status}
+    return {
+        "availability_status": producer.availability_status,
+        "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
+    }
 
 
 @router.get("/dashboard")
@@ -233,6 +238,7 @@ def dashboard(
             "is_available_today": bool(producer.is_available_today),
             # MEH-12 — dashboard toggle reads this to highlight the active pill
             "availability_status": producer.availability_status or "available",
+            "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
             "status": producer.status,
             "plan": producer.plan,
         },

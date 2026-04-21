@@ -118,6 +118,8 @@ def _migrate_columns(engine):
         ("users", "is_producer", "BOOLEAN DEFAULT FALSE"),
         # MEH-138 — profile photo upload + Google OAuth sync.
         ("users", "avatar_url", "VARCHAR"),
+        # MEH-155 — vacation end date for automatic badge clearance.
+        ("producers", "vacation_until", "DATE"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.
@@ -200,6 +202,17 @@ def _migrate_columns(engine):
                 {"new": new_slug, "id": str(row[0])},
             )
             log.warning("[MEH-148] renamed reserved slug '%s' → '%s' for producer %s", old_slug, new_slug, row[0])
+        # MEH-155: clear vacation status for producers whose vacation_until has passed.
+        result = conn.execute(text(
+            "UPDATE producers SET availability_status = 'available', vacation_until = NULL"
+            " WHERE availability_status = 'vacation'"
+            "   AND vacation_until IS NOT NULL"
+            "   AND vacation_until < CURRENT_DATE"
+            " RETURNING id"
+        ))
+        cleared = result.rowcount
+        if cleared:
+            log.info("[MEH-155] cleared expired vacation status for %d producer(s)", cleared)
         conn.commit()
 
 
