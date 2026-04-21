@@ -46,6 +46,19 @@ def _bootstrap_schema():
 
 
 @pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Reset slowapi in-memory counters before each test.
+
+    SlowAPIMiddleware checks limits before Pydantic validation, so every
+    request (including future 422s) burns from the quota. Without this
+    reset, the 12 POST /contact tests exhaust the 5/hour limit by test 6.
+    """
+    from app.rate_limit import limiter
+    limiter._storage.reset()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _clean_tables():
     """Truncate all tables between tests for isolation."""
     with engine.connect() as conn:
