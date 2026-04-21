@@ -198,6 +198,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
     google_id = user_info["sub"]
     email = user_info.get("email", "")
     name = user_info.get("name", "")
+    picture = user_info.get("picture") or None
 
     # Check if user exists by google_id or email
     user = db.query(User).filter(User.google_id == google_id).first()
@@ -221,10 +222,17 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
                 google_id=google_id,
                 role="consumer",
                 referral_code=_gen_referral_code(),
+                avatar_url=picture,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
+
+    # MEH-138: fill avatar_url from Google picture if not already set
+    # (don't overwrite a manually-uploaded photo).
+    if picture and not user.avatar_url:
+        user.avatar_url = picture
+        db.commit()
 
     return Token(access_token=create_access_token(user.id))
 
