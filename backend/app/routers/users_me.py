@@ -21,6 +21,7 @@ class ProfileUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted."""
     name: str | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
+    avatar_url: str | None = None
 
 
 class PasswordChange(BaseModel):
@@ -46,6 +47,9 @@ def update_profile(
         if not trimmed:
             raise HTTPException(status_code=422, detail="שם לא יכול להיות ריק")
         user.name = trimmed
+
+    if data.avatar_url is not None:
+        user.avatar_url = data.avatar_url
 
     if data.email is not None:
         new_email = data.email.lower()
