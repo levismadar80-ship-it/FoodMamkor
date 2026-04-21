@@ -242,6 +242,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         onClick={() => submitRaw()}
         className="shrink-0 text-primary hover:text-primary-dark transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="חיפוש"
+        data-testid="hero-search-submit"
       >
         <MagnifyingGlass size={22} weight="bold" aria-hidden="true" />
       </button>
