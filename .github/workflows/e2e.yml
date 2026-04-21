@@ -1,0 +1,70 @@
+name: E2E Tests
+
+# Runs Playwright against the Vercel preview URL for every PR targeting
+# staging or main. Tests hit the PR's own deployed preview — not the
+# shared staging environment — so a broken PR shows red, not green.
+#
+# Flow:
+#   1. Wait for Vercel to finish deploying the PR preview (up to 5min)
+#   2. Extract the preview URL from GitHub Deployments API
+#   3. Run Playwright with TEST_URL pointing at that URL
+#   4. Upload HTML report as artifact on failure
+#
+# Required secrets: none beyond the auto-provided GITHUB_TOKEN.
+# Vercel connects via its GitHub integration; we read the deployment
+# status through the standard GitHub Deployments API.
+
+on:
+  pull_request:
+    branches: [staging, main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright E2E (Vercel preview)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install Playwright (Chromium only)
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Wait for Vercel preview deployment
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
+        id: preview
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max_timeout: 300
+          check_interval: 15
+
+      - name: Run E2E tests
+        run: npx playwright test
+        working-directory: frontend
+        env:
+          TEST_URL: ${{ steps.preview.outputs.url }}
+          CI: "true"
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
