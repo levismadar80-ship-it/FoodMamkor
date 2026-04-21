@@ -5,27 +5,24 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #209 (MEH-208 test triple-fix) — MERGED to staging (squash 5ca25d5)
-Also open: PR #207 (Resend email migration, feature/meh-XXX-resend-email) — DRAFT
+PRs merged: #209 (MEH-208 test triple-fix) + #207 (SMTP → Resend migration)
 Summary:
-  PR #209: fix(MEH-208) — 3 test bugs hidden by pytest -x stop-at-first-failure
-    All three introduced in PR #205 (MEH-144), masked because -x stopped at the first failure.
-    1. NameError: _notify_admin_new_producer else-branch used `producer.name` (out of scope) → `name`
-    2. Lambda arity: stubs were lambda p: None (1 arg) for 2-arg functions → lambda *a, **k: None
-       (PR #210 also fixed this; merged their version during conflict resolution)
-    3. FakeSMTP.__init__ missing **kwargs: smtplib.SMTP(host, port, timeout=10) caused TypeError
-       caught silently in try/except → send_message never called → assertion on sent["to"] failed
+  PR #209: 3 test bugs hidden by pytest -x — NameError, lambda arity, FakeSMTP **kwargs
+  PR #207: SMTP → Resend HTTP API (Railway blocks 25/465/587)
+    - NEW services/email.py: send_email(), fail-open
+    - config.py: removed smtp_*, added resend_api_key
+    - resend==2.29.0 in requirements.txt
+    - All 6 SMTP call sites migrated (auth, admin, marketing, experience_notifications)
+    ⚠ Human action needed: add RESEND_API_KEY to Railway (staging + production)
 
 ## Current state
 Branch: staging
-Staging HEAD: 5ca25d5 (MEH-208 squash merge of #209)
+Staging HEAD: ed12426 (Resend migration squash #207)
 Main HEAD: e42127e (production release — staging ahead)
 
 ## Next task
+  ⚠ IMMEDIATE: Add RESEND_API_KEY to Railway env (staging + production) for email to work
   Open PRs:
-  - PR #207: SMTP → Resend migration (feature/meh-XXX-resend-email → staging) — DRAFT, needs CI green
-    Human prerequisites: create Resend account, verify mehamakor.online domain,
-    add RESEND_API_KEY to Railway staging + production env vars
   - PR #203: MEH-126 Playwright E2E — draft, needs review
   - PR #204: MEH-142 edge cases audit (docs-only) — draft, needs review
   Candidates from backlog:
@@ -59,7 +56,8 @@ First step: ask user which to tackle next (PR #207 likely priority — Railway S
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- PR #207: SMTP → Resend migration (feature/meh-XXX-resend-email → staging) — DRAFT
+- PR #203: MEH-126 Playwright E2E (draft)
+- PR #204: MEH-142 edge cases audit docs-only (draft)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
