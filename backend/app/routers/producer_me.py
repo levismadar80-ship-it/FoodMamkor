@@ -528,7 +528,7 @@ def send_phone_otp(
 
 
 @router.post("/verify-phone/confirm", status_code=200)
-@limiter.limit("5/minute")
+@limiter.limit("3/minute")
 def confirm_phone_otp(
     request: Request,
     body: OtpConfirmIn,
