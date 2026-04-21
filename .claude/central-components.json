@@ -1,0 +1,12 @@
+{
+  "description": "Central components — run /adversarial-review even if build fails (Rule 20). Logic risk > syntax risk.",
+  "components": [
+    "frontend/components/MapClient.jsx",
+    "frontend/app/producers/[id]/ProducerDetailClient.jsx",
+    "backend/app/main.py",
+    "backend/app/auth.py",
+    "backend/app/routers/producers.py",
+    "backend/app/routers/admin.py",
+    "backend/app/routers/auth.py"
+  ]
+}
