@@ -6,7 +6,6 @@ import Link from "next/link";
 import { UserCircle, Lock, Storefront } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
-import { validateEmail } from "@/lib/validators";
 import PasswordStrength from "@/components/PasswordStrength";
 
 /**
@@ -125,15 +124,14 @@ function TabButton({ active, onClick, icon, children }) {
 function ProfileTab() {
   const { user, updateProfile } = useAuth();
   const [name, setName] = useState(user.name || "");
-  const [email, setEmail] = useState(user.email || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
+  const isOAuth = !!user.is_oauth || !!user.google_id || !!user.apple_id;
   const trimmedName = name.trim();
-  const emailOk = validateEmail(email);
-  const dirty = trimmedName !== (user.name || "") || email !== (user.email || "");
-  const canSave = dirty && !!trimmedName && emailOk;
+  const dirty = trimmedName !== (user.name || "");
+  const canSave = dirty && !!trimmedName;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,7 +142,6 @@ function ProfileTab() {
     try {
       const patch = {};
       if (trimmedName !== user.name) patch.name = trimmedName;
-      if (email !== user.email) patch.email = email;
       await updateProfile(patch);
       setMessage("הפרטים נשמרו");
     } catch (err) {
@@ -194,20 +191,22 @@ function ProfileTab() {
         </div>
         <div>
           <label htmlFor="profile-email" className="block text-sm font-medium mb-1">
-            אימייל *
+            אימייל
           </label>
           <input
             id="profile-email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full border border-border rounded-[12px] px-3 py-2"
+            value={user.email || ""}
+            readOnly
+            disabled
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-light text-site-muted cursor-not-allowed"
             dir="ltr"
           />
-          {!emailOk && email.length > 0 && (
-            <p className="text-xs text-red-600 mt-1 text-right">האימייל לא תקין</p>
-          )}
+          <p className="text-xs text-site-muted mt-1 text-right">
+            {isOAuth
+              ? "התחברת עם Google — לשינוי אימייל, ערכי ב-Google"
+              : "לשינוי אימייל, פני לתמיכה"}
+          </p>
         </div>
 
         {message && (
