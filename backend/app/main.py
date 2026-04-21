@@ -290,6 +290,20 @@ async def lifespan(app: FastAPI):
     log.info("=" * 60)
     log.info("scheduling DB init in background — /health is live NOW")
 
+    # Warn about optional config that silently disables features.
+    _missing = [
+        name for name, val in [
+            ("ADMIN_EMAIL", settings.admin_email),
+            ("RESEND_API_KEY", settings.resend_api_key),
+            ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
+        ] if not val
+    ]
+    if _missing:
+        log.warning(
+            "⚠️ Optional env vars not set — some features disabled: %s",
+            ", ".join(_missing),
+        )
+
     # Fire-and-forget — no await. Uvicorn starts serving immediately.
     # Keep a reference on the app so the task isn't garbage-collected.
     app.state.db_init_status = "initializing"
