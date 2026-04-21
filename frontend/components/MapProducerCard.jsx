@@ -4,6 +4,7 @@ import Link from "next/link";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
+import { getWhatsAppHref } from "@/lib/utils";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const { city: userCity } = useUserCity();
@@ -107,7 +108,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Actions */}
         <div className="flex items-center gap-2 mt-1.5">
           <a
-            href={waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}` : baseHref}
+            href={waPhone ? getWhatsAppHref(waPhone, `היי! מצאתי אותך במהמקור — ${p.name || ""}`) : baseHref}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => { e.stopPropagation(); if (waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
