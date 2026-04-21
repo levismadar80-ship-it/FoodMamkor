@@ -13,6 +13,7 @@ import { CaretDown, Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import SmartSearch from "@/components/SmartSearch";
+import HeroSearch from "@/components/HeroSearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -377,26 +378,16 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             role="search"
             aria-label="חיפוש בתי עסק"
-            className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2.5 px-6 py-3.5"
+            className="mx-auto mt-8 bg-white shadow-lg px-6 py-3.5"
             style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
           >
-            <svg
-              className="w-5 h-5 text-primary shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {/* MEH-13: smart search with autocomplete. Enter-without-
-                selection routes to /search?q=... so the old city-only
-                handleSearch fallback is retired — the results page
-                handles producer + product matches together. */}
-            <SmartSearch
+            {/* MEH-99: HeroSearch routes to /producers?q= for filtered listing.
+                SmartSearch (routes to /search?q= results page) is retained
+                in the site header for secondary navigation. */}
+            <HeroSearch
               placeholder={t("search_placeholder")}
               srLabel={t("search_sr_label")}
-              className="flex-1"
+              className="w-full"
             />
           </motion.div>
 
