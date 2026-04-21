@@ -156,11 +156,11 @@ export default function AdminDashboard() {
               צפה בכל →
             </Link>
           </div>
-          {data.pending_producers.length === 0 ? (
+          {(data.pending_producers || []).length === 0 ? (
             <p className="text-sm text-text-secondary">אין בקשות ממתינות</p>
           ) : (
             <ul className="space-y-2">
-              {data.pending_producers.map((p) => (
+              {(data.pending_producers || []).map((p) => (
                 <li key={p.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
                   <div>
                     <p className="font-medium">{p.name}</p>
@@ -182,8 +182,11 @@ export default function AdminDashboard() {
       {/* Activity feed */}
       <div className="bg-white border border-border rounded-[12px] p-5">
         <h2 className="font-semibold mb-3">פעילות אחרונה</h2>
+        {(data.recent_activity || []).length === 0 && (
+          <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
+        )}
         <ul className="space-y-2">
-          {data.recent_activity.map((a) => (
+          {(data.recent_activity || []).map((a) => (
             <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
               <div className="flex items-center gap-2">
                 <span>🆕</span>
