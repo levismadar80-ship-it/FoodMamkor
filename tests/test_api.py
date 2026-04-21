@@ -1089,3 +1089,75 @@ class TestCloudinaryHebrewErrors:
         detail = resp.json()["detail"]
         assert "JPG" in detail or "PNG" in detail or "תמונות" in detail
         assert "Upload failed" not in detail
+
+
+# ---------- MEH-155: Vacation badge auto-clear after return_date ----------
+
+class TestVacationBadgeClear:
+    """vacation_until field auto-clears expired vacation at serialization time (MEH-155)."""
+
+    def test_set_vacation_with_future_date(self, client, db):
+        """POST availability-status with vacation + future vacation_until persists both."""
+        from datetime import date, timedelta
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+
+        future = (date.today() + timedelta(days=7)).isoformat()
+        resp = client.post(
+            "/producers/me/availability-status",
+            json={"status": "vacation", "vacation_until": future},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["availability_status"] == "vacation"
+        assert body["vacation_until"] == future
+
+    def test_expired_vacation_clears_in_api_response(self, client, db):
+        """A producer with vacation_until in the past should appear as 'available' in GET /producers."""
+        from datetime import date, timedelta
+        producer = make_producer(db)
+        producer.availability_status = "vacation"
+        producer.vacation_until = date.today() - timedelta(days=1)
+        db.commit()
+
+        resp = client.get(f"/producers/{producer.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["availability_status"] == "available", (
+            f"Expected 'available' for expired vacation, got '{body['availability_status']}'"
+        )
+        assert body.get("vacation_until") is None
+
+    def test_active_vacation_stays_in_api_response(self, client, db):
+        """A producer with vacation_until in the future stays as 'vacation'."""
+        from datetime import date, timedelta
+        producer = make_producer(db)
+        producer.availability_status = "vacation"
+        producer.vacation_until = date.today() + timedelta(days=3)
+        db.commit()
+
+        resp = client.get(f"/producers/{producer.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["availability_status"] == "vacation"
+
+    def test_switching_away_from_vacation_clears_date(self, client, db):
+        """Setting status to 'available' must clear vacation_until."""
+        from datetime import date, timedelta
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        producer.availability_status = "vacation"
+        producer.vacation_until = date.today() + timedelta(days=5)
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/availability-status",
+            json={"status": "available"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["vacation_until"] is None

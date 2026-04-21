@@ -229,6 +229,8 @@ class ProducerListOut(BaseModel):
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
+    # MEH-155: optional vacation end date — auto-cleared when past.
+    vacation_until: date | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -260,6 +262,14 @@ class ProducerListOut(BaseModel):
     def _compute_trust_tier(self):
         from app.services.trust_tier import compute_trust_tier
         self.trust_tier = compute_trust_tier(self)
+        # MEH-155: if vacation_until has passed, treat as available in the API response.
+        if (
+            self.availability_status == "vacation"
+            and self.vacation_until is not None
+            and self.vacation_until < date.today()
+        ):
+            self.availability_status = "available"
+            self.vacation_until = None
         return self
 
     model_config = {"from_attributes": True}

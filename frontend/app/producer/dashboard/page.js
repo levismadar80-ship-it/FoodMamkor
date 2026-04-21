@@ -67,6 +67,7 @@ export default function ProducerDashboardPage() {
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [vacationUntil, setVacationUntil] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -74,7 +75,10 @@ export default function ProducerDashboardPage() {
       router.push("/login");
       return;
     }
-    api.get("/producers/me/dashboard").then((r) => setData(r.data)).catch(() => setData(null));
+    api.get("/producers/me/dashboard").then((r) => {
+      setData(r.data);
+      setVacationUntil(r.data?.producer?.vacation_until || "");
+    }).catch(() => setData(null));
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
     api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
@@ -115,7 +119,10 @@ export default function ProducerDashboardPage() {
         : prev,
     );
     try {
-      await api.post("/producers/me/availability-status", { status });
+      const body = { status };
+      if (status === "vacation" && vacationUntil) body.vacation_until = vacationUntil;
+      await api.post("/producers/me/availability-status", body);
+      if (status !== "vacation") setVacationUntil("");
     } catch {
       alert("לא הצלחנו לעדכן את סטטוס הזמינות — נסי שוב בעוד רגע");
       // Refetch on failure so the UI doesn't stay out of sync.
@@ -297,6 +304,33 @@ export default function ProducerDashboardPage() {
             );
           })}
         </div>
+        {(producer.availability_status || "available") === "vacation" && (
+          <div className="mt-4 flex items-center gap-3">
+            <label htmlFor="vacation-until" className="text-sm text-site-muted whitespace-nowrap">
+              חזרה ב:
+            </label>
+            <input
+              id="vacation-until"
+              type="date"
+              value={vacationUntil}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setVacationUntil(e.target.value)}
+              onBlur={() => { if (vacationUntil) setAvailabilityStatus("vacation"); }}
+              className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              dir="ltr"
+            />
+            {vacationUntil && (
+              <button
+                type="button"
+                onClick={() => { setVacationUntil(""); setAvailabilityStatus("vacation"); }}
+                className="text-xs text-site-muted hover:text-red-600 transition"
+                aria-label="הסירי תאריך חזרה"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Analytics stat cards */}

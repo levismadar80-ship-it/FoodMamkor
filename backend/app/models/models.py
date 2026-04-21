@@ -70,6 +70,8 @@ class Producer(Base):
     # Values: "available" (default) | "full" | "vacation". Rendered as a
     # colored-dot badge on ProducerCard + ProducerDetail.
     availability_status = Column(String(20), default="available")
+    # MEH-155: optional vacation end date — cleared automatically when past.
+    vacation_until = Column(Date, nullable=True)
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
