@@ -156,6 +156,22 @@ def _migrate_columns(engine):
         conn.execute(text(
             "CREATE INDEX IF NOT EXISTS idx_producers_lat_lng ON producers (lat, lng)"
         ))
+        # MEH-99 — search analytics: log zero-result queries for discovery.
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS search_queries (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                query TEXT NOT NULL,
+                results_count INTEGER NOT NULL DEFAULT 0,
+                searched_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+            """
+        ))
+        # GIN index on producers.name (simple dictionary) for future full-text
+        # upgrade path. NO pg_trgm — not needed at current scale.
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_producers_name ON producers USING gin(to_tsvector('simple', name))"
+        ))
         conn.commit()
 
 

@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from sqlalchemy import func
+from sqlalchemy import exists, func, text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user, get_current_user_optional
@@ -29,7 +29,7 @@ def _attach_badge_fields(producer):
     else:
         producer.days_since_created = None
     return producer
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Report, User
+from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryOut,
@@ -210,18 +210,63 @@ def list_producers(
         q = q.filter(Producer.lactose_free == lactose_free)
         count_q = count_q.filter(Producer.lactose_free == lactose_free)
 
-    # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
+    # MEH-99 — cross-field search: name · description · city · category names · product names.
     if search_q and search_q.strip():
-        like = f"%{search_q.strip()}%"
-        name_or_desc = (Producer.name.ilike(like)) | (Producer.description.ilike(like))
-        q = q.filter(name_or_desc)
-        count_q = count_q.filter(name_or_desc)
+        clean = search_q.strip()
+        like = f"%{clean}%"
+
+        has_category = (
+            db.query(ProducerCategory)
+            .join(Category, Category.id == ProducerCategory.category_id)
+            .filter(
+                ProducerCategory.producer_id == Producer.id,
+                Category.name.ilike(like),
+            )
+            .exists()
+        )
+        has_product = (
+            db.query(Product)
+            .filter(
+                Product.producer_id == Producer.id,
+                Product.name.ilike(like),
+            )
+            .exists()
+        )
+        search_filter = (
+            Producer.name.ilike(like)
+            | Producer.description.ilike(like)
+            | Producer.city.ilike(like)
+            | has_category
+            | has_product
+        )
+        q = q.filter(search_filter)
+        count_q = count_q.filter(search_filter)
+
+        # Relevance ordering in non-geo mode: exact name first, then prefix, then rating.
+        if not geo_search:
+            q = q.order_by(False).order_by(
+                (func.lower(Producer.name) == clean.lower()).desc(),
+                Producer.name.ilike(f"{clean}%").desc(),
+                Producer.avg_rating.desc(),
+                Producer.created_at.desc(),
+            )
 
     # MEH-23 — total BEFORE applying limit/offset so the frontend can render
     # "X מתוך Y" and numbered pagination.
     total_count = count_q.scalar() or 0
     if response is not None:
         response.headers["X-Total-Count"] = str(total_count)
+
+    # MEH-99 — log zero-result searches for product discovery analytics.
+    if search_q and search_q.strip() and total_count == 0:
+        try:
+            db.execute(
+                text("INSERT INTO search_queries (query, results_count) VALUES (:q, 0)"),
+                {"q": search_q.strip()[:200]},
+            )
+            db.commit()
+        except Exception:
+            pass
 
     if geo_search:
         # A multi-entity query combined with joinedload on a collection
