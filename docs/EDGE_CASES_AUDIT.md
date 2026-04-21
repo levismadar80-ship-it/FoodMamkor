@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-The codebase is in solid shape for an Israeli v1 marketplace — the security fundamentals (JWT, rate limits, IDOR ownership checks, magic-byte upload validation, CSP) are all present and intentional. The most dangerous gap is **JWT token revocation**: if an admin blocks an abusive user, that user's existing token remains valid for up to 24 hours — on a small community site this is a meaningful trust risk. The second class of urgent issues is **idempotency**: double-tapping Favorite or Review triggers a raw 500 rather than a graceful 409/200, which will be the first bug users file. Beyond those two, the audit found **4 admin-panel null-crash vectors** that would prevent the admin from functioning on launch day, a **trivial DoS** via unlimited search query length, and a **fail-open SMTP/Anthropic gap** that silently swallows both contact form messages and content moderation without any admin alert. All P0 issues are 1-line or 1-day fixes. Confidence level: high — **63 edge cases** catalogued across frontend, backend, security, schema, SEO, accessibility, and legal layers.
+The codebase is in solid shape for an Israeli v1 marketplace — the security fundamentals (JWT, rate limits, IDOR ownership checks, magic-byte upload validation, CSP) are all present and intentional. The most dangerous gap is **JWT token revocation**: if an admin blocks an abusive user, that user's existing token remains valid for up to 24 hours — on a small community site this is a meaningful trust risk. The second class of urgent issues is **idempotency**: double-tapping Favorite or Review triggers a raw 500 rather than a graceful 409/200, which will be the first bug users file. Beyond those two, the audit found **4 admin-panel null-crash vectors** that would prevent the admin from functioning on launch day, a **trivial DoS** via unlimited search query length, and a **fail-open SMTP/Anthropic gap** that silently swallows both contact form messages and content moderation without any admin alert. All P0 issues are 1-line or 1-day fixes. Confidence level: high — **78 edge cases** catalogued across frontend, backend, security, schema, SEO, accessibility, legal, and analytics layers.
 
 ---
 
@@ -78,6 +78,21 @@ The codebase is in solid shape for an Israeli v1 marketplace — the security fu
 | 61 | `LoginPromptModal` / `LocationModal` | **Modal keyboard: Escape closes but focus is not restored** — WCAG 2.1 AA requires focus returns to trigger element on close; currently lands on `<body>`; screen reader users lose navigation context | sometimes | broken feature | ugly | 1 day | **P1** |
 | 62 | `lib/producer-import.py` | **Bulk Excel import with Hebrew encoding issues** — `producer_import.py` reads Excel with openpyxl; if file is saved as Windows-1255 (common Israeli Excel export) instead of UTF-8, Hebrew columns produce garbled text; no encoding detection | rare | broken feature | broken | 1 day | **P2** |
 | 63 | `ProducerCard` / `[slug]` | **Producer name with Hebrew niqqud (vowel marks) breaks slug generation** — slugify may strip niqqud but leave double dashes or trailing dashes; slug `חֶמְאָה--טְבָעִית` normalises to an ugly URL; two producers with same consonants but different niqqud collide | rare | broken trust | ugly | 1 day | **P2** |
+| 64 | `/admin/users` | **Admin expand-favorites crashes when orphaned favorite references deleted producer** — `producer.name` is null for an orphaned row; frontend `.map()` doesn't null-coalesce; admin can't manage that user | rare | broken feature | ugly | 1 day | **P1** |
+| 65 | `ProducersClient` pagination | **Stale "X מתוך Y" counter after producer deleted mid-browse** — `initialTotal` set at SSR time; when admin deletes a producer while user browses, `hasMore` flips false but counter says 120 while only 116 exist | sometimes | broken feature | broken | 1 week | **P1** |
+| 66 | `search.py` + `producers.py` | **Hebrew niqqud mismatch in ILIKE** — producer name stored as "בָּשָׂר" (with diacritics); user searches "בשר" (without); SQL ILIKE is byte-by-byte; no match; result is empty even though they're the same word | sometimes | broken feature | broken | 1 day | **P2** |
+| 67 | `search.py` | **Single Hebrew character causes broad ILIKE or DB timeout** — `min_length` check only strips whitespace; `q="א"` passes validation; `LIKE "%א%"` matches every word containing alef; potential 500 on slow DB | rare | broken feature | ugly | 1 line | **P2** |
+| 68 | `producer_import.py` | **Excel import with Windows-1252/Latin1 encoding stores mojibake** — openpyxl reads misencoded file; Hebrew cells become "ш║╡ш║╜"; import reports "50 imported successfully" with silently corrupt names | sometimes | broken trust | broken | 1 week | **P1** |
+| 69 | `producer_import.py` | **Duplicate rows in one Excel upload** — import checks DB after each row; if the same producer appears twice, the first insert creates the row and the second skips it; concurrent admin re-imports can bypass the dedupe window | rare | broken trust | ugly | 1 week | **P2** |
+| 70 | `admin_extra.py` analytics | **Admin dashboard map renders out-of-bounds coordinates** — `map_points` query filters `lat.isnot(None)` but not `BETWEEN -90 AND 90`; a stale `lat=400` crashes Leaflet on the admin dashboard | rare | broken page | broken | 1 day | **P2** |
+| 71 | `experience_notifications.py` | **Approval email not sent when host email is null** — `if not to_email: return` silently skips; host never learns their experience was approved; no WARNING logged to admin-visible surface | rare | broken feature | ugly | 1 day | **P1** |
+| 72 | auth / multi-tab | **Tab A logs out; Tab B continues with stale in-memory token** — `localStorage.removeItem` in Tab B not observed by Tab A; Tab A's auth state stays authenticated until next 401; flash of broken authenticated UI | sometimes | broken feature | ugly | 1 week | **P2** |
+| 73 | map / mobile iOS | **Pinch-zoom while filter modal open misaligns fixed-position modal** — iOS Safari viewport scale changes after `position:fixed` elements are painted; modal click target drifts from visual position | rare | broken feature | broken | 1 week | **P2** |
+| 74 | `lib/friday-mode.js` | **Friday mode flickers during DST transition hour** — Israel DST "spring forward" happens Friday 2 AM; client `Intl` may be 1h off on unsynced Android; server UTC checks don't match client Jerusalem time during transition window | rare | broken feature | ugly | 1 week | **P2** |
+| 75 | `analytics.py` `track_producer_view` | **Bot filtering bypassed with spoofed UA → inflated view counts** — `is_bot_user_agent()` matches known bot strings only; curl with Chrome UA passes; IP hash dedupes within one session but load-balancer IP makes all requests hash identical — or attacker rotates IPs | sometimes | broken trust | ugly | 1 week | **P1** |
+| 76 | `availability_status` | **Stale vacation badge after return date passes** — no auto-clear logic; producer forgets to toggle back; badge shows "בהפסקה" indefinitely even when producer is actively taking orders; customers think the business is closed | sometimes | broken feature | broken | 1 day | **P1** |
+| 77 | `admin_extra.py` settings | **No test endpoint for VAPID/push — misconfiguration invisible to admin** — "Test Services" panel covers Twilio + Cloudinary but not Web Push; missing VAPID keys silently disable push subscriptions with no admin alert | sometimes | broken feature | ugly | 1 day | **P2** |
+| 78 | `admin_extra.py` role mgmt | **Admin accidentally demotes self with no recovery path** — backend protects only `SUPER_ADMIN_EMAIL`; no audit log; an admin who demotes themselves loses access with no undo | rare | broken feature | ugly | 1 week | **P2** |
 
 ---
 
@@ -202,6 +217,10 @@ Priority order — open these after this audit PR merges:
 | MEH-158 | `fix(a11y): restore focus to trigger element on modal close (WCAG 2.1 AA)` | P1 | 1 day |
 | MEH-159 | `fix(upload): translate Cloudinary policy-rejection error to Hebrew message` | P1 | 1 day |
 | MEH-160 | `fix(seo): fallback OG image for producers with no photos` | P2 | 1 day |
+| MEH-161 | `fix(search): min_length=2 after strip + Unicode normalize ILIKE for niqqud` | P2 | 1 day |
+| MEH-162 | `fix(import): detect non-UTF-8 Excel files — warn admin, reject corrupt Hebrew` | P1 | 1 week |
+| MEH-163 | `fix(availability): auto-clear vacation status when availability_return_date passes` | P1 | 1 day |
+| MEH-164 | `fix(analytics): rate-limit producer view endpoint by IP to prevent count inflation` | P1 | 1 day |
 
 ---
 
@@ -218,4 +237,4 @@ Priority order — open these after this audit PR merges:
 
 ---
 
-*Last updated: 2026-04-21. Run another audit pass after MEH-103 (AI moderation v2) and MEH-130 (full roadmap) land — both add new surfaces.*
+*Last updated: 2026-04-21. 78 edge cases total across 3 research passes. Run another audit pass after MEH-103 (AI moderation v2) and MEH-130 (full roadmap) land — both add new surfaces. Linear issues to open: MEH-143–MEH-164 (22 issues).*
