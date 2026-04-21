@@ -183,38 +183,61 @@ Steps:
 
 ### C. GitHub branch protection
 
-Branch protection requires admin access in the GitHub UI (it can't be set via
-the GitHub MCP tools available in this codebase). Open:
+Branch protection requires admin access — it can't be set via the GitHub API in
+this codebase. Open:
 
 **<https://github.com/levismadar80-ship-it/FoodMamkor/settings/branches>**
 
+> **After merging `.github/workflows/pr-checks.yml`**, push a test PR to `staging`
+> and let the three jobs run once. GitHub only shows a check in the "Required status
+> checks" autocomplete AFTER it has seen the check run at least once. Do not
+> configure the rules below until the first run has completed.
+
 #### Rule 1: `main`
 
-- **Branch name pattern:** `main`
-- ✅ Require a pull request before merging
-  - ✅ Require approvals: **1**
-  - ✅ Dismiss stale pull request approvals when new commits are pushed
-- ✅ Require status checks to pass before merging
-  - Add the GitHub Actions checks once they're wired up (pytest, playwright,
-    next build). Leave empty for now if no CI exists yet.
-- ✅ Require branches to be up to date before merging
-- ✅ Require linear history (no merge commits — only rebase or squash)
-- ✅ Do not allow bypassing the above settings (applies to admins too)
-- ❌ Allow force pushes — leave **disabled**
-- ❌ Allow deletions — leave **disabled**
+| Setting | Value |
+|---|---|
+| Branch name pattern | `main` |
+| Require a pull request before merging | ✅ |
+| Required approvals | **1** |
+| Dismiss stale approvals on new commits | ✅ |
+| Require status checks to pass before merging | ✅ |
+| → Required checks | `Frontend build (Next.js)` |
+| → Required checks | `Backend tests (pytest)` |
+| → Required checks | `Frontend lint (RTL + Next.js rules)` |
+| Require branches to be up to date before merging | ✅ |
+| Require linear history (squash or rebase only) | ✅ |
+| Do not allow bypassing the above settings | ✅ (applies to admins too) |
+| Allow force pushes | ❌ disabled |
+| Allow deletions | ❌ disabled |
 
 #### Rule 2: `staging`
 
-- **Branch name pattern:** `staging`
-- ✅ Require a pull request before merging
-  - **Required approvals: 0** (self-merge OK at the staging stage — review
-    happens at the `staging → main` step)
-- ✅ Require status checks to pass before merging — same checks as `main`.
-- ❌ Allow force pushes — disabled.
-- ❌ Allow deletions — disabled.
+| Setting | Value |
+|---|---|
+| Branch name pattern | `staging` |
+| Require a pull request before merging | ✅ |
+| Required approvals | **0** (self-merge OK — review happens at `staging → main`) |
+| Require status checks to pass before merging | ✅ |
+| → Required checks | `Frontend build (Next.js)` |
+| → Required checks | `Backend tests (pytest)` |
+| → Required checks | `Frontend lint (RTL + Next.js rules)` |
+| Require branches to be up to date before merging | ✅ |
+| Allow force pushes | ❌ disabled |
+| Allow deletions | ❌ disabled |
 
-After saving both rules, verify by attempting a direct push from a feature
-branch to `main` — it should be rejected.
+> **Check names must match exactly.** The job `name:` fields in
+> `.github/workflows/pr-checks.yml` and `.github/workflows/deploy.yml` are what
+> GitHub uses to identify required checks. If the workflow YAML changes a job name,
+> the branch protection rule must be updated to match.
+
+> **`Adversarial review` is intentionally NOT a required check.** It only runs
+> when `.github/scripts/adversarial-review.sh` exists (see workflow). The check
+> is informational until that script is added.
+
+After saving both rules, verify by attempting a direct push from a feature branch
+to `staging` — it should be rejected with "protected branch" error.
+
 
 ### Sanity checks before promoting `staging → main`
 
