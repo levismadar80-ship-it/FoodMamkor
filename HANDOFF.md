@@ -5,38 +5,34 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #205 (MEH-144 producer registration stuck) — MERGED to staging (SHA bfd7770)
+PR merged/opened: #209 (MEH-208 test triple-fix) — MERGED to staging (squash 5ca25d5)
+Also open: PR #207 (Resend email migration, feature/meh-XXX-resend-email) — DRAFT
 Summary:
-  PR #205: fix(MEH-144) — producer registration stuck on "שולחת..."
-    Root cause: _notify_admin_new_producer, _notify_producer_registered, _send_welcome_email
-    were called synchronously after db.commit(). SMTP/Twilio hang → Vercel 30s proxy timeout
-    → 502 to frontend. DB rows committed → retry with same email → 400 orphan loop.
-    Fixes:
-    - backend/app/routers/auth.py: all 3 notification calls moved to FastAPI BackgroundTasks
-    - Duplicate email in register_producer: 400 → 409 with actionable Hebrew message
-    - Primitive capture before background tasks (DetachedInstanceError fix found in adversarial review)
-    - smtplib.SMTP timeout=10 on all 7 SMTP calls across 4 files
-    - frontend: setLoading in finally block on all 4 auth forms
-    - 3 regression tests added to TestAuth
-    Adversarial review found and fixed: DetachedInstanceError — ORM object passed to BG task
-    after session close; fixed by extracting p_name/p_city/p_phone as primitives.
+  PR #209: fix(MEH-208) — 3 test bugs hidden by pytest -x stop-at-first-failure
+    All three introduced in PR #205 (MEH-144), masked because -x stopped at the first failure.
+    1. NameError: _notify_admin_new_producer else-branch used `producer.name` (out of scope) → `name`
+    2. Lambda arity: stubs were lambda p: None (1 arg) for 2-arg functions → lambda *a, **k: None
+       (PR #210 also fixed this; merged their version during conflict resolution)
+    3. FakeSMTP.__init__ missing **kwargs: smtplib.SMTP(host, port, timeout=10) caused TypeError
+       caught silently in try/except → send_message never called → assertion on sent["to"] failed
 
 ## Current state
 Branch: staging
-Staging HEAD: bfd7770 (MEH-144 squash merge of #205)
+Staging HEAD: 5ca25d5 (MEH-208 squash merge of #209)
 Main HEAD: e42127e (production release — staging ahead)
 
 ## Next task
-  Open PRs on staging:
-  - PR #203: MEH-126 Playwright E2E infrastructure — still draft, needs review/merge
-  - PR #204: MEH-142 edge cases audit (docs-only) — still draft, needs review/merge
+  Open PRs:
+  - PR #207: SMTP → Resend migration (feature/meh-XXX-resend-email → staging) — DRAFT, needs CI green
+    Human prerequisites: create Resend account, verify mehamakor.online domain,
+    add RESEND_API_KEY to Railway staging + production env vars
+  - PR #203: MEH-126 Playwright E2E — draft, needs review
+  - PR #204: MEH-142 edge cases audit (docs-only) — draft, needs review
   Candidates from backlog:
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
-  - Events section on producer detail page
-  - MEH-XXX: Migrate email from SMTP → HTTP-based provider (Resend/SendGrid) — Railway blocks SMTP
 
-First step: ask user which to tackle next.
+First step: ask user which to tackle next (PR #207 likely priority — Railway SMTP egress blocked).
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -63,7 +59,7 @@ First step: ask user which to tackle next.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- No open PRs as of 2026-04-21
+- PR #207: SMTP → Resend migration (feature/meh-XXX-resend-email → staging) — DRAFT
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
