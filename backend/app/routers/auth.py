@@ -456,4 +456,4 @@ def _notify_admin_new_producer(name: str, city: str | None):
         except Exception as e:
             logger.warning(f"[EMAIL] Failed: {e}")
     else:
-        logger.debug(f"[EMAIL] Would send notification about {producer.name}")
+        logger.debug("[EMAIL] ADMIN_EMAIL not set — skipping admin notification for new producer: %s", name)

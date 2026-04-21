@@ -572,7 +572,7 @@ class TestContact:
         sent = {}
 
         class FakeSMTP:
-            def __init__(self, host, port):
+            def __init__(self, host, port, **kwargs):
                 sent["host"] = host
                 sent["port"] = port
 
@@ -628,7 +628,7 @@ class TestContact:
         sent = {}
 
         class FakeSMTP:
-            def __init__(self, host, port):
+            def __init__(self, host, port, **kwargs):
                 pass
 
             def __enter__(self):
