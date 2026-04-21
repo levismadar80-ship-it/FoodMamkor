@@ -1,0 +1,125 @@
+name: E2E Tests
+
+# Runs Playwright against the Vercel preview URL for every PR targeting
+# staging or main. Tests hit the PR's own deployed preview — not the
+# shared staging environment — so a broken PR shows red, not green.
+#
+# Flow:
+#   1. Extract preview URL from the Vercel bot's PR comment
+#      (Vercel posts/updates this comment on every deploy — no Deployments API needed)
+#   2. Poll until the URL returns a 2xx/3xx response (up to 5 min)
+#   3. Run Playwright with TEST_URL pointing at that URL
+#   4. Upload HTML report as artifact on failure
+#
+# Required secrets: none beyond the auto-provided GITHUB_TOKEN.
+
+on:
+  pull_request:
+    branches: [staging, main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright E2E (Vercel preview)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install Playwright (Chromium only)
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Wait for Vercel preview deployment
+        id: preview
+        # shell: bash {0} — removes the default -eo pipefail flags so jq
+        # returning empty or a transient curl error doesn't abort the loop.
+        shell: bash {0}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "Polling Vercel PR comment for preview URL…"
+          echo "repo=$REPO  pr=$PR_NUMBER"
+
+          for attempt in $(seq 1 20); do
+            echo "--- attempt $attempt/20 ---"
+
+            # Vercel bot posts/updates a PR comment with a [Preview](...) link.
+            # Extract the first https://*.vercel.app URL from that link.
+            COMMENT=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" 2>/dev/null \
+              | jq -r '[.[] | select(.user.login == "vercel[bot]")] | last | .body // ""' \
+              2>/dev/null) || COMMENT=""
+
+            ENV_URL=$(echo "$COMMENT" \
+              | grep -oE '\[Preview\]\(https://[^)]+\)' \
+              | grep -oE 'https://[^)]+' \
+              | head -1 2>/dev/null) || ENV_URL=""
+
+            echo "  candidate_url=$ENV_URL"
+
+            if [ -n "$ENV_URL" ] && [ "$ENV_URL" != "null" ]; then
+              # Check the deployment is actually serving (not still building)
+              HTTP=$(curl -sI --max-time 10 "$ENV_URL" 2>/dev/null \
+                | head -1 | awk '{print $2}') || HTTP=""
+              echo "  http_status=$HTTP"
+
+              if [[ "$HTTP" =~ ^[23] ]]; then
+                echo "url=$ENV_URL" >> "$GITHUB_OUTPUT"
+                echo "Preview URL: $ENV_URL"
+                exit 0
+              else
+                echo "  URL found but not ready yet (HTTP $HTTP)"
+              fi
+            else
+              echo "  No Vercel bot comment with preview URL yet"
+            fi
+
+            [ "$attempt" -lt 20 ] && sleep 15
+          done
+
+          echo "Timed out — Vercel preview not ready after 5 minutes"
+          exit 1
+
+      - name: Run E2E tests
+        run: npx playwright test
+        working-directory: frontend
+        env:
+          TEST_URL: ${{ steps.preview.outputs.url }}
+          CI: "true"
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7

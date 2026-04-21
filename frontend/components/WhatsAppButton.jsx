@@ -68,6 +68,7 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
+      data-testid="whatsapp-cta"
       aria-disabled={pending || undefined}
       className={`btn-whatsapp inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm w-full justify-center font-medium ${
         pending ? "opacity-70 pointer-events-none" : ""
