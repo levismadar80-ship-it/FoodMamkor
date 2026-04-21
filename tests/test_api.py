@@ -99,10 +99,16 @@ class TestAuth:
         assert resp.status_code == 409
         assert "התחברי לחשבון שלך" in resp.json()["detail"]
 
-    def test_register_producer_email_failure_still_succeeds(self, client, db):
+    def test_register_producer_email_failure_still_succeeds(self, client, db, monkeypatch):
         """Email delivery failure must never block the 200 response (fire-and-forget)."""
         from unittest.mock import patch
-        with patch("app.routers.auth.send_email", side_effect=Exception("Resend down")):
+        from app import config
+        # Activate resend so send_email attempts a real send, then simulate Resend
+        # being down.  The exception is caught INSIDE send_email's try/except so
+        # the background task completes without raising — registration must still
+        # return 200.
+        monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
+        with patch("resend.Emails.send", side_effect=Exception("Resend down")):
             resp = client.post("/auth/register/producer", json={
                 **self.VALID_PRODUCER_REG,
                 "email": "producer2@test.com",
@@ -566,7 +572,7 @@ class TestContact:
             config.settings, "contact_email", "contactmehamakor.online@gmail.com"
         )
 
-        with patch("app.services.email.send_email") as mock_send:
+        with patch("app.routers.marketing.send_email") as mock_send:
             resp = client.post("/contact", json=self.VALID_PAYLOAD)
 
         assert resp.status_code == 200
@@ -589,7 +595,7 @@ class TestContact:
         monkeypatch.setattr(config.settings, "contact_email", "")
         monkeypatch.setattr(config.settings, "admin_email", "levismadar80@gmail.com")
 
-        with patch("app.services.email.send_email") as mock_send:
+        with patch("app.routers.marketing.send_email") as mock_send:
             resp = client.post("/contact", json=self.VALID_PAYLOAD)
 
         assert resp.status_code == 200
