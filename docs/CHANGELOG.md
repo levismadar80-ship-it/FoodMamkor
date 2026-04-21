@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-21 — MEH-138: profile photo upload + Google OAuth sync — users.avatar_url column, POST /upload/avatar (magic-byte, face-crop), Google picture backfill on login, /settings avatar upload UI, Header+BottomNav updated (#214)
+
 ## 2026-04-21 — MEH-143: role upgrade — existing consumer can add producer to same account; POST /auth/register/producer detects JWT for upgrade path; GET /auth/email-exists with EmailStr + 5/min; User.is_producer durable flag; auth context refreshUser(); login page respects ?redirect= (#213)
 
 ## 2026-04-21 — MEH-139: settings email field made permanently read-only; isOAuth detection in ProfileTab; email removed from PATCH payload (#212)
