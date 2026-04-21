@@ -1337,12 +1337,13 @@ class TestFavoritesCount:
     """MEH-106 — favorites_count in /producers response."""
 
     def test_producers_list_includes_favorites_count(self, client, db):
+        make_producer(db, status="approved")
         resp = client.get("/producers")
         assert resp.status_code == 200
         data = resp.json()
-        if data:
-            assert "favorites_count" in data[0]
-            assert isinstance(data[0]["favorites_count"], int)
+        assert len(data) >= 1
+        assert "favorites_count" in data[0]
+        assert isinstance(data[0]["favorites_count"], int)
 
     def test_favorites_count_reflects_saved_producers(self, client, db):
         p = make_producer(db, status="approved")

@@ -333,7 +333,8 @@ def producers_count(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
-def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
+@limiter.limit("120/minute")
+def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
     producer = (
         db.query(Producer)
         .options(
@@ -345,7 +346,6 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
         .first()
     )
     if not producer:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     _attach_badge_fields(producer)
     _attach_favorites_count(producer, db)

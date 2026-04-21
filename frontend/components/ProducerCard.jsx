@@ -166,6 +166,10 @@ function CardHeart({ producer, onCountChange }) {
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
+  // Keep in sync when the parent re-fetches the list (filter/pagination).
+  useEffect(() => {
+    setLocalFavCount(producer.favorites_count ?? 0);
+  }, [producer.favorites_count]);
   const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
