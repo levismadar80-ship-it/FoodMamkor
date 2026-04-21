@@ -5,7 +5,8 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
+PR merged/opened: #159 (MEH-62 security deps) — MERGED to staging (SHA 894dc49)
+                 #199 (MEH-99 smart search) — MERGED to staging (SHA 3833645)
 Summary:
   PR #199: MEH-99 smart search
     - GET /search: cross-field ILIKE across producers (name+desc), products (name+desc),
@@ -71,9 +72,11 @@ First step: decide which open PR to review/merge next — ask user.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
+- #159: MEH-62 security deps — MERGED to staging 2026-04-21
 - #199: MEH-99 smart search — MERGED to staging 2026-04-21
 - #198: feature/meh-78-map-bugs — MEH-78 map bugs — MERGED to staging 2026-04-21
-- See `gh pr list --state open` for remaining open PRs (#136, #159, #184, #186 may still be open)
+- #184, #186: stale HANDOFF PRs — CLOSED 2026-04-21 (no merge needed)
+- Remaining open: #136 (map legend collapsible)
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
