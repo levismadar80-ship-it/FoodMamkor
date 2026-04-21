@@ -14,6 +14,8 @@
 
 ## 2026-04-21 — MEH-XXX: SMTP → Resend migration — all 6 smtplib call sites replaced with shared `services/email.py` (Resend HTTP API); removes SMTP_HOST/PORT/USER/PASSWORD from config; Railway egress firewall no longer blocks email delivery
 
+## 2026-04-21 — MEH-128: Vibe Coding Responsibility system — pre-edit-guard.js PreToolUse hook warns on central component edits (non-blocking); docs/CENTRAL_COMPONENTS.md 4-step protocol; docs/EMERGENCY_OVERRIDE.md; PR template central component checklist; CLAUDE.md guardrails section
+
 ## 2026-04-21 — MEH-144: producer registration stuck "שולחת..." — notifications moved to BackgroundTasks (response no longer blocks on SMTP/Twilio), 409 for duplicate email, finally block on all 3 auth forms, timeout=10 on all 7 SMTP calls, 3 regression tests
 
 ## 2026-04-21 — MEH-95/96: WhatsApp colour tokens — .btn-whatsapp/.btn-whatsapp-outline/.bg-whatsapp utilities in globals.css; zero inline #25D366 across 7 files (#202)

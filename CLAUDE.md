@@ -107,6 +107,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
     - Caveat: `Monitor` needs the advertising MCP server connected; if unavailable, fall back to manual `curl` polling and note it in the session summary.
 18. **One branch per feature (frontend + backend together).** Solo project rule: frontend and backend changes for the same feature go on ONE branch. Before opening any new branch: `gh pr list --state open` — if open PR exists for same feature → add fix to that branch, not a new one. If fix discovered during feature work → add to feature branch directly (same PR), one commit: `fix: [description]`. Only open separate branch when fix is completely unrelated to any open PR, or hotfix on production while feature branch is in review. Never: open backend PR + separate frontend PR for same feature; open new branch for bug discovered during existing feature work; leave related fixes on different branches requiring later merging.
 19. **Zod validation before every map API call.** Import schema from `lib/schemas.js`; call `safeParse()` before any `api.get/post` or Leaflet mutation. On failure: `showToast(error.issues[0].message, "info"); return;`. Never pass NaN, null, 0, or values > 50 to API or map functions.
+20. **Review order — CI before adversarial (mandatory).** Every PR must follow this exact sequence: `npm run build` → `pytest tests/test_api.py` → `/adversarial-review` → merge. Never run `/adversarial-review` before CI passes — adversarial on broken code wastes time. **Exception:** central components (`MapClient.jsx`, `ProducerDetail`, `main.py`) — run adversarial even if build fails (logic risk > syntax risk). Central component list: `.claude/central-components.json`.
 
 ## Regression prevention rules
 1. **Grep before delete.** Before removing or renaming any variable, prop, or function: grep the entire codebase for all usages first. Do not remove until all consumers are updated.
@@ -238,3 +239,6 @@ graph LR
   Prod["👤 require_producer"] --> R8["/producers/me/{dashboard, analytics, availability}"]
   Adm["🛡️ require_admin"] --> R9["/admin/dashboard, /producers, /experiences"]
 ```
+
+## Vibe Coding Guardrails (MEH-128)
+`.claude/pre-edit-guard.js` (PreToolUse hook) warns (non-blocking) on edits to central components. Before shipping: follow the 4-step protocol in [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md). Emergency skips must be logged per [docs/EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md).
