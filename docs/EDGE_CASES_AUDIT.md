@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-The codebase is in solid shape for an Israeli v1 marketplace — the security fundamentals (JWT, rate limits, IDOR ownership checks, magic-byte upload validation, CSP) are all present and intentional. The most dangerous gap is **JWT token revocation**: if an admin blocks an abusive user, that user's existing token remains valid for up to 24 hours — on a small community site this is a meaningful trust risk. The second class of urgent issues is **idempotency**: double-tapping Favorite or Review triggers a raw 500 rather than a graceful 409/200, which will be the first bug users file. Beyond those two, the audit found **4 admin-panel null-crash vectors** that would prevent the admin from functioning on launch day, a **trivial DoS** via unlimited search query length, and a **fail-open SMTP/Anthropic gap** that silently swallows both contact form messages and content moderation without any admin alert. All P0 issues are 1-line or 1-day fixes. Confidence level: high — **48 edge cases** catalogued across frontend, backend, security, and schema layers.
+The codebase is in solid shape for an Israeli v1 marketplace — the security fundamentals (JWT, rate limits, IDOR ownership checks, magic-byte upload validation, CSP) are all present and intentional. The most dangerous gap is **JWT token revocation**: if an admin blocks an abusive user, that user's existing token remains valid for up to 24 hours — on a small community site this is a meaningful trust risk. The second class of urgent issues is **idempotency**: double-tapping Favorite or Review triggers a raw 500 rather than a graceful 409/200, which will be the first bug users file. Beyond those two, the audit found **4 admin-panel null-crash vectors** that would prevent the admin from functioning on launch day, a **trivial DoS** via unlimited search query length, and a **fail-open SMTP/Anthropic gap** that silently swallows both contact form messages and content moderation without any admin alert. All P0 issues are 1-line or 1-day fixes. Confidence level: high — **63 edge cases** catalogued across frontend, backend, security, schema, SEO, accessibility, and legal layers.
 
 ---
 
@@ -63,6 +63,21 @@ The codebase is in solid shape for an Israeli v1 marketplace — the security fu
 | 46 | `POST /contact` | **SMTP down → contact form silently loses messages** — fail-open: backend returns 200, DB row persisted, but email never sent; admin has no notification; user assumes message delivered | sometimes | broken trust | ugly | 1 day | **P1** |
 | 47 | `experiences` / map | **Experience with null lat/lng on `location_type=public`** — no server-side validation that public experiences require coordinates; detail page map component crashes; no NOT NULL constraint on experience coords | sometimes | broken feature | broken | 1 day | **P2** |
 | 48 | `experiences` moderation | **Rejected experience re-edit: unclear which feedback applies** — host edits rejected experience, status reverts to pending; Claude re-runs; if rejected again, does `rejection_reason` update or stay stale? Frontend shows ambiguous feedback state | sometimes | broken feature | ugly | 1 day | **P2** |
+| 49 | `CookieBanner` + `lib/analytics.js` | **Analytics fire after user selects "essential only"** — `trackEvent()` has no consent gate; fires backend tracking calls regardless of `cookieConsent` value in localStorage; GDPR violation | every day | security | broken | 1 day | **P0** |
+| 50 | `/map` page | **Googlebot sees only a loading spinner** — `MapClient` is dynamically imported with `ssr: false`; crawler gets `<p>טוענת מפה...</p>` with no producer data; sitemap lists `/map` at priority 0.9; effectively invisible to search | every day | broken feature | broken | 1 week | **P1** |
+| 51 | `lib/seo.js` / `[slug]` | **OG image missing for producers with no images** — `ogImage()` returns null; social shares show text-only card with no preview; description fallback works but image doesn't | sometimes | broken trust | ugly | 1 day | **P2** |
+| 52 | `WhatsAppButton` / desktop | **WhatsApp deep link on desktop with no app** — `wa.me/...` opens blank page on desktop if WhatsApp Web is not already logged in; no fallback or tooltip | sometimes | broken feature | ugly | 1 day | **P1** |
+| 53 | `lib/utils.js` `normalizePhone` | **Landline number silently nullifies WhatsApp CTA** — `normalizePhone` rejects 02/03 landline prefixes with no error; user enters a valid Israeli business number; WA button vanishes with zero explanation | rare | broken feature | broken | 1 day | **P2** |
+| 54 | `group_buys` router | **Group buy deadline passes while user fills the form** — `POST /group-buys/{id}/commit` returns 400 on expired deadline; frontend discards user input with no recovery; no client-side countdown warning | rare | broken feature | broken | 1 week | **P2** |
+| 55 | `group_buys` router | **Group buy min_participants=0 auto-funds on first commit** — no validation that `min_participants >= 1`; status flips to "funded" immediately; subsequent users see a funded buy with no explanation | rare | broken feature | ugly | 1 day | **P2** |
+| 56 | `upload.py` / Cloudinary | **Cloudinary policy rejection returns generic 500** — magic-byte check passes but Cloudinary rejects content; frontend shows undifferentiated error; user retries with same image indefinitely | sometimes | broken feature | broken | 1 day | **P1** |
+| 57 | `upload.py` + profile save | **Image uploaded but profile save fails → orphaned Cloudinary asset** — upload succeeds, returns URL; subsequent profile POST fails; image lives in Cloudinary forever with no DB reference; storage cost accumulates | rare | broken feature | broken | 1 week | **P2** |
+| 58 | `producer/dashboard` | **Pending producer edits profile with no feedback on whether edits are visible** — status=pending banner appears but no message clarifying "edits won't be visible until approved"; producers assume edits go live | every day | broken trust | ugly | 1 day | **P1** |
+| 59 | `lib/api.js` + auth | **JWT 24h expiry with no re-auth prompt** — interceptor clears token on 401 but shows no "session expired" message; user gets silent API failures; no refresh-token mechanism; no login modal | sometimes | broken feature | broken | 1 week | **P1** |
+| 60 | `MapClient.jsx` | **Shared map URL loses filter state** — `/map?city=תל אביב&chip=organic` URL shared externally; `MapClient` doesn't read `searchParams`; recipient sees default empty state | sometimes | broken feature | broken | 1 week | **P2** |
+| 61 | `LoginPromptModal` / `LocationModal` | **Modal keyboard: Escape closes but focus is not restored** — WCAG 2.1 AA requires focus returns to trigger element on close; currently lands on `<body>`; screen reader users lose navigation context | sometimes | broken feature | ugly | 1 day | **P1** |
+| 62 | `lib/producer-import.py` | **Bulk Excel import with Hebrew encoding issues** — `producer_import.py` reads Excel with openpyxl; if file is saved as Windows-1255 (common Israeli Excel export) instead of UTF-8, Hebrew columns produce garbled text; no encoding detection | rare | broken feature | broken | 1 day | **P2** |
+| 63 | `ProducerCard` / `[slug]` | **Producer name with Hebrew niqqud (vowel marks) breaks slug generation** — slugify may strip niqqud but leave double dashes or trailing dashes; slug `חֶמְאָה--טְבָעִית` normalises to an ugly URL; two producers with same consonants but different niqqud collide | rare | broken trust | ugly | 1 day | **P2** |
 
 ---
 
@@ -73,10 +88,11 @@ These block the launch. All have short fix times.
 | # | Edge Case | Rationale |
 |---|---|---|
 | 1 | ~~**JWT not invalidated on user block**~~ (#1) | ✅ **Fixed in PR #201** — `get_current_user` now checks `is_blocked` inline; remaining exposure is ≤5min (DB-read throttle). No longer a launch blocker. |
-| 2 | **Double-submit Favorite/Review = HTTP 500** (#5, #6) | Tapping Favorite or submitting Review while network is slow sends a duplicate request → raw DB constraint error → 500 page. This will be the first bug filed by real users on launch day. |
-| 3 | **Search query no max length** (#2) | Trivial single-line fix. Without it, anyone can send a 1MB search string that gets written to `search_queries` table on every keystroke (300ms debounce). On a media launch with traffic spike this causes disk exhaustion. |
-| 4 | **Admin dashboard crashes on null data** (#3, #4) | Admin can't use the dashboard if the API returns incomplete data during seed or migration. If admin can't approve pending producers at launch, the site is broken for producers waiting for approval. |
-| 5 | **Reserved slug collision** (#7) | Producer named "about", "admin", "neighbor", "events", "map", etc. gets a permanent 404 page that no admin action can fix without a DB slug edit. The `RESERVED` set needs to be complete before any producer can register. |
+| 2 | **Cookie consent not enforced — analytics fire after "essential only"** (#49) | GDPR violation. Every user who opts out of tracking is still tracked. On launch day this is a legal liability, not a UX issue. 1-day fix: gate `trackEvent()` on `cookieConsent` value. |
+| 3 | **Double-submit Favorite/Review = HTTP 500** (#5, #6) | Tapping Favorite or submitting Review while network is slow sends a duplicate request → raw DB constraint error → 500 page. This will be the first bug filed by real users on launch day. |
+| 4 | **Search query no max length** (#2) | Trivial single-line fix. Without it, anyone can send a 1MB search string written to `search_queries` table on every keystroke (300ms debounce). On a media launch with traffic spike this causes disk exhaustion. |
+| 5 | **Admin dashboard crashes on null data** (#3, #4) | Admin can't approve pending producers at launch if the dashboard crashes on incomplete API data. 1-day fix: null guards + default `[]`. |
+| 6 | **Reserved slug collision** (#7) | Producer named "about", "admin", "neighbor", "events", "map", etc. gets a permanent 404. The `RESERVED` set must be complete before any producer can register. |
 
 ---
 
@@ -181,6 +197,11 @@ Priority order — open these after this audit PR merges:
 | MEH-153 | `fix(availability): force is_available_today=false when vacation mode set` | P1 | 1 day |
 | MEH-154 | `fix(ops): admin alert when ANTHROPIC_API_KEY missing (moderation bypassed)` | P1 | 1 day |
 | MEH-155 | `fix(contact): admin dashboard indicator + Slack fallback when SMTP is down` | P1 | 1 day |
+| MEH-156 | `fix(gdpr): gate trackEvent() on cookieConsent value — no tracking after essential-only opt-out` | P0 | 1 day |
+| MEH-157 | `fix(auth): JWT expiry re-auth prompt — login modal on 401 + session-expired toast` | P1 | 1 week |
+| MEH-158 | `fix(a11y): restore focus to trigger element on modal close (WCAG 2.1 AA)` | P1 | 1 day |
+| MEH-159 | `fix(upload): translate Cloudinary policy-rejection error to Hebrew message` | P1 | 1 day |
+| MEH-160 | `fix(seo): fallback OG image for producers with no photos` | P2 | 1 day |
 
 ---
 
