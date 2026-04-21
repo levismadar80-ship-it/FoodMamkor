@@ -5,28 +5,22 @@
 
 ## Last session
 Date: 2026-04-21
-PRs merged: #212 (MEH-139 email readonly) + #213 (MEH-143 role upgrade) + #214 (MEH-138 profile photo) + #228 (email-exists rate limit fix)
+PRs merged: #221 #222 #223 #224 #225 #226 #227 #229 #230 #232 (MEH-142 audit batch — all P1 issues)
 Summary:
-  PR #212: settings email field permanently read-only; isOAuth detection in ProfileTab
-  PR #213: role upgrade — existing consumer adds producer to same account
-    - User.is_producer BOOLEAN DEFAULT FALSE (durable flag)
-    - POST /auth/register/producer: optional JWT → upgrade path vs new-registration
-    - GET /auth/email-exists (EmailStr, 5/min) — UX hint for duplicate email
-    - Frontend: isUpgrade flag, authLoading guard, upgrade banner, email-blur warning
-      with "התחברי ←" link to /login?redirect=/register/producer
-    - Login page: ?redirect= param respected (email + OAuth), Suspense wrapper added
-    - auth-context.js: refreshUser() added
-    - get_current_user_optional: re-raises 403 for blocked users (adversarial-review fix)
-    - Upgrade guard checks producer_id OR is_producer
-    - 5 new tests + is_producer assertion on new-registration test
-  PR #214: profile photo upload + Google OAuth sync
-    - users.avatar_url column (VARCHAR, migration in _migrate_columns)
-    - POST /upload/avatar — magic-byte validated, 400px face-crop, 10/hour, no freemium gate
-    - PATCH /users/me + UserOut now include avatar_url
-    - Google OAuth: saves picture field on create; backfills on return login if null
-    - /settings ProfileTab: avatar circle → clickable label + spinner overlay
-    - Header + BottomNav: user.avatar → user.avatar_url
-    - 2 new tests
+  PR #221: MEH-149 Cookie consent GDPR gate — trackEvent() gated on localStorage["cookieConsent"]==="all"; ClarityScript client component; 5 tests
+  PR #222: MEH-157 Pending producer banner — enhanced pending/rejected banners with SLA + CTA; 3 tests
+  PR #223: MEH-152 WhatsApp desktop fallback — getWhatsAppHref() util (matchMedia hover+pointer); applied to 6 call sites; 5 tests
+  PR #224: MEH-153 Cloudinary errors → Hebrew — raw exceptions swallowed, Hebrew messages to users; 3 backend tests
+  PR #225: MEH-155 Vacation badge auto-clear — vacation_until DATE column; Pydantic model_validator auto-clears expired; startup SQL cleanup; 4 backend tests
+  PR #226: MEH-156 JWT expiry re-auth — auth:expired CustomEvent + AuthProvider listener + Hebrew toast with /login redirect; 3 tests
+  PR #227: MEH-158 Modal focus return WCAG 2.1 AA — useFocusReturn(open) hook; applied to LocationModal, LoginPromptModal, ReportButton (+ dialog semantics); 5 tests
+  PR #229: MEH-154 Excel mojibake detection — _has_mojibake() detects ×/ø; parse_row flags rows; import_rows batch-rejects; 5 tests
+  PR #230: MEH-159 Pagination counter stale — GET /producers/count (60/min); liveTotal state; x-total-count header sync; visibilitychange refresh; 6 tests
+  PR #232: MEH-151 Map SSR Googlebot — page.js async SC fetches 100 producers (1h ISR); sr-only <nav> for Googlebot; MapClient.jsx untouched; 6 tests
+  MEH-160: SKIPPED (standing instruction from user)
+
+Previous session context:
+  PR #212 MEH-139, PR #213 MEH-143, PR #214 MEH-138, PR #228 email-exists rate limit
 
 Previous session context (already on staging):
   PR #210: MEH-128 Vibe Coding Responsibility system (pre-edit-guard.js, central-components)
