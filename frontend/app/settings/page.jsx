@@ -125,6 +125,7 @@ function ProfileTab() {
   const { user, updateProfile } = useAuth();
   const [name, setName] = useState(user.name || "");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
@@ -151,6 +152,29 @@ function ProfileTab() {
     }
   };
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await api.post("/upload/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await updateProfile({ avatar_url: res.data.url });
+      setMessage("תמונת הפרופיל עודכנה");
+    } catch {
+      setError("שגיאה בהעלאת התמונה, נסי שוב");
+    } finally {
+      setUploading(false);
+      // Reset input so the same file can be re-selected after an error
+      e.target.value = "";
+    }
+  };
+
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
 
   return (
@@ -160,17 +184,51 @@ function ProfileTab() {
       className="bg-white border border-border rounded-[16px] p-6"
     >
       <div className="flex items-center gap-4 mb-6">
-        <div
-          aria-hidden="true"
-          className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-semibold bg-primary"
+        <label
+          htmlFor="avatar-upload"
+          className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
+          aria-label="שינוי תמונת פרופיל"
         >
-          {initial}
-        </div>
+          {user.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.avatar_url}
+              alt=""
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-semibold bg-primary">
+              {initial}
+            </div>
+          )}
+          {/* Hover overlay */}
+          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <span className="text-white text-xs font-medium">שנה</span>
+          </div>
+          {/* Upload spinner */}
+          {uploading && (
+            <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+              <svg className="animate-spin w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            </div>
+          )}
+        </label>
+        <input
+          id="avatar-upload"
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={handleAvatarChange}
+          disabled={uploading}
+        />
         <div>
           <p className="font-semibold text-site-text">{user.name}</p>
           <p className="text-sm text-site-muted" dir="ltr">
             {user.email}
           </p>
+          <p className="text-xs text-site-muted mt-0.5">לחצי על התמונה לשינוי</p>
         </div>
       </div>
 

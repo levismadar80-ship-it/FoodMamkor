@@ -29,7 +29,7 @@ export default function BottomNav() {
 
   // Smart auth slot: guest→/login, consumer→/settings, producer→/producer/dashboard.
   const isProducer = user?.role === "producer";
-  const hasAvatar = !!user?.avatar;
+  const hasAvatar = !!user?.avatar_url;
   const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
   const profileHref = user
     ? isProducer ? "/producer/dashboard" : "/settings"
@@ -100,7 +100,7 @@ export default function BottomNav() {
                   >
                     {hasAvatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                      <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-white text-xs font-semibold leading-none">{initial}</span>
                     )}

@@ -111,3 +111,56 @@ async def upload_image(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@router.post("/avatar")
+@limiter.limit("10/hour")
+async def upload_avatar(
+    request: Request,
+    file: UploadFile,
+    user: User = Depends(get_current_user),
+):
+    """Upload a profile photo to Cloudinary. Same magic-byte validation as
+    /upload/image but no freemium gate, smaller crop (400px square), and
+    a dedicated avatars/ folder so producer gallery images stay separate.
+    """
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
+        )
+    if not contents:
+        raise HTTPException(status_code=400, detail="קובץ ריק")
+
+    detected = _sniff_image_type(contents[:32])
+    if detected is None:
+        raise HTTPException(
+            status_code=400,
+            detail="רק תמונות JPG/PNG/WebP/GIF מותרות",
+        )
+
+    if not settings.cloudinary_cloud_name:
+        return {"url": f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"}
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor/avatars",
+            public_id=uuid.uuid4().hex,
+            resource_type="image",
+            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+        )
+        return {"url": result["secure_url"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

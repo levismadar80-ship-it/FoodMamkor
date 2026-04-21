@@ -116,6 +116,9 @@ class User(Base):
     # MEH-143: one account / multiple roles. True once the user has ever
     # registered a producer, even if role is later changed by admin.
     is_producer = Column(Boolean, default=False)
+    # MEH-138: profile photo. Populated from Google OAuth picture on first
+    # login, or via manual upload through POST /upload/avatar.
+    avatar_url = Column(String, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")

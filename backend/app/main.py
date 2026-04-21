@@ -116,6 +116,8 @@ def _migrate_columns(engine):
         ("producer_whatsapp_clicks", "user_id", "UUID REFERENCES users(id) ON DELETE SET NULL"),
         # MEH-143 — role upgrade: existing user adds a producer profile.
         ("users", "is_producer", "BOOLEAN DEFAULT FALSE"),
+        # MEH-138 — profile photo upload + Google OAuth sync.
+        ("users", "avatar_url", "VARCHAR"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.

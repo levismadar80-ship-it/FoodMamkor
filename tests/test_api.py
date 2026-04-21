@@ -881,3 +881,28 @@ class TestProducerReviews:
         p = make_producer(db)
         resp = client.post(f"/producers/{p.id}/reviews", json={"stars": 5})
         assert resp.status_code == 401
+
+
+# ---------- Avatar upload ----------
+
+class TestAvatarUpload:
+    def test_patch_profile_saves_avatar_url(self, client, db):
+        """PATCH /users/me with avatar_url persists it and returns it in UserOut."""
+        user = make_user(db, email="avatar@test.com")
+        resp = client.patch(
+            "/users/me",
+            json={"avatar_url": "https://res.cloudinary.com/test/image/upload/avatars/abc.jpg"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["avatar_url"] == "https://res.cloudinary.com/test/image/upload/avatars/abc.jpg"
+
+    def test_upload_avatar_requires_auth(self, client, db):
+        """POST /upload/avatar without JWT → 401."""
+        import io
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        resp = client.post(
+            "/upload/avatar",
+            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+        )
+        assert resp.status_code == 401

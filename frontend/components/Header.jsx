@@ -394,7 +394,7 @@ function LoginPill({ label, transparent }) {
  */
 function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShadow }) {
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
-  const hasAvatar = !!user.avatar;
+  const hasAvatar = !!user.avatar_url;
   const isProducer = user.role === "producer";
   const isAdmin = user.role === "admin";
 
@@ -422,7 +422,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
         {hasAvatar ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={user.avatar}
+            src={user.avatar_url}
             alt=""
             className="w-full h-full object-cover"
           />
