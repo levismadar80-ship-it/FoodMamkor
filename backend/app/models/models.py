@@ -600,7 +600,9 @@ class ProducerWhatsAppClick(Base):
     dashboard's `whatsapp_clicks` metric, no rating loop.
 
     Written from `POST /producers/{id}/whatsapp-click`, which is anonymous
-    and rate-limited 10/minute per IP (slowapi).
+    and rate-limited 10/minute per IP (slowapi). user_id is set when the
+    caller is authenticated (optional JWT) so the producer can see how many
+    unique registered users clicked.
     """
 
     __tablename__ = "producer_whatsapp_clicks"
@@ -610,6 +612,12 @@ class ProducerWhatsAppClick(Base):
         UUID(as_uuid=True),
         ForeignKey("producers.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
