@@ -15,15 +15,33 @@ A file is central if an undetected logic error in it could:
 
 See `.claude/central-components.json` for the authoritative list. Current entries:
 
+### Frontend critical (40+ Linear issue appearances — highest breakage frequency)
+
 | File | Why it's central |
 |---|---|
-| `frontend/components/MapClient.jsx` | Primary map UI — state corruption invisible at build time |
-| `frontend/app/producers/[id]/ProducerDetailClient.jsx` | Main producer view — auth gating + CTA logic |
+| `frontend/app/map/MapClient.jsx` | Primary map page — state corruption invisible at build time |
+| `frontend/components/MapComponent.jsx` | Leaflet wrapper — z-index, tile, marker logic shared across views |
+| `frontend/app/producers/page.jsx` | Producer detail page — auth gating, CTA layout, review section |
+| `frontend/app/page.js` | Homepage — hero, stats bar, category grid, Friday mode |
+| `frontend/app/layout.js` | Root layout — font loading, RTL dir, global providers |
+| `frontend/lib/language-context.js` | Language/RTL context — affects every component in the tree |
+
+### Frontend medium (frequent co-changes, regression-prone)
+
+| File | Why it's central |
+|---|---|
+| `frontend/components/ProducerCard.jsx` | Rendered 100+ times per page — undefined prop = blank list |
+| `frontend/components/Header.jsx` | Auth state, nav links — breaks session UI globally |
+| `frontend/components/BottomNav.jsx` | Mobile nav — z-index collisions, active-state bugs |
+| `frontend/components/Footer.jsx` | Newsletter form, legal links — appears on every page |
+
+### Backend critical
+
+| File | Why it's central |
+|---|---|
 | `backend/app/main.py` | App entry point — middleware, CORS, route registration |
-| `backend/app/auth.py` | JWT decode + `get_current_user` — auth bypass risk |
-| `backend/app/routers/producers.py` | CRUD for producers — IDOR risk, ownership checks |
-| `backend/app/routers/admin.py` | Admin endpoints — privilege escalation risk |
-| `backend/app/routers/auth.py` | Registration + login — duplicate-user, token issuance |
+| `backend/app/routers/auth.py` | Registration + login — duplicate-user, token issuance, BackgroundTasks |
+| `backend/app/config.py` | Settings — env var defaults, missing key → silent misconfiguration |
 
 ## 4-Step Protocol (mandatory before shipping an edit)
 
