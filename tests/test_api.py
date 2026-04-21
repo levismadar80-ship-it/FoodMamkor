@@ -1234,3 +1234,100 @@ class TestProducersCount:
         make_producer(db, status="pending")
         after = client.get("/producers/count").json()["count"]
         assert after == before  # pending not counted
+
+
+class TestCategoryRequests:
+    """MEH-141 — category request flow: submit + admin review."""
+
+    def test_submit_category_request_returns_201(self, client, db):
+        resp = client.post(
+            "/category-requests",
+            json={"requested_name": "משקאות מותססים", "examples": "קומבוצ'ה"},
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["requested_name"] == "משקאות מותססים"
+        assert body["status"] == "pending"
+
+    def test_submit_empty_name_rejected(self, client, db):
+        resp = client.post(
+            "/category-requests",
+            json={"requested_name": "", "examples": None},
+        )
+        assert resp.status_code == 422
+
+    def test_admin_list_category_requests_grouped(self, client, db):
+        admin = make_user(db, role="admin")
+        client.post("/category-requests", json={"requested_name": "תבלינים"})
+        client.post("/category-requests", json={"requested_name": "תבלינים"})
+        resp = client.get("/admin/category-requests", headers=auth_header(admin))
+        assert resp.status_code == 200
+        groups = resp.json()
+        names = [g["requested_name"] for g in groups]
+        assert "תבלינים" in names
+        # find the group and verify count >= 2
+        group = next((g for g in groups if g["requested_name"] == "תבלינים"), None)
+        assert group is not None
+        assert group["count"] >= 2
+
+    def test_admin_patch_status(self, client, db):
+        admin = make_user(db, role="admin")
+        # Submit a request
+        create_resp = client.post(
+            "/category-requests",
+            json={"requested_name": "קמח כוסמין", "examples": "לחם כוסמין"},
+        )
+        assert create_resp.status_code == 201
+        req_id = create_resp.json()["id"]
+        # Admin approves
+        resp = client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "approved", "admin_notes": "נוסיף בגרסה הבאה"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "approved"
+        assert body["admin_notes"] == "נוסיף בגרסה הבאה"
+
+    def test_non_admin_cannot_list_requests(self, client, db):
+        consumer = make_user(db, role="consumer")
+        resp = client.get("/admin/category-requests", headers=auth_header(consumer))
+        assert resp.status_code == 403
+
+    def test_non_admin_cannot_patch_request(self, client, db):
+        consumer = make_user(db, role="consumer")
+        create_resp = client.post(
+            "/category-requests",
+            json={"requested_name": "צמחי מרפא"},
+        )
+        assert create_resp.status_code == 201
+        req_id = create_resp.json()["id"]
+        resp = client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "approved"},
+            headers=auth_header(consumer),
+        )
+        assert resp.status_code == 403
+
+    def test_admin_notes_preserved_on_status_reset(self, client, db):
+        admin = make_user(db, role="admin")
+        create_resp = client.post(
+            "/category-requests",
+            json={"requested_name": "שמנים קרים"},
+        )
+        req_id = create_resp.json()["id"]
+        # Approve with notes
+        client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "approved", "admin_notes": "נבחן בגרסה הבאה"},
+            headers=auth_header(admin),
+        )
+        # Reset to pending (no notes sent) — notes must survive
+        resp = client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "pending"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["admin_notes"] == "נבחן בגרסה הבאה"
