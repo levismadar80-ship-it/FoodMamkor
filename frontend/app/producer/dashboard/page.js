@@ -37,7 +37,7 @@ function VanityLinkCard({ slug }) {
           href={`https://wa.me/?text=${waText}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 text-sm text-center border border-[#25D366] text-[#25D366] rounded-[8px] px-3 py-1.5 hover:bg-[#25D366]/5 transition"
+          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-[8px] px-3 py-1.5"
         >
           שתפי בוואטסאפ
         </a>
