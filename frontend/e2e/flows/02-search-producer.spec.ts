@@ -7,9 +7,10 @@ test.describe("Search", () => {
     await expect(searchInput).toBeVisible();
 
     await searchInput.fill("חלב");
-    // Wait past the 300ms debounce so the dropdown doesn't intercept Enter
-    await page.waitForTimeout(350);
-    await searchInput.press("Enter");
+    // Click the submit button directly — avoids the autocomplete dropdown
+    // intercepting Enter (highlightIdx=0 on open, so Enter would navigate
+    // to the first suggestion instead of /producers).
+    await page.locator('button[aria-label="חיפוש"]').click();
 
     // Should land on /producers (with or without query string)
     await page.waitForURL(/\/producers/, { timeout: 10_000 });
