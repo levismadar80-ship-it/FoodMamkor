@@ -1,40 +1,51 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-20
+> Last updated: 2026-04-21
 
 ## Last session
-Date: 2026-04-20
-PR merged/opened: #187 (feature/meh-56-whatsapp-onboarding) — MERGED to staging
+Date: 2026-04-21
+PR merged/opened: #196 (feature/meh-whatsapp-click-tracking) — MERGED to staging
 Summary:
-  PR #187: MEH-56 — async WhatsApp onboarding + AI bio writer
-    - /register/producer: 2-step minimal form (account + שם עסק/טלפון/קטגוריה)
-      status=pending_whatsapp on create; WhatsApp welcome sent to producer phone
-    - backend/app/services/bio_generator.py (new): Instagram scrape + Claude Haiku
-      Hebrew bio ≤150 chars; fail-open on missing API key
-    - POST /producers/me/bio/generate (5/hour rate limit)
-    - Producer dashboard: pending_whatsapp banner, 7-item completion checklist
-      with progress bar + "+X% נראות" labels; AI bio panel (generate + save)
-    - Admin: pending filter + counts include pending_whatsapp; statusBadge
-      maps pending_whatsapp → "ממתין — וואטסאפ" (orange)
-    - Adversarial review: 2 issues fixed (ToS checkbox re-added, admin badge regression)
-    - All checks green: lint ✅, Vercel ✅
+  PR #196: WhatsApp click tracking fix — whatsapp_clicks_week showed 0
+    - Root cause: producer_whatsapp_clicks table missing in older Railway DBs
+      (model added after initial DB init; create_all never ran for this table)
+    - Fix 1: _migrate_columns() now runs CREATE TABLE IF NOT EXISTS
+      producer_whatsapp_clicks before the column-level ALTER TABLE loop
+    - Fix 2: ProducerWhatsAppClick model gains user_id (nullable UUID FK → users)
+      so authenticated clicks are attributed; endpoint accepts optional JWT
+    - pytest: TestWhatsAppClickTracking (4 cases) — anonymous click, authed
+      click with user_id, 404 on unknown producer, dashboard week count
+    - Build ✅, lint ✅, Vercel preview ✅
 
-  Previous: #185 MEH-50 שוק שישי (MERGED to staging)
-  Previous: #184 HANDOFF.md update (MERGED to staging)
-  Previous: #183 MEH-51 trust ladder (MERGED to staging)
+  PRs #193–#195: MEH-116 full site copy refresh (MERGED to staging)
+    - Banned phrases swept: מגדלים קטנים, שכנות שמבשלות, אוכל אמיתי, יצרן→בעל עסק
+    - About page full rewrite (Sapir story, accordion tips, testimonials placeholder)
+    - ParallaxQuote attribution prop, Footer newsletter redesign
+    - Chatbot system prompt updated; auth.py welcome email updated
+
+  Previous: #187 MEH-56 async WhatsApp onboarding (MERGED to staging)
 
 ## Current state
-Branch: staging
-Staging HEAD: 723512a (MEH-56 async WhatsApp onboarding — just merged)
-Main HEAD: e42127e (production release — staging ahead by #168–#187)
+Branch: feature/meh-whatsapp-click-tracking (merged) — now on staging
+Staging HEAD: e0d69ef (WhatsApp click tracking fix — just merged #196)
+Main HEAD: e42127e (production release — staging ahead by multiple PRs)
 
 ## Next task
-  1. Admin analytics: add referral count per producer (skipped from MEH-49 scope)
+  Producer reviews system (see spec in last user message):
+    - DB: producer_reviews table (UNIQUE per user+producer, rating 1–5, body TEXT)
+    - Backend: POST /producers/{id}/reviews (gated: must have clicked WhatsApp),
+      GET /producers/{id}/reviews (paginated 10), avg_rating + reviews_count update
+    - Frontend: review form on producer detail (post-WhatsApp click), star display,
+      badge on ProducerCard (≥3 reviews)
+    - Trust: auth required, one review per producer per user, Haiku moderation
+  First step: git checkout staging → git checkout -b feature/producer-reviews
+
+  Deferred:
+  1. Admin analytics: referral count per producer
   2. ProducerCard heart/favorite Phase C (post-login replay)
   3. Lightbox for gallery images
   4. Events section on producer detail page
-  5. availability_return_date schema change (v2 backend)
 
 Deferred from design bundle (do NOT start without explicit user confirmation):
   - Item 4: New homepage editorial sections (EditorialBreath, MeetAProducer, HowItWorks)

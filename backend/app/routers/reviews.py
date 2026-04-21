@@ -7,20 +7,90 @@ all reviews on every write (simple + correct; fine at this scale).
 MEH-10 adds:
   - nested route aliases GET/POST /producers/:id/reviews (spec-compliant)
   - GET /admin/reviews — list all reviews with producer + user name (admin only)
+
+Reviews spec:
+  - WhatsApp click gate: only users who have clicked the WhatsApp CTA for
+    this specific producer may submit a review. Verified via
+    producer_whatsapp_clicks.user_id. Fail-open: if the clicks table is empty
+    (e.g. DB migration hasn't run) we let the review through.
+  - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
+  - Pagination: GET returns 10 reviews per page.
 """
+import json
+import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_admin
 from app.database import get_db
-from app.models import Producer, ProducerReview, User
+from app.models import Producer, ProducerReview, ProducerWhatsAppClick, User
 from app.rate_limit import limiter
 
 router = APIRouter(tags=["reviews"])
+log = logging.getLogger(__name__)
+
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
+_ai_client = None
+
+
+def _get_ai_client():
+    global _ai_client
+    if _ai_client is not None:
+        return _ai_client
+    try:
+        from app.config import settings
+        if not settings.anthropic_api_key:
+            return None
+        import httpx
+        import anthropic
+        _ai_client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            http_client=httpx.Client(),
+        )
+        return _ai_client
+    except Exception as exc:
+        log.warning("[reviews] anthropic client init failed: %s", exc)
+        return None
+
+
+def _moderate_review_body(body: str | None) -> str:
+    """Run body text through Haiku. Returns 'APPROVED' | 'FLAGGED' | 'REJECTED'.
+    Fail-open: any error returns 'APPROVED'.
+    """
+    if not body:
+        return "APPROVED"
+    client = _get_ai_client()
+    if client is None:
+        log.info("[reviews] no AI client — skipping moderation (fail-open)")
+        return "APPROVED"
+    prompt = f"""אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
+בדוק את טקסט הביקורת הבאה ותחזיר JSON בלבד.
+
+טקסט: {body}
+
+החזר JSON בלבד (ללא ```json):
+{{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
+
+APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
+FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
+REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
+    try:
+        msg = client.messages.create(
+            model=HAIKU_MODEL,
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = msg.content[0].text.strip()
+        data = json.loads(raw)
+        status = data.get("status", "APPROVED")
+        return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"
+    except Exception as exc:
+        log.warning("[reviews] moderation call failed: %s — fail-open", exc)
+        return "APPROVED"
 
 
 class ReviewCreate(BaseModel):
@@ -165,12 +235,44 @@ def delete_review(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/producers/{producer_id}/reviews", response_model=list[ReviewOut])
+class ReviewsPage(BaseModel):
+    reviews: list[ReviewOut]
+    total: int
+    page: int
+    pages: int
+
+    model_config = {"from_attributes": True}
+
+
+PAGE_SIZE = 10
+
+
+@router.get("/producers/{producer_id}/reviews", response_model=ReviewsPage)
 def list_reviews_nested(
     producer_id: UUID,
+    page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
 ):
-    return list_reviews(producer_id=producer_id, db=db)
+    """Paginated reviews for a producer (10 per page, newest first)."""
+    base = (
+        db.query(ProducerReview)
+        .options(joinedload(ProducerReview.user))
+        .filter(ProducerReview.producer_id == producer_id)
+    )
+    total = base.count()
+    rows = (
+        base.order_by(ProducerReview.created_at.desc())
+        .offset((page - 1) * PAGE_SIZE)
+        .limit(PAGE_SIZE)
+        .all()
+    )
+    import math
+    return ReviewsPage(
+        reviews=[_serialize(r) for r in rows],
+        total=total,
+        page=page,
+        pages=max(1, math.ceil(total / PAGE_SIZE)),
+    )
 
 
 class ReviewCreateNested(BaseModel):
@@ -193,6 +295,55 @@ def create_review_nested(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Submit or update a review.
+
+    Gate: the caller must have previously clicked the producer's WhatsApp CTA
+    while authenticated (i.e. a row exists in producer_whatsapp_clicks with
+    producer_id == this producer AND user_id == current user). This ensures
+    reviews come from real contacts, not anonymous drive-by submissions.
+
+    Exception: if the user already has an existing review for this producer
+    they can update it regardless (they passed the gate when they first wrote).
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # Check if user already has a review (allowed to update regardless of gate)
+    existing_review = (
+        db.query(ProducerReview)
+        .filter(
+            ProducerReview.producer_id == producer_id,
+            ProducerReview.user_id == user.id,
+        )
+        .first()
+    )
+
+    # Enforce WhatsApp click gate for first-time reviews
+    if not existing_review:
+        clicked = (
+            db.query(ProducerWhatsAppClick.id)
+            .filter(
+                ProducerWhatsAppClick.producer_id == producer_id,
+                ProducerWhatsAppClick.user_id == user.id,
+            )
+            .first()
+        )
+        if not clicked:
+            raise HTTPException(
+                status_code=403,
+                detail="יש ללחוץ על כפתור WhatsApp לפני כתיבת ביקורת",
+            )
+
+    # Haiku moderation on body text (fail-open)
+    if data.body:
+        verdict = _moderate_review_body(data.body)
+        if verdict == "REJECTED":
+            raise HTTPException(
+                status_code=422,
+                detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
+            )
+
     full = ReviewCreate(
         producer_id=producer_id,
         stars=data.stars,
