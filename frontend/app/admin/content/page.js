@@ -83,9 +83,13 @@ function CategoriesEditor() {
       </form>
 
       <ul className="space-y-2">
-        {items.map((c) => (
-          <CategoryRow key={c.id} cat={c} onSave={update} onDelete={remove} />
-        ))}
+        {items.length === 0 ? (
+          <li className="text-sm text-text-secondary text-center py-4">אין נתונים להצגה</li>
+        ) : (
+          items.map((c) => (
+            <CategoryRow key={c.id} cat={c} onSave={update} onDelete={remove} />
+          ))
+        )}
       </ul>
     </div>
   );

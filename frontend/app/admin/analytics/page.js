@@ -91,11 +91,11 @@ export default function AdminAnalyticsPage() {
         {/* Top cities */}
         <div className="bg-white border border-border rounded-[12px] p-5">
           <h2 className="font-semibold mb-3">ערים מובילות</h2>
-          {data.by_city.length === 0 ? (
-            <p className="text-sm text-text-secondary">אין נתונים</p>
+          {(data.by_city || []).length === 0 ? (
+            <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
           ) : (
             <ol className="space-y-1.5 text-sm">
-              {data.by_city.map((c, i) => (
+              {(data.by_city || []).map((c, i) => (
                 <li key={c.city} className="flex justify-between border-b border-border pb-1.5">
                   <span><span className="text-text-secondary">{i + 1}.</span> {c.city}</span>
                   <span className="text-text-secondary">{c.count}</span>
@@ -108,11 +108,11 @@ export default function AdminAnalyticsPage() {
         {/* Top producers */}
         <div className="bg-white border border-border rounded-[12px] p-5">
           <h2 className="font-semibold mb-3">בתי עסק עם הכי הרבה מועדפים</h2>
-          {data.top_producers.length === 0 ? (
-            <p className="text-sm text-text-secondary">אין נתונים</p>
+          {(data.top_producers || []).length === 0 ? (
+            <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
-              {data.top_producers.map((p) => (
+              {(data.top_producers || []).map((p) => (
                 <li key={p.id} className="flex justify-between border-b border-border pb-1.5">
                   <span>{p.name}</span>
                   <span className="text-text-secondary inline-flex items-center gap-1">
@@ -130,16 +130,20 @@ export default function AdminAnalyticsPage() {
       <div className="bg-white border border-border rounded-[12px] p-5">
         <h2 className="font-semibold mb-3">פיזור גיאוגרפי</h2>
         <p className="text-sm text-text-secondary mb-2">
-          {data.map_points.length} בתי עסק עם מיקום מיפוי
+          {(data.map_points || []).length} בתי עסק עם מיקום מיפוי
         </p>
-        <div className="bg-accent/30 rounded-[12px] p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-          {data.map_points.slice(0, 30).map((p) => (
-            <div key={p.id} className="bg-white rounded p-2 border border-border">
-              <p className="font-medium truncate">{p.name}</p>
-              <p className="text-text-secondary">{p.lat?.toFixed(3)}, {p.lng?.toFixed(3)}</p>
-            </div>
-          ))}
-        </div>
+        {(data.map_points || []).length === 0 ? (
+          <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
+        ) : (
+          <div className="bg-accent/30 rounded-[12px] p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+            {(data.map_points || []).slice(0, 30).map((p) => (
+              <div key={p.id} className="bg-white rounded p-2 border border-border">
+                <p className="font-medium truncate">{p.name}</p>
+                <p className="text-text-secondary">{p.lat?.toFixed(3)}, {p.lng?.toFixed(3)}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
