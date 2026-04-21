@@ -179,7 +179,7 @@ def register_producer(
 
 
 @router.get("/email-exists")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db)):
     """MEH-143: non-auth check so the producer register form can warn
     before submit that the email belongs to an existing consumer account."""
