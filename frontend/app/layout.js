@@ -1,4 +1,3 @@
-import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
@@ -11,6 +10,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidget from "@/components/ChatWidget";
 import InstallPrompt from "@/components/InstallPrompt";
+import ClarityScript from "@/components/ClarityScript";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
@@ -134,15 +134,7 @@ export default function RootLayout({ children }) {
           </SmoothScrollProvider>
           </LanguageProvider>
         </AuthProvider>
-        {CLARITY_PROJECT_ID && (
-          <Script id="ms-clarity" strategy="afterInteractive">
-            {`(function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");`}
-          </Script>
-        )}
+        {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}
       </body>
     </html>
   );
