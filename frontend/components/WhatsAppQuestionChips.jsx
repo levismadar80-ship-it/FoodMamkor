@@ -1,4 +1,4 @@
-import { normalizePhone } from "@/lib/utils";
+import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
 
 const BASE_QUESTIONS = [
   "יש לך לבן פרה השבוע?",
@@ -23,8 +23,7 @@ export default function WhatsAppQuestionChips({ producer }) {
       </p>
       <div className="flex flex-wrap gap-2">
         {questions.map((q) => {
-          const text = `שלום ${name}, ${q}`;
-          const href = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+          const href = getWhatsAppHref(digits, `שלום ${name}, ${q}`);
           return (
             <a
               key={q}

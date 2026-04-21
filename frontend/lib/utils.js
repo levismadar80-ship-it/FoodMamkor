@@ -5,6 +5,26 @@
  */
 
 /**
+ * Build a WhatsApp direct-message URL for a normalised phone number.
+ * On desktop (mouse + fine pointer) → web.whatsapp.com/send to avoid the
+ * wa.me redirect loop that dead-ends on desktop browsers without the app.
+ * On mobile → wa.me to open the native app directly.
+ * SSR (window undefined) → falls back to wa.me.
+ *
+ * @param {string} phone — normalised digits (output of normalizePhone)
+ * @param {string} [text] — pre-filled message text (plain, not encoded)
+ */
+export function getWhatsAppHref(phone, text = "") {
+  const encoded = encodeURIComponent(text);
+  const isDesktop =
+    typeof window !== "undefined" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  return isDesktop
+    ? `https://web.whatsapp.com/send?phone=${phone}&text=${encoded}`
+    : `https://wa.me/${phone}?text=${encoded}`;
+}
+
+/**
  * Normalize an Israeli phone number into the exact format that WhatsApp's
  * `wa.me` deep-link expects: a contiguous digit string with NO `+`, NO
  * spaces, NO dashes, NO parentheses, NO dots, NO other punctuation.
