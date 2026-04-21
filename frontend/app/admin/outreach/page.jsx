@@ -570,7 +570,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
                 <button
                   type="button"
                   onClick={() => openTemplate(tpl)}
-                  className="text-xs px-2 py-1 rounded bg-[#25D366] text-white hover:bg-[#1ea855]"
+                  className="btn-whatsapp text-xs px-2 py-1 rounded"
                 >
                   פתח ב-WhatsApp
                 </button>

@@ -21,7 +21,7 @@ const VARIANTS = {
   whatsapp: {
     Icon: WhatsappLogo,
     className:
-      "bg-[#25D366] text-white hover:bg-[#1ea855] focus-visible:ring-[#25D366]/40",
+      "btn-whatsapp",
   },
   phone: {
     Icon: Phone,
