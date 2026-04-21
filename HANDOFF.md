@@ -5,7 +5,8 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #201 (PR quality gate) — MERGED to staging (SHA f838500)
+PR merged/opened: #203 (MEH-142 edge cases audit) — OPEN as draft, targeting staging
+                 #201 (PR quality gate) — MERGED to staging (SHA f838500)
 Summary:
   PR #201: 3-layer PR quality gate
     - .github/pull_request_template.md: Type checkboxes, CI + manual checklists
@@ -19,16 +20,37 @@ Summary:
     - docs/DEPLOYMENT.md: documented exact CI check names for GitHub branch protection setup
     - Build ✅, all 57 pytest tests pass ✅
 
+  PR #203 (MEH-142 edge cases audit):
+    - docs/EDGE_CASES_AUDIT.md: 48 edge cases catalogued (frontend + backend + security + schema)
+    - 5 P0 issues (4 remain open; #1 JWT block already fixed in PR #201)
+    - 13 P1 issues; 30 P2 issues
+    - Security deep dive: JWT revocation, OAuth token replay, rate limit gaps, IDOR audit, file upload, CORS, secrets
+    - 13 new Linear issue titles recommended (MEH-143 through MEH-155)
+    - research only — no code changes
+
   Previous: #202 (MEH-95/96 WhatsApp colour tokens) — MERGED to staging 2026-04-21
 
 ## Current state
-Branch: staging
+Branch: feature/meh-142-edge-cases-audit (PR #203 open as draft)
 Staging HEAD: f838500 (PR quality gate — squash merge of #201)
 Main HEAD: e42127e (production release — staging ahead by multiple PRs)
 
 ## Next task
-  No open PRs. Ask user what to work on next.
-  Candidates from backlog:
+  After PR #203 merges — open Linear issues from the audit:
+  PRIORITY ORDER:
+    P0 (open immediately):
+    - MEH-144: max_length=200 on search_q (1 line)
+    - MEH-145: idempotent favorite + review (INSERT ON CONFLICT)
+    - MEH-146: null guard on admin dashboard pending_producers + monthly_producers
+    - MEH-147: complete RESERVED slug set
+    P1 (next sprint):
+    - MEH-148: WhatsApp CTA fallback for phone-null legacy records
+    - MEH-149: unify password validation policy
+    - MEH-153: force is_available_today=false when vacation mode set
+    - MEH-154: admin alert when ANTHROPIC_API_KEY missing
+    - MEH-155: admin dashboard indicator + Slack fallback when SMTP down
+
+  Backlog candidates (unchanged):
   - Admin analytics: referral count per producer
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
@@ -61,14 +83,13 @@ First step: decide which open PR to review/merge next — ask user.
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
 
 ## Open PRs
-- No open PRs as of 2026-04-21
+- #203: MEH-142 edge cases audit (feature/meh-142-edge-cases-audit → staging) — DRAFT
 
 ## Known issues (not yet filed)
 - Phase 3 text-right sweep on forms — partially done in PR #162
   (register/producer only); register/page.js + other forms still TBD
-- ProducerCard heart/favorite — Phase C not yet implemented (post-login replay)
-- Map WhatsApp CTA: old producer records without phone still skip the button.
-  Verify in production after staging redeploy.
+- ProducerCard heart/favorite — Phase C not yet implemented (post-login replay) [#39 in audit]
+- Map WhatsApp CTA: old producer records without phone still skip the button [#13, #48 in audit]
 - MEH-54 VAPID keys: must be set in Railway env for push to work. Fail-open until set.
 - MEH-50 SW timer push: only fires while SW is active. Server-side push (v2) needed
   for reliable delivery when app is closed.
@@ -78,6 +99,7 @@ First step: decide which open PR to review/merge next — ask user.
   visibility. If user resizes from desktop→mobile (or vice-versa) without a page
   reload, the registered API may point to the wrong map. Acceptable for v1 — full
   fix requires ResizeObserver-driven re-registration (v2 path).
+- Full edge cases audit: docs/EDGE_CASES_AUDIT.md — 48 items, see P0 list above for immediate actions.
 
 ## Do NOT start until you've reported
 - Current open PRs (git + GitHub)
