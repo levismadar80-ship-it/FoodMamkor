@@ -202,6 +202,24 @@ def _migrate_columns(engine):
                 {"new": new_slug, "id": str(row[0])},
             )
             log.warning("[MEH-148] renamed reserved slug '%s' → '%s' for producer %s", old_slug, new_slug, row[0])
+        # MEH-141: category request flow — new table for missing-category signals.
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS category_requests (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                requested_name VARCHAR(100) NOT NULL,
+                examples TEXT,
+                producer_id UUID REFERENCES producers(id) ON DELETE SET NULL,
+                status VARCHAR(20) DEFAULT 'pending' NOT NULL,
+                admin_notes TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+                reviewed_at TIMESTAMPTZ
+            )
+            """
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_category_requests_status ON category_requests(status)"
+        ))
         # MEH-155: clear vacation status for producers whose vacation_until has passed.
         result = conn.execute(text(
             "UPDATE producers SET availability_status = 'available', vacation_until = NULL"
@@ -387,6 +405,9 @@ app.include_router(users_me.router)
 app.include_router(admin_outreach.router)
 app.include_router(admin_outreach.prefill_router)
 app.include_router(chat.router)
+
+from app.routers import category_requests  # noqa: E402
+app.include_router(category_requests.router)
 app.include_router(referrals.router)
 app.include_router(group_buys.router)
 app.include_router(group_buys.admin_router)
