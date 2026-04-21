@@ -232,6 +232,8 @@ async def import_producers_excel(
         raise HTTPException(status_code=500, detail="openpyxl not installed")
 
     contents = await file.read()
+    if len(contents) > 10_000_000:
+        raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
     try:
         wb = load_workbook(BytesIO(contents), data_only=True)
     except Exception as e:

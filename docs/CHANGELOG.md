@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-21 — MEH-162: 4 security BLOCKs fixed — OAuth account-takeover IDOR (409 on silent link), file upload OOM (10MB cap), email header injection in experience_notifications, /forgot-password honest UI instead of fake success
+
 ## 2026-04-21 — MEH-XXX: SMTP → Resend migration — all 6 smtplib call sites replaced with shared `services/email.py` (Resend HTTP API); removes SMTP_HOST/PORT/USER/PASSWORD from config; Railway egress firewall no longer blocks email delivery
 
 ## 2026-04-21 — MEH-128: Vibe Coding Responsibility system — pre-edit-guard.js PreToolUse hook warns on central component edits (non-blocking); docs/CENTRAL_COMPONENTS.md 4-step protocol; docs/EMERGENCY_OVERRIDE.md; PR template central component checklist; CLAUDE.md guardrails section
