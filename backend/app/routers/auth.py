@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
-def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
+def register(request: Request, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
@@ -47,16 +47,19 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
     db.add(user)
     db.commit()
     db.refresh(user)
-    # LAUNCH_CHECKLIST week 3 — welcome email (fire-and-forget, no block)
-    _send_welcome_email(user.email, user.name, role="consumer")
+    # Email runs after response is sent — never blocks the 200
+    background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
     return Token(access_token=create_access_token(user.id))
 
 
 @router.post("/register/producer", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2
-def register_producer(request: Request, data: ProducerRegister, db: Session = Depends(get_db)):
+def register_producer(request: Request, data: ProducerRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
+        raise HTTPException(
+            status_code=409,
+            detail="האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך.",
+        )
 
     # MEH-17: validate primary contact method has its required field filled.
     method = (data.primary_contact_method or "whatsapp").strip().lower()
@@ -123,10 +126,13 @@ def register_producer(request: Request, data: ProducerRegister, db: Session = De
     db.commit()
     db.refresh(user)
 
-    _notify_admin_new_producer(producer)
-    _notify_producer_registered(producer)
-    # LAUNCH_CHECKLIST week 3 — welcome email (business variant)
-    _send_welcome_email(user.email, user.name, role="producer")
+    # All notifications run after the 200 is sent — never block the response.
+    # Previously these were synchronous calls; if SMTP/Twilio hung they caused
+    # the proxy (Vercel 30s) to time out, return 502, and orphan the created
+    # user+producer row (registration succeeded in DB but frontend saw failure).
+    background_tasks.add_task(_notify_admin_new_producer, producer)
+    background_tasks.add_task(_notify_producer_registered, producer)
+    background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
     return Token(access_token=create_access_token(user.id))
 
@@ -285,7 +291,7 @@ def _send_welcome_email(email: str, name: str, role: str = "consumer"):
         msg["From"] = settings.smtp_user
         msg["To"] = email
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg)
@@ -317,7 +323,7 @@ def _send_deletion_email(email: str, name: str):
         msg["From"] = settings.smtp_user
         msg["To"] = email
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg)
@@ -437,7 +443,7 @@ def _notify_admin_new_producer(producer: Producer):
             msg["From"] = settings.smtp_user
             msg["To"] = settings.admin_email
 
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
                 server.starttls()
                 server.login(settings.smtp_user, settings.smtp_password)
                 server.send_message(msg)

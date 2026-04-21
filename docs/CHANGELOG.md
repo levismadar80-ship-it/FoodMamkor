@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-21 — MEH-144: producer registration stuck "שולחת..." — notifications moved to BackgroundTasks (response no longer blocks on SMTP/Twilio), 409 for duplicate email, finally block on all 3 auth forms, timeout=10 on all 7 SMTP calls, 3 regression tests
+
 ## 2026-04-21 — MEH-95/96: WhatsApp colour tokens — .btn-whatsapp/.btn-whatsapp-outline/.bg-whatsapp utilities in globals.css; zero inline #25D366 across 7 files (#202)
 
 ## 2026-04-21 — MEH-129: CLAUDE.md execution principles §7–13 — Lazy Edit, Atomic Edits, Skeptic Mode, File:Line Evidence, Numbered Plan First, Narrated Actions, Real Imports Only (#200)
