@@ -1294,3 +1294,40 @@ class TestCategoryRequests:
         consumer = make_user(db, role="consumer")
         resp = client.get("/admin/category-requests", headers=auth_header(consumer))
         assert resp.status_code == 403
+
+    def test_non_admin_cannot_patch_request(self, client, db):
+        consumer = make_user(db, role="consumer")
+        create_resp = client.post(
+            "/category-requests",
+            json={"requested_name": "צמחי מרפא"},
+        )
+        assert create_resp.status_code == 201
+        req_id = create_resp.json()["id"]
+        resp = client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "approved"},
+            headers=auth_header(consumer),
+        )
+        assert resp.status_code == 403
+
+    def test_admin_notes_preserved_on_status_reset(self, client, db):
+        admin = make_user(db, role="admin")
+        create_resp = client.post(
+            "/category-requests",
+            json={"requested_name": "שמנים קרים"},
+        )
+        req_id = create_resp.json()["id"]
+        # Approve with notes
+        client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "approved", "admin_notes": "נבחן בגרסה הבאה"},
+            headers=auth_header(admin),
+        )
+        # Reset to pending (no notes sent) — notes must survive
+        resp = client.patch(
+            f"/admin/category-requests/{req_id}",
+            json={"status": "pending"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["admin_notes"] == "נבחן בגרסה הבאה"

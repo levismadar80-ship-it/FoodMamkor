@@ -4,10 +4,9 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user, require_admin
+from app.auth import require_admin
 from app.database import get_db
 from app.models.models import CategoryRequest
 from app.rate_limit import limiter
@@ -25,7 +24,7 @@ def submit_category_request(
 ):
     row = CategoryRequest(
         requested_name=body.requested_name.strip(),
-        examples=body.examples,
+        examples=body.examples.strip() if body.examples else None,
         producer_id=body.producer_id,
     )
     db.add(row)
@@ -86,7 +85,9 @@ def review_category_request(
     if not row:
         raise HTTPException(status_code=404, detail="בקשה לא נמצאה")
     row.status = body.status
-    row.admin_notes = body.admin_notes
+    # Only overwrite notes when the caller explicitly provides them.
+    if body.admin_notes is not None:
+        row.admin_notes = body.admin_notes
     row.reviewed_at = datetime.utcnow()
     db.commit()
     db.refresh(row)

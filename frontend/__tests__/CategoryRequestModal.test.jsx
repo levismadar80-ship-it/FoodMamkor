@@ -73,9 +73,16 @@ describe("CategoryRequestModal (MEH-141)", () => {
 
   it("calls onClose when backdrop clicked", () => {
     const onClose = vi.fn();
-    const { container } = render(<CategoryRequestModal open={true} onClose={onClose} />);
+    render(<CategoryRequestModal open={true} onClose={onClose} />);
     const backdrop = screen.getByRole("dialog");
     fireEvent.click(backdrop);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("calls onClose on Escape key — WCAG 2.1 §2.1.2", () => {
+    const onClose = vi.fn();
+    render(<CategoryRequestModal open={true} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });
 });

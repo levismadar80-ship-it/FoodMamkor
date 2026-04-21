@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
@@ -9,9 +9,16 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
   const [name, setName] = useState("");
   const [examples, setExamples] = useState("");
   const [loading, setLoading] = useState(false);
-  const nameRef = useRef(null);
 
   useFocusReturn(open);
+
+  // WCAG 2.1 §2.1.2 — Escape closes the dialog.
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -41,7 +48,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="cat-req-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+      className="fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-right" dir="rtl">
@@ -52,7 +59,6 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <input
-              ref={nameRef}
               autoFocus
               required
               maxLength={100}
