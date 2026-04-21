@@ -1026,3 +1026,66 @@ class TestDoubleSubmitIdempotency:
 
         r2 = client.post(f"/producers/{producer.id}/reviews", json=payload, headers=headers)
         assert r2.status_code in (200, 201), f"Second POST returned {r2.status_code}: {r2.text}"
+
+
+# ---------- MEH-153: Cloudinary Hebrew error messages ----------
+
+class TestCloudinaryHebrewErrors:
+    """Upload error responses must be Hebrew (MEH-153)."""
+
+    def test_freemium_limit_returns_hebrew(self, client, db):
+        """A producer on free plan with 3+ images gets a Hebrew 403."""
+        import io
+
+        user = make_user(db, role="producer", email="upload_limit@test.com")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        producer.plan = "free"
+        # images is ARRAY(Text) on Producer; set 3 URLs to hit the limit
+        producer.images = [
+            "https://res.cloudinary.com/test/img/0.jpg",
+            "https://res.cloudinary.com/test/img/1.jpg",
+            "https://res.cloudinary.com/test/img/2.jpg",
+        ]
+        db.commit()
+
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        resp = client.post(
+            "/upload/image",
+            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 403
+        detail = resp.json()["detail"]
+        assert "חינם" in detail or "חינמי" in detail, f"Expected Hebrew, got: {detail}"
+        assert "Free plan" not in detail, "English error leaked to user"
+
+    def test_oversized_image_returns_hebrew(self, client, db):
+        """Files over 5 MB return a Hebrew 400 error."""
+        import io
+        user = make_user(db, email="upload_size@test.com")
+        big_content = b"\xff\xd8\xff" + b"\x00" * (5 * 1024 * 1024 + 1)
+        resp = client.post(
+            "/upload/image",
+            files={"file": ("big.jpg", io.BytesIO(big_content), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+        detail = resp.json()["detail"]
+        assert "MB" in detail
+        assert "Upload failed" not in detail
+
+    def test_invalid_file_type_returns_hebrew(self, client, db):
+        """Non-image binary returns a Hebrew 400 error."""
+        import io
+        user = make_user(db, email="upload_type@test.com")
+        fake_pdf = b"%PDF-1.4 not an image"
+        resp = client.post(
+            "/upload/image",
+            files={"file": ("doc.pdf", io.BytesIO(fake_pdf), "application/pdf")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+        detail = resp.json()["detail"]
+        assert "JPG" in detail or "PNG" in detail or "תמונות" in detail
+        assert "Upload failed" not in detail
