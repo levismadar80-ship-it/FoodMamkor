@@ -5,42 +5,44 @@
 
 ## Last session
 Date: 2026-04-21
-PR merged/opened: #201 (PR quality gate) — MERGED to staging (SHA f838500)
+PR merged/opened: #205 (MEH-144 producer registration stuck) — MERGED to staging (SHA bfd7770)
 Summary:
-  PR #201: 3-layer PR quality gate
-    - .github/pull_request_template.md: Type checkboxes, CI + manual checklists
-    - .github/workflows/pr-checks.yml: build (Next.js) + pytest + adversarial-review jobs
-    - tests/conftest.py: added _reset_rate_limiter autouse fixture — SlowAPIMiddleware checks
-      rate limits before Pydantic validation, so even 422-bound requests burn quota; the
-      12 POST /contact tests exhaust the 5/hour limit without the reset
-    - backend/app/auth.py: fixed get_current_user to reject blocked users with 403 — previously
-      blocked users could still use valid JWTs on all authenticated endpoints (only /auth/login
-      had the is_blocked check). Root cause found by running the full test suite locally.
-    - docs/DEPLOYMENT.md: documented exact CI check names for GitHub branch protection setup
-    - Build ✅, all 57 pytest tests pass ✅
-
-  Previous: #202 (MEH-95/96 WhatsApp colour tokens) — MERGED to staging 2026-04-21
+  PR #205: fix(MEH-144) — producer registration stuck on "שולחת..."
+    Root cause: _notify_admin_new_producer, _notify_producer_registered, _send_welcome_email
+    were called synchronously after db.commit(). SMTP/Twilio hang → Vercel 30s proxy timeout
+    → 502 to frontend. DB rows committed → retry with same email → 400 orphan loop.
+    Fixes:
+    - backend/app/routers/auth.py: all 3 notification calls moved to FastAPI BackgroundTasks
+    - Duplicate email in register_producer: 400 → 409 with actionable Hebrew message
+    - Primitive capture before background tasks (DetachedInstanceError fix found in adversarial review)
+    - smtplib.SMTP timeout=10 on all 7 SMTP calls across 4 files
+    - frontend: setLoading in finally block on all 4 auth forms
+    - 3 regression tests added to TestAuth
+    Adversarial review found and fixed: DetachedInstanceError — ORM object passed to BG task
+    after session close; fixed by extracting p_name/p_city/p_phone as primitives.
 
 ## Current state
 Branch: staging
-Staging HEAD: f838500 (PR quality gate — squash merge of #201)
-Main HEAD: e42127e (production release — staging ahead by multiple PRs)
+Staging HEAD: bfd7770 (MEH-144 squash merge of #205)
+Main HEAD: e42127e (production release — staging ahead)
 
 ## Next task
-  No open PRs. Ask user what to work on next.
+  Open PRs on staging:
+  - PR #203: MEH-126 Playwright E2E infrastructure — still draft, needs review/merge
+  - PR #204: MEH-142 edge cases audit (docs-only) — still draft, needs review/merge
   Candidates from backlog:
-  - Admin analytics: referral count per producer
   - ProducerCard heart/favorite Phase C (post-login replay)
   - Lightbox for gallery images
   - Events section on producer detail page
+  - MEH-XXX: Migrate email from SMTP → HTTP-based provider (Resend/SendGrid) — Railway blocks SMTP
 
-  Deferred from design bundle (do NOT start without explicit user confirmation):
-  - Item 4: New homepage editorial sections (EditorialBreath, MeetAProducer, HowItWorks)
-  - Item 5: Botanical logo mark for Header/Layout
-
-First step: decide which open PR to review/merge next — ask user.
+First step: ask user which to tackle next.
 
 ## Key decisions (don't revisit)
+| Decision | Reason | Date |
+|----------|--------|------|
+| MEH-144: notifications via BackgroundTasks | Synchronous SMTP/Twilio blocked Vercel proxy → 502 + orphan users | April 2026 |
+| MEH-144: 409 (not 400) for dup email on producer register | Actionable message directing user to login; 400 was silent | April 2026 |
 | Decision | Reason | Date |
 |----------|--------|------|
 | MEH-78: mapPane dual-instance fix via BoundingClientRect | At effect time, display:none containers have 0 dimensions — reliable, no extra prop | April 2026 |
