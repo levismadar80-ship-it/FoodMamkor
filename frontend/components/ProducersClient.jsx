@@ -302,7 +302,12 @@ export default function ProducersClient({
         <>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
             {displayItems.map((p) => (
-              <ProducerCard key={p.id} producer={p} referrer="producers-index" />
+              <ProducerCard
+                key={p.id}
+                producer={p}
+                referrer="producers-index"
+                highlightQuery={searchQ || undefined}
+              />
             ))}
           </div>
 

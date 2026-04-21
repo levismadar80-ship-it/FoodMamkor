@@ -257,12 +257,15 @@ def list_producers(
     if response is not None:
         response.headers["X-Total-Count"] = str(total_count)
 
-    # MEH-99 — log zero-result searches for product discovery analytics.
-    if search_q and search_q.strip() and total_count == 0:
+    # MEH-99 — log every search (zero AND non-zero) so trending has signal.
+    # Zero-result rows are used for discovery; non-zero rows drive /search/trending.
+    if search_q and search_q.strip():
         try:
             db.execute(
-                text("INSERT INTO search_queries (query, results_count) VALUES (:q, 0)"),
-                {"q": search_q.strip()[:200]},
+                text(
+                    "INSERT INTO search_queries (query, results_count) VALUES (:q, :n)"
+                ),
+                {"q": search_q.strip()[:200], "n": total_count},
             )
             db.commit()
         except Exception:

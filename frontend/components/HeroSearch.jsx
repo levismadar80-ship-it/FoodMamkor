@@ -2,42 +2,59 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
 import api from "@/lib/api";
-import { highlightMatch } from "@/lib/highlight";
+import { highlightMatch } from "@/lib/highlightMatch";
 
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
  *
- * Differences from SmartSearch:
- *   - Submitting raw text navigates to /producers?q= (filtered listing).
- *   - Category selections navigate to /producers?q=<name>.
- *   - City selections navigate to /producers?q=<city>.
- *   - Producer/product selections go to the producer detail page.
- *   - Max 5 suggestions per section, 300ms debounce.
- *   - Self-contained: includes the magnifying glass icon on the end side (RTL-left).
+ * Routes to /producers?q= on submit (vs SmartSearch → /search?q=).
+ *
+ * Three dropdown states:
+ *   empty + focused + recent exist    → recent searches (🕐, localStorage)
+ *   empty + focused + no recent       → trending searches (🔥, /search/trending)
+ *   ≥2 chars typed                    → live autocomplete (producers / categories / cities)
  */
 
-function Highlighted({ text, query }) {
-  const parts = highlightMatch(text, query);
-  return (
-    <>
-      {parts.map((part, i) =>
-        typeof part === "string" ? (
-          <span key={i}>{part}</span>
-        ) : (
-          <mark key={i} className="bg-yellow-100 text-inherit rounded px-0.5">
-            {part.match}
-          </mark>
-        ),
-      )}
-    </>
-  );
-}
-
+// --- Recent searches helpers (localStorage) ---
+const RECENT_KEY = "mehamakor_recent_searches";
+const MAX_RECENT = 5;
 const DEBOUNCE_MS = 300;
 const MAX_PER_SECTION = 5;
 const EMPTY_RESULT = { producers: [], products: [], cities: [], categories: [] };
+
+function readRecent() {
+  try {
+    const raw = typeof window !== "undefined" && localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.slice(0, MAX_RECENT) : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(query) {
+  try {
+    const prev = readRecent();
+    const next = [query, ...prev.filter((q) => q !== query)].slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return readRecent();
+  }
+}
+
+function deleteRecent(query) {
+  try {
+    const next = readRecent().filter((q) => q !== query);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return readRecent();
+  }
+}
 
 export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   const router = useRouter();
@@ -46,10 +63,19 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [trending, setTrending] = useState([]);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const trendingFetchedRef = useRef(false);
 
+  // Hydrate recent searches after mount (localStorage is client-only).
+  useEffect(() => {
+    setRecentSearches(readRecent());
+  }, []);
+
+  // Debounced autocomplete fetch.
   useEffect(() => {
     const q = value.trim();
     if (q.length < 2) {
@@ -62,7 +88,10 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       abortRef.current = controller;
       setLoading(true);
       api
-        .get("/search", { params: { q, limit: MAX_PER_SECTION }, signal: controller.signal })
+        .get("/search", {
+          params: { q, limit: MAX_PER_SECTION },
+          signal: controller.signal,
+        })
         .then((r) => setResults(r.data || EMPTY_RESULT))
         .catch(() => setResults(EMPTY_RESULT))
         .finally(() => setLoading(false));
@@ -70,6 +99,16 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
     return () => clearTimeout(handle);
   }, [value]);
 
+  // Outside-click closes dropdown.
+  useEffect(() => {
+    const handler = (e) => {
+      if (!containerRef.current?.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Flat rows for keyboard navigation in autocomplete mode.
   const flatRows = useMemo(() => {
     const rows = [];
     for (const p of results.producers.slice(0, MAX_PER_SECTION)) {
@@ -84,13 +123,26 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
     return rows;
   }, [results]);
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (!containerRef.current?.contains(e.target)) setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const handleFocus = () => {
+    setIsOpen(true);
+    // Fetch trending once per mount, only when input is empty.
+    if (!value.trim() && !trendingFetchedRef.current) {
+      trendingFetchedRef.current = true;
+      api
+        .get("/search/trending")
+        .then((r) => setTrending(Array.isArray(r.data) ? r.data : []))
+        .catch(() => {});
+    }
+  };
+
+  const submitRaw = (q = value.trim()) => {
+    if (!q) return;
+    const next = pushRecent(q);
+    setRecentSearches(next);
+    setValue(q);
+    setIsOpen(false);
+    router.push(`/producers?q=${encodeURIComponent(q)}`);
+  };
 
   const navigate = (row) => {
     setIsOpen(false);
@@ -98,46 +150,56 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       const path = row.data.slug ? `/${row.data.slug}` : `/producer/${row.data.id}`;
       router.push(path);
     } else if (row.kind === "category") {
-      router.push(`/producers?q=${encodeURIComponent(row.data.name)}`);
+      submitRaw(row.data.name);
     } else if (row.kind === "city") {
-      router.push(`/producers?q=${encodeURIComponent(row.data)}`);
+      submitRaw(row.data);
     }
   };
 
-  const submitRaw = () => {
-    const q = value.trim();
-    if (!q) return;
-    setIsOpen(false);
-    router.push(`/producers?q=${encodeURIComponent(q)}`);
-  };
-
   const handleKeyDown = (e) => {
-    if (!isOpen || flatRows.length === 0) {
+    const trimmed = value.trim();
+    const isAutocomplete = trimmed.length >= 2;
+
+    if (!isOpen) {
       if (e.key === "Enter") {
         e.preventDefault();
         submitRaw();
       }
       return;
     }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightIdx((i) => Math.min(i + 1, flatRows.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightIdx((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const row = flatRows[highlightIdx];
-      if (row) navigate(row);
-      else submitRaw();
-    } else if (e.key === "Escape") {
-      setIsOpen(false);
+
+    if (isAutocomplete && flatRows.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightIdx((i) => Math.min(i + 1, flatRows.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightIdx((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const row = flatRows[highlightIdx];
+        if (row) navigate(row);
+        else submitRaw();
+      } else if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    } else {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitRaw();
+      } else if (e.key === "Escape") {
+        setIsOpen(false);
+      }
     }
   };
 
   const trimmed = value.trim();
-  const hasResults = flatRows.length > 0;
-  const showDropdown = isOpen && trimmed.length >= 2;
+  const isAutocomplete = trimmed.length >= 2;
+  const hasAutoResults = flatRows.length > 0;
+  const showAutocomplete = isOpen && isAutocomplete;
+  const showEmpty =
+    isOpen && !isAutocomplete && (recentSearches.length > 0 || trending.length > 0);
+
   let cursor = 0;
 
   return (
@@ -157,29 +219,34 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           setIsOpen(true);
           setHighlightIdx(0);
         }}
-        onFocus={() => setIsOpen(true)}
+        onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
-        aria-expanded={showDropdown && hasResults}
+        aria-expanded={(showAutocomplete && hasAutoResults) || showEmpty}
         aria-autocomplete="list"
         aria-controls="hero-search-listbox"
-        aria-activedescendant={hasResults ? `hero-search-row-${highlightIdx}` : undefined}
+        aria-activedescendant={
+          isAutocomplete && hasAutoResults
+            ? `hero-search-row-${highlightIdx}`
+            : undefined
+        }
       />
 
       {/* Magnifying glass on the end-side (left in RTL) */}
       <button
         type="button"
-        onClick={submitRaw}
+        onClick={() => submitRaw()}
         className="shrink-0 text-primary hover:text-primary-dark transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="חיפוש"
       >
         <MagnifyingGlass size={22} weight="bold" aria-hidden="true" />
       </button>
 
-      {showDropdown && (
+      {/* ---- Autocomplete dropdown (≥2 chars) ---- */}
+      {showAutocomplete && (
         <div
           id="hero-search-listbox"
           role="listbox"
@@ -187,10 +254,10 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-right"
           dir="rtl"
         >
-          {loading && !hasResults && (
+          {loading && !hasAutoResults && (
             <p className="px-3 py-3 text-xs text-site-muted">טוענת תוצאות...</p>
           )}
-          {!loading && !hasResults && (
+          {!loading && !hasAutoResults && (
             <p className="px-3 py-3 text-xs text-site-muted">
               אין תוצאות עבור &quot;{trimmed}&quot;
             </p>
@@ -208,9 +275,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                     onSelect={() => navigate({ kind: "producer", data: p })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    <div className="font-medium">
-                      <Highlighted text={p.name} query={trimmed} />
-                    </div>
+                    <div className="font-medium">{highlightMatch(p.name, trimmed)}</div>
                     {p.city && (
                       <div className="text-xs text-site-muted mt-0.5">{p.city}</div>
                     )}
@@ -233,7 +298,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                     onHover={() => setHighlightIdx(i)}
                   >
                     <span>{c.emoji ? `${c.emoji} ` : ""}</span>
-                    <Highlighted text={c.name} query={trimmed} />
+                    {highlightMatch(c.name, trimmed)}
                   </Row>
                 );
               })}
@@ -252,10 +317,75 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                     onSelect={() => navigate({ kind: "city", data: city })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    <Highlighted text={city} query={trimmed} />
+                    {highlightMatch(city, trimmed)}
                   </Row>
                 );
               })}
+            </Section>
+          )}
+        </div>
+      )}
+
+      {/* ---- Empty-input dropdown (recent or trending) ---- */}
+      {showEmpty && (
+        <div
+          data-testid="hero-search-history"
+          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl text-right"
+          dir="rtl"
+        >
+          {recentSearches.length > 0 ? (
+            <Section title="חיפושים אחרונים">
+              {recentSearches.map((q) => (
+                <li
+                  key={q}
+                  className="flex items-center justify-between px-3 py-2.5 text-sm text-site-text hover:bg-light/50 cursor-pointer min-h-[44px]"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    submitRaw(q);
+                  }}
+                >
+                  <span className="flex items-center gap-2">
+                    <ClockCounterClockwise
+                      size={16}
+                      className="text-site-muted shrink-0"
+                      aria-hidden="true"
+                    />
+                    {q}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-site-muted hover:text-site-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    aria-label={`הסר ${q} מהחיפושים האחרונים`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setRecentSearches(deleteRecent(q));
+                    }}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </Section>
+          ) : (
+            <Section title="חיפושים פופולריים">
+              {trending.map((q) => (
+                <li
+                  key={q}
+                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-site-text hover:bg-light/50 cursor-pointer min-h-[44px]"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    submitRaw(q);
+                  }}
+                >
+                  <Fire
+                    size={16}
+                    className="text-primary shrink-0"
+                    aria-hidden="true"
+                  />
+                  {q}
+                </li>
+              ))}
             </Section>
           )}
         </div>
@@ -286,7 +416,7 @@ function Row({ id, active, onSelect, onHover, children }) {
         onSelect();
       }}
       onMouseEnter={onHover}
-      className={`px-3 py-2.5 cursor-pointer text-sm ${
+      className={`px-3 py-2.5 cursor-pointer text-sm min-h-[44px] flex items-start flex-col justify-center ${
         active ? "bg-light text-primary" : "text-site-text hover:bg-light/50"
       }`}
     >
