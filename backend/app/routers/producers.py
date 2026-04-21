@@ -323,18 +323,23 @@ def record_whatsapp_click(
     request: Request,
     producer_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """Log a WhatsApp CTA click for the producer dashboard.
 
-    Anonymous (no auth). Frontend fires this via `navigator.sendBeacon`
-    immediately before opening `wa.me` — fire-and-forget, doesn't block
-    the window. Rate-limited 10/minute per IP to bound abuse. Unknown
-    producer IDs return 404.
+    Auth optional — JWT is accepted when present so the click can be
+    attributed to a registered user. Frontend fires this via
+    `navigator.sendBeacon` immediately before opening `wa.me` —
+    fire-and-forget, doesn't block the window. Rate-limited 10/minute
+    per IP to bound abuse. Unknown producer IDs return 404.
     """
     exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
     if not exists:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    db.add(ProducerWhatsAppClick(producer_id=producer_id))
+    db.add(ProducerWhatsAppClick(
+        producer_id=producer_id,
+        user_id=current_user.id if current_user else None,
+    ))
     db.commit()
     return {"detail": "logged"}
 
