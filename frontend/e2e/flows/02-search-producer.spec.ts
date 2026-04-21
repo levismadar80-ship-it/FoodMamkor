@@ -10,7 +10,9 @@ test.describe("Search", () => {
     // Click the submit button directly — avoids the autocomplete dropdown
     // intercepting Enter (highlightIdx=0 on open, so Enter would navigate
     // to the first suggestion instead of /producers).
-    await page.locator('button[aria-label="חיפוש"]').click();
+    // Use data-testid to avoid strict-mode collision with Header's search
+    // buttons which share the same aria-label="חיפוש".
+    await page.locator('[data-testid="hero-search-submit"]').click();
 
     // Should land on /producers (with or without query string)
     await page.waitForURL(/\/producers/, { timeout: 10_000 });
