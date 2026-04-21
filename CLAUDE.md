@@ -162,8 +162,8 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 - **Anthropic `proxies` kwarg** — always pass `http_client=httpx.Client()` (see Key locked decisions). Don't "clean up" the kwarg.
 - **Duplicate producer-detail CTAs** — sidebar WhatsApp is canonical; sticky bar is mobile-only. Never render both at the same breakpoint.
 
-## עקרונות ביצוע — Cursor · Devin · V0 · Manus · Windsurf (2026)
-> Workflow rules 1–19 = how to *structure* work. These = how to *execute* it.
+## עקרונות ביצוע (exec §7–13) — Cursor · Devin · V0 · Manus · Windsurf (2026)
+> Workflow rules 1–19 cover primarily *structure*. These cover *execution*. When referencing by number, use "exec §N" to avoid collision with workflow rule N.
 
 7. **Lazy Edit (Cursor)** — changed lines + `// ... existing code ...` markers only. Never return a full file.
 8. **Atomic Edits (Cursor)** — 3 changes in one file = 1 edit call, not 3. All-or-nothing.
@@ -185,7 +185,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 - `/adversarial-review` — FINDER→ADVERSARY→REFEREE review of all changed files; required before every merge (rule 5a).
 
 ## How to update this file
-- Keep it ≤ 245 lines (raised from 195 in April 2026 when execution principles §7–13 were added). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
+- Keep it ≤ 245 lines (raised from 195 in April 2026 when execution principles §7–13 were added; cap applies to non-diagram content ~190 lines + ~50 lines diagrams). If you need more space, the content belongs in `docs/` or [.ai/diagrams/](./.ai/diagrams/), not here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
 
 ## Architecture Diagrams
