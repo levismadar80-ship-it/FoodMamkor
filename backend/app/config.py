@@ -48,13 +48,11 @@ class Settings(BaseSettings):
     twilio_whatsapp_from: str = ""
     admin_whatsapp_to: str = ""
 
-    # SMTP Email
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    # Admin account — used both as the SMTP notification recipient AND as
-    # the initial admin user seeded on first boot (see seed_data.py).
+    # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
+    # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
+    resend_api_key: str = ""
+    # Admin account — used as the notification recipient AND as the initial
+    # admin user seeded on first boot (see seed_data.py).
     # Leave admin_password empty in local dev to skip the admin seed.
     admin_email: str = ""
     admin_password: str = ""

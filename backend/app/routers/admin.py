@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
+from app.services.email import send_email
 from app.database import get_db
 from app.models import Category, DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
 from app.schemas.schemas import (
@@ -530,27 +531,7 @@ def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)
 
 
 def _send_notification_email(to_email: str, subject: str, body: str):
-    """Send email notification."""
-    if not settings.smtp_user:
-        logger.debug(f"[EMAIL] Would send to {to_email}: {subject}")
-        return
-
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = settings.smtp_user
-        msg["To"] = to_email
-
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as server:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
-        logger.info(f"[EMAIL] Sent to {to_email}")
-    except Exception as e:
-        logger.warning(f"[EMAIL] Failed to send to {to_email}: {e}")
+    send_email(to_email, subject, body)
 
 
 def _send_whatsapp(to: str, body: str):
