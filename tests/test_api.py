@@ -906,3 +906,38 @@ class TestAvatarUpload:
             files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
         )
         assert resp.status_code == 401
+
+
+# ---------- MEH-146: double-submit idempotency ----------
+
+class TestDoubleSubmitIdempotency:
+    """MEH-146 — duplicate POST on favorites and reviews must return 200, not 500."""
+
+    def test_favorite_double_submit_is_idempotent(self, client, db):
+        user = make_user(db, email="fav_double@test.com")
+        producer = make_producer(db)
+        headers = auth_header(user)
+
+        r1 = client.post(f"/users/me/favorites/{producer.id}", headers=headers)
+        assert r1.status_code in (200, 201)
+
+        r2 = client.post(f"/users/me/favorites/{producer.id}", headers=headers)
+        assert r2.status_code in (200, 201), f"Second POST returned {r2.status_code}: {r2.text}"
+
+    def test_review_double_submit_is_idempotent(self, client, db):
+        user = make_user(db, email="rev_double@test.com")
+        producer = make_producer(db)
+        headers = auth_header(user)
+
+        # Satisfy the WhatsApp-click gate
+        from app.models.models import ProducerWhatsAppClick
+        click = ProducerWhatsAppClick(producer_id=producer.id, user_id=user.id)
+        db.add(click)
+        db.commit()
+
+        payload = {"stars": 4, "title": "נהדר", "body": "מאוד טרי"}
+        r1 = client.post(f"/producers/{producer.id}/reviews", json=payload, headers=headers)
+        assert r1.status_code in (200, 201)
+
+        r2 = client.post(f"/producers/{producer.id}/reviews", json=payload, headers=headers)
+        assert r2.status_code in (200, 201), f"Second POST returned {r2.status_code}: {r2.text}"

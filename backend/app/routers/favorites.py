@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user
@@ -33,8 +34,12 @@ def add_favorite(producer_id: UUID, user: User = Depends(get_current_user), db: 
     if existing:
         return {"detail": "Already in favorites"}
 
-    db.add(Favorite(user_id=user.id, producer_id=producer_id))
-    db.commit()
+    try:
+        db.add(Favorite(user_id=user.id, producer_id=producer_id))
+        db.commit()
+    except IntegrityError:
+        # Concurrent request already inserted the same row — idempotent.
+        db.rollback()
     return {"detail": "Added to favorites"}
 
 
