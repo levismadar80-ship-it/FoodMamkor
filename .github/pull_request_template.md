@@ -38,3 +38,14 @@ Example:
   - `docs/SECURITY.md` if auth or permissions changed
   - `docs/DEPLOYMENT.md` if env vars or infra changed
   - `docs/MANUAL_TESTING.md` if new user-facing flows added
+
+## Central Component Checklist (skip if no central components touched)
+
+Central components: `MapClient.jsx`, `ProducerDetailClient.jsx`, `main.py`, `auth.py`,
+`routers/producers.py`, `routers/admin.py`, `routers/auth.py`.
+Full list: `.claude/central-components.json`. Protocol: `docs/CENTRAL_COMPONENTS.md`.
+
+- [ ] Read the full file before editing (not a partial read)
+- [ ] `/adversarial-review` ran after editing (even if build was failing)
+- [ ] Regression test added/updated for any logic change
+- [ ] HANDOFF.md documents what changed and why

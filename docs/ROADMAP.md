@@ -34,6 +34,9 @@
 - [ ] /producer/dashboard — זמינות יומית + סטטיסטיקות + הוספת אירוע
 - [ ] "עסקים דומים" בתחתית עמוד עסק
 - [ ] "עסקים חדשים" סקציה בדף הבית
+- [ ] ProducerCard heart/favorite Phase C — post-login replay (user favorited while logged out → replay after login)
+- [ ] Lightbox for gallery images — full-screen image viewer on producer detail page
+- [ ] Events section on homepage — preview strip of upcoming farm/producer events (feeds from /events)
 
 ### לפני דומיין — חובה לעבור:
 - [ ] Docker + localhost עובד
