@@ -908,6 +908,91 @@ class TestAvatarUpload:
         assert resp.status_code == 401
 
 
+# ---------- MEH-148: Reserved slug protection ----------
+
+class TestReservedSlugs:
+    """Producer slugs must not collide with app routes (MEH-148)."""
+
+    def test_admin_create_with_explicit_reserved_slug_returns_400(self, client, db):
+        admin = make_user(db, role="admin")
+        resp = client.post(
+            "/admin/producers",
+            json={
+                "name": "חנות נהדרת",
+                "slug": "about",
+                "city": "תל אביב",
+            },
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 400
+        assert "שמור" in resp.json()["detail"]
+
+    def test_admin_create_reserved_slug_variants(self, client, db):
+        admin = make_user(db, role="admin")
+        for reserved in ("map", "admin", "login", "search", "favorites", "api"):
+            resp = client.post(
+                "/admin/producers",
+                json={"name": "עסק", "slug": reserved, "city": "חיפה"},
+                headers=auth_header(admin),
+            )
+            assert resp.status_code == 400, f"Expected 400 for slug '{reserved}'"
+
+    def test_admin_create_with_reserved_name_auto_suffixes_slug(self, client, db):
+        """When name auto-generates a reserved slug, the slug should be suffixed."""
+        admin = make_user(db, role="admin")
+        # Name "about" → slug "about" is reserved → should become "about-2"
+        resp = client.post(
+            "/admin/producers",
+            json={"name": "about", "city": "ירושלים"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["slug"] not in ("about",), "Reserved slug was assigned unchanged"
+        assert body["slug"].startswith("about-")
+
+    def test_admin_update_with_reserved_slug_returns_400(self, client, db):
+        admin = make_user(db, role="admin")
+        producer = make_producer(db)
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json={"slug": "map"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 400
+        assert "שמור" in resp.json()["detail"]
+
+    def test_producer_me_update_with_reserved_slug_returns_400(self, client, db):
+        """A producer user cannot set their own slug to a reserved word."""
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+        resp = client.put(
+            "/producers/me",
+            json={"slug": "admin"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+        assert "שמור" in resp.json()["detail"]
+
+    def test_non_reserved_slug_is_accepted(self, client, db):
+        admin = make_user(db, role="admin")
+        resp = client.post(
+            "/admin/producers",
+            json={"name": "חוות האגס", "slug": "chavat-ha-egas", "city": "כפר סבא"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 201
+        assert resp.json()["slug"] == "chavat-ha-egas"
+
+    def test_reserved_slug_set_contains_key_routes(self, client, db):
+        """Smoke-test the RESERVED_SLUGS constant itself."""
+        from app.slug_utils import RESERVED_SLUGS
+        for route in ("about", "map", "login", "admin", "search", "api"):
+            assert route in RESERVED_SLUGS
+
+
 # ---------- MEH-146: double-submit idempotency ----------
 
 class TestDoubleSubmitIdempotency:

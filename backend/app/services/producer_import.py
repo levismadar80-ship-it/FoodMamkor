@@ -19,6 +19,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models import Category, DeliveryArea, Producer, ProducerCategory
+from app.slug_utils import RESERVED_SLUGS
 
 
 def _slugify(text: str) -> str:
@@ -46,11 +47,12 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id=None) -> str:
     candidate = base_slug
     counter = 2
     while True:
-        q = db.query(Producer).filter(Producer.slug == candidate)
-        if exclude_id:
-            q = q.filter(Producer.id != exclude_id)
-        if not q.first():
-            return candidate
+        if candidate not in RESERVED_SLUGS:
+            q = db.query(Producer).filter(Producer.slug == candidate)
+            if exclude_id:
+                q = q.filter(Producer.id != exclude_id)
+            if not q.first():
+                return candidate
         candidate = f"{base_slug}-{counter}"
         counter += 1
 

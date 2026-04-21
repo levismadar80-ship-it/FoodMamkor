@@ -20,6 +20,7 @@ from app.schemas.schemas import (
     ProducerImportResult,
     ProducerUpdate,
 )
+from app.slug_utils import RESERVED_SLUGS
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -48,17 +49,18 @@ def _yes_no(value) -> bool:
 
 
 def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = None) -> str:
-    """Append -2, -3, ... until slug is unique."""
+    """Append -2, -3, ... until slug is unique and not reserved."""
     if not base_slug:
         return base_slug
     candidate = base_slug
     counter = 2
     while True:
-        q = db.query(Producer).filter(Producer.slug == candidate)
-        if exclude_id:
-            q = q.filter(Producer.id != exclude_id)
-        if not q.first():
-            return candidate
+        if candidate not in RESERVED_SLUGS:
+            q = db.query(Producer).filter(Producer.slug == candidate)
+            if exclude_id:
+                q = q.filter(Producer.id != exclude_id)
+            if not q.first():
+                return candidate
         candidate = f"{base_slug}-{counter}"
         counter += 1
 
@@ -109,6 +111,9 @@ def admin_create_producer(
 ):
     """Admin-created producers are auto-approved."""
     slug = data.slug or _slugify(data.name)
+    # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
+    if data.slug and _slugify(data.slug) in RESERVED_SLUGS:
+        raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
     slug = _ensure_unique_slug(db, slug)
 
     producer = Producer(
@@ -166,9 +171,12 @@ def admin_update_producer(
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
 
-    # Keep slug unique if changed
+    # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:
-        payload["slug"] = _ensure_unique_slug(db, _slugify(payload["slug"]), exclude_id=producer.id)
+        candidate = _slugify(payload["slug"])
+        if candidate in RESERVED_SLUGS:
+            raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+        payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
 
     # Mirror price_range → starting_price_label for backward-compat display
     if "price_range" in payload:

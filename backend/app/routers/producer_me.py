@@ -33,6 +33,7 @@ from app.schemas.schemas import (
     OtpConfirmIn,
 )
 from app.services.trust_tier import VALID_BADGE_CODES
+from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +89,26 @@ def update_my_producer(
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
+
+    # Validate and deduplicate slug if explicitly provided.
+    if "slug" in payload and payload["slug"]:
+        raw = _slugify_me(payload["slug"])
+        if raw in RESERVED_SLUGS:
+            raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+        # Ensure uniqueness — producers can't collide with each other or reserved routes.
+        candidate = raw
+        counter = 2
+        while True:
+            if candidate not in RESERVED_SLUGS:
+                existing = db.query(Producer).filter(
+                    Producer.slug == candidate,
+                    Producer.id != producer.id,
+                ).first()
+                if not existing:
+                    break
+            candidate = f"{raw}-{counter}"
+            counter += 1
+        payload["slug"] = candidate
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
