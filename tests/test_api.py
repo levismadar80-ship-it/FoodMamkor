@@ -67,6 +67,51 @@ class TestAuth:
         assert resp.status_code == 200
         assert resp.json()["email"] == "me@test.com"
 
+    # --- Producer registration (MEH-144 regression tests) ---
+
+    VALID_PRODUCER_REG = {
+        "email": "producer@test.com",
+        "name": "שרה ישראלית",
+        "password": "Pass1234!",
+        "producer_name": "חוות שרה",
+        "phone": "0501234567",
+        "category_ids": [],
+        "primary_contact_method": "whatsapp",
+    }
+
+    def test_register_producer_succeeds_returns_token(self, client, db):
+        """Valid payload → 200 + JWT; user+producer rows created."""
+        resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]
+        from app.models.models import User, Producer
+        user = db.query(User).filter(User.email == "producer@test.com").first()
+        assert user is not None
+        assert user.role == "producer"
+        producer = db.query(Producer).filter(Producer.name == "חוות שרה").first()
+        assert producer is not None
+        assert producer.status == "pending_whatsapp"
+
+    def test_register_producer_duplicate_email_returns_409(self, client, db):
+        """Existing email → 409 (not 400) with actionable Hebrew message."""
+        make_user(db, email="producer@test.com")
+        resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
+        assert resp.status_code == 409
+        assert "התחברי לחשבון שלך" in resp.json()["detail"]
+
+    def test_register_producer_email_failure_still_succeeds(self, client, db):
+        """SMTP failure must never block the 200 response (fire-and-forget)."""
+        from unittest.mock import patch
+        import smtplib
+        with patch("smtplib.SMTP", side_effect=smtplib.SMTPException("SMTP down")):
+            resp = client.post("/auth/register/producer", json={
+                **self.VALID_PRODUCER_REG,
+                "email": "producer2@test.com",
+                "producer_name": "חוות שרה 2",
+            })
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]
+
 
 # ---------- Producers ----------
 
@@ -336,8 +381,8 @@ class TestMeh56WhatsAppOnboarding:
     def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
         # Stub out Twilio and email so no network calls
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "_notify_admin_new_producer", lambda p: None)
-        monkeypatch.setattr(auth_mod, "_notify_producer_registered", lambda p: None)
+        monkeypatch.setattr(auth_mod, "_notify_admin_new_producer", lambda name, city: None)
+        monkeypatch.setattr(auth_mod, "_notify_producer_registered", lambda name, phone: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
         resp = client.post("/auth/register/producer", json={
@@ -527,7 +572,7 @@ class TestContact:
         sent = {}
 
         class FakeSMTP:
-            def __init__(self, host, port):
+            def __init__(self, host, port, **kwargs):
                 sent["host"] = host
                 sent["port"] = port
 
@@ -583,7 +628,7 @@ class TestContact:
         sent = {}
 
         class FakeSMTP:
-            def __init__(self, host, port):
+            def __init__(self, host, port, **kwargs):
                 pass
 
             def __enter__(self):
