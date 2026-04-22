@@ -5,8 +5,9 @@
 
 ## Last session
 Date: 2026-04-22
-PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102)
+PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102) + #240 (MEH-102 bugfix)
 Summary:
+  PR #240: MEH-102 bugfix — CSP img-src: added https://unpkg.com (Leaflet marker icons); Array.isArray guard on similar-producers r.data; Waze button hidden on desktop via mobile UA detection
   PR #238: MEH-212 Playwright E2E CI — deployment_status trigger replaces Vercel bot comment poll; TEST_URL from event; timeout-minutes 20→15; fallback (repository_dispatch) documented in DEPLOYMENT.md; confirmed working: job fires in ~3m 35s
   PR #237: MEH-102 Producer detail content — opening_hours column + migration; OpeningHours.jsx; MiniMap.jsx; similar producers section; MEH-79 closed as duplicate
   PR #236: MEH-106 Social proof — favorites_count on ProducerCard + ProducerDetail
