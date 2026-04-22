@@ -407,19 +407,26 @@ def get_vapid_public_key():
 @app.get("/holiday-mode")
 @limiter.limit("60/minute")
 def get_holiday_mode(request: Request):
-    """Return holiday-mode state for the frontend banner."""
+    """Return holiday-mode state for the frontend banner.
+
+    MEH-247 — reads the same admin_settings keys the /admin/settings page
+    writes (`holiday_override_enabled`, `holiday_override_key`), and returns
+    the `{enabled, key}` shape the `HolidayBanner` component consumes.
+    Prior to this fix the endpoint read different keys and returned a
+    `{active, banner_text}` shape, so the banner never lit up.
+    """
     from app.database import SessionLocal
     from app.models.models import AdminSetting
     db = None
     try:
         db = SessionLocal()
         rows = db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["holiday_mode_active", "holiday_mode_banner_text"])
+            AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
         ).all()
         kv = {r.key: r.value for r in rows}
         return {
-            "active": kv.get("holiday_mode_active", "false").lower() == "true",
-            "banner_text": kv.get("holiday_mode_banner_text") or None,
+            "enabled": (kv.get("holiday_override_enabled") or "false").lower() == "true",
+            "key": kv.get("holiday_override_key") or None,
         }
     finally:
         if db is not None:
