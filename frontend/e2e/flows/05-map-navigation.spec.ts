@@ -1,13 +1,21 @@
 import { test, expect } from "@playwright/test";
 
+// Cold Vercel preview: Leaflet is ssr:false so the dynamic chunk fetch + React
+// mount can take 30-45s. These overrides apply only to this spec file.
+test.describe.configure({ retries: 1 });
+
 test.describe("Map", () => {
+  test.use({ actionTimeout: 15_000 });
+
   test("map page loads and centers on Israel", async ({ page }) => {
     // Leaflet is ssr:false — chunk download + React mount takes up to ~30s on
     // cold Vercel preview. Override the global 30s test timeout so the
     // waitForSelector below has room to breathe.
     test.setTimeout(90_000);
     await page.goto("/map");
-    await page.waitForLoadState("domcontentloaded");
+    // networkidle ensures the Leaflet JS chunk has been fetched before we poll
+    // for .leaflet-container — avoids false timeouts on cold Vercel previews.
+    await page.waitForLoadState("networkidle");
     // MapComponent is ssr:false — dynamic import must complete before Leaflet
     // initialises and adds .leaflet-container. In CI (cold Vercel preview)
     // the chunk fetch can take up to ~35s; 45s gives comfortable headroom.
