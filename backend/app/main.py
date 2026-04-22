@@ -362,7 +362,7 @@ async def record_request_metrics(request: Request, call_next) -> Response:
         try:
             record_request(duration_ms)
         except Exception:
-            pass
+            log.debug("[metrics] record_request failed (non-fatal)", exc_info=True)
 
 
 app.include_router(auth.router)

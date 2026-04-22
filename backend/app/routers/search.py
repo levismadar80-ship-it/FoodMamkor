@@ -10,6 +10,8 @@ producers). If this grows past ~10k rows we'd swap to pg_trgm GIN.
 import time
 from uuid import UUID
 
+import structlog
+
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import or_, text
@@ -18,6 +20,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
+
+logger = structlog.get_logger(__name__)
 
 # In-memory cache for trending queries — single entry, 1-hour TTL.
 _trending_cache: dict = {"data": None, "ts": 0.0}
@@ -199,6 +203,7 @@ def trending_searches(db: Session = Depends(get_db)):
         ).fetchall()
         result = [row[0] for row in rows]
     except Exception:
+        logger.warning("[search] trending cache DB query failed — returning empty", exc_info=True)
         result = []
 
     _trending_cache["data"] = result

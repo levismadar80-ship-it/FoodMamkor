@@ -54,6 +54,7 @@ def _get_client():
     if _client is not None:
         return _client
     if not settings.anthropic_api_key:
+        logger.debug("[experience-moderation] ANTHROPIC_API_KEY not set — client unavailable")
         return None
     try:
         import anthropic
@@ -137,6 +138,7 @@ def _safe_decimal(value) -> float | None:
     try:
         return float(Decimal(str(value)))
     except Exception:
+        logger.debug("[experience-moderation] decimal conversion failed", value=repr(value))
         return None
 
 

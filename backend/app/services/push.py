@@ -24,6 +24,7 @@ def send_push_notification(subscription: dict, *, title: str, body: str, url: st
     from app.config import settings
 
     if not settings.vapid_private_key or not settings.vapid_public_key:
+        log.debug("[push] push notifications disabled — VAPID keys not set")
         return
 
     try:
