@@ -21,6 +21,20 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
+class City(Base):
+    """MEH-213: canonical Israeli city list seeded from data.gov.il.
+    Used to validate delivery_cities on producers — free text is forbidden
+    to prevent duplicates and broken search (e.g. ת״א vs תל אביב-יפו).
+    """
+    __tablename__ = "cities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name_he = Column(String(100), unique=True, nullable=False)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Producer(Base):
     __tablename__ = "producers"
 
@@ -74,6 +88,14 @@ class Producer(Base):
     vacation_until = Column(Date, nullable=True)
     # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
     opening_hours = Column(String, nullable=True)
+    # MEH-213: location mode. Two independent booleans (not an enum) because
+    # a producer can have BOTH a physical store AND offer delivery.
+    # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
+    has_physical_location = Column(Boolean, nullable=False, default=True)
+    offers_delivery = Column(Boolean, nullable=False, default=False)
+    # Delivery scope — mutually exclusive: nationwide flag XOR city list.
+    delivery_nationwide = Column(Boolean, nullable=False, default=False)
+    delivery_cities = Column(ARRAY(Text), nullable=False, default=[])
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)

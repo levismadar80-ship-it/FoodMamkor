@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 
@@ -41,6 +42,11 @@ const EMPTY = {
   is_recommended: false,
   admin_notes: "",
   images: [],
+  // MEH-213 — location mode
+  has_physical_location: true,
+  offers_delivery: false,
+  delivery_nationwide: false,
+  delivery_cities: [],
 };
 
 export default function ProducerForm({ initial = null, producerId = null }) {
@@ -78,6 +84,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
         admin_notes: initial.admin_notes ?? "",
         opening_hours: initial.opening_hours ?? "",
+        // MEH-213 — location mode
+        has_physical_location: initial.has_physical_location ?? true,
+        offers_delivery: initial.offers_delivery ?? false,
+        delivery_nationwide: initial.delivery_nationwide ?? false,
+        delivery_cities: initial.delivery_cities ?? [],
       });
     }
   }, [initial]);
@@ -385,6 +396,61 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </div>
       </Section>
 
+      {/* MEH-213 — location type */}
+      <Section title="סוג העסק">
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.has_physical_location}
+              onChange={(e) => update("has_physical_location", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🏪 חנות פיזית (קבלת לקוחות)
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.offers_delivery}
+              onChange={(e) => update("offers_delivery", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🚚 משלוחים
+          </label>
+          {!form.has_physical_location && !form.offers_delivery && (
+            <p className="text-xs text-red-600">חייב לסמן לפחות אחד מהשניים</p>
+          )}
+          {form.offers_delivery && (
+            <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.delivery_nationwide}
+                  onChange={(e) => {
+                    update("delivery_nationwide", e.target.checked);
+                    if (e.target.checked) update("delivery_cities", []);
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+                משלוחים לכל הארץ
+              </label>
+              {!form.delivery_nationwide && (
+                <div>
+                  <span className="block text-sm text-text-secondary mb-1">ערים שמשלוחים אליהן</span>
+                  <CitiesAutocomplete
+                    value={form.delivery_cities}
+                    onChange={(cities) => update("delivery_cities", cities)}
+                  />
+                  {form.delivery_cities.length === 0 && (
+                    <p className="text-xs text-red-600 mt-1">יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Section>
+
       <Section title="משלוחים ואיסוף">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -507,7 +573,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={
+            saving ||
+            (!form.has_physical_location && !form.offers_delivery) ||
+            (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
+          }
           className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
           {saving ? "שומר..." : producerId ? "שמור שינויים" : "צור עסק"}

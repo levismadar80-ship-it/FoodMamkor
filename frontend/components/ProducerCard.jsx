@@ -318,6 +318,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           {(producer.trust_tier ?? 1) >= 3 && (
             <TrustBadge tier={producer.trust_tier} compact />
           )}
+          {/* MEH-213: delivery-only badge — shown when no physical storefront */}
+          {producer.has_physical_location === false && producer.offers_delivery && (
+            <span className="inline-flex items-center rounded-full bg-light border border-border text-site-text px-2 py-0.5 text-[11px]">
+              🚚 משלוחים בלבד
+            </span>
+          )}
           {fridayMode && producer.is_available_today && (
             <span className="inline-flex items-center rounded-full bg-secondary/10 border border-secondary/30 text-secondary px-2 py-0.5 text-[11px] font-semibold">
               🛒 מגיעה היום
