@@ -84,7 +84,7 @@ def update_my_producer(
         "primary_contact_method", "contact_email", "slug", "top_product_name",
         "starting_price_label", "price_range", "grass_fed", "organic_certified",
         "has_delivery", "pickup_points", "kosher", "is_available_today",
-        "images",
+        "images", "custom_questions",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
