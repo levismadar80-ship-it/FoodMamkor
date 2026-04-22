@@ -132,7 +132,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     api
       .get("/producers", { params: { category: catId, exclude: producer.id, limit: 3 } })
       .then((r) => {
-        const list = r.data || [];
+        const list = Array.isArray(r.data) ? r.data : [];
         setSimilarProducers(list.length >= 3 ? list.slice(0, 3) : []);
       })
       .catch(() => setSimilarProducers([]));
