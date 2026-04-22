@@ -26,7 +26,15 @@ ENV UV_COMPILE_BYTECODE=1 \
 # and uv.lock from the build context without adding a separate COPY layer,
 # preserving the Docker layer cache when only app/ code changes.
 # The BuildKit cache mount (~/.cache/uv) is reused across builds.
-RUN --mount=type=cache,target=/root/.cache/uv \
+#
+# MEH-260 — the `id=uv-cache` is required by Railway's BuildKit. Local
+# docker BuildKit defaults the id to the target path when omitted, but
+# Railway's build runner rejects the mount with
+#   "flag '--mount=type=cache,target=/root/.cache/uv' is missing an
+#    id argument at Line 29"
+# Keep the id short + descriptive; it's the cache partition key across
+# builds of this repo.
+RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
     --mount=type=bind,source=backend/uv.lock,target=uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-dev
