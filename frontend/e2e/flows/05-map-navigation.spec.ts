@@ -13,9 +13,7 @@ test.describe("Map", () => {
     // waitForSelector below has room to breathe.
     test.setTimeout(90_000);
     await page.goto("/map");
-    // networkidle ensures the Leaflet JS chunk has been fetched before we poll
-    // for .leaflet-container — avoids false timeouts on cold Vercel previews.
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     // MapComponent is ssr:false — dynamic import must complete before Leaflet
     // initialises and adds .leaflet-container. In CI (cold Vercel preview)
     // the chunk fetch can take up to ~35s; 45s gives comfortable headroom.
