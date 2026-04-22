@@ -5,7 +5,8 @@
 
 ## Last session
 Date: 2026-04-22
-PRs open: #242 (MEH-213, still pending CI) + MEH-211 (copy batch 1, this branch)
+PRs merged: #247 (MEH-211, copy sweep batch 1 — squash merged to staging)
+PRs open: #242 (MEH-213, still pending CI)
 Summary:
   MEH-211 (batch 1 copy sweep) — MEH-202 + MEH-204 + MEH-207:
     4 files changed, text only, no logic/DB/design.
@@ -81,23 +82,18 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-211-copy-sweep-batch-1 (2 commits ahead of staging — frontend copy + docs)
-Staging HEAD: 8a2a6a6 (fix: pin httpx in requirements.txt — follow-up to MEH-166 password flow)
+Branch: staging (MEH-211 squash-merged via PR #247 — 4920bd6)
+Staging HEAD: 4920bd6 (feat(meh-211): copy sweep batch 1 — MEH-202 + MEH-204 + MEH-207)
 Main HEAD: e42127e (production is many commits behind staging — needs promotion)
 
 ## Open PRs
-MEH-211 — copy sweep batch 1 (MEH-202+204+207) (feature/meh-211-copy-sweep-batch-1 → staging)
-  Draft PR, UI text only. Review on Vercel preview — 4 pages: register/producer step 4,
-  /terms §2, /search, /register/producer hero + info box (logged in + logged out).
-
 #242 — MEH-213 business location types (feature/meh-213-location-types → staging)
-  CI: pytest pending, Next.js build fixed (was failing due to */ in JSDoc comment), lint pending
+  CI: all green as of last check (Next.js build fixed — */ JSDoc comment)
   Preview: food-mamkor-git-feature-m-ba2835-levismadar80-ship-its-projects.vercel.app
 
 ## Next task
-- Review MEH-211 copy sweep on Vercel preview (mobile 375px check)
-- After MEH-211 merge: close MEH-202, MEH-204, MEH-207 as Done
-- Wait for CI green on PR #242 — then request user review + merge to staging
+- Close MEH-202, MEH-204, MEH-207 as Done in Linear (MEH-211 merged ✅)
+- Check CI on PR #242 — if green, request user review + merge to staging
 - After MEH-213 merge: run seed script on Railway staging: `python backend/scripts/seed_cities.py`
 - ProducerCard heart/favorite Phase C (post-login replay)
 - Lightbox for gallery images
