@@ -681,6 +681,7 @@ function ProductsSection() {
       setError("שגיאה בהעלאת תמונה");
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 

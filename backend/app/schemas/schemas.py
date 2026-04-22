@@ -101,12 +101,22 @@ class ProductCreate(BaseModel):
     price_range: str | None = None
     image_url: str | None = Field(None, max_length=500)
 
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
+
 
 class ProductUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     price_range: str | None = None
     image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
 
 
 class ProductOut(BaseModel):
