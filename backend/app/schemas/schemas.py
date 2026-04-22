@@ -417,6 +417,11 @@ class UserOut(BaseModel):
     referral_code: str | None = None
     # MEH-138: profile photo URL (Cloudinary or Google picture).
     avatar_url: str | None = None
+    # MEH-206: producer status fields — populated by GET /auth/me when
+    # the user has a linked producer. Used by /settings to show the
+    # correct business tab state (pending/approved/rejected/suspended).
+    producer_status: str | None = None
+    producer_rejection_reason: str | None = None
 
     model_config = {"from_attributes": True}
 

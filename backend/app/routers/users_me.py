@@ -22,6 +22,7 @@ class ProfileUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
     avatar_url: str | None = None
+    city: str | None = Field(None, max_length=100)  # MEH-206: preferred city
 
 
 class PasswordChange(BaseModel):
@@ -50,6 +51,9 @@ def update_profile(
 
     if data.avatar_url is not None:
         user.avatar_url = data.avatar_url
+
+    if data.city is not None:
+        user.city = data.city.strip()
 
     if data.email is not None:
         new_email = data.email.lower()

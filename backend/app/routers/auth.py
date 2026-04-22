@@ -254,8 +254,32 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserOut)
 @limiter.limit("120/minute")
-def get_me(request: Request, user: User = Depends(get_current_user)):
-    return user
+def get_me(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return current user, enriched with producer status/rejection_reason."""
+    out = UserOut.model_validate(user)
+    if user.producer_id:
+        producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+        if producer:
+            out.producer_status = producer.status
+            out.producer_rejection_reason = producer.rejection_reason
+    return out
+
+
+@router.post("/logout-all-devices", response_model=Token)
+@limiter.limit("5/hour")
+def logout_all_devices(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Invalidate all existing sessions by incrementing token_version.
+
+    Returns a new token for the current session so the caller stays
+    authenticated. All other devices receive 401 on their next request.
+    """
+    user.token_version = (user.token_version or 1) + 1
+    db.commit()
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/apple", response_model=Token)

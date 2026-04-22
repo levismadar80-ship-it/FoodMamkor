@@ -151,6 +151,11 @@ class User(Base):
     # expires 1 hour after issue, cleared on redeem or re-issue.
     reset_token = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.
+    # POST /auth/logout-all-devices increments this; old tokens with a
+    # stale `tv` value are rejected. Fail-open: tokens without a `tv`
+    # claim (issued before this column) are still accepted.
+    token_version = Column(Integer, default=1, nullable=False, server_default="1")
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
