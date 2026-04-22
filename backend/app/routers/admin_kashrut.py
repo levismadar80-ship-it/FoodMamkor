@@ -3,13 +3,14 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models.models import KashrutBadgeRequest, Producer
 from app.models import User
+from app.rate_limit import limiter
 from app.schemas.schemas import (
     KashrutRequestOut,
     KashrutRejectIn,
@@ -20,7 +21,9 @@ router = APIRouter(prefix="/admin", tags=["admin-kashrut"])
 
 
 @router.get("/kashrut", response_model=list[KashrutRequestOut])
+@limiter.limit("60/minute")
 def list_kashrut_requests(
+    request: Request,
     status: str = "pending",
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),

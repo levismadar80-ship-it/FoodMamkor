@@ -224,6 +224,36 @@ def test_kashrut_request_duplicate_pending(client, db):
 # Integration tests: admin kashrut review
 # ---------------------------------------------------------------------------
 
+def test_list_kashrut_requests(client, db):
+    producer = make_producer(db, name="חוות בדיקה")
+    admin = make_user(db, role="admin")
+    db.commit()
+
+    pending = KashrutBadgeRequest(producer_id=producer.id, badge_code="rabanut")
+    approved = KashrutBadgeRequest(producer_id=producer.id, badge_code="badatz", status="approved")
+    db.add_all([pending, approved])
+    db.commit()
+
+    r = client.get("/admin/kashrut?status=pending", headers=auth_header(admin))
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["badge_code"] == "rabanut"
+    assert data[0]["producer_name"] == "חוות בדיקה"
+
+    r2 = client.get("/admin/kashrut?status=approved", headers=auth_header(admin))
+    assert r2.status_code == 200
+    assert len(r2.json()) == 1
+    assert r2.json()[0]["badge_code"] == "badatz"
+
+
+def test_list_kashrut_requires_admin(client, db):
+    consumer = make_user(db, role="consumer")
+    db.commit()
+    r = client.get("/admin/kashrut?status=pending", headers=auth_header(consumer))
+    assert r.status_code == 403
+
+
 def test_admin_approve_kashrut(client, db):
     producer = make_producer(db, name="חוות ט")
     user = make_user(db, role="producer")
