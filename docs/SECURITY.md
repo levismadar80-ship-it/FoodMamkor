@@ -39,20 +39,34 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
 > (`"mehamakor123"`-style). That has been replaced — see the
 > `_DEV_SECRET_SENTINEL` + `_load_settings()` flow in `config.py`.
 
-### 2. Rate Limiting — חסום brute force
+### ✅ 2. Rate Limiting — SHIPPED (SECURITY FIX #2, corrected in MEH-256)
+
+**Status:** slowapi decorators are in place on all sensitive endpoints
+with the limits shown below. MEH-256 closed the proxy-IP bypass that
+silently made all users share one bucket — the limiter now keys on the
+real client IP when behind a trusted proxy.
+
+**⚠️ NEVER use `get_remote_address` directly behind a proxy.** Use
+`get_real_client_ip` from `backend/app/rate_limit.py`. Behind Railway /
+Cloudflare / nginx, `request.client.host` is the proxy IP, not the
+user's; keying on it collapses all traffic into a single bucket.
 
 ```python
-# pip install slowapi
+# backend/app/rate_limit.py (current shape)
+def get_real_client_ip(request: Request) -> str:
+    if os.getenv("TRUSTED_PROXY", "0") == "1":
+        xff = request.headers.get("x-forwarded-for", "")
+        if xff:
+            client_ip = xff.split(",")[0].strip()
+            if client_ip:
+                return client_ip
+    return get_remote_address(request)
 
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
+limiter = Limiter(key_func=get_real_client_ip)
 
 # על כל endpoint רגיש:
 @router.post("/auth/login")
-@limiter.limit("5/minute")        # 5 ניסיונות בדקה
+@limiter.limit("5/minute")        # 5 ניסיונות בדקה, per real client IP
 async def login(request: Request, ...):
 
 @router.post("/auth/register")
@@ -64,6 +78,13 @@ async def login(request: Request, ...):
 @router.post("/ratings")
 @limiter.limit("20/day")          # 20 דירוגים ביום
 ```
+
+**Deploy requirement:** set `TRUSTED_PROXY=1` in Railway env on both
+staging and production. See `docs/DEPLOYMENT.md` → "One-Time Platform
+Setup". Leave unset for local dev and any directly-exposed deploy —
+trusting a client-controlled header without a proxy stripping it
+re-opens the bypass (an attacker just sends `X-Forwarded-For: 1.2.3.4`
+to rotate identities at will).
 
 ### 3. SQL Injection — השתמש תמיד ב-SQLAlchemy ORM
 

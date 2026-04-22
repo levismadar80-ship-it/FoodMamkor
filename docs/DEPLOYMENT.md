@@ -140,6 +140,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `TWILIO_*` | Use **Twilio test credentials** so staging WhatsApp messages don't go out for real. |
+   | `TRUSTED_PROXY` | **`1`** — see "Rate-limiter trusted-proxy flag" below. Required on both staging and production; if unset, all users share one rate-limit bucket keyed on Railway's edge IP (brute-force protection silently defeated; MEH-256). |
    | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
 6. Production environment — verify the GitHub source is pinned to `main`.
@@ -237,6 +238,36 @@ this codebase. Open:
 
 After saving both rules, verify by attempting a direct push from a feature branch
 to `staging` — it should be rejected with "protected branch" error.
+
+
+### D. Rate-limiter trusted-proxy flag (MEH-256)
+
+Set `TRUSTED_PROXY=1` on the backend service in **both** Railway
+environments (staging + production):
+
+1. Railway dashboard → backend service → **Variables → New Variable**
+2. Name: `TRUSTED_PROXY`, Value: `1`
+3. Save. Railway restarts the container automatically.
+
+Without this flag, `slowapi` keys rate limits on `request.client.host`
+— which on Railway is the edge-proxy IP, not the user's. All users end
+up sharing one bucket, so a single attacker burning the 5/minute login
+limit blocks login for the entire site and brute-force from a
+distributed IP pool against a single target counts as one IP.
+
+With `TRUSTED_PROXY=1`, the limiter reads the first value of
+`X-Forwarded-For` (set by the Railway edge) as the real client IP. The
+flag is env-gated because trusting XFF on a directly-exposed deploy
+lets any attacker spoof the header to rotate identities at will —
+never enable it on a server that isn't behind a known proxy.
+
+Verification (curl from two distinct IPs, same minute):
+```
+curl -H "X-Forwarded-For: 1.1.1.1" https://staging.mehamakor.online/auth/login -d '...'  # attempt 1
+... repeat 5 times ...
+curl -H "X-Forwarded-For: 1.1.1.1" ... # attempt 6 → 429
+curl -H "X-Forwarded-For: 2.2.2.2" ... # attempt 1 from new IP → still 200/401 (not 429)
+```
 
 
 ### Sanity checks before promoting `staging → main`
