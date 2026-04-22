@@ -134,8 +134,13 @@ function CardHeart({ producer, onCountChange }) {
       }
     } catch (err) {
       // 404 on DELETE means the record was already gone (stale cache /
-      // removed from another tab) — desired state achieved, no revert.
-      if (!next && err?.response?.status === 404) return;
+      // removed from another device) — desired state achieved (heart already
+      // unfilled). But the user wasn't in the server count, so revert the
+      // optimistic -1 we applied; don't revert the heart UI itself.
+      if (!next && err?.response?.status === 404) {
+        onCountChange?.(1);
+        return;
+      }
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
