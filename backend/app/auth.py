@@ -108,3 +108,12 @@ def require_producer(user: User = Depends(get_current_user)) -> User:
     if user.role != "producer":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Producer access required")
     return user
+
+
+def require_verified_email(user: User = Depends(get_current_user)) -> User:
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="יש לאמת את כתובת האימייל תחילה",
+        )
+    return user

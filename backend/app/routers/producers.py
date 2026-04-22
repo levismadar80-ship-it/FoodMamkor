@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import exists, func, text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.auth import get_current_user, get_current_user_optional
+from app.auth import get_current_user, get_current_user_optional, require_verified_email
 from app.database import get_db
 
 
@@ -444,7 +444,7 @@ def record_whatsapp_click(
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
 def create_producer(
     data: ProducerCreate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
     """Create a pending producer row.

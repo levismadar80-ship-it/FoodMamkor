@@ -41,6 +41,8 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
+    verify_token = secrets.token_urlsafe(32)
+    verify_expires = datetime.utcnow() + timedelta(hours=24)
     user = User(
         email=data.email,
         name=data.name,
@@ -49,11 +51,14 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
         phone=data.phone,
         role="consumer",
         referral_code=_gen_referral_code(),
+        email_verified=False,
+        email_verify_token=verify_token,
+        email_verify_expires=verify_expires,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    # Email runs after response is sent — never blocks the 200
+    background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
     return Token(access_token=create_access_token(user.id))
 
@@ -143,6 +148,9 @@ def register_producer(
             delivery_day=da.delivery_day,
         ))
 
+    verify_token = secrets.token_urlsafe(32)
+    verify_expires = datetime.utcnow() + timedelta(hours=24)
+
     if upgrade_path:
         # Link producer to existing user, upgrade role + flag.
         user.producer_id = producer.id
@@ -160,6 +168,9 @@ def register_producer(
             producer_id=producer.id,
             is_producer=True,
             referral_code=_gen_referral_code(),
+            email_verified=False,
+            email_verify_token=verify_token,
+            email_verify_expires=verify_expires,
         )
         db.add(user)
         db.commit()
@@ -167,16 +178,15 @@ def register_producer(
 
     # Capture producer primitives NOW — expire_on_commit=True means ORM
     # attributes are expired after commit, and FastAPI closes the session
-    # before background tasks run. Passing the ORM object directly would
-    # raise DetachedInstanceError when the background task accesses .name etc.
+    # before background tasks run.
     p_name = producer.name
     p_city = producer.city
     p_phone = producer.phone
 
-    # All notifications run after the 200 is sent — never block the response.
     background_tasks.add_task(_notify_admin_new_producer, p_name, p_city)
     background_tasks.add_task(_notify_producer_registered, p_name, p_phone)
     if not upgrade_path:
+        background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
         background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
     return Token(access_token=create_access_token(user.id))
@@ -211,15 +221,16 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
         if user:
             # SECURITY: prevent silent account takeover — if the email is already
             # registered via password (or a different OAuth provider), refuse to
-            # link without explicit user action. An attacker who obtains a Google
-            # token for victim@example.com would otherwise fully hijack the account.
+            # link without explicit user action.
             if not user.google_id:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
                 )
+            user.email_verified = True
+            db.commit()
         else:
-            # Create new user
+            # Create new user — Google already verified the email
             user = User(
                 email=email,
                 name=name,
@@ -227,6 +238,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
                 role="consumer",
                 referral_code=_gen_referral_code(),
                 avatar_url=picture,
+                email_verified=True,
             )
             db.add(user)
             db.commit()
@@ -282,13 +294,17 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
                 )
+            user.email_verified = True
+            db.commit()
         else:
+            # Create new user — Apple already verified the email
             user = User(
                 email=email,
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
                 referral_code=_gen_referral_code(),
+                email_verified=True,
             )
             db.add(user)
             db.commit()
@@ -300,10 +316,7 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
 @router.post("/forgot-password")
 @limiter.limit("3/hour")
 def forgot_password(request: Request, data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """
-    Send a password-reset email. Always returns 200 to prevent email enumeration.
-    Rate-limited to 3/hour per IP.
-    """
+    """Send a password-reset email. Always returns 200 to prevent email enumeration."""
     user = db.query(User).filter(User.email == data.email).first()
     if user:
         token = secrets.token_urlsafe(32)
@@ -318,10 +331,7 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 @router.post("/reset-password")
 @limiter.limit("5/hour")
 def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """
-    Consume a reset token and update the password.
-    Token is single-use and expires after 1 hour.
-    """
+    """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
     if not user or not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
@@ -330,6 +340,40 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
     user.reset_token_expires_at = None
     db.commit()
     return {"detail": "הסיסמה עודכנה בהצלחה"}
+
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    """Consume email verification token. Clears token on success."""
+    user = db.query(User).filter(User.email_verify_token == token).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="קישור האימות לא תקין")
+    if user.email_verify_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="קישור האימות פג תוקף")
+    user.email_verified = True
+    user.email_verify_token = None
+    user.email_verify_expires = None
+    db.commit()
+    return {"detail": "האימייל אומת בהצלחה"}
+
+
+@router.post("/resend-verify")
+@limiter.limit("3/hour")
+def resend_verify(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Re-send verification email. Rate-limited to 3/hour per IP."""
+    if user.email_verified:
+        return {"detail": "האימייל כבר מאומת"}
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=24)
+    user.email_verify_token = token
+    user.email_verify_expires = expires
+    db.commit()
+    _send_verify_email(user.email, user.name, token)
+    return {"detail": "אימייל אימות נשלח"}
 
 
 @router.delete("/me")
@@ -365,6 +409,20 @@ def _send_reset_email(email: str, name: str, reset_link: str):
         f"בברכה,\nצוות מהמקור 🌱"
     )
     send_email(email, "מהמקור - איפוס סיסמה", body)
+
+
+def _send_verify_email(email: str, name: str, token: str):
+    """Send email-verification link via Resend. Fire-and-forget."""
+    verify_url = f"{settings.frontend_url}/verify-email?token={token}"
+    body = (
+        f"שלום {name},\n\n"
+        f"לאימות כתובת האימייל שלך לחצי על הקישור הבא:\n\n"
+        f"{verify_url}\n\n"
+        f"הקישור תקף ל-24 שעות.\n\n"
+        f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+    send_email(email, "מהמקור - אמתי את האימייל שלך", body)
 
 
 def _send_welcome_email(email: str, name: str, role: str = "consumer"):

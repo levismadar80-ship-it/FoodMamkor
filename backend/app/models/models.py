@@ -151,6 +151,10 @@ class User(Base):
     # expires 1 hour after issue, cleared on redeem or re-issue.
     reset_token = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-192: email verification. Token is cleared on successful verify.
+    email_verified = Column(Boolean, default=False)
+    email_verify_token = Column(String(64), nullable=True, index=True)
+    email_verify_expires = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")

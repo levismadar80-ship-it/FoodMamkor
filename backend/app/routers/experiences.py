@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, get_current_user_optional
+from app.auth import get_current_user, get_current_user_optional, require_verified_email
 from app.database import get_db
 from app.models import Experience, User
 from app.rate_limit import limiter
@@ -204,7 +204,7 @@ def get_experience(
 def submit_experience(
     request: Request,  # required by slowapi
     data: ExperienceCreate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
     """
