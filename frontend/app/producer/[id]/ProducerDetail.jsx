@@ -60,6 +60,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [similarProducers, setSimilarProducers] = useState([]);
 
+  const trackContactClick = useCallback((method) => {
+    if (!producer?.id) return;
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    try {
+      fetch(`/api/producers/${producer.id}/contact-click`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ method }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // tracking is best-effort
+    }
+  }, [producer?.id]);
+
   const scrollToSection = useCallback((key) => {
     setActiveTab(key);
     const el = sectionRefs.current[key];
@@ -721,6 +738,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   href={`tel:${producer.phone}`}
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
                   dir="ltr"
+                  onClick={() => trackContactClick("phone")}
                 >
                   <Phone size={18} weight="duotone" className="text-primary shrink-0" />
                   <span className="truncate">{producer.phone}</span>
@@ -739,6 +757,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm overflow-hidden"
                     dir="ltr"
+                    onClick={() => trackContactClick("instagram")}
                   >
                     <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
                     <span className="truncate min-w-0">@{handle}</span>
@@ -759,6 +778,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                  onClick={() => trackContactClick("website")}
                 >
                   <Globe size={18} weight="duotone" className="text-primary shrink-0" />
                   אתר
@@ -771,6 +791,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   href={`mailto:${producer.contact_email}`}
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
                   dir="ltr"
+                  onClick={() => trackContactClick("email")}
                 >
                   <EnvelopeSimple size={18} weight="duotone" className="text-primary shrink-0" />
                   <span className="truncate">{producer.contact_email}</span>
