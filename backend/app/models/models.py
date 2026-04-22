@@ -145,6 +145,10 @@ class User(Base):
     # MEH-138: profile photo. Populated from Google OAuth picture on first
     # login, or via manual upload through POST /upload/avatar.
     avatar_url = Column(String, nullable=True)
+    # MEH-166: password reset. Token is a 32-byte URL-safe random string,
+    # expires 1 hour after issue, cleared on redeem or re-issue.
+    reset_token = Column(String(64), nullable=True, index=True)
+    reset_token_expires_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")

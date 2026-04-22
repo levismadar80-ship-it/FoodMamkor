@@ -14,6 +14,15 @@ class UserRegister(BaseModel):
     phone: str | None = None
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
+
+
 class ProducerRegister(BaseModel):
     # User account — optional when upgrading an already-authenticated user
     # (MEH-143). Required for new (unauthenticated) registrations; the

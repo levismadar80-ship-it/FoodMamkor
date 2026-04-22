@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
@@ -9,6 +9,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
+import { showToast } from "@/lib/toast";
 
 /**
  * Login page (docs/archive/FEEDBACK_FIXES.md fix 2).
@@ -43,6 +44,12 @@ function LoginPageBody() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   // tasks_for_claude_code.md task 7 — eye-icon toggle for password visibility
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (params.get("reset") === "1") {
+      showToast("הסיסמה עודכנה בהצלחה — אפשר להתחבר", "success");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();
