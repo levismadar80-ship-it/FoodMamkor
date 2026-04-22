@@ -17,10 +17,6 @@ from app.config import settings
 from app.rate_limit import limiter
 from app.routers import admin, admin_experiences, admin_extra, admin_kashrut, admin_outreach, alerts, auth, chat, cities, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
 
-# Force stdout to be unbuffered so Railway's log panel shows startup
-# messages in real time. Without this, Python buffers until the process
-# writes a newline + the buffer fills, which can swallow early-boot
-# errors entirely in container environments.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -91,52 +87,34 @@ def _migrate_columns(engine):
         ("producers", "reviews_count", "INTEGER DEFAULT 0"),
         ("home_products", "street", "VARCHAR(200)"),
         ("home_products", "zip_code", "VARCHAR(20)"),
-        # feature/producer-analytics — DAU tracking on /admin/dashboard.
-        # Nullable so pre-existing users don't get backfilled to NOW().
         ("users", "last_active_at", "TIMESTAMP"),
-        # MEH-12 — durable availability status (available | full | vacation).
         ("producers", "availability_status", "VARCHAR(20) DEFAULT 'available'"),
-        # MEH-17 — flexible contact methods. Producers pick one of
-        # whatsapp | phone | website | email as the CTA channel.
         ("producers", "primary_contact_method", "VARCHAR(20) DEFAULT 'whatsapp'"),
         ("producers", "contact_email", "VARCHAR(200)"),
-        # MEH-18 — manual editorial "מומלץ" badge.
         ("producers", "is_recommended", "BOOLEAN DEFAULT FALSE"),
-        # MEH-49 — referral code (unique short code per user).
         ("users", "referral_code", "VARCHAR(20)"),
-        # MEH-53 — Instagram story card URL (Cloudinary).
         ("producers", "story_card_url", "VARCHAR(500)"),
-        # MEH-51 — trust ladder + kashrut badges
         ("producers", "phone_verified", "BOOLEAN DEFAULT FALSE"),
         ("producers", "ambassador", "BOOLEAN DEFAULT FALSE"),
         ("producers", "kashrut_badges", "TEXT[] DEFAULT '{}'"),
         ("producers", "kashrut_verified_at", "TIMESTAMP"),
         ("producers", "kashrut_expires_at", "TIMESTAMP"),
-        # whatsapp click user attribution (was anonymous-only at first)
         ("producer_whatsapp_clicks", "user_id", "UUID REFERENCES users(id) ON DELETE SET NULL"),
-        # MEH-143 — role upgrade: existing user adds a producer profile.
         ("users", "is_producer", "BOOLEAN DEFAULT FALSE"),
-        # MEH-138 — profile photo upload + Google OAuth sync.
         ("users", "avatar_url", "VARCHAR"),
-        # MEH-155 — vacation end date for automatic badge clearance.
         ("producers", "vacation_until", "DATE"),
-        # MEH-102 — weekly opening hours (free-text, nullable).
         ("producers", "opening_hours", "TEXT"),
-        # MEH-213 — location mode booleans + delivery scope.
         ("producers", "has_physical_location", "BOOLEAN NOT NULL DEFAULT TRUE"),
         ("producers", "offers_delivery", "BOOLEAN NOT NULL DEFAULT FALSE"),
         ("producers", "delivery_nationwide", "BOOLEAN NOT NULL DEFAULT FALSE"),
         ("producers", "delivery_cities", "TEXT[] NOT NULL DEFAULT '{}'"),
-        # MEH-166 — password reset token (one-time, 1h TTL).
         ("users", "reset_token", "VARCHAR(64)"),
         ("users", "reset_token_expires_at", "TIMESTAMP"),
+        ("producers", "custom_questions", "TEXT[]"),
         # MEH-103 — admin can hide abusive reviews without deleting them.
         ("producer_reviews", "is_hidden", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
-        # Ensure the table itself exists for Railway DBs older than the model.
-        # create_all() handles new tables on a fresh deploy, but if the table
-        # was introduced after initial setup this guard covers the gap.
         conn.execute(text(
             """
             CREATE TABLE IF NOT EXISTS producer_whatsapp_clicks (
@@ -151,7 +129,6 @@ def _migrate_columns(engine):
             conn.execute(text(
                 f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
             ))
-        # MEH-213 — canonical cities table for delivery_cities validation.
         conn.execute(text(
             """
             CREATE TABLE IF NOT EXISTS cities (
@@ -163,8 +140,6 @@ def _migrate_columns(engine):
             )
             """
         ))
-        # MEH-213 — CHECK constraints (idempotent via DO block).
-        # 1. At least one mode must be true (prevents has_physical=FALSE, offers_delivery=FALSE).
         conn.execute(text(
             """
             DO $$
@@ -178,7 +153,6 @@ def _migrate_columns(engine):
             END $$
             """
         ))
-        # 2. delivery_nationwide and a non-empty city list are mutually exclusive.
         conn.execute(text(
             """
             DO $$
@@ -192,30 +166,21 @@ def _migrate_columns(engine):
             END $$
             """
         ))
-        # Unique index on slug (allow nulls)
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_producers_slug ON producers (slug) WHERE slug IS NOT NULL"
         ))
-        # MEH-49: unique index on referral_code (allow nulls for pre-existing users)
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code) WHERE referral_code IS NOT NULL"
         ))
-        # Make password_hash nullable for Google OAuth users
         conn.execute(text(
             "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
         ))
-        # Legacy: drop the PostGIS geometry column from any older deployment.
-        # We now compute distance with Haversine directly against lat/lng,
-        # so no extension is required. Safe no-op if the column is absent.
         conn.execute(text(
             "ALTER TABLE producers DROP COLUMN IF EXISTS location"
         ))
-        # Make sure a plain b-tree index exists for the Haversine WHERE's
-        # lat/lng IS NOT NULL prefilter.
         conn.execute(text(
             "CREATE INDEX IF NOT EXISTS idx_producers_lat_lng ON producers (lat, lng)"
         ))
-        # MEH-99 — search analytics: log zero-result queries for discovery.
         conn.execute(text(
             """
             CREATE TABLE IF NOT EXISTS search_queries (
@@ -226,12 +191,9 @@ def _migrate_columns(engine):
             )
             """
         ))
-        # GIN index on producers.name (simple dictionary) for future full-text
-        # upgrade path. NO pg_trgm — not needed at current scale.
         conn.execute(text(
             "CREATE INDEX IF NOT EXISTS idx_producers_name ON producers USING gin(to_tsvector('simple', name))"
         ))
-        # MEH-148: rename any existing producer whose slug collides with a reserved route.
         from app.slug_utils import RESERVED_SLUGS
         reserved_list = ", ".join(f"'{s}'" for s in RESERVED_SLUGS)
         rows = conn.execute(text(
@@ -255,7 +217,6 @@ def _migrate_columns(engine):
                 {"new": new_slug, "id": str(row[0])},
             )
             log.warning("[MEH-148] renamed reserved slug '%s' → '%s' for producer %s", old_slug, new_slug, row[0])
-        # MEH-141: category request flow — new table for missing-category signals.
         conn.execute(text(
             """
             CREATE TABLE IF NOT EXISTS category_requests (
@@ -273,7 +234,6 @@ def _migrate_columns(engine):
         conn.execute(text(
             "CREATE INDEX IF NOT EXISTS idx_category_requests_status ON category_requests(status)"
         ))
-        # MEH-155: clear vacation status for producers whose vacation_until has passed.
         result = conn.execute(text(
             "UPDATE producers SET availability_status = 'available', vacation_until = NULL"
             " WHERE availability_status = 'vacation'"
@@ -284,21 +244,24 @@ def _migrate_columns(engine):
         cleared = result.rowcount
         if cleared:
             log.info("[MEH-155] cleared expired vacation status for %d producer(s)", cleared)
+        # admin_settings — key-value store for admin-controlled site config.
+        # Guard needed for existing Railway deployments that predate this table.
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS admin_settings (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+            """
+        ))
         conn.commit()
 
 
 def _run_db_init_sync() -> None:
-    """
-    The actual blocking DB init work: create_all + migrations + seed.
-    Runs in a worker thread via asyncio.to_thread so it can never block
-    uvicorn's event loop or starve the /health endpoint.
-
-    Every step logs [bg 1/4]..[bg 4/4] so progress is visible in Railway
-    logs even when it takes minutes on a cold DB.
-    """
     log.info("[bg 1/4] importing models...")
     from app.database import Base, engine
-    from app.models import models  # noqa: F401 — ensure models are registered
+    from app.models import models  # noqa: F401
     log.info("[bg 1/4] models imported OK")
 
     log.info("[bg 2/4] Base.metadata.create_all...")
@@ -316,12 +279,6 @@ def _run_db_init_sync() -> None:
 
 
 async def _init_db_background(app: FastAPI) -> None:
-    """
-    Wrapper that runs _run_db_init_sync() in a thread and catches any
-    exception. Runs as a fire-and-forget asyncio task from lifespan.
-    Records the final state on app.state.db_init_status so /health can
-    report it accurately.
-    """
     try:
         await asyncio.to_thread(_run_db_init_sync)
         log.info("background DB init complete — all tables/migrations/seed ready")
@@ -334,24 +291,6 @@ async def _init_db_background(app: FastAPI) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    On startup: log environment, kick off DB init in the background,
-    and IMMEDIATELY yield so uvicorn starts accepting connections.
-
-    CRITICAL design choice: DB init runs as an asyncio background task,
-    NOT inline. This means /health responds within a second of container
-    start regardless of DB state — the container is "healthy" from
-    Railway's perspective as long as uvicorn is alive, which decouples
-    the HTTP server from DB availability. Any DB errors show up in the
-    logs via [bg X/4] markers and a loud STARTUP FAILED traceback.
-
-    Previous versions ran create_all() inline in lifespan. That worked
-    when the DB was fast but HUNG uvicorn forever when the DB was slow
-    or unreachable, because psycopg2's connect_timeout only covers the
-    initial TCP handshake — subsequent operations can hang indefinitely.
-    The container would then fail its healthcheck and get killed before
-    it could even emit a traceback.
-    """
     log.info("=" * 60)
     log.info("mehamakor backend starting up")
     log.info("DATABASE_URL  = %s", _redacted_db_url())
@@ -361,7 +300,6 @@ async def lifespan(app: FastAPI):
     log.info("=" * 60)
     log.info("scheduling DB init in background — /health is live NOW")
 
-    # Warn about optional config that silently disables features.
     _missing = [
         name for name, val in [
             ("ADMIN_EMAIL", settings.admin_email),
@@ -375,8 +313,6 @@ async def lifespan(app: FastAPI):
             ", ".join(_missing),
         )
 
-    # Fire-and-forget — no await. Uvicorn starts serving immediately.
-    # Keep a reference on the app so the task isn't garbage-collected.
     app.state.db_init_status = "initializing"
     app.state.db_init_task = asyncio.create_task(_init_db_background(app))
 
@@ -387,19 +323,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="מהמקור - MeHaMakor API", version="1.0.0", lifespan=lifespan)
 
-# SECURITY FIX #2: rate limiting. The limiter is a module-level Limiter()
-# imported from app.rate_limit so routers can decorate individual endpoints
-# with `@limiter.limit("5/minute")`. The middleware hooks into FastAPI's
-# request lifecycle and the exception handler converts 429s into a JSON body.
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# SECURITY FIX #7: CORS origins are now read from the `CORS_ORIGINS` env var
-# (comma-separated). The default in settings is local dev hosts only —
-# production MUST override via env. Previously `allow_origins=["*"]`, which
-# together with `allow_credentials=True` is a browser-level no-op anyway
-# but still sent CORS headers for every origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list(),
@@ -409,9 +336,6 @@ app.add_middleware(
 )
 
 
-# SECURITY FIX #8: HTTP security headers. Applied as middleware so every
-# response (including errors) carries them. Kept minimal — HSTS is typically
-# handled by the reverse proxy (Railway/nginx), so we don't set it here.
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next) -> Response:
     response: Response = await call_next(request)
@@ -424,14 +348,7 @@ async def add_security_headers(request: Request, call_next) -> Response:
     return response
 
 
-# feature/producer-analytics: lightweight request-timing middleware. Appends
-# (monotonic_timestamp, duration_ms) to a bounded deque in
-# app.services.analytics so /admin/dashboard can compute
-# response_time_avg_ms + requests_per_minute over the last hour. Per-process
-# in-memory — not durable across restarts, not shared across workers.
-# Good enough for a single-operator admin dashboard; docs/SECURITY.md
-# has the full v1-limitation note.
-import time as _time  # noqa: E402 — local import keeps startup banner clean
+import time as _time  # noqa: E402
 
 from app.services.analytics import record_request  # noqa: E402
 
@@ -447,7 +364,6 @@ async def record_request_metrics(request: Request, call_next) -> Response:
         try:
             record_request(duration_ms)
         except Exception:
-            # Never fail a request because of metric bookkeeping.
             pass
 
 
@@ -469,7 +385,6 @@ app.include_router(admin_experiences.router)
 app.include_router(reviews.router)
 app.include_router(search.router)
 app.include_router(users_me.router)
-# MEH-22 — admin outreach + the public prefill lookup it pairs with.
 app.include_router(admin_outreach.router)
 app.include_router(admin_outreach.prefill_router)
 app.include_router(chat.router)
@@ -480,7 +395,7 @@ app.include_router(referrals.router)
 app.include_router(group_buys.router)
 app.include_router(group_buys.admin_router)
 app.include_router(alerts.router)
-app.include_router(admin_kashrut.router)  # MEH-51
+app.include_router(admin_kashrut.router)
 
 
 @app.get("/push-vapid-key")
@@ -491,20 +406,21 @@ def get_vapid_public_key():
 
 
 @app.get("/holiday-mode")
-def get_holiday_mode():
-    """Return admin holiday override settings for the frontend banner."""
+@limiter.limit("60/minute")
+def get_holiday_mode(request: Request):
+    """Return holiday-mode state for the frontend banner."""
     from app.database import SessionLocal
     from app.models.models import AdminSetting
     db = None
     try:
         db = SessionLocal()
         rows = db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
+            AdminSetting.key.in_(["holiday_mode_active", "holiday_mode_banner_text"])
         ).all()
         kv = {r.key: r.value for r in rows}
         return {
-            "enabled": kv.get("holiday_override_enabled", "false").lower() == "true",
-            "key": kv.get("holiday_override_key", "") or "",
+            "active": kv.get("holiday_mode_active", "false").lower() == "true",
+            "banner_text": kv.get("holiday_mode_banner_text") or None,
         }
     finally:
         if db is not None:
@@ -518,14 +434,5 @@ def root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health():
-    """
-    Lightweight health endpoint used by Railway's healthcheck. Must NOT
-    touch the database — if DB init fails, this still has to return 200
-    so Railway doesn't kill the container before we can read the logs.
-
-    Reports the background DB init state so operators can tell whether
-    /producers et al will work yet, without actually querying the DB.
-    Possible db_init values: initializing, ready, failed, not_scheduled.
-    """
     db_state = getattr(app.state, "db_init_status", "not_scheduled")
     return {"status": "ok", "db_init": db_state}

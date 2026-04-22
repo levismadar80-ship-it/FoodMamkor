@@ -107,6 +107,8 @@ class Producer(Base):
     kashrut_badges = Column(ARRAY(Text), default=[])
     kashrut_verified_at = Column(DateTime, nullable=True)
     kashrut_expires_at = Column(DateTime, nullable=True)
+    # MEH-210 Phase 2 — producer-defined WhatsApp question chips (overrides category defaults).
+    custom_questions = Column(ARRAY(Text), nullable=True)
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
