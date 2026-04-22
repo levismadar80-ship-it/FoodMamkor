@@ -5,9 +5,23 @@
 
 ## Last session
 Date: 2026-04-22
-PRs open: #242 (MEH-213, still pending CI) + MEH-218 (CLAUDE.md refactor, this branch)
+PRs open: #242 (MEH-213, still pending CI) + MEH-211 (copy batch 1, this branch)
 Summary:
-  MEH-218 — CLAUDE.md modular refactor (2026 best practices):
+  MEH-211 (batch 1 copy sweep) — MEH-202 + MEH-204 + MEH-207:
+    4 files changed, text only, no logic/DB/design.
+    MEH-202: "לממכר מזון" → "למכירת המוצרים" in register/producer step 4
+      consent checkbox (page.js:405) + terms §2 paragraph 2 (terms/page.js:35).
+      First paragraph of terms §2 (legal list) untouched.
+    MEH-204: Search placeholder "חפשי ירקות טריים, בשר grass-fed..." →
+      "לחם מחמצת, ביצים אורגניות, ירקות ופירות" in search/page.jsx:112 +
+      language-context.js:34 (Hebrew locale). English locale untouched.
+    MEH-207: /register/producer hero H1 "הוסיפי את העסק שלך" → "תני לעסק שלך בית";
+      subtitle → "5 דקות. בלי עמלות. בלי מתווכים.";
+      OAuth info box now email-only across 2 block spans (removes user.name to
+      sidestep MEH-206 truncation bug).
+    Post-fix verification: all 5 banned strings → zero results across frontend/.
+
+  Previous session — MEH-218 — CLAUDE.md modular refactor (2026 best practices):
     Motivation: CLAUDE.md at 245 lines, over its own 245 cap. Duplicate compact
       triggers (40% vs 60%); 3 overlapping bug-handling sections; inline Mermaid
       diagrams duplicating .ai/diagrams/; Known Bug Patterns + custom commands
@@ -67,27 +81,24 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-218-claude-md-refactor (3 commits ahead of staging — docs/ + .claude/ only)
+Branch: feature/meh-211-copy-sweep-batch-1 (2 commits ahead of staging — frontend copy + docs)
 Staging HEAD: 8a2a6a6 (fix: pin httpx in requirements.txt — follow-up to MEH-166 password flow)
 Main HEAD: e42127e (production is many commits behind staging — needs promotion)
 
 ## Open PRs
-MEH-218 — CLAUDE.md modular refactor (feature/meh-218-claude-md-refactor → staging)
-  Draft PR, docs-only (no code files touched). CI: N/A (no build/test impact).
-  Review focus: verify every rule from the old 245-line CLAUDE.md is still findable
-  somewhere (rules → .claude/rules/*.md, bug patterns → docs/BUG_PATTERNS.md,
-  locked decisions → docs/LOCKED_DECISIONS.md).
+MEH-211 — copy sweep batch 1 (MEH-202+204+207) (feature/meh-211-copy-sweep-batch-1 → staging)
+  Draft PR, UI text only. Review on Vercel preview — 4 pages: register/producer step 4,
+  /terms §2, /search, /register/producer hero + info box (logged in + logged out).
 
 #242 — MEH-213 business location types (feature/meh-213-location-types → staging)
   CI: pytest pending, Next.js build fixed (was failing due to */ in JSDoc comment), lint pending
   Preview: food-mamkor-git-feature-m-ba2835-levismadar80-ship-its-projects.vercel.app
 
 ## Next task
-- Review MEH-218 refactor PR — verify rules map cleanly, new CLAUDE.md is scannable in a
-  fresh session. After approval: merge to staging (docs-only, no preview needed).
+- Review MEH-211 copy sweep on Vercel preview (mobile 375px check)
+- After MEH-211 merge: close MEH-202, MEH-204, MEH-207 as Done
 - Wait for CI green on PR #242 — then request user review + merge to staging
-- After merge: run seed script on Railway staging: `python backend/scripts/seed_cities.py`
-- Verify GET /cities?q=תל returns results on staging
+- After MEH-213 merge: run seed script on Railway staging: `python backend/scripts/seed_cities.py`
 - ProducerCard heart/favorite Phase C (post-login replay)
 - Lightbox for gallery images
 
