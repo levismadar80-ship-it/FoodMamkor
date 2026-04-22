@@ -8,14 +8,9 @@
 
 ## ❌ 404s — Frontend calls with no backend route
 
-### 1. `POST /auth/forgot-password`
+**None found.**
 
-| | |
-|---|---|
-| **Frontend** | `frontend/app/forgot-password/page.js:17` |
-| **Backend** | **MISSING — no route in auth.py or anywhere** |
-| **Impact** | Full page exists with email form, submit, success/error states. Any user clicking "Forgot Password" fires a request that returns 404. Password reset is silently broken. |
-| **Fix needed** | Add `POST /auth/forgot-password` to backend (generate token, send SMTP email) OR remove the frontend page entirely if out of scope for v1. |
+> **False positive correction (post-audit):** `POST /auth/forgot-password` was initially flagged as missing because the audit branch was based on `main`, which hadn't yet received MEH-197 / PR #243. That PR added `POST /auth/forgot-password` + `POST /auth/reset-password` to `backend/app/routers/auth.py` and is already merged to `staging`. Route is fully implemented and wired — no action needed.
 
 ---
 
@@ -188,11 +183,12 @@ Not bugs — unfinished features — but worth knowing before adding auth/securi
 
 | Category | Count |
 |---|---|
-| ❌ 404 — frontend call, no backend route | **1** |
+| ❌ 404 — frontend call, no backend route | **0** |
 | ⚠️ Dead backend routes (no frontend consumer) | **19** |
-| ✅ Matched pairs (method + path + body verified) | **~70** |
+| ✅ Matched pairs (method + path + body verified) | **~72** |
 | 📄 Docs mismatch (non-blocking) | **1** |
 
-**Single actionable fix required:**  
-`POST /auth/forgot-password` — implement the backend route, or remove the frontend page.  
-All other mismatches are unfinished features (dead backend routes) — not broken flows.
+**No broken flows found.**  
+All frontend API calls resolve to existing backend routes.  
+Dead backend routes are unimplemented features — not regressions.  
+Docs mismatch (`DELETE /users/me` → `DELETE /auth/me`) fixed separately on staging.
