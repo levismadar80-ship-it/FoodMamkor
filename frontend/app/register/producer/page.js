@@ -6,6 +6,7 @@ import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
+import CategorySelector from "@/components/CategorySelector";
 import PasswordStrength from "@/components/PasswordStrength";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
@@ -328,32 +329,12 @@ function RegisterProducerPageBody() {
               </p>
             </div>
 
-            <div>
-              <p className="font-medium mb-2 text-sm">קטגוריה *</p>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => toggleCategory(cat.id)}
-                    className={`px-3 py-1 rounded-full text-sm transition ${
-                      form.category_ids.includes(cat.id)
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-text-secondary"
-                    }`}
-                  >
-                    {cat.emoji} {cat.name}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCategoryModal(true)}
-                className="mt-2 text-sm text-primary/70 underline hover:text-primary transition"
-              >
-                לא רואה את הקטגוריה שלך? ספרי לנו ←
-              </button>
-            </div>
+            <CategorySelector
+              categories={categories}
+              selectedIds={form.category_ids}
+              onChange={toggleCategory}
+              onRequestCategory={() => setShowCategoryModal(true)}
+            />
 
             {/* Dietary labels */}
             <div>

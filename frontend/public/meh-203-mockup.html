@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MEH-203 Category Selector Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', 'Arial', sans-serif; background: #F5F0E8; color: #1C1A17; padding: 24px; direction: rtl; }
+  .card { background: white; border: 1px solid #e5e0d8; border-radius: 16px; padding: 20px; max-width: 480px; margin: 0 auto; }
+  h2 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .required { color: #B91C1C; }
+
+  /* Search */
+  .search-wrap { position: relative; margin-bottom: 14px; }
+  .search-wrap input {
+    width: 100%; border: 1px solid #e5e0d8; border-radius: 10px;
+    padding: 10px 14px 10px 36px; font-size: 16px; background: #faf8f4;
+    outline: none; transition: border-color .15s;
+    direction: rtl; text-align: right;
+  }
+  .search-wrap input:focus { border-color: #2e6853; }
+  .search-icon {
+    position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
+    color: #999; pointer-events: none; font-size: 14px;
+  }
+
+  /* Chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 8px 14px; border-radius: 20px; font-size: 13px;
+    border: 1px solid #e5e0d8; background: #F5F0E8;
+    cursor: pointer; transition: all .15s; user-select: none;
+    min-height: 40px;
+  }
+  .chip:hover { border-color: #2e6853; background: rgba(46,104,83,0.06); }
+  .chip.selected {
+    background: #2e6853; color: white; border-color: #2e6853;
+  }
+  .chip.selected .check { display: inline; margin-inline-start: 2px; font-size: 11px; }
+  .chip .check { display: none; }
+
+  /* Expand link */
+  .expand-link {
+    display: inline-flex; align-items: center; gap-4px; margin-top: 10px;
+    font-size: 12px; color: #2e6853; cursor: pointer; text-decoration: none;
+    background: none; border: none; padding: 0; font-family: inherit;
+  }
+  .expand-link:hover { text-decoration: underline; }
+
+  /* No results */
+  .no-results { font-size: 12px; color: #888; margin-top: 6px; }
+  .no-results a { color: #2e6853; text-decoration: underline; cursor: pointer; }
+
+  /* Section label */
+  .section-label { font-size: 11px; color: #888; margin-bottom: 8px; margin-top: 2px; }
+
+  /* Variants row */
+  .variants { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px auto; max-width: 1000px; }
+  .variant { flex: 1 1 300px; }
+  .variant-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #888; margin-bottom: 8px; }
+
+  /* State labels */
+  .state-label { font-size: 10px; color: #999; margin-top: 8px; text-align: center; }
+
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 20px; max-width: 1000px; margin-left: auto; margin-right: auto; }
+</style>
+</head>
+<body>
+
+<h1>MEH-203 — Category Selector Redesign Mockup</h1>
+
+<div class="variants">
+
+  <!-- VARIANT A: flex-wrap chips (recommended) -->
+  <div class="variant">
+    <div class="variant-title">Variant A — Flex-wrap (מומלץ)</div>
+    <div class="card">
+      <h2>קטגוריה <span class="required">*</span></h2>
+
+      <div class="search-wrap" style="margin-top:8px">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchA" placeholder="חפשי קטגוריה..." oninput="filterA(this.value)" />
+      </div>
+
+      <div class="section-label" id="labelA">פופולריות</div>
+      <div class="chips" id="chipsA"></div>
+
+      <button class="expand-link" id="expandA" onclick="toggleExpandA()">
+        <span id="expandTextA">← עוד קטגוריות (9)</span>
+      </button>
+
+      <div class="no-results" id="noResultsA" style="display:none">
+        לא מצאת את הקטגוריה שלך?
+        <a onclick="alert('פתח מודל בקשה')">ספרי לנו ←</a>
+      </div>
+    </div>
+    <div class="state-label">Default — 6 פופולריות + הרחבה</div>
+  </div>
+
+  <!-- VARIANT B: 2×3 grid -->
+  <div class="variant">
+    <div class="variant-title">Variant B — 2×3 Grid</div>
+    <div class="card">
+      <h2>קטגוריה <span class="required">*</span></h2>
+
+      <div class="search-wrap" style="margin-top:8px">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchB" placeholder="חפשי קטגוריה..." oninput="filterB(this.value)" />
+      </div>
+
+      <div class="section-label">פופולריות</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;" id="gridB"></div>
+
+      <button class="expand-link" id="expandB" onclick="toggleExpandB()">
+        <span id="expandTextB">← עוד קטגוריות (9)</span>
+      </button>
+    </div>
+    <div class="state-label">Grid 2×3 — רוחב אחיד</div>
+  </div>
+
+  <!-- VARIANT C: selected state demo -->
+  <div class="variant">
+    <div class="variant-title">Variant C — Selected State (2 נבחרו)</div>
+    <div class="card">
+      <h2>קטגוריה <span class="required">*</span></h2>
+
+      <div class="search-wrap" style="margin-top:8px">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="חפשי קטגוריה..." />
+      </div>
+
+      <div class="section-label">פופולריות</div>
+      <div class="chips">
+        <div class="chip selected">🥩 בשר ודגים<span class="check">✓</span></div>
+        <div class="chip">🥛 חלב וגבינות<span class="check">✓</span></div>
+        <div class="chip selected">🍞 לחמים ואפייה<span class="check">✓</span></div>
+        <div class="chip">🥬 ירקות<span class="check">✓</span></div>
+        <div class="chip">🍓 פירות<span class="check">✓</span></div>
+        <div class="chip">🥚 ביצים<span class="check">✓</span></div>
+      </div>
+      <button class="expand-link">← עוד קטגוריות (9)</button>
+    </div>
+    <div class="state-label">2 קטגוריות נבחרו — multi-select נשמר</div>
+  </div>
+
+</div>
+
+<!-- Full expanded state -->
+<div style="max-width:480px; margin: 0 auto 24px;">
+  <div class="variant-title">Expanded state — "עוד קטגוריות" נפתח</div>
+  <div class="card">
+    <h2>קטגוריה <span class="required">*</span></h2>
+    <div class="search-wrap" style="margin-top:8px">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="חפשי קטגוריה..." />
+    </div>
+    <div class="section-label">פופולריות</div>
+    <div class="chips" style="margin-bottom:12px">
+      <div class="chip selected">🥩 בשר ודגים<span class="check">✓</span></div>
+      <div class="chip">🥛 חלב וגבינות<span class="check">✓</span></div>
+      <div class="chip">🍞 לחמים ואפייה<span class="check">✓</span></div>
+      <div class="chip">🥬 ירקות<span class="check">✓</span></div>
+      <div class="chip">🍓 פירות<span class="check">✓</span></div>
+      <div class="chip">🥚 ביצים<span class="check">✓</span></div>
+    </div>
+    <div class="section-label">עוד קטגוריות</div>
+    <div class="chips">
+      <div class="chip">🫒 שמנים ודבש<span class="check">✓</span></div>
+      <div class="chip">🥒 מותססים וכבושים<span class="check">✓</span></div>
+      <div class="chip">🫙 מוצרים מוכנים<span class="check">✓</span></div>
+      <div class="chip">🌿 צמחי מרפא ותוספים<span class="check">✓</span></div>
+      <div class="chip">🧴 סבונים טבעיים<span class="check">✓</span></div>
+      <div class="chip">🌸 קרמים ושמנים<span class="check">✓</span></div>
+      <div class="chip">🌿 תכשירי צמחים<span class="check">✓</span></div>
+      <div class="chip">🕯️ נרות וארומה<span class="check">✓</span></div>
+      <div class="chip">💊 תוספי תזונה<span class="check">✓</span></div>
+    </div>
+    <button class="expand-link" style="margin-top:10px">↑ פחות קטגוריות</button>
+  </div>
+  <div class="state-label">All categories visible — הכל נפתח inline, אין modal</div>
+</div>
+
+<script>
+const POPULAR = [
+  {id:4, name:"בשר ודגים", emoji:"🥩"},
+  {id:2, name:"חלב וגבינות", emoji:"🥛"},
+  {id:3, name:"לחמים ואפייה", emoji:"🍞"},
+  {id:6, name:"ירקות", emoji:"🥬"},
+  {id:7, name:"פירות", emoji:"🍓"},
+  {id:1, name:"ביצים", emoji:"🥚"},
+];
+const MORE = [
+  {id:5, name:"שמנים ודבש", emoji:"🫒"},
+  {id:8, name:"מותססים וכבושים", emoji:"🥒"},
+  {id:9, name:"מוצרים מוכנים", emoji:"🫙"},
+  {id:10, name:"צמחי מרפא ותוספים", emoji:"🌿"},
+  {id:11, name:"סבונים טבעיים", emoji:"🧴"},
+  {id:12, name:"קרמים ושמנים", emoji:"🌸"},
+  {id:13, name:"תכשירי צמחים", emoji:"🌿"},
+  {id:14, name:"נרות וארומה", emoji:"🕯️"},
+  {id:15, name:"תוספי תזונה", emoji:"💊"},
+];
+const ALL = [...POPULAR, ...MORE];
+
+// ---- Variant A (flex-wrap) ----
+let selectedA = new Set();
+let expandedA = false;
+
+function renderChipsA(list) {
+  return list.map(c => `
+    <div class="chip ${selectedA.has(c.id) ? 'selected' : ''}"
+         onclick="toggleA(${c.id})" data-id="${c.id}">
+      ${c.emoji} ${c.name}<span class="check">✓</span>
+    </div>`).join('');
+}
+
+function drawA(query = '') {
+  const q = query.trim().toLowerCase();
+  const filtered = q ? ALL.filter(c => c.name.includes(q)) : null;
+  const noResult = q && filtered.length === 0;
+  const showPopular = !q;
+  const showMore = !q && expandedA;
+
+  const chipsEl = document.getElementById('chipsA');
+  const labelEl = document.getElementById('labelA');
+  const expandEl = document.getElementById('expandA');
+  const expandText = document.getElementById('expandTextA');
+  const noResultEl = document.getElementById('noResultsA');
+
+  if (noResult) {
+    chipsEl.innerHTML = '';
+    labelEl.style.display = 'none';
+    expandEl.style.display = 'none';
+    noResultEl.style.display = 'block';
+    return;
+  }
+  noResultEl.style.display = 'none';
+
+  if (q) {
+    labelEl.textContent = 'תוצאות';
+    labelEl.style.display = 'block';
+    chipsEl.innerHTML = renderChipsA(filtered);
+    expandEl.style.display = 'none';
+  } else {
+    labelEl.textContent = 'פופולריות';
+    labelEl.style.display = 'block';
+    const shown = expandedA ? ALL : POPULAR;
+    chipsEl.innerHTML = renderChipsA(shown);
+    expandEl.style.display = 'block';
+    expandText.textContent = expandedA
+      ? '↑ פחות קטגוריות'
+      : `← עוד קטגוריות (${MORE.length})`;
+  }
+}
+
+function toggleA(id) {
+  selectedA.has(id) ? selectedA.delete(id) : selectedA.add(id);
+  drawA(document.getElementById('searchA').value);
+}
+function filterA(val) { drawA(val); }
+function toggleExpandA() { expandedA = !expandedA; drawA(document.getElementById('searchA').value); }
+
+// ---- Variant B (grid) ----
+let selectedB = new Set();
+let expandedB = false;
+
+function drawB(query = '') {
+  const q = query.trim().toLowerCase();
+  const filtered = q ? ALL.filter(c => c.name.includes(q)) : null;
+  const gridEl = document.getElementById('gridB');
+  const expandEl = document.getElementById('expandB');
+  const expandText = document.getElementById('expandTextB');
+
+  const shown = q ? filtered : (expandedB ? ALL : POPULAR);
+  gridEl.innerHTML = shown.map(c => `
+    <div class="chip ${selectedB.has(c.id) ? 'selected' : ''}"
+         onclick="toggleB(${c.id})" style="justify-content:center">
+      ${c.emoji} ${c.name}<span class="check">✓</span>
+    </div>`).join('');
+  expandEl.style.display = q ? 'none' : 'block';
+  if (!q) expandText.textContent = expandedB ? '↑ פחות קטגוריות' : `← עוד קטגוריות (${MORE.length})`;
+}
+function toggleB(id) {
+  selectedB.has(id) ? selectedB.delete(id) : selectedB.add(id);
+  drawB(document.getElementById('searchB').value);
+}
+function filterB(val) { drawB(val); }
+function toggleExpandB() { expandedB = !expandedB; drawB(document.getElementById('searchB').value); }
+
+drawA(); drawB();
+</script>
+</body>
+</html>
