@@ -31,7 +31,7 @@ const translations = {
     // Hero
     hero_title: "האוכל הכי טוב קרוב אלייך. פשוט לא ידעת איפה.",
     hero_subtitle: "בתי עסק מקומיים, כולם במקום אחד.",
-    search_placeholder: "חפשי ירקות טריים, בשר grass-fed...",
+    search_placeholder: "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
     search_sr_label: "חיפוש בתי עסק וערים",
     search_submit: "חיפוש",
 
