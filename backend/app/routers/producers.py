@@ -125,6 +125,8 @@ def list_producers(
     # so the frontend can render "X מתוך Y" and numbered pagination.
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    # MEH-102 — exclude a single producer by UUID (used by similar-producers widget).
+    exclude: UUID | None = None,
     response: Response = None,
     db: Session = Depends(get_db),
 ):
@@ -276,6 +278,11 @@ def list_producers(
                 Producer.avg_rating.desc(),
                 Producer.created_at.desc(),
             )
+
+    # MEH-102 — exclude a specific producer (used by similar-producers widget).
+    if exclude is not None:
+        q = q.filter(Producer.id != exclude)
+        count_q = count_q.filter(Producer.id != exclude)
 
     # MEH-23 — total BEFORE applying limit/offset so the frontend can render
     # "X מתוך Y" and numbered pagination.

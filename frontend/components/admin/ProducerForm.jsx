@@ -10,6 +10,7 @@ const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 const EMPTY = {
   name: "",
   contact_name: "",
+  opening_hours: "",
   phone: "",
   instagram: "",
   website: "",
@@ -76,6 +77,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
         admin_notes: initial.admin_notes ?? "",
+        opening_hours: initial.opening_hours ?? "",
       });
     }
   }, [initial]);
@@ -480,6 +482,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             ))}
           </div>
         )}
+      </Section>
+
+      <Section title="שעות פעילות">
+        <Field label='שעות פתיחה (פורמט: "Sun-Thu 09:00-18:00, Fri 09:00-14:00")' full>
+          <input
+            value={form.opening_hours}
+            onChange={(e) => update("opening_hours", e.target.value)}
+            className={inputClass}
+            placeholder="Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+            dir="ltr"
+          />
+        </Field>
       </Section>
 
       <Section title="הערות פנימיות (לא גלוי למשתמשים)">

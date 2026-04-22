@@ -289,6 +289,8 @@ class ProducerDetailOut(ProducerListOut):
     created_at: datetime
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
+    # MEH-102: weekly opening hours. Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+    opening_hours: str | None = None
 
     model_config = {"from_attributes": True}
 

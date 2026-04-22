@@ -1362,3 +1362,24 @@ class TestFavoritesCount:
         p = make_producer(db, status="approved")
         data = client.get(f"/producers/{p.id}").json()
         assert data["favorites_count"] == 0
+
+
+class TestSimilarProducersExclude:
+    def test_exclude_param_omits_producer(self, client, db):
+        """GET /producers?exclude=<id> must not return that producer."""
+        p1 = make_producer(db, name="Exclude Me", status="approved")
+        make_producer(db, name="Keep Me", status="approved")
+        resp = client.get(f"/producers?exclude={p1.id}")
+        assert resp.status_code == 200
+        ids = [p["id"] for p in resp.json()]
+        assert str(p1.id) not in ids
+
+    def test_exclude_param_absent_returns_all(self, client, db):
+        """Without exclude, both producers are returned."""
+        p1 = make_producer(db, name="Both A", status="approved")
+        p2 = make_producer(db, name="Both B", status="approved")
+        resp = client.get("/producers")
+        assert resp.status_code == 200
+        ids = [p["id"] for p in resp.json()]
+        assert str(p1.id) in ids
+        assert str(p2.id) in ids
