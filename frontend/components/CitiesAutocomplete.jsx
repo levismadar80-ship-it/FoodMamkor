@@ -10,7 +10,7 @@ import api from "@/lib/api";
  *   value    — string[] of currently selected city names
  *   onChange — (cities: string[]) => void
  *
- * RTL-aware: uses start-*/end-* logical classes. Never left-*/right-*.
+ * RTL-aware: uses start-* and end-* logical classes. Never left-* or right-*.
  * Keyboard nav: ArrowUp/Down to move, Enter to add, Backspace to remove last.
  */
 export default function CitiesAutocomplete({ value = [], onChange }) {
