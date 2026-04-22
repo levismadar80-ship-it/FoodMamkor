@@ -149,8 +149,8 @@ function ProfileTab() {
     try {
       const patch = {};
       if (trimmedName !== user.name) patch.name = trimmedName;
-      if (city !== (user.city || "")) patch.city = city.trim() || null;
-      if (phone !== (user.phone || "")) patch.phone = phone.trim() || null;
+      if (city !== (user.city || "")) patch.city = city.trim();
+      if (phone !== (user.phone || "")) patch.phone = phone.trim();
       await updateProfile(patch);
       setMessage("הפרטים נשמרו");
       setTimeout(() => setMessage(null), 3000);
