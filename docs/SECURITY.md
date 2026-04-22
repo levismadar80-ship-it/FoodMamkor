@@ -152,6 +152,13 @@ Additional notes:
   that the caller owns the follower row before returning/updating
   the flags. Admin override is intentionally **not** granted for
   these — notification preferences are personal data.
+- **MEH-254 — `GET /producers/{uuid}` status filter:** pending/rejected
+  producers may only be fetched by their owner (`viewer.producer_id ==
+  producer.id`) or an admin. Anonymous or non-owner callers get the
+  same 404 as a non-existent UUID, so the endpoint can't be used to
+  enumerate queue state or leak pre-approval data (GDPR /
+  חוק הגנת הפרטיות). The slug endpoint already filters to approved-only;
+  keep both in sync when schema changes land.
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
