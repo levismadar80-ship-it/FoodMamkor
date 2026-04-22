@@ -161,7 +161,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
             <span class="card-rating">⭐ 4.8 (23)</span>
             <span class="card-city">📍 חיפה</span>
           </div>
-          <a class="card-link" href="#">לדף העסק ←</a>
+          <a class="card-link" href="#">לדף העסק →</a>
         </div>
         <div class="producer-card">
           <div class="card-top">
@@ -172,7 +172,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
             <span class="card-rating">⭐ 4.9 (41)</span>
             <span class="card-city">📍 תל אביב</span>
           </div>
-          <a class="card-link" href="#">לדף העסק ←</a>
+          <a class="card-link" href="#">לדף העסק →</a>
         </div>
         <div class="producer-card">
           <div class="card-top">
@@ -184,7 +184,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
             <span class="card-rating">⭐ 4.7 (18)</span>
             <span class="card-city">📍 מושב בן שמן</span>
           </div>
-          <a class="card-link" href="#">לדף העסק ←</a>
+          <a class="card-link" href="#">לדף העסק →</a>
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
 
     <div class="footer-cta">
       <p>יש לך עסק תוצרת בית?</p>
-      <button class="footer-btn">הוסיפי עסק ←</button>
+      <button class="footer-btn">הוסיפי עסק →</button>
     </div>
   </div>
 
@@ -231,20 +231,20 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
         <div class="producer-card">
           <div class="card-top"><span class="card-name">חוות הכרמל</span><span class="verified-badge">✓ מאומת</span></div>
           <div class="card-meta"><span class="card-category">גבינות</span><span class="card-rating">⭐ 4.8</span><span class="card-city">📍 חיפה</span></div>
-          <a class="card-link" href="#">לדף העסק ←</a>
+          <a class="card-link" href="#">לדף העסק →</a>
         </div>
         <div class="producer-card">
           <div class="card-top"><span class="card-name">גבינות ומחלבה</span></div>
           <div class="card-meta"><span class="card-category">גבינות</span><span class="card-rating">⭐ 4.6</span><span class="card-city">📍 רמת גן</span></div>
-          <a class="card-link" href="#">לדף העסק ←</a>
+          <a class="card-link" href="#">לדף העסק →</a>
         </div>
         <div class="producer-card">
           <div class="card-top"><span class="card-name">מחלבת הגליל</span></div>
           <div class="card-meta"><span class="card-category">חלב וגבינות</span><span class="card-rating">⭐ 4.9</span><span class="card-city">📍 כפר ורדים</span></div>
-          <a class="card-link" href="#">לדף העסק ←</a>
+          <a class="card-link" href="#">לדף העסק →</a>
         </div>
       </div>
-      <a href="#" style="display:block;text-align:center;font-size:13px;color:#2e6853;margin-top:12px;text-decoration:underline;">הצגת כל 5 בתי העסק ←</a>
+      <a href="#" style="display:block;text-align:center;font-size:13px;color:#2e6853;margin-top:12px;text-decoration:underline;">הצגת כל 5 בתי העסק →</a>
     </section>
 
     <section>
@@ -307,7 +307,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
       </div>
     </div>
 
-    <a class="no-results-link" href="#">לא מצאת? ספרי לנו מה את מחפשת ←</a>
+    <a class="no-results-link" href="#" onclick="openFeedbackModal(event)">לא מצאת? ספרי לנו מה את מחפשת →</a>
   </div>
 
   <!-- STATE 4: LOADING -->
@@ -357,6 +357,63 @@ function clearSearch(btn) {
   input.value = '';
   input.focus();
 }
+
+function openFeedbackModal(e) {
+  if (e) e.preventDefault();
+  const modal = document.getElementById('feedback-modal');
+  modal.style.display = 'flex';
+  const searchInput = document.querySelector('#state-noresults input[type=text]');
+  const ta = document.getElementById('feedback-text');
+  if (searchInput) ta.value = searchInput.value;
+  updateFeedbackBtn();
+  setTimeout(() => ta.focus(), 50);
+}
+function closeFeedbackModal() {
+  document.getElementById('feedback-modal').style.display = 'none';
+}
+function closeFeedbackIfOverlay(e) {
+  if (e.target === document.getElementById('feedback-modal')) closeFeedbackModal();
+}
+function updateFeedbackBtn() {
+  const btn = document.getElementById('feedback-send-btn');
+  const val = document.getElementById('feedback-text').value.trim();
+  btn.disabled = !val;
+  btn.style.opacity = val ? '1' : '.45';
+}
+function sendFeedback() {
+  const ta = document.getElementById('feedback-text');
+  if (!ta.value.trim()) return;
+  // real impl: POST /feedback { query: ta.value }
+  closeFeedbackModal();
+  const toast = document.createElement('div');
+  toast.textContent = 'תודה! נשתדל להביא מה שחיפשת 🙏';
+  toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2e6853;color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-family:"DM Sans",sans-serif;z-index:99999;white-space:nowrap;';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
 </script>
+
+<!-- Feedback modal — triggered from no-results link -->
+<div id="feedback-modal" onclick="closeFeedbackIfOverlay(event)"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-end;justify-content:center;">
+  <div onclick="event.stopPropagation()"
+    style="background:white;border-radius:20px 20px 0 0;padding:28px 20px 40px;max-width:390px;width:100%;direction:rtl;">
+    <div style="width:36px;height:4px;background:#e5e0d8;border-radius:2px;margin:0 auto 20px;"></div>
+    <h2 style="font-family:'Frank Ruhl Libre',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:#1C1A17;">ספרי לנו מה חיפשת</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6;">לא מצאנו תוצאות? נשמח לדעת — זה עוזר לנו להזמין יצרנים חדשים למאגר.</p>
+    <textarea id="feedback-text" oninput="updateFeedbackBtn()"
+      placeholder="למשל: קינואה, טופו, שמן קוקוס..."
+      aria-label="תוכן המשוב"
+      style="width:100%;border:1.5px solid #e5e0d8;border-radius:10px;padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;resize:none;height:80px;outline:none;direction:rtl;"></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button onclick="closeFeedbackModal()"
+        style="flex:1;background:transparent;color:#1C1A17;border:1.5px solid #e5e0d8;border-radius:10px;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;">ביטול</button>
+      <button id="feedback-send-btn" onclick="sendFeedback()" disabled
+        aria-label="שליחת משוב"
+        style="flex:1;background:#2e6853;color:white;border:none;border-radius:10px;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;opacity:.45;">שלחי →</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

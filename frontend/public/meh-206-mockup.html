@@ -93,9 +93,15 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
 .stat-num { font-size: 22px; font-weight: 700; color: #2e6853; }
 .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
 
-/* Pending badge */
+/* Pending / approved / rejected badges */
 .badge-pending { display: inline-flex; align-items: center; gap: 5px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 4px 10px; font-size: 11px; color: #c2410c; font-weight: 500; }
 .badge-approved { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+.badge-rejected { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+
+/* Password eye-toggle */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-left: 36px !important; }
+.eye-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #888; font-size: 15px; padding: 0; line-height: 1; } /* rtl-ok: inside dir=ltr password input */
 
 /* States */
 .state { display: none; }
@@ -134,6 +140,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
   <button class="sw-btn" onclick="showState('delete2')">מחיקה שלב 2</button>
   <button class="sw-btn" onclick="showState('logoutconfirm')">התנתקות אישור</button>
   <button class="sw-btn" onclick="showState('business-pending')">עסק ממתין</button>
+  <button class="sw-btn" onclick="showState('business-rejected')">עסק נדחה</button>
 </div>
 <div class="role-row">
   <span style="font-size:11px;color:#888;align-self:center;">תפקיד:</span>
@@ -170,7 +177,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
         <div class="avatar-row">
           <div class="avatar">
             ד
-            <div class="avatar-edit">✏️</div>
+            <div class="avatar-edit" role="button" tabindex="0" aria-label="שנה תמונת פרופיל">✏️</div>
           </div>
           <div class="avatar-info">
             <div class="name">דנה לוי</div>
@@ -203,20 +210,29 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
       <div class="card">
         <div class="card-title">שינוי סיסמה</div>
         <div class="field">
-          <label>סיסמה נוכחית</label>
-          <input type="password" value="••••••••" dir="ltr" />
+          <label for="pw-current">סיסמה נוכחית</label>
+          <div class="pw-wrap">
+            <input id="pw-current" type="password" value="••••••••" dir="ltr" />
+            <button type="button" class="eye-btn" onclick="togglePw('pw-current',this)" aria-label="הצג/הסתר סיסמה נוכחית">👁</button>
+          </div>
         </div>
         <div class="field">
-          <label>סיסמה חדשה</label>
-          <input type="password" placeholder="לפחות 8 תווים" dir="ltr" />
+          <label for="pw-new">סיסמה חדשה</label>
+          <div class="pw-wrap">
+            <input id="pw-new" type="password" placeholder="לפחות 8 תווים" dir="ltr" />
+            <button type="button" class="eye-btn" onclick="togglePw('pw-new',this)" aria-label="הצג/הסתר סיסמה חדשה">👁</button>
+          </div>
           <!-- password strength bar -->
           <div style="height:4px;background:#e5e0d8;border-radius:2px;margin-top:6px;">
             <div style="height:4px;width:60%;background:#f59e0b;border-radius:2px;"></div>
           </div>
         </div>
         <div class="field">
-          <label>אישור סיסמה</label>
-          <input type="password" placeholder="" dir="ltr" />
+          <label for="pw-confirm">אישור סיסמה</label>
+          <div class="pw-wrap">
+            <input id="pw-confirm" type="password" placeholder="" dir="ltr" />
+            <button type="button" class="eye-btn" onclick="togglePw('pw-confirm',this)" aria-label="הצג/הסתר אישור סיסמה">👁</button>
+          </div>
         </div>
         <button class="btn-primary">עדכני סיסמה</button>
       </div>
@@ -278,21 +294,21 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
             <div class="tl">עדכונים שבועיים</div>
             <div class="ts">סיכום מה חדש אצל המועדפים שלך</div>
           </div>
-          <div class="toggle"></div>
+          <div class="toggle" role="switch" aria-checked="true" tabindex="0" aria-label="עדכונים שבועיים"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
             <div class="tl">חידושים ותוכן</div>
             <div class="ts">מבצעים, מתכונים וטיפים עונתיים</div>
           </div>
-          <div class="toggle off"></div>
+          <div class="toggle off" role="switch" aria-checked="false" tabindex="0" aria-label="חידושים ותוכן"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
             <div class="tl">הצגה ברשימת שכנות</div>
             <div class="ts">אפשרי לאחרים לראות שאת בסביבה</div>
           </div>
-          <div class="toggle"></div>
+          <div class="toggle" role="switch" aria-checked="true" tabindex="0" aria-label="הצגה ברשימת שכנות"></div>
         </div>
       </div>
 
@@ -403,7 +419,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
         <div style="font-size:12px;color:#888;margin-bottom:18px;">המכשיר הנוכחי יישאר מחובר.</div>
         <div style="display:flex;gap:10px;">
           <button class="btn-outline" style="flex:1;" onclick="showState('security')">ביטול</button>
-          <button class="btn-outline" style="flex:1;border-color:#d97706;color:#d97706;font-weight:600;" onclick="showState('security')">כן, התנתקי מכולם</button>
+          <button style="flex:1;background:#d97706;color:white;border:none;border-radius:10px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;" onclick="showState('security')">כן, התנתקי מכולם</button>
         </div>
       </div>
     </div>
@@ -424,6 +440,24 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-we
         </div>
       </div>
       <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:#2e6853;color:white;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">עדכני פרטים ←</a>
+    </div>
+
+    <!-- ──────────── עסק נדחה ──────────── -->
+    <div class="state" id="state-business-rejected">
+      <div class="card">
+        <div class="card-label">העסק שלך</div>
+        <div class="card-title" style="margin-bottom:8px;">מחלבת הגולן</div>
+        <span class="badge-rejected">✗ לא אושר</span>
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;margin-top:12px;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:4px;">סיבת הדחייה:</div>
+          <div style="font-size:12px;color:#1C1A17;line-height:1.5;">המידע שסיפקת אינו מספיק לאימות. אנא עדכני תמונת רישיון עסק או אסמכתא אחרת.</div>
+        </div>
+        <p style="font-size:12px;color:#555;margin-bottom:16px;line-height:1.5;">יש שאלות? פני לתמיכה ונשמח לעזור.</p>
+        <div style="display:flex;gap:8px;">
+          <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:#2e6853;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">עדכני פרטים →</a>
+          <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:#2e6853;border:1.5px solid #2e6853;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">דברי איתנו</a>
+        </div>
+      </div>
     </div>
 
   </div><!-- /phone-inner -->
@@ -450,7 +484,7 @@ function showState(s) {
 }
 
 function stateLabel(s) {
-  const m = { profile:'פרטים', security:'אבטחה', privacy:'פרטיות', delete1:'מחיקה', delete2:'מחיקה', business:'עסק', logoutconfirm:'התנתקות', 'business-pending':'עסק ממתין' };
+  const m = { profile:'פרטים', security:'אבטחה', privacy:'פרטיות', delete1:'מחיקה', delete2:'מחיקה', business:'עסק', logoutconfirm:'התנתקות', 'business-pending':'עסק ממתין', 'business-rejected':'עסק נדחה' };
   return m[s] || s;
 }
 
@@ -504,6 +538,12 @@ function validateCity(input) {
   const valid = input.value === '' || KNOWN_CITIES.includes(input.value);
   err.style.display = valid ? 'none' : 'block';
   wrap.style.borderColor = valid ? '#e5e0d8' : '#dc2626';
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
 }
 
 // init
