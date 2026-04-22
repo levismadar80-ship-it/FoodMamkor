@@ -14,6 +14,7 @@ from app.models import (
     Favorite,
     HomeProduct,
     Producer,
+    Product,
     ProducerFollower,
     ProducerPageView,
     ProducerWhatsAppClick,
@@ -28,6 +29,9 @@ from app.models.models import HomeProductWhatsAppClick, PhoneOtpToken, KashrutBa
 from app.schemas.schemas import (
     ProducerDetailOut,
     ProducerUpdate,
+    ProductCreate,
+    ProductUpdate,
+    ProductOut,
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
@@ -628,3 +632,67 @@ def generate_bio_endpoint(
     from app.services.bio_generator import generate_bio
     bio = generate_bio(body.source)
     return {"bio": bio}
+
+
+# MEH-88: Product CRUD
+# ---------------------------------------------------------------------------
+
+@router.get("/products", response_model=list[ProductOut])
+def list_my_products(
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    return db.query(Product).filter(Product.producer_id == user.producer_id).all()
+
+
+@router.post("/products", response_model=ProductOut, status_code=201)
+@limiter.limit("60/hour")
+def create_my_product(
+    request: Request,
+    data: ProductCreate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    product = Product(producer_id=user.producer_id, **data.model_dump())
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+@router.put("/products/{product_id}", response_model=ProductOut)
+@limiter.limit("60/hour")
+def update_my_product(
+    request: Request,
+    product_id: UUID,
+    data: ProductUpdate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.producer_id == user.producer_id,
+    ).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(product, field, value)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+@router.delete("/products/{product_id}", status_code=204)
+def delete_my_product(
+    product_id: UUID,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.producer_id == user.producer_id,
+    ).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+    db.delete(product)
+    db.commit()

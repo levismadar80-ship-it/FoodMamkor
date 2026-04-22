@@ -240,6 +240,7 @@ class Product(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text)
     price_range = Column(String(50))
+    image_url = Column(Text)
 
     producer = relationship("Producer", back_populates="products")
 
