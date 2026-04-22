@@ -23,6 +23,7 @@ def _get_client():
     if _client is not None:
         return _client
     if not settings.anthropic_api_key:
+        logger.debug("[bio] ANTHROPIC_API_KEY not set — bio generation disabled")
         return None
     try:
         import anthropic

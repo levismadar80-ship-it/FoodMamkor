@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
+import structlog
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from joserfc import jwt as jose_jwt
@@ -16,6 +17,8 @@ from app.models import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+logger = structlog.get_logger(__name__)
 
 
 def hash_password(password: str) -> str:
@@ -52,6 +55,7 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
         user.last_active_at = now
         db.commit()
     except Exception:
+        logger.warning("[auth] last_active_at update failed", user_id=str(user.id), exc_info=True)
         try:
             db.rollback()
         except Exception:

@@ -1,12 +1,15 @@
 from datetime import datetime
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import exists, func, text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user, get_current_user_optional
 from app.database import get_db
+
+logger = structlog.get_logger(__name__)
 
 
 def _attach_badge_fields(producer):
@@ -18,10 +21,12 @@ def _attach_badge_fields(producer):
     try:
         producer.products_count = len(producer.products or [])
     except Exception:
+        logger.debug("[producers] products lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
         producer.products_count = 0
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
+        logger.debug("[producers] delivery_areas lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
         producer.delivery_count = 0
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
@@ -306,7 +311,7 @@ def list_producers(
             )
             db.commit()
         except Exception:
-            pass
+            logger.warning("[producers] search_queries INSERT failed", exc_info=True)
 
     if geo_search:
         # A multi-entity query combined with joinedload on a collection
