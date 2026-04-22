@@ -71,6 +71,11 @@ function CardHeart({ producer, onCountChange }) {
   // Hydrate from the module cache. Re-renders on any favorite change.
   useEffect(() => {
     if (!user) return;
+    // Clear guest-tap state on login so filled = favorited, not guestSaved.
+    // Without this, a guest who tapped hearts then logged in would see
+    // filled hearts where toggle computes next = !favorited (false) → POST
+    // instead of DELETE, making the heart appear permanently stuck.
+    setGuestSaved(false);
     let alive = true;
     ensureFavoritesLoaded().then(() => {
       if (alive) setFavorited(isFavoritedCache(producer.id));
@@ -127,7 +132,10 @@ function CardHeart({ producer, onCountChange }) {
       } else {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }
-    } catch {
+    } catch (err) {
+      // 404 on DELETE means the record was already gone (stale cache /
+      // removed from another tab) — desired state achieved, no revert.
+      if (!next && err?.response?.status === 404) return;
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
