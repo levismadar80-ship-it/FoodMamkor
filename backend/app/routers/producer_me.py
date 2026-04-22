@@ -10,6 +10,7 @@ from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
 from app.models import (
+    ContactClick,
     DeliveryArea,
     Favorite,
     HomeProduct,
@@ -302,6 +303,7 @@ def producer_analytics(
         extra=(ProducerPageView.referrer == "search"),
     )
     whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
+    contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
 
     # Followers
     follower_count = (
@@ -455,6 +457,7 @@ def producer_analytics(
         "profile_views": profile_views,
         "search_appearances": search_appearances,
         "whatsapp_clicks": whatsapp_clicks,
+        "contact_clicks": contact_clicks,
         "follower_count": int(follower_count),
         "new_followers_this_week": int(new_followers_this_week),
         "average_rating": round(average_rating, 2),

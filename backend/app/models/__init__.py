@@ -1,6 +1,7 @@
 from app.models.models import (
     AdminSetting,
     Category,
+    ContactClick,
     ContactMessage,
     DeliveryArea,
     Event,
@@ -46,6 +47,7 @@ __all__ = [
     "AdminSetting",
     "StaticPage",
     "NewsletterSubscriber",
+    "ContactClick",
     "ContactMessage",
     "Event",
     "Experience",

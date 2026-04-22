@@ -123,6 +123,24 @@ def _migrate_columns(engine):
             )
             """
         ))
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS producer_contact_clicks (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                producer_id UUID NOT NULL REFERENCES producers(id) ON DELETE CASCADE,
+                user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                method VARCHAR(20) NOT NULL,
+                ip_hash VARCHAR(64),
+                clicked_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+            """
+        ))
+        conn.execute(text(
+            """
+            CREATE INDEX IF NOT EXISTS ix_contact_clicks_producer_at
+            ON producer_contact_clicks (producer_id, clicked_at)
+            """
+        ))
         for table, column, col_type in migrations:
             conn.execute(text(
                 f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"

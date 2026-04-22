@@ -401,6 +401,7 @@ function AnalyticsSection({ analytics, profile }) {
     profile_views,
     search_appearances,
     whatsapp_clicks,
+    contact_clicks,
     follower_count,
     new_followers_this_week,
     average_rating,
@@ -466,8 +467,8 @@ function AnalyticsSection({ analytics, profile }) {
         <ProfileStrengthCard profile={profile} analytics={analytics} />
       )}
 
-      {/* Row 1: windowed metric cards (profile / search / whatsapp) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Row 1: windowed metric cards (profile / search / whatsapp / contact) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <WindowedMetricCard
           label="צפיות בפרופיל"
           icon="👁️"
@@ -482,6 +483,11 @@ function AnalyticsSection({ analytics, profile }) {
           label="לחיצות ווטסאפ"
           icon="💬"
           windows={whatsapp_clicks}
+        />
+        <WindowedMetricCard
+          label="לחיצות יצירת קשר"
+          icon="📞"
+          windows={contact_clicks}
         />
       </div>
 
