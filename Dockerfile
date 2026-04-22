@@ -25,17 +25,16 @@ ENV UV_COMPILE_BYTECODE=1 \
 # Install Python deps from the lock file. Bind mounts expose pyproject.toml
 # and uv.lock from the build context without adding a separate COPY layer,
 # preserving the Docker layer cache when only app/ code changes.
-# The BuildKit cache mount (~/.cache/uv) is reused across builds.
 #
-# MEH-260 — the `id=uv-cache` is required by Railway's BuildKit. Local
-# docker BuildKit defaults the id to the target path when omitted, but
-# Railway's build runner rejects the mount with
-#   "flag '--mount=type=cache,target=/root/.cache/uv' is missing an
-#    id argument at Line 29"
-# Keep the id short + descriptive; it's the cache partition key across
-# builds of this repo.
-RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-    --mount=type=bind,source=backend/uv.lock,target=uv.lock \
+# MEH-260 — no BuildKit cache mount for uv's download cache. Railway's
+# BuildKit rejected `--mount=type=cache,target=...` without an id
+# (original) AND the plain `id=uv-cache` variant (PR #289) because
+# its runner expects the Railway-specific `id=s/<service-uuid>-<name>`
+# format. Rather than couple the Dockerfile to a specific Railway
+# service UUID, we drop the cache mount entirely. Cost is ~20-30s per
+# cold build (uv re-downloads ~80 wheels from PyPI); revisit if build
+# time becomes an issue post-launch.
+RUN --mount=type=bind,source=backend/uv.lock,target=uv.lock \
     --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-dev
 
