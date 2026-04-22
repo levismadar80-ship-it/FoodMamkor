@@ -10,7 +10,7 @@ Coverage:
 - Unauthenticated → 401
 """
 import io
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from app.models.models import User
 from conftest import auth_header, make_user
@@ -34,7 +34,7 @@ def _upload(client, headers, data=None, filename="photo.jpg", content_type="imag
 class TestAvatarUpload:
     def test_jpeg_returns_200_and_url(self, client, db):
         user = make_user(db)
-        with patch("app.config.settings") as mock_settings:
+        with patch("app.routers.upload.settings") as mock_settings:
             mock_settings.cloudinary_cloud_name = None  # dev-mode: placeholder URL
             resp = _upload(client, auth_header(user))
         assert resp.status_code == 200
@@ -43,7 +43,7 @@ class TestAvatarUpload:
 
     def test_avatar_url_saved_to_db(self, client, db):
         user = make_user(db)
-        with patch("app.config.settings") as mock_settings:
+        with patch("app.routers.upload.settings") as mock_settings:
             mock_settings.cloudinary_cloud_name = None
             _upload(client, auth_header(user))
         db.refresh(user)
@@ -52,7 +52,7 @@ class TestAvatarUpload:
 
     def test_png_upload_accepted(self, client, db):
         user = make_user(db)
-        with patch("app.config.settings") as mock_settings:
+        with patch("app.routers.upload.settings") as mock_settings:
             mock_settings.cloudinary_cloud_name = None
             resp = _upload(client, auth_header(user), data=PNG_HEADER, filename="photo.png", content_type="image/png")
         assert resp.status_code == 200

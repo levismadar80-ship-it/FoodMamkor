@@ -130,6 +130,7 @@ function ProfileTab() {
   const [error, setError] = useState(null);
 
   const isOAuth = !!user.is_oauth || !!user.google_id || !!user.apple_id;
+  const oAuthProvider = user.google_id ? "Google" : user.apple_id ? "Apple" : null;
   const trimmedName = name.trim();
   const dirty = trimmedName !== (user.name || "");
   const canSave = dirty && !!trimmedName;
@@ -265,7 +266,7 @@ function ProfileTab() {
           />
           <p className="text-xs text-site-muted mt-1 text-right">
             {isOAuth
-              ? "האימייל מחובר לחשבון Google שלך. לשינוי — עדכני בהגדרות Google"
+              ? `האימייל מחובר לחשבון ${oAuthProvider ?? "חיצוני"} שלך. לשינוי — עדכני בהגדרות ${oAuthProvider ?? "ספק הזהות"}`
               : "לשינוי אימייל, פני לתמיכה"}
           </p>
         </div>
