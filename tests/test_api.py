@@ -9,7 +9,7 @@ Coverage:
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
 from app.models.models import AdminSetting, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
-from conftest import auth_header, make_category, make_producer, make_user
+from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
 
 
 # ---------- Auth ----------
@@ -879,7 +879,7 @@ class TestProducerReviews:
 
     def test_post_review_requires_auth(self, client, db):
         p = make_producer(db)
-        resp = client.post(f"/producers/{p.id}/reviews", json={"stars": 5})
+        resp = client.post(f"/producers/{p.id}/reviews", json=valid_review_payload())
         assert resp.status_code == 401
 
 
