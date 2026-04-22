@@ -1,7 +1,7 @@
 /**
- * Category-aware WhatsApp question defaults (MEH-210).
+ * Category-aware WhatsApp question defaults (MEH-210 Phase 1).
  * Keys are the Hebrew category names as stored in the DB (seed_data.py CATEGORIES list).
- * Used by WhatsAppQuestionChips to replace the old hardcoded BASE_QUESTIONS.
+ * Phase 2 (MEH-210): custom_questions on the producer overrides these defaults.
  */
 
 export const CATEGORY_QUESTIONS = {
@@ -85,6 +85,7 @@ export const CATEGORY_QUESTIONS = {
 export const DEFAULT_QUESTIONS = ["איך מזמינים?", "יש משלוח?", "מה חדש אצלך?"];
 
 export function getProducerQuestions(producer) {
+  if (producer.custom_questions?.length > 0) return producer.custom_questions;
   const primaryCategory = producer.categories?.[0]?.name;
   return CATEGORY_QUESTIONS[primaryCategory] ?? DEFAULT_QUESTIONS;
 }

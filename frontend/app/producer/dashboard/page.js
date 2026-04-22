@@ -378,6 +378,16 @@ export default function ProducerDashboardPage() {
           <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
         </div>
       )}
+
+      {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
+      {profile && (
+        <div className="mt-6">
+          <CustomQuestionsCard
+            profile={profile}
+            onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -701,6 +711,71 @@ function ProfileStrengthCard({ profile, analytics }) {
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-210 Phase 2: custom WhatsApp question chips
+// ============================================================
+
+const MAX_QUESTIONS = 5;
+
+function CustomQuestionsCard({ profile, onSave }) {
+  const [questions, setQuestions] = useState(() => {
+    const saved = profile?.custom_questions || [];
+    return [...saved, ...Array(MAX_QUESTIONS - saved.length).fill("")].slice(0, MAX_QUESTIONS);
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const payload = questions.filter((q) => q.trim());
+      await api.put("/producers/me", { custom_questions: payload });
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      alert("שגיאה בשמירה — נסי שוב");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline text-base font-bold mb-1">שאלות שמופיעות בדף שלך</h2>
+      <p className="text-xs text-site-muted mb-4">
+        אם תשאירי ריק, נציג שאלות ברירת מחדל לפי הקטגוריה שלך
+      </p>
+      <div className="space-y-2">
+        {questions.map((q, i) => (
+          <input
+            key={i}
+            type="text"
+            value={q}
+            maxLength={80}
+            onChange={(e) => {
+              const updated = [...questions];
+              updated[i] = e.target.value;
+              setQuestions(updated);
+            }}
+            placeholder="דוגמה: אילו סוגי גבינות יש השבוע?"
+            className="w-full border border-[#e5e0d8] rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
+            dir="rtl"
+          />
+        ))}
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        {saving ? "שומרת..." : saved ? "✓ נשמר" : "שמרי שאלות"}
+      </button>
     </div>
   );
 }
