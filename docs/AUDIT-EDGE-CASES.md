@@ -59,3 +59,20 @@
 | 34 | POST /reviews | Duplicate submit | Upsert or 409 | ✓ code upserts on (producer, user) pair | OK | — |
 | 35 | POST /reviews | Stars outside 1–5 | 422 | ✓ Pydantic `Field(ge=1, le=5)` | OK | — |
 | 36 | POST /reviews | Rate limit | 20/day | ✓ `@limiter.limit("20/day")` on both flat + nested routes (limits stack on IP: effective 40/day across both endpoints) | LOW | Backend |
+
+## Findings Table — REMAINING (flows 17–26)
+
+| # | Flow | Scenario | Expected | Actual | Severity | Fix scope |
+|---|------|----------|----------|--------|----------|-----------|
+| 37 | Empty states | /favorites with 0 favs | CTA to browse | Not inspected in this audit | MEDIUM | Frontend (verify) |
+| 38 | Empty states | /admin top cities | Graceful empty | ✓ "עוד אין נתוני ערים" copy present | OK | — |
+| 39 | Empty states | /admin pending list | Graceful empty | ✓ "אין בקשות ממתינות" copy present | OK | — |
+| 40 | Network | Offline detection | Banner + queue | No `navigator.onLine` listener, no service worker, no offline banner | MEDIUM | Frontend |
+| 41 | Network | Slow 3G skeletons | Loading skeletons | Some components show "טוען..." text; skeleton strategy inconsistent | MEDIUM | Frontend |
+| 42 | Network | API 500 mid-action | Error toast + retry | Global error boundary `app/error.js` exists; per-action 500 handling inconsistent — `catch` branches often show fallback message but no retry | MEDIUM | Frontend |
+| 43 | Data | 500-char description display | Ellipsis or scroll | Not verified in audit; producer description is `TEXT` with no backend length cap | LOW | Frontend |
+| 44 | Data | Emoji + RTL mixing | Render correctly | React handles Unicode; not visually verified | LOW | — |
+| 45 | Data | Null bytes / control chars in input | Reject or strip | No explicit sanitization at schema layer; SQLAlchemy escapes for SQL but stored as-is | LOW | Backend |
+| 46 | Permission | Consumer tries producer-only endpoint | 403 | ✓ `require_producer` dependency enforced on `/producers/me/*` | OK | — |
+| 47 | Permission | Producer A edits Producer B | 403 | Not verified in audit — depends on IDOR check in `producer_me.py` | HIGH | Backend (verify) |
+| 48 | Permission | Block self | 400 | ✓ `admin_extra.py` blocks `target.id == user.id` | OK | — |
