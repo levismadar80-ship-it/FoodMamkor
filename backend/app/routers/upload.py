@@ -123,10 +123,13 @@ async def upload_avatar(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Upload a profile photo to Cloudinary. Same magic-byte validation as
     /upload/image but no freemium gate, smaller crop (400px square), and
     a dedicated avatars/ folder so producer gallery images stay separate.
+    Saves avatar_url to users table atomically so the caller needs no
+    separate PATCH /users/me call.
     """
     contents = await file.read(MAX_FILE_SIZE + 1)
     if len(contents) > MAX_FILE_SIZE:
@@ -145,7 +148,10 @@ async def upload_avatar(
         )
 
     if not settings.cloudinary_cloud_name:
-        return {"url": f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"}
+        url = f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"
+        user.avatar_url = url
+        db.commit()
+        return {"url": url}
 
     try:
         import cloudinary
@@ -163,7 +169,10 @@ async def upload_avatar(
             resource_type="image",
             transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
         )
-        return {"url": result["secure_url"]}
+        url = result["secure_url"]
+        user.avatar_url = url
+        db.commit()
+        return {"url": url}
     except HTTPException:
         raise
     except Exception as e:

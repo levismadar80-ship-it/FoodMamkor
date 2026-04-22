@@ -1,11 +1,5 @@
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
-
-const BASE_QUESTIONS = [
-  "יש לך לבן פרה השבוע?",
-  "איך מזמינים?",
-  "מגיעה השבוע ל[עיר]?",
-  'כמה עולה ק"ג?',
-];
+import { getProducerQuestions } from "@/lib/categoryQuestions";
 
 export default function WhatsAppQuestionChips({ producer }) {
   const digits = normalizePhone(producer?.phone);
@@ -14,7 +8,7 @@ export default function WhatsAppQuestionChips({ producer }) {
   const city = producer.city || "האזור שלי";
   const name = producer.name || "";
 
-  const questions = BASE_QUESTIONS.map((q) => q.replace("[עיר]", city));
+  const questions = getProducerQuestions(producer).map((q) => q.replace("[עיר]", city));
 
   return (
     <div className="mb-3">

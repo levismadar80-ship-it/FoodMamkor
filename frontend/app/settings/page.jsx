@@ -122,7 +122,7 @@ function TabButton({ active, onClick, icon, children }) {
 // ---------------------------------------------------------------------------
 
 function ProfileTab() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
   const [name, setName] = useState(user.name || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -130,6 +130,7 @@ function ProfileTab() {
   const [error, setError] = useState(null);
 
   const isOAuth = !!user.is_oauth || !!user.google_id || !!user.apple_id;
+  const oAuthProvider = user.google_id ? "Google" : user.apple_id ? "Apple" : null;
   const trimmedName = name.trim();
   const dirty = trimmedName !== (user.name || "");
   const canSave = dirty && !!trimmedName;
@@ -145,6 +146,7 @@ function ProfileTab() {
       if (trimmedName !== user.name) patch.name = trimmedName;
       await updateProfile(patch);
       setMessage("הפרטים נשמרו");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
       setError(err?.response?.data?.detail || "לא הצלחנו לשמור. נסי שוב.");
     } finally {
@@ -161,11 +163,12 @@ function ProfileTab() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await api.post("/upload/avatar", formData, {
+      await api.post("/upload/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      await updateProfile({ avatar_url: res.data.url });
+      await refreshUser();
       setMessage("תמונת הפרופיל עודכנה");
+      setTimeout(() => setMessage(null), 3000);
     } catch {
       setError("שגיאה בהעלאת התמונה, נסי שוב");
     } finally {
@@ -243,6 +246,7 @@ function ProfileTab() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+            spellCheck={false}
             className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
             dir="rtl"
           />
@@ -262,7 +266,7 @@ function ProfileTab() {
           />
           <p className="text-xs text-site-muted mt-1 text-right">
             {isOAuth
-              ? "התחברת עם Google — לשינוי אימייל, ערכי ב-Google"
+              ? `האימייל מחובר לחשבון ${oAuthProvider ?? "חיצוני"} שלך. לשינוי — עדכני בהגדרות ${oAuthProvider ?? "ספק הזהות"}`
               : "לשינוי אימייל, פני לתמיכה"}
           </p>
         </div>
@@ -304,7 +308,6 @@ function SecurityTab() {
       {isOAuth ? (
         <div className="bg-white border border-border rounded-[16px] p-6 text-sm text-site-muted">
           התחברת דרך Google / Apple — שינוי סיסמה מתבצע שם.
-          אין סיסמה מקומית לשנות.
         </div>
       ) : (
         <PasswordChangeCard changePassword={changePassword} />
@@ -474,7 +477,7 @@ function DangerZone({ deleteAccount, router }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4">
           <div
             role="dialog"
             aria-modal="true"
