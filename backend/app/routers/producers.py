@@ -395,6 +395,15 @@ def get_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    # MEH-254 — pending/rejected producers are not consented-to-public. Only
+    # the owner and admins may fetch them by UUID; everyone else sees 404 so
+    # the UUID can't be used to enumerate queue state.
+    if producer.status != "approved":
+        is_admin = getattr(viewer, "role", None) == "admin"
+        is_owner = viewer is not None and viewer.producer_id == producer.id
+        if not (is_admin or is_owner):
+            raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
     # MEH-18 — compute badge fields from the already-loaded relationships.
     _attach_badge_fields(producer)
     # MEH-106: social proof count.
