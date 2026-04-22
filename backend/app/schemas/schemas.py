@@ -99,6 +99,14 @@ class ProductCreate(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
 
 
 class ProductOut(BaseModel):
@@ -106,6 +114,7 @@ class ProductOut(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = None
 
     model_config = {"from_attributes": True}
 

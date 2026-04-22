@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { UserCircle, Lock, Storefront } from "@phosphor-icons/react";
+import Image from "next/image";
+import { UserCircle, Lock, Storefront, Package, Plus, Trash, X } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import PasswordStrength from "@/components/PasswordStrength";
@@ -638,6 +639,8 @@ function BusinessTab() {
         </div>
       </div>
 
+      <ProductsSection />
+
       <Link
         href="/producer/dashboard"
         className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium"
@@ -645,6 +648,186 @@ function BusinessTab() {
         ניהול מלא ←
       </Link>
     </section>
+  );
+}
+
+function ProductsSection() {
+  const [products, setProducts] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", description: "", price_range: "", image_url: "" });
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.get("/producers/me/products")
+      .then((r) => setProducts(r.data))
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setForm((f) => ({ ...f, image_url: r.data.url }));
+    } catch {
+      setError("שגיאה בהעלאת תמונה");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) { setError("שם המוצר הוא שדה חובה"); return; }
+    setSaving(true);
+    setError("");
+    try {
+      const r = await api.post("/producers/me/products", form);
+      setProducts((p) => [...(p || []), r.data]);
+      setForm({ name: "", description: "", price_range: "", image_url: "" });
+      setAdding(false);
+    } catch {
+      setError("שגיאה בשמירת המוצר");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/producers/me/products/${id}`);
+      setProducts((p) => p.filter((pr) => pr.id !== id));
+    } catch {
+      setError("שגיאה במחיקת המוצר");
+    }
+  };
+
+  if (loading) return null;
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-headline text-lg font-bold text-site-text">מוצרים</h3>
+        {!adding && (
+          <button
+            onClick={() => { setAdding(true); setError(""); }}
+            className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
+          >
+            <Plus size={14} aria-hidden="true" />
+            הוסיפי מוצר
+          </button>
+        )}
+      </div>
+
+      {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+
+      {products?.length === 0 && !adding && (
+        <p className="text-sm text-site-muted">טרם הוספת מוצרים לפרופיל.</p>
+      )}
+
+      <div className="space-y-3 mb-4">
+        {products?.map((product) => (
+          <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-light">
+            {product.image_url ? (
+              <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
+                <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="48px" />
+              </div>
+            ) : (
+              <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
+                <Package size={20} className="text-site-muted/60" aria-hidden="true" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm text-site-text truncate">{product.name}</p>
+              {product.price_range && <p className="text-xs text-accent">{product.price_range}</p>}
+            </div>
+            <button
+              onClick={() => handleDelete(product.id)}
+              aria-label={`מחקי ${product.name}`}
+              className="p-1.5 rounded-[6px] text-site-muted hover:text-red-500 hover:bg-red-50 transition"
+            >
+              <Trash size={16} aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-light">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-site-text">מוצר חדש</p>
+            <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label="ביטול">
+              <X size={16} className="text-site-muted" aria-hidden="true" />
+            </button>
+          </div>
+          <input
+            required
+            placeholder="שם המוצר *"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+          />
+          <input
+            placeholder="תיאור קצר"
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+          />
+          <input
+            placeholder="טווח מחיר (לדוג׳ ₪35–50)"
+            value={form.price_range}
+            onChange={(e) => setForm((f) => ({ ...f, price_range: e.target.value }))}
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+          />
+          <div>
+            <label className="text-xs text-site-muted mb-1 block">תמונת מוצר</label>
+            {form.image_url ? (
+              <div className="flex items-center gap-2">
+                <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
+                  <Image src={form.image_url} alt="תמונה" fill className="object-cover" sizes="48px" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
+                  className="text-xs text-red-500 hover:underline"
+                >
+                  הסר
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
+                <Package size={14} aria-hidden="true" />
+                {uploading ? "מעלה..." : "העלי תמונה"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                />
+              </label>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={saving || uploading}
+              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
+            >
+              {saving ? "שומרת..." : "שמור מוצר"}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
 
