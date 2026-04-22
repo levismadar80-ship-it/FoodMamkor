@@ -662,6 +662,153 @@ function DangerZoneCard() {
 }
 
 // ---------------------------------------------------------------------------
-// CHUNK 5+ placeholder
+// העסק שלי
 // ---------------------------------------------------------------------------
-function BusinessTab() { return null; }
+
+function BusinessTab() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [supportOpen, setSupportOpen] = useState(false);
+
+  const status = user.producer_status || "pending";
+  const rejectionReason = user.producer_rejection_reason;
+
+  useEffect(() => {
+    api.get("/producers/me/dashboard")
+      .then((r) => setStats(r.data))
+      .catch(() => setStats(null))
+      .finally(() => setLoadingStats(false));
+  }, []);
+
+  const dimmed = status === "suspended";
+
+  return (
+    <div className="space-y-6">
+      {/* Status banner */}
+      {status === "pending" && (
+        <div className="rounded-[12px] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+          ✋ הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.
+        </div>
+      )}
+      {status === "rejected" && (
+        <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-4 space-y-3">
+          <p className="text-sm font-semibold text-red-700">הבקשה לא אושרה</p>
+          {rejectionReason && (
+            <p className="text-sm text-red-600">{rejectionReason}</p>
+          )}
+          <ul className="space-y-1 text-sm text-red-700">
+            <li className="flex items-start gap-2"><span>•</span><span>ודאי שכל פרטי העסק מלאים ומדויקים</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>הוסיפי תמונות ברורות של המוצרים</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>בדקי שכתובת העסק נכונה</span></li>
+          </ul>
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="text-sm text-primary hover:underline"
+          >
+            דברי איתנו &rarr;
+          </button>
+        </div>
+      )}
+      {status === "suspended" && (
+        <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
+          <span>⚠️</span>
+          <span className="font-medium">החשבון מושעה זמנית.</span>
+          <button
+            type="button"
+            onClick={() => setSupportOpen(true)}
+            className="ms-auto text-primary hover:underline text-xs"
+          >
+            צרי קשר
+          </button>
+        </div>
+      )}
+
+      {/* Stats grid */}
+      <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        <h2 className="font-semibold text-site-text mb-4">סטטיסטיקות</h2>
+        {loadingStats ? (
+          <p className="text-sm text-site-muted">טוענת...</p>
+        ) : stats ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <StatCard label="צפיות" value={stats.views ?? 0} />
+            <StatCard label="מועדפים" value={stats.favorites ?? 0} />
+            <StatCard label="ביקורות" value={stats.reviews ?? 0} />
+            <StatCard label="דירוג ממוצע" value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
+            <StatCard label="מוצרים" value={stats.products ?? 0} />
+            <StatCard label="הזמנות" value={stats.orders ?? 0} />
+          </div>
+        ) : (
+          <p className="text-sm text-site-muted">הנתונים אינם זמינים כרגע.</p>
+        )}
+      </section>
+
+      {/* Link to producer profile edit */}
+      {status === "approved" && (
+        <div className="text-center">
+          <Link href="/producer/edit" className="text-sm text-primary hover:underline">
+            ערכי פרופיל עסק &rarr;
+          </Link>
+        </div>
+      )}
+
+      {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-[12px] bg-light px-4 py-3 text-center">
+      <p className="text-2xl font-bold text-site-text">{value}</p>
+      <p className="text-xs text-site-muted mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+function SupportModal({ onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="צרי קשר עם התמיכה"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
+        <h2 className="font-semibold text-site-text text-lg">צרי קשר</h2>
+        <p className="text-sm text-site-muted">נשמח לעזור. בחרי את הדרך הנוחה לך:</p>
+        <a
+          href="https://wa.me/972500000000"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"
+        >
+          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
+          <div>
+            <p className="text-sm font-medium">וואטסאפ</p>
+            <p className="text-xs text-site-muted">זמינות ב׳–ה׳ 9:00–17:00</p>
+          </div>
+        </a>
+        <a
+          href="mailto:support@mehamakor.online"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"
+        >
+          <EnvelopeSimple size={22} weight="duotone" className="text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-medium">אימייל</p>
+            <p className="text-xs text-site-muted">support@mehamakor.online</p>
+          </div>
+        </a>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
+        >
+          סגרי
+        </button>
+      </div>
+    </div>
+  );
+}
