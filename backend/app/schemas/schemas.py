@@ -9,7 +9,10 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 class UserRegister(BaseModel):
     email: EmailStr
     name: str
-    password: str
+    # MEH-248 — backend password min_length matches the frontend `minLength={8}`
+    # on /register; without this the API accepted single-char passwords from
+    # any non-browser caller.
+    password: str = Field(min_length=8, max_length=200)
     city: str | None = None
     phone: str | None = None
 
@@ -29,7 +32,10 @@ class ProducerRegister(BaseModel):
     # router validates and raises 422 when they are absent in that case.
     email: EmailStr | None = None
     name: str | None = None
-    password: str | None = None
+    # MEH-248 — when a password is supplied (new-registration path), it
+    # must meet the same 8-char minimum as /register. The None case
+    # (authenticated user upgrading to producer, MEH-143) skips the check.
+    password: str | None = Field(default=None, min_length=8, max_length=200)
     # Producer details
     producer_name: str
     description: str | None = None
