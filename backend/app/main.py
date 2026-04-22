@@ -111,6 +111,8 @@ def _migrate_columns(engine):
         ("users", "reset_token", "VARCHAR(64)"),
         ("users", "reset_token_expires_at", "TIMESTAMP"),
         ("producers", "custom_questions", "TEXT[]"),
+        # MEH-103 — admin can hide abusive reviews without deleting them.
+        ("producer_reviews", "is_hidden", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
         conn.execute(text(

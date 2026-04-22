@@ -15,7 +15,7 @@ import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
 import TrustBadge from "@/components/TrustBadge";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
-import ProducerReviews from "@/components/ProducerReviews";
+import ReviewsSection from "@/components/ReviewsSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import OpeningHours from "@/components/OpeningHours";
@@ -635,7 +635,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               reviewsContainerRef.current = el;
             }}
           >
-            {reviewsVisible && <ProducerReviews producerId={producer.id} />}
+            {reviewsVisible && (
+              <ReviewsSection
+                producerId={producer.id}
+                avgRating={producer.avg_rating ?? 0}
+                reviewCount={producer.reviews_count ?? 0}
+              />
+            )}
           </div>
         </div>
 
