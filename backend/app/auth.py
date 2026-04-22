@@ -3,7 +3,10 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from joserfc import jwt as jose_jwt
+from joserfc.errors import JoseError
+from joserfc.jwk import OctKey
+from joserfc.jwt import JWTClaimsRegistry
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
@@ -23,10 +26,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
+def _jwt_key() -> OctKey:
+    return OctKey.import_key(settings.secret_key.encode())
+
+
 def create_access_token(user_id: UUID) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {"sub": str(user_id), "exp": expire}
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
 # feature/producer-analytics: throttle last_active_at writes to at most
@@ -58,11 +65,12 @@ def get_current_user(
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        user_id = payload.get("sub")
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+        JWTClaimsRegistry().validate(token_obj.claims)
+        user_id = token_obj.claims.get("sub")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
-    except JWTError:
+    except JoseError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
     user = db.query(User).filter(User.id == user_id).first()
