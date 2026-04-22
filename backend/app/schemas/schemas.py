@@ -249,6 +249,17 @@ class ProducerUpdate(BaseModel):
     delivery_cities: list[str] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
+    # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
+    availability_status: str | None = None
+    vacation_until: date | None = None
+
+    @field_validator("availability_status")
+    @classmethod
+    def _validate_availability_status(cls, v):
+        allowed = {"available", "full", "vacation"}
+        if v is not None and v not in allowed:
+            raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
 
     @field_validator("custom_questions")
     @classmethod
