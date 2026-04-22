@@ -122,7 +122,7 @@ function TabButton({ active, onClick, icon, children }) {
 // ---------------------------------------------------------------------------
 
 function ProfileTab() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
   const [name, setName] = useState(user.name || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -161,10 +161,10 @@ function ProfileTab() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await api.post("/upload/avatar", formData, {
+      await api.post("/upload/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      await updateProfile({ avatar_url: res.data.url });
+      await refreshUser();
       setMessage("תמונת הפרופיל עודכנה");
     } catch {
       setError("שגיאה בהעלאת התמונה, נסי שוב");
