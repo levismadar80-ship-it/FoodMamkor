@@ -1,9 +1,25 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22
+> Last updated: 2026-04-22 (uv migration)
 
-## Last session
+## Last session (uv migration — 2026-04-22)
+PR: claude/migrate-pip-to-uv-8p7aT → staging (open, pending review)
+Root cause fixed: `requirements.txt` had no transitive pins; `slowapi`'s
+  transitive deps resolved incompatibly with `fastapi==0.115.6` in CI,
+  causing `ImportError: PYDANTIC_V2` before any test ran.
+Changes:
+  - backend/requirements.txt REMOVED
+  - backend/pyproject.toml ADDED — 22 direct deps, Python >=3.11
+  - backend/uv.lock ADDED — 79 packages, all transitive deps pinned with hashes
+  - Dockerfile: pip → uv (COPY --from=ghcr.io/astral-sh/uv, RUN uv sync --frozen
+    --no-dev with BuildKit cache mount; ENV PATH .venv/bin:PATH)
+  - .github/workflows/pr-checks.yml: setup-python+pip → astral-sh/setup-uv@v3
+    + uv sync --frozen + GITHUB_PATH
+  - docs/DEPLOYMENT.md: §8 table updated, §9 "Dependency management (uv)" added
+Next: PR review → merge to staging → CI green → promote staging → main
+
+## Previous last session
 Date: 2026-04-22
 PRs merged: #247 (MEH-211, copy sweep batch 1 — squash merged to staging)
 PRs open: #242 (MEH-213, still pending CI)
