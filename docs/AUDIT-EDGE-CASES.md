@@ -42,3 +42,20 @@
 | 22 | /admin table | Rapid approve/reject clicks | Debounce/disable button | Admin POSTs have no `@limiter.limit`; rapid clicks hit DB directly | MEDIUM | Backend + Frontend |
 | 23 | /admin/settings | Connection test | Actual network call | `/admin/settings/test/twilio|cloudinary` only checks env-var presence; no real API ping | LOW | Backend |
 | 24 | /admin/layout | Badge count | Show live pending count | ✓ `pendingModCount` refetched on pathname change, but doubles `/admin/dashboard` call on `/admin` root | LOW | Frontend perf |
+
+## Findings Table — CORE FLOWS (flows 11–16)
+
+| # | Flow | Scenario | Expected | Actual | Severity | Fix scope |
+|---|------|----------|----------|--------|----------|-----------|
+| 25 | /producers/{uuid} | Pending/rejected producer fetched by UUID | 404 | `GET /producers/{producer_id}` has **no status filter** — returns any producer regardless of status (IDOR/info disclosure). `by-slug` is properly filtered. | HIGH | Backend |
+| 26 | Producer detail | Producer deleted after view | 404 | Endpoint returns 404; frontend error boundary not audited | LOW | — |
+| 27 | /map | 0 producers in area | Friendly empty state | `MapClient` behavior not inspected; API returns `[]` correctly | MEDIUM | Frontend (verify) |
+| 28 | /map | Producers without coords | Excluded | ✓ geo query filters `lat.isnot(None)` + `lng.isnot(None)` | OK | — |
+| 29 | /search | Hebrew morphology (גבינה vs גבינות) | Match both | ILIKE is literal; plural/singular won't match. No pg_trgm or stemming | MEDIUM | Backend |
+| 30 | /search | SQL injection / `<script>` | Escaped | ✓ SQLAlchemy parameterized; React auto-escapes output | OK | — |
+| 31 | /neighbor | 0 products | Friendly empty + CTA | `home_products.py` returns `[]`; frontend empty state not inspected | MEDIUM | Frontend (verify) |
+| 32 | /favorites | Logged-out click on heart | Redirect/login prompt | Known issue per HANDOFF.md ("Phase C post-login replay not implemented") | MEDIUM | Frontend |
+| 33 | /favorites | Producer hard-deleted after favorited | Row skipped or cleaned | `GET /users/me/favorites` uses `joinedload(Favorite.producer)` — orphaned fav would serialize with null producer and likely 500 via Pydantic | HIGH | Backend |
+| 34 | POST /reviews | Duplicate submit | Upsert or 409 | ✓ code upserts on (producer, user) pair | OK | — |
+| 35 | POST /reviews | Stars outside 1–5 | 422 | ✓ Pydantic `Field(ge=1, le=5)` | OK | — |
+| 36 | POST /reviews | Rate limit | 20/day | ✓ `@limiter.limit("20/day")` on both flat + nested routes (limits stack on IP: effective 40/day across both endpoints) | LOW | Backend |
