@@ -35,52 +35,58 @@ export default function MiniMap({ lat, lng, name }) {
     setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
   }, []);
 
-  const wazeUrl = `waze://ul?ll=${lat},${lng}&navigate=yes`;
+  const hasCoords = lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng));
+  const wazeUrl = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
   const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
   return (
     <section className="mt-8 border-t border-border pt-8">
       <h2 className="font-headline text-2xl font-bold text-site-text mb-4">מיקום</h2>
-      <div className="rounded-[16px] overflow-hidden border border-border" style={{ height: 300 }}>
-        <MapContainer
-          center={[lat, lng]}
-          zoom={14}
-          style={{ height: "100%", width: "100%" }}
-          zoomControl={false}
-          attributionControl={false}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='© OpenStreetMap contributors'
-          />
-          <Marker position={[lat, lng]} title={name} />
-          <DisableInteraction />
-        </MapContainer>
-      </div>
+      {hasCoords && (
+        <div className="rounded-[16px] overflow-hidden border border-border" style={{ height: 300 }}>
+          <MapContainer
+            key={`${lat}-${lng}`}
+            center={[Number(lat), Number(lng)]}
+            zoom={14}
+            style={{ height: "100%", width: "100%" }}
+            zoomControl={false}
+            attributionControl={false}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='© OpenStreetMap contributors'
+            />
+            <Marker position={[Number(lat), Number(lng)]} title={name} />
+            <DisableInteraction />
+          </MapContainer>
+        </div>
+      )}
 
-      {/* Navigation buttons */}
-      <div className="flex gap-3 mt-3">
-        {isMobile && (
+      {/* Navigation buttons — only when coordinates are valid */}
+      {hasCoords && (
+        <div className="flex gap-3 mt-3">
+          {isMobile && (
+            <a
+              href={wazeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
+            >
+              <NavigationArrow size={16} weight="regular" aria-hidden="true" />
+              פתחי ב-Waze
+            </a>
+          )}
           <a
-            href={wazeUrl}
+            href={gmapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
           >
             <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-            פתחי ב-Waze
+            פתחי ב-Google Maps
           </a>
-        )}
-        <a
-          href={gmapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
-        >
-          <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-          פתחי ב-Google Maps
-        </a>
-      </div>
+        </div>
+      )}
     </section>
   );
 }
