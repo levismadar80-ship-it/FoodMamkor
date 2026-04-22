@@ -709,10 +709,11 @@ The error `Error creating build plan with Railpack` used to happen because:
    Railway only finds if you set Root Directory = `backend` manually.
 
 **Fix (now committed):** Both `/Dockerfile` and `/railway.json` live at
-the **repo root**. The Dockerfile uses `COPY backend/requirements.txt` and
-`COPY backend/ .` paths so the backend-only image is built from a
-repo-root build context. You do **not** need to set a Root Directory in
-Railway anymore — just import the repo and it works.
+the **repo root**. The Dockerfile uses `COPY backend/ .` so the
+backend-only image is built from a repo-root build context — deps are
+installed via `uv sync --frozen` from `backend/uv.lock` (see §9). You
+do **not** need to set a Root Directory in Railway anymore — just import
+the repo and it works.
 
 ### 2.2 Create the backend service
 
@@ -1003,13 +1004,63 @@ Run through this checklist in a real browser:
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` *(repo root)* | Railway build image; builds from repo-root context with `COPY backend/...`; uses `$PORT` at runtime |
+| `Dockerfile` *(repo root)* | Railway build image; installs deps via uv from lock file; uses `$PORT` at runtime |
 | `railway.json` *(repo root)* | Forces Dockerfile builder + healthcheck; discovered automatically by Railway without a Root Directory setting |
 | `.dockerignore` *(repo root)* | Prunes `frontend/`, docs, `.env`, and caches from the build context |
 | `frontend/vercel.json` | Next.js framework hint + security headers. Imported by Vercel when Root Directory is set to `frontend`. No custom install/build commands — Vercel's defaults handle Next.js. |
+| `backend/pyproject.toml` | Direct Python dependencies (replaces requirements.txt); source of truth for dep versions |
+| `backend/uv.lock` | Full transitive lock file with hashes — committed so CI and Railway install identical packages |
 | `backend/.env.example` | All backend env vars, documented |
 | `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
 | `frontend/.env.example` | All frontend env vars, documented |
 | `frontend/next.config.js` | `/api/*` → `BACKEND_URL` rewrite |
 | `frontend/app/sitemap.js` | Uses `NEXT_PUBLIC_SITE_URL` for dynamic sitemap |
+
+---
+
+## 9. Dependency management (uv)
+
+Backend dependencies are managed with **[uv](https://github.com/astral-sh/uv)** — a fast, reproducible Python package manager.
+
+### Key files
+
+| File | Role |
+|---|---|
+| `backend/pyproject.toml` | Direct deps only (was `requirements.txt`) |
+| `backend/uv.lock` | All transitive deps, pinned with SHA-256 hashes — **always commit this** |
+
+### Local workflow
+
+```bash
+# Install uv (one-time, macOS/Linux)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install backend deps (creates backend/.venv automatically)
+cd backend
+uv sync
+
+# Add a new dep
+uv add some-package
+
+# Upgrade a dep
+uv lock --upgrade-package some-package
+
+# Run pytest with the project venv
+uv run python -m pytest ../tests/test_api.py -v
+```
+
+### Why uv
+
+The previous `requirements.txt` had no transitive pins, so CI resolved packages
+fresh each run. `slowapi`'s transitive deps resolved to versions incompatible
+with `fastapi==0.115.6` in CI, causing an `ImportError` on `PYDANTIC_V2` before
+any test ran. `uv.lock` pins every transitive dep with a SHA-256 hash, so CI
+installs byte-for-byte what was tested locally — the conflict cannot recur.
+
+### Dockerfile cache
+
+The Dockerfile uses BuildKit cache mounts so the `~/.cache/uv` wheel cache
+survives across Railway builds. When only app code changes (not deps), the
+`uv sync` layer is a cache hit and the build skips re-downloading packages
+entirely.
