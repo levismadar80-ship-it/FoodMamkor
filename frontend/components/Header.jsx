@@ -46,17 +46,23 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [resendSent, setResendSent] = useState(false);
   const [resendSending, setResendSending] = useState(false);
+  const [resendError, setResendError] = useState("");
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
 
   const handleResend = async () => {
     if (resendSending) return;
     setResendSending(true);
+    setResendError("");
     try {
       await api.post("/auth/resend-verify");
       setResendSent(true);
-    } catch {
-      // silently fail — user can try the button again
+    } catch (err) {
+      if (err.response?.status === 429) {
+        setResendError("הגעת למגבלה — נסי שוב בעוד שעה");
+      } else {
+        setResendError("שגיאה, נסי שוב");
+      }
     }
     setResendSending(false);
   };
@@ -355,9 +361,11 @@ export default function Header() {
       )}
 
       {user && user.email_verified === false && (
-        <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm">
+        <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm flex-wrap">
           <span className="text-amber-800">📧 אמתי את האימייל שלך כדי לפרסם תוכן</span>
-          {!resendSent ? (
+          {resendError ? (
+            <span className="text-red-600 text-xs font-medium">{resendError}</span>
+          ) : !resendSent ? (
             <button
               onClick={handleResend}
               disabled={resendSending}
