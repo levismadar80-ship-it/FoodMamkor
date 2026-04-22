@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MEH-206 Settings Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=DM+Sans:wght@400;500;600&family=Cormorant+Garamond:ital,wght@1,500&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', Arial, sans-serif; background: #e8e2d8; color: #1C1A17; direction: rtl; padding: 20px; }
+h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 12px; color: #555; letter-spacing: .02em; }
+
+/* State + role switchers */
+.controls { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+.role-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.sw-btn { border: 1px solid #2e6853; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-family: 'DM Sans', sans-serif; cursor: pointer; background: transparent; color: #2e6853; transition: all .15s; }
+.sw-btn.active { background: #2e6853; color: white; }
+.role-btn { border: 1px solid #7c6; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-family: 'DM Sans', sans-serif; cursor: pointer; background: transparent; color: #2e6853; transition: all .15s; }
+.role-btn.active { background: #2e6853; color: white; }
+
+/* Phone shell */
+.phone { max-width: 390px; margin: 0 auto; background: #F5F0E8; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.18); min-height: 680px; }
+.phone-inner { padding: 24px 16px 40px; }
+
+/* H1 */
+.page-h1 { font-family: 'Frank Ruhl Libre', serif; font-size: 26px; font-weight: 900; color: #1C1A17; margin-bottom: 20px; line-height: 1.2; }
+
+/* Tab bar */
+.tab-bar { display: flex; gap: 4px; background: white; border: 1px solid #e5e0d8; border-radius: 40px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+.tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 12px; border-radius: 40px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .15s; color: #888; border: none; background: transparent; }
+.tab.active { background: #2e6853; color: white; }
+.tab-icon { font-size: 14px; }
+
+/* Cards */
+.card { background: white; border: 1px solid #e5e0d8; border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.card-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #2e6853; margin-bottom: 4px; }
+.card-title { font-size: 15px; font-weight: 600; color: #1C1A17; margin-bottom: 14px; }
+
+/* Avatar row */
+.avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; background: #2e6853; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 700; flex-shrink: 0; position: relative; }
+.avatar-edit { position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background: white; border: 1px solid #e5e0d8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.avatar-info .name { font-weight: 600; font-size: 15px; }
+.avatar-info .email { font-size: 12px; color: #888; direction: ltr; text-align: right; }
+.avatar-info .hint { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+/* Form fields */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px; }
+.field input, .field select { width: 100%; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 9px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: #1C1A17; background: white; outline: none; }
+.field input:focus, .field select:focus { border-color: #2e6853; }
+.field input.readonly { background: #f8f7f5; color: #aaa; cursor: not-allowed; }
+.field .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+/* Buttons */
+.btn-primary { background: #2e6853; color: white; border: none; border-radius: 10px; padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-outline { background: transparent; color: #1C1A17; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+.btn-danger { background: #dc2626; color: white; border: none; border-radius: 10px; padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+.btn-danger-outline { background: transparent; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 10px; padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+
+/* Danger zone card */
+.card-danger { background: white; border: 2px solid #fca5a5; border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.card-danger-title { font-size: 14px; font-weight: 600; color: #dc2626; margin-bottom: 6px; }
+.card-danger-desc { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.5; }
+
+/* Logout all devices row */
+.action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.action-row .action-text { flex: 1; }
+.action-row .action-text .title { font-size: 14px; font-weight: 500; }
+.action-row .action-text .desc { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* City pill */
+.city-search { display: flex; align-items: center; gap: 8px; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 8px 12px; background: white; }
+.city-search input { flex: 1; border: none; outline: none; font-size: 14px; font-family: 'DM Sans', sans-serif; background: transparent; }
+.city-icon { color: #2e6853; font-size: 16px; }
+
+/* Privacy toggles */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0ede8; }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label .tl { font-size: 14px; font-weight: 500; }
+.toggle-label .ts { font-size: 12px; color: #888; margin-top: 2px; }
+.toggle { width: 40px; height: 22px; background: #2e6853; border-radius: 11px; position: relative; flex-shrink: 0; cursor: pointer; }
+.toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: .15s; }
+.toggle.off { background: #d1d5db; }
+.toggle.off::after { left: 20px; }
+
+/* Business tab */
+.stat-grid { display: grid; grid-cols: 3; gap: 8px; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; }
+.stat-box { background: #F5F0E8; border-radius: 10px; padding: 10px; text-align: center; }
+.stat-num { font-size: 22px; font-weight: 700; color: #2e6853; }
+.stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+/* Pending badge */
+.badge-pending { display: inline-flex; align-items: center; gap: 5px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 4px 10px; font-size: 11px; color: #c2410c; font-weight: 500; }
+.badge-approved { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+
+/* States */
+.state { display: none; }
+.state.active { display: block; }
+
+/* Delete modal overlay */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; }
+.modal-sheet { background: white; border-radius: 20px 20px 0 0; padding: 28px 20px 40px; max-width: 390px; width: 100%; }
+.modal-handle { width: 36px; height: 4px; background: #e5e0d8; border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: 'Frank Ruhl Libre', serif; font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+.modal-title.danger { color: #dc2626; }
+.modal-desc { font-size: 13px; color: #555; margin-bottom: 16px; line-height: 1.6; }
+.modal-list { font-size: 13px; color: #555; margin-bottom: 16px; padding-right: 18px; }
+.modal-list li { margin-bottom: 5px; }
+.modal-warn { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #c2410c; margin-bottom: 16px; }
+.modal-input-label { font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px; }
+.modal-input { width: 100%; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 9px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; direction: ltr; text-align: left; outline: none; }
+.modal-input:focus { border-color: #dc2626; }
+.modal-input.match { border-color: #22c55e; }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions button { flex: 1; }
+
+.divider { height: 1px; background: #f0ede8; margin: 12px 0; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">MEH-206 · הגדרות חשבון — Phases 2+3 Mockup</h1>
+
+<!-- State switcher -->
+<div class="controls">
+  <button class="sw-btn active" onclick="showState('profile')">פרטים אישיים</button>
+  <button class="sw-btn" onclick="showState('security')">אבטחה</button>
+  <button class="sw-btn" onclick="showState('privacy')">פרטיות</button>
+  <button class="sw-btn" onclick="showState('delete1')">מחיקה שלב 1</button>
+  <button class="sw-btn" onclick="showState('delete2')">מחיקה שלב 2</button>
+</div>
+<div class="role-row">
+  <span style="font-size:11px;color:#888;align-self:center;">תפקיד:</span>
+  <button class="role-btn active" onclick="setRole('consumer')">צרכנית רגילה</button>
+  <button class="role-btn" onclick="setRole('producer')">בעלת עסק מאושרת</button>
+  <button class="role-btn" onclick="setRole('pending')">בעלת עסק ממתינה</button>
+</div>
+
+<div class="phone">
+  <div class="phone-inner">
+    <div class="page-h1">הגדרות חשבון</div>
+
+    <!-- Tab bar (role-aware) -->
+    <div class="tab-bar" id="tab-bar">
+      <button class="tab active" id="tab-profile" onclick="showState('profile')">
+        <span class="tab-icon">👤</span> פרטים אישיים
+      </button>
+      <button class="tab" id="tab-security" onclick="showState('security')">
+        <span class="tab-icon">🔒</span> אבטחה
+      </button>
+      <button class="tab" id="tab-privacy" onclick="showState('privacy')">
+        <span class="tab-icon">🛡</span> פרטיות
+      </button>
+      <button class="tab producer-only" id="tab-business" onclick="showState('business')" style="display:none">
+        <span class="tab-icon">🏪</span> העסק שלי
+      </button>
+    </div>
+
+    <!-- ──────────── פרטים אישיים ──────────── -->
+    <div class="state active" id="state-profile">
+      <div class="card">
+        <div class="avatar-row">
+          <div class="avatar">
+            ד
+            <div class="avatar-edit">✏️</div>
+          </div>
+          <div class="avatar-info">
+            <div class="name">דנה לוי</div>
+            <div class="email">dana@example.com</div>
+            <div class="hint">לחצי על התמונה לשינוי</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>שם מלא *</label>
+          <input type="text" value="דנה לוי" dir="rtl" />
+        </div>
+        <div class="field">
+          <label>אימייל</label>
+          <input type="email" value="dana@example.com" class="readonly" readonly dir="ltr" />
+          <div class="hint">לשינוי אימייל, פני לתמיכה</div>
+        </div>
+        <button class="btn-primary">שמרי</button>
+      </div>
+
+      <!-- OAuth info card (Google) -->
+      <div class="card" style="display:none" id="oauth-card">
+        <div class="card-label">חשבון מחובר</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;">התחברת דרך Google · שינוי שם ותמונה — דרך הגדרות Google שלך</div>
+      </div>
+    </div>
+
+    <!-- ──────────── אבטחה ──────────── -->
+    <div class="state" id="state-security">
+      <!-- Password change (email users only) -->
+      <div class="card">
+        <div class="card-title">שינוי סיסמה</div>
+        <div class="field">
+          <label>סיסמה נוכחית</label>
+          <input type="password" value="••••••••" dir="ltr" />
+        </div>
+        <div class="field">
+          <label>סיסמה חדשה</label>
+          <input type="password" placeholder="לפחות 8 תווים" dir="ltr" />
+          <!-- password strength bar -->
+          <div style="height:4px;background:#e5e0d8;border-radius:2px;margin-top:6px;">
+            <div style="height:4px;width:60%;background:#f59e0b;border-radius:2px;"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>אישור סיסמה</label>
+          <input type="password" placeholder="" dir="ltr" />
+        </div>
+        <button class="btn-primary">עדכני סיסמה</button>
+      </div>
+
+      <!-- Logout this device -->
+      <div class="card">
+        <div class="action-row">
+          <div class="action-text">
+            <div class="title">התנתקות</div>
+            <div class="desc">מנתקת את המכשיר הזה בלבד</div>
+          </div>
+          <button class="btn-outline">התנתקי</button>
+        </div>
+      </div>
+
+      <!-- Logout ALL devices — NEW in Phase 2 -->
+      <div class="card" style="border-color:#fde68a;border-width:1.5px;">
+        <div class="action-row">
+          <div class="action-text">
+            <div class="title">התנתקות מכל המכשירים</div>
+            <div class="desc">מנתקת את כל הסשנים הפעילים — פלאפון, מחשב, טאבלט</div>
+          </div>
+          <button class="btn-outline" style="border-color:#d97706;color:#d97706;white-space:nowrap;">התנתקי מכולם</button>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="card-danger">
+        <div class="card-danger-title">אזור מסוכן</div>
+        <div class="card-danger-desc">מחיקת חשבון תסיר לצמיתות את כל הנתונים — מועדפים, דירוגים, עסק (אם יש). לא ניתן לבטל.</div>
+        <button class="btn-danger" onclick="showState('delete1')">מחקי חשבון</button>
+      </div>
+    </div>
+
+    <!-- ──────────── פרטיות — NEW tab ──────────── -->
+    <div class="state" id="state-privacy">
+      <!-- Preferred city — new field for Phase 3 -->
+      <div class="card">
+        <div class="card-label">מיקום מועדף</div>
+        <div class="card-title">עיר מגורים</div>
+        <div class="city-search">
+          <span class="city-icon">📍</span>
+          <input type="text" placeholder="חפשי עיר..." value="תל אביב-יפו" dir="rtl" />
+        </div>
+        <div class="hint" style="font-size:11px;color:#aaa;margin-top:6px;">
+          משפיעה על תוצאות חיפוש מחדר ועל הצגת עסקים קרובים.
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn-primary" style="font-size:13px;">שמרי</button>
+        </div>
+      </div>
+
+      <!-- Notification / privacy toggles -->
+      <div class="card">
+        <div class="card-title">הגדרות תקשורת</div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl">עדכונים שבועיים</div>
+            <div class="ts">סיכום מה חדש אצל המועדפים שלך</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl">חידושים ותוכן</div>
+            <div class="ts">מבצעים, מתכונים וטיפים עונתיים</div>
+          </div>
+          <div class="toggle off"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl">הצגה ברשימת שכנות</div>
+            <div class="ts">אפשרי לאחרים לראות שאת בסביבה</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+      </div>
+
+      <!-- Auth provider info (read-only) -->
+      <div class="card">
+        <div class="card-label">ספק זהות</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">✉️</span>
+          <span>חשבון אימייל וסיסמה</span>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px;">כניסה באמצעות: dana@example.com</div>
+      </div>
+    </div>
+
+    <!-- ──────────── העסק שלי (producer-only) ──────────── -->
+    <div class="state" id="state-business">
+      <div class="card">
+        <div class="card-label">העסק שלך</div>
+        <div class="card-title" style="margin-bottom:8px;">מחלבת הגולן</div>
+        <div id="status-badge">
+          <span class="badge-approved">✓ מאושר</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-num">147</div>
+            <div class="stat-lbl">מועדפים</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">1.2k</div>
+            <div class="stat-lbl">צפיות (30י)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">38</div>
+            <div class="stat-lbl">WhatsApp שבוע</div>
+          </div>
+        </div>
+      </div>
+      <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:#2e6853;color:white;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">ניהול מלא ←</a>
+    </div>
+
+    <!-- ──────────── מחיקה שלב 1 — Modal Step 1 ──────────── -->
+    <div class="state" id="state-delete1">
+      <!-- background shows security tab -->
+      <div class="card" style="opacity:.4;pointer-events:none;">
+        <div class="card-danger-title">אזור מסוכן</div>
+        <div class="card-danger-desc">מחיקת חשבון תסיר לצמיתות...</div>
+        <button class="btn-danger">מחקי חשבון</button>
+      </div>
+
+      <!-- Bottom sheet modal — step 1 -->
+      <div style="position:relative;margin-top:-20px;">
+        <div class="modal-sheet" style="border-radius:20px;box-shadow:0 -4px 24px rgba(0,0,0,.12);">
+          <div class="modal-handle"></div>
+          <div class="modal-title danger">מחיקת חשבון</div>
+          <div class="modal-desc">פעולה זו <strong>בלתי הפיכה</strong>. מה יימחק:</div>
+          <ul class="modal-list">
+            <li>כל המועדפים שסימנת</li>
+            <li>כל הדירוגים שכתבת</li>
+            <li>ההיסטוריה שלך באתר</li>
+          </ul>
+
+          <!-- Producer-specific warning (shown for producers) -->
+          <div class="modal-warn" id="producer-warn">
+            ⚠️ <strong>בעלת עסק:</strong> גם דף העסק, התמונות ואישורי הכשרות שלך יימחקו לצמיתות. לא ניתן לשחזר.
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn-outline" onclick="showState('security')">ביטול</button>
+            <button class="btn-danger" onclick="showState('delete2')">המשיכי למחיקה ←</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── מחיקה שלב 2 — Modal Step 2 ──────────── -->
+    <div class="state" id="state-delete2">
+      <div class="card" style="opacity:.4;pointer-events:none;">
+        <div class="card-danger-title">אזור מסוכן</div>
+      </div>
+
+      <div style="position:relative;margin-top:-20px;">
+        <div class="modal-sheet" style="border-radius:20px;box-shadow:0 -4px 24px rgba(0,0,0,.12);">
+          <div class="modal-handle"></div>
+          <div class="modal-title danger">אישור סופי</div>
+          <div class="modal-desc">הקלידי את כתובת האימייל שלך כדי לאשר את המחיקה:</div>
+
+          <div class="field" style="margin-bottom:6px;">
+            <label class="modal-input-label">dana@example.com</label>
+            <input class="modal-input" type="email" placeholder="dana@example.com" dir="ltr" id="delete-email-input" oninput="checkEmailMatch(this)" />
+          </div>
+          <div id="email-match-msg" style="font-size:12px;color:#aaa;min-height:16px;margin-bottom:10px;"></div>
+
+          <div class="modal-actions">
+            <button class="btn-outline" onclick="showState('delete1')">← חזרה</button>
+            <button class="btn-danger" id="confirm-delete-btn" disabled style="opacity:.45;">מחקי לצמיתות</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /phone-inner -->
+</div><!-- /phone -->
+
+<script>
+let currentRole = 'consumer';
+
+function showState(s) {
+  document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('state-' + s);
+  if (el) el.classList.add('active');
+
+  // sync state switcher buttons
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.sw-btn').forEach(b => {
+    if (b.textContent.trim().startsWith(stateLabel(s))) b.classList.add('active');
+  });
+
+  // sync tab buttons
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabMap = { profile:'tab-profile', security:'tab-security', privacy:'tab-privacy', business:'tab-business' };
+  if (tabMap[s]) document.getElementById(tabMap[s])?.classList.add('active');
+}
+
+function stateLabel(s) {
+  const m = { profile:'פרטים', security:'אבטחה', privacy:'פרטיות', delete1:'מחיקה', delete2:'מחיקה', business:'העסק' };
+  return m[s] || s;
+}
+
+function setRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const businessTab = document.getElementById('tab-business');
+  const producerWarn = document.getElementById('producer-warn');
+  const statusBadge = document.getElementById('status-badge');
+
+  if (role === 'consumer') {
+    businessTab.style.display = 'none';
+    if (producerWarn) producerWarn.style.display = 'none';
+  } else if (role === 'producer') {
+    businessTab.style.display = 'flex';
+    if (producerWarn) producerWarn.style.display = 'block';
+    if (statusBadge) statusBadge.innerHTML = '<span class="badge-approved">✓ מאושר</span>';
+  } else if (role === 'pending') {
+    businessTab.style.display = 'flex';
+    if (producerWarn) producerWarn.style.display = 'block';
+    if (statusBadge) statusBadge.innerHTML = '<span class="badge-pending">⏳ ממתין לאישור</span>';
+  }
+}
+
+function checkEmailMatch(input) {
+  const expected = 'dana@example.com';
+  const btn = document.getElementById('confirm-delete-btn');
+  const msg = document.getElementById('email-match-msg');
+  if (input.value === expected) {
+    input.classList.add('match');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    msg.textContent = '✓ אימייל מאושר';
+    msg.style.color = '#16a34a';
+  } else {
+    input.classList.remove('match');
+    btn.disabled = true;
+    btn.style.opacity = '.45';
+    msg.textContent = input.value.length > 0 ? 'האימייל לא תואם' : '';
+    msg.style.color = '#dc2626';
+  }
+}
+
+// init
+showState('profile');
+</script>
+</body>
+</html>

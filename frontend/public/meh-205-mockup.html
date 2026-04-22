@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MEH-205 Search Discovery Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=DM+Sans:wght@400;500;600&family=Cormorant+Garamond:ital,wght@1,500&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', Arial, sans-serif; background: #e8e2d8; color: #1C1A17; direction: rtl; padding: 20px; }
+h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #555; letter-spacing: .02em; }
+
+/* State switcher */
+.switcher { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.sw-btn { border: 1px solid #2e6853; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; background: transparent; color: #2e6853; transition: all .15s; }
+.sw-btn.active { background: #2e6853; color: white; }
+
+/* Phone shell */
+.phone { max-width: 390px; margin: 0 auto; background: #F5F0E8; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.18); min-height: 700px; }
+
+/* States */
+.state { display: none; padding: 20px 16px 40px; }
+.state.active { display: block; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 11px; color: #888; margin-bottom: 14px; }
+.breadcrumb a { color: #888; text-decoration: none; }
+.breadcrumb span { margin: 0 4px; }
+
+/* H1 */
+.page-h1 { font-family: 'Frank Ruhl Libre', serif; font-size: 28px; font-weight: 900; color: #1C1A17; margin-bottom: 16px; line-height: 1.2; }
+
+/* Search bar */
+.search-bar { display: flex; gap: 8px; margin-bottom: 48px; }
+.search-wrap { flex: 1; display: flex; align-items: center; gap: 8px; border: 1.5px solid #d0cac0; border-radius: 40px; padding: 10px 16px; background: white; font-size: 16px; }
+.search-wrap input { flex: 1; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 14px; color: #1C1A17; background: transparent; direction: rtl; text-align: right; }
+.search-wrap input::placeholder { color: #aaa; }
+.search-icon { color: #999; font-size: 16px; flex-shrink: 0; }
+.search-btn { background: #2e6853; color: white; border: none; border-radius: 40px; padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+/* Sections */
+.section { margin-bottom: 48px; }
+.eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #2e6853; margin-bottom: 4px; }
+.section-h2 { font-family: 'Cormorant Garamond', 'Frank Ruhl Libre', serif; font-size: 22px; font-style: italic; font-weight: 500; color: #1C1A17; margin-bottom: 14px; line-height: 1.2; }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; border: 1px solid #e5e0d8; border-radius: 40px; padding: 8px 16px; font-size: 13px; background: #F5F0E8; color: #1C1A17; cursor: pointer; transition: all .15s; min-height: 40px; text-decoration: none; }
+.chip:hover { border-color: #2e6853; background: rgba(46,104,83,0.1); }
+.city-chip { min-height: 36px; font-size: 12px; padding: 6px 14px; }
+
+/* Producer cards */
+.card-grid { display: flex; flex-direction: column; gap: 12px; }
+.producer-card { background: white; border: 1px solid #e5e0d8; border-radius: 12px; padding: 16px; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.card-name { font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 16px; color: #1C1A17; }
+.verified-badge { background: rgba(46,104,83,0.1); color: #2e6853; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.card-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.card-category { font-size: 11px; color: #888; background: #F5F0E8; padding: 3px 8px; border-radius: 20px; }
+.card-rating { font-size: 12px; color: #555; }
+.card-city { font-size: 11px; color: #888; }
+.card-link { font-size: 12px; color: #2e6853; text-decoration: none; font-weight: 600; }
+.card-link:hover { text-decoration: underline; }
+
+/* Footer CTA */
+.footer-cta { background: rgba(46,104,83,0.08); border: 1px solid rgba(46,104,83,0.2); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 32px; }
+.footer-cta p { font-size: 13px; color: #2e6853; font-weight: 500; }
+.footer-btn { background: #2e6853; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* Results summary */
+.results-summary { font-size: 13px; color: #888; margin-bottom: 24px; }
+.results-h2 { font-family: 'Frank Ruhl Libre', serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #1C1A17; }
+
+/* Product list */
+.product-list { background: white; border: 1px solid #e5e0d8; border-radius: 12px; overflow: hidden; }
+.product-item { padding: 12px 16px; border-bottom: 1px solid #f0ede8; }
+.product-item:last-child { border-bottom: none; }
+.product-name { font-size: 14px; font-weight: 600; color: #1C1A17; margin-bottom: 2px; }
+.product-desc { font-size: 12px; color: #888; margin-bottom: 3px; }
+.product-by { font-size: 11px; color: #2e6853; }
+
+/* No results */
+.no-results-icon { text-align: center; font-size: 72px; margin-bottom: 16px; }
+.no-results-h2 { font-family: 'Frank Ruhl Libre', serif; font-size: 20px; font-weight: 900; text-align: center; margin-bottom: 8px; }
+.no-results-sub { font-size: 13px; color: #888; text-align: center; margin-bottom: 20px; }
+.no-results-label { font-size: 12px; color: #555; margin-bottom: 10px; font-weight: 500; }
+.no-results-link { display: block; text-align: center; color: #2e6853; font-size: 13px; text-decoration: underline; margin-top: 20px; cursor: pointer; }
+
+/* Loading skeletons */
+.skeleton { background: linear-gradient(90deg, #e8e2d8 25%, #ddd8ce 50%, #e8e2d8 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skel-chip { height: 40px; width: 90px; border-radius: 40px; display: inline-block; margin: 4px; }
+.skel-card { height: 100px; border-radius: 12px; margin-bottom: 12px; }
+
+/* Divider */
+.divider { border: none; border-top: 1px solid #e5e0d8; margin: 32px 0; }
+
+/* Search filled label */
+.search-filled { background: #f0f7f4; border-color: #2e6853 !important; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">MEH-205 — דף חיפוש Discovery · 4 States</h1>
+
+<div class="switcher">
+  <button class="sw-btn active" onclick="showState('default')">ברירת מחדל</button>
+  <button class="sw-btn" onclick="showState('results')">עם תוצאות</button>
+  <button class="sw-btn" onclick="showState('noresults')">אין תוצאות</button>
+  <button class="sw-btn" onclick="showState('loading')">טוען</button>
+</div>
+
+<div class="phone">
+
+  <!-- STATE 1: DEFAULT -->
+  <div class="state active" id="state-default">
+    <div class="breadcrumb"><a href="#">בית</a><span>›</span>חיפוש</div>
+    <h1 class="page-h1">חיפוש</h1>
+
+    <div class="search-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="לחם מחמצת, ביצים אורגניות..." />
+      </div>
+      <button class="search-btn">חפשי</button>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow">חיפוש פופולרי</div>
+      <h2 class="section-h2">מה מחפשות אצלנו</h2>
+      <div class="chips">
+        <a class="chip" href="#">🍞 לחם מחמצת</a>
+        <a class="chip" href="#">🥬 ירקות</a>
+        <a class="chip" href="#">🧀 גבינות</a>
+        <a class="chip" href="#">🥩 בשר</a>
+        <a class="chip" href="#">🥚 ביצים</a>
+        <a class="chip" href="#">🍯 דבש</a>
+        <a class="chip" href="#">🧴 סבונים</a>
+        <a class="chip" href="#">🫒 שמנים</a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow">מומלצות</div>
+      <h2 class="section-h2">בתי עסק מובילים</h2>
+      <div class="card-grid">
+        <div class="producer-card">
+          <div class="card-top">
+            <span class="card-name">חוות הכרמל</span>
+            <span class="verified-badge">✓ מאומת</span>
+          </div>
+          <div class="card-meta">
+            <span class="card-category">גבינות</span>
+            <span class="card-rating">⭐ 4.8 (23)</span>
+            <span class="card-city">📍 חיפה</span>
+          </div>
+          <a class="card-link" href="#">לדף העסק ←</a>
+        </div>
+        <div class="producer-card">
+          <div class="card-top">
+            <span class="card-name">מאפיית לחם הארץ</span>
+          </div>
+          <div class="card-meta">
+            <span class="card-category">לחמים ואפייה</span>
+            <span class="card-rating">⭐ 4.9 (41)</span>
+            <span class="card-city">📍 תל אביב</span>
+          </div>
+          <a class="card-link" href="#">לדף העסק ←</a>
+        </div>
+        <div class="producer-card">
+          <div class="card-top">
+            <span class="card-name">ביצים מהמשק</span>
+            <span class="verified-badge">✓ מאומת</span>
+          </div>
+          <div class="card-meta">
+            <span class="card-category">ביצים</span>
+            <span class="card-rating">⭐ 4.7 (18)</span>
+            <span class="card-city">📍 מושב בן שמן</span>
+          </div>
+          <a class="card-link" href="#">לדף העסק ←</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="eyebrow">לפי מיקום</div>
+      <h2 class="section-h2">חפשי לפי עיר</h2>
+      <div class="chips">
+        <a class="chip city-chip" href="#">תל אביב</a>
+        <a class="chip city-chip" href="#">ירושלים</a>
+        <a class="chip city-chip" href="#">חיפה</a>
+        <a class="chip city-chip" href="#">רמת גן</a>
+        <a class="chip city-chip" href="#">פתח תקווה</a>
+      </div>
+    </div>
+
+    <div class="footer-cta">
+      <p>יש לך עסק תוצרת בית?</p>
+      <button class="footer-btn">הוסיפי עסק ←</button>
+    </div>
+  </div>
+
+  <!-- STATE 2: RESULTS -->
+  <div class="state" id="state-results">
+    <div class="breadcrumb"><a href="#">בית</a><span>›</span>חיפוש: גבינות</div>
+    <h1 class="page-h1">חיפוש</h1>
+
+    <div class="search-bar">
+      <div class="search-wrap search-filled">
+        <span class="search-icon">🔍</span>
+        <input type="text" value="גבינות" style="color:#1C1A17;" />
+      </div>
+      <button class="search-btn">חפשי</button>
+    </div>
+
+    <p class="results-summary">8 תוצאות עבור "גבינות"</p>
+
+    <section style="margin-bottom:32px;">
+      <h2 class="results-h2">בתי עסק (5)</h2>
+      <div class="card-grid">
+        <div class="producer-card">
+          <div class="card-top"><span class="card-name">חוות הכרמל</span><span class="verified-badge">✓ מאומת</span></div>
+          <div class="card-meta"><span class="card-category">גבינות</span><span class="card-rating">⭐ 4.8</span><span class="card-city">📍 חיפה</span></div>
+          <a class="card-link" href="#">לדף העסק ←</a>
+        </div>
+        <div class="producer-card">
+          <div class="card-top"><span class="card-name">גבינות ומחלבה</span></div>
+          <div class="card-meta"><span class="card-category">גבינות</span><span class="card-rating">⭐ 4.6</span><span class="card-city">📍 רמת גן</span></div>
+          <a class="card-link" href="#">לדף העסק ←</a>
+        </div>
+        <div class="producer-card">
+          <div class="card-top"><span class="card-name">מחלבת הגליל</span></div>
+          <div class="card-meta"><span class="card-category">חלב וגבינות</span><span class="card-rating">⭐ 4.9</span><span class="card-city">📍 כפר ורדים</span></div>
+          <a class="card-link" href="#">לדף העסק ←</a>
+        </div>
+      </div>
+      <a href="#" style="display:block;text-align:center;font-size:13px;color:#2e6853;margin-top:12px;text-decoration:underline;">הצגת כל 5 בתי העסק ←</a>
+    </section>
+
+    <section>
+      <h2 class="results-h2">מוצרים (3)</h2>
+      <div class="product-list">
+        <div class="product-item">
+          <div class="product-name">גבינת בולגרית 5% שומן</div>
+          <div class="product-desc">גבינה לבנה עדינה, ממחלבה קטנה בגליל</div>
+          <div class="product-by">אצל מחלבת הגליל</div>
+        </div>
+        <div class="product-item">
+          <div class="product-name">גבינה צפתית מיושנת</div>
+          <div class="product-desc">6 חודשי ייישון, מחלב כבשים</div>
+          <div class="product-by">אצל חוות הכרמל</div>
+        </div>
+        <div class="product-item">
+          <div class="product-name">לבנה ביתית בשמן זית</div>
+          <div class="product-desc">לבנה ביתית, זיתים, עשבי תיבול</div>
+          <div class="product-by">אצל גבינות ומחלבה</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- STATE 3: NO RESULTS -->
+  <div class="state" id="state-noresults">
+    <div class="breadcrumb"><a href="#">בית</a><span>›</span>חיפוש</div>
+    <h1 class="page-h1">חיפוש</h1>
+
+    <div class="search-bar">
+      <div class="search-wrap search-filled">
+        <span class="search-icon">🔍</span>
+        <input type="text" value="קינואה" style="color:#1C1A17;" />
+      </div>
+      <button class="search-btn">חפשי</button>
+    </div>
+
+    <div style="text-align:center;padding:24px 0 32px;">
+      <div class="no-results-icon">🌿</div>
+      <h2 class="no-results-h2">לא מצאנו תוצאות ל"קינואה"</h2>
+      <p class="no-results-sub">אבל אולי יעניינו אותך:</p>
+    </div>
+
+    <div class="section">
+      <div class="no-results-label">חיפושים פופולריים</div>
+      <div class="chips">
+        <a class="chip" href="#">🍞 לחם מחמצת</a>
+        <a class="chip" href="#">🥬 ירקות</a>
+        <a class="chip" href="#">🧀 גבינות</a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="no-results-label">או חפשי לפי עיר:</div>
+      <div class="chips">
+        <a class="chip city-chip" href="#">תל אביב</a>
+        <a class="chip city-chip" href="#">ירושלים</a>
+        <a class="chip city-chip" href="#">חיפה</a>
+      </div>
+    </div>
+
+    <a class="no-results-link" href="#">לא מצאת? ספרי לנו מה את מחפשת ←</a>
+  </div>
+
+  <!-- STATE 4: LOADING -->
+  <div class="state" id="state-loading">
+    <div class="breadcrumb" style="opacity:.3;">בית › חיפוש</div>
+    <div class="skeleton" style="height:32px;width:100px;margin-bottom:16px;"></div>
+
+    <div style="display:flex;gap:8px;margin-bottom:48px;">
+      <div class="skeleton" style="flex:1;height:42px;border-radius:40px;"></div>
+      <div class="skeleton" style="width:64px;height:42px;border-radius:40px;"></div>
+    </div>
+
+    <div style="margin-bottom:48px;">
+      <div class="skeleton" style="height:10px;width:80px;margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:22px;width:180px;margin-bottom:16px;border-radius:4px;"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="skeleton skel-chip"></div>
+        <div class="skeleton skel-chip" style="width:70px;"></div>
+        <div class="skeleton skel-chip" style="width:75px;"></div>
+        <div class="skeleton skel-chip" style="width:60px;"></div>
+        <div class="skeleton skel-chip" style="width:50px;"></div>
+        <div class="skeleton skel-chip" style="width:65px;"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="skeleton" style="height:10px;width:60px;margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:22px;width:160px;margin-bottom:16px;border-radius:4px;"></div>
+      <div class="skeleton skel-card"></div>
+      <div class="skeleton skel-card"></div>
+      <div class="skeleton skel-card"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showState(name) {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('state-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
