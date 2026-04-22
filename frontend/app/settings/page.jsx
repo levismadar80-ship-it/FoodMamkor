@@ -124,6 +124,8 @@ function TabButton({ active, onClick, icon, children }) {
 function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
   const [name, setName] = useState(user.name || "");
+  const [city, setCity] = useState(user.city || "");
+  const [phone, setPhone] = useState(user.phone || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -132,7 +134,10 @@ function ProfileTab() {
   const isOAuth = !!user.is_oauth || !!user.google_id || !!user.apple_id;
   const oAuthProvider = user.google_id ? "Google" : user.apple_id ? "Apple" : null;
   const trimmedName = name.trim();
-  const dirty = trimmedName !== (user.name || "");
+  const dirty =
+    trimmedName !== (user.name || "") ||
+    city !== (user.city || "") ||
+    phone !== (user.phone || "");
   const canSave = dirty && !!trimmedName;
 
   const handleSubmit = async (e) => {
@@ -144,6 +149,8 @@ function ProfileTab() {
     try {
       const patch = {};
       if (trimmedName !== user.name) patch.name = trimmedName;
+      if (city !== (user.city || "")) patch.city = city.trim();
+      if (phone !== (user.phone || "")) patch.phone = phone.trim();
       await updateProfile(patch);
       setMessage("הפרטים נשמרו");
       setTimeout(() => setMessage(null), 3000);
@@ -268,6 +275,40 @@ function ProfileTab() {
             {isOAuth
               ? `האימייל מחובר לחשבון ${oAuthProvider ?? "חיצוני"} שלך. לשינוי — עדכני בהגדרות ${oAuthProvider ?? "ספק הזהות"}`
               : "לשינוי אימייל, פני לתמיכה"}
+          </p>
+        </div>
+        <div>
+          <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
+            עיר <span className="text-site-muted font-normal">(אופציונלי)</span>
+          </label>
+          <input
+            id="profile-city"
+            type="text"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="תל אביב"
+            className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
+            dir="rtl"
+          />
+          <p className="text-xs text-site-muted mt-1 text-right">
+            כדי שנציג לך עסקים באזורך
+          </p>
+        </div>
+        <div>
+          <label htmlFor="profile-phone" className="block text-sm font-medium mb-1">
+            טלפון <span className="text-site-muted font-normal">(אופציונלי)</span>
+          </label>
+          <input
+            id="profile-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="050-1234567"
+            className="w-full border border-border rounded-[12px] px-3 py-2"
+            dir="ltr"
+          />
+          <p className="text-xs text-site-muted mt-1 text-right">
+            נוסיף בקרוב notifications
           </p>
         </div>
 
