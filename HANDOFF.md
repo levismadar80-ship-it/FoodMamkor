@@ -1,7 +1,64 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22 (MEH-245 deployment verification — PR #277 open; staging has MEH-87/83/84 batch)
+> Last updated: 2026-04-22 (MEH-260 staging deploy drift — incident doc + two Dockerfile fixes merged)
+
+## 🚨 Most recent — MEH-260 staging deploy drift (2026-04-22, evening)
+
+**Incident:** Railway `foodmamkor-staging` was running stale code for
+**weeks**. Discovered during MEH-256 investigation when access logs
+showed 404s on endpoints that exist in `staging` HEAD. Full writeup:
+`docs/INCIDENTS/2026-04-staging-deploy-drift.md`.
+
+**Two stacked root causes:**
+1. Railway staging env's GitHub source was pointing at `main`, not
+   `staging`. **User fixed via dashboard.**
+2. Railway's BuildKit rejects the uv cache mount without a
+   service-specific id. **Fixed in code** — PR #291
+   (`458d651`) removed the cache mount entirely.
+
+**Merged this session (all on `staging`):**
+- #287 debug XFF logging → **reverted** via #288 before causing issues
+- #288 revert MEH-256 debug
+- #289 add `id=uv-cache` (first attempt — Railway rejected)
+- #290 **closed** (merge conflict — superseded by #291)
+- #291 remove uv cache mount (second attempt — expected to work)
+
+**Current state — AWAITING HUMAN VERIFICATION:**
+- Last staging commit: `458d651`
+- Railway build should now succeed; user must verify:
+  ```bash
+  BACKEND=https://foodmamkor-staging.up.railway.app
+  curl -s "$BACKEND/health"
+  curl -s "$BACKEND/holiday-mode"
+  python scripts/check_api_contract.py --probe "$BACKEND"
+  ```
+
+**Implications:**
+- The 9 PRs merged earlier today (MEH-247/248/249/250/251/252/253/254/255)
+  were all in a vacuum — all CI passes are meaningless until the
+  probe confirms 0 orphans. Re-verify every CRITICAL/HIGH once staging
+  is actually live (MEH-254 IDOR fix is the top priority).
+- **MEH-244 (production drift)** is suspected to be the SAME root
+  cause. Do NOT touch production until staging verification is clean.
+- **MEH-256 XFF investigation** is blocked — debug `print` was removed
+  in #288. If still needed, open a follow-up to re-add as structured
+  `log.info` (cleaner lifecycle).
+
+**Prevention follow-up (not done in this session):**
+- Flip `api-contract-probe-staging` in `.github/workflows/deploy.yml`
+  from `continue-on-error: true` to hard failure once baseline shows
+  0 orphans.
+- Add a weekly deploy-freshness check script.
+
+---
+
+## Previous — MEH-242 audit session + 9 PR batch (2026-04-22, day)
+
+10 Linear issues opened from MEH-242 audit (MEH-246…255); 9 merged to
+staging over the afternoon. Details in Linear / commit log. All of
+those merges are **subject to re-verification** pending MEH-260
+confirmation that staging is now running the right code.
 
 ## Open PR (MEH-245 deployment verification — 2026-04-22)
 PR: #277 (feature/meh-245-deployment-verification → staging, draft, 3 commits)

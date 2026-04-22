@@ -239,6 +239,65 @@ After saving both rules, verify by attempting a direct push from a feature branc
 to `staging` — it should be rejected with "protected branch" error.
 
 
+### E. Verify deploys actually ran (MEH-260)
+
+Merging to `staging` or `main` does not guarantee the runtime changed.
+Two failures have been seen in the wild (2026-04):
+
+1. **Source-branch drift.** Railway's environment-level GitHub source
+   was silently pointing at the wrong branch (`main` instead of
+   `staging`). Every merge to `staging` was a no-op at runtime for
+   several weeks. Fix is in the Railway UI — no code change.
+2. **Dockerfile BuildKit mismatch.** Railway's build runner rejects
+   `--mount=type=cache,target=...` unless the `id=` is present AND
+   in Railway's `s/<service-uuid>-<name>` format. Either hardcode the
+   id (couples the Dockerfile to a service) or drop the cache mount
+   (~20-30s slower cold build).
+
+**After every merge to `staging` or `main`, verify the runtime matches
+the code, not just that CI went green:**
+
+```bash
+# 1. Health check — confirms the container is up at all
+BACKEND=https://foodmamkor-staging.up.railway.app   # or foodmamkor-production
+curl -s "$BACKEND/health"
+#   Expect: {"status":"ok","db_init":"ready"}
+
+# 2. Contract probe — hits every frontend call-site against the live backend
+python scripts/check_api_contract.py --probe "$BACKEND"
+#   Expect: 0 frontend orphans
+#   If any endpoint returns 404 that exists in the code, the runtime
+#   is stale. Go to the incident runbook below.
+```
+
+**Signs of deploy drift:**
+
+- Contract probe shows endpoints returning 404 that exist in
+  `git log origin/staging:backend/app/routers/<file>.py`.
+- Railway's Deployments tab shows an "Active" deployment from days ago,
+  not the latest commit.
+- Bug fixes merged "days ago" still reproduce.
+
+**If drift is suspected:**
+
+1. Railway dashboard → the affected service → **Settings → Source →
+   Branch**. Confirm it matches the expected branch (`staging` for
+   staging env, `main` for production env).
+2. Railway dashboard → the affected service → **Deployments**. Check
+   for FAILED deploys between the last Active one and now. Copy the
+   build log error.
+3. Check `.github/workflows/deploy.yml` runs for recent commits —
+   does the "Trigger Railway redeploy" job show `skipped` (correct:
+   only runs on push to the protected branches) or `success` (the CLI
+   kick fired)?
+4. If the CLI "succeeded" but the container is stale: the `railway
+   redeploy` CLI can silently "succeed" while deploying the same
+   branch pointer as before. Check Railway's Deployments tab, not
+   the GitHub Actions log.
+5. See `docs/INCIDENTS/2026-04-staging-deploy-drift.md` for a full
+   diagnostic walkthrough.
+
+
 ### Sanity checks before promoting `staging → main`
 
 - [ ] `npx playwright test --project=desktop` passes locally (6/6)
