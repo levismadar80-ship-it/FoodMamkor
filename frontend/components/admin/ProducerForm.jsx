@@ -47,6 +47,9 @@ const EMPTY = {
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
+  // MEH-89 — availability
+  availability_status: "available",
+  vacation_until: "",
 };
 
 export default function ProducerForm({ initial = null, producerId = null }) {
@@ -89,6 +92,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         offers_delivery: initial.offers_delivery ?? false,
         delivery_nationwide: initial.delivery_nationwide ?? false,
         delivery_cities: initial.delivery_cities ?? [],
+        // MEH-89 — availability
+        availability_status: initial.availability_status ?? "available",
+        vacation_until: initial.vacation_until ?? "",
       });
     }
   }, [initial]);
@@ -148,6 +154,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean),
+      // MEH-89 — clear vacation_until when not on vacation
+      vacation_until: form.availability_status === "vacation" && form.vacation_until ? form.vacation_until : null,
     };
 
     try {
@@ -560,6 +568,41 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             dir="ltr"
           />
         </Field>
+      </Section>
+
+      <Section title="זמינות">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[
+            { value: "available", label: "זמינה" },
+            { value: "full", label: "תפוסה" },
+            { value: "vacation", label: "בהפסקה" },
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => update("availability_status", value)}
+              className={`px-4 py-1.5 rounded-full text-sm border transition ${
+                form.availability_status === value
+                  ? "bg-primary text-white border-primary"
+                  : "border-border text-site-text hover:border-primary"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {form.availability_status === "vacation" && (
+          <Field label="תאריך חזרה (אופציונלי)">
+            <input
+              type="date"
+              value={form.vacation_until}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => update("vacation_until", e.target.value)}
+              className={inputClass}
+              dir="ltr"
+            />
+          </Field>
+        )}
       </Section>
 
       <Section title="הערות פנימיות (לא גלוי למשתמשים)">

@@ -161,6 +161,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       : "";
 
   const isVacation = producer.availability_status === "vacation";
+  const vacationReturnLabel = (() => {
+    if (!producer.vacation_until) return "חוזרת בקרוב";
+    try {
+      return "חוזרת ב-" + new Date(producer.vacation_until).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+    } catch {
+      return "חוזרת בקרוב";
+    }
+  })();
 
   const words = (producer.name || "").trim().split(/\s+/).filter(Boolean);
   const producerInitials =
@@ -389,7 +397,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
               <p className="text-sm font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
               <p className="text-xs text-slate-500 mt-1">
-                ניתן להשאיר הודעה — יחזרו אליך בקרוב
+                {vacationReturnLabel} — ניתן להשאיר הודעה
               </p>
             </div>
           )}
@@ -652,6 +660,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {isVacation && (
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
                 <p className="text-xs font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+                <p className="text-xs text-slate-500 mt-0.5">{vacationReturnLabel}</p>
               </div>
             )}
 
@@ -801,7 +810,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
           {isVacation ? (
-            <span className="text-[11px] text-site-muted shrink-0">🌿 בהפסקה</span>
+            <span className="text-[11px] text-site-muted shrink-0">🌿 {vacationReturnLabel}</span>
           ) : producer.reviews_count >= 3 ? (
             <div className="shrink-0 text-[11px] text-site-muted leading-tight">
               <div className="font-bold text-[#8B6914]">

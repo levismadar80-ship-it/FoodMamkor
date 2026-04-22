@@ -230,6 +230,9 @@ class ProducerUpdate(BaseModel):
     delivery_cities: list[str] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
+    # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
+    availability_status: str | None = None
+    vacation_until: date | None = None
 
     @field_validator("custom_questions")
     @classmethod
