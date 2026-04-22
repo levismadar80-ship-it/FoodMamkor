@@ -5,22 +5,27 @@
 
 ## Last session
 Date: 2026-04-22
-PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102) + #240 (MEH-102 bugfix) + #239 (Playwright E2E fixes)
+PRs open: #242 (MEH-213, feature/meh-213-location-types)
 Summary:
-  PR #239: fix 3 Playwright E2E failures —
-    Bug A (spec 03 desktop): CTA locator .first() resolved to md:hidden mobile CTA;
-      fix: :visible on both arms of OR-selector in 03-view-producer-detail.spec.ts
-    Bug B (spec 03+04 mobile, also real UX bug): ProducerCard handleRootClick did nothing
-      when onClick prop absent; clicking card body below h3 never navigated;
-      fix: useRouter + router.push(producerHref) in ProducerCard.jsx
-    Bug C (spec 05 mobile): MapClient renders mapPane twice (desktop+mobile containers);
-      both Leaflet instances mount → two .leaflet-container in DOM;
-      fix: :visible on waitForSelector + fallback toBeVisible in 05-map-navigation.spec.ts
-  PR #240: MEH-102 bugfix — CSP img-src: added https://unpkg.com (Leaflet marker icons); Array.isArray guard on similar-producers r.data; Waze button hidden on desktop via mobile UA detection
-  PR #238: MEH-212 Playwright E2E CI — deployment_status trigger replaces Vercel bot comment poll; TEST_URL from event; timeout-minutes 20→15; fallback (repository_dispatch) documented in DEPLOYMENT.md; confirmed working: job fires in ~3m 35s
-  PR #237: MEH-102 Producer detail content — opening_hours column + migration; OpeningHours.jsx; MiniMap.jsx; similar producers section; MEH-79 closed as duplicate
-  PR #236: MEH-106 Social proof — favorites_count on ProducerCard + ProducerDetail
-  PR #234: MEH-141 Category request flow — category_requests table + modal + admin panel
+  PR #242 (MEH-213) — Business location types + canonical cities:
+    Backend: City model + cities table (idempotent DDL); 4 new columns on producers
+      (has_physical_location, offers_delivery, delivery_nationwide, delivery_cities TEXT[]);
+      2 CHECK constraints (both-false blocked; nationwide XOR city-list); Pydantic v2
+      model_validator for mutual-exclusion; GET /cities?q= autocomplete (60/min);
+      scripts/seed_cities.py from data.gov.il; geo-search excludes delivery-only.
+    Frontend: CitiesAutocomplete (debounced, ARIA combobox, keyboard nav);
+      DeliveryBlock (3 states: nationwide / city chips / fallback + WhatsAppButton);
+      ProducerDetail: conditional MiniMap + DeliveryBlock; ProducerCard: "משלוחים בלבד"
+      badge; ProducerForm: "סוג העסק" section + cascading checkboxes + CitiesAutocomplete
+      + client-side save guard; producer-completeness.js delivery-aware;
+      CSV export 4 new columns; seo.js areaServed for delivery-only.
+    Tests: test_producer_location_types.py (cities endpoint, both-false, nationwide+cities, geo-search exclusion).
+    Build fix: CitiesAutocomplete JSDoc comment had "start-*/" which SWC parsed as
+      closing the block comment — fixed on second commit.
+    Merge: pulled latest staging (MiniMap.jsx Waze fix + ProducerReviews.jsx guard) into branch.
+
+Previous sessions:
+  PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102) + #240 (MEH-102 bugfix) + #239 (Playwright E2E fixes) + #241 (MEH-102 bugfix v2)
 
 Previous session context:
   PR #221: MEH-149 Cookie consent GDPR gate
@@ -36,20 +41,21 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: staging
-Staging HEAD: 6fe93f8 (includes #240 MEH-102 bugfix)
-Main HEAD: e42127e (production is many commits behind — needs promotion)
+Branch: feature/meh-213-location-types (ahead of staging with MEH-213 work)
+Staging HEAD: c5bc8f2 (includes MEH-102 bugfix v2 — Waze https + ProducerReviews Array.isArray)
+Main HEAD: e42127e (production is many commits behind staging — needs promotion)
 
 ## Open PRs
-None.
+#242 — MEH-213 business location types (feature/meh-213-location-types → staging)
+  CI: pytest pending, Next.js build fixed (was failing due to */ in JSDoc comment), lint pending
+  Preview: food-mamkor-git-feature-m-ba2835-levismadar80-ship-its-projects.vercel.app
 
 ## Next task
-- PR #239 merged ✅ — Playwright E2E failures fixed
+- Wait for CI green on PR #242 — then request user review + merge to staging
+- After merge: run seed script on Railway staging: `python backend/scripts/seed_cities.py`
+- Verify GET /cities?q=תל returns results on staging
 - ProducerCard heart/favorite Phase C (post-login replay)
 - Lightbox for gallery images
-- Events section on homepage
-
-First step: ask user which to tackle next.
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |

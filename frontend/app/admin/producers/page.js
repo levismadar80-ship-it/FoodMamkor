@@ -71,9 +71,14 @@ function ProducersAdminPage() {
 
   const exportExcel = () => {
     // Build CSV from current visible rows (BOM for Excel UTF-8)
-    const headers = ["שם", "עיר", "טלפון", "אינסטגרם", "אתר", "סטטוס", "slug"];
+    const headers = ["שם", "עיר", "טלפון", "אינסטגרם", "אתר", "סטטוס", "slug", "חנות פיזית", "משלוחים", "כל הארץ", "ערי משלוח"];
     const rows = producers.map((p) => [
       p.name, p.city || "", p.phone || "", p.instagram || "", p.website || "", p.status, p.slug || "",
+      // MEH-213 — location mode columns
+      p.has_physical_location !== false ? "כן" : "לא",
+      p.offers_delivery ? "כן" : "לא",
+      p.delivery_nationwide ? "כן" : "לא",
+      (p.delivery_cities || []).join(", "),
     ]);
     const csv = "\uFEFF" + [headers, ...rows]
       .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))

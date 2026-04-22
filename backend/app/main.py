@@ -15,7 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.rate_limit import limiter
-from app.routers import admin, admin_experiences, admin_extra, admin_kashrut, admin_outreach, alerts, auth, chat, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
+from app.routers import admin, admin_experiences, admin_extra, admin_kashrut, admin_outreach, alerts, auth, chat, cities, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
 
 # Force stdout to be unbuffered so Railway's log panel shows startup
 # messages in real time. Without this, Python buffers until the process
@@ -122,6 +122,11 @@ def _migrate_columns(engine):
         ("producers", "vacation_until", "DATE"),
         # MEH-102 — weekly opening hours (free-text, nullable).
         ("producers", "opening_hours", "TEXT"),
+        # MEH-213 — location mode booleans + delivery scope.
+        ("producers", "has_physical_location", "BOOLEAN NOT NULL DEFAULT TRUE"),
+        ("producers", "offers_delivery", "BOOLEAN NOT NULL DEFAULT FALSE"),
+        ("producers", "delivery_nationwide", "BOOLEAN NOT NULL DEFAULT FALSE"),
+        ("producers", "delivery_cities", "TEXT[] NOT NULL DEFAULT '{}'"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.
@@ -141,6 +146,47 @@ def _migrate_columns(engine):
             conn.execute(text(
                 f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
             ))
+        # MEH-213 — canonical cities table for delivery_cities validation.
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS cities (
+                id SERIAL PRIMARY KEY,
+                name_he TEXT UNIQUE NOT NULL,
+                lat DOUBLE PRECISION,
+                lng DOUBLE PRECISION,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+            """
+        ))
+        # MEH-213 — CHECK constraints (idempotent via DO block).
+        # 1. At least one mode must be true (prevents has_physical=FALSE, offers_delivery=FALSE).
+        conn.execute(text(
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'producer_location_mode'
+                ) THEN
+                    ALTER TABLE producers ADD CONSTRAINT producer_location_mode
+                        CHECK (has_physical_location OR offers_delivery);
+                END IF;
+            END $$
+            """
+        ))
+        # 2. delivery_nationwide and a non-empty city list are mutually exclusive.
+        conn.execute(text(
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'delivery_nationwide_xor_cities'
+                ) THEN
+                    ALTER TABLE producers ADD CONSTRAINT delivery_nationwide_xor_cities
+                        CHECK (NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0));
+                END IF;
+            END $$
+            """
+        ))
         # Unique index on slug (allow nulls)
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_producers_slug ON producers (slug) WHERE slug IS NOT NULL"
@@ -401,6 +447,7 @@ async def record_request_metrics(request: Request, call_next) -> Response:
 
 
 app.include_router(auth.router)
+app.include_router(cities.router)
 app.include_router(producers.router)
 app.include_router(favorites.router)
 app.include_router(producer_me.router)

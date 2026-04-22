@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-22 — MEH-213: business location types + canonical cities list — has_physical_location / offers_delivery booleans on producers; cities table seeded from data.gov.il; GET /cities?q= autocomplete; 2 CHECK constraints; delivery-only producers excluded from geo-search; CitiesAutocomplete + DeliveryBlock components; ProducerDetail conditional map + DeliveryBlock; ProducerCard "משלוחים בלבד" badge; admin ProducerForm cascading checkboxes; producer-completeness delivery-aware; CSV export + SEO areaServed; 4 pytest tests (PR #242, open)
+
 ## 2026-04-22 — MEH-212: Playwright E2E CI fix — deployment_status trigger replaces Vercel bot comment poll. Root cause: regex \[Preview\]\(https://...\) never matched actual Vercel comment format; all 20 poll attempts (5 min) exhausted silently. Fix: on: deployment_status fires after Vercel signals success; TEST_URL from event. Job now runs in ~3m 35s. Fallback (repository_dispatch) documented in DEPLOYMENT.md. (#238)
 
 ## 2026-04-22 — MEH-106: social proof — favorites_count batch-fetched (GROUP BY, no N+1); ProducerCard "❤️ X שמרו" when ≥5 with optimistic tap update; ProducerDetail trust row same count; get_producer_by_slug gets rate limit + request param; 3 backend tests (#236)

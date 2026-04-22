@@ -83,19 +83,30 @@ export function buildPageUrl(producer) {
 export function buildJsonLd(producer) {
   if (!producer) return null;
 
+  const isDeliveryOnly = producer.has_physical_location === false && producer.offers_delivery;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: producer.name,
     description: producer.description || "",
-    address: {
+  };
+
+  // MEH-213: delivery-only producers have no physical address for JSON-LD.
+  // Use areaServed instead so Google understands the service area.
+  if (!isDeliveryOnly) {
+    jsonLd.address = {
       "@type": "PostalAddress",
       addressLocality: producer.city || "",
       addressCountry: "IL",
-    },
-  };
+    };
+  } else if (producer.delivery_nationwide) {
+    jsonLd.areaServed = "Israel";
+  } else if (producer.delivery_cities?.length > 0) {
+    jsonLd.areaServed = producer.delivery_cities;
+  }
 
-  if (producer.lat && producer.lng) {
+  if (!isDeliveryOnly && producer.lat && producer.lng) {
     jsonLd.geo = {
       "@type": "GeoCoordinates",
       latitude: producer.lat,

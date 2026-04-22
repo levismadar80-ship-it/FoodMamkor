@@ -154,6 +154,9 @@ def list_producers(
                 selectinload(Producer.delivery_areas),
             )
             .filter(Producer.status == "approved")
+            # MEH-213: map pins only for producers with a physical location.
+            # Delivery-only producers have no address to pin on the map.
+            .filter(Producer.has_physical_location.is_(True))
             # Haversine is undefined for NULL coords — exclude them before
             # applying the distance filter.
             .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
@@ -164,6 +167,7 @@ def list_producers(
             db.query(func.count(Producer.id.distinct()))
             .select_from(Producer)
             .filter(Producer.status == "approved")
+            .filter(Producer.has_physical_location.is_(True))
             .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
             .filter(_haversine_km(lat, lng) <= radius_km)
         )
