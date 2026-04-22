@@ -16,7 +16,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Callable, Optional
 
+import structlog
 from sqlalchemy.orm import Session
+
+logger = structlog.get_logger(__name__)
 
 from app.models.models import HomeProductWhatsAppClick
 
@@ -84,10 +87,12 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
         and settings.twilio_auth_token
         and settings.twilio_whatsapp_from
     ):
+        logger.debug("[rating-dispatcher] SMS disabled", reason="Twilio credentials not set")
         return
 
     buyer = click.user
     if not buyer or not buyer.phone:
+        logger.debug("[rating-dispatcher] SMS skipped", reason="buyer has no phone", click_id=str(click.id))
         return
 
     listing = click.home_product

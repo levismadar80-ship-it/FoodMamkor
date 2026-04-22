@@ -30,13 +30,14 @@ see Claude's signal when reviewing the queue.
 from __future__ import annotations
 
 import json
-import logging
 from decimal import Decimal
 from typing import Any
 
+import structlog
+
 from app.config import settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Hardcoded per feature/experiences-moderation plan Q1 — Haiku is enough for
 # pre-moderation and strictly cheaper than settings.anthropic_model (Opus).
@@ -54,10 +55,15 @@ def _get_client():
     if _client is not None:
         return _client
     if not settings.anthropic_api_key:
+        logger.debug("[experience-moderation] ANTHROPIC_API_KEY not set — client unavailable")
         return None
     try:
         import anthropic
-        _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        import httpx
+        _client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            http_client=httpx.Client(),
+        )
         return _client
     except Exception as e:  # pragma: no cover — defensive
         logger.warning("anthropic client init failed: %s", e)
@@ -137,6 +143,7 @@ def _safe_decimal(value) -> float | None:
     try:
         return float(Decimal(str(value)))
     except Exception:
+        logger.debug("[experience-moderation] decimal conversion failed", value=repr(value))
         return None
 
 
