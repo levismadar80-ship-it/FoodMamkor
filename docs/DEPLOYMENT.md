@@ -239,6 +239,58 @@ After saving both rules, verify by attempting a direct push from a feature branc
 to `staging` — it should be rejected with "protected branch" error.
 
 
+### D. Rate-limiter `TRUSTED_PROXY` flag (MEH-256) — **REQUIRED**
+
+Set `TRUSTED_PROXY=1` on the backend service in **both** Railway
+environments (staging + production). Without it, the rate limiter
+falls back to `request.client.host` which on Railway is the edge-proxy
+IP (`100.64.0.X` CGN range). All users share one bucket — a single
+attacker burning the 5/min login limit denies login for the whole site.
+
+1. Railway dashboard → backend service → **Variables → New Variable**
+2. Name: `TRUSTED_PROXY`, Value: `1`
+3. Save. Railway restarts the container automatically.
+
+With `TRUSTED_PROXY=1` the rate limiter reads `X-Real-IP` (set by
+Railway's edge from its own view of the TCP peer — unspoofable),
+falling back to `X-Forwarded-For[-2]` if X-Real-IP is missing. Full
+canonical implementation: [`backend/app/rate_limit.py`](../backend/app/rate_limit.py)
++ security rationale in [docs/SECURITY.md](./SECURITY.md) §2.
+
+**Never enable `TRUSTED_PROXY` on a deploy that is directly exposed to
+the public internet** — without a known proxy stripping/overwriting
+`X-Real-IP`, attackers can set the header themselves and rotate
+identities at will.
+
+**Verification — curl with spoofed headers to staging:**
+
+Because `X-Real-IP` is set by Railway's edge (not readable from
+outside), the best verification is to make requests from two different
+real IPs and confirm the limiter counters isolate. The simplest proxy
+for "different real IPs" is a laptop on Wi-Fi + a phone on cellular.
+
+```bash
+# From laptop A (one real IP):
+for i in 1 2 3 4 5 6; do
+  curl -X POST https://staging.mehamakor.online/auth/login \
+    -d '{"email":"no@one.com","password":"x"}'
+done
+# attempt 6 → 429
+
+# From phone B (distinct real IP) same minute:
+curl -X POST https://staging.mehamakor.online/auth/login \
+  -d '{"email":"no@one.com","password":"x"}'
+# → 401 (bucket isolates), not 429
+```
+
+If both IPs land in the same bucket, `TRUSTED_PROXY` is unset or mis-typed
+(check case: `1` / `true` / `yes` / `on` are accepted, nothing else).
+
+Assumes exactly one trusted proxy hop (Railway edge). If Cloudflare
+is ever added in front of Railway, revisit the XFF fallback path
+(`X-Real-IP` primary stays correct — Railway still sets it).
+
+
 ### E. Verify deploys actually ran (MEH-260)
 
 Merging to `staging` or `main` does not guarantee the runtime changed.
