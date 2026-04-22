@@ -53,7 +53,7 @@ function SettingsPageBody() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-4 py-10 pb-28">
       <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
         הגדרות חשבון
       </h1>
@@ -354,6 +354,7 @@ function PasswordChangeCard({ changePassword }) {
     try {
       await changePassword(current, next);
       setMessage("הסיסמה עודכנה");
+      setTimeout(() => setMessage(null), 3000);
       setCurrent("");
       setNext("");
       setConfirm("");
