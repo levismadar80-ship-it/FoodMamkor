@@ -180,6 +180,12 @@ summary + pointer here.
    and check the pages most affected by the change.
 5. **RTL logical properties.** Full rule + exception list:
    [.claude/rules/rtl.md](./rtl.md).
+6. **Guard tests (401/403/409) must send schema-valid payloads.**
+   A 422 proves nothing about the guard. FastAPI validates the request
+   body before running `Depends(get_current_user)` when the body
+   parameter precedes the auth dep in the function signature. Use
+   `valid_*_payload()` fixtures from `tests/conftest.py`; schema
+   changes must not silently invalidate security tests.
 
 ---
 

@@ -159,6 +159,36 @@ def auth_header(user: User) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+# ---------- valid payload fixtures (MEH-241) ----------
+# Guard tests (401/403/409) must use these so schema changes don't silently
+# invalidate security coverage.  Pattern: valid_*_payload() | {"field": bad}
+
+def valid_review_payload() -> dict:
+    """Passes ReviewCreateNested: stars (1-5), body (min 10 chars)."""
+    return {"stars": 5, "body": "מוצר נהדר, ממליצה בחום!"}
+
+
+def valid_user_register_payload() -> dict:
+    """Passes UserRegister: email, name, password (all required)."""
+    return {
+        "email": "valid@example.com",
+        "name": "משתמשת בדיקה",
+        "password": "Pass1234!",
+    }
+
+
+def valid_producer_register_payload() -> dict:
+    """Passes ProducerRegister for a new (unauthenticated) registration."""
+    return {
+        "email": "producer@example.com",
+        "name": "יצרנית בדיקה",
+        "password": "Pass1234!",
+        "producer_name": "חוות הבדיקה",
+        "category_ids": [],
+        "primary_contact_method": "whatsapp",
+    }
+
+
 # Make helpers importable from tests
 @pytest.fixture
 def factories():
