@@ -2,7 +2,9 @@ import logging
 import re
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 from pydantic import BaseModel
@@ -543,6 +545,47 @@ def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)
         "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),
         "hidden_home_products": db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).count(),
     }
+
+
+_DATA_GOV_URL = (
+    "https://data.gov.il/api/3/action/datastore_search"
+    "?resource_id=d4901968-dad3-4845-a9b0-a57d027f11ab&limit=1500"
+)
+
+
+@router.post("/seed-cities", status_code=200)
+def seed_cities(
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Idempotent: fetch Israeli localities from data.gov.il and upsert into cities table."""
+    try:
+        resp = httpx.get(_DATA_GOV_URL, timeout=30)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"data.gov.il fetch failed: {exc}")
+
+    records = resp.json().get("result", {}).get("records", [])
+    inserted = 0
+    for rec in records:
+        name = (rec.get("שם_יישוב") or rec.get("SHEM_YISHUV") or "").strip()
+        if not name:
+            continue
+        try:
+            lat = float(rec.get("lat") or rec.get("Y") or 0) or None
+            lng = float(rec.get("lon") or rec.get("X") or 0) or None
+        except (TypeError, ValueError):
+            lat = lng = None
+        result = db.execute(
+            text(
+                "INSERT INTO cities (name_he, lat, lng) VALUES (:name_he, :lat, :lng)"
+                " ON CONFLICT (name_he) DO NOTHING"
+            ),
+            {"name_he": name, "lat": lat, "lng": lng},
+        )
+        inserted += result.rowcount
+    db.commit()
+    return {"seeded": inserted}
 
 
 def _send_notification_email(to_email: str, subject: str, body: str):
