@@ -563,7 +563,7 @@ function LogoutAllDevicesCard() {
 // ---------------------------------------------------------------------------
 
 function DangerZoneCard() {
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const router = useRouter();
   const [phase, setPhase] = useState("idle"); // idle | confirm | grace
   const [emailInput, setEmailInput] = useState("");
@@ -578,7 +578,7 @@ function DangerZoneCard() {
     setLoading(true);
     setError(null);
     try {
-      await api.delete("/auth/me");
+      await deleteAccount(); // clears token + user state via auth context
       setPhase("grace");
     } catch (err) {
       setError(err?.response?.data?.detail || "שגיאה — נסי שוב");
@@ -780,7 +780,7 @@ function SupportModal({ onClose }) {
         <h2 className="font-semibold text-site-text text-lg">צרי קשר</h2>
         <p className="text-sm text-site-muted">נשמח לעזור. בחרי את הדרך הנוחה לך:</p>
         <a
-          href="https://wa.me/972500000000"
+          href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"

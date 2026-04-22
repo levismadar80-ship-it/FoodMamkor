@@ -55,7 +55,7 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
     db.refresh(user)
     # Email runs after response is sent — never blocks the 200
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/register/producer", response_model=Token)
@@ -179,7 +179,7 @@ def register_producer(
     if not upgrade_path:
         background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.get("/email-exists")
@@ -238,7 +238,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
         user.avatar_url = picture
         db.commit()
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/login", response_model=Token)
@@ -249,7 +249,7 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.get("/me", response_model=UserOut)
@@ -318,7 +318,7 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
             db.commit()
             db.refresh(user)
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/forgot-password")

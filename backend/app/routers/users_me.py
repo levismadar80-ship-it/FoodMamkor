@@ -53,7 +53,7 @@ def update_profile(
         user.avatar_url = data.avatar_url
 
     if data.city is not None:
-        user.city = data.city.strip()
+        user.city = data.city.strip() or None
 
     if data.email is not None:
         new_email = data.email.lower()

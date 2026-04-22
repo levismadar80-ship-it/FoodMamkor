@@ -135,3 +135,6 @@ CREATE INDEX IF NOT EXISTS idx_experiences_status ON experiences(status);
 CREATE INDEX IF NOT EXISTS idx_experiences_event_date ON experiences(event_date);
 CREATE INDEX IF NOT EXISTS idx_experiences_city ON experiences(city);
 CREATE INDEX IF NOT EXISTS idx_experiences_host ON experiences(host_user_id);
+
+-- MEH-206: logout-all-devices. Safe to run on existing DBs (IF NOT EXISTS).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 1;
