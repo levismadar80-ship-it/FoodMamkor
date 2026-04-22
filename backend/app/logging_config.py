@@ -36,7 +36,19 @@ def configure_logging() -> None:
     shared_processors: list = [
         structlog.contextvars.merge_contextvars,
         _add_correlation_id,
-        structlog.stdlib.add_logger_name,
+        # NOTE: `structlog.stdlib.add_logger_name` intentionally OMITTED.
+        # That processor reads `logger.name`, but the `PrintLogger`
+        # instances produced by `PrintLoggerFactory` below have no `.name`
+        # attribute. The combination crashed every `log.info(...)` call on
+        # production-shape startup (MEH-260, AttributeError at
+        # structlog/stdlib.py:805 "'PrintLogger' object has no attribute
+        # 'name'") — never observed earlier only because staging was
+        # drift-stuck on pre-MEH-240 code. If the logger name is needed
+        # in output, either bind it manually (`log.bind(logger=name)`)
+        # or switch `logger_factory` to `structlog.stdlib.LoggerFactory()`
+        # — that path produces stdlib loggers which expose `.name` but
+        # routes output through the logging module instead of direct
+        # stdout writes, which Railway's log panel handles differently.
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),
