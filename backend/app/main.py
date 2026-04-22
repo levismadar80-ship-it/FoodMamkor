@@ -242,6 +242,17 @@ def _migrate_columns(engine):
         cleared = result.rowcount
         if cleared:
             log.info("[MEH-155] cleared expired vacation status for %d producer(s)", cleared)
+        # admin_settings — key-value store for admin-controlled site config.
+        # Guard needed for existing Railway deployments that predate this table.
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS admin_settings (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+            """
+        ))
         conn.commit()
 
 
@@ -402,12 +413,12 @@ def get_holiday_mode(request: Request):
     try:
         db = SessionLocal()
         rows = db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
+            AdminSetting.key.in_(["holiday_mode_active", "holiday_mode_banner_text"])
         ).all()
         kv = {r.key: r.value for r in rows}
         return {
-            "enabled": kv.get("holiday_override_enabled", "false").lower() == "true",
-            "key": kv.get("holiday_override_key", "") or "",
+            "active": kv.get("holiday_mode_active", "false").lower() == "true",
+            "banner_text": kv.get("holiday_mode_banner_text") or None,
         }
     finally:
         if db is not None:
