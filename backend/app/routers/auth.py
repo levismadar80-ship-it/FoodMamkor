@@ -195,6 +195,15 @@ def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
 def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
+    # MEH-253 — distinguish "Google OAuth isn't configured on this server"
+    # (503) from "the token you sent is invalid" (401). Before this check,
+    # both cases returned 401 "אסימון Google לא תקין" — misleading to the
+    # user and to anyone debugging the deploy.
+    if not settings.google_client_id:
+        raise HTTPException(
+            status_code=503,
+            detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+        )
     user_info = _verify_google_token(data.id_token)
     if not user_info:
         raise HTTPException(status_code=401, detail="אסימון Google לא תקין")
@@ -262,6 +271,12 @@ def get_me(request: Request, user: User = Depends(get_current_user)):
 @limiter.limit("10/minute")  # SECURITY FIX #2
 def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
+    # MEH-253 — 503 when the provider isn't configured (see google_auth).
+    if not settings.apple_client_id:
+        raise HTTPException(
+            status_code=503,
+            detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+        )
     user_info = _verify_apple_token(data.id_token)
     if not user_info:
         raise HTTPException(status_code=401, detail="אסימון Apple לא תקין")
