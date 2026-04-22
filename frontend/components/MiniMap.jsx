@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { NavigationArrow } from "@phosphor-icons/react";
 import "leaflet/dist/leaflet.css";
@@ -30,6 +30,11 @@ function DisableInteraction() {
 }
 
 export default function MiniMap({ lat, lng, name }) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+  }, []);
+
   const wazeUrl = `waze://ul?ll=${lat},${lng}&navigate=yes`;
   const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
@@ -55,15 +60,17 @@ export default function MiniMap({ lat, lng, name }) {
 
       {/* Navigation buttons */}
       <div className="flex gap-3 mt-3">
-        <a
-          href={wazeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
-        >
-          <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-          פתחי ב-Waze
-        </a>
+        {isMobile && (
+          <a
+            href={wazeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
+          >
+            <NavigationArrow size={16} weight="regular" aria-hidden="true" />
+            פתחי ב-Waze
+          </a>
+        )}
         <a
           href={gmapsUrl}
           target="_blank"
