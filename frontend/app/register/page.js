@@ -8,15 +8,14 @@ import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
-import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
-import { validateIsraeliPhone, validateEmail } from "@/lib/validators";
+import { validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
-  const [form, setForm] = useState({ email: "", name: "", password: "", city: "", phone: "" });
+  const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +35,6 @@ export default function RegisterPage() {
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
-  const [phoneTouched, setPhoneTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -58,11 +56,6 @@ export default function RegisterPage() {
       setError("סיסמא חייבת להכיל לפחות 8 תווים");
       return;
     }
-    if (form.phone && !validateIsraeliPhone(form.phone)) {
-      setError("מספר טלפון לא תקין");
-      return;
-    }
-
     setLoading(true);
     try {
       await register(form);
@@ -100,14 +93,10 @@ export default function RegisterPage() {
   const emailValid = emailTouched && validateEmail(form.email);
   const passwordInvalid = passwordTouched && form.password.length > 0 && form.password.length < 8;
   const passwordValidLength = passwordTouched && form.password.length >= 8;
-  const phoneInvalid = phoneTouched && form.phone.length > 0 && !validateIsraeliPhone(form.phone);
-  const phoneValid = phoneTouched && form.phone.length > 0 && validateIsraeliPhone(form.phone);
-
   const formIsValid =
     !!nameTrimmed &&
     validateEmail(form.email) &&
     form.password.length >= 8 &&
-    (!form.phone || validateIsraeliPhone(form.phone)) &&
     agreedToTerms;
 
   const googleConfigured =
@@ -236,40 +225,6 @@ export default function RegisterPage() {
               <p className="text-xs text-red-500 mt-1 text-right">סיסמא חייבת להכיל לפחות 8 תווים</p>
             )}
             <PasswordStrength password={form.password} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">עיר</label>
-            <CitySearch
-              id="register-city"
-              label="עיר"
-              value={form.city}
-              onChange={(val) => setForm({ ...form, city: val })}
-              placeholder="הרצליה"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">טלפון</label>
-            <input
-              value={form.phone}
-              onChange={set("phone")}
-              onBlur={() => setPhoneTouched(true)}
-              placeholder="050-1234567"
-              aria-invalid={phoneInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
-                phoneInvalid
-                  ? "border-red-400"
-                  : phoneValid
-                    ? "border-primary"
-                    : ""
-              }`}
-              dir="ltr"
-            />
-            {phoneInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">מספר טלפון לא תקין</p>
-            )}
-            {phoneValid && (
-              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
-            )}
           </div>
           <label className="flex items-start gap-2 text-sm cursor-pointer">
             <input
