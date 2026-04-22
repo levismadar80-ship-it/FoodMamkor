@@ -575,6 +575,85 @@ deploys, which is exactly the opposite of what we want.
 
 ---
 
+## E2E CI — Playwright against Vercel preview
+
+The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
+runs Playwright tests against each PR's Vercel preview URL.
+
+### How it works (current: `deployment_status` trigger)
+
+GitHub Actions fires **only after Vercel signals the preview is ready**
+(`deployment_status.state == 'success'` and
+`deployment_status.environment` starts with `"Preview"`). The preview URL
+is a first-class event field — no polling, no comment-regex parsing:
+
+```yaml
+TEST_URL: ${{ github.event.deployment_status.target_url }}
+```
+
+The job checks out `github.event.deployment.sha` (the exact deployed commit,
+not HEAD) and runs Playwright with Chromium only (`timeout-minutes: 15`).
+Production deployments (`environment: "Production"`) are skipped by the
+`if:` condition.
+
+### Why we switched from the previous `pull_request` trigger
+
+The previous trigger polled for the Vercel bot PR comment and extracted the
+URL with a regex (`\[Preview\]\(https://...\)`). The regex never matched the
+actual Vercel comment format, so all 20 poll attempts (5 min each ×15 s)
+exhausted silently — every job exited 1 regardless of PR content. This
+produced a permanent `failure` status on every PR in 5 min 55 s, mistaken
+for a stuck/hung job (MEH-212, confirmed on PRs #234 and #236).
+
+### Fallback: `repository_dispatch` if `deployment_status` stops firing
+
+Vercel 2026 recommendation for repos where `deployment_status` events don't
+appear in Actions (e.g. certain GitHub App integration modes): configure a
+**Vercel deployment webhook** that fires a `repository_dispatch` event.
+
+**To switch to the fallback:**
+
+1. **Vercel → Project → Settings → Webhooks → Add:**
+   - URL: `https://api.github.com/repos/levismadar80-ship-it/FoodMamkor/dispatches`
+   - Event: `deployment-ready`
+   - Header: `Authorization: Bearer <GitHub PAT with `repo` scope>`
+   - Body template (Vercel webhook variables):
+     ```json
+     {
+       "event_type": "vercel.deployment.success",
+       "client_payload": {
+         "url": "{DEPLOYMENT_URL}",
+         "branch": "{GIT_BRANCH}"
+       }
+     }
+     ```
+
+2. **Change the trigger in `e2e.yml`:**
+   ```yaml
+   on:
+     repository_dispatch:
+       types: [vercel.deployment.success]
+   ```
+
+3. **Replace `TEST_URL` and `if:` condition:**
+   ```yaml
+   # in the job-level if:
+   if: github.event.client_payload.branch != 'main'
+
+   # in the Run E2E tests step env:
+   TEST_URL: ${{ github.event.client_payload.url }}
+   ```
+
+4. **Checkout the right commit** — `github.event.deployment.sha` is
+   unavailable on `repository_dispatch`; use `github.sha` or parse the
+   commit from the payload.
+
+**Required secret:** a GitHub PAT with `repo` scope. Add it in
+Vercel's webhook configuration (`Authorization` header). The
+`deployment_status` approach needs only `GITHUB_TOKEN` — no PAT.
+
+---
+
 ## 0. Prerequisites
 
 - [ ] GitHub repo pushed, with branch `main` as the deploy branch
