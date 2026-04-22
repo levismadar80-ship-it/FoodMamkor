@@ -1,11 +1,10 @@
 import asyncio
-import logging
 import os
-import sys
-import traceback
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
+import structlog
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -14,15 +13,12 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
+from app.logging_config import configure_logging
 from app.rate_limit import limiter
 from app.routers import admin, admin_experiences, admin_extra, admin_kashrut, admin_outreach, alerts, auth, chat, cities, events, experiences, favorites, group_buys, home_products, marketing, producer_me, producers, recipes, referrals, reports, reviews, search, upload, users_me
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    stream=sys.stdout,
-)
-log = logging.getLogger("mehamakor.startup")
+configure_logging()
+log = structlog.get_logger("mehamakor.startup")
 
 
 def _redacted_db_url() -> str:
@@ -286,8 +282,7 @@ async def _init_db_background(app: FastAPI) -> None:
         log.info("background DB init complete — all tables/migrations/seed ready")
         app.state.db_init_status = "ready"
     except Exception:
-        log.error("background DB init FAILED — /producers et al will 500 until fixed")
-        log.error("traceback follows:\n%s", traceback.format_exc())
+        log.error("background DB init failed — /producers et al will 500 until fixed", exc_info=True)
         app.state.db_init_status = "failed"
 
 
@@ -328,13 +323,14 @@ app = FastAPI(title="מהמקור - MeHaMakor API", version="1.0.0", lifespan=li
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(CorrelationIdMiddleware, header_name="X-Request-ID")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "X-Request-ID"],
 )
 
 
