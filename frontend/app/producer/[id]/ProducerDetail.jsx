@@ -18,6 +18,10 @@ import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import OpeningHours from "@/components/OpeningHours";
+import ProducerCard from "@/components/ProducerCard";
+import dynamic from "next/dynamic";
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 import { useAuth } from "@/lib/auth-context";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
@@ -52,6 +56,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const [isBarVisible, setIsBarVisible] = useState(false);
   const [events, setEvents] = useState([]);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [similarProducers, setSimilarProducers] = useState([]);
 
   const scrollToSection = useCallback((key) => {
     setActiveTab(key);
@@ -118,6 +123,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       .then((r) => setEvents(r.data || []))
       .catch(() => setEvents([]));
   }, [producer?.id]);
+
+  // MEH-102: fetch similar producers (same first category, excluding self)
+  useEffect(() => {
+    if (!producer?.id || !producer?.categories?.length) return;
+    const catId = producer.categories[0]?.id;
+    if (!catId) return;
+    api
+      .get("/producers", { params: { category: catId, exclude: producer.id, limit: 3 } })
+      .then((r) => {
+        const list = r.data || [];
+        setSimilarProducers(list.length >= 3 ? list.slice(0, 3) : []);
+      })
+      .catch(() => setSimilarProducers([]));
+  }, [producer?.id, producer?.categories]);
 
   if (loading) {
     return (
@@ -437,6 +456,33 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               <p className="text-site-text/85 leading-relaxed whitespace-pre-line">
                 {producer.description}
               </p>
+            </section>
+          )}
+
+          {/* MEH-102: Opening hours */}
+          <OpeningHours opening_hours={producer.opening_hours} />
+
+          {/* MEH-102: Mini-map with navigation */}
+          {producer.lat && producer.lng && (
+            <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+          )}
+
+          {/* MEH-102: Similar producers */}
+          {similarProducers.length >= 3 && (
+            <section className="mt-8 border-t border-border pt-8">
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-1">עסקים דומים</h2>
+              {producer.categories?.[0]?.name && (
+                <p className="text-sm text-site-muted mb-4">
+                  {producer.categories[0].name} · באזור שלך
+                </p>
+              )}
+              <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
+                {similarProducers.map((p) => (
+                  <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
+                    <ProducerCard producer={p} referrer="similar" />
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 

@@ -72,6 +72,8 @@ class Producer(Base):
     availability_status = Column(String(20), default="available")
     # MEH-155: optional vacation end date — cleared automatically when past.
     vacation_until = Column(Date, nullable=True)
+    # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+    opening_hours = Column(String, nullable=True)
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)

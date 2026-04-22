@@ -120,6 +120,8 @@ def _migrate_columns(engine):
         ("users", "avatar_url", "VARCHAR"),
         # MEH-155 — vacation end date for automatic badge clearance.
         ("producers", "vacation_until", "DATE"),
+        # MEH-102 — weekly opening hours (free-text, nullable).
+        ("producers", "opening_hours", "TEXT"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.
