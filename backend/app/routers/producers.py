@@ -29,7 +29,33 @@ def _attach_badge_fields(producer):
     else:
         producer.days_since_created = None
     return producer
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
+from app.models import Category, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
+
+
+def _attach_favorites_counts(producers, db):
+    """MEH-106: batch-load favorites_count for a list of producers (single query)."""
+    if not producers:
+        return producers
+    ids = [p.id for p in producers]
+    counts = dict(
+        db.query(Favorite.producer_id, func.count(Favorite.user_id))
+        .filter(Favorite.producer_id.in_(ids))
+        .group_by(Favorite.producer_id)
+        .all()
+    )
+    for p in producers:
+        p.favorites_count = counts.get(p.id, 0)
+    return producers
+
+
+def _attach_favorites_count(producer, db):
+    """MEH-106: load favorites_count for a single producer."""
+    producer.favorites_count = (
+        db.query(func.count(Favorite.user_id))
+        .filter(Favorite.producer_id == producer.id)
+        .scalar() or 0
+    )
+    return producer
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryOut,
@@ -288,11 +314,13 @@ def list_producers(
             producer.distance_km = round(float(distance_km), 2)
             _attach_badge_fields(producer)
             results.append(producer)
+        _attach_favorites_counts(results, db)
         return results
 
     rows = q.offset(offset).limit(limit).all()
     for p in rows:
         _attach_badge_fields(p)
+    _attach_favorites_counts(rows, db)
     return rows
 
 
@@ -305,7 +333,8 @@ def producers_count(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
-def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
+@limiter.limit("120/minute")
+def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
     producer = (
         db.query(Producer)
         .options(
@@ -316,11 +345,10 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
     )
-    if producer:
-        _attach_badge_fields(producer)
     if not producer:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    _attach_badge_fields(producer)
+    _attach_favorites_count(producer, db)
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
@@ -351,6 +379,8 @@ def get_producer(
 
     # MEH-18 — compute badge fields from the already-loaded relationships.
     _attach_badge_fields(producer)
+    # MEH-106: social proof count.
+    _attach_favorites_count(producer, db)
 
     # Compute report_count from DB
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0

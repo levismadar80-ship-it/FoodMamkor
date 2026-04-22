@@ -250,6 +250,8 @@ class ProducerListOut(BaseModel):
     # Populated by /producers only when ?lat=&lng=&radius_km= are passed.
     # Computed via Haversine SQL — not a real column.
     distance_km: float | None = None
+    # MEH-106: social proof — count of users who saved this producer.
+    favorites_count: int = 0
     # MEH-51: trust ladder — computed at serialization, not stored.
     trust_tier: int = 1
     phone_verified: bool = False
