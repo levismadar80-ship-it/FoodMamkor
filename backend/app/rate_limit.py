@@ -1,72 +1,83 @@
 """Shared rate limiter instance used across all routers.
 
 SECURITY FIX #2 (docs/SECURITY.md): brute-force protection via slowapi.
-Limits are applied per-IP. The limiter is registered on the FastAPI
-app in main.py (see `app.state.limiter = limiter` + the exception
-handler). Each router that wants to protect an endpoint imports
-`limiter` from here and adds a `@limiter.limit("N/timeframe")`
-decorator under the `@router.post(...)` decorator.
+Limits are applied per-real-client-IP. The limiter is registered on
+the FastAPI app in main.py (`app.state.limiter = limiter` + the
+exception handler). Each router that wants to protect an endpoint
+imports `limiter` from here and adds
+`@limiter.limit("N/timeframe")` under the `@router.post(...)`.
 
 Decorated endpoints MUST accept `request: Request` as the first
 parameter — slowapi reads it via introspection.
 
 ---
 
-MEH-256 — structured observability for the Railway XFF investigation.
+MEH-256 — real client IP behind Railway's proxy (resolved).
 
-Previous attempt (PR #287) used a raw `print`, which shipped
-debug-print-on-every-request into the hot path and had to be reverted
-within an hour (PR #288). This replaces that with a structured
-`log.warning` shim that:
-  - goes through the existing structlog config (honors level env vars)
-  - emits one structured event per request with xff / x_real_ip /
-    x_envoy / remote_addr so we can filter in Railway's log UI
-  - DOES NOT change the rate-limit key value — still returns
-    `get_remote_address(request)` exactly as before
+`slowapi.util.get_remote_address` reads `request.client.host`, which
+on Railway is the edge-proxy IP (`100.64.0.X` CGN range). Keying on
+that collapses the entire internet into one rate-limit bucket.
 
-Purpose: gather three curls' worth of header data so we can decide
-empirically whether Railway's edge appends or replaces XFF, and whether
-it exposes X-Real-IP or X-Envoy-External-Address. The real MEH-256 fix
-(proper per-client keying) is a separate PR.
+Empirical investigation (PR #293 debug probe, captured 2026-04-22)
+showed Railway's edge reliably sets `X-Real-IP` from its OWN view of
+the TCP peer — unspoofable because Railway overwrites whatever the
+client sends in that slot. `X-Forwarded-For` has the real client at
+index `-2` (rightmost is Railway's internal proxy, which varies per
+pod: `167.82.233.*`, `140.248.75.*`, `100.64.0.*`).
 
-When the data is captured, either:
-  (a) lower the log level of this event to DEBUG so it goes silent in
-      production but can be re-enabled for debugging, OR
-  (b) remove the shim entirely if the real fix lands first.
+Key-resolution priority when `TRUSTED_PROXY` is enabled:
+  1. `X-Real-IP` header — primary, unspoofable (Railway edge)
+  2. `X-Forwarded-For[-2]` — defensive fallback when ≥2 entries
+     (skip single-entry XFF: that's just what the client sent)
+  3. `get_remote_address(request)` — last resort
+
+When `TRUSTED_PROXY` is not set, headers are client-controlled and
+must be ignored — falls straight through to `get_remote_address`.
+
+`TRUSTED_PROXY` must be set to `1` / `true` / `yes` / `on` (case
+insensitive). Configure on Railway staging + production; leave unset
+for local dev and any directly-exposed deploy.
 """
-import structlog
+import os
+
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-log = structlog.get_logger(__name__)
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
-def _logged_remote_address(request: Request) -> str:
-    """Return get_remote_address(request) unchanged, with a structured
-    log on the side for the MEH-256 XFF investigation.
+def _trusted_proxy_enabled() -> bool:
+    return os.getenv("TRUSTED_PROXY", "0").strip().lower() in _TRUTHY
 
-    Behavior is identical to `get_remote_address` — every rate-limit
-    decorator still buckets by whatever that function returns. This
-    shim only observes.
+
+def get_real_client_ip(request: Request) -> str:
+    """Return the real caller IP for rate-limit bucketing.
+
+    See module docstring for the resolution priority. In short: when
+    behind a trusted proxy, prefer `X-Real-IP` (Railway sets this
+    unspoofably); fall back to the second-to-last X-Forwarded-For
+    entry; fall through to `request.client.host` otherwise.
     """
-    xff = request.headers.get("x-forwarded-for", "")
-    x_real_ip = request.headers.get("x-real-ip", "")
-    x_envoy = request.headers.get("x-envoy-external-address", "")
-    remote = request.client.host if request.client else None
-    key = get_remote_address(request)
+    if _trusted_proxy_enabled():
+        # Primary: X-Real-IP, set by Railway's edge from its own
+        # TCP-peer view of the caller. Overwritten on ingress, so the
+        # client cannot spoof this value.
+        real_ip = request.headers.get("x-real-ip", "").strip()
+        if real_ip:
+            return real_ip
 
-    log.warning(
-        "meh256_xff_probe",
-        path=request.url.path,
-        method=request.method,
-        xff=xff,
-        x_real_ip=x_real_ip,
-        x_envoy=x_envoy,
-        remote_addr=remote,
-        limiter_key=key,
-    )
-    return key
+        # Defensive fallback: X-Forwarded-For[-2]. Rightmost entry
+        # is always Railway's internal proxy; the real client is the
+        # entry immediately before it. Only trust when there are at
+        # least 2 entries — a 1-entry XFF is just whatever the client
+        # sent in the request, i.e. spoofable.
+        xff = request.headers.get("x-forwarded-for", "")
+        entries = [e.strip() for e in xff.split(",") if e.strip()]
+        if len(entries) >= 2:
+            return entries[-2]
+
+    return get_remote_address(request)
 
 
-limiter = Limiter(key_func=_logged_remote_address)
+limiter = Limiter(key_func=get_real_client_ip)
