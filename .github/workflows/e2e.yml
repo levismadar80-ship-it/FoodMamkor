@@ -1,38 +1,52 @@
 name: E2E Tests
 
-# Runs Playwright against the Vercel preview URL for every PR targeting
-# staging or main. Tests hit the PR's own deployed preview — not the
-# shared staging environment — so a broken PR shows red, not green.
+# Trigger: fires when Vercel signals a preview deployment succeeded.
+# The preview URL arrives in github.event.deployment_status.target_url
+# — zero polling, zero comment-regex parsing.
 #
-# Flow:
-#   1. Extract preview URL from the Vercel bot's PR comment
-#      (Vercel posts/updates this comment on every deploy — no Deployments API needed)
-#   2. Poll until the URL returns a 2xx/3xx response (up to 5 min)
-#   3. Run Playwright with TEST_URL pointing at that URL
-#   4. Upload HTML report as artifact on failure
+# Why deployment_status (not pull_request):
+#   The previous pull_request trigger polled for the Vercel bot PR comment
+#   and extracted the URL with a regex (\[Preview\]\(https://...\)). The
+#   regex never matched the actual Vercel comment format, so all 20 poll
+#   attempts (5 min) exhausted silently and every job exited 1 — regardless
+#   of PR content. Switching to deployment_status means the job only starts
+#   AFTER Vercel signals readiness; the URL is a first-class event field.
+#   Confirmed failure pattern on PRs #234 and #236 (MEH-212).
+#
+# Fallback path: if Vercel stops firing deployment_status events for
+#   staging-targeting PRs, switch to repository_dispatch with
+#   event_type: vercel.deployment.success (see docs/DEPLOYMENT.md → "E2E CI").
 #
 # Required secrets: none beyond the auto-provided GITHUB_TOKEN.
 
 on:
-  pull_request:
-    branches: [staging, main]
+  deployment_status:
 
 permissions:
   contents: read
   pull-requests: read
 
 concurrency:
-  group: e2e-${{ github.ref }}
+  group: e2e-${{ github.event.deployment.ref }}
   cancel-in-progress: true
 
 jobs:
   e2e:
     name: Playwright E2E (Vercel preview)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+
+    # Only run on successful Vercel Preview deployments.
+    # Vercel sets environment to "Preview" (or "Preview – <slug>") for branch
+    # previews, and "Production" for main. Skip Production and non-success states.
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      startsWith(github.event.deployment_status.environment, 'Preview')
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -57,63 +71,11 @@ jobs:
         working-directory: frontend
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
-      - name: Wait for Vercel preview deployment
-        id: preview
-        # shell: bash {0} — removes the default -eo pipefail flags so jq
-        # returning empty or a transient curl error doesn't abort the loop.
-        shell: bash {0}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          echo "Polling Vercel PR comment for preview URL…"
-          echo "repo=$REPO  pr=$PR_NUMBER"
-
-          for attempt in $(seq 1 20); do
-            echo "--- attempt $attempt/20 ---"
-
-            # Vercel bot posts/updates a PR comment with a [Preview](...) link.
-            # Extract the first https://*.vercel.app URL from that link.
-            COMMENT=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" 2>/dev/null \
-              | jq -r '[.[] | select(.user.login == "vercel[bot]")] | last | .body // ""' \
-              2>/dev/null) || COMMENT=""
-
-            ENV_URL=$(echo "$COMMENT" \
-              | grep -oE '\[Preview\]\(https://[^)]+\)' \
-              | grep -oE 'https://[^)]+' \
-              | head -1 2>/dev/null) || ENV_URL=""
-
-            echo "  candidate_url=$ENV_URL"
-
-            if [ -n "$ENV_URL" ] && [ "$ENV_URL" != "null" ]; then
-              # Check the deployment is actually serving (not still building)
-              HTTP=$(curl -sI --max-time 10 "$ENV_URL" 2>/dev/null \
-                | head -1 | awk '{print $2}') || HTTP=""
-              echo "  http_status=$HTTP"
-
-              if [[ "$HTTP" =~ ^[23] ]]; then
-                echo "url=$ENV_URL" >> "$GITHUB_OUTPUT"
-                echo "Preview URL: $ENV_URL"
-                exit 0
-              else
-                echo "  URL found but not ready yet (HTTP $HTTP)"
-              fi
-            else
-              echo "  No Vercel bot comment with preview URL yet"
-            fi
-
-            [ "$attempt" -lt 20 ] && sleep 15
-          done
-
-          echo "Timed out — Vercel preview not ready after 5 minutes"
-          exit 1
-
       - name: Run E2E tests
         run: npx playwright test
         working-directory: frontend
         env:
-          TEST_URL: ${{ steps.preview.outputs.url }}
+          TEST_URL: ${{ github.event.deployment_status.target_url }}
           CI: "true"
 
       - name: Upload Playwright report
