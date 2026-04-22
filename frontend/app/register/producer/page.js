@@ -183,16 +183,16 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">הוסיפי את העסק שלך</h1>
-        <p className="text-site-muted text-center mb-4">הצטרפי למהמקור והגיעי לקונות שמחפשות אוכל אמיתי</p>
+        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">תני לעסק שלך בית</h1>
+        <p className="text-site-muted text-center mb-4">5 דקות. בלי עמלות. בלי מתווכים.</p>
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < 3 && (
           <div className="bg-light border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-site-text flex items-start gap-2">
             <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              את מחוברת כ<strong>{user.name}</strong> ({user.email}).
-              {" "}העסק יתווסף לחשבון הקיים שלך.
+              <span className="block">את מחוברת עם {user.email}</span>
+              <span className="block">העסק יצורף לחשבון הזה</span>
             </span>
           </div>
         )}
@@ -402,7 +402,7 @@ function RegisterProducerPageBody() {
                 קראתי ואני מסכימה{" "}
                 <a href="/terms" target="_blank" className="text-primary hover:underline">לתנאי השימוש</a>{" "}
                 ו<a href="/privacy" target="_blank" className="text-primary hover:underline">למדיניות הפרטיות</a>,
-                ומצהירה שיש ברשותי את כל הרישיונות הנדרשים לממכר מזון לפי חוק רישוי עסקים.
+                ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.
               </span>
             </label>
 

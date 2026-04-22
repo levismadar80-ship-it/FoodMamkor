@@ -109,7 +109,7 @@ function SearchPageBody() {
             type="search"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="חפשי ירקות טריים, בשר grass-fed..."
+            placeholder="לחם מחמצת, ביצים אורגניות, ירקות ופירות"
             dir="rtl"
             className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-sm"
             aria-label="חיפוש"
