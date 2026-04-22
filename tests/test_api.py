@@ -1331,3 +1331,34 @@ class TestCategoryRequests:
         )
         assert resp.status_code == 200
         assert resp.json()["admin_notes"] == "נבחן בגרסה הבאה"
+
+
+class TestFavoritesCount:
+    """MEH-106 — favorites_count in /producers response."""
+
+    def test_producers_list_includes_favorites_count(self, client, db):
+        make_producer(db, status="approved")
+        resp = client.get("/producers")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) >= 1
+        assert "favorites_count" in data[0]
+        assert isinstance(data[0]["favorites_count"], int)
+
+    def test_favorites_count_reflects_saved_producers(self, client, db):
+        p = make_producer(db, status="approved")
+        # count before any favorites
+        before = client.get(f"/producers/{p.id}").json().get("favorites_count", 0)
+        # add a favorite
+        u = make_user(db)
+        from app.models.models import Favorite
+        fav = Favorite(user_id=u.id, producer_id=p.id)
+        db.add(fav)
+        db.commit()
+        after = client.get(f"/producers/{p.id}").json().get("favorites_count", 0)
+        assert after == before + 1
+
+    def test_favorites_count_zero_when_no_saves(self, client, db):
+        p = make_producer(db, status="approved")
+        data = client.get(f"/producers/{p.id}").json()
+        assert data["favorites_count"] == 0

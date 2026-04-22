@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   HeartStraight,
+  Heart,
   WhatsappLogo,
   Phone,
   Globe,
@@ -68,7 +69,7 @@ function availabilityDotColor(producer) {
  *     via showToast({ action }), not a login modal.
  *   - Hidden when the viewer owns this producer (own-card edge case).
  */
-function CardHeart({ producer }) {
+function CardHeart({ producer, onCountChange }) {
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   // Independent "guest tapped" state — preserves visual feedback across
@@ -123,10 +124,11 @@ function CardHeart({ producer }) {
       return;
     }
 
-    // Optimistic fill; revert on error.
+    // Optimistic fill + count update; revert on error.
     const next = !favorited;
     setFavorited(next);
     setFavoritedLocal(producer.id, next);
+    onCountChange?.(next ? 1 : -1);
     try {
       if (next) {
         await api.post(`/users/me/favorites/${producer.id}`);
@@ -136,6 +138,7 @@ function CardHeart({ producer }) {
     } catch {
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
+      onCountChange?.(next ? -1 : 1);
       showToast("משהו השתבש, נסי שוב", "error");
     }
   };
@@ -162,6 +165,11 @@ function CardHeart({ producer }) {
 }
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
+  const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
+  // Keep in sync when the parent re-fetches the list (filter/pagination).
+  useEffect(() => {
+    setLocalFavCount(producer.favorites_count ?? 0);
+  }, [producer.favorites_count]);
   const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
@@ -239,7 +247,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             )}
           </div>
         </Link>
-        <CardHeart producer={producer} />
+        <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
       </div>
 
       <div className="p-4 flex-1 flex flex-col">
@@ -312,6 +320,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             </span>
           )}
         </div>
+
+        {localFavCount >= 5 && (
+          <p className="mt-1 flex items-center gap-1 text-[12px] text-site-muted">
+            <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
+            {localFavCount} שמרו
+          </p>
+        )}
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
           {priceLabel ? (
