@@ -149,6 +149,19 @@ class ProducerAdminCreate(BaseModel):
     images: list[str] = []
     category_ids: list[int] = []
     delivery_area_cities: list[str] = []  # simple comma-split list
+    # MEH-213 — location mode
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
+
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        if not self.has_physical_location and not self.offers_delivery:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
 
 
 class ProducerImportPreviewRow(BaseModel):
@@ -201,6 +214,24 @@ class ProducerUpdate(BaseModel):
     status: str | None = None
     category_ids: list[int] | None = None
     delivery_area_cities: list[str] | None = None  # admin form: simple list of city names
+    # MEH-213 — location mode
+    has_physical_location: bool | None = None
+    offers_delivery: bool | None = None
+    delivery_nationwide: bool | None = None
+    delivery_cities: list[str] | None = None
+
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        hp = self.has_physical_location
+        od = self.offers_delivery
+        # Only validate when both are explicitly set (partial updates allowed)
+        if hp is not None and od is not None and not hp and not od:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        dn = self.delivery_nationwide
+        dc = self.delivery_cities
+        if dn and dc and len(dc) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
 
 
 class ProducerListOut(BaseModel):
@@ -259,6 +290,11 @@ class ProducerListOut(BaseModel):
     kashrut_badges: list[str] = []
     kashrut_verified_at: datetime | None = None
     kashrut_expires_at: datetime | None = None
+    # MEH-213 — location mode
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
 
     @model_validator(mode="after")
     def _compute_trust_tier(self):

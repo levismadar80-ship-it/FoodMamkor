@@ -143,6 +143,11 @@ def admin_create_producer(
         admin_notes=data.admin_notes,
         is_verified=data.is_verified,
         images=data.images or [],
+        # MEH-213 — location mode
+        has_physical_location=data.has_physical_location,
+        offers_delivery=data.offers_delivery,
+        delivery_nationwide=data.delivery_nationwide,
+        delivery_cities=data.delivery_cities,
         status="approved",  # admin = pre-approved
     )
     db.add(producer)

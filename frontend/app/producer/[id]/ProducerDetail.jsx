@@ -19,6 +19,7 @@ import ProducerReviews from "@/components/ProducerReviews";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
 import OpeningHours from "@/components/OpeningHours";
+import DeliveryBlock from "@/components/DeliveryBlock";
 import ProducerCard from "@/components/ProducerCard";
 import dynamic from "next/dynamic";
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
@@ -424,7 +425,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               Desktop: MapButton moves here from sidebar to reduce sidebar density.
               WhatsAppShareButton is secondary (gray outlined) to avoid green conflict with primary CTA. */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {producer.lat && producer.lng && (
+            {/* MEH-213: map button only for producers with a physical location */}
+            {producer.has_physical_location !== false && producer.lat && producer.lng && (
               <button
                 type="button"
                 onClick={handleShowOnMap}
@@ -462,8 +464,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           {/* MEH-102: Opening hours */}
           <OpeningHours opening_hours={producer.opening_hours} />
 
-          {/* MEH-102: Mini-map with navigation */}
-          {producer.lat && producer.lng && (
+          {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
+          {producer.has_physical_location !== false && producer.lat && producer.lng && (
             <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
           )}
 
@@ -571,8 +573,21 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </section>
           )}
 
-          {/* Delivery Areas */}
-          {producer.delivery_areas?.length > 0 && (
+          {/* MEH-213: DeliveryBlock — shown when offers_delivery=true.
+              Replaces the old delivery_areas table for the new location model. */}
+          {producer.offers_delivery && (
+            <div ref={(el) => { sectionRefs.current.delivery = el; }}>
+              <DeliveryBlock
+                nationwide={producer.delivery_nationwide}
+                cities={producer.delivery_cities || []}
+                producer={producer}
+              />
+            </div>
+          )}
+
+          {/* Legacy delivery_areas table — shown for producers with the old model
+              (has delivery_areas rows but no delivery_cities set yet). */}
+          {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
             <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
                 אזורי משלוח
@@ -581,15 +596,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 <table className="w-full">
                   <thead className="bg-light">
                     <tr>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
-                        עיר
-                      </th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
-                        מינימום הזמנה
-                      </th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
-                        יום משלוח
-                      </th>
+                      <th className="text-end px-4 py-3 text-sm font-medium text-primary">עיר</th>
+                      <th className="text-end px-4 py-3 text-sm font-medium text-primary">מינימום הזמנה</th>
+                      <th className="text-end px-4 py-3 text-sm font-medium text-primary">יום משלוח</th>
                     </tr>
                   </thead>
                   <tbody>

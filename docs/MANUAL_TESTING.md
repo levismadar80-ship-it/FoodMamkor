@@ -805,6 +805,45 @@ Added with `feature/session-handoff`.
 
 ---
 
+## MEH-213: Business location types + cities autocomplete (PR #242)
+
+### Admin ProducerForm — "סוג העסק" section
+- [ ] Create new producer → "סוג העסק" section shows 2 checkboxes: "חנות פיזית" (checked by default) + "משלוחים" (unchecked) — צור עסק button is enabled
+- [ ] Uncheck both checkboxes → inline error "חייב לסמן לפחות אחד מהשניים" appears; save button becomes disabled
+- [ ] Check "משלוחים" only → cascading section appears with "משלוחים לכל הארץ" checkbox + CitiesAutocomplete below it
+- [ ] Check "משלוחים לכל הארץ" → CitiesAutocomplete disappears; save is enabled
+- [ ] Uncheck "משלוחים לכל הארץ" with no cities selected → inline error "יש לבחור לפחות עיר אחת"; save disabled
+- [ ] Type "תל" in CitiesAutocomplete → dropdown shows cities starting with "תל" (requires seeded cities table); click a result → city chip appears
+- [ ] Click × on a city chip → chip is removed
+- [ ] Keyboard: ArrowDown/Up navigates dropdown; Enter adds selected city; Backspace removes last chip when input is empty
+- [ ] Save delivery-only producer (no physical, offers_delivery=true, delivery_nationwide=true) → producer created; confirm in DB
+
+### ProducerDetail — 4 location modes
+- [ ] Physical-only producer → MiniMap visible, Waze/Gmaps buttons visible, no DeliveryBlock
+- [ ] Physical + delivery producer → MiniMap visible AND DeliveryBlock visible below
+- [ ] Delivery-only + nationwide → no MiniMap, no Waze/Gmaps; DeliveryBlock shows "🚚 משלוחים לכל הארץ" badge
+- [ ] Delivery-only + city list → no MiniMap; DeliveryBlock shows city chips
+- [ ] Delivery-only + no area set → DeliveryBlock shows "משלוחים בתיאום מראש — צרי קשר לפרטים"
+- [ ] DeliveryBlock WhatsApp button → tapping opens WhatsApp correctly; Network tab shows POST /producers/:id/whatsapp-click beacon
+
+### ProducerCard — "משלוחים בלבד" badge
+- [ ] Delivery-only producer in list grid → shows "🚚 משלוחים בלבד" chip in badge row
+- [ ] Physical-only or physical+delivery producer → no "משלוחים בלבד" chip
+
+### Geo-search (map) exclusion
+- [ ] Open /map → delivery-only producer does NOT appear as a pin; physical producer at same coords DOES appear
+
+### Admin completeness dot
+- [ ] Delivery-only producer with delivery_nationwide=true but no lat/lng → completeness dot is green (not red)
+- [ ] Delivery-only producer with offers_delivery=true but no cities and no nationwide → completeness dot is yellow with "אזורי משלוח" in tooltip
+
+### GET /cities?q= endpoint
+- [ ] After running seed script: GET /api/cities?q=תל → returns ["תל אביב-יפו", "תל מונד", ...] (Hebrew sorted)
+- [ ] GET /api/cities?q= (empty) → returns up to 20 cities alphabetically
+- [ ] GET /api/cities?q=xxxxnotacityxxx → returns []
+
+---
+
 ## Smart Search — HeroSearch + /producers?q= (MEH-99, PR #199)
 
 ### Hero search pill — recent / trending dropdown
