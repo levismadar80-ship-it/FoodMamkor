@@ -105,7 +105,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text" // rtl-ok: eye toggle inside dir="ltr" input
               aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
             >
               {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text" // rtl-ok: eye toggle inside dir="ltr" input
               aria-label={showConfirm ? "הסתר סיסמה" : "הצג סיסמה"}
             >
               {showConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}
