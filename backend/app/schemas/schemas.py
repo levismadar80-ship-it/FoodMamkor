@@ -453,6 +453,8 @@ class UserOut(BaseModel):
     referral_code: str | None = None
     # MEH-138: profile photo URL (Cloudinary or Google picture).
     avatar_url: str | None = None
+    # MEH-192: email verification status.
+    email_verified: bool = False
 
     model_config = {"from_attributes": True}
 
