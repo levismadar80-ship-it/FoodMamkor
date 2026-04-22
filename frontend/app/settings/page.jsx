@@ -348,7 +348,7 @@ function PasswordChangeCard({ isOAuth }) {
     setError(null);
     setMessage(null);
     try {
-      await api.post("/auth/change-password", { current_password: current, new_password: next });
+      await api.patch("/users/me/password", { current_password: current, new_password: next });
       setMessage("הסיסמה עודכנה בהצלחה");
       setCurrent(""); setNext(""); setConfirm("");
       setTimeout(() => setMessage(null), 3000);
@@ -578,7 +578,7 @@ function DangerZoneCard() {
     setLoading(true);
     setError(null);
     try {
-      await api.delete("/users/me");
+      await api.delete("/auth/me");
       setPhase("grace");
     } catch (err) {
       setError(err?.response?.data?.detail || "שגיאה — נסי שוב");
