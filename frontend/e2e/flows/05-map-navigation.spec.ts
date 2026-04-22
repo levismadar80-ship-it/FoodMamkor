@@ -17,7 +17,10 @@ test.describe("Map", () => {
     // MapComponent is ssr:false — dynamic import must complete before Leaflet
     // initialises and adds .leaflet-container. In CI (cold Vercel preview)
     // the chunk fetch can take up to ~35s; 45s gives comfortable headroom.
-    await page.waitForSelector(".leaflet-container", { timeout: 45_000 });
+    // :visible scopes to the active viewport container — MapClient renders
+    // mapPane twice (desktop hidden lg:grid + mobile lg:hidden); both Leaflet
+    // instances mount, producing two .leaflet-container elements in the DOM.
+    await page.waitForSelector(".leaflet-container:visible", { timeout: 45_000 });
     // Allow tile + marker loading
     await page.waitForTimeout(2000);
 
@@ -30,8 +33,9 @@ test.describe("Map", () => {
       expect(center[0], "Map lat should be within Israel").toBeGreaterThan(29);
       expect(center[0], "Map lat should be within Israel").toBeLessThan(34);
     } else {
-      // __MAP_CENTER__ not yet set — fall back to confirming map rendered
-      await expect(page.locator(".leaflet-container")).toBeVisible();
+      // __MAP_CENTER__ not yet set — fall back to confirming map rendered.
+      // :visible avoids ambiguous multi-element match (two containers in DOM).
+      await expect(page.locator(".leaflet-container:visible")).toBeVisible();
     }
   });
 });

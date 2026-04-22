@@ -17,10 +17,11 @@ test.describe("Producer detail", () => {
     await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 10_000 });
 
     await expect(page.locator("h1").first()).toBeVisible();
-    // Either the unified PrimaryContactButton or a standalone WhatsApp button
+    // Either the unified PrimaryContactButton or a standalone WhatsApp button.
+    // :visible filters out the md:hidden mobile CTA that appears first in DOM.
     await expect(
       page
-        .locator('[data-testid="primary-contact-button"], [data-testid="whatsapp-cta"]')
+        .locator('[data-testid="primary-contact-button"]:visible, [data-testid="whatsapp-cta"]:visible')
         .first()
     ).toBeVisible();
   });
