@@ -1,5 +1,7 @@
 import logging
+import secrets
 import uuid
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import EmailStr
@@ -20,9 +22,11 @@ def _gen_referral_code() -> str:
     return uuid.uuid4().hex[:8]
 from app.schemas.schemas import (
     AppleAuthRequest,
+    ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
     ProducerRegister,
+    ResetPasswordRequest,
     Token,
     UserOut,
     UserRegister,
@@ -293,6 +297,41 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
     return Token(access_token=create_access_token(user.id))
 
 
+@router.post("/forgot-password")
+@limiter.limit("3/hour")
+def forgot_password(request: Request, data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Send a password-reset email. Always returns 200 to prevent email enumeration.
+    Rate-limited to 3/hour per IP.
+    """
+    user = db.query(User).filter(User.email == data.email).first()
+    if user:
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+        reset_link = f"{settings.frontend_url}/reset-password?token={token}"
+        background_tasks.add_task(_send_reset_email, user.email, user.name, reset_link)
+    return {"detail": "אם האימייל קיים במערכת, ישלח קישור לאיפוס"}
+
+
+@router.post("/reset-password")
+@limiter.limit("5/hour")
+def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Consume a reset token and update the password.
+    Token is single-use and expires after 1 hour.
+    """
+    user = db.query(User).filter(User.reset_token == data.token).first()
+    if not user or not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    user.password_hash = hash_password(data.new_password)
+    user.reset_token = None
+    user.reset_token_expires_at = None
+    db.commit()
+    return {"detail": "הסיסמה עודכנה בהצלחה"}
+
+
 @router.delete("/me")
 @limiter.limit("3/hour")
 def delete_account(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -314,6 +353,18 @@ def delete_account(request: Request, user: User = Depends(get_current_user), db:
     _send_deletion_email(user_email, user_name)
 
     return {"detail": "Account deleted successfully"}
+
+
+def _send_reset_email(email: str, name: str, reset_link: str):
+    body = (
+        f"שלום {name},\n\n"
+        f"קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.\n\n"
+        f"לחצי על הקישור הבא לאיפוס הסיסמה (תוקף: שעה אחת):\n"
+        f"{reset_link}\n\n"
+        f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+    send_email(email, "מהמקור - איפוס סיסמה", body)
 
 
 def _send_welcome_email(email: str, name: str, role: str = "consumer"):

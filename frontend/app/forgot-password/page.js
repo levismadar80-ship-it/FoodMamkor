@@ -1,25 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
+    setError("");
     setLoading(true);
     try {
       await api.post("/auth/forgot-password", { email });
       setSubmitted(true);
     } catch {
-      // Endpoint not yet implemented — show honest contact message instead of
-      // fake success that would leave the user waiting for an email that never arrives.
-      setSubmitted("contact");
+      setError("שגיאה בשליחה, נסי שוב מאוחר יותר");
     } finally {
       setLoading(false);
     }
@@ -34,22 +35,12 @@ export default function ForgotPasswordPage() {
         <h1 className="font-headline text-2xl font-bold text-site-text mb-1">איפוס סיסמה</h1>
         <p className="text-site-muted text-sm mb-6">נשלח לך קישור לאיפוס סיסמה לאימייל</p>
 
-        {submitted === true ? (
+        {submitted ? (
           <div className="bg-light border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
             <p className="font-medium mb-1">✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס</p>
             <p className="text-site-muted text-xs mt-2">
               לא קיבלת? צרי קשר:{" "}
               <a href="mailto:levismadar80@gmail.com" className="text-primary hover:underline">
-                levismadar80@gmail.com
-              </a>
-            </p>
-          </div>
-        ) : submitted === "contact" ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-[12px] px-5 py-4 text-amber-800 text-sm">
-            <p className="font-medium mb-1">שחזור סיסמה בקרוב</p>
-            <p className="text-xs mt-2">
-              לעזרה מיידית, צרי קשר:{" "}
-              <a href="mailto:levismadar80@gmail.com" className="underline font-medium">
                 levismadar80@gmail.com
               </a>
             </p>
@@ -65,6 +56,9 @@ export default function ForgotPasswordPage() {
               dir="ltr"
               className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary"
             />
+            {error && (
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            )}
             <button
               type="submit"
               disabled={loading || !email}
@@ -72,6 +66,11 @@ export default function ForgotPasswordPage() {
             >
               {loading ? "שולח..." : "שלחי קישור לאיפוס"}
             </button>
+            <p className="text-center text-sm text-site-muted">
+              <Link href="/login" className="text-primary hover:underline">
+                חזרה להתחברות
+              </Link>
+            </p>
           </form>
         )}
       </div>
