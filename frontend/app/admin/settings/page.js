@@ -6,6 +6,10 @@ import api from "@/lib/api";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState(null);
+  // MEH-250 — pristine copy of what the server returned; compared to
+  // `settings` to compute the diff for the confirm dialog + disable the
+  // Save button when nothing has changed.
+  const [originalSettings, setOriginalSettings] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -27,6 +31,7 @@ export default function AdminSettingsPage() {
           }
         } catch {}
         setSettings(data);
+        setOriginalSettings(data);
       })
       .catch(() => setLoadError(true));
   }, []);
@@ -39,10 +44,25 @@ export default function AdminSettingsPage() {
     setSaved(false);
   };
 
+  // MEH-250 — diff original vs current so we can show the admin
+  // exactly what's about to change and refuse no-op saves.
+  const changedKeys = originalSettings
+    ? Object.keys(settings).filter((k) => settings[k] !== originalSettings[k])
+    : [];
+  const isDirty = changedKeys.length > 0;
+
   const save = async () => {
+    if (!isDirty) return;
+    const summary = changedKeys
+      .map((k) => `• ${k}: ${originalSettings[k] || "∅"} → ${settings[k] || "∅"}`)
+      .join("\n");
+    if (!window.confirm(`האם לשמור את השינויים הבאים?\n\n${summary}`)) {
+      return;
+    }
     setSaving(true);
     try {
       await api.put("/admin/settings", settings);
+      setOriginalSettings(settings);
       setSaved(true);
     } finally {
       setSaving(false);
@@ -198,10 +218,20 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50">
+        <button
+          onClick={save}
+          disabled={saving || !isDirty}
+          className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
+          title={!isDirty ? "אין שינויים לשמירה" : undefined}
+        >
           {saving ? "שומר..." : "שמור הגדרות"}
         </button>
-        {saved && <span className="text-sm text-primary">נשמר ✓</span>}
+        {isDirty && !saving && (
+          <span className="text-xs text-site-muted">
+            {changedKeys.length} שינויים לא שמורים
+          </span>
+        )}
+        {saved && !isDirty && <span className="text-sm text-primary">נשמר ✓</span>}
       </div>
     </div>
   );
