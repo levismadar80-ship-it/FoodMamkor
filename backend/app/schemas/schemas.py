@@ -228,6 +228,21 @@ class ProducerUpdate(BaseModel):
     offers_delivery: bool | None = None
     delivery_nationwide: bool | None = None
     delivery_cities: list[str] | None = None
+    # MEH-210 Phase 2 — custom WhatsApp question chips
+    custom_questions: list[str] | None = None
+
+    @field_validator("custom_questions")
+    @classmethod
+    def _validate_custom_questions(cls, v):
+        if v is None:
+            return v
+        filtered = [q.strip() for q in v if q.strip()]
+        if len(filtered) > 5:
+            raise ValueError("מותר עד 5 שאלות")
+        for q in filtered:
+            if len(q) > 80:
+                raise ValueError("כל שאלה מוגבלת ל-80 תווים")
+        return filtered
 
     @model_validator(mode="after")
     def _validate_location_mode(self):
@@ -336,6 +351,8 @@ class ProducerDetailOut(ProducerListOut):
     story_card_url: str | None = None
     # MEH-102: weekly opening hours. Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
     opening_hours: str | None = None
+    # MEH-210 Phase 2 — custom WhatsApp question chips
+    custom_questions: list[str] | None = None
 
     model_config = {"from_attributes": True}
 
