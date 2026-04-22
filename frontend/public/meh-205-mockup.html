@@ -53,8 +53,8 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
 .card-grid { display: flex; flex-direction: column; gap: 12px; }
 .producer-card { background: white; border: 1px solid #e5e0d8; border-radius: 12px; padding: 16px; }
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-.card-name { font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 16px; color: #1C1A17; }
-.verified-badge { background: rgba(46,104,83,0.1); color: #2e6853; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.card-name { font-family: 'Frank Ruhl Libre', serif; font-weight: 700; font-size: 16px; color: #1C1A17; flex: 1; min-width: 0; }
+.verified-badge { background: rgba(46,104,83,0.1); color: #2e6853; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; margin-inline-start: 6px; }
 .card-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
 .card-category { font-size: 11px; color: #888; background: #F5F0E8; padding: 3px 8px; border-radius: 20px; }
 .card-rating { font-size: 12px; color: #555; }
@@ -97,6 +97,13 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
 
 /* Search filled label */
 .search-filled { background: #f0f7f4; border-color: #2e6853 !important; }
+
+/* Clear (×) button inside filled search input */
+.clear-btn { background: none; border: none; color: #bbb; font-size: 14px; line-height: 1; cursor: pointer; padding: 0 2px; flex-shrink: 0; }
+.clear-btn:hover { color: #555; }
+
+/* Empty-state fallback label (no popular searches / cities in DB) */
+.fallback-label { font-size: 11px; color: #aaa; font-style: italic; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -114,7 +121,7 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
 
   <!-- STATE 1: DEFAULT -->
   <div class="state active" id="state-default">
-    <div class="breadcrumb"><a href="#">בית</a><span>›</span>חיפוש</div>
+    <div class="breadcrumb"><a href="#">בית</a><span>/</span>חיפוש</div>
     <h1 class="page-h1">חיפוש</h1>
 
     <div class="search-bar">
@@ -192,6 +199,8 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
         <a class="chip city-chip" href="#">רמת גן</a>
         <a class="chip city-chip" href="#">פתח תקווה</a>
       </div>
+      <!-- fallback when DB has no cities: -->
+      <!-- <p class="fallback-label">אין עדיין ערים במאגר — fallback: מפה כללית</p> -->
     </div>
 
     <div class="footer-cta">
@@ -202,13 +211,14 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
 
   <!-- STATE 2: RESULTS -->
   <div class="state" id="state-results">
-    <div class="breadcrumb"><a href="#">בית</a><span>›</span>חיפוש: גבינות</div>
+    <div class="breadcrumb"><a href="#">בית</a><span>/</span>חיפוש: גבינות</div>
     <h1 class="page-h1">חיפוש</h1>
 
     <div class="search-bar">
       <div class="search-wrap search-filled">
         <span class="search-icon">🔍</span>
         <input type="text" value="גבינות" style="color:#1C1A17;" />
+        <button class="clear-btn" onclick="clearSearch(this)" aria-label="נקי חיפוש">✕</button>
       </div>
       <button class="search-btn">חפשי</button>
     </div>
@@ -261,13 +271,14 @@ h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 16px; font-we
 
   <!-- STATE 3: NO RESULTS -->
   <div class="state" id="state-noresults">
-    <div class="breadcrumb"><a href="#">בית</a><span>›</span>חיפוש</div>
+    <div class="breadcrumb"><a href="#">בית</a><span>/</span>חיפוש</div>
     <h1 class="page-h1">חיפוש</h1>
 
     <div class="search-bar">
       <div class="search-wrap search-filled">
         <span class="search-icon">🔍</span>
         <input type="text" value="קינואה" style="color:#1C1A17;" />
+        <button class="clear-btn" onclick="clearSearch(this)" aria-label="נקי חיפוש">✕</button>
       </div>
       <button class="search-btn">חפשי</button>
     </div>
@@ -339,6 +350,12 @@ function showState(name) {
   document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('state-' + name).classList.add('active');
   event.target.classList.add('active');
+}
+
+function clearSearch(btn) {
+  const input = btn.closest('.search-wrap').querySelector('input');
+  input.value = '';
+  input.focus();
 }
 </script>
 </body>
