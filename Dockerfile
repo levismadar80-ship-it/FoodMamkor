@@ -22,21 +22,17 @@ ENV UV_COMPILE_BYTECODE=1 \
 # Dockerfile at the top level without needing a Root Directory setting.
 # All COPY paths are prefixed with backend/ accordingly.
 #
-# Install Python deps from the lock file. Bind mounts expose pyproject.toml
-# and uv.lock from the build context without adding a separate COPY layer,
-# preserving the Docker layer cache when only app/ code changes.
-#
-# MEH-260 — no BuildKit cache mount for uv's download cache. Railway's
-# BuildKit rejected `--mount=type=cache,target=...` without an id
-# (original) AND the plain `id=uv-cache` variant (PR #289) because
-# its runner expects the Railway-specific `id=s/<service-uuid>-<name>`
-# format. Rather than couple the Dockerfile to a specific Railway
-# service UUID, we drop the cache mount entirely. Cost is ~20-30s per
-# cold build (uv re-downloads ~80 wheels from PyPI); revisit if build
-# time becomes an issue post-launch.
-RUN --mount=type=bind,source=backend/uv.lock,target=uv.lock \
-    --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-dev
+# MEH-260 — Railway's BuildKit only accepts `type=cache` mounts, and
+# even those require a Railway-specific `id=s/<service-uuid>-<name>`
+# format. `type=bind` mounts (which we used to avoid a COPY layer)
+# are rejected outright with:
+#   "other mount types are not supported"
+# So we fall back to the standard pattern: COPY the lockfiles first,
+# run uv sync, then COPY the app code. When only app/ code changes,
+# the uv sync layer still hits the Docker layer cache as long as the
+# COPY of uv.lock + pyproject.toml is identical.
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev
 
 # Put the venv on PATH so `python` and `uvicorn` resolve from the venv.
 ENV PATH="/app/.venv/bin:${PATH}"
