@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine, SquaresFour } from "@phosphor-icons/react";
+import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine, SquaresFour, NavigationArrow, CircleNotch } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { GeoSearchSchema } from "@/lib/schemas";
@@ -99,6 +99,7 @@ export default function MapPage() {
   // MEH-58 Phase 2 — desktop split ratio + mobile bottom sheet snap.
   const [splitRatio, setSplitRatio] = useState("40fr 60fr");
   const [sheetSnap, setSheetSnap] = useState(PEEK);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const mapApiRef = useRef(null);
   // Direct ref to the Leaflet map instance. Both desktop + mobile MapComponents
@@ -426,6 +427,33 @@ export default function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
 
+  const handleGpsClick = useCallback(() => {
+    if (gpsLoading) return;
+    if (!navigator.geolocation) {
+      showToast("הדפדפן שלך לא תומך ב-GPS", "error");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsLoading(false);
+        const { latitude: lat, longitude: lng } = pos.coords;
+        if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+        mapApiRef.current?.getMap()?.flyTo([lat, lng], 13, { duration: 1.2 });
+      },
+      (err) => {
+        setGpsLoading(false);
+        const msgs = {
+          1: "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
+          2: "המיקום שלך לא זמין. נסי מאוחר יותר.",
+          3: "לקח יותר מדי זמן. נסי שוב.",
+        };
+        showToast(msgs[err.code] ?? "לא הצלחנו לקבל את המיקום שלך", "error");
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }, [gpsLoading]);
+
   // docs/archive/MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
   const toggleCategory = (name) => {
     setActiveCategoryNames((prev) => {
@@ -586,6 +614,20 @@ export default function MapPage() {
           <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-light transition">הוסיפי עסק +</Link>
         </div>
       )}
+
+      {/* GPS center button — desktop only; mobile has one in the filter bar */}
+      <button
+        type="button"
+        onClick={handleGpsClick}
+        disabled={gpsLoading}
+        aria-label="מרכזי את המפה על המיקום שלי"
+        className="hidden lg:flex absolute bottom-24 end-4 w-11 h-11 rounded-full bg-background border border-border shadow-md items-center justify-center text-primary hover:bg-light transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+      >
+        {gpsLoading
+          ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
+          : <NavigationArrow size={20} weight="fill" aria-hidden="true" />
+        }
+      </button>
 
       {/* Collapsible category legend — desktop only; mobile sees emoji on markers */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}

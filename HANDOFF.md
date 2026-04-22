@@ -1,23 +1,48 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22 (uv migration)
+> Last updated: 2026-04-22 (MEH-87 + MEH-83 + MEH-84 batch)
 
-## Last session (uv migration — 2026-04-22)
-PR: claude/migrate-pip-to-uv-8p7aT → staging (open, pending review)
+## Last session (MEH-87 + MEH-83 + MEH-84 — 2026-04-22)
+PRs opened this session:
+  - #270 (MEH-87): Tab focus trap in LoginPromptModal — draft, CI pending
+  - #272 (MEH-83): Lightbox on gallery images — draft, CI running
+  - #274 (MEH-84): GPS center button on /map — draft, CI queued
+PRs merged this session:
+  - #264 (uv migration, claude/migrate-pip-to-uv-8p7aT) — merged to staging ✅
+
+MEH-87 (Task 1) — LoginPromptModal Tab focus trap:
+  Root cause: focus trap was missing (only ESC was handled, not Tab/Shift+Tab).
+  Fix: `modalRef` on dialog div + Tab/Shift+Tab handler in existing `handleKey`
+  useEffect; cycles through all focusable elements within the dialog.
+  File: frontend/components/LoginPromptModal.jsx
+
+MEH-86 (Task 2) — Infinite scroll on /producers:
+  SKIPPED — spec pre-condition not met: requires ≥50 producers in DB, only 5.
+
+MEH-83 (Task 3) — Lightbox on gallery images:
+  New file: frontend/components/Lightbox.jsx (pure React, zero deps)
+  Updated: frontend/components/ImageGallery.jsx — image wrapped in <button>,
+    opens Lightbox on click; focus returns to trigger button on close.
+  CSS: globals.css — lightboxFadeIn 200ms + lightboxImgFade 150ms keyframes.
+  RTL: ArrowLeft=next, ArrowRight=prev; nav arrows use start-4/end-4.
+  A11y: role=dialog, aria-modal, Tab trap, focus-on-close, body scroll lock.
+  Test: frontend/e2e/flows/06-lightbox.spec.ts
+
+MEH-84 (Task 4) — GPS center button on /map:
+  Updated: frontend/app/map/MapClient.jsx
+  Button: absolute bottom-24 end-4, 44×44px, z-[1000], hidden lg:flex (desktop only).
+  Icon: NavigationArrow → CircleNotch spinner during wait.
+  3 per-error-code toasts: denied / unavailable / timeout in Hebrew.
+  NaN guard before flyTo. Mobile unchanged (has its own "קרוב אלי" in filter bar).
+  Test: frontend/e2e/flows/07-gps-button.spec.ts
+
+## Previous last session (uv migration — 2026-04-22)
+PR: claude/migrate-pip-to-uv-8p7aT → staging (merged ✅)
 Root cause fixed: `requirements.txt` had no transitive pins; `slowapi`'s
-  transitive deps resolved incompatibly with `fastapi==0.115.6` in CI,
-  causing `ImportError: PYDANTIC_V2` before any test ran.
-Changes:
-  - backend/requirements.txt REMOVED
-  - backend/pyproject.toml ADDED — 22 direct deps, Python >=3.11
-  - backend/uv.lock ADDED — 79 packages, all transitive deps pinned with hashes
-  - Dockerfile: pip → uv (COPY --from=ghcr.io/astral-sh/uv, RUN uv sync --frozen
-    --no-dev with BuildKit cache mount; ENV PATH .venv/bin:PATH)
-  - .github/workflows/pr-checks.yml: setup-python+pip → astral-sh/setup-uv@v3
-    + uv sync --frozen + GITHUB_PATH
-  - docs/DEPLOYMENT.md: §8 table updated, §9 "Dependency management (uv)" added
-Next: PR review → merge to staging → CI green → promote staging → main
+  transitive deps resolved incompatibly with `fastapi==0.115.6` in CI.
+Changes: backend/requirements.txt removed; pyproject.toml + uv.lock added;
+  Dockerfile pip→uv; pr-checks.yml setup-uv@v3; docs/DEPLOYMENT.md §8+§9.
 
 ## Previous last session
 Date: 2026-04-22
@@ -130,27 +155,29 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-89-availability-return-date (PR #268, CI running)
-Last branch before: feature/meh-88-product-image (PR #267, all CI green)
-Staging HEAD: 86eefcf (unchanged — no merges this session)
-Main HEAD: e42127e (production is 80+ commits behind staging — needs promotion)
+Branch: feature/meh-84-gps-button (PR #274, CI queued)
+Last branch: feature/meh-83-lightbox (PR #272, CI running)
+Staging HEAD: updated — PR #264 (uv migration) merged this session
+Main HEAD: e42127e (production still behind staging — needs promotion)
 
 ## PRs merged this session
-None — all 4 PRs still in draft, awaiting review + merge.
+- #264 — uv migration (claude/migrate-pip-to-uv-8p7aT) ✅
 
 ## Open PRs
 - #265 — MEH-236: CardHeart can't undo favorite (draft)
 - #266 — MEH-187: Vercel Speed Insights (draft)
 - #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
-- #268 — MEH-89: vacation return date in banner + admin form (draft, CI running)
+- #268 — MEH-89: vacation return date in banner + admin form (draft)
+- #270 — MEH-87: LoginPromptModal Tab focus trap (draft, CI pending)
+- #272 — MEH-83: Lightbox on gallery images (draft, CI running)
+- #274 — MEH-84: GPS button on /map (draft, CI queued)
 
 ## Next task
-- Review and merge #265 → #268 to staging (in order: #265 first as it's a bug fix)
+- Wait for CI on #270, #272, #274 → then review + merge in order
+- MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
 - MEH-205: /search page redesign (discovery-first) — next feature in queue
-- MEH-206 Phases 2+3: role-aware tabs, users.preferred_city, POST /auth/logout-all-devices, 2-step delete — pending design session
-- ProducerCard heart/favorite Phase C (post-login replay)
-- Verify password reset end-to-end on staging (requires RESEND_API_KEY in Railway staging env)
-- Promote staging → main (production is 80+ commits behind)
+- Review and merge #265 → #268 to staging (older open PRs, still valid)
+- Promote staging → main (production is behind)
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
