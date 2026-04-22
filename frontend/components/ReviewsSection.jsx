@@ -188,6 +188,8 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
       {/* Write review CTA / form */}
       {user ? (
+        // Producer owners cannot review their own business (backend guard mirrors this)
+        user.producer_id === producerId ? null :
         hasClickedWa ? (
           !showForm ? (
             <button
