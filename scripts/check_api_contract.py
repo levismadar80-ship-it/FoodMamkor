@@ -43,12 +43,17 @@ API_CALL_RE = re.compile(
         (?P<quote>["'`])(?P<path>[^"'`]+)(?P=quote)""",
     re.VERBOSE | re.DOTALL,
 )
-# fetch("...") — treats method as GET; an overridden { method: "POST" } option
-# is not parsed (documented limitation).
+# fetch("..."). The method option, if present, is read from a short window
+# after the URL — e.g. fetch("/api/x", { method: "POST", ... }). Missing or
+# unparsed option defaults to GET.
 FETCH_CALL_RE = re.compile(
     r"""\bfetch\s*\(\s*(?P<quote>["'`])(?P<url>[^"'`]+)(?P=quote)""",
     re.VERBOSE | re.DOTALL,
 )
+FETCH_METHOD_RE = re.compile(
+    r"""method\s*:\s*["'](?P<method>\w+)["']"""
+)
+FETCH_METHOD_WINDOW = 400  # chars after the URL to scan for method: "..."
 # navigator.sendBeacon("...") — fire-and-forget POST.
 SEND_BEACON_RE = re.compile(
     r"""\bsendBeacon\s*\(\s*(?P<quote>["'`])(?P<url>[^"'`]+)(?P=quote)""",
@@ -116,7 +121,10 @@ def extract_frontend_calls() -> list[tuple[str, str, str, int]]:
             if p is None:
                 continue
             line = text.count("\n", 0, m.start()) + 1
-            calls.append(("GET", normalise(p), file_rel, line))
+            window = text[m.end() : m.end() + FETCH_METHOD_WINDOW]
+            mm = FETCH_METHOD_RE.search(window)
+            method = mm.group("method").upper() if mm else "GET"
+            calls.append((method, normalise(p), file_rel, line))
         for m in SEND_BEACON_RE.finditer(text):
             p = _strip_host_prefix(m.group("url"))
             if p is None:

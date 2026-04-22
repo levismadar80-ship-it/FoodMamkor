@@ -19,7 +19,7 @@ Summary:
   Shipped in this PR:
     - docs/AUDIT-API-CONTRACT.md — post-mortem + runbook for the 3 modes
     - scripts/check_api_contract.py — static / --probe URL / --cross-env.
-      Static on staging: 177 frontend call sites, 153 backend routes,
+      Static on staging: 178 frontend call sites, 154 backend routes,
       0 orphan frontend calls, 0 method mismatches, 23 dead backend
       routes flagged for triage (not deleted here).
     - .github/workflows/deploy.yml — two warn-only jobs

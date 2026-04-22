@@ -54,9 +54,9 @@ needed for `--probe` / `--cross-env`.
   are handled via an explicit allowlist in the script (`KNOWN_DYNAMIC_EXPANSIONS`).
   One entry today — add more only when the variable is constrained to a
   finite set of known literals in the same file.
-- `fetch()` defaults to `GET`; an overridden method passed via
-  `{ method: "POST" }` is not parsed. `navigator.sendBeacon()` is treated
-  as `POST`.
+- `fetch()` reads the HTTP method from an adjacent `method: "POST"` option
+  (scanned in a 400-char window after the URL). Missing option defaults to
+  `GET`. `navigator.sendBeacon()` is treated as `POST`.
 
 ---
 
@@ -64,9 +64,9 @@ needed for `--probe` / `--cross-env`.
 
 | Metric | Count |
 |---|---|
-| Frontend call sites | 177 |
-| Frontend unique paths | 100 |
-| Backend routes | 153 |
+| Frontend call sites | 178 |
+| Frontend unique paths | 101 |
+| Backend routes | 154 |
 | Orphan frontend (404 risk) | **0** ✅ |
 | Method mismatches | **0** ✅ |
 | Known dynamic expansions matched | 1 |
