@@ -155,6 +155,14 @@ class ProducerAdminCreate(BaseModel):
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
 
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        if not self.has_physical_location and not self.offers_delivery:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
+
 
 class ProducerImportPreviewRow(BaseModel):
     row_number: int

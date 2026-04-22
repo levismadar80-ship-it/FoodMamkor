@@ -21,6 +21,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
   const debounceRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const listboxId = useRef(`cities-listbox-${Math.random().toString(36).slice(2)}`).current;
 
   const fetchSuggestions = useCallback((q) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -130,6 +131,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           role="combobox"
           aria-expanded={open}
           aria-autocomplete="list"
+          aria-controls={listboxId}
           aria-activedescendant={activeIdx >= 0 ? `city-opt-${activeIdx}` : undefined}
         />
       </div>
@@ -138,6 +140,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
       {open && (
         <ul
           ref={listRef}
+          id={listboxId}
           role="listbox"
           className="absolute z-50 start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-[12px] shadow-md text-sm"
         >
