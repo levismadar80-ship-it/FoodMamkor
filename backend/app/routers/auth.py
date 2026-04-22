@@ -358,12 +358,13 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
 
 
 @router.get("/verify-email")
-def verify_email(token: str, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     """Consume email verification token. Clears token on success."""
     user = db.query(User).filter(User.email_verify_token == token).first()
     if not user:
         raise HTTPException(status_code=400, detail="קישור האימות לא תקין")
-    if user.email_verify_expires < datetime.utcnow():
+    if user.email_verify_expires is None or user.email_verify_expires < datetime.utcnow():
         raise HTTPException(status_code=400, detail="קישור האימות פג תוקף")
     user.email_verified = True
     user.email_verify_token = None

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
@@ -13,7 +12,6 @@ import { validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { register } = useAuth();
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
