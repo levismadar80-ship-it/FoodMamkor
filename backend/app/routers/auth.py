@@ -335,17 +335,47 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
 @router.delete("/me")
 @limiter.limit("3/hour")
 def delete_account(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Delete user account and all associated data. Required by Apple App Store Guidelines."""
+    """Delete user account and all associated data.
+
+    Required by Apple App Store Guidelines; also closes the GDPR /
+    חוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who
+    deleted her account left the Producer row behind in the public
+    directory (the /producers list, /map, and search), with reviews,
+    followers, and page-view analytics still referencing her.
+
+    Now, if the user owns a Producer, that Producer is hard-deleted
+    before the user row. Producer-linked tables cascade via the FKs
+    defined in models.py (all have ondelete=CASCADE):
+      - ProducerCategory, DeliveryArea, Product
+      - ProducerReview, ProducerFollower, Favorite
+      - ProducerPageView, ProducerWhatsAppClick
+      - Report (on producer), Event, Experience
+    """
     user_email = user.email
     user_name = user.name
+    producer_id = user.producer_id
 
-    # Delete all user data (cascade)
+    # 1. Clean up user-linked (not producer-linked) rows that don't cascade
+    #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
+    #    the explicit deletes for defense-in-depth against pre-cascade data.
     db.query(HomeProductRating).filter(HomeProductRating.user_id == user.id).delete()
     db.query(HomeProductWhatsAppClick).filter(HomeProductWhatsAppClick.user_id == user.id).delete()
     db.query(HomeProduct).filter(HomeProduct.user_id == user.id).delete()
     db.query(Favorite).filter(Favorite.user_id == user.id).delete()
     db.query(Report).filter(Report.reporter_id == user.id).delete()
 
+    # 2. If this user owns a Producer, remove the FK reference from the user
+    #    row first (User.producer_id has no ondelete, so deleting the
+    #    producer while the user still points at it would violate the
+    #    constraint), then delete the producer — children cascade.
+    if producer_id is not None:
+        user.producer_id = None
+        db.flush()
+        producer = db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer is not None:
+            db.delete(producer)
+
+    # 3. Finally, delete the user itself.
     db.delete(user)
     db.commit()
 
