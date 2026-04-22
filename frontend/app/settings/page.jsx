@@ -145,6 +145,7 @@ function ProfileTab() {
       if (trimmedName !== user.name) patch.name = trimmedName;
       await updateProfile(patch);
       setMessage("הפרטים נשמרו");
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
       setError(err?.response?.data?.detail || "לא הצלחנו לשמור. נסי שוב.");
     } finally {
@@ -166,6 +167,7 @@ function ProfileTab() {
       });
       await refreshUser();
       setMessage("תמונת הפרופיל עודכנה");
+      setTimeout(() => setMessage(null), 3000);
     } catch {
       setError("שגיאה בהעלאת התמונה, נסי שוב");
     } finally {
@@ -243,6 +245,7 @@ function ProfileTab() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+            spellCheck={false}
             className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
             dir="rtl"
           />
@@ -262,7 +265,7 @@ function ProfileTab() {
           />
           <p className="text-xs text-site-muted mt-1 text-right">
             {isOAuth
-              ? "התחברת עם Google — לשינוי אימייל, ערכי ב-Google"
+              ? "האימייל מחובר לחשבון Google שלך. לשינוי — עדכני בהגדרות Google"
               : "לשינוי אימייל, פני לתמיכה"}
           </p>
         </div>
@@ -304,7 +307,6 @@ function SecurityTab() {
       {isOAuth ? (
         <div className="bg-white border border-border rounded-[16px] p-6 text-sm text-site-muted">
           התחברת דרך Google / Apple — שינוי סיסמה מתבצע שם.
-          אין סיסמה מקומית לשנות.
         </div>
       ) : (
         <PasswordChangeCard changePassword={changePassword} />
@@ -474,7 +476,7 @@ function DangerZone({ deleteAccount, router }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 z-[10000] flex items-center justify-center p-4">
           <div
             role="dialog"
             aria-modal="true"
