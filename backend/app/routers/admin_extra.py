@@ -368,8 +368,15 @@ DEFAULT_SETTINGS = {
     "admin_whatsapp": "",
     "freemium_premium_price": "0",
     "freemium_free_image_limit": "3",
+    # MEH-247 — admin-facing holiday + Friday override toggles. Both are
+    # persisted server-side so admin A's toggle is visible to admin B on
+    # next /admin/settings load. Consumer-side reads happen via the
+    # public `GET /holiday-mode` endpoint in main.py (holiday) and
+    # `lib/friday-mode.js` on the frontend (Friday — currently localStorage
+    # + timezone rule; a public /friday-mode endpoint is TODO).
     "holiday_override_enabled": "false",
     "holiday_override_key": "",
+    "friday_mode_override": "false",
 }
 
 
