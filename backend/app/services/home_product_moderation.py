@@ -19,13 +19,14 @@ Design notes:
 from __future__ import annotations
 
 import json
-import logging
 from decimal import Decimal
 from typing import Any
 
+import structlog
+
 from app.config import settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Module-level client — lazy constructed on first call to avoid import-time
 # crashes when anthropic isn't installed (e.g. during tests or migrations).

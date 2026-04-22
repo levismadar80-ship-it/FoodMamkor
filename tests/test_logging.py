@@ -83,6 +83,12 @@ class TestSensitiveFieldRedaction:
 
 
 class TestLogFormat:
+    @pytest.fixture(autouse=True)
+    def _restore_structlog(self):
+        original = structlog.get_config()
+        yield
+        structlog.configure(**original)
+
     def test_json_format_produces_parseable_json(self, monkeypatch):
         """LOG_FORMAT=json renderer must produce a JSON string with 'event' key."""
         monkeypatch.setenv("LOG_FORMAT", "json")
