@@ -316,7 +316,7 @@ POST   /auth/login               public  — email+password → JWT
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
-DELETE /users/me                 auth    — account deletion (App Store)
+DELETE /auth/me                  auth    — account deletion (App Store)
 ```
 
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
@@ -610,7 +610,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 
 ## Apple App Store compliance
 
-- `DELETE /users/me` — deletes the user row + cascaded rows (favorites,
+- `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
   home_products, home_product_ratings, producer_reviews, experiences,
   producer_followers). Events hosted by the user's producer are NOT
   cascaded — they belong to the producer record.
