@@ -12,6 +12,10 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-22 — MEH-210 Phase 2: producer custom WhatsApp question chips — producers.custom_questions TEXT[] nullable; validator (max 5, ≤80 chars, blanks stripped); exposed in ProducerDetailOut; CustomQuestionsCard on /producer/dashboard (5 inputs, saves via PUT /producers/me); getProducerQuestions() checks custom_questions first, falls back to category defaults, then global defaults (#252)
+
+## 2026-04-22 — MEH-221 + MEH-210 Phase 1 + MEH-206 Phase 1 + MEH-203 — avatar upload saves to DB atomically (db dep added to upload_avatar, refreshUser() replaces duplicate PATCH); category-aware WhatsApp chips (categoryQuestions.js, 15 categories); settings quick wins (provider-aware OAuth copy, z-[10000] delete modal, auto-hide toasts); category selector redesign Variant A (flex-wrap chips, search, expand/collapse, CategorySelector component) (#248)
+
 ## 2026-04-22 — PR #247 merged to staging — MEH-202+204+207 (batch 1 copy sweep): "לממכר מזון" → "למכירת המוצרים" in /register/producer consent + /terms §2; search placeholder "grass-fed" → "לחם מחמצת, ביצים אורגניות, ירקות ופירות"; /register/producer H1 → "תני לעסק שלך בית", subtitle → "5 דקות. בלי עמלות. בלי מתווכים.", OAuth info box email-only (removes name truncation). Text only, 4 files.
 
 ## 2026-04-22 — MEH-218: CLAUDE.md modular refactor — 245 → 138 lines; split into 7 domain rule files under .claude/rules/ (rtl, security, testing, deployment, frontend, backend, workflow); extracted docs/BUG_PATTERNS.md + docs/LOCKED_DECISIONS.md (Railway port, Anthropic http_client, Resend, PostGIS, AI fail-open — each with "the trap" context); removed inline Mermaid diagrams (already canonical in .ai/diagrams/); unified 3 overlapping bug-handling sections into one Bug Protocol; consolidated duplicate /compact triggers (40% → /compact, 60% → /session-save + /clear); hard cap lowered to ≤150 lines with update policy that new domain rules must land in .claude/rules/, not CLAUDE.md. Zero rules deleted; docs/ + .claude/ only, no code touched.
