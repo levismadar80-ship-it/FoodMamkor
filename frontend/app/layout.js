@@ -11,6 +11,7 @@ import CustomCursor from "@/components/CustomCursor";
 import ChatWidget from "@/components/ChatWidget";
 import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
@@ -135,6 +136,7 @@ export default function RootLayout({ children }) {
           </LanguageProvider>
         </AuthProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}
+        <SpeedInsights />
       </body>
     </html>
   );
