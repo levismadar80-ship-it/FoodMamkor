@@ -12,6 +12,10 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-22 — MEH-106: social proof — favorites_count batch-fetched (GROUP BY, no N+1); ProducerCard "❤️ X שמרו" when ≥5 with optimistic tap update; ProducerDetail trust row same count; get_producer_by_slug gets rate limit + request param; 3 backend tests (#236)
+
+## 2026-04-22 — MEH-141: category request flow — category_requests table + POST /category-requests (5/hour) + GET+PATCH /admin/category-requests; CategoryRequestModal with Escape/WCAG 2.1; discreet link below category pills in producer registration; admin panel grouped by name; 5 backend tests + 6 frontend tests (#234)
+
 ## 2026-04-21 — MEH-138: profile photo upload + Google OAuth sync — users.avatar_url column, POST /upload/avatar (magic-byte, face-crop), Google picture backfill on login, /settings avatar upload UI, Header+BottomNav updated (#214)
 
 ## 2026-04-21 — MEH-143: role upgrade — existing consumer can add producer to same account; POST /auth/register/producer detects JWT for upgrade path; GET /auth/email-exists with EmailStr + 5/min; User.is_producer durable flag; auth context refreshUser(); login page respects ?redirect= (#213)
