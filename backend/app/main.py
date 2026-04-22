@@ -130,6 +130,8 @@ def _migrate_columns(engine):
         # MEH-166 — password reset token (one-time, 1h TTL).
         ("users", "reset_token", "VARCHAR(64)"),
         ("users", "reset_token_expires_at", "TIMESTAMP"),
+        # MEH-103 — admin can hide abusive reviews without deleting them.
+        ("producer_reviews", "is_hidden", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.

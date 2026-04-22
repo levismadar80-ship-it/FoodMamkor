@@ -558,6 +558,7 @@ class ProducerReview(Base):
     stars = Column(Integer, nullable=False)  # 1-5
     title = Column(String(200), nullable=True)
     body = Column(Text, nullable=True)
+    is_hidden = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     producer = relationship("Producer", back_populates="reviews")

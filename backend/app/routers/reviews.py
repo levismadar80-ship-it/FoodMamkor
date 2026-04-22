@@ -1,23 +1,18 @@
-"""Producer reviews (1-5 stars + optional title/body).
+"""Producer reviews (1-5 stars + optional body, 10-500 chars).
 
-Per docs/archive/FIXES_V2.md fix 3. One review per user per producer; the aggregates
-`producers.avg_rating` and `producers.reviews_count` are recomputed from
-all reviews on every write (simple + correct; fine at this scale).
-
-MEH-10 adds:
-  - nested route aliases GET/POST /producers/:id/reviews (spec-compliant)
-  - GET /admin/reviews — list all reviews with producer + user name (admin only)
-
-Reviews spec:
+MEH-103 verified reviews system:
   - WhatsApp click gate: only users who have clicked the WhatsApp CTA for
-    this specific producer may submit a review. Verified via
-    producer_whatsapp_clicks.user_id. Fail-open: if the clicks table is empty
-    (e.g. DB migration hasn't run) we let the review through.
+    this specific producer may submit a first review. Enforced via
+    producer_whatsapp_clicks.user_id (nullable FK added in migrations).
+  - Owner guard: producer owners cannot review their own business.
   - Haiku AI moderation on body text (fail-open — no API key → APPROVED).
-  - Pagination: GET returns 10 reviews per page.
+  - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
+  - Hidden reviews are excluded from public GET endpoints and aggregates.
+  - Pagination: GET /producers/{id}/reviews returns 10 per page.
 """
 import json
 import logging
+import math
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -94,11 +89,9 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
         return "APPROVED"
 
 
-class ReviewCreate(BaseModel):
-    producer_id: UUID
+class ReviewCreateNested(BaseModel):
     stars: int = Field(..., ge=1, le=5)
-    title: str | None = Field(None, max_length=200)
-    body: str | None = Field(None, max_length=2000)
+    body: str = Field(..., min_length=10, max_length=500)
 
 
 class ReviewOut(BaseModel):
@@ -107,20 +100,50 @@ class ReviewOut(BaseModel):
     user_id: UUID
     user_name: str | None = None
     stars: int
-    title: str | None = None
     body: str | None = None
     created_at: str
 
     model_config = {"from_attributes": True}
 
 
+class AdminReviewOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    producer_name: str | None = None
+    user_id: UUID
+    user_name: str | None = None
+    user_email: str | None = None
+    stars: int
+    body: str | None = None
+    is_hidden: bool
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewsPage(BaseModel):
+    reviews: list[ReviewOut]
+    total: int
+    page: int
+    pages: int
+
+    model_config = {"from_attributes": True}
+
+
+PAGE_SIZE = 10
+
+
 def _recompute_producer_rating(producer_id: UUID, db: Session) -> None:
+    """Recompute avg_rating + reviews_count from all visible (non-hidden) reviews."""
     row = (
         db.query(
             func.avg(ProducerReview.stars).label("avg"),
             func.count(ProducerReview.id).label("cnt"),
         )
-        .filter(ProducerReview.producer_id == producer_id)
+        .filter(
+            ProducerReview.producer_id == producer_id,
+            ProducerReview.is_hidden.is_(False),
+        )
         .one()
     )
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
@@ -137,12 +160,46 @@ def _serialize(review: ProducerReview) -> ReviewOut:
         user_id=review.user_id,
         user_name=review.user.name if review.user else None,
         stars=review.stars,
-        title=review.title,
         body=review.body,
         created_at=review.created_at.isoformat() if review.created_at else "",
     )
 
 
+# ---------------------------------------------------------------------------
+# Public GET
+# ---------------------------------------------------------------------------
+
+@router.get("/producers/{producer_id}/reviews", response_model=ReviewsPage)
+def list_reviews_nested(
+    producer_id: UUID,
+    page: int = Query(1, ge=1),
+    db: Session = Depends(get_db),
+):
+    """Paginated visible reviews for a producer (10 per page, newest first)."""
+    base = (
+        db.query(ProducerReview)
+        .options(joinedload(ProducerReview.user))
+        .filter(
+            ProducerReview.producer_id == producer_id,
+            ProducerReview.is_hidden.is_(False),
+        )
+    )
+    total = base.count()
+    rows = (
+        base.order_by(ProducerReview.created_at.desc())
+        .offset((page - 1) * PAGE_SIZE)
+        .limit(PAGE_SIZE)
+        .all()
+    )
+    return ReviewsPage(
+        reviews=[_serialize(r) for r in rows],
+        total=total,
+        page=page,
+        pages=max(1, math.ceil(total / PAGE_SIZE)),
+    )
+
+
+# Legacy flat route — kept for backwards compat with any existing clients.
 @router.get("/reviews", response_model=list[ReviewOut])
 def list_reviews(
     producer_id: UUID,
@@ -151,47 +208,98 @@ def list_reviews(
     reviews = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
-        .filter(ProducerReview.producer_id == producer_id)
+        .filter(
+            ProducerReview.producer_id == producer_id,
+            ProducerReview.is_hidden.is_(False),
+        )
         .order_by(ProducerReview.created_at.desc())
         .all()
     )
     return [_serialize(r) for r in reviews]
 
 
-@router.post("/reviews", response_model=ReviewOut, status_code=201)
-@limiter.limit("20/day")  # SECURITY FIX #2: cap review spam
-def create_review(
+# ---------------------------------------------------------------------------
+# POST — create or update a review (upsert, one per user per producer)
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/producers/{producer_id}/reviews",
+    response_model=ReviewOut,
+    status_code=201,
+)
+@limiter.limit("20/day")
+def create_review_nested(
     request: Request,
-    data: ReviewCreate,
+    producer_id: UUID,
+    data: ReviewCreateNested,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # Make sure the producer exists
-    producer = db.query(Producer).filter(Producer.id == data.producer_id).first()
+    """Submit or update a review.
+
+    Guards (checked in order):
+      1. Producer must exist.
+      2. Producer owner cannot review their own business.
+      3. First-time reviewers must have a WA click row for this producer.
+      4. Body is moderated by Haiku (fail-open).
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
-    # Enforce one-review-per-user-per-producer; if exists, update it (upsert)
-    existing = (
+    # Guard: owner cannot review themselves
+    if user.producer_id is not None and str(user.producer_id) == str(producer_id):
+        raise HTTPException(
+            status_code=403,
+            detail="בעלת עסק לא יכולה לדרג את עצמה",
+        )
+
+    existing_review = (
         db.query(ProducerReview)
         .filter(
-            ProducerReview.producer_id == data.producer_id,
+            ProducerReview.producer_id == producer_id,
             ProducerReview.user_id == user.id,
         )
         .first()
     )
-    if existing:
-        existing.stars = data.stars
-        existing.title = data.title
-        existing.body = data.body
+
+    # Guard: WA click required for first-time reviews
+    if not existing_review:
+        clicked = (
+            db.query(ProducerWhatsAppClick.id)
+            .filter(
+                ProducerWhatsAppClick.producer_id == producer_id,
+                ProducerWhatsAppClick.user_id == user.id,
+            )
+            .first()
+        )
+        if not clicked:
+            raise HTTPException(
+                status_code=403,
+                detail="יש ללחוץ על כפתור WhatsApp לפני כתיבת ביקורת",
+            )
+
+    # Haiku moderation (fail-open)
+    if data.body:
+        verdict = _moderate_review_body(data.body)
+        if verdict == "REJECTED":
+            raise HTTPException(
+                status_code=422,
+                detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
+            )
+
+    if existing_review:
+        existing_review.stars = data.stars
+        existing_review.body = data.body
+        # Unhide on edit (user is updating a previously hidden review)
+        existing_review.is_hidden = False
         db.commit()
-        review = existing
+        review = existing_review
     else:
         review = ProducerReview(
-            producer_id=data.producer_id,
+            producer_id=producer_id,
             user_id=user.id,
             stars=data.stars,
-            title=data.title,
             body=data.body,
         )
         db.add(review)
@@ -199,24 +307,20 @@ def create_review(
             db.commit()
             db.refresh(review)
         except IntegrityError:
-            # Concurrent double-submit inserted the same (producer, user) row.
-            # Rollback and fall through to an UPDATE on the now-existing row.
             db.rollback()
             review = (
                 db.query(ProducerReview)
                 .filter(
-                    ProducerReview.producer_id == data.producer_id,
+                    ProducerReview.producer_id == producer_id,
                     ProducerReview.user_id == user.id,
                 )
                 .first()
             )
             review.stars = data.stars
-            review.title = data.title
             review.body = data.body
             db.commit()
 
-    _recompute_producer_rating(data.producer_id, db)
-    # Reload with user relation for serialization
+    _recompute_producer_rating(producer_id, db)
     review = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
@@ -225,6 +329,10 @@ def create_review(
     )
     return _serialize(review)
 
+
+# ---------------------------------------------------------------------------
+# DELETE — owner or admin
+# ---------------------------------------------------------------------------
 
 @router.delete("/reviews/{review_id}")
 def delete_review(
@@ -247,150 +355,23 @@ def delete_review(
 
 
 # ---------------------------------------------------------------------------
-# MEH-10 nested route aliases — spec requires /producers/:id/reviews form.
-# Old routes (/reviews, /reviews?producer_id=X) stay as-is so existing clients
-# don't break; these are thin wrappers delegating to the same handlers.
+# Admin endpoints
 # ---------------------------------------------------------------------------
 
-
-class ReviewsPage(BaseModel):
-    reviews: list[ReviewOut]
-    total: int
-    page: int
-    pages: int
-
-    model_config = {"from_attributes": True}
-
-
-PAGE_SIZE = 10
-
-
-@router.get("/producers/{producer_id}/reviews", response_model=ReviewsPage)
-def list_reviews_nested(
-    producer_id: UUID,
-    page: int = Query(1, ge=1),
+@router.put("/admin/reviews/{review_id}/hide")
+def hide_review(
+    review_id: UUID,
+    _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Paginated reviews for a producer (10 per page, newest first)."""
-    base = (
-        db.query(ProducerReview)
-        .options(joinedload(ProducerReview.user))
-        .filter(ProducerReview.producer_id == producer_id)
-    )
-    total = base.count()
-    rows = (
-        base.order_by(ProducerReview.created_at.desc())
-        .offset((page - 1) * PAGE_SIZE)
-        .limit(PAGE_SIZE)
-        .all()
-    )
-    import math
-    return ReviewsPage(
-        reviews=[_serialize(r) for r in rows],
-        total=total,
-        page=page,
-        pages=max(1, math.ceil(total / PAGE_SIZE)),
-    )
-
-
-class ReviewCreateNested(BaseModel):
-    """Same as ReviewCreate but without producer_id (comes from the URL)."""
-    stars: int = Field(..., ge=1, le=5)
-    title: str | None = Field(None, max_length=200)
-    body: str | None = Field(None, max_length=2000)
-
-
-@router.post(
-    "/producers/{producer_id}/reviews",
-    response_model=ReviewOut,
-    status_code=201,
-)
-@limiter.limit("20/day")
-def create_review_nested(
-    request: Request,
-    producer_id: UUID,
-    data: ReviewCreateNested,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Submit or update a review.
-
-    Gate: the caller must have previously clicked the producer's WhatsApp CTA
-    while authenticated (i.e. a row exists in producer_whatsapp_clicks with
-    producer_id == this producer AND user_id == current user). This ensures
-    reviews come from real contacts, not anonymous drive-by submissions.
-
-    Exception: if the user already has an existing review for this producer
-    they can update it regardless (they passed the gate when they first wrote).
-    """
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-
-    # Check if user already has a review (allowed to update regardless of gate)
-    existing_review = (
-        db.query(ProducerReview)
-        .filter(
-            ProducerReview.producer_id == producer_id,
-            ProducerReview.user_id == user.id,
-        )
-        .first()
-    )
-
-    # Enforce WhatsApp click gate for first-time reviews
-    if not existing_review:
-        clicked = (
-            db.query(ProducerWhatsAppClick.id)
-            .filter(
-                ProducerWhatsAppClick.producer_id == producer_id,
-                ProducerWhatsAppClick.user_id == user.id,
-            )
-            .first()
-        )
-        if not clicked:
-            raise HTTPException(
-                status_code=403,
-                detail="יש ללחוץ על כפתור WhatsApp לפני כתיבת ביקורת",
-            )
-
-    # Haiku moderation on body text (fail-open)
-    if data.body:
-        verdict = _moderate_review_body(data.body)
-        if verdict == "REJECTED":
-            raise HTTPException(
-                status_code=422,
-                detail="תוכן הביקורת אינו עומד בהנחיות הקהילה שלנו",
-            )
-
-    full = ReviewCreate(
-        producer_id=producer_id,
-        stars=data.stars,
-        title=data.title,
-        body=data.body,
-    )
-    return create_review(request=request, data=full, user=user, db=db)
-
-
-# ---------------------------------------------------------------------------
-# Admin listing — all reviews with producer + user name for moderation UI.
-# Deletion reuses the existing DELETE /reviews/{id} endpoint (it already
-# accepts is_admin override).
-# ---------------------------------------------------------------------------
-
-
-class AdminReviewOut(BaseModel):
-    id: UUID
-    producer_id: UUID
-    producer_name: str | None = None
-    user_id: UUID
-    user_name: str | None = None
-    user_email: str | None = None
-    stars: int
-    title: str | None = None
-    body: str | None = None
-    created_at: str
-
-    model_config = {"from_attributes": True}
+    """Set is_hidden=True on a review. Recomputes producer aggregates."""
+    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    review.is_hidden = True
+    db.commit()
+    _recompute_producer_rating(review.producer_id, db)
+    return {"detail": "Review hidden", "id": str(review_id)}
 
 
 @router.get("/admin/reviews", response_model=list[AdminReviewOut])
@@ -398,6 +379,7 @@ def admin_list_reviews(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    """All reviews (including hidden) for moderation."""
     rows = (
         db.query(ProducerReview)
         .options(
@@ -407,20 +389,18 @@ def admin_list_reviews(
         .order_by(ProducerReview.created_at.desc())
         .all()
     )
-    out: list[AdminReviewOut] = []
-    for r in rows:
-        out.append(
-            AdminReviewOut(
-                id=r.id,
-                producer_id=r.producer_id,
-                producer_name=r.producer.name if r.producer else None,
-                user_id=r.user_id,
-                user_name=r.user.name if r.user else None,
-                user_email=r.user.email if r.user else None,
-                stars=r.stars,
-                title=r.title,
-                body=r.body,
-                created_at=r.created_at.isoformat() if r.created_at else "",
-            )
+    return [
+        AdminReviewOut(
+            id=r.id,
+            producer_id=r.producer_id,
+            producer_name=r.producer.name if r.producer else None,
+            user_id=r.user_id,
+            user_name=r.user.name if r.user else None,
+            user_email=r.user.email if r.user else None,
+            stars=r.stars,
+            body=r.body,
+            is_hidden=r.is_hidden,
+            created_at=r.created_at.isoformat() if r.created_at else "",
         )
-    return out
+        for r in rows
+    ]
