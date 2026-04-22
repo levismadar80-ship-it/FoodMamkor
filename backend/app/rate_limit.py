@@ -37,19 +37,41 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 
+# Truthy env-var values. `"1"` is canonical; the others guard against the
+# common UX trap of `TRUSTED_PROXY=true` silently being a no-op.
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _trusted_proxy_enabled() -> bool:
+    return os.getenv("TRUSTED_PROXY", "0").strip().lower() in _TRUTHY
+
+
 def get_real_client_ip(request: Request) -> str:
     """Return the real client IP when behind a trusted proxy, else the
     TCP peer's IP. Gated by the `TRUSTED_PROXY=1` env var so spoofing
     `X-Forwarded-For` in an untrusted environment cannot bypass limits.
+
+    Uses the RIGHTMOST entry of `X-Forwarded-For`, which is the value
+    the trusted proxy appended. Default envoy / nginx / ELB behavior is
+    to append (not replace) client-sent XFF, so the LEFTMOST entry is
+    attacker-controlled (`curl -H "X-Forwarded-For: 1.1.1.1"` lands
+    there verbatim). The rightmost entry is the one Railway's edge
+    added from its own TCP-peer view of the caller — safe against
+    client-side spoofing regardless of what the caller sent.
+
+    If Railway ever stops appending and starts replacing XFF, this
+    still works because there's only one entry and leftmost==rightmost.
+
+    Assumption: exactly ONE trusted proxy hop (Railway edge). If a
+    second proxy gets added (Cloudflare in front of Railway, etc.),
+    change to `split(",")[-N]` where N is the hop count.
     """
-    if os.getenv("TRUSTED_PROXY", "0") == "1":
+    if _trusted_proxy_enabled():
         xff = request.headers.get("x-forwarded-for", "")
         if xff:
-            # Standard XFF format: "client, proxy1, proxy2". First entry
-            # is the original client; later entries are the proxy chain.
-            client_ip = xff.split(",")[0].strip()
-            if client_ip:
-                return client_ip
+            entries = [e.strip() for e in xff.split(",") if e.strip()]
+            if entries:
+                return entries[-1]
     return get_remote_address(request)
 
 

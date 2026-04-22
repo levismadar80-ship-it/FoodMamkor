@@ -255,19 +255,43 @@ up sharing one bucket, so a single attacker burning the 5/minute login
 limit blocks login for the entire site and brute-force from a
 distributed IP pool against a single target counts as one IP.
 
-With `TRUSTED_PROXY=1`, the limiter reads the first value of
-`X-Forwarded-For` (set by the Railway edge) as the real client IP. The
-flag is env-gated because trusting XFF on a directly-exposed deploy
-lets any attacker spoof the header to rotate identities at will —
-never enable it on a server that isn't behind a known proxy.
+With `TRUSTED_PROXY=1`, the limiter reads the **rightmost** entry of
+`X-Forwarded-For` — the value the Railway edge **appended** from its
+own view of the TCP peer. Taking the leftmost would be unsafe: envoy
+(Railway), nginx, ELB, and Cloudflare all *append* to XFF rather than
+replacing it, so the leftmost entry is whatever the caller sent (e.g.
+a `curl -H "X-Forwarded-For: 1.1.1.1"` lands there verbatim) and is
+fully spoofable.
 
-Verification (curl from two distinct IPs, same minute):
+The flag is env-gated because, without a proxy appending its own
+entry, the only XFF value present is what the caller sent — trusting
+it on a directly-exposed deploy lets any attacker rotate identities at
+will. Never enable `TRUSTED_PROXY` on a server that isn't behind a
+known proxy.
+
+Verification — the two curls below must target **different users' real
+IPs**, not different `X-Forwarded-For` values from the same machine.
+Taking the rightmost entry means that a client-sent `X-Forwarded-For`
+is effectively ignored for rate-limiting purposes (the proxy's appended
+value wins), so you can't fake the bucket by varying the header:
 ```
-curl -H "X-Forwarded-For: 1.1.1.1" https://staging.mehamakor.online/auth/login -d '...'  # attempt 1
-... repeat 5 times ...
-curl -H "X-Forwarded-For: 1.1.1.1" ... # attempt 6 → 429
-curl -H "X-Forwarded-For: 2.2.2.2" ... # attempt 1 from new IP → still 200/401 (not 429)
+# From laptop A (one real IP):
+for i in 1 2 3 4 5 6; do
+  curl -X POST https://staging.mehamakor.online/auth/login \
+    -d '{"email":"no@one.com","password":"x"}'
+done
+# attempt 6 → 429
+
+# From laptop B or a mobile on cellular (a distinct real IP), same minute:
+curl -X POST https://staging.mehamakor.online/auth/login \
+  -d '{"email":"no@one.com","password":"x"}'
+# → 401 (rate-limit bucket isolates correctly), not 429
 ```
+
+Assumes exactly one trusted proxy hop (Railway edge). If a second
+proxy gets added (Cloudflare in front of Railway), update
+`get_real_client_ip` in `backend/app/rate_limit.py` to take the
+rightmost-Nth entry.
 
 
 ### Sanity checks before promoting `staging → main`

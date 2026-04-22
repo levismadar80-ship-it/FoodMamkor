@@ -54,12 +54,16 @@ user's; keying on it collapses all traffic into a single bucket.
 ```python
 # backend/app/rate_limit.py (current shape)
 def get_real_client_ip(request: Request) -> str:
-    if os.getenv("TRUSTED_PROXY", "0") == "1":
+    if _trusted_proxy_enabled():   # TRUSTED_PROXY in {"1","true","yes","on"}
         xff = request.headers.get("x-forwarded-for", "")
         if xff:
-            client_ip = xff.split(",")[0].strip()
-            if client_ip:
-                return client_ip
+            # RIGHTMOST = the value Railway's edge appended from the
+            # real TCP peer. Leftmost would be attacker-controlled
+            # because envoy/nginx/ELB/Cloudflare all APPEND to XFF
+            # rather than replacing.
+            entries = [e.strip() for e in xff.split(",") if e.strip()]
+            if entries:
+                return entries[-1]
     return get_remote_address(request)
 
 limiter = Limiter(key_func=get_real_client_ip)
