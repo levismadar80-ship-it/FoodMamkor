@@ -494,8 +494,174 @@ function PasswordChangeCard({ isOAuth }) {
 }
 
 // ---------------------------------------------------------------------------
-// CHUNK 4+ placeholders
+// Logout all devices
 // ---------------------------------------------------------------------------
-function LogoutAllDevicesCard() { return null; }
-function DangerZoneCard() { return null; }
+
+function LogoutAllDevicesCard() {
+  const { logoutAllDevices } = useAuth();
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleLogout = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await logoutAllDevices();
+      setConfirming(false);
+    } catch {
+      setError("שגיאה — נסי שוב");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="bg-white border border-border rounded-[16px] p-6">
+      <h2 className="font-semibold text-site-text mb-1">יציאה מכל המכשירים</h2>
+      <p className="text-sm text-site-muted mb-4">
+        מבטלת את כל הסשנים הפעילים ומחדשת את האסימון — כולל המכשיר הנוכחי.
+      </p>
+
+      {!confirming ? (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="border border-amber-500 text-amber-700 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-50 transition"
+        >
+          יציאה מכל המכשירים
+        </button>
+      ) : (
+        <div className="rounded-[12px] bg-amber-50 border border-amber-200 p-4 space-y-3">
+          <p className="text-sm text-amber-800 font-medium">לאשר יציאה מכל המכשירים?</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loading}
+              className="bg-amber-500 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
+            >
+              {loading ? "מתנתקת..." : "כן, יציאה"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
+            >
+              ביטול
+            </button>
+          </div>
+          {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// מחיקת חשבון
+// ---------------------------------------------------------------------------
+
+function DangerZoneCard() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [phase, setPhase] = useState("idle"); // idle | confirm | grace
+  const [emailInput, setEmailInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const emailMatch = emailInput.trim().toLowerCase() === (user.email || "").toLowerCase();
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    if (!emailMatch) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api.delete("/users/me");
+      setPhase("grace");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "שגיאה — נסי שוב");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (phase === "grace") {
+    return (
+      <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
+        <p className="text-2xl">⏳</p>
+        <h2 className="font-semibold text-site-text">בקשת המחיקה התקבלה</h2>
+        <p className="text-sm text-site-muted">
+          החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push("/login")}
+          className="mt-2 text-sm text-primary hover:underline"
+        >
+          חזרי לדף הכניסה
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-white border border-red-200 rounded-[16px] p-6">
+      <h2 className="font-semibold text-red-700 mb-1">מחיקת חשבון</h2>
+      <p className="text-sm text-site-muted mb-4">
+        פעולה זו בלתי הפיכה. כל הנתונים, הביקורות והמועדפים יימחקו לצמיתות.
+      </p>
+
+      {phase === "idle" && (
+        <button
+          type="button"
+          onClick={() => setPhase("confirm")}
+          className="border border-red-400 text-red-600 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-50 transition"
+        >
+          מחקי חשבון
+        </button>
+      )}
+
+      {phase === "confirm" && (
+        <form onSubmit={handleDelete} className="space-y-3">
+          <label htmlFor="danger-email" className="block text-sm font-medium text-red-700">
+            הקלידי את האימייל שלך לאישור
+          </label>
+          <input
+            id="danger-email"
+            type="email"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            placeholder={user.email || ""}
+            className="w-full border border-red-300 rounded-[12px] px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition"
+            dir="ltr"
+            autoComplete="off"
+          />
+          {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={!emailMatch || loading}
+              className="bg-red-600 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
+            >
+              {loading ? "מוחקת..." : "אישור מחיקה"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
+              className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
+            >
+              ביטול
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CHUNK 5+ placeholder
+// ---------------------------------------------------------------------------
 function BusinessTab() { return null; }
