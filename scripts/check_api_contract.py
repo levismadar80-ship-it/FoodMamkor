@@ -43,9 +43,10 @@ API_CALL_RE = re.compile(
         (?P<quote>["'`])(?P<path>[^"'`]+)(?P=quote)""",
     re.VERBOSE | re.DOTALL,
 )
-# fetch("..."). The method option, if present, is read from a short window
-# after the URL — e.g. fetch("/api/x", { method: "POST", ... }). Missing or
-# unparsed option defaults to GET.
+# fetch("..."). The method option, if present, is read from the balanced
+# {...} options object that follows the URL and comma — e.g.
+# fetch("/api/x", { method: "POST", ... }). Missing or unparsed option
+# defaults to GET.
 FETCH_CALL_RE = re.compile(
     r"""\bfetch\s*\(\s*(?P<quote>["'`])(?P<url>[^"'`]+)(?P=quote)""",
     re.VERBOSE | re.DOTALL,
@@ -53,7 +54,6 @@ FETCH_CALL_RE = re.compile(
 FETCH_METHOD_RE = re.compile(
     r"""method\s*:\s*["'](?P<method>\w+)["']"""
 )
-FETCH_METHOD_WINDOW = 400  # chars after the URL to scan for method: "..."
 # navigator.sendBeacon("...") — fire-and-forget POST.
 SEND_BEACON_RE = re.compile(
     r"""\bsendBeacon\s*\(\s*(?P<quote>["'`])(?P<url>[^"'`]+)(?P=quote)""",
@@ -98,6 +98,37 @@ def _strip_host_prefix(u: str) -> str | None:
     return u
 
 
+def _fetch_options_object(text: str, url_end: int) -> str:
+    """Return the literal chars of the `{ ... }` options object that
+    follows a fetch URL, or "" if there isn't one.
+
+    Skips whitespace, requires a `,`, skips more whitespace, then reads a
+    balanced `{...}`. Using balanced braces (rather than a raw char
+    window) prevents a `method:` key from an *unrelated* adjacent
+    fetch/object from being misattributed to this call.
+    """
+    i = url_end
+    while i < len(text) and text[i] in " \t\n\r":
+        i += 1
+    if i >= len(text) or text[i] != ",":
+        return ""
+    i += 1
+    while i < len(text) and text[i] in " \t\n\r":
+        i += 1
+    if i >= len(text) or text[i] != "{":
+        return ""
+    depth = 1
+    j = i + 1
+    while j < len(text) and depth > 0:
+        c = text[j]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        j += 1
+    return text[i:j]
+
+
 def extract_frontend_calls() -> list[tuple[str, str, str, int]]:
     calls: list[tuple[str, str, str, int]] = []
     for f in FRONTEND.rglob("*"):
@@ -121,8 +152,8 @@ def extract_frontend_calls() -> list[tuple[str, str, str, int]]:
             if p is None:
                 continue
             line = text.count("\n", 0, m.start()) + 1
-            window = text[m.end() : m.end() + FETCH_METHOD_WINDOW]
-            mm = FETCH_METHOD_RE.search(window)
+            options = _fetch_options_object(text, m.end())
+            mm = FETCH_METHOD_RE.search(options) if options else None
             method = mm.group("method").upper() if mm else "GET"
             calls.append((method, normalise(p), file_rel, line))
         for m in SEND_BEACON_RE.finditer(text):

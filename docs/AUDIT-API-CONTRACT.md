@@ -54,9 +54,19 @@ needed for `--probe` / `--cross-env`.
   are handled via an explicit allowlist in the script (`KNOWN_DYNAMIC_EXPANSIONS`).
   One entry today — add more only when the variable is constrained to a
   finite set of known literals in the same file.
-- `fetch()` reads the HTTP method from an adjacent `method: "POST"` option
-  (scanned in a 400-char window after the URL). Missing option defaults to
-  `GET`. `navigator.sendBeacon()` is treated as `POST`.
+- `fetch()` reads the HTTP method from the balanced `{...}` options object
+  that follows the URL and comma. Missing option defaults to `GET`.
+  `navigator.sendBeacon()` is treated as `POST`.
+- Probe mode cannot distinguish a missing route from a missing resource —
+  handlers that raise `HTTPException(404)` on unknown IDs (e.g.
+  `POST /producers/{_}/whatsapp-click`) will show up as `404` in
+  `--probe` output even though the route exists. Cross-env mode is not
+  affected for the MEH-244 endpoints because both `/holiday-mode` and
+  `/admin/group-buys` are parameter-free. For parameter-based routes,
+  rely on static mode + cross-env drift, not the raw probe status.
+- Rate-limited endpoints (`@limiter.limit(...)`) can return `429` during
+  a probe burst. `429` is not `404` so the tool still exits `0`; treat
+  any `429` in output as "inconclusive, re-probe later".
 
 ---
 
