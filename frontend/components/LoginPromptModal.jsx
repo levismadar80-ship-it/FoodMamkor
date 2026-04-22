@@ -30,16 +30,33 @@ export default function LoginPromptModal({
   nextPath = "/",
 }) {
   const primaryRef = useRef(null);
+  const modalRef = useRef(null);
 
   // Capture trigger before CTA-focus effect runs (effect order matters).
   useFocusReturn(open);
 
-  // Esc to close + focus primary CTA on open + lock body scroll.
+  // Esc to close + Tab trap + focus primary CTA on open + lock body scroll.
   useEffect(() => {
     if (!open) return;
 
     const handleKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+
+      const focusables = modalRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", handleKey);
 
@@ -67,6 +84,7 @@ export default function LoginPromptModal({
       role="presentation"
     >
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-prompt-title"
