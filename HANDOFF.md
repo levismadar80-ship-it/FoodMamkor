@@ -5,8 +5,40 @@
 
 ## Last session
 Date: 2026-04-22
-PRs merged: #247 (MEH-211, copy sweep batch 1 — squash merged to staging)
-PRs open: #242 (MEH-213, still pending CI)
+PRs merged: none this session
+PRs open: #265 (MEH-236), #266 (MEH-187), #267 (MEH-88 — all CI green), #268 (MEH-89 — CI running)
+Summary:
+  MEH-236 (Task 1) — CardHeart can't undo favorite (heart stays filled after second click):
+    Root cause: `guestSaved` state never reset on login, so `filled = favorited || guestSaved`
+    stays true. Fix: `setGuestSaved(false)` at top of useEffect when user is defined.
+    Secondary fix: DELETE 404 treated as success (stale cache / other device).
+    PR #265: frontend/components/ProducerCard.jsx only.
+
+  MEH-187 (Task 2) — Vercel Speed Insights Real User Monitoring:
+    Added @vercel/speed-insights@1.3.1 + <SpeedInsights /> in layout.js.
+    PR #266: frontend/package.json + package-lock.json + app/layout.js.
+    Note: initial CI failure (npm ci lockfile mismatch) fixed in follow-up commit.
+
+  MEH-88 (Task 3) — products.image_url schema change (v2, approved):
+    Backend: _migrate_columns products.image_url TEXT; Product model; ProductCreate /
+      ProductUpdate / ProductOut schemas; producer_me.py GET/POST/PUT/DELETE
+      /producers/me/products with IDOR ownership checks.
+    Frontend: ProducerDetail product cards — 64×64 thumbnail with Package icon fallback;
+      settings BusinessTab — new ProductsSection (list + add with image upload + delete).
+    Tests: tests/test_product_image.py (9 cases: create/update/clear/delete/IDOR/isolation).
+    PR #267: all CI green (lint ✅, build ✅, tests ✅, adversarial ✅).
+
+  MEH-89 (Task 4) — availability_return_date (v2, approved):
+    No new DB column needed — vacation_until DATE already existed from MEH-155.
+    Backend: ProducerUpdate schema gets availability_status + vacation_until so admin
+      PUT /producers/:id can set them (previously producer-only).
+    Frontend: ProducerDetail — 3 vacation banner locations now show "חוזרת ב-{date}"
+      (he-IL locale) or "חוזרת בקרוב" fallback using producer.vacation_until.
+    Frontend: Admin ProducerForm — new "זמינות" section with pill buttons + conditional
+      date picker; vacation_until nulled in payload when status ≠ vacation.
+    PR #268: CI running.
+
+Previous session — PRs #265/#266 (MEH-236 + MEH-187, opened but not yet merged):
 Summary:
   MEH-211 (batch 1 copy sweep) — MEH-202 + MEH-204 + MEH-207:
     4 files changed, text only, no logic/DB/design.
@@ -82,23 +114,27 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-210-phase-2-custom-questions (merged to staging via PR #252)
-Staging HEAD: 86eefcf (feat(meh-210-phase-2): producer custom WhatsApp question chips)
-Main HEAD: e42127e (production is many commits behind staging — needs promotion)
+Branch: feature/meh-89-availability-return-date (PR #268, CI running)
+Last branch before: feature/meh-88-product-image (PR #267, all CI green)
+Staging HEAD: 86eefcf (unchanged — no merges this session)
+Main HEAD: e42127e (production is 80+ commits behind staging — needs promotion)
 
 ## PRs merged this session
-- #248 — MEH-221 avatar upload + MEH-210 Phase 1 category chips + MEH-206 Phase 1 settings + MEH-203 category selector redesign
-- #252 — MEH-210 Phase 2 custom WhatsApp question chips
+None — all 4 PRs still in draft, awaiting review + merge.
 
 ## Open PRs
-None.
+- #265 — MEH-236: CardHeart can't undo favorite (draft)
+- #266 — MEH-187: Vercel Speed Insights (draft)
+- #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
+- #268 — MEH-89: vacation return date in banner + admin form (draft, CI running)
 
 ## Next task
-- MEH-205: /search page redesign (discovery-first) — next in queue
+- Review and merge #265 → #268 to staging (in order: #265 first as it's a bug fix)
+- MEH-205: /search page redesign (discovery-first) — next feature in queue
 - MEH-206 Phases 2+3: role-aware tabs, users.preferred_city, POST /auth/logout-all-devices, 2-step delete — pending design session
 - ProducerCard heart/favorite Phase C (post-login replay)
 - Verify password reset end-to-end on staging (requires RESEND_API_KEY in Railway staging env)
-- Promote staging → main (production is 78+ commits behind)
+- Promote staging → main (production is 80+ commits behind)
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -134,6 +170,8 @@ None.
 | MEH-218: CLAUDE.md cap 245 → 150 | Above 200 lines the file stops being a one-page index; domain rules belong in .claude/rules/*.md, trap context in docs/LOCKED_DECISIONS.md | April 2026 |
 | MEH-218: diagrams deleted from CLAUDE.md | Inline Mermaid duplicated .ai/diagrams/ which is the canonical source and is auto-loaded via --append-system-prompt | April 2026 |
 | MEH-218: Bug Protocol unified into 1 section | Three overlapping sections (Regression rules + Bug Pattern Protocol + Known Bug Patterns) caused confusion; split into "protocol" (CLAUDE.md) and "pattern library" (docs/BUG_PATTERNS.md) | April 2026 |
+| MEH-88: products CRUD via /producers/me/products (not embedded in PUT /me) | Separate resource endpoints enable per-product image upload and clean IDOR checks | April 2026 |
+| MEH-89: no new availability_return_date column — vacation_until (MEH-155) covers it | Duplicate column would diverge; vacation_until already auto-clears, exposed in all schemas, used by producer dashboard | April 2026 |
 
 
 ## Known issues (not yet filed)
