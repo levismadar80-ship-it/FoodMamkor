@@ -5,8 +5,17 @@
 
 ## Last session
 Date: 2026-04-22
-PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102) + #240 (MEH-102 bugfix)
+PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102) + #240 (MEH-102 bugfix) + #239 (Playwright E2E fixes)
 Summary:
+  PR #239: fix 3 Playwright E2E failures —
+    Bug A (spec 03 desktop): CTA locator .first() resolved to md:hidden mobile CTA;
+      fix: :visible on both arms of OR-selector in 03-view-producer-detail.spec.ts
+    Bug B (spec 03+04 mobile, also real UX bug): ProducerCard handleRootClick did nothing
+      when onClick prop absent; clicking card body below h3 never navigated;
+      fix: useRouter + router.push(producerHref) in ProducerCard.jsx
+    Bug C (spec 05 mobile): MapClient renders mapPane twice (desktop+mobile containers);
+      both Leaflet instances mount → two .leaflet-container in DOM;
+      fix: :visible on waitForSelector + fallback toBeVisible in 05-map-navigation.spec.ts
   PR #240: MEH-102 bugfix — CSP img-src: added https://unpkg.com (Leaflet marker icons); Array.isArray guard on similar-producers r.data; Waze button hidden on desktop via mobile UA detection
   PR #238: MEH-212 Playwright E2E CI — deployment_status trigger replaces Vercel bot comment poll; TEST_URL from event; timeout-minutes 20→15; fallback (repository_dispatch) documented in DEPLOYMENT.md; confirmed working: job fires in ~3m 35s
   PR #237: MEH-102 Producer detail content — opening_hours column + migration; OpeningHours.jsx; MiniMap.jsx; similar producers section; MEH-79 closed as duplicate
@@ -28,15 +37,14 @@ Previous session context:
 
 ## Current state
 Branch: staging
-Staging HEAD: a4da9ea (fix(ci): MEH-212 — Playwright E2E deployment_status trigger — PR #238)
+Staging HEAD: 6fe93f8 (includes #240 MEH-102 bugfix)
 Main HEAD: e42127e (production is many commits behind — needs promotion)
 
 ## Open PRs
 None.
 
 ## Next task
-- MEH-212 Done ✅ — Playwright CI now fires correctly via deployment_status
-- Spec 05 (map page cold-start) still failing — pre-existing, tracked as known issue below
+- PR #239 merged ✅ — Playwright E2E failures fixed
 - ProducerCard heart/favorite Phase C (post-login replay)
 - Lightbox for gallery images
 - Events section on homepage
@@ -77,7 +85,7 @@ First step: ask user which to tackle next.
 
 
 ## Known issues (not yet filed)
-- Playwright E2E spec 05 (map page, 90s timeout) times out on cold Vercel previews. Affected PRs #236, #237, #238. deployment_status trigger (MEH-212) fixed the infra hang — this remaining failure is a real test timeout, not an infra issue. Needs longer actionTimeout on the map spec or a warm-up step before tests run.
+- Playwright spec 05 dual-Leaflet root cause (MapClient renders mapPane twice) is patched in tests only — :visible selector avoids the ambiguity. The architectural fix (conditional rendering instead of CSS hiding) is v2 scope.
 - feature/meh-106-social-proof and feature/meh-212-playwright-ci-fix branches not deleted — git push --delete returns 403 in this env; delete manually from GitHub UI.
 - Phase 3 text-right sweep on forms — partially done in PR #162
   (register/producer only); register/page.js + other forms still TBD

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -165,6 +166,7 @@ function CardHeart({ producer, onCountChange }) {
 }
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
+  const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
   // Keep in sync when the parent re-fetches the list (filter/pagination).
   useEffect(() => {
@@ -204,9 +206,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const MethodIcon = METHOD_ICON[primaryMethod];
 
   const handleRootClick = (e) => {
+    if (e.target.closest("a, button")) return;
     if (onClick) {
-      if (e.target.closest("a, button")) return;
       onClick(producer);
+    } else {
+      router.push(producerHref);
     }
   };
 
