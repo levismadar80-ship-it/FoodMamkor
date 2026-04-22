@@ -5,10 +5,13 @@
 
 ## Last session
 Date: 2026-04-22
-PRs merged: #234 (MEH-141) + #236 (MEH-106)
+PRs merged: #237 (MEH-102)
 Summary:
-  PR #234: MEH-141 Category request flow — category_requests table, POST /category-requests (5/hour), GET+PATCH /admin/category-requests; CategoryRequestModal (Escape/WCAG 2.1, z-[9000]); discreet link below category pills in producer registration; admin panel grouped by name; 5 backend tests + 6 frontend tests
-  PR #236: MEH-106 Social proof — favorites_count batch-fetched (single GROUP BY query, no N+1); ProducerCard "❤️ X שמרו" when count ≥5, optimistic update on heart tap; ProducerDetail trust row shows same count; get_producer_by_slug gets @limiter.limit("120/minute") + request: Request param; 3 backend tests
+  PR #237: MEH-102 Producer detail content — opening_hours column + migration + schema; GET /producers?exclude=UUID query param; OpeningHours.jsx (parses "Sun-Thu HH:MM-HH:MM" format, computes open/closed in Asia/Jerusalem, day table); MiniMap.jsx (ssr:false Leaflet, all interactions disabled, Waze + GMaps buttons); similar producers section (hidden if <3, horizontal scroll mobile / 3-col desktop); opening_hours field in ProducerForm admin; 2 backend tests. MEH-79 closed as duplicate.
+
+Previous session context:
+  PR #234: MEH-141 Category request flow
+  PR #236: MEH-106 Social proof (favorites_count)
 
 Previous session context:
   PR #221: MEH-149 Cookie consent GDPR gate
@@ -25,7 +28,7 @@ Previous session context:
 
 ## Current state
 Branch: staging
-Staging HEAD: 910a558 (feat: MEH-106 social proof — favorites_count on card + detail — PR #236)
+Staging HEAD: 88e09a1 (feat(meh-102): producer detail — opening hours, mini-map, similar producers — PR #237)
 Main HEAD: e42127e (production is many commits behind — needs promotion)
 
 ## Open PRs
@@ -73,7 +76,7 @@ First step: ask user which to tackle next.
 
 
 ## Known issues (not yet filed)
-- Playwright E2E CI stuck — known infra issue; failed on PR #236 (not related to MEH-106 code). Separate MEH incoming from user.
+- Playwright E2E CI flaky — spec 05 (map page, 90s timeout) times out on cold Vercel previews. Affected PRs #236, #237. Not a code bug — pre-existing infra flakiness. Needs longer timeout or skip-on-cold-preview guard.
 - feature/meh-106-social-proof branch not deleted — git push --delete returned 403 in this env; delete manually from GitHub UI.
 - Phase 3 text-right sweep on forms — partially done in PR #162
   (register/producer only); register/page.js + other forms still TBD
