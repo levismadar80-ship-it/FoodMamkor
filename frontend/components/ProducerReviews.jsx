@@ -49,9 +49,9 @@ export default function ProducerReviews({ producerId }) {
     api
       .get(`/producers/${producerId}/reviews`, { params: { page: p } })
       .then((r) => {
-        setReviews(r.data.reviews);
-        setTotal(r.data.total);
-        setPages(r.data.pages);
+        setReviews(Array.isArray(r.data?.reviews) ? r.data.reviews : []);
+        setTotal(r.data?.total ?? 0);
+        setPages(r.data?.pages ?? 1);
         setPage(p);
       })
       .catch(() => setReviews([]))
