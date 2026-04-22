@@ -164,7 +164,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const vacationReturnLabel = (() => {
     if (!producer.vacation_until) return "חוזרת בקרוב";
     try {
-      return "חוזרת ב-" + new Date(producer.vacation_until).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+      // Parse as local date (not UTC) to avoid off-by-one in UTC+2/+3 (Israel).
+      const [y, m, d] = producer.vacation_until.split("-").map(Number);
+      return "חוזרת ב-" + new Date(y, m - 1, d).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
     } catch {
       return "חוזרת בקרוב";
     }

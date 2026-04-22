@@ -234,6 +234,14 @@ class ProducerUpdate(BaseModel):
     availability_status: str | None = None
     vacation_until: date | None = None
 
+    @field_validator("availability_status")
+    @classmethod
+    def _validate_availability_status(cls, v):
+        allowed = {"available", "full", "vacation"}
+        if v is not None and v not in allowed:
+            raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
+
     @field_validator("custom_questions")
     @classmethod
     def _validate_custom_questions(cls, v):
