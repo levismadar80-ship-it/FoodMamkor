@@ -3,11 +3,15 @@
 import { useState, useRef, useCallback } from "react";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
+import Lightbox from "./Lightbox";
 
 export default function ImageGallery({ images = [], producerId = null, categoryEmoji = null, producerInitials = "" }) {
   const [current, setCurrent] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
+  // Keep a ref to the currently displayed image so Lightbox can return focus to it
+  const imageButtonRef = useRef(null);
 
   const handleTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -66,20 +70,29 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
   }
 
   return (
+    <>
     <div
       className="relative h-52 rounded-[12px] overflow-hidden bg-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <ImageWithFallback
-        src={images[current]}
-        alt={`תמונה ${current + 1}`}
-        fill
-        priority={current === 0}
-        className="object-cover"
-        sizes="(max-width: 768px) 100vw, 60vw"
-      />
+      <button
+        ref={imageButtonRef}
+        type="button"
+        onClick={() => setLightboxOpen(true)}
+        aria-label={`הגדלי תמונה ${current + 1}`}
+        className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+      >
+        <ImageWithFallback
+          src={images[current]}
+          alt={`תמונה ${current + 1}`}
+          fill
+          priority={current === 0}
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 60vw"
+        />
+      </button>
       {producerId && (
         <div className="absolute top-3 start-3 z-10">
           <FavoriteButton producerId={producerId} variant="gallery" />
@@ -127,5 +140,16 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
         </>
       )}
     </div>
+    {lightboxOpen && (
+      <Lightbox
+        images={images}
+        startIndex={current}
+        onClose={() => {
+          setLightboxOpen(false);
+          imageButtonRef.current?.focus();
+        }}
+      />
+    )}
+    </>
   );
 }
