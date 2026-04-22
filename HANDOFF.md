@@ -5,8 +5,34 @@
 
 ## Last session
 Date: 2026-04-22
-PRs open: #242 (MEH-213, feature/meh-213-location-types)
+PRs open: #242 (MEH-213, still pending CI) + MEH-218 (CLAUDE.md refactor, this branch)
 Summary:
+  MEH-218 — CLAUDE.md modular refactor (2026 best practices):
+    Motivation: CLAUDE.md at 245 lines, over its own 245 cap. Duplicate compact
+      triggers (40% vs 60%); 3 overlapping bug-handling sections; inline Mermaid
+      diagrams duplicating .ai/diagrams/; Known Bug Patterns + custom commands
+      that were documentation, not rules. Anthropic / HumanLayer / Hightower
+      (March 2026) all recommend modular .claude/rules/ split.
+    3 commits, docs + .claude/ only (zero code files touched):
+      1. docs(meh-218) — docs/BUG_PATTERNS.md + docs/LOCKED_DECISIONS.md extracted
+         verbatim with expanded "why" / "the trap" sections.
+      2. feat(meh-218) — .claude/rules/ split into 7 domain files (rtl, security,
+         testing, deployment, frontend, backend, workflow — 602 lines total).
+         All rule content preserved verbatim.
+      3. refactor(meh-218) — CLAUDE.md rewritten 245 → 138 lines. Removed:
+         inline Mermaid diagrams (already in .ai/diagrams/), Known Bug Patterns
+         section (→ docs/BUG_PATTERNS.md), Custom commands duplication, verbose
+         rail/anthropic prose. Unified Bug Protocol (was 3 sections). Single
+         /compact rule (was duplicated at 40% and 60%). Top-10 workflow rules
+         summarized with pointer to .claude/rules/workflow.md.
+    Verification: wc -l CLAUDE.md = 138 ≤ 150 cap; ls .claude/rules/ = 7 files;
+      grep -r 'left-3\|right-3' .claude/ → only .claude/rules/rtl.md;
+      no Mermaid or Architecture Diagrams section in CLAUDE.md.
+    Zero rules deleted — every rule from the old file survived somewhere.
+    Hard cap lowered from 245 → 150 lines; update policy: new domain rules
+      go into .claude/rules/*.md, not back into CLAUDE.md.
+
+Previous session (2026-04-22, earlier):
   PR #242 (MEH-213) — Business location types + canonical cities:
     Backend: City model + cities table (idempotent DDL); 4 new columns on producers
       (has_physical_location, offers_delivery, delivery_nationwide, delivery_cities TEXT[]);
@@ -41,16 +67,24 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-213-location-types (ahead of staging with MEH-213 work)
-Staging HEAD: c5bc8f2 (includes MEH-102 bugfix v2 — Waze https + ProducerReviews Array.isArray)
+Branch: feature/meh-218-claude-md-refactor (3 commits ahead of staging — docs/ + .claude/ only)
+Staging HEAD: 8a2a6a6 (fix: pin httpx in requirements.txt — follow-up to MEH-166 password flow)
 Main HEAD: e42127e (production is many commits behind staging — needs promotion)
 
 ## Open PRs
+MEH-218 — CLAUDE.md modular refactor (feature/meh-218-claude-md-refactor → staging)
+  Draft PR, docs-only (no code files touched). CI: N/A (no build/test impact).
+  Review focus: verify every rule from the old 245-line CLAUDE.md is still findable
+  somewhere (rules → .claude/rules/*.md, bug patterns → docs/BUG_PATTERNS.md,
+  locked decisions → docs/LOCKED_DECISIONS.md).
+
 #242 — MEH-213 business location types (feature/meh-213-location-types → staging)
   CI: pytest pending, Next.js build fixed (was failing due to */ in JSDoc comment), lint pending
   Preview: food-mamkor-git-feature-m-ba2835-levismadar80-ship-its-projects.vercel.app
 
 ## Next task
+- Review MEH-218 refactor PR — verify rules map cleanly, new CLAUDE.md is scannable in a
+  fresh session. After approval: merge to staging (docs-only, no preview needed).
 - Wait for CI green on PR #242 — then request user review + merge to staging
 - After merge: run seed script on Railway staging: `python backend/scripts/seed_cities.py`
 - Verify GET /cities?q=תל returns results on staging
@@ -88,6 +122,9 @@ Main HEAD: e42127e (production is many commits behind staging — needs promotio
 | MEH-51: artisan-dairy replaces raw-dairy; grass-fed removed | Refined spec — 8 valid badge codes | April 2026 |
 | RTL: logical properties only | Physical left-*/right-* cause RTL bugs | April 2026 |
 | Backend sort defaults newest-first | Deterministic pagination, no PostGIS needed | April 2026 |
+| MEH-218: CLAUDE.md cap 245 → 150 | Above 200 lines the file stops being a one-page index; domain rules belong in .claude/rules/*.md, trap context in docs/LOCKED_DECISIONS.md | April 2026 |
+| MEH-218: diagrams deleted from CLAUDE.md | Inline Mermaid duplicated .ai/diagrams/ which is the canonical source and is auto-loaded via --append-system-prompt | April 2026 |
+| MEH-218: Bug Protocol unified into 1 section | Three overlapping sections (Regression rules + Bug Pattern Protocol + Known Bug Patterns) caused confusion; split into "protocol" (CLAUDE.md) and "pattern library" (docs/BUG_PATTERNS.md) | April 2026 |
 
 
 ## Known issues (not yet filed)
