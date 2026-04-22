@@ -127,6 +127,9 @@ def _migrate_columns(engine):
         ("producers", "offers_delivery", "BOOLEAN NOT NULL DEFAULT FALSE"),
         ("producers", "delivery_nationwide", "BOOLEAN NOT NULL DEFAULT FALSE"),
         ("producers", "delivery_cities", "TEXT[] NOT NULL DEFAULT '{}'"),
+        # MEH-166 — password reset token (one-time, 1h TTL).
+        ("users", "reset_token", "VARCHAR(64)"),
+        ("users", "reset_token_expires_at", "TIMESTAMP"),
     ]
     with engine.connect() as conn:
         # Ensure the table itself exists for Railway DBs older than the model.
