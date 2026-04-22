@@ -76,3 +76,34 @@
 | 46 | Permission | Consumer tries producer-only endpoint | 403 | ✓ `require_producer` dependency enforced on `/producers/me/*` | OK | — |
 | 47 | Permission | Producer A edits Producer B | 403 | Not verified in audit — depends on IDOR check in `producer_me.py` | HIGH | Backend (verify) |
 | 48 | Permission | Block self | 400 | ✓ `admin_extra.py` blocks `target.id == user.id` | OK | — |
+
+## Severity Definitions
+- **CRITICAL:** security vuln, data loss, broken auth, white screen, or a shipped feature that is completely non-functional
+- **HIGH:** core flow broken, user cannot complete primary action, IDOR / privilege edge
+- **MEDIUM:** degraded UX, workaround exists, minor flow broken, missing error branch
+- **LOW:** cosmetic, edge case unlikely to hit in practice, minor copy gap
+
+## Recommended Issue Breakdown (proposed, awaiting ספיר approval)
+- **MEH-AAA: Forgot-password full flow (backend + frontend + email) — CRITICAL.** Covers findings #1, #2, #3. Implement `POST /auth/forgot-password`, `POST /auth/reset-password`, `/reset-password` page, Resend email template, rate limit, OWASP-compliant generic response.
+- **MEH-BBB: Holiday + Friday market toggles — CRITICAL.** Covers findings #18, #19. Add `admin_setting` keys, settings UI toggle, consumer-side banner, persistence test.
+- **MEH-CCC: Backend validation hardening — HIGH.** Covers findings #9, #25, #33, #47. Add `min_length=8` on password, status filter on `GET /producers/{id}`, null-producer guard on `/users/me/favorites`, audit producer_me IDOR.
+- **MEH-DDD: Account deletion completeness — HIGH.** Covers finding #15. When producer user deletes account, cascade Producer row + ProducerCategory + DeliveryArea + reviews.
+- **MEH-EEE: Admin UX pass — MEDIUM.** Covers findings #17, #20, #22, #24, #41. Global 401 interceptor, confirm-before-save dialog, disable action buttons during mutation, dedupe dashboard fetches, consistent loading skeletons.
+- **MEH-FFF: Network error handling — MEDIUM.** Covers findings #7, #40, #42. Add 429 toast branch, offline banner, consistent retry pattern.
+- **MEH-GGG: Empty state + search morphology pass — MEDIUM.** Covers findings #27, #29, #31, #37. Audit every list page, add Hebrew morphology (pg_trgm or simple suffix trimming).
+- **MEH-HHH: OAuth polish — LOW.** Covers findings #12, #13. Better error copy when client_id missing, verify CSP allowlist includes accounts.google.com.
+
+## Out of Scope (known, tracked elsewhere)
+- MEH-78 (map center) — already tracked
+- MEH-161 (email infra) — already tracked
+- MEH-163 (admin notify) — already tracked
+- MEH-240 (logging) — in flight; this audit will inform it
+- MEH-241 (valid payload fixtures) — in flight
+
+## Audit Method & Limitations
+This audit was performed by static code review against staging HEAD
+`708afc9` without browser access. All findings tagged "not inspected" or
+"not verified" need a follow-up manual repro on the Vercel preview
+before a fix issue is opened. Screenshots for CRITICAL/HIGH findings
+should be captured during that repro pass (issue MEH-242 deliverable
+calls for `docs/audit-screenshots/` — deferred until live repro).
