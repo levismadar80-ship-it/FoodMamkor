@@ -17,6 +17,7 @@ import { X } from "@phosphor-icons/react";
 export default function Lightbox({ images = [], startIndex = 0, onClose }) {
   const [index, setIndex] = useState(startIndex);
   const closeRef = useRef(null);
+  const dialogRef = useRef(null);
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
 
@@ -36,12 +37,24 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
     [images.length]
   );
 
-  // ESC closes; ArrowLeft=next, ArrowRight=prev (RTL-aware)
+  // ESC closes; ArrowLeft=next, ArrowRight=prev (RTL-aware); Tab cycles within dialog
   useEffect(() => {
+    const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     const onKey = (e) => {
       if (e.key === "Escape") { onClose(); return; }
-      if (e.key === "ArrowLeft") goNext();
-      if (e.key === "ArrowRight") goPrev();
+      if (e.key === "ArrowLeft") { goNext(); return; }
+      if (e.key === "ArrowRight") { goPrev(); return; }
+      if (e.key === "Tab") {
+        const els = Array.from(dialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
+        if (!els.length) return;
+        const first = els[0];
+        const last = els[els.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -75,6 +88,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
       onTouchEnd={handleTouchEnd}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="תצוגת תמונה"
