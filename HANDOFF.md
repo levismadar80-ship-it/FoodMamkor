@@ -1,9 +1,49 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22 (MEH-87 + MEH-83 + MEH-84 batch)
+> Last updated: 2026-04-22 (MEH-245 deployment verification — PR #277 open; staging has MEH-87/83/84 batch)
 
-## Last session (MEH-87 + MEH-83 + MEH-84 — 2026-04-22)
+## Open PR (MEH-245 deployment verification — 2026-04-22)
+PR: #277 (feature/meh-245-deployment-verification → staging, draft, 3 commits)
+Summary:
+  MEH-245 pivoted mid-session from "frontend↔backend contract audit" to
+  "deployment verification tool" after discovering the three console 404s
+  flagged in MEH-244 were not static code drift:
+    - /holiday-mode → exists at backend/app/main.py:407 on staging
+      (commit 663e3b7). Root cause is staging↔production deploy drift.
+    - /admin/group-buys → exists at backend/app/routers/group_buys.py:19
+      (admin_router registered at backend/app/main.py:395). Same cause.
+    - /auth/profile-image → lives only on the unmerged MEH-243 branch.
+      Out of scope here; MEH-243 will ship both sides together.
+
+  Shipped in this PR:
+    - docs/AUDIT-API-CONTRACT.md — post-mortem + runbook for the 3 modes
+    - scripts/check_api_contract.py — static / --probe URL / --cross-env.
+      Static on staging: 177 frontend call sites, 153 backend routes,
+      0 orphan frontend calls, 0 method mismatches, 23 dead backend
+      routes flagged for triage (not deleted here).
+    - .github/workflows/deploy.yml — two warn-only jobs
+      (api-contract-static on every PR/push, api-contract-probe-staging
+      after staging Railway redeploy). Flip to hard failure after MEH-244.
+
+  MEH-244 was re-scoped in Linear to a post-MEH-245 diagnosis task — run
+  the cross-env probe against production, redeploy if drift confirmed,
+  close as not-reproducible otherwise.
+
+Next (after #277 merges):
+  1. Wait for staging redeploy, then run MEH-244 cross-env probe:
+     `python scripts/check_api_contract.py --cross-env \
+       --staging https://staging.mehamakor.online \
+       --prod https://mehamakor.online`
+     and triage per docs/AUDIT-API-CONTRACT.md → "The three known 404s".
+  2. After MEH-244 closes with prod green, flip both CI jobs in
+     .github/workflows/deploy.yml from `continue-on-error: true` to hard
+     failure.
+  3. Triage the 23 dead backend routes listed in docs/AUDIT-API-CONTRACT.md.
+
+---
+
+## Last session merged to staging (MEH-87 + MEH-83 + MEH-84 — 2026-04-22)
 PRs opened this session:
   - #270 (MEH-87): Tab focus trap in LoginPromptModal — draft, CI pending
   - #272 (MEH-83): Lightbox on gallery images — draft, CI running
@@ -38,8 +78,8 @@ MEH-84 (Task 4) — GPS center button on /map:
   Test: frontend/e2e/flows/07-gps-button.spec.ts
 
 ## Previous last session (uv migration — 2026-04-22)
-PR: claude/migrate-pip-to-uv-8p7aT → staging (merged ✅)
-Root cause fixed: `requirements.txt` had no transitive pins; `slowapi`'s
+PR: #264 (claude/migrate-pip-to-uv-8p7aT) — merged to staging ✅
+Root cause: `requirements.txt` had no transitive pins; `slowapi`'s
   transitive deps resolved incompatibly with `fastapi==0.115.6` in CI.
 Changes: backend/requirements.txt removed; pyproject.toml + uv.lock added;
   Dockerfile pip→uv; pr-checks.yml setup-uv@v3; docs/DEPLOYMENT.md §8+§9.
