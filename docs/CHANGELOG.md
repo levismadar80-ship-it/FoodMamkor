@@ -12,7 +12,7 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
-## 2026-04-22 — MEH-202+204+207 (batch 1 copy sweep): "לממכר מזון" → "למכירת המוצרים" in /register/producer consent + /terms §2; search placeholder "grass-fed" → "לחם מחמצת, ביצים אורגניות, ירקות ופירות"; /register/producer H1 → "תני לעסק שלך בית", subtitle → "5 דקות. בלי עמלות. בלי מתווכים.", OAuth info box email-only (removes name truncation). Text only, 4 files.
+## 2026-04-22 — PR #247 merged to staging — MEH-202+204+207 (batch 1 copy sweep): "לממכר מזון" → "למכירת המוצרים" in /register/producer consent + /terms §2; search placeholder "grass-fed" → "לחם מחמצת, ביצים אורגניות, ירקות ופירות"; /register/producer H1 → "תני לעסק שלך בית", subtitle → "5 דקות. בלי עמלות. בלי מתווכים.", OAuth info box email-only (removes name truncation). Text only, 4 files.
 
 ## 2026-04-22 — MEH-218: CLAUDE.md modular refactor — 245 → 138 lines; split into 7 domain rule files under .claude/rules/ (rtl, security, testing, deployment, frontend, backend, workflow); extracted docs/BUG_PATTERNS.md + docs/LOCKED_DECISIONS.md (Railway port, Anthropic http_client, Resend, PostGIS, AI fail-open — each with "the trap" context); removed inline Mermaid diagrams (already canonical in .ai/diagrams/); unified 3 overlapping bug-handling sections into one Bug Protocol; consolidated duplicate /compact triggers (40% → /compact, 60% → /session-save + /clear); hard cap lowered to ≤150 lines with update policy that new domain rules must land in .claude/rules/, not CLAUDE.md. Zero rules deleted; docs/ + .claude/ only, no code touched.
 
