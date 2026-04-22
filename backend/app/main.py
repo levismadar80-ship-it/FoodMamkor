@@ -113,6 +113,8 @@ def _migrate_columns(engine):
         ("producers", "custom_questions", "TEXT[]"),
         # MEH-103 — admin can hide abusive reviews without deleting them.
         ("producer_reviews", "is_hidden", "BOOLEAN DEFAULT FALSE"),
+        # MEH-88 — product image thumbnails.
+        ("products", "image_url", "TEXT"),
     ]
     with engine.connect() as conn:
         conn.execute(text(

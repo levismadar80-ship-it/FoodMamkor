@@ -99,6 +99,24 @@ class ProductCreate(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
 
 
 class ProductOut(BaseModel):
@@ -106,6 +124,7 @@ class ProductOut(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = None
 
     model_config = {"from_attributes": True}
 

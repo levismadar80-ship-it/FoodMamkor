@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple, Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
@@ -558,15 +559,32 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 {producer.products.map((product) => (
                   <div
                     key={product.id}
-                    className="bg-white rounded-[12px] p-4 border border-border"
+                    className="bg-white rounded-[12px] p-4 border border-border flex gap-3 items-start"
                   >
-                    <p className="font-medium text-site-text">{product.name}</p>
-                    {product.description && (
-                      <p className="text-sm text-site-muted mt-1">{product.description}</p>
+                    {product.image_url ? (
+                      <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-light">
+                        <Image
+                          src={product.image_url}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 shrink-0 rounded-[8px] bg-light flex items-center justify-center">
+                        <Package size={28} className="text-site-muted/60" aria-hidden="true" />
+                      </div>
                     )}
-                    {product.price_range && (
-                      <p className="text-accent font-medium mt-2">{product.price_range}</p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-site-text">{product.name}</p>
+                      {product.description && (
+                        <p className="text-sm text-site-muted mt-1 line-clamp-2">{product.description}</p>
+                      )}
+                      {product.price_range && (
+                        <p className="text-accent font-medium mt-2">{product.price_range}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
