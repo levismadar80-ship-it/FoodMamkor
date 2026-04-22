@@ -82,21 +82,23 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: staging (MEH-211 squash-merged via PR #247 — 4920bd6)
-Staging HEAD: 4920bd6 (feat(meh-211): copy sweep batch 1 — MEH-202 + MEH-204 + MEH-207)
+Branch: feature/meh-210-phase-2-custom-questions (merged to staging via PR #252)
+Staging HEAD: 86eefcf (feat(meh-210-phase-2): producer custom WhatsApp question chips)
 Main HEAD: e42127e (production is many commits behind staging — needs promotion)
 
+## PRs merged this session
+- #248 — MEH-221 avatar upload + MEH-210 Phase 1 category chips + MEH-206 Phase 1 settings + MEH-203 category selector redesign
+- #252 — MEH-210 Phase 2 custom WhatsApp question chips
+
 ## Open PRs
-#242 — MEH-213 business location types (feature/meh-213-location-types → staging)
-  CI: all green as of last check (Next.js build fixed — */ JSDoc comment)
-  Preview: food-mamkor-git-feature-m-ba2835-levismadar80-ship-its-projects.vercel.app
+None.
 
 ## Next task
-- Close MEH-202, MEH-204, MEH-207 as Done in Linear (MEH-211 merged ✅)
-- Check CI on PR #242 — if green, request user review + merge to staging
-- After MEH-213 merge: run seed script on Railway staging: `python backend/scripts/seed_cities.py`
+- MEH-205: /search page redesign (discovery-first) — next in queue
+- MEH-206 Phases 2+3: role-aware tabs, users.preferred_city, POST /auth/logout-all-devices, 2-step delete — pending design session
 - ProducerCard heart/favorite Phase C (post-login replay)
-- Lightbox for gallery images
+- Verify password reset end-to-end on staging (requires RESEND_API_KEY in Railway staging env)
+- Promote staging → main (production is 78+ commits behind)
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
