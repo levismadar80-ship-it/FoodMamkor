@@ -310,7 +310,192 @@ function ProfileTab() {
 }
 
 // ---------------------------------------------------------------------------
-// CHUNK 3+ placeholders
+// אבטחה
 // ---------------------------------------------------------------------------
-function SecurityTab() { return null; }
+
+function SecurityTab() {
+  const { user } = useAuth();
+  const isOAuth = !!user.is_oauth;
+
+  return (
+    <div className="space-y-6">
+      <PasswordChangeCard isOAuth={isOAuth} />
+      <LogoutAllDevicesCard />
+      <DangerZoneCard />
+    </div>
+  );
+}
+
+function PasswordChangeCard({ isOAuth }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
+
+  const rulesPass = passwordRules.every((r) => r.check(next));
+  const mismatch = confirm.length > 0 && confirm !== next;
+  const canSave = !isOAuth && current.length >= 1 && rulesPass && next === confirm && !mismatch;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!canSave) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.post("/auth/change-password", { current_password: current, new_password: next });
+      setMessage("הסיסמה עודכנה בהצלחה");
+      setCurrent(""); setNext(""); setConfirm("");
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "שגיאה בעדכון הסיסמה");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isOAuth) {
+    return (
+      <section role="tabpanel" aria-label="שינוי סיסמה" className="bg-white border border-border rounded-[16px] p-6">
+        <h2 className="font-semibold text-site-text mb-2">סיסמה</h2>
+        <p className="text-sm text-site-muted">החשבון שלך מחובר דרך OAuth — אין צורך בסיסמה נפרדת.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-white border border-border rounded-[16px] p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-site-text">שינוי סיסמה</h2>
+        <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+          שכחת סיסמה נוכחית?
+        </Link>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Current password */}
+        <div>
+          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">סיסמה נוכחית *</label>
+          <div className="relative">
+            <input
+              id="sec-current"
+              type={showCurrent ? "text" : "password"}
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              required
+              // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
+              className="w-full border border-border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              dir="ltr"
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrent((v) => !v)}
+              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              aria-label={showCurrent ? "הסתירי סיסמה נוכחית" : "הציגי סיסמה נוכחית"}
+              aria-pressed={showCurrent}
+            >
+              {showCurrent ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
+
+        {/* New password */}
+        <div>
+          <label htmlFor="sec-new" className="block text-sm font-medium mb-1">סיסמה חדשה *</label>
+          <div className="relative">
+            <input
+              id="sec-new"
+              type={showNew ? "text" : "password"}
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              required
+              minLength={8}
+              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
+              className="w-full border border-border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              dir="ltr"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew((v) => !v)}
+              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              aria-label={showNew ? "הסתירי סיסמה חדשה" : "הציגי סיסמה חדשה"}
+              aria-pressed={showNew}
+            >
+              {showNew ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+          {/* Live 4-rule checklist — shown once user starts typing */}
+          {next.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {passwordRules.map((rule) => {
+                const ok = rule.check(next);
+                return (
+                  <li key={rule.id} className={`flex items-center gap-1.5 text-xs ${ok ? "text-primary" : "text-site-muted"}`}>
+                    <span aria-hidden="true">{ok ? "✓" : "○"}</span>
+                    {rule.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Confirm password */}
+        <div>
+          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">אימות סיסמה חדשה *</label>
+          <div className="relative">
+            <input
+              id="sec-confirm"
+              type={showConfirm ? "text" : "password"}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              aria-invalid={mismatch || undefined}
+              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
+              className={`w-full border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-red-400" : "border-border"}`}
+              dir="ltr"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm((v) => !v)}
+              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              aria-label={showConfirm ? "הסתירי אימות סיסמה" : "הציגי אימות סיסמה"}
+              aria-pressed={showConfirm}
+            >
+              {showConfirm ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+          {mismatch && (
+            <p className="text-xs text-red-500 mt-1 text-right" role="alert">הסיסמאות לא זהות</p>
+          )}
+        </div>
+
+        {message && <p className="text-sm text-primary" role="status">✓ {message}</p>}
+        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={!canSave || saving}
+          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+        >
+          {saving ? "שומרת..." : "עדכני סיסמה"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CHUNK 4+ placeholders
+// ---------------------------------------------------------------------------
+function LogoutAllDevicesCard() { return null; }
+function DangerZoneCard() { return null; }
 function BusinessTab() { return null; }
