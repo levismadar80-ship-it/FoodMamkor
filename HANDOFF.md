@@ -5,13 +5,12 @@
 
 ## Last session
 Date: 2026-04-22
-PRs merged: #237 (MEH-102)
+PRs merged: #234 (MEH-141) + #236 (MEH-106) + #238 (MEH-212) + #237 (MEH-102)
 Summary:
-  PR #237: MEH-102 Producer detail content — opening_hours column + migration + schema; GET /producers?exclude=UUID query param; OpeningHours.jsx (parses "Sun-Thu HH:MM-HH:MM" format, computes open/closed in Asia/Jerusalem, day table); MiniMap.jsx (ssr:false Leaflet, all interactions disabled, Waze + GMaps buttons); similar producers section (hidden if <3, horizontal scroll mobile / 3-col desktop); opening_hours field in ProducerForm admin; 2 backend tests. MEH-79 closed as duplicate.
-
-Previous session context:
-  PR #234: MEH-141 Category request flow
-  PR #236: MEH-106 Social proof (favorites_count)
+  PR #238: MEH-212 Playwright E2E CI — deployment_status trigger replaces Vercel bot comment poll; TEST_URL from event; timeout-minutes 20→15; fallback (repository_dispatch) documented in DEPLOYMENT.md; confirmed working: job fires in ~3m 35s
+  PR #237: MEH-102 Producer detail content — opening_hours column + migration; OpeningHours.jsx; MiniMap.jsx; similar producers section; MEH-79 closed as duplicate
+  PR #236: MEH-106 Social proof — favorites_count on ProducerCard + ProducerDetail
+  PR #234: MEH-141 Category request flow — category_requests table + modal + admin panel
 
 Previous session context:
   PR #221: MEH-149 Cookie consent GDPR gate
@@ -28,14 +27,15 @@ Previous session context:
 
 ## Current state
 Branch: staging
-Staging HEAD: 88e09a1 (feat(meh-102): producer detail — opening hours, mini-map, similar producers — PR #237)
+Staging HEAD: a4da9ea (fix(ci): MEH-212 — Playwright E2E deployment_status trigger — PR #238)
 Main HEAD: e42127e (production is many commits behind — needs promotion)
 
 ## Open PRs
 None.
 
 ## Next task
-- Open MEH for Playwright E2E CI investigation (infra stuck — separate issue, do NOT touch .github/workflows yet)
+- MEH-212 Done ✅ — Playwright CI now fires correctly via deployment_status
+- Spec 05 (map page cold-start) still failing — pre-existing, tracked as known issue below
 - ProducerCard heart/favorite Phase C (post-login replay)
 - Lightbox for gallery images
 - Events section on homepage
@@ -76,8 +76,8 @@ First step: ask user which to tackle next.
 
 
 ## Known issues (not yet filed)
-- Playwright E2E CI flaky — spec 05 (map page, 90s timeout) times out on cold Vercel previews. Affected PRs #236, #237. Not a code bug — pre-existing infra flakiness. Needs longer timeout or skip-on-cold-preview guard.
-- feature/meh-106-social-proof branch not deleted — git push --delete returned 403 in this env; delete manually from GitHub UI.
+- Playwright E2E spec 05 (map page, 90s timeout) times out on cold Vercel previews. Affected PRs #236, #237, #238. deployment_status trigger (MEH-212) fixed the infra hang — this remaining failure is a real test timeout, not an infra issue. Needs longer actionTimeout on the map spec or a warm-up step before tests run.
+- feature/meh-106-social-proof and feature/meh-212-playwright-ci-fix branches not deleted — git push --delete returns 403 in this env; delete manually from GitHub UI.
 - Phase 3 text-right sweep on forms — partially done in PR #162
   (register/producer only); register/page.js + other forms still TBD
 - ProducerCard heart/favorite — Phase C not yet implemented (post-login replay)
