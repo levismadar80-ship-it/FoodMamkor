@@ -33,9 +33,9 @@ def _jwt_key() -> OctKey:
     return OctKey.import_key(settings.secret_key.encode())
 
 
-def create_access_token(user_id: UUID) -> str:
+def create_access_token(user_id: UUID, token_version: int = 1) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": str(user_id), "exp": expire}
+    payload = {"sub": str(user_id), "exp": expire, "tv": token_version}
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
@@ -82,6 +82,11 @@ def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
     if user.is_blocked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
+    # MEH-206: token_version check — fail-open so tokens issued before
+    # this column was added (no `tv` claim) are still accepted.
+    tv = token_obj.claims.get("tv")
+    if tv is not None and tv != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
     return user
