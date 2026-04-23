@@ -798,7 +798,7 @@ class TestProducerReviews:
         user = make_user(db, email="norclick@test.com")
         resp = client.post(
             f"/producers/{p.id}/reviews",
-            json={"stars": 5, "title": "מצוין", "body": None},
+            json={"stars": 5, "body": "מוצר טוב מאוד, ממליצה בחום!"},
             headers=auth_header(user),
         )
         assert resp.status_code == 403
@@ -1020,7 +1020,7 @@ class TestDoubleSubmitIdempotency:
         db.add(click)
         db.commit()
 
-        payload = {"stars": 4, "title": "נהדר", "body": "מאוד טרי"}
+        payload = {"stars": 4, "body": "מוצר מאוד טרי ואיכותי, ממליצה!"}
         r1 = client.post(f"/producers/{producer.id}/reviews", json=payload, headers=headers)
         assert r1.status_code in (200, 201)
 
