@@ -1,7 +1,30 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22 (MEH-259 smoke test added; MEH-256 rate-limit fix merged; MEH-257 closed as duplicate)
+> Last updated: 2026-04-23 (MEH-262 GPS test fix + settings/page.jsx broken imports fixed; PR #305 open draft)
+
+## Current — MEH-262 GPS test + staging build fix (2026-04-23)
+
+**Branch:** `feature/meh-262-fix-gps-test-modal-handling`
+**PR:** #305 (draft) — `feature/meh-262-fix-gps-test-modal-handling → staging`
+
+**What was done:**
+1. Diagnosed failing Playwright E2E tests — root cause was LocationModal (z-[9000]) masking the GPS button (z-[1000]) 800ms after page mount (test ran against a fresh localStorage with no `user_city`).
+2. Fixed `07-gps-button.spec.ts` — added LocationModal dismiss via "דלגי לעכשיו" button (try/catch in case modal doesn't appear), and scoped GPS button locator to `:visible` to handle dual-MapClient DOM (both desktop + mobile containers render in parallel).
+3. Fixed staging build (`Failed to compile`) — `settings/page.jsx` was missing `import Image from "next/image"`, `Plus`/`Package`/`Trash`/`X` from `@phosphor-icons/react`, and `const [phone, setPhone] = useState(user.phone || "")` — all lost when MEH-206 (#259) rewrote the file without carrying forward MEH-88's product section imports.
+
+**Linear issues filed:**
+- MEH-262: GPS test LocationModal flow fix ✅ (this PR)
+- MEH-263: LocationModal z-index architecture concern (separate issue, not fixed yet)
+- MEH-264: Vercel Automation Bypass Secret missing from E2E CI (separate issue, not fixed yet)
+
+**PR #305 DoD status:**
+- [x] `npm run build` passes (confirmed locally after import fix)
+- [ ] CI checks need to go green on push — waiting for CI run
+- [ ] `/adversarial-review` not yet run
+- [ ] Not yet undrafted/ready for review
+
+**Next step:** Wait for CI on PR #305. If green, run `/adversarial-review`, then unmark draft. PR #299 (MEH-173 marketing skills) was undrafted last session and may be ready to merge — check its CI status.
 
 ## Most recent — MEH-259 smoke test (2026-04-22, late night)
 
