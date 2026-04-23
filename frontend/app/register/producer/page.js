@@ -8,6 +8,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import CategorySelector from "@/components/CategorySelector";
 import PasswordStrength from "@/components/PasswordStrength";
+import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 
@@ -227,6 +228,25 @@ function RegisterProducerPageBody() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">1. פרטי חשבון</h2>
+
+            {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
+                no Google/Apple client_id is configured. */}
+            <ProducerOAuthButtons
+              onSuccess={async () => {
+                await refreshUser();
+                setStep(2);
+              }}
+              onError={(msg, meta) => {
+                if (meta?.redirectToLogin) {
+                  router.push(`/login?redirect=${encodeURIComponent("/register/producer")}`);
+                  return;
+                }
+                setStepError(msg);
+              }}
+            />
+
+            <h3 className="text-sm font-medium text-site-muted pt-2">הרשמה עם אימייל</h3>
+
             <input
               placeholder="שם מלא *"
               value={form.name}
