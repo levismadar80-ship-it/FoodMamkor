@@ -65,6 +65,16 @@ class AppleAuthRequest(BaseModel):
     name: str | None = None  # Apple only sends name on first auth
 
 
+# MEH-170 — Step-0 OAuth on producer signup. Same shape as Google/Apple
+# auth but paired with an explicit "producer flow" discriminator so the
+# router can return 409 when the user already has a producer linked
+# (the UI then redirects to /login instead of silently logging in).
+class ProducerOAuthSignupRequest(BaseModel):
+    provider: str = Field(pattern="^(google|apple)$")
+    id_token: str
+    name: str | None = None  # Apple only sends name on first auth
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
