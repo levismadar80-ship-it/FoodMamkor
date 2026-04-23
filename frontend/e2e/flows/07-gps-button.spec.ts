@@ -16,7 +16,21 @@ test.describe("GPS button on /map", () => {
     // Button is desktop-only (hidden lg:flex). Resize to desktop viewport.
     await page.setViewportSize({ width: 1280, height: 800 });
 
-    const gpsBtn = page.locator('[aria-label="מרכזי את המפה על המיקום שלי"]');
+    // LocationModal (z-[9000]) opens 800ms after mount when no userCity is saved and
+    // visually masks the GPS button (z-[1000]). Dismiss it via "דלגי לעכשיו" if present.
+    // MEH-262 / MEH-263 — intentional flow fix, not a workaround.
+    const skipBtn = page.getByRole("button", { name: "דלגי לעכשיו" });
+    try {
+      await skipBtn.waitFor({ state: "visible", timeout: 2000 });
+      await skipBtn.click();
+      await skipBtn.waitFor({ state: "hidden", timeout: 2000 });
+    } catch {
+      // modal did not appear — proceed
+    }
+
+    // :visible scopes to the active map container — MapClient renders twice
+    // (desktop lg:grid + mobile lg:hidden); both produce a GPS button in the DOM.
+    const gpsBtn = page.locator('[aria-label="מרכזי את המפה על המיקום שלי"]:visible');
     await expect(gpsBtn).toBeVisible({ timeout: 10_000 });
 
     // Clicking should not throw; we verify no JS error is logged.
