@@ -29,6 +29,14 @@ const fullProducer = {
   categories: [{ id: 1, name: "חלב וגבינות" }],
 };
 
+// MEH-172 — helpers for the new @graph structure.
+const getBusiness = (json) =>
+  json["@graph"].find((e) => e["@type"] === "FoodEstablishment");
+const getBreadcrumb = (json) =>
+  json["@graph"].find((e) => e["@type"] === "BreadcrumbList");
+const getWebPage = (json) =>
+  json["@graph"].find((e) => e["@type"] === "WebPage");
+
 describe("buildTitle", () => {
   it("uses the MEH-9 spec format: [name] — [category] ב[city] | מהמקור", () => {
     expect(buildTitle(fullProducer)).toBe(
@@ -122,18 +130,27 @@ describe("buildJsonLd", () => {
     expect(buildJsonLd(null)).toBe(null);
   });
 
-  it("sets @type=LocalBusiness with required fields", () => {
+  it("wraps the output in schema.org @graph (MEH-172)", () => {
     const json = buildJsonLd(fullProducer);
     expect(json["@context"]).toBe("https://schema.org");
-    expect(json["@type"]).toBe("LocalBusiness");
-    expect(json.name).toBe("חוות השקמה");
-    expect(json.address.addressLocality).toBe("רחובות");
-    expect(json.address.addressCountry).toBe("IL");
+    expect(Array.isArray(json["@graph"])).toBe(true);
+    expect(json["@graph"].length).toBe(3);
+    expect(getWebPage(json)).toBeDefined();
+    expect(getBreadcrumb(json)).toBeDefined();
+    expect(getBusiness(json)).toBeDefined();
+  });
+
+  it("uses @type=FoodEstablishment with required fields", () => {
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.name).toBe("חוות השקמה");
+    expect(business.address.addressLocality).toBe("רחובות");
+    expect(business.address.addressCountry).toBe("IL");
+    expect(business.url).toBe(`${SITE_URL}/havat-hashikma`);
   });
 
   it("includes geo when lat+lng present", () => {
-    const json = buildJsonLd(fullProducer);
-    expect(json.geo).toEqual({
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.geo).toEqual({
       "@type": "GeoCoordinates",
       latitude: 31.8928,
       longitude: 34.8113,
@@ -141,44 +158,48 @@ describe("buildJsonLd", () => {
   });
 
   it("omits geo when lat or lng is missing", () => {
-    const json = buildJsonLd({ ...fullProducer, lat: null });
-    expect(json.geo).toBeUndefined();
+    const business = getBusiness(buildJsonLd({ ...fullProducer, lat: null }));
+    expect(business.geo).toBeUndefined();
   });
 
-  it("normalizes website without protocol to https", () => {
-    const json = buildJsonLd(fullProducer);
-    expect(json.url).toBe("https://havat-hashikma.co.il");
+  it("normalizes producer website into sameAs with https", () => {
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.sameAs).toEqual(["https://havat-hashikma.co.il"]);
   });
 
-  it("preserves website when it already has a protocol", () => {
-    const json = buildJsonLd({ ...fullProducer, website: "http://example.com" });
-    expect(json.url).toBe("http://example.com");
+  it("preserves website protocol when already present", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, website: "http://example.com" }),
+    );
+    expect(business.sameAs).toEqual(["http://example.com"]);
   });
 
   it("includes FULL images array (not just the first)", () => {
-    const json = buildJsonLd(fullProducer);
-    expect(json.image).toEqual(fullProducer.images);
-    expect(json.image.length).toBe(2);
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.image).toEqual(fullProducer.images);
+    expect(business.image.length).toBe(2);
   });
 
   it("omits image when images array is empty", () => {
-    const json = buildJsonLd({ ...fullProducer, images: [] });
-    expect(json.image).toBeUndefined();
+    const business = getBusiness(buildJsonLd({ ...fullProducer, images: [] }));
+    expect(business.image).toBeUndefined();
   });
 
   it("includes priceRange when set", () => {
-    const json = buildJsonLd(fullProducer);
-    expect(json.priceRange).toBe("₪40-80");
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.priceRange).toBe("₪40-80");
   });
 
   it("omits priceRange when not set", () => {
-    const json = buildJsonLd({ ...fullProducer, price_range: null });
-    expect(json.priceRange).toBeUndefined();
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, price_range: null }),
+    );
+    expect(business.priceRange).toBeUndefined();
   });
 
   it("includes aggregateRating when avg_rating + reviews_count > 0", () => {
-    const json = buildJsonLd(fullProducer);
-    expect(json.aggregateRating).toEqual({
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.aggregateRating).toEqual({
       "@type": "AggregateRating",
       ratingValue: 4.7,
       reviewCount: 14,
@@ -186,13 +207,59 @@ describe("buildJsonLd", () => {
   });
 
   it("omits aggregateRating when reviews_count is 0", () => {
-    const json = buildJsonLd({ ...fullProducer, reviews_count: 0 });
-    expect(json.aggregateRating).toBeUndefined();
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, reviews_count: 0 }),
+    );
+    expect(business.aggregateRating).toBeUndefined();
   });
 
   it("omits aggregateRating when avg_rating is null", () => {
-    const json = buildJsonLd({ ...fullProducer, avg_rating: null });
-    expect(json.aggregateRating).toBeUndefined();
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, avg_rating: null }),
+    );
+    expect(business.aggregateRating).toBeUndefined();
+  });
+
+  // MEH-172 — new assertions for the three-entity graph ----------------
+
+  it("builds a BreadcrumbList ישראל → קטגוריה → עיר → שם העסק", () => {
+    const crumb = getBreadcrumb(buildJsonLd(fullProducer));
+    expect(crumb.itemListElement.length).toBe(4);
+    expect(crumb.itemListElement[0].name).toBe("ישראל");
+    expect(crumb.itemListElement[0].position).toBe(1);
+    expect(crumb.itemListElement[1].name).toBe("חלב וגבינות");
+    expect(crumb.itemListElement[1].item).toContain("/producers?category=");
+    expect(crumb.itemListElement[2].name).toBe("רחובות");
+    expect(crumb.itemListElement[2].item).toContain("/producers?city=");
+    expect(crumb.itemListElement[3].name).toBe("חוות השקמה");
+    expect(crumb.itemListElement[3].item).toBe(`${SITE_URL}/havat-hashikma`);
+  });
+
+  it("skips breadcrumb gaps when category or city is missing", () => {
+    const crumb = getBreadcrumb(
+      buildJsonLd({ ...fullProducer, city: null, categories: [] }),
+    );
+    // Just ישראל + name when neither category nor city exist.
+    expect(crumb.itemListElement.length).toBe(2);
+    expect(crumb.itemListElement[0].name).toBe("ישראל");
+    expect(crumb.itemListElement[1].name).toBe("חוות השקמה");
+  });
+
+  it("emits a WebPage wrapper in Hebrew tied to the business + breadcrumb", () => {
+    const webPage = getWebPage(buildJsonLd(fullProducer));
+    expect(webPage.inLanguage).toBe("he-IL");
+    expect(webPage.url).toBe(`${SITE_URL}/havat-hashikma`);
+    expect(webPage.breadcrumb["@id"]).toBe(
+      `${SITE_URL}/havat-hashikma#breadcrumb`,
+    );
+    expect(webPage.about["@id"]).toBe(`${SITE_URL}/havat-hashikma#business`);
+  });
+
+  it("emits Hebrew strings literally, not unicode-escaped", () => {
+    const json = JSON.stringify(buildJsonLd(fullProducer));
+    expect(json).toContain("חוות השקמה");
+    expect(json).toContain("ישראל");
+    expect(json).not.toContain("\\u05");
   });
 });
 
