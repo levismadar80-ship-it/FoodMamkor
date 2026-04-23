@@ -3,6 +3,7 @@
 import { forwardRef, Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   UserCircle,
   Lock,
@@ -11,6 +12,10 @@ import {
   EyeSlash,
   WhatsappLogo,
   EnvelopeSimple,
+  Plus,
+  Package,
+  Trash,
+  X,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -157,6 +162,7 @@ function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
   const [name, setName] = useState(user.name || "");
   const [city, setCity] = useState(user.city || "");
+  const [phone, setPhone] = useState(user.phone || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
