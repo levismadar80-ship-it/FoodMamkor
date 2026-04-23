@@ -8,8 +8,8 @@ Coverage:
   settings, analytics, page editing
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
-from app.models.models import AdminSetting, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
-from conftest import auth_header, make_category, make_producer, make_user
+from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
+from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
 
 
 # ---------- Auth ----------
@@ -879,7 +879,7 @@ class TestProducerReviews:
 
     def test_post_review_requires_auth(self, client, db):
         p = make_producer(db)
-        resp = client.post(f"/producers/{p.id}/reviews", json={"stars": 5})
+        resp = client.post(f"/producers/{p.id}/reviews", json=valid_review_payload())
         assert resp.status_code == 401
 
 
@@ -1383,3 +1383,76 @@ class TestSimilarProducersExclude:
         ids = [p["id"] for p in resp.json()]
         assert str(p1.id) in ids
         assert str(p2.id) in ids
+
+
+class TestContactClickTracking:
+    """MEH-82: POST /producers/{id}/contact-click and analytics integration."""
+
+    def test_anonymous_click_returns_204(self, client, db):
+        p = make_producer(db, status="approved")
+        resp = client.post(f"/producers/{p.id}/contact-click", json={"method": "phone"})
+        assert resp.status_code == 204
+
+    def test_authenticated_click_attributed_to_user(self, client, db):
+        p = make_producer(db, status="approved")
+        u = make_user(db)
+        resp = client.post(
+            f"/producers/{p.id}/contact-click",
+            json={"method": "instagram"},
+            headers=auth_header(u),
+        )
+        assert resp.status_code == 204
+        row = db.query(ContactClick).filter(ContactClick.producer_id == p.id).first()
+        assert row is not None
+        assert row.user_id == u.id
+        assert row.method == "instagram"
+
+    def test_all_valid_methods_accepted(self, client, db):
+        p = make_producer(db, status="approved")
+        for method in ("phone", "instagram", "website", "email"):
+            resp = client.post(f"/producers/{p.id}/contact-click", json={"method": method})
+            assert resp.status_code == 204, f"method={method} returned {resp.status_code}"
+
+    def test_invalid_method_returns_422(self, client, db):
+        p = make_producer(db, status="approved")
+        resp = client.post(f"/producers/{p.id}/contact-click", json={"method": "fax"})
+        assert resp.status_code == 422
+
+    def test_unknown_producer_returns_404(self, client, db):
+        import uuid
+        resp = client.post(
+            f"/producers/{uuid.uuid4()}/contact-click",
+            json={"method": "phone"},
+        )
+        assert resp.status_code == 404
+
+    def test_click_row_has_ip_hash(self, client, db):
+        p = make_producer(db, status="approved")
+        client.post(f"/producers/{p.id}/contact-click", json={"method": "website"})
+        row = db.query(ContactClick).filter(ContactClick.producer_id == p.id).first()
+        assert row is not None
+        # ip_hash may be None in test (testclient passes no real IP) — just verify column exists
+        assert hasattr(row, "ip_hash")
+
+    def test_analytics_includes_contact_clicks(self, client, db):
+        """GET /producers/me/analytics returns contact_clicks windowed dict."""
+        u = make_user(db, role="producer")
+        p = make_producer(db, status="approved")
+        u.producer_id = p.id
+        db.commit()
+        db.refresh(u)
+
+        # Record a click
+        client.post(
+            f"/producers/{p.id}/contact-click",
+            json={"method": "email"},
+            headers=auth_header(u),
+        )
+
+        resp = client.get("/producers/me/analytics", headers=auth_header(u))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "contact_clicks" in data
+        cc = data["contact_clicks"]
+        assert "last_7d" in cc and "last_30d" in cc and "total" in cc
+        assert cc["total"] >= 1

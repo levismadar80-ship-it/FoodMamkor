@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -245,6 +246,7 @@ class Product(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text)
     price_range = Column(String(50))
+    image_url = Column(Text)
 
     producer = relationship("Producer", back_populates="products")
 
@@ -665,6 +667,39 @@ class ProducerWhatsAppClick(Base):
         index=True,
     )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class ContactClick(Base):
+    """MEH-82: one row per click on a non-WhatsApp contact method (phone/instagram/website/email).
+
+    Tracked via POST /producers/{id}/contact-click so the producer dashboard
+    can show a breakdown by method alongside the existing whatsapp_clicks metric.
+    IP is hashed (SHA-256 + rotating salt) for privacy; user_id is set when the
+    caller is authenticated.
+    """
+
+    __tablename__ = "producer_contact_clicks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    method = Column(String(20), nullable=False)  # phone | instagram | website | email
+    ip_hash = Column(String(64), nullable=True)
+    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("ix_contact_clicks_producer_at", "producer_id", "clicked_at"),
+    )
 
 
 class ReferralClick(Base):

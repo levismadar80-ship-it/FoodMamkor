@@ -195,6 +195,15 @@ def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
 def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
+    # MEH-253 — distinguish "Google OAuth isn't configured on this server"
+    # (503) from "the token you sent is invalid" (401). Before this check,
+    # both cases returned 401 "אסימון Google לא תקין" — misleading to the
+    # user and to anyone debugging the deploy.
+    if not settings.google_client_id:
+        raise HTTPException(
+            status_code=503,
+            detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+        )
     user_info = _verify_google_token(data.id_token)
     if not user_info:
         raise HTTPException(status_code=401, detail="אסימון Google לא תקין")
@@ -286,6 +295,12 @@ def logout_all_devices(
 @limiter.limit("10/minute")  # SECURITY FIX #2
 def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
+    # MEH-253 — 503 when the provider isn't configured (see google_auth).
+    if not settings.apple_client_id:
+        raise HTTPException(
+            status_code=503,
+            detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+        )
     user_info = _verify_apple_token(data.id_token)
     if not user_info:
         raise HTTPException(status_code=401, detail="אסימון Apple לא תקין")
@@ -359,17 +374,47 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
 @router.delete("/me")
 @limiter.limit("3/hour")
 def delete_account(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Delete user account and all associated data. Required by Apple App Store Guidelines."""
+    """Delete user account and all associated data.
+
+    Required by Apple App Store Guidelines; also closes the GDPR /
+    חוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who
+    deleted her account left the Producer row behind in the public
+    directory (the /producers list, /map, and search), with reviews,
+    followers, and page-view analytics still referencing her.
+
+    Now, if the user owns a Producer, that Producer is hard-deleted
+    before the user row. Producer-linked tables cascade via the FKs
+    defined in models.py (all have ondelete=CASCADE):
+      - ProducerCategory, DeliveryArea, Product
+      - ProducerReview, ProducerFollower, Favorite
+      - ProducerPageView, ProducerWhatsAppClick
+      - Report (on producer), Event, Experience
+    """
     user_email = user.email
     user_name = user.name
+    producer_id = user.producer_id
 
-    # Delete all user data (cascade)
+    # 1. Clean up user-linked (not producer-linked) rows that don't cascade
+    #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
+    #    the explicit deletes for defense-in-depth against pre-cascade data.
     db.query(HomeProductRating).filter(HomeProductRating.user_id == user.id).delete()
     db.query(HomeProductWhatsAppClick).filter(HomeProductWhatsAppClick.user_id == user.id).delete()
     db.query(HomeProduct).filter(HomeProduct.user_id == user.id).delete()
     db.query(Favorite).filter(Favorite.user_id == user.id).delete()
     db.query(Report).filter(Report.reporter_id == user.id).delete()
 
+    # 2. If this user owns a Producer, remove the FK reference from the user
+    #    row first (User.producer_id has no ondelete, so deleting the
+    #    producer while the user still points at it would violate the
+    #    constraint), then delete the producer — children cascade.
+    if producer_id is not None:
+        user.producer_id = None
+        db.flush()
+        producer = db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer is not None:
+            db.delete(producer)
+
+    # 3. Finally, delete the user itself.
     db.delete(user)
     db.commit()
 

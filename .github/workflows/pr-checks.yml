@@ -71,24 +71,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
         with:
+          version: "latest"
           python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: backend/requirements.txt
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
 
       - name: Install dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install pytest httpx pytest-timeout
-        working-directory: .
+        run: uv sync --frozen
+        working-directory: backend
 
       - name: Show installed packages
-        run: pip list
+        run: uv pip list
+        working-directory: backend
 
       - name: Run tests
-        run: python -m pytest tests/test_api.py -v --tb=long -x --timeout=60
+        run: backend/.venv/bin/python -m pytest tests/test_api.py -v --tb=long -x --timeout=60
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           # Stub secrets so imports don't fail — tests never hit real services.

@@ -1,12 +1,16 @@
 from datetime import datetime
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from pydantic import BaseModel
 from sqlalchemy import exists, func, text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user, get_current_user_optional
 from app.database import get_db
+
+logger = structlog.get_logger(__name__)
 
 
 def _attach_badge_fields(producer):
@@ -18,10 +22,12 @@ def _attach_badge_fields(producer):
     try:
         producer.products_count = len(producer.products or [])
     except Exception:
+        logger.debug("[producers] products lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
         producer.products_count = 0
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
+        logger.debug("[producers] delivery_areas lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
         producer.delivery_count = 0
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
@@ -29,7 +35,8 @@ def _attach_badge_fields(producer):
     else:
         producer.days_since_created = None
     return producer
-from app.models import Category, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
+from app.models import Category, ContactClick, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
+from app.services.analytics import hash_ip
 
 
 def _attach_favorites_counts(producers, db):
@@ -306,7 +313,7 @@ def list_producers(
             )
             db.commit()
         except Exception:
-            pass
+            logger.warning("[producers] search_queries INSERT failed", exc_info=True)
 
     if geo_search:
         # A multi-entity query combined with joinedload on a collection
@@ -388,6 +395,15 @@ def get_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    # MEH-254 — pending/rejected producers are not consented-to-public. Only
+    # the owner and admins may fetch them by UUID; everyone else sees 404 so
+    # the UUID can't be used to enumerate queue state.
+    if producer.status != "approved":
+        is_admin = getattr(viewer, "role", None) == "admin"
+        is_owner = viewer is not None and viewer.producer_id == producer.id
+        if not (is_admin or is_owner):
+            raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
     # MEH-18 — compute badge fields from the already-loaded relationships.
     _attach_badge_fields(producer)
     # MEH-106: social proof count.
@@ -439,6 +455,44 @@ def record_whatsapp_click(
     ))
     db.commit()
     return {"detail": "logged"}
+
+
+_VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email"})
+
+
+class ContactClickIn(BaseModel):
+    method: str
+
+
+@router.post("/producers/{producer_id}/contact-click", status_code=204)
+@limiter.limit("10/minute")
+def record_contact_click(
+    request: Request,
+    producer_id: UUID,
+    data: ContactClickIn,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """Log a contact-method click for the producer dashboard.
+
+    Accepts method ∈ {phone, instagram, website, email}. Auth optional —
+    JWT when present attributes the click to a registered user. IP is
+    SHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited
+    10/minute per IP consistent with whatsapp-click.
+    """
+    if data.method not in _VALID_CONTACT_METHODS:
+        raise HTTPException(status_code=422, detail="method לא חוקי")
+    exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    client_ip = request.client.host if request.client else None
+    db.add(ContactClick(
+        producer_id=producer_id,
+        user_id=current_user.id if current_user else None,
+        method=data.method,
+        ip_hash=hash_ip(client_ip),
+    ))
+    db.commit()
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)

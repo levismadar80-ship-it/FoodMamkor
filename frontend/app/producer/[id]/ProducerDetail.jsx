@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple, Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
@@ -58,6 +59,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const [events, setEvents] = useState([]);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [similarProducers, setSimilarProducers] = useState([]);
+
+  const trackContactClick = useCallback((method) => {
+    if (!producer?.id) return;
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    try {
+      fetch(`/api/producers/${producer.id}/contact-click`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ method }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // tracking is best-effort
+    }
+  }, [producer?.id]);
 
   const scrollToSection = useCallback((key) => {
     setActiveTab(key);
@@ -161,6 +179,16 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       : "";
 
   const isVacation = producer.availability_status === "vacation";
+  const vacationReturnLabel = (() => {
+    if (!producer.vacation_until) return "חוזרת בקרוב";
+    try {
+      // Parse as local date (not UTC) to avoid off-by-one in UTC+2/+3 (Israel).
+      const [y, m, d] = producer.vacation_until.split("-").map(Number);
+      return "חוזרת ב-" + new Date(y, m - 1, d).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+    } catch {
+      return "חוזרת בקרוב";
+    }
+  })();
 
   const words = (producer.name || "").trim().split(/\s+/).filter(Boolean);
   const producerInitials =
@@ -389,7 +417,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
               <p className="text-sm font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
               <p className="text-xs text-slate-500 mt-1">
-                ניתן להשאיר הודעה — יחזרו אליך בקרוב
+                {vacationReturnLabel} — ניתן להשאיר הודעה
               </p>
             </div>
           )}
@@ -558,15 +586,32 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 {producer.products.map((product) => (
                   <div
                     key={product.id}
-                    className="bg-white rounded-[12px] p-4 border border-border"
+                    className="bg-white rounded-[12px] p-4 border border-border flex gap-3 items-start"
                   >
-                    <p className="font-medium text-site-text">{product.name}</p>
-                    {product.description && (
-                      <p className="text-sm text-site-muted mt-1">{product.description}</p>
+                    {product.image_url ? (
+                      <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-light">
+                        <Image
+                          src={product.image_url}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 shrink-0 rounded-[8px] bg-light flex items-center justify-center">
+                        <Package size={28} className="text-site-muted/60" aria-hidden="true" />
+                      </div>
                     )}
-                    {product.price_range && (
-                      <p className="text-accent font-medium mt-2">{product.price_range}</p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-site-text">{product.name}</p>
+                      {product.description && (
+                        <p className="text-sm text-site-muted mt-1 line-clamp-2">{product.description}</p>
+                      )}
+                      {product.price_range && (
+                        <p className="text-accent font-medium mt-2">{product.price_range}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -652,6 +697,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {isVacation && (
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
                 <p className="text-xs font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+                <p className="text-xs text-slate-500 mt-0.5">{vacationReturnLabel}</p>
               </div>
             )}
 
@@ -692,6 +738,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   href={`tel:${producer.phone}`}
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
                   dir="ltr"
+                  onClick={() => trackContactClick("phone")}
                 >
                   <Phone size={18} weight="duotone" className="text-primary shrink-0" />
                   <span className="truncate">{producer.phone}</span>
@@ -710,6 +757,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm overflow-hidden"
                     dir="ltr"
+                    onClick={() => trackContactClick("instagram")}
                   >
                     <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
                     <span className="truncate min-w-0">@{handle}</span>
@@ -730,6 +778,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                  onClick={() => trackContactClick("website")}
                 >
                   <Globe size={18} weight="duotone" className="text-primary shrink-0" />
                   אתר
@@ -742,6 +791,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   href={`mailto:${producer.contact_email}`}
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
                   dir="ltr"
+                  onClick={() => trackContactClick("email")}
                 >
                   <EnvelopeSimple size={18} weight="duotone" className="text-primary shrink-0" />
                   <span className="truncate">{producer.contact_email}</span>
@@ -801,7 +851,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
           {isVacation ? (
-            <span className="text-[11px] text-site-muted shrink-0">🌿 בהפסקה</span>
+            <span className="text-[11px] text-site-muted shrink-0">🌿 {vacationReturnLabel}</span>
           ) : producer.reviews_count >= 3 ? (
             <div className="shrink-0 text-[11px] text-site-muted leading-tight">
               <div className="font-bold text-[#8B6914]">

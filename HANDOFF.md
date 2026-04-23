@@ -1,12 +1,218 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22
+> Last updated: 2026-04-22 (MEH-259 smoke test added; MEH-256 rate-limit fix merged; MEH-257 closed as duplicate)
 
-## Last session
+## Most recent — MEH-259 smoke test (2026-04-22, late night)
+
+Seven-check post-deploy verification script. Fails loudly when a
+security primitive is wrong. Covers MEH-256 (rate-limit isolation),
+MEH-254 (IDOR), MEH-248 (password min_length), plus invariants
+(auth required, security headers, CORS strict, rate-limit enforcement).
+
+Files:
+- `scripts/smoke_test.py` — 7 check functions + runner
+- `scripts/smoke_test_prod.sh` — bash wrapper
+- `docs/SMOKE-TEST.md` — runbook + add-a-check guide
+
+Run: `scripts/smoke_test_prod.sh` (defaults to production) or
+`scripts/smoke_test_prod.sh https://foodmamkor-staging.up.railway.app`.
+
+**Not in CI yet** — run manually first, wire into the deploy workflow
+as a follow-up once it's consistently green.
+
+## MEH-256 rate-limit fix (PR #296, merged `2938ec9`)
+
+Real fix using `X-Real-IP` as the primary signal (unspoofable, set by
+Railway edge from own TCP-peer view). Supersedes PR #286 (closed as
+superseded). Removes MEH-256 debug probe from rate_limit.py.
+
+**⏭ Required ops action before the fix has effect:**
+Set `TRUSTED_PROXY=1` on Railway staging + production backend
+Variables. Without it the key function falls through to
+`get_remote_address` and the bug persists. See `docs/DEPLOYMENT.md` §D.
+
+## MEH-257 closed as Duplicate
+
+Created earlier in the session before MEH-256 stabilized as the
+canonical id. Same bug, same fix — MEH-256 closes it.
+
+---
+
+## Earlier in the session — MEH-260 staging deploy drift (2026-04-22, evening)
+
+**Incident:** Railway `foodmamkor-staging` was running stale code for
+**weeks**. Discovered during MEH-256 investigation when access logs
+showed 404s on endpoints that exist in `staging` HEAD. Full writeup:
+`docs/INCIDENTS/2026-04-staging-deploy-drift.md`.
+
+**Two stacked root causes:**
+1. Railway staging env's GitHub source was pointing at `main`, not
+   `staging`. **User fixed via dashboard.**
+2. Railway's BuildKit rejects the uv cache mount without a
+   service-specific id. **Fixed in code** — PR #291
+   (`458d651`) removed the cache mount entirely.
+
+**Merged this session (all on `staging`):**
+- #287 debug XFF logging → **reverted** via #288 before causing issues
+- #288 revert MEH-256 debug
+- #289 add `id=uv-cache` (first attempt — Railway rejected)
+- #290 **closed** (merge conflict — superseded by #291)
+- #291 remove uv cache mount (second attempt — expected to work)
+
+**Current state — AWAITING HUMAN VERIFICATION:**
+- Last staging commit: `458d651`
+- Railway build should now succeed; user must verify:
+  ```bash
+  BACKEND=https://foodmamkor-staging.up.railway.app
+  curl -s "$BACKEND/health"
+  curl -s "$BACKEND/holiday-mode"
+  python scripts/check_api_contract.py --probe "$BACKEND"
+  ```
+
+**Implications:**
+- The 9 PRs merged earlier today (MEH-247/248/249/250/251/252/253/254/255)
+  were all in a vacuum — all CI passes are meaningless until the
+  probe confirms 0 orphans. Re-verify every CRITICAL/HIGH once staging
+  is actually live (MEH-254 IDOR fix is the top priority).
+- **MEH-244 (production drift)** is suspected to be the SAME root
+  cause. Do NOT touch production until staging verification is clean.
+- **MEH-256 XFF investigation** is blocked — debug `print` was removed
+  in #288. If still needed, open a follow-up to re-add as structured
+  `log.info` (cleaner lifecycle).
+
+**Prevention follow-up (not done in this session):**
+- Flip `api-contract-probe-staging` in `.github/workflows/deploy.yml`
+  from `continue-on-error: true` to hard failure once baseline shows
+  0 orphans.
+- Add a weekly deploy-freshness check script.
+
+---
+
+## Previous — MEH-242 audit session + 9 PR batch (2026-04-22, day)
+
+10 Linear issues opened from MEH-242 audit (MEH-246…255); 9 merged to
+staging over the afternoon. Details in Linear / commit log. All of
+those merges are **subject to re-verification** pending MEH-260
+confirmation that staging is now running the right code.
+
+## Open PR (MEH-245 deployment verification — 2026-04-22)
+PR: #277 (feature/meh-245-deployment-verification → staging, draft, 3 commits)
+Summary:
+  MEH-245 pivoted mid-session from "frontend↔backend contract audit" to
+  "deployment verification tool" after discovering the three console 404s
+  flagged in MEH-244 were not static code drift:
+    - /holiday-mode → exists at backend/app/main.py:407 on staging
+      (commit 663e3b7). Root cause is staging↔production deploy drift.
+    - /admin/group-buys → exists at backend/app/routers/group_buys.py:19
+      (admin_router registered at backend/app/main.py:395). Same cause.
+    - /auth/profile-image → lives only on the unmerged MEH-243 branch.
+      Out of scope here; MEH-243 will ship both sides together.
+
+  Shipped in this PR:
+    - docs/AUDIT-API-CONTRACT.md — post-mortem + runbook for the 3 modes
+    - scripts/check_api_contract.py — static / --probe URL / --cross-env.
+      Static on staging: 178 frontend call sites, 154 backend routes,
+      0 orphan frontend calls, 0 method mismatches, 23 dead backend
+      routes flagged for triage (not deleted here).
+    - .github/workflows/deploy.yml — two warn-only jobs
+      (api-contract-static on every PR/push, api-contract-probe-staging
+      after staging Railway redeploy). Flip to hard failure after MEH-244.
+
+  MEH-244 was re-scoped in Linear to a post-MEH-245 diagnosis task — run
+  the cross-env probe against production, redeploy if drift confirmed,
+  close as not-reproducible otherwise.
+
+Next (after #277 merges):
+  1. Wait for staging redeploy, then run MEH-244 cross-env probe:
+     `python scripts/check_api_contract.py --cross-env \
+       --staging https://staging.mehamakor.online \
+       --prod https://mehamakor.online`
+     and triage per docs/AUDIT-API-CONTRACT.md → "The three known 404s".
+  2. After MEH-244 closes with prod green, flip both CI jobs in
+     .github/workflows/deploy.yml from `continue-on-error: true` to hard
+     failure.
+  3. Triage the 23 dead backend routes listed in docs/AUDIT-API-CONTRACT.md.
+
+---
+
+## Last session merged to staging (MEH-87 + MEH-83 + MEH-84 — 2026-04-22)
+PRs opened this session:
+  - #270 (MEH-87): Tab focus trap in LoginPromptModal — draft, CI pending
+  - #272 (MEH-83): Lightbox on gallery images — draft, CI running
+  - #274 (MEH-84): GPS center button on /map — draft, CI queued
+PRs merged this session:
+  - #264 (uv migration, claude/migrate-pip-to-uv-8p7aT) — merged to staging ✅
+
+MEH-87 (Task 1) — LoginPromptModal Tab focus trap:
+  Root cause: focus trap was missing (only ESC was handled, not Tab/Shift+Tab).
+  Fix: `modalRef` on dialog div + Tab/Shift+Tab handler in existing `handleKey`
+  useEffect; cycles through all focusable elements within the dialog.
+  File: frontend/components/LoginPromptModal.jsx
+
+MEH-86 (Task 2) — Infinite scroll on /producers:
+  SKIPPED — spec pre-condition not met: requires ≥50 producers in DB, only 5.
+
+MEH-83 (Task 3) — Lightbox on gallery images:
+  New file: frontend/components/Lightbox.jsx (pure React, zero deps)
+  Updated: frontend/components/ImageGallery.jsx — image wrapped in <button>,
+    opens Lightbox on click; focus returns to trigger button on close.
+  CSS: globals.css — lightboxFadeIn 200ms + lightboxImgFade 150ms keyframes.
+  RTL: ArrowLeft=next, ArrowRight=prev; nav arrows use start-4/end-4.
+  A11y: role=dialog, aria-modal, Tab trap, focus-on-close, body scroll lock.
+  Test: frontend/e2e/flows/06-lightbox.spec.ts
+
+MEH-84 (Task 4) — GPS center button on /map:
+  Updated: frontend/app/map/MapClient.jsx
+  Button: absolute bottom-24 end-4, 44×44px, z-[1000], hidden lg:flex (desktop only).
+  Icon: NavigationArrow → CircleNotch spinner during wait.
+  3 per-error-code toasts: denied / unavailable / timeout in Hebrew.
+  NaN guard before flyTo. Mobile unchanged (has its own "קרוב אלי" in filter bar).
+  Test: frontend/e2e/flows/07-gps-button.spec.ts
+
+## Previous last session (uv migration — 2026-04-22)
+PR: #264 (claude/migrate-pip-to-uv-8p7aT) — merged to staging ✅
+Root cause: `requirements.txt` had no transitive pins; `slowapi`'s
+  transitive deps resolved incompatibly with `fastapi==0.115.6` in CI.
+Changes: backend/requirements.txt removed; pyproject.toml + uv.lock added;
+  Dockerfile pip→uv; pr-checks.yml setup-uv@v3; docs/DEPLOYMENT.md §8+§9.
+
+## Previous last session
 Date: 2026-04-22
-PRs merged: #247 (MEH-211, copy sweep batch 1 — squash merged to staging)
-PRs open: #242 (MEH-213, still pending CI)
+PRs merged: none this session
+PRs open: #265 (MEH-236), #266 (MEH-187), #267 (MEH-88 — all CI green), #268 (MEH-89 — CI running)
+Summary:
+  MEH-236 (Task 1) — CardHeart can't undo favorite (heart stays filled after second click):
+    Root cause: `guestSaved` state never reset on login, so `filled = favorited || guestSaved`
+    stays true. Fix: `setGuestSaved(false)` at top of useEffect when user is defined.
+    Secondary fix: DELETE 404 treated as success (stale cache / other device).
+    PR #265: frontend/components/ProducerCard.jsx only.
+
+  MEH-187 (Task 2) — Vercel Speed Insights Real User Monitoring:
+    Added @vercel/speed-insights@1.3.1 + <SpeedInsights /> in layout.js.
+    PR #266: frontend/package.json + package-lock.json + app/layout.js.
+    Note: initial CI failure (npm ci lockfile mismatch) fixed in follow-up commit.
+
+  MEH-88 (Task 3) — products.image_url schema change (v2, approved):
+    Backend: _migrate_columns products.image_url TEXT; Product model; ProductCreate /
+      ProductUpdate / ProductOut schemas; producer_me.py GET/POST/PUT/DELETE
+      /producers/me/products with IDOR ownership checks.
+    Frontend: ProducerDetail product cards — 64×64 thumbnail with Package icon fallback;
+      settings BusinessTab — new ProductsSection (list + add with image upload + delete).
+    Tests: tests/test_product_image.py (9 cases: create/update/clear/delete/IDOR/isolation).
+    PR #267: all CI green (lint ✅, build ✅, tests ✅, adversarial ✅).
+
+  MEH-89 (Task 4) — availability_return_date (v2, approved):
+    No new DB column needed — vacation_until DATE already existed from MEH-155.
+    Backend: ProducerUpdate schema gets availability_status + vacation_until so admin
+      PUT /producers/:id can set them (previously producer-only).
+    Frontend: ProducerDetail — 3 vacation banner locations now show "חוזרת ב-{date}"
+      (he-IL locale) or "חוזרת בקרוב" fallback using producer.vacation_until.
+    Frontend: Admin ProducerForm — new "זמינות" section with pill buttons + conditional
+      date picker; vacation_until nulled in payload when status ≠ vacation.
+    PR #268: CI running.
+
+Previous session — PRs #265/#266 (MEH-236 + MEH-187, opened but not yet merged):
 Summary:
   MEH-211 (batch 1 copy sweep) — MEH-202 + MEH-204 + MEH-207:
     4 files changed, text only, no logic/DB/design.
@@ -82,23 +288,29 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-210-phase-2-custom-questions (merged to staging via PR #252)
-Staging HEAD: 86eefcf (feat(meh-210-phase-2): producer custom WhatsApp question chips)
-Main HEAD: e42127e (production is many commits behind staging — needs promotion)
+Branch: feature/meh-84-gps-button (PR #274, CI queued)
+Last branch: feature/meh-83-lightbox (PR #272, CI running)
+Staging HEAD: updated — PR #264 (uv migration) merged this session
+Main HEAD: e42127e (production still behind staging — needs promotion)
 
 ## PRs merged this session
-- #248 — MEH-221 avatar upload + MEH-210 Phase 1 category chips + MEH-206 Phase 1 settings + MEH-203 category selector redesign
-- #252 — MEH-210 Phase 2 custom WhatsApp question chips
+- #264 — uv migration (claude/migrate-pip-to-uv-8p7aT) ✅
 
 ## Open PRs
-None.
+- #265 — MEH-236: CardHeart can't undo favorite (draft)
+- #266 — MEH-187: Vercel Speed Insights (draft)
+- #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
+- #268 — MEH-89: vacation return date in banner + admin form (draft)
+- #270 — MEH-87: LoginPromptModal Tab focus trap (draft, CI pending)
+- #272 — MEH-83: Lightbox on gallery images (draft, CI running)
+- #274 — MEH-84: GPS button on /map (draft, CI queued)
 
 ## Next task
-- MEH-205: /search page redesign (discovery-first) — next in queue
-- MEH-206 Phases 2+3: role-aware tabs, users.preferred_city, POST /auth/logout-all-devices, 2-step delete — pending design session
-- ProducerCard heart/favorite Phase C (post-login replay)
-- Verify password reset end-to-end on staging (requires RESEND_API_KEY in Railway staging env)
-- Promote staging → main (production is 78+ commits behind)
+- Wait for CI on #270, #272, #274 → then review + merge in order
+- MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
+- MEH-205: /search page redesign (discovery-first) — next feature in queue
+- Review and merge #265 → #268 to staging (older open PRs, still valid)
+- Promote staging → main (production is behind)
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
@@ -134,6 +346,8 @@ None.
 | MEH-218: CLAUDE.md cap 245 → 150 | Above 200 lines the file stops being a one-page index; domain rules belong in .claude/rules/*.md, trap context in docs/LOCKED_DECISIONS.md | April 2026 |
 | MEH-218: diagrams deleted from CLAUDE.md | Inline Mermaid duplicated .ai/diagrams/ which is the canonical source and is auto-loaded via --append-system-prompt | April 2026 |
 | MEH-218: Bug Protocol unified into 1 section | Three overlapping sections (Regression rules + Bug Pattern Protocol + Known Bug Patterns) caused confusion; split into "protocol" (CLAUDE.md) and "pattern library" (docs/BUG_PATTERNS.md) | April 2026 |
+| MEH-88: products CRUD via /producers/me/products (not embedded in PUT /me) | Separate resource endpoints enable per-product image upload and clean IDOR checks | April 2026 |
+| MEH-89: no new availability_return_date column — vacation_until (MEH-155) covers it | Duplicate column would diverge; vacation_until already auto-clears, exposed in all schemas, used by producer dashboard | April 2026 |
 
 
 ## Known issues (not yet filed)

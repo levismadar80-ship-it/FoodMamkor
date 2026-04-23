@@ -9,7 +9,10 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 class UserRegister(BaseModel):
     email: EmailStr
     name: str
-    password: str
+    # MEH-248 — backend password min_length matches the frontend `minLength={8}`
+    # on /register; without this the API accepted single-char passwords from
+    # any non-browser caller.
+    password: str = Field(min_length=8, max_length=200)
     city: str | None = None
     phone: str | None = None
 
@@ -29,7 +32,10 @@ class ProducerRegister(BaseModel):
     # router validates and raises 422 when they are absent in that case.
     email: EmailStr | None = None
     name: str | None = None
-    password: str | None = None
+    # MEH-248 — when a password is supplied (new-registration path), it
+    # must meet the same 8-char minimum as /register. The None case
+    # (authenticated user upgrading to producer, MEH-143) skips the check.
+    password: str | None = Field(default=None, min_length=8, max_length=200)
     # Producer details
     producer_name: str
     description: str | None = None
@@ -99,6 +105,24 @@ class ProductCreate(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
 
 
 class ProductOut(BaseModel):
@@ -106,6 +130,7 @@ class ProductOut(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -230,6 +255,17 @@ class ProducerUpdate(BaseModel):
     delivery_cities: list[str] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
+    # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
+    availability_status: str | None = None
+    vacation_until: date | None = None
+
+    @field_validator("availability_status")
+    @classmethod
+    def _validate_availability_status(cls, v):
+        allowed = {"available", "full", "vacation"}
+        if v is not None and v not in allowed:
+            raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
 
     @field_validator("custom_questions")
     @classmethod

@@ -8,17 +8,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv for fast, reproducible installs from the lock file.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
 WORKDIR /app
+
+# Compile bytecode at install time (faster cold-start) and use copy mode
+# so the venv works correctly when the layer is committed to the image.
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 # Build context is the REPO ROOT (not backend/) so Railway finds this
 # Dockerfile at the top level without needing a Root Directory setting.
 # All COPY paths are prefixed with backend/ accordingly.
 #
-# Install Python deps first so Docker layer cache is reused when only
-# backend/app/ code changes.
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# MEH-260 — Railway's BuildKit only accepts `type=cache` mounts, and
+# even those require a Railway-specific `id=s/<service-uuid>-<name>`
+# format. `type=bind` mounts (which we used to avoid a COPY layer)
+# are rejected outright with:
+#   "other mount types are not supported"
+# So we fall back to the standard pattern: COPY the lockfiles first,
+# run uv sync, then COPY the app code. When only app/ code changes,
+# the uv sync layer still hits the Docker layer cache as long as the
+# COPY of uv.lock + pyproject.toml is identical.
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev
+
+# Put the venv on PATH so `python` and `uvicorn` resolve from the venv.
+ENV PATH="/app/.venv/bin:${PATH}"
 
 COPY backend/ .
 

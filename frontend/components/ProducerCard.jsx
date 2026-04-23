@@ -30,15 +30,6 @@ import {
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
 
-function producerInitials(name) {
-  return (name || "")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] || "")
-    .join("")
-    .slice(0, 2);
-}
-
 // Decorative footer hint for the producer's preferred contact channel.
 // The list DTO doesn't carry phone/website so a link would often dead-
 // end; the icon is a signal, the card itself is the tap target.
@@ -80,6 +71,11 @@ function CardHeart({ producer, onCountChange }) {
   // Hydrate from the module cache. Re-renders on any favorite change.
   useEffect(() => {
     if (!user) return;
+    // Clear guest-tap state on login so filled = favorited, not guestSaved.
+    // Without this, a guest who tapped hearts then logged in would see
+    // filled hearts where toggle computes next = !favorited (false) → POST
+    // instead of DELETE, making the heart appear permanently stuck.
+    setGuestSaved(false);
     let alive = true;
     ensureFavoritesLoaded().then(() => {
       if (alive) setFavorited(isFavoritedCache(producer.id));
@@ -136,7 +132,15 @@ function CardHeart({ producer, onCountChange }) {
       } else {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }
-    } catch {
+    } catch (err) {
+      // 404 on DELETE means the record was already gone (stale cache /
+      // removed from another device) — desired state achieved (heart already
+      // unfilled). But the user wasn't in the server count, so revert the
+      // optimistic -1 we applied; don't revert the heart UI itself.
+      if (!next && err?.response?.status === 404) {
+        onCountChange?.(1);
+        return;
+      }
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
@@ -238,15 +242,17 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               />
             ) : (
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-light"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-light px-2"
                 aria-label={`${producer.name} — תמונה חסרה`}
               >
                 <span className="text-5xl leading-none" aria-hidden="true">
                   {producer.categories?.[0]?.emoji || "🌿"}
                 </span>
-                <span className="font-headline text-base font-bold text-primary mt-2 opacity-80">
-                  {producerInitials(producer.name)}
-                </span>
+                {producer.categories?.[0]?.name && (
+                  <span className="font-headline text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
+                    {producer.categories[0].name}
+                  </span>
+                )}
               </div>
             )}
           </div>

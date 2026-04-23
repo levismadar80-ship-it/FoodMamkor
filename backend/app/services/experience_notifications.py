@@ -25,6 +25,7 @@ def notify_admin_new_submission(
 ) -> None:
     """Fired from POST /experiences once the row is persisted."""
     if not settings.admin_email:
+        logger.debug("[notifications] ADMIN_EMAIL not set — admin notification skipped")
         return
     subject = f"מהמקור — חוויה חדשה ממתינה לאישור: {title}"
     flag_line = (

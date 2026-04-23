@@ -22,7 +22,7 @@ class ProfileUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
     avatar_url: str | None = None
-    city: str | None = Field(None, max_length=100)  # MEH-206: preferred city
+    city: str | None = Field(None, max_length=100)
 
 
 class PasswordChange(BaseModel):

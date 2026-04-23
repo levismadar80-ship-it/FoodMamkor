@@ -39,31 +39,74 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
 > (`"mehamakor123"`-style). That has been replaced — see the
 > `_DEV_SECRET_SENTINEL` + `_load_settings()` flow in `config.py`.
 
-### 2. Rate Limiting — חסום brute force
+### ✅ 2. Rate Limiting — SHIPPED (SECURITY FIX #2, corrected in MEH-256)
+
+**Status:** slowapi decorators in place on all sensitive endpoints
+with the limits below. MEH-256 closed the proxy-IP bypass: the limiter
+now keys on the real client IP via `X-Real-IP` (set by Railway's edge,
+unspoofable by client), with an XFF fallback and a `get_remote_address`
+last resort. Empirical investigation (PR #293 probe, 2026-04-22)
+confirmed `X-Real-IP` is always populated by Railway and cannot be
+overwritten by client-sent headers.
+
+**⚠️ NEVER use `get_remote_address` directly behind a proxy.** Use
+`get_real_client_ip` from `backend/app/rate_limit.py`. Behind Railway
+/ Cloudflare / nginx, `request.client.host` resolves to the proxy's
+own IP (`100.64.0.X` on Railway's CGN range) — keying on it collapses
+every user into one rate-limit bucket.
 
 ```python
-# pip install slowapi
-
-from slowapi import Limiter, _rate_limit_exceeded_handler
+# backend/app/rate_limit.py (canonical shape)
+import os
+from fastapi import Request
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
 
-# על כל endpoint רגיש:
+def _trusted_proxy_enabled() -> bool:
+    return os.getenv("TRUSTED_PROXY", "0").strip().lower() in _TRUTHY
+
+def get_real_client_ip(request: Request) -> str:
+    if _trusted_proxy_enabled():
+        # 1. X-Real-IP — Railway edge sets this from its own TCP-peer
+        #    view; unspoofable because Railway overwrites on ingress.
+        real_ip = request.headers.get("x-real-ip", "").strip()
+        if real_ip:
+            return real_ip
+        # 2. XFF[-2] — defensive fallback when ≥2 entries. Rightmost
+        #    is always Railway's internal proxy; real client is [-2].
+        #    Single-entry XFF is skipped — it's just what the client
+        #    sent, so spoofable.
+        xff = request.headers.get("x-forwarded-for", "")
+        entries = [e.strip() for e in xff.split(",") if e.strip()]
+        if len(entries) >= 2:
+            return entries[-2]
+    # 3. Last resort / local-dev: TCP peer. When TRUSTED_PROXY is
+    #    unset, client-controlled headers are ignored — otherwise a
+    #    directly-exposed deploy would let anyone spoof X-Real-IP.
+    return get_remote_address(request)
+
+limiter = Limiter(key_func=get_real_client_ip)
+
+# Per-endpoint:
 @router.post("/auth/login")
-@limiter.limit("5/minute")        # 5 ניסיונות בדקה
-async def login(request: Request, ...):
+@limiter.limit("5/minute")        # per real client IP
+def login(request: Request, ...):
 
 @router.post("/auth/register")
-@limiter.limit("3/hour")          # 3 הרשמות בשעה
+@limiter.limit("3/hour")
 
-@router.post("/home-listings")
-@limiter.limit("10/hour")         # 10 פרסומים בשעה
+@router.post("/home-products")
+@limiter.limit("10/hour")
 
-@router.post("/ratings")
-@limiter.limit("20/day")          # 20 דירוגים ביום
+@router.post("/producers/{id}/reviews")
+@limiter.limit("20/day")
 ```
+
+**Deploy requirement:** `TRUSTED_PROXY=1` on Railway staging +
+production backends. Without it, the key function falls through to
+`get_remote_address` and the bug returns. See `docs/DEPLOYMENT.md` §D.
 
 ### 3. SQL Injection — השתמש תמיד ב-SQLAlchemy ORM
 
@@ -152,6 +195,13 @@ Additional notes:
   that the caller owns the follower row before returning/updating
   the flags. Admin override is intentionally **not** granted for
   these — notification preferences are personal data.
+- **MEH-254 — `GET /producers/{uuid}` status filter:** pending/rejected
+  producers may only be fetched by their owner (`viewer.producer_id ==
+  producer.id`) or an admin. Anonymous or non-owner callers get the
+  same 404 as a non-existent UUID, so the endpoint can't be used to
+  enumerate queue state or leak pre-approval data (GDPR /
+  חוק הגנת הפרטיות). The slug endpoint already filters to approved-only;
+  keep both in sync when schema changes land.
 
 ### 6. העלאת קבצים — תמונות מסוכנות
 
