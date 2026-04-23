@@ -1,9 +1,45 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-22 (MEH-260 staging deploy drift — incident doc + two Dockerfile fixes merged)
+> Last updated: 2026-04-22 (MEH-259 smoke test added; MEH-256 rate-limit fix merged; MEH-257 closed as duplicate)
 
-## 🚨 Most recent — MEH-260 staging deploy drift (2026-04-22, evening)
+## Most recent — MEH-259 smoke test (2026-04-22, late night)
+
+Seven-check post-deploy verification script. Fails loudly when a
+security primitive is wrong. Covers MEH-256 (rate-limit isolation),
+MEH-254 (IDOR), MEH-248 (password min_length), plus invariants
+(auth required, security headers, CORS strict, rate-limit enforcement).
+
+Files:
+- `scripts/smoke_test.py` — 7 check functions + runner
+- `scripts/smoke_test_prod.sh` — bash wrapper
+- `docs/SMOKE-TEST.md` — runbook + add-a-check guide
+
+Run: `scripts/smoke_test_prod.sh` (defaults to production) or
+`scripts/smoke_test_prod.sh https://foodmamkor-staging.up.railway.app`.
+
+**Not in CI yet** — run manually first, wire into the deploy workflow
+as a follow-up once it's consistently green.
+
+## MEH-256 rate-limit fix (PR #296, merged `2938ec9`)
+
+Real fix using `X-Real-IP` as the primary signal (unspoofable, set by
+Railway edge from own TCP-peer view). Supersedes PR #286 (closed as
+superseded). Removes MEH-256 debug probe from rate_limit.py.
+
+**⏭ Required ops action before the fix has effect:**
+Set `TRUSTED_PROXY=1` on Railway staging + production backend
+Variables. Without it the key function falls through to
+`get_remote_address` and the bug persists. See `docs/DEPLOYMENT.md` §D.
+
+## MEH-257 closed as Duplicate
+
+Created earlier in the session before MEH-256 stabilized as the
+canonical id. Same bug, same fix — MEH-256 closes it.
+
+---
+
+## Earlier in the session — MEH-260 staging deploy drift (2026-04-22, evening)
 
 **Incident:** Railway `foodmamkor-staging` was running stale code for
 **weeks**. Discovered during MEH-256 investigation when access logs
