@@ -111,6 +111,18 @@ def _migrate_columns(engine):
         ("producer_reviews", "is_hidden", "BOOLEAN DEFAULT FALSE"),
         # MEH-88 — product image thumbnails.
         ("products", "image_url", "TEXT"),
+        # MEH-206 — logout-all-devices / session invalidation via JWT `tv` claim.
+        # Without this column the User SELECT inside /auth/login (and every
+        # other endpoint that loads a User) raises "column does not exist"
+        # → 500. NOT NULL DEFAULT 1 matches the model's server_default so
+        # existing rows backfill cleanly.
+        ("users", "token_version", "INTEGER NOT NULL DEFAULT 1"),
+        # MEH-192 — email verification on signup. Same migration-gap as
+        # token_version above; model shipped before the column was wired
+        # into _migrate_columns.
+        ("users", "email_verified", "BOOLEAN DEFAULT FALSE"),
+        ("users", "email_verify_token", "VARCHAR(64)"),
+        ("users", "email_verify_expires", "TIMESTAMP"),
     ]
     with engine.connect() as conn:
         conn.execute(text(
