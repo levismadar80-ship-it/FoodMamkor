@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user
+from app.auth import get_current_user, require_verified_email
 from app.database import get_db
 from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, User
 from app.rate_limit import limiter
@@ -177,7 +177,7 @@ def get_home_product(product_id: UUID, db: Session = Depends(get_db)):
 def create_home_product(
     request: Request,
     data: HomeProductCreate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
     # Run AI moderation — blocks REJECTED, records status for APPROVED/FLAGGED.

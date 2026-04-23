@@ -458,6 +458,8 @@ class UserOut(BaseModel):
     # correct business tab state (pending/approved/rejected/suspended).
     producer_status: str | None = None
     producer_rejection_reason: str | None = None
+    # MEH-192: email verification status.
+    email_verified: bool = False
 
     model_config = {"from_attributes": True}
 

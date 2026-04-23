@@ -157,6 +157,10 @@ class User(Base):
     # stale `tv` value are rejected. Fail-open: tokens without a `tv`
     # claim (issued before this column) are still accepted.
     token_version = Column(Integer, default=1, nullable=False, server_default="1")
+    # MEH-192: email verification. Token is cleared on successful verify.
+    email_verified = Column(Boolean, default=False)
+    email_verify_token = Column(String(64), nullable=True, index=True)
+    email_verify_expires = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
