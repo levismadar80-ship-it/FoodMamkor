@@ -22,8 +22,7 @@ class ProfileUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
     avatar_url: str | None = None
-    city: str | None = None
-    phone: str | None = None
+    city: str | None = Field(None, max_length=100)
 
 
 class PasswordChange(BaseModel):
@@ -55,9 +54,6 @@ def update_profile(
 
     if data.city is not None:
         user.city = data.city.strip() or None
-
-    if data.phone is not None:
-        user.phone = data.phone.strip() or None
 
     if data.email is not None:
         new_email = data.email.lower()
