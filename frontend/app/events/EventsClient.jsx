@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ExperienceCard from "@/components/ExperienceCard";
+import CalendarView from "@/components/CalendarView";
 
 const CATEGORIES = [
   { key: "", label: "הכל" },
@@ -56,6 +57,9 @@ export default function EventsPage() {
   // deep-link and survives refresh / share / bookmark.
   const initialTab = search.get("tab") === "experiences" ? "experiences" : "events";
   const [tab, setTab] = useState(initialTab);
+  // View mode — list (default) vs calendar. Independent of tab; applies
+  // to whichever data set (events / experiences) is loaded.
+  const [view, setView] = useState("list");
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +189,40 @@ export default function EventsPage() {
         </div>
       </div>
 
+      {/* View-mode toggle — list vs calendar */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <div
+          role="tablist"
+          aria-label="מצב תצוגה"
+          className="inline-flex gap-1 rounded-lg bg-light p-1"
+        >
+          <button
+            role="tab"
+            aria-selected={view === "list"}
+            onClick={() => setView("list")}
+            className={`px-4 py-2 text-sm rounded-lg transition ${
+              view === "list"
+                ? "bg-primary text-white"
+                : "text-site-text hover:bg-background"
+            }`}
+          >
+            רשימה
+          </button>
+          <button
+            role="tab"
+            aria-selected={view === "calendar"}
+            onClick={() => setView("calendar")}
+            className={`px-4 py-2 text-sm rounded-lg transition ${
+              view === "calendar"
+                ? "bg-primary text-white"
+                : "text-site-text hover:bg-background"
+            }`}
+          >
+            לוח שנה
+          </button>
+        </div>
+      </div>
+
       {/* Filters */}
       <section className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -228,6 +266,11 @@ export default function EventsPage() {
                 : "אין אירועים שתואמים לסינון הנוכחי — עדיין 🌱"}
             </p>
           </div>
+        ) : view === "calendar" ? (
+          <CalendarView
+            items={events}
+            linkPrefix={tab === "experiences" ? "/experiences" : "/events"}
+          />
         ) : (
           <div className="space-y-12">
             {Object.entries(groupedByMonth).map(([month, monthEvents]) => (
