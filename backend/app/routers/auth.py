@@ -614,7 +614,7 @@ def _notify_producer_registered(name: str, phone: str | None):
 def _notify_admin_new_producer(name: str, city: str | None):
     """Send WhatsApp + email notification to admin about new producer."""
     message = (
-        f"יצרן חדש: {name} - {city or 'לא צוין'}\n"
+        f"בית עסק חדש: {name} - {city or 'לא צוין'}\n"
         f"לאישור: {settings.frontend_url}/admin"
     )
     # WhatsApp via Twilio
@@ -635,4 +635,4 @@ def _notify_admin_new_producer(name: str, city: str | None):
 
     # Email
     if settings.admin_email:
-        send_email(settings.admin_email, f"מהמקור - יצרן חדש: {name}", message)
+        send_email(settings.admin_email, f"מהמקור - בית עסק חדש: {name}", message)
