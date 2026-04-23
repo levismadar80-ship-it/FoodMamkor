@@ -39,6 +39,23 @@ Example:
   - `docs/DEPLOYMENT.md` if env vars or infra changed
   - `docs/MANUAL_TESTING.md` if new user-facing flows added
 
+## Database Checklist (MEH-266 — skip only when truthfully not relevant)
+
+Production broke on 2026-04-24 because MEH-206 + MEH-192 added columns to
+the `User` model without updating `_migrate_columns()`. Railway container
+booted fine but every `/auth/login` returned 500 "column does not exist".
+Full post-mortem: MEH-265. Until we migrate to Alembic (MEH-267), this
+checklist is the contract.
+
+- [ ] PR does **not** touch `backend/app/models/*.py` — **OR** —
+- [ ] `backend/app/main.py:_migrate_columns()` has an `ALTER TABLE ADD
+      COLUMN` entry for every new column added to a model in this PR
+- [ ] Verified the migration runs on an **existing** DB (not just on
+      `create_all` in pytest — pytest builds a fresh DB every run and
+      silently hides missing migration entries)
+- [ ] Any endpoint that queries the new column(s) was hit manually after
+      the migration ran
+
 ## Central Component Checklist (skip if no central components touched)
 
 Central components: `MapClient.jsx`, `ProducerDetailClient.jsx`, `main.py`, `auth.py`,
