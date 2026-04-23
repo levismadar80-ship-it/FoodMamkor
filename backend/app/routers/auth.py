@@ -25,6 +25,7 @@ from app.schemas.schemas import (
     ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
+    ProducerOAuthSignupRequest,
     ProducerRegister,
     ResetPasswordRequest,
     Token,
@@ -246,6 +247,104 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
     if picture and not user.avatar_url:
         user.avatar_url = picture
         db.commit()
+
+    return Token(access_token=create_access_token(user.id))
+
+
+@router.post("/register/producer/oauth", response_model=Token)
+@limiter.limit("10/minute")
+def register_producer_oauth(
+    request: Request,
+    data: ProducerOAuthSignupRequest,
+    db: Session = Depends(get_db),
+):
+    """MEH-170 — OAuth as Step 0 of producer signup.
+
+    Creates or logs in a user via Google or Apple, then returns a JWT.
+    The frontend advances to Step 2 of /register/producer; the final
+    POST /auth/register/producer takes the MEH-143 upgrade path because
+    the user is already authenticated.
+
+    Differs from /auth/google and /auth/apple in ONE place: if the
+    authenticated user already has a producer linked, return 409 so the
+    UI can redirect to /login instead of silently continuing. Everything
+    else — token verification, MEH-166 email-collision guard, MEH-138
+    avatar backfill — is re-used from the existing OAuth handlers.
+    """
+    provider = data.provider
+    if provider == "google":
+        if not settings.google_client_id:
+            raise HTTPException(
+                status_code=503,
+                detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            )
+        user_info = _verify_google_token(data.id_token)
+        sub_field = "google_id"
+    else:  # apple — pattern validator on schema guarantees one of the two
+        if not settings.apple_client_id:
+            raise HTTPException(
+                status_code=503,
+                detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            )
+        user_info = _verify_apple_token(data.id_token)
+        sub_field = "apple_id"
+
+    if not user_info:
+        label = "Google" if provider == "google" else "Apple"
+        raise HTTPException(status_code=401, detail=f"אסימון {label} לא תקין")
+
+    oauth_sub = user_info["sub"]
+    email = user_info.get("email", "")
+    # Apple only sends the name on the very first auth; callers may pass
+    # it explicitly via `name`. Fall back to the Google "name" claim or
+    # the email local-part so the User.name NOT NULL constraint holds.
+    full_name = data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
+
+    # 1. Look up by provider sub first (stable identifier).
+    user = db.query(User).filter(getattr(User, sub_field) == oauth_sub).first()
+
+    # 2. Fall back to email lookup — MEH-166 takeover guard.
+    if not user:
+        user = db.query(User).filter(User.email == email).first() if email else None
+        if user:
+            # Email registered via password or the *other* OAuth provider.
+            # Refuse silent link — same rule as /auth/google and /auth/apple.
+            if not getattr(user, sub_field):
+                raise HTTPException(
+                    status_code=409,
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                )
+        else:
+            kwargs = {
+                "email": email,
+                "name": full_name,
+                "role": "consumer",
+                "referral_code": _gen_referral_code(),
+                sub_field: oauth_sub,
+            }
+            if provider == "google":
+                kwargs["avatar_url"] = user_info.get("picture") or None
+            user = User(**kwargs)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+    # 3. If this account is already a producer, bail out — the producer
+    # signup flow is for NEW producers. Existing ones should log in and
+    # use the producer dashboard.
+    if user.producer_id or getattr(user, "is_producer", False):
+        raise HTTPException(
+            status_code=409,
+            detail="יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.",
+        )
+
+    # MEH-138 — backfill the Google avatar once, without overwriting a
+    # manually-uploaded photo.
+    if provider == "google":
+        picture = user_info.get("picture")
+        if picture and not user.avatar_url:
+            user.avatar_url = picture
+            db.commit()
 
     return Token(access_token=create_access_token(user.id))
 
