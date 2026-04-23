@@ -96,6 +96,7 @@ def make_user(
     role: str = "consumer",
     password: str = "Pass1234!",
     is_blocked: bool = False,
+    email_verified: bool = True,
 ) -> User:
     user = User(
         email=email or f"u{uuid.uuid4().hex[:8]}@test.com",
@@ -103,6 +104,7 @@ def make_user(
         password_hash=hash_password(password),
         role=role,
         is_blocked=is_blocked,
+        email_verified=email_verified,
     )
     db.add(user)
     db.commit()
