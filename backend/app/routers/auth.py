@@ -358,7 +358,7 @@ def register_producer_oauth(
             user.avatar_url = picture
             db.commit()
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/login", response_model=Token)
