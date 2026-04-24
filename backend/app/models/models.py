@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import relationship
@@ -117,6 +118,15 @@ class Producer(Base):
     favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
     reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
+
+    # Full-text search on producer name (Hebrew-friendly via 'simple' config).
+    __table_args__ = (
+        Index(
+            "idx_producers_name",
+            text("to_tsvector('simple', name)"),
+            postgresql_using="gin",
+        ),
+    )
 
 
 class User(Base):
@@ -853,3 +863,17 @@ class CategoryRequest(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", backref="category_requests")
+
+
+class SearchQuery(Base):
+    """Search telemetry — one row per /producers?search=... query.
+
+    Written from producers.py:310 (after search).  Read from search.py:218 to
+    compute /search/trending.
+    """
+    __tablename__ = "search_queries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    query = Column(Text, nullable=False)
+    results_count = Column(Integer, nullable=False, default=0)
+    searched_at = Column(DateTime, nullable=False, default=datetime.utcnow)
