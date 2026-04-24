@@ -20,6 +20,57 @@ from app.rate_limit import limiter
 
 def _gen_referral_code() -> str:
     return uuid.uuid4().hex[:8]
+
+
+_MAX_AVATAR_BYTES = 1 * 1024 * 1024  # 1 MB — Google avatars are tiny
+
+
+def _upload_google_avatar_or_none(picture_url: str | None) -> str | None:
+    """Download a Google profile picture and re-host it on Cloudinary.
+
+    Fail-open: any network or API error returns None so OAuth login is
+    never blocked. Returns the Cloudinary secure_url on success, or
+    picture_url unchanged when Cloudinary is not configured (dev only).
+    """
+    if not picture_url:
+        return None
+    if not settings.cloudinary_cloud_name:
+        return picture_url  # dev fallback — Cloudinary not wired up
+    try:
+        import httpx
+        import cloudinary
+        import cloudinary.uploader
+
+        resp = httpx.get(picture_url, timeout=5, follow_redirects=True)
+        resp.raise_for_status()
+        contents = resp.content
+        if len(contents) > _MAX_AVATAR_BYTES:
+            logger.warning(
+                "Google avatar too large (%d bytes), skipping Cloudinary re-host",
+                len(contents),
+            )
+            return None
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor/avatars",
+            public_id=uuid.uuid4().hex,
+            resource_type="image",
+            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+        )
+        return result["secure_url"]
+    except Exception:
+        logger.exception(
+            "Failed to re-host Google avatar from %s — login continues without avatar",
+            picture_url,
+        )
+        return None
+
+
 from app.schemas.schemas import (
     AppleAuthRequest,
     ForgotPasswordRequest,
@@ -222,7 +273,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
     google_id = user_info["sub"]
     email = user_info.get("email", "")
     name = user_info.get("name", "")
-    picture = user_info.get("picture") or None
+    picture = _upload_google_avatar_or_none(user_info.get("picture"))
 
     # Check if user exists by google_id or email
     user = db.query(User).filter(User.google_id == google_id).first()
@@ -311,6 +362,11 @@ def register_producer_oauth(
     # it explicitly via `name`. Fall back to the Google "name" claim or
     # the email local-part so the User.name NOT NULL constraint holds.
     full_name = data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
+    # Re-host the Google avatar once here so both new-user creation and the
+    # MEH-138 backfill use the same Cloudinary URL without a double upload.
+    picture_for_google = _upload_google_avatar_or_none(
+        user_info.get("picture") if provider == "google" else None
+    )
 
     # 1. Look up by provider sub first (stable identifier).
     user = db.query(User).filter(getattr(User, sub_field) == oauth_sub).first()
@@ -335,7 +391,7 @@ def register_producer_oauth(
                 sub_field: oauth_sub,
             }
             if provider == "google":
-                kwargs["avatar_url"] = user_info.get("picture") or None
+                kwargs["avatar_url"] = picture_for_google
             user = User(**kwargs)
             db.add(user)
             db.commit()
@@ -353,9 +409,8 @@ def register_producer_oauth(
     # MEH-138 — backfill the Google avatar once, without overwriting a
     # manually-uploaded photo.
     if provider == "google":
-        picture = user_info.get("picture")
-        if picture and not user.avatar_url:
-            user.avatar_url = picture
+        if picture_for_google and not user.avatar_url:
+            user.avatar_url = picture_for_google
             db.commit()
 
     return Token(access_token=create_access_token(user.id, user.token_version))
