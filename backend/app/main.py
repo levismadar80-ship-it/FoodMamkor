@@ -40,19 +40,14 @@ def _redacted_db_url() -> str:
 
 
 def _run_db_init_sync() -> None:
-    log.info("[bg 1/3] importing models...")
-    from app.database import Base, engine
+    log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
-    log.info("[bg 1/3] models imported OK")
+    log.info("[bg 1/2] models imported OK")
 
-    log.info("[bg 2/3] Base.metadata.create_all...")
-    Base.metadata.create_all(bind=engine)
-    log.info("[bg 2/3] create_all OK")
-
-    log.info("[bg 3/3] running seed_data.seed()...")
+    log.info("[bg 2/2] running seed_data.seed()...")
     from seed_data import seed
     seed()
-    log.info("[bg 3/3] seed OK")
+    log.info("[bg 2/2] seed OK")
 
 
 async def _init_db_background(app: FastAPI) -> None:

@@ -120,8 +120,6 @@ class Producer(Base):
     reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
-    # Historically created via raw DDL in main.py::_migrate_columns; mirrored
-    # here so Alembic autogenerate detects it and future migrations can diff.
     __table_args__ = (
         Index(
             "idx_producers_name",
@@ -869,10 +867,6 @@ class CategoryRequest(Base):
 
 class SearchQuery(Base):
     """Search telemetry — one row per /producers?search=... query.
-
-    Historically created via raw DDL in main.py::_migrate_columns (no ORM class).
-    Promoted to a first-class model as part of MEH-267 so Alembic autogenerate
-    picks it up and the table participates in the migration graph.
 
     Written from producers.py:310 (after search).  Read from search.py:218 to
     compute /search/trending.
