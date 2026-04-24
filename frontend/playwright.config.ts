@@ -20,6 +20,15 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "on-first-retry",
     video: "off",
+    // MEH-264 — Vercel Deployment Protection returns 403 "host_not_allowed"
+    // on every preview URL until requests present this bypass header.
+    // Secret lives in GitHub Actions → Secrets as
+    // VERCEL_AUTOMATION_BYPASS_SECRET and is exported to the job env as
+    // VERCEL_BYPASS_SECRET. When unset (local runs), we send an empty
+    // string which Vercel ignores for non-protected environments.
+    extraHTTPHeaders: {
+      "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET || "",
+    },
   },
   projects: [
     {
