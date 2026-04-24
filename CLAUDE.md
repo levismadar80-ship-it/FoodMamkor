@@ -107,6 +107,8 @@ Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BU
 
 _Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns` drift broke production login; the hotfix PR bundled a 7-call-site refactor under pressure._
 
+File edit safety — read before write, diff after write, no silent deletions. Full protocol: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md)
+
 ## Execution principles (exec §7–13)
 > Workflow rules 1–20 cover *structure*. These cover *execution*. Use "exec §N" to avoid collision with workflow rule N.
 
