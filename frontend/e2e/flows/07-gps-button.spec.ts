@@ -11,7 +11,9 @@ test.describe("GPS button on /map", () => {
     await context.setGeolocation({ latitude: 32.0853, longitude: 34.7818 });
 
     await page.goto("/map");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    // Wait for Leaflet to mount from the dynamic import before checking GPS button.
+    await page.waitForSelector(".leaflet-container:visible", { timeout: 45_000 });
 
     // Button is desktop-only (hidden lg:flex). Resize to desktop viewport.
     await page.setViewportSize({ width: 1280, height: 800 });
