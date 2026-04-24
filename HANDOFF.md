@@ -1,7 +1,25 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (Session 4 — MEH-271 arch smell detection + MEH-258 security checklist)
+> Last updated: 2026-04-25 (MEH-287 — producer WhatsApp welcome silent-fail fix)
+
+## 2026-04-25 Session — MEH-287 WhatsApp welcome
+
+### What shipped
+- `backend/app/schemas/schemas.py` — new `ProducerRegistrationResponse(Token)` adds `whatsapp_sent: bool`
+- `backend/app/routers/auth.py`: pre-flight `whatsapp_expected`; silent return → `logger.error`; `logger.warning` → `logger.error(exc_info=True)`; returns bool
+- `frontend/app/register/producer/page.js` — step-3 success screen copy + banner conditional on `whatsapp_sent` (default `true` for older servers)
+- `tests/test_whatsapp_notify.py` — 3 cases: missing Twilio env, full env + Twilio stubbed, missing phone
+
+### Accident + fix
+PR #329 was accidentally merged to `main` instead of `staging`.
+- PR #332 (hotfix/revert-pr-329) reverted it from `main` ✅
+- PR #333 (feature/meh-287-whatsapp-welcome-fix → staging) re-landed it correctly ✅
+
+### Sibling audit findings
+6 endpoints in `auth.py` still return naked `Token` with silent-fail side effects (`/register`, OAuth). Proposed follow-ups logged in Linear.
+
+---
 
 ## 2026-04-24 Session 5 update
 
