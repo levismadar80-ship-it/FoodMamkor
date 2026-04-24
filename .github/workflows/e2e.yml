@@ -77,6 +77,11 @@ jobs:
         env:
           TEST_URL: ${{ github.event.deployment_status.target_url }}
           CI: "true"
+          # MEH-264 — Vercel Deployment Protection bypass. Without this
+          # secret, every Vercel preview URL returns 403 "host_not_allowed"
+          # and the whole E2E suite fails instantly. Consumed by
+          # frontend/playwright.config.ts via extraHTTPHeaders.
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
