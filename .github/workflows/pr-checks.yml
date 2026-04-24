@@ -87,6 +87,47 @@ jobs:
         run: uv pip list
         working-directory: backend
 
+      # ─────────────────────────────────────────────
+      # Migration drift gate (MEH-267)
+      # Runs alembic against the fresh Postgres service before pytest.
+      # Catches migration bugs (broken revision file, bad SQL, wrong deps)
+      # at PR time instead of on production boot.
+      # ─────────────────────────────────────────────
+      - name: Alembic upgrade head (migration drift gate)
+        working-directory: backend
+        run: .venv/bin/alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+
+      - name: Verify alembic schema (34 tables + baseline revision)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          EXPECTED_REV="b2e8f947c316"
+          EXPECTED_TABLES=34
+
+          ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
+            "SELECT version_num FROM alembic_version;")
+          if [ "$ACTUAL_REV" != "$EXPECTED_REV" ]; then
+            echo "::error::alembic_version='$ACTUAL_REV', expected '$EXPECTED_REV'"
+            exit 1
+          fi
+          echo "alembic_version = $ACTUAL_REV ✓"
+
+          TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
+            "SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema='public'
+               AND table_type='BASE TABLE'
+               AND table_name <> 'alembic_version';")
+          if [ "$TABLE_COUNT" -ne "$EXPECTED_TABLES" ]; then
+            echo "::error::Table count=$TABLE_COUNT, expected $EXPECTED_TABLES"
+            psql -h localhost -U postgres -d mehamakor_test -c "\dt"
+            exit 1
+          fi
+          echo "Tables (excl. alembic_version) = $TABLE_COUNT ✓"
+
       - name: Run tests
         run: backend/.venv/bin/python -m pytest tests/test_api.py -v --tb=long -x --timeout=60
         env:

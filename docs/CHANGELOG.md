@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-23 — MEH-262: Playwright GPS-button test fix — LocationModal dismiss + dual-MapClient :visible scoping; fix broken settings/page.jsx imports (Image, Plus, Package, Trash, X, phone state) lost in MEH-206 overwrite; MEH-263 (LocationModal z-index doc) + MEH-264 (Vercel bypass) filed (PR #305)
+
 ## 2026-04-22 — MEH-210 Phase 2: producer custom WhatsApp question chips — producers.custom_questions TEXT[] nullable; validator (max 5, ≤80 chars, blanks stripped); exposed in ProducerDetailOut; CustomQuestionsCard on /producer/dashboard (5 inputs, saves via PUT /producers/me); getProducerQuestions() checks custom_questions first, falls back to category defaults, then global defaults (#252)
 
 ## 2026-04-22 — MEH-221 + MEH-210 Phase 1 + MEH-206 Phase 1 + MEH-203 — avatar upload saves to DB atomically (db dep added to upload_avatar, refreshUser() replaces duplicate PATCH); category-aware WhatsApp chips (categoryQuestions.js, 15 categories); settings quick wins (provider-aware OAuth copy, z-[10000] delete modal, auto-hide toasts); category selector redesign Variant A (flex-wrap chips, search, expand/collapse, CategorySelector component) (#248)

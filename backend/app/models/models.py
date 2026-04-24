@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import relationship
@@ -110,6 +111,11 @@ class Producer(Base):
     kashrut_expires_at = Column(DateTime, nullable=True)
     # MEH-210 Phase 2 — producer-defined WhatsApp question chips (overrides category defaults).
     custom_questions = Column(ARRAY(Text), nullable=True)
+    # MEH-283 — admin reject reason surfaced on /auth/me as producer_rejection_reason.
+    # Accessed in auth.py::get_me; missing column was raising AttributeError for any
+    # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
+    # never added it to the DB, baseline didn't pick it up).
+    rejection_reason = Column(Text, nullable=True)
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
@@ -117,6 +123,15 @@ class Producer(Base):
     favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
     reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
+
+    # Full-text search on producer name (Hebrew-friendly via 'simple' config).
+    __table_args__ = (
+        Index(
+            "idx_producers_name",
+            text("to_tsvector('simple', name)"),
+            postgresql_using="gin",
+        ),
+    )
 
 
 class User(Base):
@@ -152,6 +167,15 @@ class User(Base):
     # expires 1 hour after issue, cleared on redeem or re-issue.
     reset_token = Column(String(64), nullable=True, index=True)
     reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.
+    # POST /auth/logout-all-devices increments this; old tokens with a
+    # stale `tv` value are rejected. Fail-open: tokens without a `tv`
+    # claim (issued before this column) are still accepted.
+    token_version = Column(Integer, default=1, nullable=False, server_default="1")
+    # MEH-192: email verification. Token is cleared on successful verify.
+    email_verified = Column(Boolean, default=False)
+    email_verify_token = Column(String(64), nullable=True, index=True)
+    email_verify_expires = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
@@ -844,3 +868,17 @@ class CategoryRequest(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", backref="category_requests")
+
+
+class SearchQuery(Base):
+    """Search telemetry — one row per /producers?search=... query.
+
+    Written from producers.py:310 (after search).  Read from search.py:218 to
+    compute /search/trending.
+    """
+    __tablename__ = "search_queries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    query = Column(Text, nullable=False)
+    results_count = Column(Integer, nullable=False, default=0)
+    searched_at = Column(DateTime, nullable=False, default=datetime.utcnow)

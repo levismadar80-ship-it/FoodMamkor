@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from app.auth import create_access_token, hash_password  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
-from app.main import _migrate_columns, app  # noqa: E402
+from app.main import app  # noqa: E402
 from app.models.models import (  # noqa: E402
     Category,
     DeliveryArea,
@@ -40,7 +40,6 @@ def _bootstrap_schema():
     # Drop everything (including admin_settings/static_pages) and recreate.
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    _migrate_columns(engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
@@ -96,6 +95,7 @@ def make_user(
     role: str = "consumer",
     password: str = "Pass1234!",
     is_blocked: bool = False,
+    email_verified: bool = True,
 ) -> User:
     user = User(
         email=email or f"u{uuid.uuid4().hex[:8]}@test.com",
@@ -103,6 +103,7 @@ def make_user(
         password_hash=hash_password(password),
         role=role,
         is_blocked=is_blocked,
+        email_verified=email_verified,
     )
     db.add(user)
     db.commit()

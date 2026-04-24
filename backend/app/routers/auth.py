@@ -25,6 +25,7 @@ from app.schemas.schemas import (
     ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
+    ProducerOAuthSignupRequest,
     ProducerRegister,
     ResetPasswordRequest,
     Token,
@@ -41,6 +42,8 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
+    verify_token = secrets.token_urlsafe(32)
+    verify_expires = datetime.utcnow() + timedelta(hours=24)
     user = User(
         email=data.email,
         name=data.name,
@@ -49,13 +52,16 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
         phone=data.phone,
         role="consumer",
         referral_code=_gen_referral_code(),
+        email_verified=False,
+        email_verify_token=verify_token,
+        email_verify_expires=verify_expires,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    # Email runs after response is sent — never blocks the 200
+    background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/register/producer", response_model=Token)
@@ -143,6 +149,9 @@ def register_producer(
             delivery_day=da.delivery_day,
         ))
 
+    verify_token = secrets.token_urlsafe(32)
+    verify_expires = datetime.utcnow() + timedelta(hours=24)
+
     if upgrade_path:
         # Link producer to existing user, upgrade role + flag.
         user.producer_id = producer.id
@@ -160,6 +169,9 @@ def register_producer(
             producer_id=producer.id,
             is_producer=True,
             referral_code=_gen_referral_code(),
+            email_verified=False,
+            email_verify_token=verify_token,
+            email_verify_expires=verify_expires,
         )
         db.add(user)
         db.commit()
@@ -167,19 +179,18 @@ def register_producer(
 
     # Capture producer primitives NOW — expire_on_commit=True means ORM
     # attributes are expired after commit, and FastAPI closes the session
-    # before background tasks run. Passing the ORM object directly would
-    # raise DetachedInstanceError when the background task accesses .name etc.
+    # before background tasks run.
     p_name = producer.name
     p_city = producer.city
     p_phone = producer.phone
 
-    # All notifications run after the 200 is sent — never block the response.
     background_tasks.add_task(_notify_admin_new_producer, p_name, p_city)
     background_tasks.add_task(_notify_producer_registered, p_name, p_phone)
     if not upgrade_path:
+        background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
         background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.get("/email-exists")
@@ -220,15 +231,16 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
         if user:
             # SECURITY: prevent silent account takeover — if the email is already
             # registered via password (or a different OAuth provider), refuse to
-            # link without explicit user action. An attacker who obtains a Google
-            # token for victim@example.com would otherwise fully hijack the account.
+            # link without explicit user action.
             if not user.google_id:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
                 )
+            user.email_verified = True
+            db.commit()
         else:
-            # Create new user
+            # Create new user — Google already verified the email
             user = User(
                 email=email,
                 name=name,
@@ -236,6 +248,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
                 role="consumer",
                 referral_code=_gen_referral_code(),
                 avatar_url=picture,
+                email_verified=True,
             )
             db.add(user)
             db.commit()
@@ -247,7 +260,105 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
         user.avatar_url = picture
         db.commit()
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
+
+
+@router.post("/register/producer/oauth", response_model=Token)
+@limiter.limit("10/minute")
+def register_producer_oauth(
+    request: Request,
+    data: ProducerOAuthSignupRequest,
+    db: Session = Depends(get_db),
+):
+    """MEH-170 — OAuth as Step 0 of producer signup.
+
+    Creates or logs in a user via Google or Apple, then returns a JWT.
+    The frontend advances to Step 2 of /register/producer; the final
+    POST /auth/register/producer takes the MEH-143 upgrade path because
+    the user is already authenticated.
+
+    Differs from /auth/google and /auth/apple in ONE place: if the
+    authenticated user already has a producer linked, return 409 so the
+    UI can redirect to /login instead of silently continuing. Everything
+    else — token verification, MEH-166 email-collision guard, MEH-138
+    avatar backfill — is re-used from the existing OAuth handlers.
+    """
+    provider = data.provider
+    if provider == "google":
+        if not settings.google_client_id:
+            raise HTTPException(
+                status_code=503,
+                detail="התחברות עם Google לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            )
+        user_info = _verify_google_token(data.id_token)
+        sub_field = "google_id"
+    else:  # apple — pattern validator on schema guarantees one of the two
+        if not settings.apple_client_id:
+            raise HTTPException(
+                status_code=503,
+                detail="התחברות עם Apple לא פעילה כרגע. נסי התחברות עם אימייל וסיסמה.",
+            )
+        user_info = _verify_apple_token(data.id_token)
+        sub_field = "apple_id"
+
+    if not user_info:
+        label = "Google" if provider == "google" else "Apple"
+        raise HTTPException(status_code=401, detail=f"אסימון {label} לא תקין")
+
+    oauth_sub = user_info["sub"]
+    email = user_info.get("email", "")
+    # Apple only sends the name on the very first auth; callers may pass
+    # it explicitly via `name`. Fall back to the Google "name" claim or
+    # the email local-part so the User.name NOT NULL constraint holds.
+    full_name = data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
+
+    # 1. Look up by provider sub first (stable identifier).
+    user = db.query(User).filter(getattr(User, sub_field) == oauth_sub).first()
+
+    # 2. Fall back to email lookup — MEH-166 takeover guard.
+    if not user:
+        user = db.query(User).filter(User.email == email).first() if email else None
+        if user:
+            # Email registered via password or the *other* OAuth provider.
+            # Refuse silent link — same rule as /auth/google and /auth/apple.
+            if not getattr(user, sub_field):
+                raise HTTPException(
+                    status_code=409,
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                )
+        else:
+            kwargs = {
+                "email": email,
+                "name": full_name,
+                "role": "consumer",
+                "referral_code": _gen_referral_code(),
+                sub_field: oauth_sub,
+            }
+            if provider == "google":
+                kwargs["avatar_url"] = user_info.get("picture") or None
+            user = User(**kwargs)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+    # 3. If this account is already a producer, bail out — the producer
+    # signup flow is for NEW producers. Existing ones should log in and
+    # use the producer dashboard.
+    if user.producer_id or getattr(user, "is_producer", False):
+        raise HTTPException(
+            status_code=409,
+            detail="יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.",
+        )
+
+    # MEH-138 — backfill the Google avatar once, without overwriting a
+    # manually-uploaded photo.
+    if provider == "google":
+        picture = user_info.get("picture")
+        if picture and not user.avatar_url:
+            user.avatar_url = picture
+            db.commit()
+
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/login", response_model=Token)
@@ -258,13 +369,37 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.get("/me", response_model=UserOut)
 @limiter.limit("120/minute")
-def get_me(request: Request, user: User = Depends(get_current_user)):
-    return user
+def get_me(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return current user, enriched with producer status/rejection_reason."""
+    out = UserOut.model_validate(user)
+    if user.producer_id:
+        producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+        if producer:
+            out.producer_status = producer.status
+            out.producer_rejection_reason = producer.rejection_reason
+    return out
+
+
+@router.post("/logout-all-devices", response_model=Token)
+@limiter.limit("5/hour")
+def logout_all_devices(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Invalidate all existing sessions by incrementing token_version.
+
+    Returns a new token for the current session so the caller stays
+    authenticated. All other devices receive 401 on their next request.
+    """
+    user.token_version = (user.token_version or 1) + 1
+    db.commit()
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/apple", response_model=Token)
@@ -297,28 +432,29 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
                 )
+            user.email_verified = True
+            db.commit()
         else:
+            # Create new user — Apple already verified the email
             user = User(
                 email=email,
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
                 referral_code=_gen_referral_code(),
+                email_verified=True,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
 
-    return Token(access_token=create_access_token(user.id))
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/forgot-password")
 @limiter.limit("3/hour")
 def forgot_password(request: Request, data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """
-    Send a password-reset email. Always returns 200 to prevent email enumeration.
-    Rate-limited to 3/hour per IP.
-    """
+    """Send a password-reset email. Always returns 200 to prevent email enumeration."""
     user = db.query(User).filter(User.email == data.email).first()
     if user:
         token = secrets.token_urlsafe(32)
@@ -333,10 +469,7 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 @router.post("/reset-password")
 @limiter.limit("5/hour")
 def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """
-    Consume a reset token and update the password.
-    Token is single-use and expires after 1 hour.
-    """
+    """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
     if not user or not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
@@ -345,6 +478,41 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
     user.reset_token_expires_at = None
     db.commit()
     return {"detail": "הסיסמה עודכנה בהצלחה"}
+
+
+@router.get("/verify-email")
+@limiter.limit("10/minute")
+def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
+    """Consume email verification token. Clears token on success."""
+    user = db.query(User).filter(User.email_verify_token == token).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="קישור האימות לא תקין")
+    if user.email_verify_expires is None or user.email_verify_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="קישור האימות פג תוקף")
+    user.email_verified = True
+    user.email_verify_token = None
+    user.email_verify_expires = None
+    db.commit()
+    return {"detail": "האימייל אומת בהצלחה"}
+
+
+@router.post("/resend-verify")
+@limiter.limit("3/hour")
+def resend_verify(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Re-send verification email. Rate-limited to 3/hour per IP."""
+    if user.email_verified:
+        return {"detail": "האימייל כבר מאומת"}
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=24)
+    user.email_verify_token = token
+    user.email_verify_expires = expires
+    db.commit()
+    _send_verify_email(user.email, user.name, token)
+    return {"detail": "אימייל אימות נשלח"}
 
 
 @router.delete("/me")
@@ -410,6 +578,20 @@ def _send_reset_email(email: str, name: str, reset_link: str):
         f"בברכה,\nצוות מהמקור 🌱"
     )
     send_email(email, "מהמקור - איפוס סיסמה", body)
+
+
+def _send_verify_email(email: str, name: str, token: str):
+    """Send email-verification link via Resend. Fire-and-forget."""
+    verify_url = f"{settings.frontend_url}/verify-email?token={token}"
+    body = (
+        f"שלום {name},\n\n"
+        f"לאימות כתובת האימייל שלך לחצי על הקישור הבא:\n\n"
+        f"{verify_url}\n\n"
+        f"הקישור תקף ל-24 שעות.\n\n"
+        f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
+        f"בברכה,\nצוות מהמקור 🌱"
+    )
+    send_email(email, "מהמקור - אמתי את האימייל שלך", body)
 
 
 def _send_welcome_email(email: str, name: str, role: str = "consumer"):
@@ -531,7 +713,7 @@ def _notify_producer_registered(name: str, phone: str | None):
 def _notify_admin_new_producer(name: str, city: str | None):
     """Send WhatsApp + email notification to admin about new producer."""
     message = (
-        f"יצרן חדש: {name} - {city or 'לא צוין'}\n"
+        f"בית עסק חדש: {name} - {city or 'לא צוין'}\n"
         f"לאישור: {settings.frontend_url}/admin"
     )
     # WhatsApp via Twilio
@@ -552,4 +734,4 @@ def _notify_admin_new_producer(name: str, city: str | None):
 
     # Email
     if settings.admin_email:
-        send_email(settings.admin_email, f"מהמקור - יצרן חדש: {name}", message)
+        send_email(settings.admin_email, f"מהמקור - בית עסק חדש: {name}", message)

@@ -40,6 +40,20 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 | Auth | JWT (24h, secret from env) + Google OAuth + Apple OAuth |
 | AI | Anthropic SDK — Opus for moderation, Haiku for chat widget |
 
+## My environment
+- **OS:** Windows 11, Git Bash (MinGW)
+- **Python 3.14:** `/c/Users/topaz/AppData/Local/Python/pythoncore-3.14-64/`
+- **pip:** `/c/Users/topaz/AppData/Local/Python/pythoncore-3.14-64/Scripts/`
+- **PostgreSQL 18:** `/c/Program Files/PostgreSQL/18/bin/` — `psql`, `pg_dump` need manual PATH export each session
+- **Node.js:** installed. **Railway CLI:** installed.
+- **NO uv, NO venv at repo root, NO PATH auto-exports**
+
+Before suggesting any shell command to Smadar:
+1. Check this section first
+2. Use explicit paths, not assumed commands
+3. One command at a time — not chained with `&&`
+4. If a tool might be missing, verify with `which <tool>` before proceeding
+
 ## Key locked decisions (1-liners — full context in [docs/LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md))
 - **Brand palette:** primary `#2e6853`, primary-dark `#2E4A2E`, bg `#F5F0E8`, text `#1C1A17`. Full tokens: [docs/DESIGN.md](./docs/DESIGN.md).
 - **No PostGIS** — Haversine in raw SQL on `producers.lat/lng`. Reverting breaks Railway.
@@ -49,6 +63,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 - **AI fail-open** — missing `ANTHROPIC_API_KEY` → moderation=APPROVED, chat=Hebrew offline msg.
 - **Security invariants** (JWT secret from env, rate limiting, IDOR checks, magic-byte uploads, CSP) — see [.claude/rules/security.md](./.claude/rules/security.md) + [docs/SECURITY.md](./docs/SECURITY.md). Never weaken to "make a test pass".
 - **No `claude/*` branches.** Use `feature/*`.
+- **Schema changes via Alembic only.** `_migrate_columns()` removed in MEH-267. Guide: [docs/MIGRATIONS.md](./docs/MIGRATIONS.md).
 - **Docs audit April 2026 complete** — trust `docs/` as of 2026-04-11. Post-April: trust `git log` + the relevant code file.
 
 ## Branch strategy
@@ -84,6 +99,15 @@ When a bug is found and fixed:
 5. **Update docs** if the fix reveals a non-obvious convention (e.g. physical `right-3` for LTR password toggles on RTL pages).
 
 Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md).
+
+## Commit discipline
+- Hotfixes get their own commit — never bundled with a refactor.
+- When Claude Code suggests "let's do both together" — say split.
+- The temptation to combine is always there. The rule is: no.
+
+_Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns` drift broke production login; the hotfix PR bundled a 7-call-site refactor under pressure._
+
+File edit safety — read before write, diff after write, no silent deletions. Full protocol: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md)
 
 ## Execution principles (exec §7–13)
 > Workflow rules 1–20 cover *structure*. These cover *execution*. Use "exec §N" to avoid collision with workflow rule N.
@@ -124,6 +148,7 @@ Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BU
 | [docs/CHANGELOG.md](./docs/CHANGELOG.md) + [docs/archive/](./docs/archive/) | Session log + historical session specs |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) | Known bug patterns — cross-ref before touching |
 | [docs/LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md) | Railway port, Anthropic http_client, Resend, PostGIS, AI fail-open — full traps |
+| [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) | Alembic workflow: add column, local check, rollback, CI gate, troubleshooting |
 | [.claude/rules/](./.claude/rules/) | Domain rules: rtl · security · testing · deployment · frontend · backend · workflow |
 | [.ai/diagrams/](./.ai/diagrams/) | Auth flow, DB schema, API routes — Mermaid sources of truth |
 

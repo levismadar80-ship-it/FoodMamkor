@@ -451,12 +451,12 @@ function AnalyticsSection({ analytics, profile }) {
         </div>
       </div>
 
-      {/* MEH-57: "יצרנית השבוע" eligibility badge */}
+      {/* MEH-57: "בעלת עסק השבוע" eligibility badge */}
       {eligibleForWeekly && (
         <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🌟</span>
           <div>
-            <p className="font-semibold text-primary text-sm">את מועמדת ליצרנית השבוע 🌟 צרי קשר עם הצוות</p>
+            <p className="font-semibold text-primary text-sm">את מועמדת לבעלת עסק השבוע 🌟 צרי קשר עם הצוות</p>
             <p className="text-xs text-site-muted">דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!</p>
           </div>
         </div>

@@ -87,6 +87,11 @@ export const metadata = {
     statusBarStyle: "black-translucent",
     title: "מהמקור",
   },
+  // Standard W3C replacement for apple-mobile-web-app-capable (deprecated iOS 17+).
+  // Keep appleWebApp above for iOS < 17 compatibility.
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport = {

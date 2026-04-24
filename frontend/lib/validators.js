@@ -36,6 +36,7 @@ export const passwordRules = [
   { id: "len", label: "לפחות 8 תווים", check: (p) => (p || "").length >= 8 },
   { id: "upper", label: "אות גדולה אחת (A-Z)", check: (p) => /[A-Z]/.test(p || "") },
   { id: "digit", label: "ספרה אחת (0-9)", check: (p) => /\d/.test(p || "") },
+  { id: "special", label: "תו מיוחד (!@#$…)", check: (p) => /[^A-Za-z0-9]/.test(p || "") },
 ];
 
 export function passwordValid(password) {

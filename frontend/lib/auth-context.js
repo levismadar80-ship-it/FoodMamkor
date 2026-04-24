@@ -154,6 +154,15 @@ export function AuthProvider({ children }) {
     } catch {}
   };
 
+  // MEH-206 — invalidate all other sessions; backend increments
+  // token_version and returns a fresh token for the current device.
+  const logoutAllDevices = async () => {
+    const res = await api.post("/auth/logout-all-devices");
+    localStorage.setItem("token", res.data.access_token);
+    const me = await api.get("/auth/me");
+    setUser(me.data);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -168,6 +177,7 @@ export function AuthProvider({ children }) {
         updateProfile,
         changePassword,
         refreshUser,
+        logoutAllDevices,
       }}
     >
       {children}

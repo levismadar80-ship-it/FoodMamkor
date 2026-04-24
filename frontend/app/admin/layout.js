@@ -87,7 +87,7 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen">
       {/* Dark-green sidebar — RTL, so it's on the right */}
       <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-light flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
