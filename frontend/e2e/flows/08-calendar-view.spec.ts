@@ -8,7 +8,10 @@ import { test, expect } from "@playwright/test";
 test.describe("Calendar view on /events", () => {
   test("toggle swaps to calendar mode and renders the grid", async ({ page }) => {
     await page.goto("/events");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    // View-mode tablist is always rendered (not data-dependent) — explicit wait
+    // avoids flaky getByRole assertions if React hydration is still settling.
+    await page.waitForSelector('[role="tablist"][aria-label="\u05de\u05e6\u05d1 \u05ea\u05e6\u05d5\u05d2\u05d4"]', { timeout: 10_000 });
 
     const listTab = page.getByRole("tab", { name: "רשימה", exact: true });
     const calendarTab = page.getByRole("tab", { name: "לוח שנה", exact: true });
@@ -29,7 +32,8 @@ test.describe("Calendar view on /events", () => {
 
   test("day cells meet the 44px touch target", async ({ page }) => {
     await page.goto("/events");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForSelector('[role="tablist"][aria-label="מצב תצוגה"]', { timeout: 10_000 });
     await page.getByRole("tab", { name: "לוח שנה", exact: true }).click();
 
     const grid = page.getByRole("grid", { name: "לוח שנה" });
