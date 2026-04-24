@@ -6,6 +6,31 @@ import { test, expect } from "@playwright/test";
  * always shows the current-month grid with day cells ≥ 44×44 for touch.
  */
 test.describe("Calendar view on /events", () => {
+  // Mock the /events API so CalendarView renders regardless of DB state.
+  // Without this, an empty response hits the events.length === 0 branch and
+  // CalendarView is never mounted — role="grid" aria-label="לוח שנה" never appears.
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/events**", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: 1,
+            title: "אירוע בדיקה",
+            event_date: "2026-05-15",
+            event_time: null,
+            city: "תל אביב",
+            category: "סדנה",
+            price: 0,
+            producer_name: "חוות בדיקה",
+            image_url: null,
+            description: null,
+          },
+        ]),
+      })
+    );
+  });
+
   test("toggle swaps to calendar mode and renders the grid", async ({ page }) => {
     await page.goto("/events");
     await page.waitForLoadState("domcontentloaded");
