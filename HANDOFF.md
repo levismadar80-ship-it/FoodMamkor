@@ -3,20 +3,64 @@
 > Read this before starting any work.
 > Last updated: 2026-04-24 (MEH-277 — reality-check refresh after parallel-session sprawl)
 
-## 2026-04-24 Reality-check (MEH-277)
+## 2026-04-24 Session 2 update (post-merge batch)
 
-Audit after multiple parallel sessions landed work without coordinated handoff. The sections below reflect live state as of 2026-04-24 ~10:30 UTC. Older "## Current" / "## Previous" sections below are preserved for history but **superseded** by this block.
+Updated ~15:00 UTC. Supersedes the MEH-277 reality-check block below.
 
 ### Open PRs (live)
 
 | PR  | MEH     | Title                          | Status | CI blocker        |
 |-----|---------|--------------------------------|--------|-------------------|
 | 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | stale 48h         |
+| 299 | MEH-173 | Install marketing skills (38)  | Ready  | MEH-280/281 specs |
+| 306 | MEH-266 | DB migration PR template       | Ready  | build+lint FAIL — needs rebase onto staging |
+
+### Recently merged (session 2 batch — 2026-04-24)
+
+- **PR #315 (MEH-277)** — HANDOFF.md reality-check refresh. Merged ~10:50.
+- **PR #307 (MEH-264)** — Vercel Automation Bypass Secret wired into `e2e.yml` + `playwright.config`. Playwright bypass now working. Merged ~11:30.
+- **PR #316 (MEH-278)** — COOP header `same-origin-allow-popups` in `next.config.js` for Google One Tap / FedCM. Merged ~15:00.
+- **PR #317 (MEH-279)** — Replace `networkidle` with `domcontentloaded` + explicit `waitForSelector` in `07-gps-button` and `08-calendar-view` E2E specs. Merged ~15:00.
+
+PRs #309 and #310 (old branch names without MEH numbers) were closed and replaced by #317 and #316 respectively.
+
+### Known open issues
+
+- **MEH-274: OAuth regressions post-#302.** PR #316 (COOP header) now merged — covers Bug 3 (postMessage block). Remaining scope: multi-init GSI warning, 409 on `/register/producer/oauth`. No branch yet.
+- **MEH-280: `08-calendar-view.spec.ts` — `role="grid" aria-label="לוח שנה"` not found.** Test/component mismatch from MEH-107 (PR #298). Playwright now runs but spec fails. Do not block other PRs on this — it predates all recent work.
+- **MEH-281: `07-gps-button.spec.ts` mobile — Leaflet `NaN,NaN` console errors.** Race condition between geolocation mock and Leaflet map init in CI. Mobile viewport only. Same status as MEH-280.
+- **MEH-269: Playwright E2E flake** — partially resolved. MEH-280 + MEH-281 are the two remaining known-failing specs. Once those are fixed, E2E should be clean.
+
+### Blockers
+
+- **PR #306 build+lint failing** — template-only change (`.github/pull_request_template.md`) but base is stale. Needs `git rebase origin/staging` before CI will pass.
+- **MEH-280 + MEH-281** — two Playwright specs now known-failing. Any PR that touches calendar or GPS map will show Playwright red until these are fixed. They are pre-existing and unrelated to recent merges.
+
+### Linear tickets created this session
+
+- MEH-278: COOP header for Google OAuth (retroactive — PR #316 merged)
+- MEH-279: Replace networkidle in Playwright (retroactive — PR #317 merged)
+- MEH-280: Fix `08-calendar-view` spec aria-label mismatch
+- MEH-281: Fix `07-gps-button` mobile Leaflet NaN race condition
+
+Note: MEH-278 and MEH-279 were created retroactively (Linear free-tier blocked earlier; resolved later in session).
+
+---
+
+## 2026-04-24 Reality-check (MEH-277)
+
+Audit after multiple parallel sessions landed work without coordinated handoff. The sections below reflect live state as of 2026-04-24 ~10:30 UTC. Older "## Current" / "## Previous" sections below are preserved for history but **superseded** by this block.
+
+### Open PRs (live) — superseded, see block above
+
+| PR  | MEH     | Title                          | Status | CI blocker        |
+|-----|---------|--------------------------------|--------|-------------------|
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | stale 48h         |
 | 299 | MEH-173 | Install marketing skills (38)  | Ready  | Playwright only   |
 | 306 | MEH-266 | DB migration PR template       | Ready  | build+lint FAIL   |
-| 307 | MEH-264 | Vercel bypass for Playwright   | Ready  | Playwright only   |
-| 309 | (none)  | Replace networkidle waits      | Draft  | Playwright only   |
-| 310 | (none)  | COOP header for Google OAuth   | Draft  | Playwright only   |
+| 307 | MEH-264 | Vercel bypass for Playwright   | **MERGED** | —            |
+| 309 | (none)  | Replace networkidle waits      | **CLOSED** (→ #317) | —     |
+| 310 | (none)  | COOP header for Google OAuth   | **CLOSED** (→ #316) | —     |
 
 Older "## Open PRs" table lower in this file (listing #265–#274) is stale — those PRs have all been resolved long ago.
 
@@ -35,7 +79,7 @@ The `MEH-261` / `MEH-262` numbers on those two branches were **already taken in 
 
 ### Blockers
 
-- **Playwright E2E fails on every recent PR.** PR #307 (Vercel protection bypass) unblocks E2E signal for all others. Merge order: **#307 first → re-run CI on #299 / #309 / #310 / #306** before merging any of them.
+- **Playwright E2E fails on every recent PR.** PR #307 (Vercel protection bypass) unblocks E2E signal for all others. Merge order: **#307 first → re-run CI on #299 / #309 / #310 / #306** before merging any of them. (**RESOLVED — #307 merged this session.**)
 - **PR #306 has Frontend build + Frontend lint failing** despite being a template-only change (`.github/pull_request_template.md`). Investigate before merge — likely base-branch divergence or stale CI cache; the template text itself cannot break the build.
 
 ### Stale branches to clean up (cleanup is a separate task)
