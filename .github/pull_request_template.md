@@ -66,3 +66,10 @@ Full list: `.claude/central-components.json`. Protocol: `docs/CENTRAL_COMPONENTS
 - [ ] `/adversarial-review` ran after editing (even if build was failing)
 - [ ] Regression test added/updated for any logic change
 - [ ] HANDOFF.md documents what changed and why
+
+## 🔍 File preservation check (reviewer)
+
+- [ ] Ran `git diff origin/staging...HEAD --stat` — file count matches task scope?
+- [ ] For each changed file: reviewed full diff, no unexpected deletions?
+- [ ] No silent removal of sections, comments, or imports that weren't explicitly mentioned in PR description?
+- [ ] If any surprise change found → blocked merge, asked Claude Code to explain

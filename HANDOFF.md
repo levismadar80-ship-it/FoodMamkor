@@ -1,7 +1,52 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (MEH-277 — reality-check refresh after parallel-session sprawl)
+> Last updated: 2026-04-24 (Session 3 — MEH-283 hotfix + MEH-286 file-preservation protocol)
+
+## 2026-04-24 Session 3 update
+
+### Merged this session
+
+| PR  | MEH     | Title                                         | Notes |
+|-----|---------|-----------------------------------------------|-------|
+| 318 | MEH-274 | `useGoogleSignIn` singleton hook + COOP fix   | Merged to staging. Preview OAuth skipped — Google doesn't allow wildcard origins |
+| 306 | MEH-266 | DB migration PR template                      | Rebased onto staging (`git rebase origin/staging`), CI passed, merged |
+| 319 | MEH-283 | `rejection_reason` ORM column + Alembic migration `b2e8f947c316` | URGENT hotfix — `/auth/me` returned 500 for all producer users post MEH-267. Two commits: ORM model + migration file, then CI drift gate update (`EXPECTED_REV`) |
+
+### Opened this session
+
+| PR  | MEH     | Title                                | Status |
+|-----|---------|--------------------------------------|--------|
+| 320 | MEH-286 | File preservation protocol           | Draft — docs/config only, CI running |
+
+### Critical follow-up (MEH-283)
+
+Railway auto-runs `alembic upgrade head` on every deploy (wired in MEH-267 Dockerfile). Merging PR #319 to staging triggers a Railway redeploy which applies migration `b2e8f947c316` (adds `producers.rejection_reason`). **Verify staging `/auth/me` returns 200 for a producer account** — if still 500, check Railway deploy logs.
+
+### New Alembic convention established
+
+Every new Alembic migration PR must update `EXPECTED_REV` in `.github/workflows/pr-checks.yml`. Current head: `b2e8f947c316`. Table count: 34.
+
+### MEH-286 Linear ticket
+
+Marked **Done**. PR #320 linked.
+
+### Open PRs (live)
+
+| PR  | MEH     | Title                          | Status | Notes |
+|-----|---------|--------------------------------|--------|-------|
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | Stale 48h+ |
+| 299 | MEH-173 | Install marketing skills (38)  | Ready  | MEH-280/281 specs blocking |
+| 320 | MEH-286 | File preservation protocol     | Draft  | CI running |
+
+### Next tasks
+
+1. Verify staging `/auth/me` 200 for a producer user (MEH-283 post-merge check)
+2. Verify staging `/login` console clean + Google OAuth works on staging.mehamakor.online (MEH-274 post-merge manual check)
+3. Merge PR #320 (MEH-286) after CI green — docs-only, no mobile testing needed
+4. MEH-280 (`08-calendar-view` aria-label mismatch) + MEH-281 (`07-gps-button` NaN race) — pre-existing Playwright flakes
+
+---
 
 ## 2026-04-24 Session 2 update (post-merge batch)
 
