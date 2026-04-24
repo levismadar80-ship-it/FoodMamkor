@@ -58,6 +58,34 @@ None actionable. All stale drafts closed.
 
 ---
 
+## 2026-04-24 Session 6 update
+
+### Opened this session
+
+| PR  | MEH     | Title                                                       | Status |
+|-----|---------|-------------------------------------------------------------|--------|
+| 335 | MEH-150 | docs: complete Resend migration — .env.example + stale SMTP comments | Draft, CI green |
+
+### What was done
+
+**MEH-150** — The core email migration (email.py, config.py, pyproject.toml `resend==2.29.0`, tests) was already complete from a prior session. This PR finishes the paper trail:
+- `backend/.env.example`: removed `SMTP_HOST/PORT/USER/PASSWORD`, added `RESEND_API_KEY` section with setup instructions
+- `marketing.py`, `experiences.py`, `admin_experiences.py`: updated in-code comments that still referenced "SMTP" → "Resend / RESEND_API_KEY"
+- `docs/CHANGELOG.md`: entry added
+
+Sentry logging skipped — Sentry is not installed anywhere in this project.
+
+### Vercel preview
+`food-mamkor-git-feature-m-4f9aa8-levismadar80-ship-its-projects.vercel.app` (building at session end)
+
+### Next tasks (after PR #335 merges)
+1. Merge PR #322 (HANDOFF docs-only, no CI gate needed)
+2. Verify MEH-299 on staging: Google login → `avatar_url` starts with `https://res.cloudinary.com`
+3. Verify MEH-300 on staging: `/producer/dashboard` no longer shows 422
+4. Manual email test: trigger welcome email on staging → confirm received (check Resend dashboard → Emails tab)
+
+---
+
 ## 2026-04-24 Session 5 update
 
 ### Merged this session
