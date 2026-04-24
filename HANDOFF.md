@@ -1,7 +1,54 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (Session 3 — MEH-283 hotfix + MEH-286 file-preservation protocol)
+> Last updated: 2026-04-24 (Session 5 — MEH-300 routing fix + MEH-299 Cloudinary avatar self-hosting)
+
+## 2026-04-24 Session 5 update
+
+### Merged this session
+
+| PR  | MEH     | Title                                              | Notes |
+|-----|---------|----------------------------------------------------|-------|
+| 327 | MEH-300 | Fix GET /producers/me → 422 (router ordering)      | `producer_me.router` moved before `producers.router` in `main.py:143–147`. 4 regression tests added. |
+| 328 | MEH-299 | Self-host Google OAuth avatars to Cloudinary       | `_upload_google_avatar_or_none()` helper in `auth.py`. 5 call sites patched. 5 unit tests added. |
+
+### Task 2 (MEH-298)
+Already completed as PR #325 in a prior session. Skipped.
+
+### What was fixed
+
+**MEH-300 root cause:** `producers.router` has no prefix and registers `/producers/{producer_id}` (catch-all). It was included at `main.py:145` before `producer_me.router` at `main.py:147`. FastAPI matches in registration order, so `GET /producers/me` was captured with `producer_id="me"`, failing UUID parse → 422. Fix: swap include order.
+
+**MEH-299 design:** New `_upload_google_avatar_or_none(picture_url)` helper in `auth.py` (lines ~22–69). Downloads via `httpx.get(timeout=5)`, uploads to `mehamakor/avatars/` (400×400 face crop), returns Cloudinary `secure_url`. Fail-open on any error — login never blocked. Dev fallback (no `CLOUDINARY_CLOUD_NAME`) returns original URL unchanged. Computed once per OAuth flow to avoid double-upload for new users.
+
+### Verification for MEH-299
+After Railway staging deploy: log in with Google → DevTools → `GET /auth/me` → `avatar_url` should start with `https://res.cloudinary.com`. Existing users with old `googleusercontent.com` URLs need to log out + back in (backfill only runs when `avatar_url` is empty).
+
+### Open PRs (live)
+
+| PR  | MEH     | Title                          | Status | Notes |
+|-----|---------|--------------------------------|--------|-------|
+| 322 | —       | Session 4 HANDOFF update       | Draft  | Docs-only, needs merge |
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | Stale 48h+ |
+
+### Next tasks
+
+1. Merge PR #322 (HANDOFF update — docs only, no CI gate needed)
+2. Verify MEH-299 on staging: Google login → `avatar_url` = Cloudinary URL
+3. Verify MEH-300 on staging: `/producer/dashboard` no longer shows 422 in Network tab
+4. Consider removing `*.googleusercontent.com` from CSP `img-src` in `next.config.js` once MEH-299 is confirmed working (MEH-298 added the wildcard as a stopgap — MEH-299 makes it unnecessary for new logins; keep it until all existing users have re-logged in)
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Fix MEH-300 via router reorder (not adding a new route) | `producer_me.py` already had `@router.get("")` — bug was purely in `main.py` include order | 2026-04-24 |
+| MEH-299 helper in `auth.py` (not a shared util file) | Single call site in one module; extraction would add a file for no reuse benefit | 2026-04-24 |
+| MEH-299 fail-open on any error | Login must never be blocked by a non-auth service; Cloudinary/httpx errors are non-critical | 2026-04-24 |
+
+---
+
+
 
 ## 2026-04-24 Session 3 update
 
