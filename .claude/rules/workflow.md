@@ -189,6 +189,65 @@ summary + pointer here.
 
 ---
 
+## Architectural smell detection (MEH-271)
+
+Learned from MEH-267 (Alembic migration scaffold): the codebase had two
+parallel mechanisms doing the same job (`Base.metadata.create_all` on
+boot + `_migrate_columns()` DDL). Both "worked" independently, so
+neither surface showed an error — the smell was invisible until a
+production incident.
+
+### Smell #1 — Two parallel mechanisms for one job
+
+**Signal:** any code where two separate paths both own the same state
+(schema, config, auth, cache). Either path can succeed while the other
+drifts silently.
+
+**Canonical example:** `create_all` + `_migrate_columns` both owning DB
+schema. Fix: one authority (Alembic). The other path is deleted, not
+disabled.
+
+**How to spot it during a session:** before touching `models/`,
+`schemas/`, or any file that owns shared state — grep for a second
+owner:
+
+```bash
+grep -r "create_all\|metadata.create\|_migrate" backend/ --include="*.py"
+```
+
+Adapt the pattern to the surface (e.g. for auth: grep for two JWT
+decode paths; for config: grep for two env-var readers).
+
+### Smell #2 — "Remember to update X when you change Y" in docs
+
+**Signal:** any sentence in `CLAUDE.md` or `.claude/rules/` that says
+"remember to update X", "keep X in sync with Y", or "also update X
+after changing Y" — this is a docs patch over a missing enforcement
+mechanism.
+
+**Examples of the pattern:**
+- "After changing `backend/app/models/`, update `docs/DATA.md`" — no
+  tool enforces this; it drifts.
+- "After changing auth routes, update `.ai/diagrams/auth-flow.md`" —
+  same problem.
+
+**Rule:** when you find this smell, do NOT fix it inline or silently
+during another PR. Instead:
+1. Open a Linear ticket describing the two surfaces that need to stay
+   in sync and what the single source of truth should be.
+2. Keep the "remember to update" note in place until the ticket ships —
+   removing it early loses the reminder without fixing the underlying
+   drift risk.
+
+### When to run this check
+
+Before any PR that touches `backend/app/models/`, `backend/app/routers/`,
+`backend/app/auth.py`, or `lib/schemas.js` — scan `CLAUDE.md` and
+`.claude/rules/` for "remember to update" / "keep.*in sync" / "also
+update". Report findings in the PR description.
+
+---
+
 ## Vibe Coding Guardrails (MEH-128)
 
 `.claude/pre-edit-guard.js` (PreToolUse hook) warns (non-blocking) on
