@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
   HeartStraight,
+  Heart,
   WhatsappLogo,
   Phone,
   Globe,
   EnvelopeSimple,
 } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
+import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { getPrimaryMethod } from "@/lib/contact-method";
@@ -25,15 +29,6 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
-
-function producerInitials(name) {
-  return (name || "")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] || "")
-    .join("")
-    .slice(0, 2);
-}
 
 // Decorative footer hint for the producer's preferred contact channel.
 // The list DTO doesn't carry phone/website so a link would often dead-
@@ -66,7 +61,7 @@ function availabilityDotColor(producer) {
  *     via showToast({ action }), not a login modal.
  *   - Hidden when the viewer owns this producer (own-card edge case).
  */
-function CardHeart({ producer }) {
+function CardHeart({ producer, onCountChange }) {
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   // Independent "guest tapped" state — preserves visual feedback across
@@ -76,6 +71,11 @@ function CardHeart({ producer }) {
   // Hydrate from the module cache. Re-renders on any favorite change.
   useEffect(() => {
     if (!user) return;
+    // Clear guest-tap state on login so filled = favorited, not guestSaved.
+    // Without this, a guest who tapped hearts then logged in would see
+    // filled hearts where toggle computes next = !favorited (false) → POST
+    // instead of DELETE, making the heart appear permanently stuck.
+    setGuestSaved(false);
     let alive = true;
     ensureFavoritesLoaded().then(() => {
       if (alive) setFavorited(isFavoritedCache(producer.id));
@@ -121,19 +121,29 @@ function CardHeart({ producer }) {
       return;
     }
 
-    // Optimistic fill; revert on error.
+    // Optimistic fill + count update; revert on error.
     const next = !favorited;
     setFavorited(next);
     setFavoritedLocal(producer.id, next);
+    onCountChange?.(next ? 1 : -1);
     try {
       if (next) {
         await api.post(`/users/me/favorites/${producer.id}`);
       } else {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }
-    } catch {
+    } catch (err) {
+      // 404 on DELETE means the record was already gone (stale cache /
+      // removed from another device) — desired state achieved (heart already
+      // unfilled). But the user wasn't in the server count, so revert the
+      // optimistic -1 we applied; don't revert the heart UI itself.
+      if (!next && err?.response?.status === 404) {
+        onCountChange?.(1);
+        return;
+      }
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
+      onCountChange?.(next ? -1 : 1);
       showToast("משהו השתבש, נסי שוב", "error");
     }
   };
@@ -159,7 +169,13 @@ function CardHeart({ producer }) {
   );
 }
 
-export default function ProducerCard({ producer, active, onClick, referrer }) {
+export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
+  const router = useRouter();
+  const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
+  // Keep in sync when the parent re-fetches the list (filter/pagination).
+  useEffect(() => {
+    setLocalFavCount(producer.favorites_count ?? 0);
+  }, [producer.favorites_count]);
   const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
@@ -194,9 +210,11 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
   const MethodIcon = METHOD_ICON[primaryMethod];
 
   const handleRootClick = (e) => {
+    if (e.target.closest("a, button")) return;
     if (onClick) {
-      if (e.target.closest("a, button")) return;
       onClick(producer);
+    } else {
+      router.push(producerHref);
     }
   };
 
@@ -224,27 +242,31 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
               />
             ) : (
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-light"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-light px-2"
                 aria-label={`${producer.name} — תמונה חסרה`}
               >
                 <span className="text-5xl leading-none" aria-hidden="true">
                   {producer.categories?.[0]?.emoji || "🌿"}
                 </span>
-                <span className="font-headline text-base font-bold text-primary mt-2 opacity-80">
-                  {producerInitials(producer.name)}
-                </span>
+                {producer.categories?.[0]?.name && (
+                  <span className="font-headline text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
+                    {producer.categories[0].name}
+                  </span>
+                )}
               </div>
             )}
           </div>
         </Link>
-        <CardHeart producer={producer} />
+        <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
       </div>
 
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-baseline gap-2 justify-between">
           <Link href={producerHref} className="block flex-1 min-w-0">
             <h3 className="font-headline font-bold text-[18px] text-site-text hover:text-primary transition leading-snug line-clamp-2">
-              {producer.name}
+              {highlightQuery
+                ? highlightMatch(producer.name, highlightQuery)
+                : producer.name}
             </h3>
           </Link>
           {hasRating && (
@@ -297,9 +319,30 @@ export default function ProducerCard({ producer, active, onClick, referrer }) {
           </p>
         )}
 
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <BadgeRow producer={producer} limit={2} />
+          {(producer.trust_tier ?? 1) >= 3 && (
+            <TrustBadge tier={producer.trust_tier} compact />
+          )}
+          {/* MEH-213: delivery-only badge — shown when no physical storefront */}
+          {producer.has_physical_location === false && producer.offers_delivery && (
+            <span className="inline-flex items-center rounded-full bg-light border border-border text-site-text px-2 py-0.5 text-[11px]">
+              🚚 משלוחים בלבד
+            </span>
+          )}
+          {fridayMode && producer.is_available_today && (
+            <span className="inline-flex items-center rounded-full bg-secondary/10 border border-secondary/30 text-secondary px-2 py-0.5 text-[11px] font-semibold">
+              🛒 מגיעה היום
+            </span>
+          )}
         </div>
+
+        {localFavCount >= 5 && (
+          <p className="mt-1 flex items-center gap-1 text-[12px] text-site-muted">
+            <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
+            {localFavCount} שמרו
+          </p>
+        )}
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
           {priceLabel ? (

@@ -6,13 +6,34 @@ import api from "@/lib/api";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState(null);
+  // MEH-250 — pristine copy of what the server returned; compared to
+  // `settings` to compute the diff for the confirm dialog + disable the
+  // Save button when nothing has changed.
+  const [originalSettings, setOriginalSettings] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tests, setTests] = useState({});
 
   useEffect(() => {
-    api.get("/admin/settings").then((r) => setSettings(r.data)).catch(() => setLoadError(true));
+    api
+      .get("/admin/settings")
+      .then((r) => {
+        // Normalize boolean fields that some backends return as bool, not string
+        const data = { ...r.data };
+        data.friday_mode_override = (data.friday_mode_override === true || data.friday_mode_override === "true") ? "true" : "false";
+        // Hydrate localStorage so isFridayMode() reflects the stored setting
+        try {
+          if (data.friday_mode_override === "true") {
+            localStorage.setItem("friday_mode_override", "1");
+          } else {
+            localStorage.removeItem("friday_mode_override");
+          }
+        } catch {}
+        setSettings(data);
+        setOriginalSettings(data);
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
   if (loadError) return <div className="text-red-600 text-sm">שגיאה בטעינת הגדרות — נסי לרענן את הדף.</div>;
@@ -23,10 +44,25 @@ export default function AdminSettingsPage() {
     setSaved(false);
   };
 
+  // MEH-250 — diff original vs current so we can show the admin
+  // exactly what's about to change and refuse no-op saves.
+  const changedKeys = originalSettings
+    ? Object.keys(settings).filter((k) => settings[k] !== originalSettings[k])
+    : [];
+  const isDirty = changedKeys.length > 0;
+
   const save = async () => {
+    if (!isDirty) return;
+    const summary = changedKeys
+      .map((k) => `• ${k}: ${originalSettings[k] || "∅"} → ${settings[k] || "∅"}`)
+      .join("\n");
+    if (!window.confirm(`האם לשמור את השינויים הבאים?\n\n${summary}`)) {
+      return;
+    }
     setSaving(true);
     try {
       await api.put("/admin/settings", settings);
+      setOriginalSettings(settings);
       setSaved(true);
     } finally {
       setSaving(false);
@@ -91,6 +127,66 @@ export default function AdminSettingsPage() {
         </Field>
       </div>
 
+      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+        <h2 className="font-semibold">חלון חג</h2>
+        <p className="text-xs text-text-secondary">הפעלי ידנית כדי לבדוק את הבאנר בדשבורד ובעמוד הבית לפני החג.</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">חלון חג פעיל</span>
+          <button
+            role="switch"
+            aria-checked={settings.holiday_override_enabled === "true"}
+            onClick={() => update("holiday_override_enabled", settings.holiday_override_enabled === "true" ? "false" : "true")}
+            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.holiday_override_enabled === "true" ? "bg-primary" : "bg-gray-200"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        <Field label="מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)">
+          <select
+            value={settings.holiday_override_key || ""}
+            onChange={(e) => update("holiday_override_key", e.target.value)}
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          >
+            <option value="">— ללא עקיפה —</option>
+            <option value="pesach">פסח</option>
+            <option value="shavuot">שבועות</option>
+            <option value="rosh_hashana">ראש השנה</option>
+            <option value="sukkot">סוכות</option>
+            <option value="chanuka">חנוכה</option>
+            <option value="tu_bishvat">ט״ו בשבט</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+        <h2 className="font-semibold">מצב שוק שישי</h2>
+        <p className="text-xs text-text-secondary">
+          הפעלי ידנית כדי לבדוק את מצב שוק שישי (סרגל יצרניות, כותרת hero, badge 🛒)
+          מחוץ לחלון הזמן הרגיל (ד׳ 18:00 — ו׳ 14:00).
+          עקיפה זו פעילה בדפדפן הנוכחי בלבד.
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">מצב שוק שישי — override</span>
+          <button
+            role="switch"
+            aria-checked={settings.friday_mode_override === "true"}
+            onClick={() => {
+              const next = settings.friday_mode_override === "true" ? "false" : "true";
+              update("friday_mode_override", next);
+              // Sync to localStorage so isFridayMode() picks it up immediately
+              if (next === "true") {
+                localStorage.setItem("friday_mode_override", "1");
+              } else {
+                localStorage.removeItem("friday_mode_override");
+              }
+            }}
+            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.friday_mode_override === "true" ? "bg-primary" : "bg-gray-200"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+      </div>
+
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
         <h2 className="font-semibold">בדיקות חיבור</h2>
         {["twilio", "cloudinary"].map((name) => (
@@ -122,10 +218,20 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50">
+        <button
+          onClick={save}
+          disabled={saving || !isDirty}
+          className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
+          title={!isDirty ? "אין שינויים לשמירה" : undefined}
+        >
           {saving ? "שומר..." : "שמור הגדרות"}
         </button>
-        {saved && <span className="text-sm text-primary">נשמר ✓</span>}
+        {isDirty && !saving && (
+          <span className="text-xs text-site-muted">
+            {changedKeys.length} שינויים לא שמורים
+          </span>
+        )}
+        {saved && !isDirty && <span className="text-sm text-primary">נשמר ✓</span>}
       </div>
     </div>
   );

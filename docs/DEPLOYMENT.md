@@ -183,38 +183,172 @@ Steps:
 
 ### C. GitHub branch protection
 
-Branch protection requires admin access in the GitHub UI (it can't be set via
-the GitHub MCP tools available in this codebase). Open:
+Branch protection requires admin access — it can't be set via the GitHub API in
+this codebase. Open:
 
 **<https://github.com/levismadar80-ship-it/FoodMamkor/settings/branches>**
 
+> **After merging `.github/workflows/pr-checks.yml`**, push a test PR to `staging`
+> and let the three jobs run once. GitHub only shows a check in the "Required status
+> checks" autocomplete AFTER it has seen the check run at least once. Do not
+> configure the rules below until the first run has completed.
+
 #### Rule 1: `main`
 
-- **Branch name pattern:** `main`
-- ✅ Require a pull request before merging
-  - ✅ Require approvals: **1**
-  - ✅ Dismiss stale pull request approvals when new commits are pushed
-- ✅ Require status checks to pass before merging
-  - Add the GitHub Actions checks once they're wired up (pytest, playwright,
-    next build). Leave empty for now if no CI exists yet.
-- ✅ Require branches to be up to date before merging
-- ✅ Require linear history (no merge commits — only rebase or squash)
-- ✅ Do not allow bypassing the above settings (applies to admins too)
-- ❌ Allow force pushes — leave **disabled**
-- ❌ Allow deletions — leave **disabled**
+| Setting | Value |
+|---|---|
+| Branch name pattern | `main` |
+| Require a pull request before merging | ✅ |
+| Required approvals | **1** |
+| Dismiss stale approvals on new commits | ✅ |
+| Require status checks to pass before merging | ✅ |
+| → Required checks | `Frontend build (Next.js)` |
+| → Required checks | `Backend tests (pytest)` |
+| → Required checks | `Frontend lint (RTL + Next.js rules)` |
+| Require branches to be up to date before merging | ✅ |
+| Require linear history (squash or rebase only) | ✅ |
+| Do not allow bypassing the above settings | ✅ (applies to admins too) |
+| Allow force pushes | ❌ disabled |
+| Allow deletions | ❌ disabled |
 
 #### Rule 2: `staging`
 
-- **Branch name pattern:** `staging`
-- ✅ Require a pull request before merging
-  - **Required approvals: 0** (self-merge OK at the staging stage — review
-    happens at the `staging → main` step)
-- ✅ Require status checks to pass before merging — same checks as `main`.
-- ❌ Allow force pushes — disabled.
-- ❌ Allow deletions — disabled.
+| Setting | Value |
+|---|---|
+| Branch name pattern | `staging` |
+| Require a pull request before merging | ✅ |
+| Required approvals | **0** (self-merge OK — review happens at `staging → main`) |
+| Require status checks to pass before merging | ✅ |
+| → Required checks | `Frontend build (Next.js)` |
+| → Required checks | `Backend tests (pytest)` |
+| → Required checks | `Frontend lint (RTL + Next.js rules)` |
+| Require branches to be up to date before merging | ✅ |
+| Allow force pushes | ❌ disabled |
+| Allow deletions | ❌ disabled |
 
-After saving both rules, verify by attempting a direct push from a feature
-branch to `main` — it should be rejected.
+> **Check names must match exactly.** The job `name:` fields in
+> `.github/workflows/pr-checks.yml` and `.github/workflows/deploy.yml` are what
+> GitHub uses to identify required checks. If the workflow YAML changes a job name,
+> the branch protection rule must be updated to match.
+
+> **`Adversarial review` is intentionally NOT a required check.** It only runs
+> when `.github/scripts/adversarial-review.sh` exists (see workflow). The check
+> is informational until that script is added.
+
+After saving both rules, verify by attempting a direct push from a feature branch
+to `staging` — it should be rejected with "protected branch" error.
+
+
+### D. Rate-limiter `TRUSTED_PROXY` flag (MEH-256) — **REQUIRED**
+
+Set `TRUSTED_PROXY=1` on the backend service in **both** Railway
+environments (staging + production). Without it, the rate limiter
+falls back to `request.client.host` which on Railway is the edge-proxy
+IP (`100.64.0.X` CGN range). All users share one bucket — a single
+attacker burning the 5/min login limit denies login for the whole site.
+
+1. Railway dashboard → backend service → **Variables → New Variable**
+2. Name: `TRUSTED_PROXY`, Value: `1`
+3. Save. Railway restarts the container automatically.
+
+With `TRUSTED_PROXY=1` the rate limiter reads `X-Real-IP` (set by
+Railway's edge from its own view of the TCP peer — unspoofable),
+falling back to `X-Forwarded-For[-2]` if X-Real-IP is missing. Full
+canonical implementation: [`backend/app/rate_limit.py`](../backend/app/rate_limit.py)
++ security rationale in [docs/SECURITY.md](./SECURITY.md) §2.
+
+**Never enable `TRUSTED_PROXY` on a deploy that is directly exposed to
+the public internet** — without a known proxy stripping/overwriting
+`X-Real-IP`, attackers can set the header themselves and rotate
+identities at will.
+
+**Verification — curl with spoofed headers to staging:**
+
+Because `X-Real-IP` is set by Railway's edge (not readable from
+outside), the best verification is to make requests from two different
+real IPs and confirm the limiter counters isolate. The simplest proxy
+for "different real IPs" is a laptop on Wi-Fi + a phone on cellular.
+
+```bash
+# From laptop A (one real IP):
+for i in 1 2 3 4 5 6; do
+  curl -X POST https://staging.mehamakor.online/auth/login \
+    -d '{"email":"no@one.com","password":"x"}'
+done
+# attempt 6 → 429
+
+# From phone B (distinct real IP) same minute:
+curl -X POST https://staging.mehamakor.online/auth/login \
+  -d '{"email":"no@one.com","password":"x"}'
+# → 401 (bucket isolates), not 429
+```
+
+If both IPs land in the same bucket, `TRUSTED_PROXY` is unset or mis-typed
+(check case: `1` / `true` / `yes` / `on` are accepted, nothing else).
+
+Assumes exactly one trusted proxy hop (Railway edge). If Cloudflare
+is ever added in front of Railway, revisit the XFF fallback path
+(`X-Real-IP` primary stays correct — Railway still sets it).
+
+
+### E. Verify deploys actually ran (MEH-260)
+
+Merging to `staging` or `main` does not guarantee the runtime changed.
+Two failures have been seen in the wild (2026-04):
+
+1. **Source-branch drift.** Railway's environment-level GitHub source
+   was silently pointing at the wrong branch (`main` instead of
+   `staging`). Every merge to `staging` was a no-op at runtime for
+   several weeks. Fix is in the Railway UI — no code change.
+2. **Dockerfile BuildKit mismatch.** Railway's build runner rejects
+   `--mount=type=cache,target=...` unless the `id=` is present AND
+   in Railway's `s/<service-uuid>-<name>` format. Either hardcode the
+   id (couples the Dockerfile to a service) or drop the cache mount
+   (~20-30s slower cold build).
+
+**After every merge to `staging` or `main`, verify the runtime matches
+the code, not just that CI went green:**
+
+```bash
+# 1. Health check — confirms the container is up at all
+BACKEND=https://foodmamkor-staging.up.railway.app   # or foodmamkor-production
+curl -s "$BACKEND/health"
+#   Expect: {"status":"ok","db_init":"ready"}
+
+# 2. Contract probe — hits every frontend call-site against the live backend
+python scripts/check_api_contract.py --probe "$BACKEND"
+#   Expect: 0 frontend orphans
+#   If any endpoint returns 404 that exists in the code, the runtime
+#   is stale. Go to the incident runbook below.
+```
+
+**Signs of deploy drift:**
+
+- Contract probe shows endpoints returning 404 that exist in
+  `git log origin/staging:backend/app/routers/<file>.py`.
+- Railway's Deployments tab shows an "Active" deployment from days ago,
+  not the latest commit.
+- Bug fixes merged "days ago" still reproduce.
+
+**If drift is suspected:**
+
+1. Railway dashboard → the affected service → **Settings → Source →
+   Branch**. Confirm it matches the expected branch (`staging` for
+   staging env, `main` for production env).
+2. Railway dashboard → the affected service → **Deployments**. Check
+   for FAILED deploys between the last Active one and now. Copy the
+   build log error.
+3. Check `.github/workflows/deploy.yml` runs for recent commits —
+   does the "Trigger Railway redeploy" job show `skipped` (correct:
+   only runs on push to the protected branches) or `success` (the CLI
+   kick fired)?
+4. If the CLI "succeeded" but the container is stale: the `railway
+   redeploy` CLI can silently "succeed" while deploying the same
+   branch pointer as before. Check Railway's Deployments tab, not
+   the GitHub Actions log.
+5. See `docs/INCIDENTS/2026-04-staging-deploy-drift.md` for a full
+   diagnostic walkthrough.
+
 
 ### Sanity checks before promoting `staging → main`
 
@@ -552,6 +686,85 @@ deploys, which is exactly the opposite of what we want.
 
 ---
 
+## E2E CI — Playwright against Vercel preview
+
+The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
+runs Playwright tests against each PR's Vercel preview URL.
+
+### How it works (current: `deployment_status` trigger)
+
+GitHub Actions fires **only after Vercel signals the preview is ready**
+(`deployment_status.state == 'success'` and
+`deployment_status.environment` starts with `"Preview"`). The preview URL
+is a first-class event field — no polling, no comment-regex parsing:
+
+```yaml
+TEST_URL: ${{ github.event.deployment_status.target_url }}
+```
+
+The job checks out `github.event.deployment.sha` (the exact deployed commit,
+not HEAD) and runs Playwright with Chromium only (`timeout-minutes: 15`).
+Production deployments (`environment: "Production"`) are skipped by the
+`if:` condition.
+
+### Why we switched from the previous `pull_request` trigger
+
+The previous trigger polled for the Vercel bot PR comment and extracted the
+URL with a regex (`\[Preview\]\(https://...\)`). The regex never matched the
+actual Vercel comment format, so all 20 poll attempts (5 min each ×15 s)
+exhausted silently — every job exited 1 regardless of PR content. This
+produced a permanent `failure` status on every PR in 5 min 55 s, mistaken
+for a stuck/hung job (MEH-212, confirmed on PRs #234 and #236).
+
+### Fallback: `repository_dispatch` if `deployment_status` stops firing
+
+Vercel 2026 recommendation for repos where `deployment_status` events don't
+appear in Actions (e.g. certain GitHub App integration modes): configure a
+**Vercel deployment webhook** that fires a `repository_dispatch` event.
+
+**To switch to the fallback:**
+
+1. **Vercel → Project → Settings → Webhooks → Add:**
+   - URL: `https://api.github.com/repos/levismadar80-ship-it/FoodMamkor/dispatches`
+   - Event: `deployment-ready`
+   - Header: `Authorization: Bearer <GitHub PAT with `repo` scope>`
+   - Body template (Vercel webhook variables):
+     ```json
+     {
+       "event_type": "vercel.deployment.success",
+       "client_payload": {
+         "url": "{DEPLOYMENT_URL}",
+         "branch": "{GIT_BRANCH}"
+       }
+     }
+     ```
+
+2. **Change the trigger in `e2e.yml`:**
+   ```yaml
+   on:
+     repository_dispatch:
+       types: [vercel.deployment.success]
+   ```
+
+3. **Replace `TEST_URL` and `if:` condition:**
+   ```yaml
+   # in the job-level if:
+   if: github.event.client_payload.branch != 'main'
+
+   # in the Run E2E tests step env:
+   TEST_URL: ${{ github.event.client_payload.url }}
+   ```
+
+4. **Checkout the right commit** — `github.event.deployment.sha` is
+   unavailable on `repository_dispatch`; use `github.sha` or parse the
+   commit from the payload.
+
+**Required secret:** a GitHub PAT with `repo` scope. Add it in
+Vercel's webhook configuration (`Authorization` header). The
+`deployment_status` approach needs only `GITHUB_TOKEN` — no PAT.
+
+---
+
 ## 0. Prerequisites
 
 - [ ] GitHub repo pushed, with branch `main` as the deploy branch
@@ -607,10 +820,11 @@ The error `Error creating build plan with Railpack` used to happen because:
    Railway only finds if you set Root Directory = `backend` manually.
 
 **Fix (now committed):** Both `/Dockerfile` and `/railway.json` live at
-the **repo root**. The Dockerfile uses `COPY backend/requirements.txt` and
-`COPY backend/ .` paths so the backend-only image is built from a
-repo-root build context. You do **not** need to set a Root Directory in
-Railway anymore — just import the repo and it works.
+the **repo root**. The Dockerfile uses `COPY backend/ .` so the
+backend-only image is built from a repo-root build context — deps are
+installed via `uv sync --frozen` from `backend/uv.lock` (see §9). You
+do **not** need to set a Root Directory in Railway anymore — just import
+the repo and it works.
 
 ### 2.2 Create the backend service
 
@@ -901,13 +1115,63 @@ Run through this checklist in a real browser:
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` *(repo root)* | Railway build image; builds from repo-root context with `COPY backend/...`; uses `$PORT` at runtime |
+| `Dockerfile` *(repo root)* | Railway build image; installs deps via uv from lock file; uses `$PORT` at runtime |
 | `railway.json` *(repo root)* | Forces Dockerfile builder + healthcheck; discovered automatically by Railway without a Root Directory setting |
 | `.dockerignore` *(repo root)* | Prunes `frontend/`, docs, `.env`, and caches from the build context |
 | `frontend/vercel.json` | Next.js framework hint + security headers. Imported by Vercel when Root Directory is set to `frontend`. No custom install/build commands — Vercel's defaults handle Next.js. |
+| `backend/pyproject.toml` | Direct Python dependencies (replaces requirements.txt); source of truth for dep versions |
+| `backend/uv.lock` | Full transitive lock file with hashes — committed so CI and Railway install identical packages |
 | `backend/.env.example` | All backend env vars, documented |
 | `backend/app/routers/producers.py` | Haversine-in-SQL distance filter (`_haversine_km`) |
 | `backend/init_db.sql` | Stock Postgres schema, no PostGIS |
 | `frontend/.env.example` | All frontend env vars, documented |
 | `frontend/next.config.js` | `/api/*` → `BACKEND_URL` rewrite |
 | `frontend/app/sitemap.js` | Uses `NEXT_PUBLIC_SITE_URL` for dynamic sitemap |
+
+---
+
+## 9. Dependency management (uv)
+
+Backend dependencies are managed with **[uv](https://github.com/astral-sh/uv)** — a fast, reproducible Python package manager.
+
+### Key files
+
+| File | Role |
+|---|---|
+| `backend/pyproject.toml` | Direct deps only (was `requirements.txt`) |
+| `backend/uv.lock` | All transitive deps, pinned with SHA-256 hashes — **always commit this** |
+
+### Local workflow
+
+```bash
+# Install uv (one-time, macOS/Linux)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install backend deps (creates backend/.venv automatically)
+cd backend
+uv sync
+
+# Add a new dep
+uv add some-package
+
+# Upgrade a dep
+uv lock --upgrade-package some-package
+
+# Run pytest with the project venv
+uv run python -m pytest ../tests/test_api.py -v
+```
+
+### Why uv
+
+The previous `requirements.txt` had no transitive pins, so CI resolved packages
+fresh each run. `slowapi`'s transitive deps resolved to versions incompatible
+with `fastapi==0.115.6` in CI, causing an `ImportError` on `PYDANTIC_V2` before
+any test ran. `uv.lock` pins every transitive dep with a SHA-256 hash, so CI
+installs byte-for-byte what was tested locally — the conflict cannot recur.
+
+### Dockerfile cache
+
+The Dockerfile uses BuildKit cache mounts so the `~/.cache/uv` wheel cache
+survives across Railway builds. When only app code changes (not deps), the
+`uv sync` layer is a cache hit and the build skips re-downloading packages
+entirely.

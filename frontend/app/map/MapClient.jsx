@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine } from "@phosphor-icons/react";
+import { ArrowLeft, Crosshair, MagnifyingGlass, X, MapTrifold, List as ListIcon, Leaf, Star, Rows, MapPinLine, SquaresFour, NavigationArrow, CircleNotch } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { GeoSearchSchema } from "@/lib/schemas";
@@ -12,7 +12,7 @@ import CitySearch from "@/components/CitySearch";
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { normalizePhone } from "@/lib/utils";
+import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
 import MapBottomSheet, { PEEK, HALF, FULL } from "@/components/MapBottomSheet";
 import LocationModal from "@/components/LocationModal";
 import { useUserCity } from "@/lib/use-user-city";
@@ -77,6 +77,16 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [sortBy, setSortBy] = useState("default");
   const [legendOpen, setLegendOpen] = useState(false);
+  const legendRef = useRef(null);
+
+  useEffect(() => {
+    if (!legendOpen) return;
+    const onClick = (e) => {
+      if (legendRef.current && !legendRef.current.contains(e.target)) setLegendOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [legendOpen]);
   const { city: userCity, setCity: setUserCity } = useUserCity();
   const [locationModalOpen, setLocationModalOpen] = useState(false);
 
@@ -89,6 +99,7 @@ export default function MapPage() {
   // MEH-58 Phase 2 — desktop split ratio + mobile bottom sheet snap.
   const [splitRatio, setSplitRatio] = useState("40fr 60fr");
   const [sheetSnap, setSheetSnap] = useState(PEEK);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const mapApiRef = useRef(null);
   // Direct ref to the Leaflet map instance. Both desktop + mobile MapComponents
@@ -99,7 +110,20 @@ export default function MapPage() {
   const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
 
   const registerMapApi = useCallback((api) => {
+    if (!api) return;
+    // `mapPane` renders in BOTH the desktop layout (hidden lg:grid) and the
+    // mobile layout (lg:hidden). On desktop the mobile container has zero
+    // dimensions (display:none); skip it so mapApiRef always points to the
+    // map the user can actually see. On mobile the desktop container is
+    // hidden and gets skipped instead.
+    const container = api.getContainer?.();
+    if (container) {
+      const { width, height } = container.getBoundingClientRect();
+      if (width === 0 && height === 0) return;
+    }
     mapApiRef.current = api;
+    // Keep mapRef in sync with the same visible map instance.
+    mapRef.current = api.getMap?.() ?? null;
   }, []);
 
   useEffect(() => {
@@ -403,6 +427,33 @@ export default function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
 
+  const handleGpsClick = useCallback(() => {
+    if (gpsLoading) return;
+    if (!navigator.geolocation) {
+      showToast("הדפדפן שלך לא תומך ב-GPS", "error");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsLoading(false);
+        const { latitude: lat, longitude: lng } = pos.coords;
+        if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+        mapApiRef.current?.getMap()?.flyTo([lat, lng], 13, { duration: 1.2 });
+      },
+      (err) => {
+        setGpsLoading(false);
+        const msgs = {
+          1: "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
+          2: "המיקום שלך לא זמין. נסי מאוחר יותר.",
+          3: "לקח יותר מדי זמן. נסי שוב.",
+        };
+        showToast(msgs[err.code] ?? "לא הצלחנו לקבל את המיקום שלך", "error");
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }, [gpsLoading]);
+
   // docs/archive/MAP_IMPROVEMENTS.md #8 — toggle a single category from the legend
   const toggleCategory = (name) => {
     setActiveCategoryNames((prev) => {
@@ -563,6 +614,52 @@ export default function MapPage() {
           <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-light transition">הוסיפי עסק +</Link>
         </div>
       )}
+
+      {/* GPS center button — desktop only; mobile has one in the filter bar */}
+      <button
+        type="button"
+        onClick={handleGpsClick}
+        disabled={gpsLoading}
+        aria-label="מרכזי את המפה על המיקום שלי"
+        className="hidden lg:flex absolute bottom-24 end-4 w-11 h-11 rounded-full bg-background border border-border shadow-md items-center justify-center text-primary hover:bg-light transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+      >
+        {gpsLoading
+          ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
+          : <NavigationArrow size={20} weight="fill" aria-hidden="true" />
+        }
+      </button>
+
+      {/* Collapsible category legend — desktop only; mobile sees emoji on markers */}
+      {/* rtl-ok: map overlay, physical left = map-canvas start */}
+      <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[800]">
+        {legendOpen && (
+          <div className="mb-2 bg-white border border-border rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] p-2 min-w-[180px]" role="group" aria-label="קטגוריות">
+            <div className="space-y-0.5">
+              {CATEGORY_LEGEND.map((cat) => {
+                const catActive = isCategoryActive(cat.name);
+                return (
+                  <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
+                    <span className="text-xs text-site-text">{cat.emoji} {cat.name.split(",")[0]}</span>
+                  </button>
+                );
+              })}
+              {activeCategoryNames !== null && (
+                <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-[13px] text-primary hover:underline mt-1 pt-1 border-t border-border">הצגי הכל</button>
+              )}
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setLegendOpen((v) => !v)}
+          aria-label="קטגוריות"
+          aria-expanded={legendOpen}
+          className="w-8 h-8 rounded-full bg-white border border-[#e5e7eb] shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center justify-center hover:bg-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <SquaresFour size={16} weight="bold" className="text-site-text" />
+        </button>
+      </div>
     </div>
   );
 
@@ -630,7 +727,7 @@ export default function MapPage() {
             {[p.categories?.[0]?.name, p.city, p.starting_price_label || p.price_range].filter(Boolean).join(" · ")}
           </p>
           {normalizePhone(p.phone) && (
-            <a href={`https://wa.me/${normalizePhone(p.phone)}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2 font-medium text-sm">
+            <a href={getWhatsAppHref(normalizePhone(p.phone), `היי! מצאתי אותך במהמקור — ${p.name || ""}`)} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2 font-medium text-sm">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
               WhatsApp
             </a>
@@ -662,26 +759,6 @@ export default function MapPage() {
               <CitySearch id="map-city-search-desktop" label="סנן לפי עיר" value={cityFilter} onChange={setCityFilter} onSubmit={handleCityFilter} placeholder="חפשי עיר..." />
             </div>
             {filterChipsBar}
-            {/* Legend — collapsible, closed by default, inside sidebar */}
-            <details open={legendOpen} onToggle={(e) => setLegendOpen(e.currentTarget.open)} className="mt-3 pt-2 border-t border-border">
-              <summary className="text-[11px] text-site-muted tracking-wider font-body uppercase cursor-pointer hover:text-site-text transition select-none">
-                קטגוריות {legendOpen ? "▲" : "▼"}
-              </summary>
-              <div className="mt-1 space-y-0.5">
-                {CATEGORY_LEGEND.map((cat) => {
-                  const catActive = isCategoryActive(cat.name);
-                  return (
-                    <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-light`} aria-pressed={catActive}>
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
-                      <span className="text-xs text-site-text">{cat.emoji} {cat.name.split(",")[0]}</span>
-                    </button>
-                  );
-                })}
-                {activeCategoryNames !== null && (
-                  <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-[13px] text-primary hover:underline mt-1 pt-1 border-t border-border">הצגי הכל</button>
-                )}
-              </div>
-            </details>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex items-center justify-between mb-3">
@@ -763,7 +840,7 @@ export default function MapPage() {
                     </div>
                   )}
                   {spPhone && (
-                    <a href={`https://wa.me/${spPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${sp.name || ""}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
+                    <a href={getWhatsAppHref(spPhone, `היי! מצאתי אותך במהמקור — ${sp.name || ""}`)} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
                       WhatsApp
                     </a>

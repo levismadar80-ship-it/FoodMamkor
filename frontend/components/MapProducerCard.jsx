@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
+import { styleForProducer } from "@/lib/map-categories";
+import { getWhatsAppHref } from "@/lib/utils";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const { city: userCity } = useUserCity();
@@ -14,6 +16,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const isVerified = p.is_verified;
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
+  const { color: categoryColor } = styleForProducer(p);
 
   const deliveryMatch = userCity && Array.isArray(p.delivery_areas)
     ? p.delivery_areas.find((d) => d.city === userCity)
@@ -59,6 +62,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
         ) : (
           <div className="w-full h-full flex items-center justify-center text-2xl" aria-hidden="true">🌿</div>
         )}
+        {/* Category color dot — bottom-end corner of thumbnail */}
+        <span
+          className="absolute bottom-1 end-1 w-2.5 h-2.5 rounded-full border-[1.5px] border-white pointer-events-none"
+          style={{ background: categoryColor }}
+          aria-hidden="true"
+        />
       </div>
 
       {/* Text content — LEFT in RTL */}
@@ -67,9 +76,15 @@ export default function MapProducerCard({ producer, active, onClick }) {
           <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "17px" }}>
             {p.name}
           </h3>
-          {(category?.name || priceLabel) && (
+          {/* Category name in muted, price in Cormorant italic gold — separate lines */}
+          {category?.name && (
             <p className="text-site-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
-              {category?.name}{category?.name && priceLabel ? " · " : ""}{priceLabel}
+              {category.name}
+            </p>
+          )}
+          {priceLabel && (
+            <p className="font-english italic line-clamp-1 mt-0.5" style={{ fontSize: "13px", color: "#8B6914" }}>
+              {priceLabel}
             </p>
           )}
         </div>
@@ -93,11 +108,11 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Actions */}
         <div className="flex items-center gap-2 mt-1.5">
           <a
-            href={waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(`היי! מצאתי אותך במהמקור — ${p.name || ""}`)}` : baseHref}
+            href={waPhone ? getWhatsAppHref(waPhone, `היי! מצאתי אותך במהמקור — ${p.name || ""}`) : baseHref}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => { e.stopPropagation(); if (waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
-            className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center shrink-0"
+            className="bg-whatsapp w-7 h-7 rounded-full flex items-center justify-center shrink-0"
             aria-label="WhatsApp"
           >
             <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>

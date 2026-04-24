@@ -61,6 +61,24 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // MEH-156: listen for JWT expiry events fired by the API interceptor.
+  // setUser/resetFavoritesCache/showToast are all stable refs — empty deps is correct.
+  useEffect(() => {
+    const handle = () => {
+      resetFavoritesCache();
+      setUser(null);
+      const redirect = encodeURIComponent(window.location.pathname);
+      showToast(
+        "פג תוקף ההתחברות — נא להתחבר מחדש",
+        "info",
+        5000,
+        { action: { label: "התחברי", href: `/login?redirect=${redirect}` } },
+      );
+    };
+    window.addEventListener("auth:expired", handle);
+    return () => window.removeEventListener("auth:expired", handle);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const afterLogin = async (me) => {
     setUser(me);
     ensureFavoritesLoaded();
@@ -125,6 +143,26 @@ export function AuthProvider({ children }) {
     await api.patch("/users/me/password", { current_password, new_password });
   };
 
+  // MEH-143 — after a role upgrade the stored token changes; re-read
+  // /auth/me so context reflects the new role immediately.
+  const refreshUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data);
+    } catch {}
+  };
+
+  // MEH-206 — invalidate all other sessions; backend increments
+  // token_version and returns a fresh token for the current device.
+  const logoutAllDevices = async () => {
+    const res = await api.post("/auth/logout-all-devices");
+    localStorage.setItem("token", res.data.access_token);
+    const me = await api.get("/auth/me");
+    setUser(me.data);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -138,6 +176,8 @@ export function AuthProvider({ children }) {
         logout,
         updateProfile,
         changePassword,
+        refreshUser,
+        logoutAllDevices,
       }}
     >
       {children}

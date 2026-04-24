@@ -9,9 +9,12 @@ This version:
   3. Uses a UUID for Cloudinary's public_id (not the user-supplied filename)
   4. Tells Cloudinary resource_type="image" which adds a server-side check
 """
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+
+log = logging.getLogger("app.upload")
 
 from app.auth import get_current_user
 from app.config import settings
@@ -79,7 +82,7 @@ async def upload_image(
         if producer and producer.plan == "free" and producer.images and len(producer.images) >= 3:
             raise HTTPException(
                 status_code=403,
-                detail="Free plan allows up to 3 images. Upgrade to premium for unlimited.",
+                detail="חשבון החינם מוגבל ל-3 תמונות. שדרגי לפרמיום להעלאה ללא הגבלה.",
             )
 
     if not settings.cloudinary_cloud_name:
@@ -110,4 +113,68 @@ async def upload_image(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        log.error("Cloudinary upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע")
+
+
+@router.post("/avatar")
+@limiter.limit("10/hour")
+async def upload_avatar(
+    request: Request,
+    file: UploadFile,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload a profile photo to Cloudinary. Same magic-byte validation as
+    /upload/image but no freemium gate, smaller crop (400px square), and
+    a dedicated avatars/ folder so producer gallery images stay separate.
+    Saves avatar_url to users table atomically so the caller needs no
+    separate PATCH /users/me call.
+    """
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
+        )
+    if not contents:
+        raise HTTPException(status_code=400, detail="קובץ ריק")
+
+    detected = _sniff_image_type(contents[:32])
+    if detected is None:
+        raise HTTPException(
+            status_code=400,
+            detail="רק תמונות JPG/PNG/WebP/GIF מותרות",
+        )
+
+    if not settings.cloudinary_cloud_name:
+        url = f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"
+        user.avatar_url = url
+        db.commit()
+        return {"url": url}
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor/avatars",
+            public_id=uuid.uuid4().hex,
+            resource_type="image",
+            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+        )
+        url = result["secure_url"]
+        user.avatar_url = url
+        db.commit()
+        return {"url": url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error("Cloudinary upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע")

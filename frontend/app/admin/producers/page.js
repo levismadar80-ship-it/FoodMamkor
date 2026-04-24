@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Cow, Leaf, Package, Seal, Truck, Warning } from "@phosphor-icons/react";
@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import Pagination from "@/components/Pagination";
 import { clampPage } from "@/lib/pagination";
+import StoryCardCanvas from "@/components/StoryCardCanvas";
 
 export default function ProducersPageWrapper() {
   return (
@@ -31,6 +32,8 @@ function ProducersAdminPage() {
   const [importPreview, setImportPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
+  // MEH-53: which producer's story-card panel is open
+  const [storyCardOpenId, setStoryCardOpenId] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -61,11 +64,21 @@ function ProducersAdminPage() {
     loadAllProducers();
   };
 
+  const toggleAmbassador = async (id, current) => {
+    await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
+    loadAllProducers();
+  };
+
   const exportExcel = () => {
     // Build CSV from current visible rows (BOM for Excel UTF-8)
-    const headers = ["שם", "עיר", "טלפון", "אינסטגרם", "אתר", "סטטוס", "slug"];
+    const headers = ["שם", "עיר", "טלפון", "אינסטגרם", "אתר", "סטטוס", "slug", "חנות פיזית", "משלוחים", "כל הארץ", "ערי משלוח"];
     const rows = producers.map((p) => [
       p.name, p.city || "", p.phone || "", p.instagram || "", p.website || "", p.status, p.slug || "",
+      // MEH-213 — location mode columns
+      p.has_physical_location !== false ? "כן" : "לא",
+      p.offers_delivery ? "כן" : "לא",
+      p.delivery_nationwide ? "כן" : "לא",
+      (p.delivery_cities || []).join(", "),
     ]);
     const csv = "\uFEFF" + [headers, ...rows]
       .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -125,6 +138,7 @@ function ProducersAdminPage() {
     const map = {
       approved: { label: "פעיל", cls: "bg-primary text-white" },
       pending: { label: "ממתין", cls: "bg-yellow-100 text-yellow-800" },
+      pending_whatsapp: { label: "ממתין — וואטסאפ", cls: "bg-orange-100 text-orange-800" },
       rejected: { label: "נדחה", cls: "bg-red-100 text-red-700" },
       inactive: { label: "מושהה", cls: "bg-gray-200 text-gray-700" },
     };
@@ -338,7 +352,8 @@ function ProducersAdminPage() {
                     </span>
                   );
                 return (
-                <tr key={p.id} className="border-t hover:bg-background/50">
+                <React.Fragment key={p.id}>
+                <tr className="border-t hover:bg-background/50">
                   <td className="px-4 py-3 font-medium">
                     <div className="flex items-center gap-2">
                       {badge}
@@ -359,7 +374,7 @@ function ProducersAdminPage() {
                   </td>
                   <td className="px-4 py-3">{statusBadge(p.status)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 flex-wrap">
                       {p.status === "pending" && (
                         <button onClick={() => quickApprove(p.id)} className="text-primary hover:underline text-xs font-medium">
                           ✓ אשר
@@ -378,12 +393,45 @@ function ProducersAdminPage() {
                           {p.status === "approved" ? "השהה" : "הפעל"}
                         </button>
                       )}
+                      {p.status === "approved" && (
+                        <button
+                          onClick={() => toggleAmbassador(p.id, p.ambassador)}
+                          className={`text-xs ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-site-muted hover:text-primary"}`}
+                          title={p.ambassador ? "הסר תפקיד שגרירה" : "הגדר כשגרירה"}
+                        >
+                          {p.ambassador ? "⭐ שגרירה" : "☆ שגריר"}
+                        </button>
+                      )}
+                      {p.status === "approved" && p.slug && (
+                        <button
+                          onClick={() => setStoryCardOpenId((prev) => prev === p.id ? null : p.id)}
+                          className="text-[#4cb08b] hover:underline text-xs"
+                          title="צור כרטיס אינסטגרם"
+                        >
+                          📸 סטורי
+                        </button>
+                      )}
                       <button onClick={() => deleteProducer(p.id, p.name)} className="text-red-600 hover:underline text-xs">
                         מחק
                       </button>
                     </div>
                   </td>
                 </tr>
+                {storyCardOpenId === p.id && (
+                  <tr>
+                    <td colSpan={6} className="px-6 pb-5 bg-background/60">
+                      <StoryCardCanvas
+                        producer={p}
+                        onUploaded={(url) => {
+                          setProducers((prev) =>
+                            prev.map((pr) => pr.id === p.id ? { ...pr, story_card_url: url } : pr)
+                          );
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
                 );
               })}
             </tbody>

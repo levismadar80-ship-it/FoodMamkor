@@ -4,10 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* WhatsApp primary CTA — single source of truth for green button styling.
-   Replaces bg-[#25D366] hover:bg-[#20b858] scattered across MapClient + ProducerDetail. */
+/* WhatsApp colour tokens — single source of truth. All #25D366 references
+   in the codebase resolve to one of these three utilities. */
 .btn-whatsapp {
-  @apply bg-[#25D366] hover:bg-[#20b858] text-white transition;
+  @apply bg-[#25D366] hover:bg-[#1ea855] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
+}
+.btn-whatsapp-outline {
+  @apply border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/5 transition;
+}
+.bg-whatsapp {
+  @apply bg-[#25D366];
 }
 
 html {
@@ -37,6 +43,19 @@ h1, h2, h3 {
   height: 100%;
   width: 100%;
   border-radius: 16px;
+}
+/* Warm map tiles — reduces the cold blue of OpenStreetMap to match the
+   site's cream/forest palette. Matches design system v2 specification.
+   saturate(0.85): gentle desaturation so tiles look warm without bleeding
+   into marker colors. Sepia removed — it was desaturating the overall
+   viewport enough to make colored category markers look gray/muted. */
+.leaflet-tile-pane {
+  filter: saturate(0.85) brightness(1.02);
+}
+/* Defensive: ensure no filter ever reaches the marker pane (e.g. if a
+   future Tailwind utility accidentally cascades into Leaflet's DOM). */
+.leaflet-marker-pane {
+  filter: none;
 }
 
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet
@@ -276,4 +295,17 @@ body.sheet-open .cookie-banner {
   .scroll-hint {
     animation: none;
   }
+}
+
+@keyframes lightboxFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes lightboxImgFade {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes lightboxFadeIn  { from { opacity: 1; } }
+  @keyframes lightboxImgFade { from { opacity: 1; transform: scale(1); } }
 }

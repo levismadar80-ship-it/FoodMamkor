@@ -15,6 +15,7 @@ import { trackEvent } from "@/lib/analytics";
 import api from "@/lib/api";
 
 const FILTER_LIMIT = 100;
+const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
 
 const CITY_CHIP = { key: "city", label: "בעיר שלי", icon: "📍" };
 
@@ -44,26 +45,42 @@ export default function ProducersClient({
   const { setCity: setUserCity } = useUserCity();
   const mountFetched = useRef(false);
 
-  const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter;
-  const displayItems = hasActiveChips ? (filteredItems ?? []) : initialItems;
+  // Infinite scroll state (unfiltered mode only)
+  const [appendItems, setAppendItems] = useState([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialPage < totalPages);
+  const [nextPage, setNextPage] = useState(initialPage + 1);
+
+  // MEH-159: live total so the counter stays accurate after admin deletes.
+  const [liveTotal, setLiveTotal] = useState(initialTotal);
+  const sentinelRef = useRef(null);
+
+  const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
+
+  const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
+  const displayItems = hasActiveChips
+    ? (filteredItems ?? [])
+    : [...initialItems, ...appendItems];
   const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
 
   const syncUrl = useCallback(
-    (chipState, city) => {
+    (chipState, city, q) => {
       const params = new URLSearchParams();
       for (const chip of CHIPS_CONFIG) {
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
       if (city) params.set("city", city);
+      if (q) params.set("q", q);
       const qs = params.toString();
       router.replace(qs ? `/producers?${qs}` : "/producers", { scroll: false });
     },
     [router],
   );
 
-  const fetchFiltered = useCallback((chipState, city) => {
+  const fetchFiltered = useCallback((chipState, city, q) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
+    if (q) params.q = q;
     if (Object.keys(params).length === 0) {
       setFilteredItems(null);
       return;
@@ -80,19 +97,65 @@ export default function ProducersClient({
       .finally(() => setLoading(false));
   }, []);
 
-  // Fetch on mount if URL already has active chips (shared link / back-nav).
+  const loadNextPage = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    api
+      .get("/producers", {
+        params: { limit: PAGE_SIZE, offset: (nextPage - 1) * PAGE_SIZE },
+      })
+      .then((r) => {
+        const items = Array.isArray(r.data) ? r.data : [];
+        setAppendItems((prev) => [...prev, ...items]);
+        // MEH-159: sync total from fresh header on every page load.
+        const freshTotal = Number(r.headers["x-total-count"]);
+        if (!Number.isNaN(freshTotal) && freshTotal >= 0) setLiveTotal(freshTotal);
+        if (items.length < PAGE_SIZE) setHasMore(false);
+        else setNextPage((p) => p + 1);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  }, [loadingMore, hasMore, nextPage]);
+
+  // IntersectionObserver — fires when the sentinel enters the viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || hasActiveChips) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadNextPage(); },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, hasActiveChips, loadNextPage]);
+
+  // Fetch on mount if URL already has active chips/search (shared link / back-nav).
   useEffect(() => {
     if (mountFetched.current) return;
     mountFetched.current = true;
-    const anyActive = Object.values(chips).some(Boolean) || !!cityFilter;
-    if (anyActive) fetchFiltered(chips, cityFilter);
+    const anyActive = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
+    if (anyActive) fetchFiltered(chips, cityFilter, searchQ);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-159: revalidate total on tab focus so the counter stays fresh if
+  // producers were deleted while the user had the tab in the background.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      api.get("/producers/count").then((r) => {
+        const n = Number(r.data?.count);
+        if (!Number.isNaN(n) && n >= 0) setLiveTotal(n);
+      }).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    syncUrl(next, cityFilter);
-    fetchFiltered(next, cityFilter);
+    syncUrl(next, cityFilter, searchQ);
+    fetchFiltered(next, cityFilter, searchQ);
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
   };
 
@@ -100,8 +163,8 @@ export default function ProducersClient({
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
-        syncUrl(chips, null);
-        fetchFiltered(chips, null);
+        syncUrl(chips, null, searchQ);
+        fetchFiltered(chips, null, searchQ);
       } else {
         setLocationModalOpen(true);
       }
@@ -114,16 +177,17 @@ export default function ProducersClient({
     setLocationModalOpen(false);
     setCityFilter(city);
     setUserCity(city);
-    syncUrl(chips, city);
-    fetchFiltered(chips, city);
+    syncUrl(chips, city, searchQ);
+    fetchFiltered(chips, city, searchQ);
     trackEvent("producers_city_filter", { city });
   };
 
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
+    setSearchQ("");
     setFilteredItems(null);
-    syncUrl(CHIPS_DEFAULT, null);
+    syncUrl(CHIPS_DEFAULT, null, "");
     trackEvent("producers_clear_all");
   };
 
@@ -134,26 +198,42 @@ export default function ProducersClient({
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
-    !hasActiveChips && initialItems.length === 0 && initialTotal > 0;
-  const showCatalogEmpty = !hasActiveChips && initialTotal === 0;
+    !hasActiveChips && initialItems.length === 0 && liveTotal > 0;
+  const showCatalogEmpty = !hasActiveChips && liveTotal === 0;
   const showGrid = !loading && !showFilterEmpty && !showPageOverflow && !showCatalogEmpty;
 
   const counterText = (() => {
     if (!showGrid) return null;
     if (hasActiveChips) return `נמצאו ${filteredItems?.length ?? 0} בתי עסק`;
-    const start = (initialPage - 1) * perPage + 1;
-    const end = Math.min(initialPage * perPage, initialTotal);
-    return `מציגים ${start}–${end} מתוך ${initialTotal}`;
+    const loaded = initialItems.length + appendItems.length;
+    // MEH-159: use liveTotal (refreshed on scroll + tab focus) so the counter
+    // stays correct after admin deletes producers mid-session.
+    return loaded >= liveTotal
+      ? `כל ${liveTotal} בתי העסק`
+      : `מציגות ${loaded} מתוך ${liveTotal} בתי עסק`;
   })();
 
   return (
     <>
       <Breadcrumb
-        items={[{ href: "/", label: "בית" }, { label: "כל בתי העסק" }]}
+        items={[
+          { href: "/", label: "בית" },
+          searchQ
+            ? { href: "/producers", label: "כל בתי העסק" }
+            : { label: "כל בתי העסק" },
+          ...(searchQ ? [{ label: `חיפוש: ${searchQ}` }] : []),
+        ]}
         className="mb-4"
       />
       <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
-        כל בתי העסק
+        {searchQ ? (
+          <>
+            תוצאות עבור:{" "}
+            <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
+          </>
+        ) : (
+          "כל בתי העסק"
+        )}
       </h1>
 
       {/* Recently viewed strip */}
@@ -191,13 +271,27 @@ export default function ProducersClient({
               type="button"
               onClick={() => {
                 setCityFilter(null);
-                syncUrl(chips, null);
-                fetchFiltered(chips, null);
+                syncUrl(chips, null, searchQ);
+                fetchFiltered(chips, null, searchQ);
               }}
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-[10px] font-bold">×</span>
               📍 {cityFilter}
+            </button>
+          )}
+          {searchQ && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQ("");
+                syncUrl(chips, cityFilter, "");
+                fetchFiltered(chips, cityFilter, "");
+              }}
+              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+            >
+              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              🔍 {searchQ}
             </button>
           )}
           <button
@@ -221,7 +315,7 @@ export default function ProducersClient({
       {loading ? (
         <SkeletonProducerGrid count={8} />
       ) : showFilterEmpty ? (
-        <FilterEmptyState onClear={clearAll} />
+        <FilterEmptyState onClear={clearAll} searchQ={searchQ} />
       ) : showPageOverflow ? (
         <PageOverflowState />
       ) : showCatalogEmpty ? (
@@ -230,11 +324,40 @@ export default function ProducersClient({
         <>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
             {displayItems.map((p) => (
-              <ProducerCard key={p.id} producer={p} referrer="producers-index" />
+              <ProducerCard
+                key={p.id}
+                producer={p}
+                referrer="producers-index"
+                highlightQuery={searchQ || undefined}
+              />
             ))}
           </div>
-          {!hasActiveChips && totalPages > 1 && (
-            <ServerPageLinks page={initialPage} totalPages={totalPages} />
+
+          {/* Infinite scroll — unfiltered mode only */}
+          {!hasActiveChips && (
+            <>
+              {/* Sentinel: observer triggers loadNextPage when this enters viewport */}
+              <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+              {loadingMore && (
+                <div className="flex justify-center py-8">
+                  <div
+                    className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
+                    role="status"
+                    aria-label="טוענת עוד בתי עסק"
+                  />
+                </div>
+              )}
+              {!hasMore && appendItems.length > 0 && (
+                <p className="text-center text-site-muted text-sm py-8">
+                  הצגנו את כל {liveTotal} בתי העסק 🌿
+                </p>
+              )}
+              {/* SEO fallback — shown when JS pagination is still the only option
+                  (e.g. user landed directly on page N via URL) */}
+              {!hasMore && appendItems.length === 0 && totalPages > 1 && (
+                <ServerPageLinks page={initialPage} totalPages={totalPages} />
+              )}
+            </>
           )}
         </>
       )}
@@ -284,19 +407,36 @@ function RecentlyViewedStrip() {
   );
 }
 
-function FilterEmptyState({ onClear }) {
+function FilterEmptyState({ onClear, searchQ }) {
   return (
     <div className="text-center py-16">
       <div
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-light mb-4"
         aria-hidden="true"
       >
-        <span className="text-2xl">🌱</span>
+        <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
       </div>
       <h2 className="font-headline text-xl font-bold text-site-text mb-2">
-        לא מצאנו בתי עסק שמתאימים לסינון הזה
+        {searchQ
+          ? `לא מצאנו בתי עסק עבור "${searchQ}"`
+          : "לא מצאנו בתי עסק שמתאימים לסינון הזה"}
       </h2>
-      <p className="text-site-muted text-sm mb-6">נסי להסיר אחד מהסינונים</p>
+      <p className="text-site-muted text-sm mb-6">
+        {searchQ ? "נסי מילה אחרת או גלי לפי קטגוריה" : "נסי להסיר אחד מהסינונים"}
+      </p>
+      {searchQ && (
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {["בשר", "גבינה", "לחם", "ירקות", "שמן", "דבש"].map((cat) => (
+            <Link
+              key={cat}
+              href={`/producers?q=${encodeURIComponent(cat)}`}
+              className="bg-white border border-border text-site-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
+            >
+              {cat}
+            </Link>
+          ))}
+        </div>
+      )}
       <button
         type="button"
         onClick={onClear}

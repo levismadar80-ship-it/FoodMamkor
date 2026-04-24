@@ -7,16 +7,25 @@ keystroke without abuse.
 No full-text index yet — plain ILIKE is fine at this scale (~hundreds of
 producers). If this grows past ~10k rows we'd swap to pg_trgm GIN.
 """
+import time
 from uuid import UUID
+
+import structlog
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
+
+logger = structlog.get_logger(__name__)
+
+# In-memory cache for trending queries — single entry, 1-hour TTL.
+_trending_cache: dict = {"data": None, "ts": 0.0}
+_TRENDING_TTL = 3600.0
 
 router = APIRouter(tags=["search"])
 
@@ -57,17 +66,39 @@ def _empty() -> SearchOut:
     return SearchOut()
 
 
+# MEH-252 — Hebrew single-letter prefix strip. ILIKE already handles the
+# common singular→plural case ("%גבינה%" matches "גבינות") because the
+# singular is a substring of the plural. What it does *not* handle is the
+# prefix-letter case: "הגבינה" is not a substring of "גבינה", so the user
+# sees "no results" after typing the definite article. Strip one of the
+# usual מש״ה כל״ב prefix letters when the remaining word is at least 3
+# characters — short enough to skip false strips like "הוא" → "וא".
+_HEBREW_PREFIXES = ("ה", "ב", "ל", "מ", "ש", "כ", "ו")
+
+
+def _strip_hebrew_prefix(word: str) -> str:
+    if len(word) >= 4 and word[0] in _HEBREW_PREFIXES:
+        return word[1:]
+    return word
+
+
 @router.get("/search", response_model=SearchOut)
 @limiter.limit("60/minute")
 def smart_search(
     request: Request,
-    q: str = Query("", max_length=100),
+    q: str = Query("", max_length=200),
     limit: int = Query(8, ge=1, le=20),
     db: Session = Depends(get_db),
 ):
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
+    # MEH-252 — for single-word Hebrew queries, fall back to the
+    # prefix-stripped form so "הגבינה" finds "גבינה". For multi-word
+    # queries we keep the literal — stripping every word's first letter
+    # is too aggressive and over-matches.
+    if " " not in q_clean:
+        q_clean = _strip_hebrew_prefix(q_clean)
     like = f"%{q_clean}%"
 
     # -------- Producers (approved only, name + description) --------
@@ -167,3 +198,36 @@ def smart_search(
         cities=cities,
         categories=categories,
     )
+
+
+@router.get("/search/trending", response_model=list[str])
+def trending_searches(db: Session = Depends(get_db)):
+    """Return top 5 queries that returned results, cached 1 hour."""
+    now = time.monotonic()
+    if (
+        _trending_cache["data"] is not None
+        and now - _trending_cache["ts"] < _TRENDING_TTL
+    ):
+        return _trending_cache["data"]
+
+    try:
+        rows = db.execute(
+            text(
+                """
+                SELECT query
+                FROM search_queries
+                WHERE results_count > 0
+                GROUP BY query
+                ORDER BY COUNT(*) DESC
+                LIMIT 5
+                """
+            )
+        ).fetchall()
+        result = [row[0] for row in rows]
+    except Exception:
+        logger.warning("[search] trending cache DB query failed — returning empty", exc_info=True)
+        result = []
+
+    _trending_cache["data"] = result
+    _trending_cache["ts"] = now
+    return result

@@ -13,6 +13,7 @@ import { CaretDown, Crosshair, House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
 import SmartSearch from "@/components/SmartSearch";
+import HeroSearch from "@/components/HeroSearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -26,6 +27,9 @@ import ChipScrollRow from "@/components/ChipScrollRow";
 import { buildChipParams, CHIPS_CONFIG } from "@/lib/producer-filters";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useOnboarding } from "@/lib/use-onboarding";
+import HolidayBanner from "@/components/HolidayBanner";
+import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
+import { isFridayMode } from "@/lib/friday-mode";
 
 const PAGE_SIZE = 8;
 
@@ -114,12 +118,19 @@ export default function HomePage() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
   const [step0Visible, setStep0Visible] = useState(false);
+  const [fridayMode, setFridayMode] = useState(false);
 
   useEffect(() => {
     if (onboardStep !== 0) return;
     const t = setTimeout(() => setStep0Visible(true), 2000);
     return () => clearTimeout(t);
   }, [onboardStep]);
+
+  useEffect(() => {
+    setFridayMode(isFridayMode());
+    const tid = setInterval(() => setFridayMode(isFridayMode()), 60 * 1000);
+    return () => clearInterval(tid);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem("recently_viewed") && !localStorage.getItem("favorite_hint_shown")) {
@@ -232,6 +243,7 @@ export default function HomePage() {
           setVisibleCount(PAGE_SIZE);
         }
       })
+      .catch(() => {})
       .finally(() => setProducersLoading(false));
   };
 
@@ -357,7 +369,7 @@ export default function HomePage() {
               textTransform: "uppercase",
             }}
           >
-            {t("hero_subtitle")}
+            {fridayMode ? "שישי הגיע 🛒 מה הולך על שולחן השבת שלך?" : t("hero_subtitle")}
           </motion.p>
 
           {/* Pill search */}
@@ -367,26 +379,16 @@ export default function HomePage() {
             transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             role="search"
             aria-label="חיפוש בתי עסק"
-            className="mx-auto mt-8 bg-white shadow-lg flex items-center gap-2.5 px-6 py-3.5"
+            className="mx-auto mt-8 bg-white shadow-lg px-6 py-3.5"
             style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
           >
-            <svg
-              className="w-5 h-5 text-primary shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {/* MEH-13: smart search with autocomplete. Enter-without-
-                selection routes to /search?q=... so the old city-only
-                handleSearch fallback is retired — the results page
-                handles producer + product matches together. */}
-            <SmartSearch
+            {/* MEH-99: HeroSearch routes to /producers?q= for filtered listing.
+                SmartSearch (routes to /search?q= results page) is retained
+                in the site header for secondary navigation. */}
+            <HeroSearch
               placeholder={t("search_placeholder")}
               srLabel={t("search_sr_label")}
-              className="flex-1"
+              className="w-full"
             />
           </motion.div>
 
@@ -425,6 +427,9 @@ export default function HomePage() {
         </button>
       </section>
 
+      {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only */}
+      {fridayMode && <FridayDeliveryStrip city={userCity} />}
+
       {/* =========================
           SOCIAL PROOF BAR
           PREMIUM_DESIGN: numbers count up from 0 when scrolled into view.
@@ -456,6 +461,11 @@ export default function HomePage() {
         onClose={() => setLocationModalOpen(false)}
         onSelectCity={handleCitySelected}
       />
+
+      {/* MEH-55: holiday banner — visible 7 days before and during a holiday */}
+      <div className="mt-4">
+        <HolidayBanner />
+      </div>
 
       {/* =========================
           CATEGORY GRID
@@ -713,7 +723,7 @@ export default function HomePage() {
                   viewport={{ once: true, amount: 0.1 }}
                   transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
-                  <ProducerCard producer={p} referrer="home" />
+                  <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
                 </motion.div>
               ))}
             </div>
@@ -760,7 +770,7 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
             {newestProducers.map((p) => (
-              <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" />
+              <ProducerCard key={`new-${p.id}`} producer={p} referrer="home" fridayMode={fridayMode} />
             ))}
           </div>
         </section>
@@ -773,7 +783,8 @@ export default function HomePage() {
           ========================= */}
       <ParallaxQuote
         image={PARALLAX_IMAGE_1}
-        quote="כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
+        quote="אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור."
+        attribution="— ספיר, מייסדת מהמקור"
         overlayOpacity={0.6}
         height="400px"
       />
@@ -804,9 +815,9 @@ export default function HomePage() {
 
       {/* =========================
           מהמטבח של השכן — preview (max 3)
-          Full browse lives at /neighbor. The full-section version used
-          to live here but we split it out so the homepage stays tight.
+          Full browse lives at /neighbor. Hidden entirely when no products exist.
           ========================= */}
+      {homeProducts.length > 0 && (
       <section
         id="home-kitchen"
         className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
@@ -827,28 +838,17 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {homeProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {homeProducts.slice(0, 3).map((hp) => (
-              <HomeProductCard
-                key={hp.id}
-                product={hp}
-                onWhatsAppClick={() => handleWhatsAppClick(hp.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-site-muted py-8">
-            {user
-              ? "אין עדיין מוצרים ביתיים."
-              : "אין עדיין מוצרים ביתיים. התחברי כדי לפרסם."}
-            {" "}
-            <Link href="/neighbor" className="text-primary hover:underline">
-              הצטרפי למהמטבח של השכן →
-            </Link>
-          </p>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {homeProducts.slice(0, 3).map((hp) => (
+            <HomeProductCard
+              key={hp.id}
+              product={hp}
+              onWhatsAppClick={() => handleWhatsAppClick(hp.id)}
+            />
+          ))}
+        </div>
       </section>
+      )}
 
       {/* =========================
           PARALLAX DIVIDER 2 (PREMIUM_DESIGN)

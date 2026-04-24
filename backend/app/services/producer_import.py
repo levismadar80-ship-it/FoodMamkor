@@ -16,9 +16,18 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+# U+00D7 (×, multiplication sign) and U+00F8 (ø) appear when Hebrew UTF-8
+# bytes are decoded as Latin-1/Windows-1252 — the classic XLS mojibake.
+_MOJIBAKE_RE = re.compile(r"[×ø]")
+
+
+def _has_mojibake(value: str | None) -> bool:
+    return bool(value and _MOJIBAKE_RE.search(value))
+
 from sqlalchemy.orm import Session
 
 from app.models import Category, DeliveryArea, Producer, ProducerCategory
+from app.slug_utils import RESERVED_SLUGS
 
 
 def _slugify(text: str) -> str:
@@ -46,11 +55,12 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id=None) -> str:
     candidate = base_slug
     counter = 2
     while True:
-        q = db.query(Producer).filter(Producer.slug == candidate)
-        if exclude_id:
-            q = q.filter(Producer.id != exclude_id)
-        if not q.first():
-            return candidate
+        if candidate not in RESERVED_SLUGS:
+            q = db.query(Producer).filter(Producer.slug == candidate)
+            if exclude_id:
+                q = q.filter(Producer.id != exclude_id)
+            if not q.first():
+                return candidate
         candidate = f"{base_slug}-{counter}"
         counter += 1
 
@@ -91,6 +101,7 @@ class RowResult:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     saved: bool = False
+    mojibake: bool = False
 
 
 def parse_row(row: list[Any], row_number: int) -> RowResult:
@@ -129,6 +140,14 @@ def parse_row(row: list[Any], row_number: int) -> RowResult:
         },
     )
 
+    # MEH-154: detect UTF-8 Hebrew decoded as Latin-1 (mojibake).
+    # Check name + key text fields. × (U+00D7) is the dead-giveaway byte.
+    _text_fields = [name, result.data.get("city"), result.data.get("description"),
+                    result.data.get("contact_name")]
+    if any(_has_mojibake(f) for f in _text_fields):
+        result.errors.append("קידוד לא תקין — שמרי את הקובץ כ-XLSX ולא XLS.")
+        result.mojibake = True
+
     if not name:
         result.errors.append("חסר שם עסק (עמודה A)")
     if not result.data["city"]:
@@ -141,11 +160,35 @@ def parse_row(row: list[Any], row_number: int) -> RowResult:
 
 def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> dict:
     """Import a list of rows (already with header skipped). Returns summary dict."""
+    # Pass 1: parse all rows before touching the DB.
+    all_parsed = [parse_row(row, idx) for idx, row in enumerate(rows, start=2)]
+
+    # MEH-154: if any row has mojibake, reject the entire batch — never partial-commit
+    # corrupted data.
+    bad_rows = [r for r in all_parsed if r.mojibake]
+    if bad_rows:
+        return {
+            "imported": 0,
+            "skipped": 0,
+            "errors": len(bad_rows),
+            "batch_rejected": True,
+            "batch_error": "קידוד לא תקין — שמרי את הקובץ כ-XLSX ולא XLS.",
+            "rows": [
+                {
+                    "row_number": r.row_number,
+                    "data": {"name": r.data.get("name")},
+                    "errors": r.errors,
+                    "warnings": [],
+                }
+                for r in bad_rows
+            ],
+        }
+
+    # Pass 2: save rows.
     results: list[RowResult] = []
     imported = skipped = errors = 0
 
-    for idx, row in enumerate(rows, start=2):  # row 2 = first data row
-        parsed = parse_row(row, idx)
+    for parsed in all_parsed:
         if not parsed.data["name"]:
             skipped += 1
             results.append(parsed)

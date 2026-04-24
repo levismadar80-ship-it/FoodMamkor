@@ -6,7 +6,7 @@
  * primary button; ProducerCard highlights the matching icon.
  */
 
-import { normalizePhone } from "@/lib/utils";
+import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
 
 export const CONTACT_METHODS = [
   { key: "whatsapp", label: "WhatsApp" },
@@ -34,7 +34,7 @@ export function getPrimaryContactHref(producer) {
       const digits = normalizePhone(producer.phone);
       if (!digits) return null;
       const msg = `היי! מצאתי אותך במהמקור — ${producer.name || ""}`;
-      return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+      return getWhatsAppHref(digits, msg);
     }
     case "phone": {
       if (!producer.phone) return null;

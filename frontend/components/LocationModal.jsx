@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Crosshair, X } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
+import { useFocusReturn } from "@/lib/use-focus-return";
 
 const POPULAR_CITIES = ["תל אביב", "ירושלים", "חיפה", "באר שבע"];
 
@@ -10,6 +11,8 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   const [searchValue, setSearchValue] = useState("");
   const [geoLoading, setGeoLoading] = useState(false);
   const overlayRef = useRef(null);
+
+  useFocusReturn(open);
 
   useEffect(() => {
     if (!open) return;
@@ -75,10 +78,10 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 start-3 w-9 h-9 rounded-full hover:bg-light flex items-center justify-center text-site-muted transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-4 start-4 w-8 h-8 rounded-full bg-background-secondary hover:bg-light flex items-center justify-center text-site-text transition-colors"
           aria-label="סגור"
         >
-          <X size={18} weight="bold" />
+          <X size={16} weight="regular" />
         </button>
 
         <h2 className="font-headline text-xl font-bold text-site-text mb-1">
@@ -107,7 +110,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
               key={city}
               type="button"
               onClick={() => handleCityPick(city)}
-              className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition"
+              className="px-4 py-3 rounded-lg bg-light hover:bg-primary hover:text-white transition-colors min-h-[44px] text-site-text text-sm font-medium"
             >
               {city}
             </button>
@@ -127,7 +130,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full text-center text-sm text-site-muted hover:text-site-text transition py-2"
+          className="w-full flex items-center justify-center text-sm text-site-muted hover:text-primary transition-colors min-h-[44px] px-4 py-3"
         >
           דלגי לעכשיו
         </button>

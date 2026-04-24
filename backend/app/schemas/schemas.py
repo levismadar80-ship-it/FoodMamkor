@@ -2,23 +2,40 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 # --- Auth ---
 class UserRegister(BaseModel):
     email: EmailStr
     name: str
-    password: str
+    # MEH-248 — backend password min_length matches the frontend `minLength={8}`
+    # on /register; without this the API accepted single-char passwords from
+    # any non-browser caller.
+    password: str = Field(min_length=8, max_length=200)
     city: str | None = None
     phone: str | None = None
 
 
-class ProducerRegister(BaseModel):
-    # User account
+class ForgotPasswordRequest(BaseModel):
     email: EmailStr
-    name: str
-    password: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
+
+
+class ProducerRegister(BaseModel):
+    # User account — optional when upgrading an already-authenticated user
+    # (MEH-143). Required for new (unauthenticated) registrations; the
+    # router validates and raises 422 when they are absent in that case.
+    email: EmailStr | None = None
+    name: str | None = None
+    # MEH-248 — when a password is supplied (new-registration path), it
+    # must meet the same 8-char minimum as /register. The None case
+    # (authenticated user upgrading to producer, MEH-143) skips the check.
+    password: str | None = Field(default=None, min_length=8, max_length=200)
     # Producer details
     producer_name: str
     description: str | None = None
@@ -32,6 +49,9 @@ class ProducerRegister(BaseModel):
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
     category_ids: list[int] = []
+    gluten_free: bool = False
+    vegan: bool = False
+    lactose_free: bool = False
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
@@ -41,6 +61,16 @@ class GoogleAuthRequest(BaseModel):
 
 
 class AppleAuthRequest(BaseModel):
+    id_token: str
+    name: str | None = None  # Apple only sends name on first auth
+
+
+# MEH-170 — Step-0 OAuth on producer signup. Same shape as Google/Apple
+# auth but paired with an explicit "producer flow" discriminator so the
+# router can return 409 when the user already has a producer linked
+# (the UI then redirects to /login instead of silently logging in).
+class ProducerOAuthSignupRequest(BaseModel):
+    provider: str = Field(pattern="^(google|apple)$")
     id_token: str
     name: str | None = None  # Apple only sends name on first auth
 
@@ -85,6 +115,24 @@ class ProductCreate(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price_range: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == "" else v
 
 
 class ProductOut(BaseModel):
@@ -92,6 +140,7 @@ class ProductOut(BaseModel):
     name: str
     description: str | None = None
     price_range: str | None = None
+    image_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -131,6 +180,9 @@ class ProducerAdminCreate(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
+    gluten_free: bool = False
+    vegan: bool = False
+    lactose_free: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
@@ -141,6 +193,19 @@ class ProducerAdminCreate(BaseModel):
     images: list[str] = []
     category_ids: list[int] = []
     delivery_area_cities: list[str] = []  # simple comma-split list
+    # MEH-213 — location mode
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
+
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        if not self.has_physical_location and not self.offers_delivery:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
 
 
 class ProducerImportPreviewRow(BaseModel):
@@ -178,6 +243,9 @@ class ProducerUpdate(BaseModel):
     price_range: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
+    gluten_free: bool | None = None
+    vegan: bool | None = None
+    lactose_free: bool | None = None
     has_delivery: bool | None = None
     pickup_points: bool | None = None
     kosher: str | None = None
@@ -190,6 +258,50 @@ class ProducerUpdate(BaseModel):
     status: str | None = None
     category_ids: list[int] | None = None
     delivery_area_cities: list[str] | None = None  # admin form: simple list of city names
+    # MEH-213 — location mode
+    has_physical_location: bool | None = None
+    offers_delivery: bool | None = None
+    delivery_nationwide: bool | None = None
+    delivery_cities: list[str] | None = None
+    # MEH-210 Phase 2 — custom WhatsApp question chips
+    custom_questions: list[str] | None = None
+    # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
+    availability_status: str | None = None
+    vacation_until: date | None = None
+
+    @field_validator("availability_status")
+    @classmethod
+    def _validate_availability_status(cls, v):
+        allowed = {"available", "full", "vacation"}
+        if v is not None and v not in allowed:
+            raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
+
+    @field_validator("custom_questions")
+    @classmethod
+    def _validate_custom_questions(cls, v):
+        if v is None:
+            return v
+        filtered = [q.strip() for q in v if q.strip()]
+        if len(filtered) > 5:
+            raise ValueError("מותר עד 5 שאלות")
+        for q in filtered:
+            if len(q) > 80:
+                raise ValueError("כל שאלה מוגבלת ל-80 תווים")
+        return filtered
+
+    @model_validator(mode="after")
+    def _validate_location_mode(self):
+        hp = self.has_physical_location
+        od = self.offers_delivery
+        # Only validate when both are explicitly set (partial updates allowed)
+        if hp is not None and od is not None and not hp and not od:
+            raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
+        dn = self.delivery_nationwide
+        dc = self.delivery_cities
+        if dn and dc and len(dc) > 0:
+            raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
 
 
 class ProducerListOut(BaseModel):
@@ -209,12 +321,17 @@ class ProducerListOut(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
+    gluten_free: bool = False
+    vegan: bool = False
+    lactose_free: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
+    # MEH-155: optional vacation end date — auto-cleared when past.
+    vacation_until: date | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -234,6 +351,34 @@ class ProducerListOut(BaseModel):
     # Populated by /producers only when ?lat=&lng=&radius_km= are passed.
     # Computed via Haversine SQL — not a real column.
     distance_km: float | None = None
+    # MEH-106: social proof — count of users who saved this producer.
+    favorites_count: int = 0
+    # MEH-51: trust ladder — computed at serialization, not stored.
+    trust_tier: int = 1
+    phone_verified: bool = False
+    ambassador: bool = False
+    kashrut_badges: list[str] = []
+    kashrut_verified_at: datetime | None = None
+    kashrut_expires_at: datetime | None = None
+    # MEH-213 — location mode
+    has_physical_location: bool = True
+    offers_delivery: bool = False
+    delivery_nationwide: bool = False
+    delivery_cities: list[str] = []
+
+    @model_validator(mode="after")
+    def _compute_trust_tier(self):
+        from app.services.trust_tier import compute_trust_tier
+        self.trust_tier = compute_trust_tier(self)
+        # MEH-155: if vacation_until has passed, treat as available in the API response.
+        if (
+            self.availability_status == "vacation"
+            and self.vacation_until is not None
+            and self.vacation_until < date.today()
+        ):
+            self.availability_status = "available"
+            self.vacation_until = None
+        return self
 
     model_config = {"from_attributes": True}
 
@@ -248,8 +393,56 @@ class ProducerDetailOut(ProducerListOut):
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
     created_at: datetime
+    # MEH-53: Instagram story card URL (Cloudinary).
+    story_card_url: str | None = None
+    # MEH-102: weekly opening hours. Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+    opening_hours: str | None = None
+    # MEH-210 Phase 2 — custom WhatsApp question chips
+    custom_questions: list[str] | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-51: Kashrut badge requests ---
+class KashrutRequestCreate(BaseModel):
+    badge_code: str
+    cert_url: str | None = None
+
+    @field_validator("cert_url")
+    @classmethod
+    def _validate_cert_url(cls, v):
+        if v is not None and not v.startswith(("https://", "http://")):
+            raise ValueError("cert_url חייב להתחיל ב-https:// או http://")
+        return v
+
+
+class KashrutRequestOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    badge_code: str
+    cert_url: str | None = None
+    status: str
+    notes: str | None = None
+    created_at: datetime
+    producer_name: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class KashrutApproveIn(BaseModel):
+    pass
+
+
+class KashrutRejectIn(BaseModel):
+    notes: str | None = None
+
+
+class OtpConfirmIn(BaseModel):
+    code: str
+
+
+class SetAmbassadorIn(BaseModel):
+    ambassador: bool
 
 
 # --- User ---
@@ -265,6 +458,18 @@ class UserOut(BaseModel):
     # hide the password-change form for OAuth-only accounts (they have
     # no password_hash to verify against).
     is_oauth: bool = False
+    # MEH-143: True once the user has a linked producer profile.
+    is_producer: bool = False
+    referral_code: str | None = None
+    # MEH-138: profile photo URL (Cloudinary or Google picture).
+    avatar_url: str | None = None
+    # MEH-206: producer status fields — populated by GET /auth/me when
+    # the user has a linked producer. Used by /settings to show the
+    # correct business tab state (pending/approved/rejected/suspended).
+    producer_status: str | None = None
+    producer_rejection_reason: str | None = None
+    # MEH-192: email verification status.
+    email_verified: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -613,3 +818,85 @@ class OutreachPrefillResponse(BaseModel):
     website: str | None = None
     city: str | None = None
     category: str | None = None
+
+
+# --- MEH-52 Group Buys ---
+class GroupBuyCommitOut(BaseModel):
+    id: UUID
+    group_buy_id: UUID
+    user_id: UUID
+    quantity: int
+    phone: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GroupBuyOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    producer_name: str | None = None
+    title: str
+    description: str | None = None
+    product_name: str
+    unit: str | None = None
+    price_per_unit_regular: Decimal
+    price_per_unit_group: Decimal
+    min_participants: int
+    max_participants: int | None = None
+    deadline: datetime
+    city: str | None = None
+    status: str
+    commits_count: int = 0
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GroupBuyDetail(GroupBuyOut):
+    """Full detail — includes whether the current user has committed."""
+    user_committed: bool = False
+    user_commit: GroupBuyCommitOut | None = None
+
+
+class GroupBuyCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=200)
+    description: str | None = None
+    product_name: str = Field(..., min_length=1, max_length=200)
+    unit: str | None = Field(None, max_length=50)
+    price_per_unit_regular: Decimal = Field(..., gt=0)
+    price_per_unit_group: Decimal = Field(..., gt=0)
+    min_participants: int = Field(..., ge=2)
+    max_participants: int | None = Field(None, ge=2)
+    deadline: datetime
+    city: str | None = Field(None, max_length=100)
+
+
+class GroupBuyCommitRequest(BaseModel):
+    quantity: int = Field(1, ge=1, le=100)
+    phone: str | None = Field(None, max_length=30)
+
+
+# MEH-141: category request flow
+class CategoryRequestCreate(BaseModel):
+    requested_name: str = Field(..., min_length=1, max_length=100)
+    examples: str | None = Field(None, max_length=300)
+    producer_id: UUID | None = None
+
+
+class CategoryRequestOut(BaseModel):
+    id: UUID
+    requested_name: str
+    examples: str | None = None
+    producer_id: UUID | None = None
+    status: str
+    admin_notes: str | None = None
+    created_at: datetime
+    reviewed_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class CategoryRequestUpdate(BaseModel):
+    status: str = Field(..., pattern="^(pending|approved|rejected|merged)$")
+    admin_notes: str | None = None

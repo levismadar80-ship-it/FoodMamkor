@@ -5,6 +5,46 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { getUpcomingHoliday } from "@/lib/holidays";
+
+function VanityLinkCard({ slug }) {
+  const url = `https://mehamakor.online/p/${slug}`;
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const waText = encodeURIComponent(`הפרופיל שלי במהמקור: ${url}`);
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5 mb-6">
+      <p className="text-sm font-medium text-site-text mb-2">🔗 הלינק שלי</p>
+      <div className="flex items-center gap-2 bg-light rounded-[10px] px-3 py-2 mb-3">
+        <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={copy}
+          className="flex-1 text-sm border border-border rounded-[8px] px-3 py-1.5 hover:border-primary transition"
+        >
+          {copied ? "✅ הועתק!" : "העתיקי לינק"}
+        </button>
+        <a
+          href={`https://wa.me/?text=${waText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-[8px] px-3 py-1.5"
+        >
+          שתפי בוואטסאפ
+        </a>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Producer dashboard — feature/producer-analytics.
@@ -25,7 +65,9 @@ export default function ProducerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [vacationUntil, setVacationUntil] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -33,10 +75,12 @@ export default function ProducerDashboardPage() {
       router.push("/login");
       return;
     }
-    // Fire both in parallel — dashboard first (drives the hero) and
-    // analytics second (drives the stat cards and charts).
-    api.get("/producers/me/dashboard").then((r) => setData(r.data)).catch(() => setData(null));
+    api.get("/producers/me/dashboard").then((r) => {
+      setData(r.data);
+      setVacationUntil(r.data?.producer?.vacation_until || "");
+    }).catch(() => setData(null));
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
+    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
 
   const toggleAvailability = async () => {
@@ -75,7 +119,10 @@ export default function ProducerDashboardPage() {
         : prev,
     );
     try {
-      await api.post("/producers/me/availability-status", { status });
+      const body = { status };
+      if (status === "vacation" && vacationUntil) body.vacation_until = vacationUntil;
+      await api.post("/producers/me/availability-status", body);
+      if (status !== "vacation") setVacationUntil("");
     } catch {
       alert("לא הצלחנו לעדכן את סטטוס הזמינות — נסי שוב בעוד רגע");
       // Refetch on failure so the UI doesn't stay out of sync.
@@ -107,9 +154,74 @@ export default function ProducerDashboardPage() {
       </p>
 
       {producer.status === "pending" && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm text-yellow-800">
-          🌿 פרופיל העסק שלך ממתין לאישור
+        <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
+          <p className="font-semibold text-yellow-800 mb-1">🌿 הפרופיל שלך בסקירה</p>
+          <p className="text-yellow-700 mb-3">
+            הצוות שלנו בודק את הפרטים — לרוב לוקח עד 3 ימי עסקים. פרופילים מלאים מאושרים מהר יותר.
+          </p>
+          <Link
+            href="/settings"
+            className="inline-block bg-yellow-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-yellow-800 transition"
+          >
+            השלימי פרופיל ←
+          </Link>
         </div>
+      )}
+
+      {producer.status === "rejected" && (
+        <div className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm" role="alert">
+          <p className="font-semibold text-red-800 mb-1">⚠️ הבקשה לא אושרה</p>
+          <p className="text-red-700 mb-3">
+            צרי קשר איתנו לפרטים נוספים ולבדיקה מחדש.
+          </p>
+          <Link
+            href="/contact"
+            className="inline-block bg-red-700 text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-red-800 transition"
+          >
+            צרי קשר ←
+          </Link>
+        </div>
+      )}
+
+      {producer.status === "pending_whatsapp" && (
+        <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
+          <p className="font-semibold text-primary mb-1">🌿 ברוכה הבאה! כמעט שם.</p>
+          <p className="text-site-muted mb-3">
+            השלימי את הפרופיל כדי להאיץ את הסקירה — פרופילים מלאים מאושרים מהר יותר.
+          </p>
+          <Link href="/settings" className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition">
+            השלימי פרופיל ←
+          </Link>
+        </div>
+      )}
+
+      {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
+      {(() => {
+        const h = getUpcomingHoliday();
+        if (!h) return null;
+        return (
+          <div
+            className="rounded-[16px] p-4 mb-6 text-sm flex items-start gap-3"
+            style={{ backgroundColor: h.color + "15", border: `1.5px solid ${h.color}35` }}
+          >
+            <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
+            <div>
+              <p className="font-semibold text-site-text">{h.dashboardHint}</p>
+              <Link
+                href="/producer/dashboard"
+                className="text-xs mt-1 inline-block hover:underline"
+                style={{ color: h.color }}
+              >
+                עדכני את הקטלוג ←
+              </Link>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* MEH-53: Vanity URL card */}
+      {producer.slug && (
+        <VanityLinkCard slug={producer.slug} />
       )}
 
       {/* Today's availability — hero action */}
@@ -192,11 +304,38 @@ export default function ProducerDashboardPage() {
             );
           })}
         </div>
+        {(producer.availability_status || "available") === "vacation" && (
+          <div className="mt-4 flex items-center gap-3">
+            <label htmlFor="vacation-until" className="text-sm text-site-muted whitespace-nowrap">
+              חזרה ב:
+            </label>
+            <input
+              id="vacation-until"
+              type="date"
+              value={vacationUntil}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setVacationUntil(e.target.value)}
+              onBlur={() => { if (vacationUntil) setAvailabilityStatus("vacation"); }}
+              className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              dir="ltr"
+            />
+            {vacationUntil && (
+              <button
+                type="button"
+                onClick={() => { setVacationUntil(""); setAvailabilityStatus("vacation"); }}
+                className="text-xs text-site-muted hover:text-red-600 transition"
+                aria-label="הסירי תאריך חזרה"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Analytics stat cards */}
       {analytics ? (
-        <AnalyticsSection analytics={analytics} />
+        <AnalyticsSection analytics={analytics} profile={profile} />
       ) : (
         <p className="text-sm text-site-muted mb-8">טוענת סטטיסטיקות...</p>
       )}
@@ -224,7 +363,31 @@ export default function ProducerDashboardPage() {
           <p className="font-headline text-lg font-bold mb-1">הצג את העסק באתר</p>
           <p className="text-sm text-site-muted">כך לקוחות רואות אותו</p>
         </Link>
+        <Link
+          href="/producer/dashboard/group-buys"
+          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+        >
+          <p className="font-headline text-lg font-bold mb-1">קבוצות הרכש שלי</p>
+          <p className="text-sm text-site-muted">נהלי קבוצות רכש ופתחי חדשות</p>
+        </Link>
       </div>
+
+      {/* AI bio */}
+      {profile && (
+        <div className="mt-8">
+          <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
+        </div>
+      )}
+
+      {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
+      {profile && (
+        <div className="mt-6">
+          <CustomQuestionsCard
+            profile={profile}
+            onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -233,11 +396,12 @@ export default function ProducerDashboardPage() {
 // Analytics section: stat cards + charts
 // ============================================================
 
-function AnalyticsSection({ analytics }) {
+function AnalyticsSection({ analytics, profile }) {
   const {
     profile_views,
     search_appearances,
     whatsapp_clicks,
+    contact_clicks,
     follower_count,
     new_followers_this_week,
     average_rating,
@@ -245,12 +409,66 @@ function AnalyticsSection({ analytics }) {
     home_products_count,
     views_by_day,
     top_cities,
+    rank_in_city,
+    conversion_rate,
+    profile_strength,
+    weekly_trend,
   } = analytics;
+
+  const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
+  const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-site-muted";
+  const cityName = profile?.city ? ` ב${profile.city}` : "";
+  const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
+
+  const eligibleForWeekly = profile_strength >= 80 && rank_in_city === 1;
 
   return (
     <div className="space-y-8 mb-10">
-      {/* Row 1: windowed metric cards (profile / search / whatsapp) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* MEH-57: Hero 4-stat bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">צפיות השבוע</p>
+          <p className={`font-headline text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
+            {profile_views?.last_7d ?? 0}
+            <span className={`text-lg font-semibold ${trendColor}`}>{trendIcon}</span>
+          </p>
+          <p className="text-xs text-site-muted mt-1">7 הימים האחרונים</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">לחיצות ווטסאפ</p>
+          <p className="font-headline text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
+          <p className="text-xs text-site-muted mt-1">7 הימים האחרונים</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">המרה %</p>
+          <p className="font-headline text-3xl font-bold text-primary">{conversion_rate}%</p>
+          <p className="text-xs text-site-muted mt-1">צפייה → ווטסאפ (30 יום)</p>
+        </div>
+        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <p className="text-xs text-site-muted mb-1">דירוג בעיר</p>
+          <p className="font-headline text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
+          <p className="text-xs text-site-muted mt-1">לפי צפיות (30 יום)</p>
+        </div>
+      </div>
+
+      {/* MEH-57: "בעלת עסק השבוע" eligibility badge */}
+      {eligibleForWeekly && (
+        <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
+          <span className="text-2xl" aria-hidden="true">🌟</span>
+          <div>
+            <p className="font-semibold text-primary text-sm">את מועמדת לבעלת עסק השבוע 🌟 צרי קשר עם הצוות</p>
+            <p className="text-xs text-site-muted">דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!</p>
+          </div>
+        </div>
+      )}
+
+      {/* MEH-57: Profile strength meter */}
+      {profile && (
+        <ProfileStrengthCard profile={profile} analytics={analytics} />
+      )}
+
+      {/* Row 1: windowed metric cards (profile / search / whatsapp / contact) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <WindowedMetricCard
           label="צפיות בפרופיל"
           icon="👁️"
@@ -265,6 +483,11 @@ function AnalyticsSection({ analytics }) {
           label="לחיצות ווטסאפ"
           icon="💬"
           windows={whatsapp_clicks}
+        />
+        <WindowedMetricCard
+          label="לחיצות יצירת קשר"
+          icon="📞"
+          windows={contact_clicks}
         />
       </div>
 
@@ -439,5 +662,218 @@ function TopCitiesBarChart({ data }) {
         );
       })}
     </ul>
+  );
+}
+
+// ============================================================
+// MEH-57: Profile strength checklist (6-item, matches backend scoring)
+// ============================================================
+
+const STRENGTH_ITEMS = [
+  { key: "image",    label: "תמונת פרופיל",          weight: 15, check: (p, a) => (p?.images?.length ?? 0) > 0 },
+  { key: "desc",     label: "תיאור עסק (50+ תווים)", weight: 20, check: (p, a) => (p?.description?.trim?.()?.length ?? 0) >= 50 },
+  { key: "product",  label: "מוצר פעיל במטבח",       weight: 25, check: (p, a) => (a?.home_products_count ?? 0) > 0 },
+  { key: "delivery", label: "אזור משלוח",             weight: 10, check: (p, a) => (p?.delivery_areas?.length ?? 0) > 0 },
+  { key: "review",   label: "ביקורת ראשונה",          weight: 15, check: (p, a) => (a?.total_reviews ?? 0) > 0 },
+  { key: "phone",    label: "טלפון מאומת",            weight: 15, check: (p, a) => !!p?.phone_verified },
+];
+
+function _strengthLabel(pct) {
+  if (pct <= 40) return "הפרופיל שלך חלש — לקוחות לא רואות אותך";
+  if (pct <= 70) return "בסדר, אבל יש מה לשפר";
+  if (pct <= 90) return "פרופיל חזק 💪";
+  return "פרופיל מושלם ⭐";
+}
+
+function ProfileStrengthCard({ profile, analytics }) {
+  const pct = analytics?.profile_strength ?? 0;
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-headline text-base font-bold">חוזק פרופיל</h2>
+        <span className="text-primary font-bold text-lg">{pct}%</span>
+      </div>
+      <p className="text-xs text-site-muted mb-3">{_strengthLabel(pct)}</p>
+      <div className="h-2 bg-light rounded-full overflow-hidden mb-4">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <ul className="space-y-2">
+        {STRENGTH_ITEMS.map((item) => {
+          const done = item.check(profile, analytics);
+          return (
+            <li key={item.key} className="flex items-center justify-between text-sm">
+              <span className={`flex items-center gap-2 ${done ? "text-site-text" : "text-site-muted"}`}>
+                <span aria-hidden="true">{done ? "✓" : "○"}</span>
+                {item.label}
+              </span>
+              {!done && (
+                <span className="text-xs text-secondary font-medium">+{item.weight}%</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-210 Phase 2: custom WhatsApp question chips
+// ============================================================
+
+const MAX_QUESTIONS = 5;
+
+function CustomQuestionsCard({ profile, onSave }) {
+  const [questions, setQuestions] = useState(() => {
+    const saved = profile?.custom_questions || [];
+    return [...saved, ...Array(MAX_QUESTIONS - saved.length).fill("")].slice(0, MAX_QUESTIONS);
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const payload = questions.filter((q) => q.trim());
+      await api.put("/producers/me", { custom_questions: payload });
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      alert("שגיאה בשמירה — נסי שוב");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline text-base font-bold mb-1">שאלות שמופיעות בדף שלך</h2>
+      <p className="text-xs text-site-muted mb-4">
+        אם תשאירי ריק, נציג שאלות ברירת מחדל לפי הקטגוריה שלך
+      </p>
+      <div className="space-y-2">
+        {questions.map((q, i) => (
+          <input
+            key={i}
+            type="text"
+            value={q}
+            maxLength={80}
+            onChange={(e) => {
+              const updated = [...questions];
+              updated[i] = e.target.value;
+              setQuestions(updated);
+            }}
+            placeholder="דוגמה: אילו סוגי גבינות יש השבוע?"
+            className="w-full border border-[#e5e0d8] rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
+            dir="rtl"
+          />
+        ))}
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        {saving ? "שומרת..." : saved ? "✓ נשמר" : "שמרי שאלות"}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-56: AI bio writer panel
+// ============================================================
+
+function BioPanelCard({ profile, onSave }) {
+  const [source, setSource] = useState(profile.instagram || "");
+  const [generatedBio, setGeneratedBio] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const generate = async () => {
+    if (!source.trim()) return;
+    setLoading(true);
+    setError("");
+    setGeneratedBio("");
+    setSaved(false);
+    try {
+      const r = await api.post("/producers/me/bio/generate", { source: source.trim() });
+      setGeneratedBio(r.data.bio || "");
+      if (!r.data.bio) setError("לא הצלחנו לייצר ביו — נסי שוב עם טקסט אחר");
+    } catch {
+      setError("שגיאה ביצירת הביו — נסי שוב");
+    }
+    setLoading(false);
+  };
+
+  const saveBio = async () => {
+    if (!generatedBio) return;
+    setSaving(true);
+    try {
+      await api.put("/producers/me", { description: generatedBio });
+      onSave(generatedBio);
+      setSaved(true);
+    } catch {
+      setError("שגיאה בשמירת הביו");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline text-base font-bold mb-1">✍️ ביו AI</h2>
+      <p className="text-xs text-site-muted mb-3">
+        הכניסי שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.
+      </p>
+
+      <textarea
+        value={source}
+        onChange={(e) => { setSource(e.target.value); setSaved(false); setGeneratedBio(""); }}
+        placeholder="@handle / קישור אינסטגרם / תיאור חופשי"
+        className="w-full border border-border rounded-[10px] px-3 py-2 text-sm resize-none h-16"
+        dir="ltr"
+        maxLength={500}
+      />
+
+      <button
+        onClick={generate}
+        disabled={loading || !source.trim()}
+        className="w-full mt-2 bg-secondary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-secondary-light transition"
+      >
+        {loading ? "יוצרת..." : "צרי ביו"}
+      </button>
+
+      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+
+      {generatedBio && (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={generatedBio}
+            onChange={(e) => setGeneratedBio(e.target.value.slice(0, 150))}
+            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-16"
+            dir="rtl"
+            maxLength={150}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-site-muted">{generatedBio.length}/150</span>
+            <button
+              onClick={saveBio}
+              disabled={saving}
+              className="bg-primary text-white px-4 py-1.5 rounded-[8px] text-xs font-medium disabled:opacity-50 hover:bg-primary-dark transition"
+            >
+              {saving ? "שומרת..." : saved ? "✓ נשמר" : "שמרי ביו"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

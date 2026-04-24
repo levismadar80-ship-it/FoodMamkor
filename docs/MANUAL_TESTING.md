@@ -1,6 +1,29 @@
 # מהמקור — Manual Testing Checklist
 > עדכון: אפריל 2026 | מתעדכן אחרי כל PR
 
+---
+
+## MEH-51 — Trust Ladder + Kashrut Badges (PR #183)
+
+- [ ] ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard צריכה להציג badge ירוק
+- [ ] ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge
+- [ ] ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill
+- [ ] ProducerDetail: TrustBadge shows next to name in header badge row
+- [ ] ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut_badges=["badatz"]` בDB → strip עם "בדצ׳ה" מופיע
+- [ ] KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים קדימה → "⚠️ תעודה פגה בקרוב"
+- [ ] KashrutBadgeStrip: no strip rendered when kashrut_badges empty (no regression to kosher text)
+- [ ] /register/producer: phone verification step 4 appears after submit if producer has phone
+- [ ] /register/producer: "שלחי לי קוד" button → POST /producers/me/verify-phone (check Twilio logs or check DB phone_otp_tokens)
+- [ ] /register/producer: correct OTP code → phone_verified=true in DB
+- [ ] /register/producer: wrong OTP code → "קוד שגוי או פג תוקף" error message
+- [ ] /register/producer: "אאמת מאוחר יותר" → skips to confirmation (step 5)
+- [ ] /admin/kashrut: page loads with pending requests list — צרי בקשה דרך POST /producers/me/kashrut-request → מופיעה בטבלה
+- [ ] /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set
+- [ ] /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB
+- [ ] /admin/kashrut: filter by status (pending/approved/rejected)
+- [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response
+- [ ] Rate limiting: 3 OTP sends per 10 min per producer, 5 confirms per minute
+
 רשימת בדיקות ידניות על הסביבה החיה לפני שחרור לפרודקשן.
 פורמט: `[ ] Test — איך לבדוק — תוצאה מצופה`
 
@@ -779,3 +802,78 @@ Added with `feature/session-handoff`.
 1. הוסיפי סקציה חדשה או הרחיבי קיימת בפורמט `[ ] Test — איך — מצופה`.
 2. שימרי את הבדיקות קצרות — פעולה אחת, תוצאה אחת.
 3. סמני ✅ רק אחרי שרצה הבדיקה על staging/production.
+
+---
+
+## MEH-213: Business location types + cities autocomplete (PR #242)
+
+### Admin ProducerForm — "סוג העסק" section
+- [ ] Create new producer → "סוג העסק" section shows 2 checkboxes: "חנות פיזית" (checked by default) + "משלוחים" (unchecked) — צור עסק button is enabled
+- [ ] Uncheck both checkboxes → inline error "חייב לסמן לפחות אחד מהשניים" appears; save button becomes disabled
+- [ ] Check "משלוחים" only → cascading section appears with "משלוחים לכל הארץ" checkbox + CitiesAutocomplete below it
+- [ ] Check "משלוחים לכל הארץ" → CitiesAutocomplete disappears; save is enabled
+- [ ] Uncheck "משלוחים לכל הארץ" with no cities selected → inline error "יש לבחור לפחות עיר אחת"; save disabled
+- [ ] Type "תל" in CitiesAutocomplete → dropdown shows cities starting with "תל" (requires seeded cities table); click a result → city chip appears
+- [ ] Click × on a city chip → chip is removed
+- [ ] Keyboard: ArrowDown/Up navigates dropdown; Enter adds selected city; Backspace removes last chip when input is empty
+- [ ] Save delivery-only producer (no physical, offers_delivery=true, delivery_nationwide=true) → producer created; confirm in DB
+
+### ProducerDetail — 4 location modes
+- [ ] Physical-only producer → MiniMap visible, Waze/Gmaps buttons visible, no DeliveryBlock
+- [ ] Physical + delivery producer → MiniMap visible AND DeliveryBlock visible below
+- [ ] Delivery-only + nationwide → no MiniMap, no Waze/Gmaps; DeliveryBlock shows "🚚 משלוחים לכל הארץ" badge
+- [ ] Delivery-only + city list → no MiniMap; DeliveryBlock shows city chips
+- [ ] Delivery-only + no area set → DeliveryBlock shows "משלוחים בתיאום מראש — צרי קשר לפרטים"
+- [ ] DeliveryBlock WhatsApp button → tapping opens WhatsApp correctly; Network tab shows POST /producers/:id/whatsapp-click beacon
+
+### ProducerCard — "משלוחים בלבד" badge
+- [ ] Delivery-only producer in list grid → shows "🚚 משלוחים בלבד" chip in badge row
+- [ ] Physical-only or physical+delivery producer → no "משלוחים בלבד" chip
+
+### Geo-search (map) exclusion
+- [ ] Open /map → delivery-only producer does NOT appear as a pin; physical producer at same coords DOES appear
+
+### Admin completeness dot
+- [ ] Delivery-only producer with delivery_nationwide=true but no lat/lng → completeness dot is green (not red)
+- [ ] Delivery-only producer with offers_delivery=true but no cities and no nationwide → completeness dot is yellow with "אזורי משלוח" in tooltip
+
+### GET /cities?q= endpoint
+- [ ] After running seed script: GET /api/cities?q=תל → returns ["תל אביב-יפו", "תל מונד", ...] (Hebrew sorted)
+- [ ] GET /api/cities?q= (empty) → returns up to 20 cities alphabetically
+- [ ] GET /api/cities?q=xxxxnotacityxxx → returns []
+
+---
+
+## Smart Search — HeroSearch + /producers?q= (MEH-99, PR #199)
+
+### Hero search pill — recent / trending dropdown
+- [ ] Homepage — click the search pill without typing → if there are recent searches (localStorage `mehamakor_recent_searches`) → dropdown shows "חיפושים אחרונים" with up to 5 items; each click routes to `/producers?q=<term>`
+- [ ] Homepage — click search pill with no recent searches → dropdown shows "חיפושים פופולריים" items from `GET /search/trending`
+- [ ] Homepage — type a single character → no autocomplete fired (debounce requires ≥ 2 chars)
+- [ ] Homepage — type 2+ chars → after 300ms debounce, dropdown shows grouped results: יצרנים / מוצרים / ערים / קטגוריות
+- [ ] Homepage — keyboard nav: ArrowDown/Up cycles through all items in the flat list; Enter submits the highlighted item
+- [ ] Homepage — type "חוו" → press Enter → navigates to `/producers?q=חוו`
+- [ ] Homepage — successful search term is saved to `mehamakor_recent_searches` (max 5, most recent first)
+- [ ] Network tab: `GET /search?q=...` fires at most once per 300ms burst (debounce guard)
+- [ ] Network tab: rapid type-delete → old in-flight request is aborted (AbortController), no stale results
+
+### /producers?q= results page
+- [ ] Navigate to `/producers?q=עגבנייה` → heading **"תוצאות עבור: עגבנייה"** appears above the grid
+- [ ] Active filter chip **🔍 עגבנייה** appears in the chip row; click × → clears `q`, heading and chip disappear, full grid reloads
+- [ ] ProducerCard names and descriptions show matched text in **bold** (no yellow background — `bg-transparent font-bold text-primary`)
+- [ ] `/producers?q=xxxnotexist` → empty state shows "לא נמצאו בתי עסק" with category pill shortcuts
+- [ ] `/producers?q=` (empty q) → behaves as normal unfiltered grid (no heading, no chip)
+- [ ] `GET /producers?q=50%` → backend handles `%` as literal character (wildcard escaping), returns correct results (no SQL crash)
+- [ ] `GET /producers?q=ח_ל_ב` → `_` treated as literal underscore, not LIKE wildcard
+
+### Rate limiting
+- [ ] Fire > 60 requests to `GET /search?q=x` in 1 minute → 429 response
+- [ ] Fire > 30 requests to `GET /search/trending` in 1 minute → 429 response
+
+---
+
+## Google OAuth / CSP (fix #173, 2026-04-19)
+
+- [ ] /login — open DevTools Console → zero CSP violations when page loads
+- [ ] /login — click "כניסה עם Google" → Google popup opens and completes without postMessage error
+- [ ] /login — Network tab → `accounts.google.com/gsi/style` loads with status 200 (not blocked)

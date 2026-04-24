@@ -48,13 +48,11 @@ class Settings(BaseSettings):
     twilio_whatsapp_from: str = ""
     admin_whatsapp_to: str = ""
 
-    # SMTP Email
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    # Admin account — used both as the SMTP notification recipient AND as
-    # the initial admin user seeded on first boot (see seed_data.py).
+    # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
+    # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
+    resend_api_key: str = ""
+    # Admin account — used as the notification recipient AND as the initial
+    # admin user seeded on first boot (see seed_data.py).
     # Leave admin_password empty in local dev to skip the admin seed.
     admin_email: str = ""
     admin_password: str = ""
@@ -70,6 +68,13 @@ class Settings(BaseSettings):
     # Anthropic (home-product moderation)
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-4-6"
+
+    # MEH-54: VAPID keys for Web Push notifications. Generate with:
+    #   python -c "from py_vapid import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem().decode()); print(v.public_key.public_bytes_raw().hex())"
+    # Leave empty to disable push (fail-open — alerts still send via WhatsApp if opted in).
+    vapid_private_key: str = ""
+    vapid_public_key: str = ""
+    vapid_subject: str = "mailto:admin@mehamakor.online"
 
     class Config:
         env_file = ".env"

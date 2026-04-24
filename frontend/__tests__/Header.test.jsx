@@ -150,6 +150,17 @@ describe("Header", () => {
       expect(screen.getByText("התנתקי")).toBeInTheDocument();
     });
 
+    it("MEH-137: הפרופיל שלי and הגדרות lead to different routes for consumers", () => {
+      render(<Header />);
+      fireEvent.click(screen.getByLabelText(/תפריט משתמשת — דנה/));
+      const profileLink = screen.getByText("הפרופיל שלי").closest("a");
+      const settingsLink = screen.getByText("הגדרות").closest("a");
+      expect(profileLink).not.toBeNull();
+      expect(settingsLink).not.toBeNull();
+      expect(profileLink.getAttribute("href")).not.toEqual(settingsLink.getAttribute("href"));
+      expect(settingsLink.getAttribute("href")).toContain("security");
+    });
+
     it("hides producer/admin items for plain consumers", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText(/תפריט משתמשת — דנה/));

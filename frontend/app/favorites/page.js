@@ -2,13 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart } from "@phosphor-icons/react";
+import { Bell, Heart } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
+import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { useFirstVisit } from "@/lib/useFirstVisit";
+
+function FavoriteCardWrapper({ fav }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <ProducerCard producer={fav.producer} />
+      <button
+        onClick={() => setOpen((v) => !v)}
+        title="הגדרי התראות"
+        aria-label="הגדרי התראות"
+        className="absolute top-2 end-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow text-primary hover:scale-105 transition z-10"
+      >
+        <Bell size={16} weight={open ? "fill" : "regular"} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="mt-2">
+          <AlertPrefsPanel
+            producerId={fav.producer_id}
+            producerName={fav.producer?.name || ""}
+            onClose={() => setOpen(false)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function FavoritesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -73,11 +101,17 @@ export default function FavoritesPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {favorites.map((fav) => (
-            <ProducerCard key={fav.producer_id} producer={fav.producer} />
-          ))}
-        </div>
+        <>
+          <p className="text-xs text-site-muted mb-4 flex items-center gap-1.5" dir="rtl">
+            <Bell size={13} aria-hidden="true" />
+            לחצי על 🔔 בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {favorites.map((fav) => (
+              <FavoriteCardWrapper key={fav.producer_id} fav={fav} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

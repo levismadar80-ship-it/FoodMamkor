@@ -41,6 +41,7 @@
 | 19 | `contact_messages` | /about contact form submissions | `ContactMessage` |
 | 20 | `admin_settings` | Key-value admin config | `AdminSetting` |
 | 21 | `static_pages` | Editable slug-based content (about, terms) | `StaticPage` |
+| 22 | `search_queries` | Analytics log of every smart-search query (MEH-99) | _(raw SQL, no ORM model)_ |
 
 Auto-created on boot via `Base.metadata.create_all(engine)` +
 `_migrate_columns()` in `backend/app/main.py`. The initial seed DDL
@@ -69,7 +70,30 @@ producers (
   has_delivery bool, pickup_points bool,
   admin_notes, is_available_today bool,
   avg_rating float, reviews_count int,
-  created_at, last_active_at
+  created_at, last_active_at,
+  -- MEH-51: trust ladder + kashrut
+  phone_verified bool default false,
+  ambassador bool default false,
+  kashrut_badges text[] default '{}',
+  kashrut_verified_at timestamp nullable,
+  kashrut_expires_at timestamp nullable
+)
+
+-- MEH-51: one-time WhatsApp OTP for phone verification
+phone_otp_tokens (
+  id uuid PK, producer_id FK,
+  phone varchar, code varchar(6),
+  expires_at timestamp, used bool default false, created_at
+)
+
+-- MEH-51: producer uploads cert → admin approves → badge activates
+kashrut_badge_requests (
+  id uuid PK, producer_id FK,
+  badge_code varchar,           -- rabanut|badatz|chalak|mehadrin|organic-kosher|shmitta|kilayim|grass-fed|raw-dairy
+  cert_url text nullable,
+  status varchar default 'pending',  -- pending|approved|rejected
+  reviewed_by FK → users nullable,
+  notes text, created_at
 )
 
 users (
@@ -241,6 +265,19 @@ producer_whatsapp_clicks (
 users.last_active_at timestamp NULL
 ```
 
+### Search analytics (MEH-99)
+
+```sql
+-- One row per /search call. results_count=0 rows surface in trending suppression.
+-- Table created by _migrate_columns() in main.py; no ORM model.
+search_queries (
+  id uuid PK DEFAULT gen_random_uuid(),
+  query text NOT NULL,
+  results_count integer NOT NULL DEFAULT 0,
+  searched_at timestamp NOT NULL DEFAULT NOW()
+)
+```
+
 ### Marketing + admin + content
 
 ```sql
@@ -279,7 +316,7 @@ POST   /auth/login               public  — email+password → JWT
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
-DELETE /users/me                 auth    — account deletion (App Store)
+DELETE /auth/me                  auth    — account deletion (App Store)
 ```
 
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
@@ -302,6 +339,9 @@ GET    /users/me/following                        auth
 # Producer-self (role=producer)
 GET    /producers/me                              producer
 PUT    /producers/me                              producer
+POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
+POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
+POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
 POST   /producers/me/availability                 producer  — toggle is_available_today
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
@@ -410,6 +450,10 @@ POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
 POST   /admin/producers/{id}/approve           admin — emails + WhatsApp
+POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
+GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
+POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
+POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
 POST   /admin/producers/{id}/reject            admin — with reason
 POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 
@@ -496,6 +540,16 @@ POST /contact                    public — { name, email, message } → contact
 GET  /cities                     public — deduped producer+listing city list
 ```
 
+### Search (`app/routers/search.py` — MEH-99)
+
+```
+GET  /search            public — q (max 100 chars), limit (1–20, default 8)
+                                 returns { producers, products, cities, categories }
+                                 rate-limited 60/minute per IP
+GET  /search/trending   public — top 5 queries with results_count>0, cached 1hr
+                                 rate-limited 30/minute per IP
+```
+
 ### Chat widget (`app/routers/chat.py`)
 
 ```
@@ -510,7 +564,7 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 
 ---
 
-## Notifications (Twilio + SMTP)
+## Notifications (Twilio + Resend)
 
 | Trigger | Channel | Target | File |
 |---|---|---|---|
@@ -525,9 +579,12 @@ POST /upload/image               auth — Cloudinary direct upload with magic-by
 | Contact form | Email | Admin | `marketing.py` |
 | 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
 
-All SMTP + Twilio sends are **best-effort** — missing env vars or send
+All Resend + Twilio sends are **best-effort** — missing env vars or send
 errors are logged but never raise. A broken notification must never
 break the underlying flow.
+
+Email is sent via `app/services/email.py` → Resend HTTP API (HTTPS/443).
+Railway blocks SMTP ports (25/465/587); `smtplib` was removed in full.
 
 ---
 
@@ -544,7 +601,7 @@ Integrations:
 - `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`
 - `GOOGLE_CLIENT_ID`, `APPLE_CLIENT_ID`
 - `TWILIO_ACCOUNT_SID` / `_AUTH_TOKEN` / `_WHATSAPP_FROM` / `ADMIN_WHATSAPP_TO`
-- `SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `ADMIN_EMAIL`
+- `RESEND_API_KEY` — Resend.com API key; `ADMIN_EMAIL` — notification recipient; `CONTACT_EMAIL` — public contact form recipient (falls back to `ADMIN_EMAIL`)
 - `ANTHROPIC_MODEL` (defaults to `claude-opus-4-6`)
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
@@ -553,7 +610,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 
 ## Apple App Store compliance
 
-- `DELETE /users/me` — deletes the user row + cascaded rows (favorites,
+- `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
   home_products, home_product_ratings, producer_reviews, experiences,
   producer_followers). Events hosted by the user's producer are NOT
   cascaded — they belong to the producer record.

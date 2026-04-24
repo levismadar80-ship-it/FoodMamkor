@@ -1,9 +1,13 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
+import structlog
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from joserfc import jwt as jose_jwt
+from joserfc.errors import JoseError
+from joserfc.jwk import OctKey
+from joserfc.jwt import JWTClaimsRegistry
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
@@ -14,6 +18,8 @@ from app.models import User
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
+logger = structlog.get_logger(__name__)
+
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -23,10 +29,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(user_id: UUID) -> str:
+def _jwt_key() -> OctKey:
+    return OctKey.import_key(settings.secret_key.encode())
+
+
+def create_access_token(user_id: UUID, token_version: int = 1) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": str(user_id), "exp": expire}
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    payload = {"sub": str(user_id), "exp": expire, "tv": token_version}
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
 # feature/producer-analytics: throttle last_active_at writes to at most
@@ -45,6 +55,7 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
         user.last_active_at = now
         db.commit()
     except Exception:
+        logger.warning("[auth] last_active_at update failed", user_id=str(user.id), exc_info=True)
         try:
             db.rollback()
         except Exception:
@@ -58,16 +69,24 @@ def get_current_user(
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        user_id = payload.get("sub")
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+        JWTClaimsRegistry().validate(token_obj.claims)
+        user_id = token_obj.claims.get("sub")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
-    except JWTError:
+    except JoseError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
+    if user.is_blocked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
+    # MEH-206: token_version check — fail-open so tokens issued before
+    # this column was added (no `tv` claim) are still accepted.
+    tv = token_obj.claims.get("tv")
+    if tv is not None and tv != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
     return user
@@ -81,7 +100,10 @@ def get_current_user_optional(
         return None
     try:
         return get_current_user(token=token, db=db)
-    except HTTPException:
+    except HTTPException as exc:
+        # Blocked users must never be treated as anonymous — re-raise 403.
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            raise
         return None
 
 
@@ -94,4 +116,13 @@ def require_admin(user: User = Depends(get_current_user)) -> User:
 def require_producer(user: User = Depends(get_current_user)) -> User:
     if user.role != "producer":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Producer access required")
+    return user
+
+
+def require_verified_email(user: User = Depends(get_current_user)) -> User:
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="יש לאמת את כתובת האימייל תחילה",
+        )
     return user

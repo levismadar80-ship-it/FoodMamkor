@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple } from "@phosphor-icons/react";
+import Image from "next/image";
+import { MapPin, MapTrifold, Phone, InstagramLogo, Globe, WhatsappLogo, Info, Package, Truck, Star, EnvelopeSimple, Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ImageGallery from "@/components/ImageGallery";
 import CategoryTag from "@/components/CategoryTag";
@@ -13,10 +14,19 @@ import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import Breadcrumb from "@/components/Breadcrumb";
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
-import ProducerReviews from "@/components/ProducerReviews";
+import TrustBadge from "@/components/TrustBadge";
+import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import ReviewsSection from "@/components/ReviewsSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import { pushRecentlyViewed } from "@/lib/recently-viewed";
+import OpeningHours from "@/components/OpeningHours";
+import DeliveryBlock from "@/components/DeliveryBlock";
+import ProducerCard from "@/components/ProducerCard";
+import dynamic from "next/dynamic";
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+import { useAuth } from "@/lib/auth-context";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import {
   getPrimaryMethod,
   getPrimaryContactHref,
@@ -35,6 +45,7 @@ import {
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [producer, setProducer] = useState(initialProducer);
   const [loading, setLoading] = useState(!initialProducer);
   const [activeTab, setActiveTab] = useState("about");
@@ -45,6 +56,26 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const inlineCTARef = useRef(null);
   const [reviewsVisible, setReviewsVisible] = useState(false);
   const [isBarVisible, setIsBarVisible] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const [similarProducers, setSimilarProducers] = useState([]);
+
+  const trackContactClick = useCallback((method) => {
+    if (!producer?.id) return;
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    try {
+      fetch(`/api/producers/${producer.id}/contact-click`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ method }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // tracking is best-effort
+    }
+  }, [producer?.id]);
 
   const scrollToSection = useCallback((key) => {
     setActiveTab(key);
@@ -104,6 +135,28 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     pushRecentlyViewed(producer.id);
   }, [producer?.id]);
 
+  useEffect(() => {
+    if (!producer?.id) return;
+    api
+      .get(`/events?producer_id=${producer.id}`)
+      .then((r) => setEvents(r.data || []))
+      .catch(() => setEvents([]));
+  }, [producer?.id]);
+
+  // MEH-102: fetch similar producers (same first category, excluding self)
+  useEffect(() => {
+    if (!producer?.id || !producer?.categories?.length) return;
+    const catId = producer.categories[0]?.id;
+    if (!catId) return;
+    api
+      .get("/producers", { params: { category: catId, exclude: producer.id, limit: 3 } })
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setSimilarProducers(list.length >= 3 ? list.slice(0, 3) : []);
+      })
+      .catch(() => setSimilarProducers([]));
+  }, [producer?.id, producer?.categories]);
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
@@ -126,6 +179,16 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       : "";
 
   const isVacation = producer.availability_status === "vacation";
+  const vacationReturnLabel = (() => {
+    if (!producer.vacation_until) return "חוזרת בקרוב";
+    try {
+      // Parse as local date (not UTC) to avoid off-by-one in UTC+2/+3 (Israel).
+      const [y, m, d] = producer.vacation_until.split("-").map(Number);
+      return "חוזרת ב-" + new Date(y, m - 1, d).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+    } catch {
+      return "חוזרת בקרוב";
+    }
+  })();
 
   const words = (producer.name || "").trim().split(/\s+/).filter(Boolean);
   const producerInitials =
@@ -221,6 +284,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </h1>
             {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
             <BadgeRow producer={producer} />
+            {/* MEH-51: trust tier badge */}
+            <TrustBadge tier={producer.trust_tier} />
             {producer.reviews_count > 0 && (
               <span
                 className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
@@ -232,6 +297,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {producer.plan === "premium" && (
               <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">
                 פרמיום
+              </span>
+            )}
+            {(producer.favorites_count ?? 0) >= 5 && (
+              <span className="inline-flex items-center gap-1 text-[13px] text-site-muted">
+                <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
+                {producer.favorites_count} שמרו את העסק הזה
               </span>
             )}
             {/* MEH-12 — durable availability status */}
@@ -330,12 +401,23 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </div>
           )}
 
+          {/* MEH-51: kashrut badge strip (rendered even when kosher text exists — additive) */}
+          {producer.kashrut_badges?.length > 0 && (
+            <div className="mt-3">
+              <KashrutBadgeStrip
+                badges={producer.kashrut_badges}
+                verified_at={producer.kashrut_verified_at}
+                expires_at={producer.kashrut_expires_at}
+              />
+            </div>
+          )}
+
           {/* Vacation banner — slate (neutral unavailable), not amber (which reads as sale/warning) */}
           {isVacation && (
             <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
               <p className="text-sm font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
               <p className="text-xs text-slate-500 mt-1">
-                ניתן להשאיר הודעה — יחזרו אליך בקרוב
+                {vacationReturnLabel} — ניתן להשאיר הודעה
               </p>
             </div>
           )}
@@ -344,6 +426,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               ref={inlineCTARef}: when this exits viewport, the sticky bar slides in.
               md:hidden — desktop sidebar already has the CTA. */}
           <div ref={inlineCTARef} className="md:hidden mt-4">
+            <WhatsAppQuestionChips producer={producer} />
             <PrimaryContactButton
               producer={producer}
               onClick={() => {
@@ -358,6 +441,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     // tracking is best-effort
                   }
                 }
+                // Mark that this user has contacted via WhatsApp — unlocks review form
+                try {
+                  localStorage.setItem(`wa_clicked_${producer.id}`, "1");
+                } catch {}
               }}
             />
           </div>
@@ -366,7 +453,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               Desktop: MapButton moves here from sidebar to reduce sidebar density.
               WhatsAppShareButton is secondary (gray outlined) to avoid green conflict with primary CTA. */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {producer.lat && producer.lng && (
+            {/* MEH-213: map button only for producers with a physical location */}
+            {producer.has_physical_location !== false && producer.lat && producer.lng && (
               <button
                 type="button"
                 onClick={handleShowOnMap}
@@ -378,6 +466,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               </button>
             )}
             <WhatsAppShareButton producer={producer} url={shareUrl} />
+            {/* MEH-49: referral chip — only for logged-in users with a referral code */}
+            {user?.referral_code && (
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/${user.referral_code}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium"
+              >
+                שתפי וקבלי 10% 🌿
+              </a>
+            )}
           </div>
 
           {/* Description */}
@@ -390,7 +489,94 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             </section>
           )}
 
-          {/* Events section — see feature/meh-XX-producer-events */}
+          {/* MEH-102: Opening hours */}
+          <OpeningHours opening_hours={producer.opening_hours} />
+
+          {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
+          {producer.has_physical_location !== false && producer.lat && producer.lng && (
+            <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+          )}
+
+          {/* MEH-102: Similar producers */}
+          {similarProducers.length >= 3 && (
+            <section className="mt-8 border-t border-border pt-8">
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-1">עסקים דומים</h2>
+              {producer.categories?.[0]?.name && (
+                <p className="text-sm text-site-muted mb-4">
+                  {producer.categories[0].name} · באזור שלך
+                </p>
+              )}
+              <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
+                {similarProducers.map((p) => (
+                  <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
+                    <ProducerCard producer={p} referrer="similar" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Events section */}
+          {events.length > 0 && (
+            <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
+              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">אירועים קרובים</h2>
+              <div className="space-y-3">
+                {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
+                  const dateStr = new Date(ev.event_date).toLocaleDateString("he-IL", {
+                    weekday: "short", day: "numeric", month: "long",
+                  });
+                  const timeStr = ev.event_time
+                    ? ev.event_time.slice(0, 5)
+                    : null;
+                  return (
+                    <div
+                      key={ev.id}
+                      className="bg-white rounded-[12px] border border-border p-4 flex gap-4"
+                    >
+                      {ev.image_url && (
+                        <img
+                          src={ev.image_url}
+                          alt={ev.title}
+                          className="w-16 h-16 rounded-[8px] object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-site-text leading-snug">{ev.title}</p>
+                        <p className="text-sm text-site-muted mt-0.5">
+                          {dateStr}{timeStr && ` · ${timeStr}`}
+                          {ev.city && ` · ${ev.city}`}
+                        </p>
+                        {ev.price > 0 && (
+                          <p className="text-sm text-accent font-medium mt-1">₪{ev.price}</p>
+                        )}
+                        {ev.price === 0 && (
+                          <p className="text-sm text-primary font-medium mt-1">חינם</p>
+                        )}
+                        {ev.registration_url && (
+                          <a
+                            href={ev.registration_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block mt-2 text-xs text-primary underline hover:text-primary-dark"
+                          >
+                            הרשמה לאירוע →
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {events.length > 3 && !showAllEvents && (
+                <button
+                  onClick={() => setShowAllEvents(true)}
+                  className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
+                >
+                  הצג את כל {events.length} האירועים
+                </button>
+              )}
+            </section>
+          )}
 
           {/* Products (premium only) */}
           {producer.products?.length > 0 && (
@@ -400,23 +586,53 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 {producer.products.map((product) => (
                   <div
                     key={product.id}
-                    className="bg-white rounded-[12px] p-4 border border-border"
+                    className="bg-white rounded-[12px] p-4 border border-border flex gap-3 items-start"
                   >
-                    <p className="font-medium text-site-text">{product.name}</p>
-                    {product.description && (
-                      <p className="text-sm text-site-muted mt-1">{product.description}</p>
+                    {product.image_url ? (
+                      <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-light">
+                        <Image
+                          src={product.image_url}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 shrink-0 rounded-[8px] bg-light flex items-center justify-center">
+                        <Package size={28} className="text-site-muted/60" aria-hidden="true" />
+                      </div>
                     )}
-                    {product.price_range && (
-                      <p className="text-accent font-medium mt-2">{product.price_range}</p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-site-text">{product.name}</p>
+                      {product.description && (
+                        <p className="text-sm text-site-muted mt-1 line-clamp-2">{product.description}</p>
+                      )}
+                      {product.price_range && (
+                        <p className="text-accent font-medium mt-2">{product.price_range}</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             </section>
           )}
 
-          {/* Delivery Areas */}
-          {producer.delivery_areas?.length > 0 && (
+          {/* MEH-213: DeliveryBlock — shown when offers_delivery=true.
+              Replaces the old delivery_areas table for the new location model. */}
+          {producer.offers_delivery && (
+            <div ref={(el) => { sectionRefs.current.delivery = el; }}>
+              <DeliveryBlock
+                nationwide={producer.delivery_nationwide}
+                cities={producer.delivery_cities || []}
+                producer={producer}
+              />
+            </div>
+          )}
+
+          {/* Legacy delivery_areas table — shown for producers with the old model
+              (has delivery_areas rows but no delivery_cities set yet). */}
+          {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
             <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
                 אזורי משלוח
@@ -425,15 +641,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                 <table className="w-full">
                   <thead className="bg-light">
                     <tr>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
-                        עיר
-                      </th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
-                        מינימום הזמנה
-                      </th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-primary">
-                        יום משלוח
-                      </th>
+                      <th className="text-end px-4 py-3 text-sm font-medium text-primary">עיר</th>
+                      <th className="text-end px-4 py-3 text-sm font-medium text-primary">מינימום הזמנה</th>
+                      <th className="text-end px-4 py-3 text-sm font-medium text-primary">יום משלוח</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -470,7 +680,13 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               reviewsContainerRef.current = el;
             }}
           >
-            {reviewsVisible && <ProducerReviews producerId={producer.id} />}
+            {reviewsVisible && (
+              <ReviewsSection
+                producerId={producer.id}
+                avgRating={producer.avg_rating ?? 0}
+                reviewCount={producer.reviews_count ?? 0}
+              />
+            )}
           </div>
         </div>
 
@@ -481,6 +697,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {isVacation && (
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
                 <p className="text-xs font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+                <p className="text-xs text-slate-500 mt-0.5">{vacationReturnLabel}</p>
               </div>
             )}
 
@@ -490,6 +707,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             {/* MEH-17: primary CTA follows producer.primary_contact_method.
                 WhatsApp still pings the analytics beacon on click so the
                 existing producer-dashboard metric keeps working. */}
+            <WhatsAppQuestionChips producer={producer} />
             <PrimaryContactButton
               producer={producer}
               onClick={() => {
@@ -506,6 +724,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     // tracking is best-effort
                   }
                 }
+                // Mark that this user has contacted via WhatsApp — unlocks review form
+                try {
+                  localStorage.setItem(`wa_clicked_${producer.id}`, "1");
+                } catch {}
               }}
             />
 
@@ -516,6 +738,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   href={`tel:${producer.phone}`}
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
                   dir="ltr"
+                  onClick={() => trackContactClick("phone")}
                 >
                   <Phone size={18} weight="duotone" className="text-primary shrink-0" />
                   <span className="truncate">{producer.phone}</span>
@@ -534,6 +757,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm overflow-hidden"
                     dir="ltr"
+                    onClick={() => trackContactClick("instagram")}
                   >
                     <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
                     <span className="truncate min-w-0">@{handle}</span>
@@ -554,6 +778,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+                  onClick={() => trackContactClick("website")}
                 >
                   <Globe size={18} weight="duotone" className="text-primary shrink-0" />
                   אתר
@@ -566,6 +791,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   href={`mailto:${producer.contact_email}`}
                   className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
                   dir="ltr"
+                  onClick={() => trackContactClick("email")}
                 >
                   <EnvelopeSimple size={18} weight="duotone" className="text-primary shrink-0" />
                   <span className="truncate">{producer.contact_email}</span>
@@ -625,7 +851,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
           {isVacation ? (
-            <span className="text-[11px] text-site-muted shrink-0">🌿 בהפסקה</span>
+            <span className="text-[11px] text-site-muted shrink-0">🌿 {vacationReturnLabel}</span>
           ) : producer.reviews_count >= 3 ? (
             <div className="shrink-0 text-[11px] text-site-muted leading-tight">
               <div className="font-bold text-[#8B6914]">

@@ -12,6 +12,52 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-23 — MEH-262: Playwright GPS-button test fix — LocationModal dismiss + dual-MapClient :visible scoping; fix broken settings/page.jsx imports (Image, Plus, Package, Trash, X, phone state) lost in MEH-206 overwrite; MEH-263 (LocationModal z-index doc) + MEH-264 (Vercel bypass) filed (PR #305)
+
+## 2026-04-22 — MEH-210 Phase 2: producer custom WhatsApp question chips — producers.custom_questions TEXT[] nullable; validator (max 5, ≤80 chars, blanks stripped); exposed in ProducerDetailOut; CustomQuestionsCard on /producer/dashboard (5 inputs, saves via PUT /producers/me); getProducerQuestions() checks custom_questions first, falls back to category defaults, then global defaults (#252)
+
+## 2026-04-22 — MEH-221 + MEH-210 Phase 1 + MEH-206 Phase 1 + MEH-203 — avatar upload saves to DB atomically (db dep added to upload_avatar, refreshUser() replaces duplicate PATCH); category-aware WhatsApp chips (categoryQuestions.js, 15 categories); settings quick wins (provider-aware OAuth copy, z-[10000] delete modal, auto-hide toasts); category selector redesign Variant A (flex-wrap chips, search, expand/collapse, CategorySelector component) (#248)
+
+## 2026-04-22 — PR #247 merged to staging — MEH-202+204+207 (batch 1 copy sweep): "לממכר מזון" → "למכירת המוצרים" in /register/producer consent + /terms §2; search placeholder "grass-fed" → "לחם מחמצת, ביצים אורגניות, ירקות ופירות"; /register/producer H1 → "תני לעסק שלך בית", subtitle → "5 דקות. בלי עמלות. בלי מתווכים.", OAuth info box email-only (removes name truncation). Text only, 4 files.
+
+## 2026-04-22 — MEH-218: CLAUDE.md modular refactor — 245 → 138 lines; split into 7 domain rule files under .claude/rules/ (rtl, security, testing, deployment, frontend, backend, workflow); extracted docs/BUG_PATTERNS.md + docs/LOCKED_DECISIONS.md (Railway port, Anthropic http_client, Resend, PostGIS, AI fail-open — each with "the trap" context); removed inline Mermaid diagrams (already canonical in .ai/diagrams/); unified 3 overlapping bug-handling sections into one Bug Protocol; consolidated duplicate /compact triggers (40% → /compact, 60% → /session-save + /clear); hard cap lowered to ≤150 lines with update policy that new domain rules must land in .claude/rules/, not CLAUDE.md. Zero rules deleted; docs/ + .claude/ only, no code touched.
+
+## 2026-04-22 — MEH-213: business location types + canonical cities list — has_physical_location / offers_delivery booleans on producers; cities table seeded from data.gov.il; GET /cities?q= autocomplete; 2 CHECK constraints; delivery-only producers excluded from geo-search; CitiesAutocomplete + DeliveryBlock components; ProducerDetail conditional map + DeliveryBlock; ProducerCard "משלוחים בלבד" badge; admin ProducerForm cascading checkboxes; producer-completeness delivery-aware; CSV export + SEO areaServed; 4 pytest tests (PR #242, open)
+
+## 2026-04-22 — MEH-212: Playwright E2E CI fix — deployment_status trigger replaces Vercel bot comment poll. Root cause: regex \[Preview\]\(https://...\) never matched actual Vercel comment format; all 20 poll attempts (5 min) exhausted silently. Fix: on: deployment_status fires after Vercel signals success; TEST_URL from event. Job now runs in ~3m 35s. Fallback (repository_dispatch) documented in DEPLOYMENT.md. (#238)
+
+## 2026-04-22 — MEH-106: social proof — favorites_count batch-fetched (GROUP BY, no N+1); ProducerCard "❤️ X שמרו" when ≥5 with optimistic tap update; ProducerDetail trust row same count; get_producer_by_slug gets rate limit + request param; 3 backend tests (#236)
+
+## 2026-04-22 — MEH-141: category request flow — category_requests table + POST /category-requests (5/hour) + GET+PATCH /admin/category-requests; CategoryRequestModal with Escape/WCAG 2.1; discreet link below category pills in producer registration; admin panel grouped by name; 5 backend tests + 6 frontend tests (#234)
+
+## 2026-04-21 — MEH-138: profile photo upload + Google OAuth sync — users.avatar_url column, POST /upload/avatar (magic-byte, face-crop), Google picture backfill on login, /settings avatar upload UI, Header+BottomNav updated (#214)
+
+## 2026-04-21 — MEH-143: role upgrade — existing consumer can add producer to same account; POST /auth/register/producer detects JWT for upgrade path; GET /auth/email-exists with EmailStr + 5/min; User.is_producer durable flag; auth context refreshUser(); login page respects ?redirect= (#213)
+
+## 2026-04-21 — MEH-139: settings email field made permanently read-only; isOAuth detection in ProfileTab; email removed from PATCH payload (#212)
+
+## 2026-04-21 — MEH-162: 4 security BLOCKs fixed — OAuth account-takeover IDOR (409 on silent link), file upload OOM (10MB cap), email header injection in experience_notifications, /forgot-password honest UI instead of fake success
+
+## 2026-04-21 — MEH-XXX: SMTP → Resend migration — all 6 smtplib call sites replaced with shared `services/email.py` (Resend HTTP API); removes SMTP_HOST/PORT/USER/PASSWORD from config; Railway egress firewall no longer blocks email delivery
+
+## 2026-04-21 — MEH-128: Vibe Coding Responsibility system — pre-edit-guard.js PreToolUse hook warns on central component edits (non-blocking); docs/CENTRAL_COMPONENTS.md 4-step protocol; docs/EMERGENCY_OVERRIDE.md; PR template central component checklist; CLAUDE.md guardrails section
+
+## 2026-04-21 — MEH-144: producer registration stuck "שולחת..." — notifications moved to BackgroundTasks (response no longer blocks on SMTP/Twilio), 409 for duplicate email, finally block on all 3 auth forms, timeout=10 on all 7 SMTP calls, 3 regression tests
+
+## 2026-04-21 — MEH-95/96: WhatsApp colour tokens — .btn-whatsapp/.btn-whatsapp-outline/.bg-whatsapp utilities in globals.css; zero inline #25D366 across 7 files (#202)
+
+## 2026-04-21 — MEH-129: CLAUDE.md execution principles §7–13 — Lazy Edit, Atomic Edits, Skeptic Mode, File:Line Evidence, Numbered Plan First, Narrated Actions, Real Imports Only (#200)
+
+## 2026-04-21 — map legend collapsible — floating SquaresFour button on map canvas, click-outside close, z-800, rtl-ok (#136)
+
+## 2026-04-21 — MEH-62: security deps — python-jose 3.4.0, python-multipart 0.0.18, next 14.2.35 — CVE-2024-33663/33664, CVE-2024-53981, CVE-2025-29927 (#159)
+
+## 2026-04-21 — MEH-99: smart search — cross-field /producers?q=, HeroSearch, recent/trending dropdown, highlightMatch, search_queries analytics, ILIKE wildcard escaping fix (#199)
+
+## 2026-04-21 — MEH-78: map bugs — dual-map registration fix, desaturated marker fix, NaN flyTo guard (#198)
+
+---
+
 ## Topical index — April 2026 sessions
 
 All 34 entries below were committed on **2026-04-08** during the intense
@@ -761,3 +807,14 @@ SENTRY_PROJECT=mehamakor-frontend
 - **feat: session handoff system (#139)** — HANDOFF.md added to repo root (last session summary, next task, key decisions, open issues); CLAUDE.md Rule 1 updated to read HANDOFF.md first; new Rule 13 (end-of-session protocol, MANDATORY same priority as Rule 1); Rules 13–17 renumbered to 14–18; Rule 7 cross-reference updated; line cap raised to ≤ 195; MANUAL_TESTING.md gains Session Handoff section.
 - **feat: RTL regression protection** — 4-layer guard against future physical-property regressions: (1) CLAUDE.md Regression rule #5 documents the `start-*/end-*/ms-*/me-*/ps-*/pe-*` convention with the list of permanent physical exceptions; (2) `frontend/.eslintrc.json` gains `no-restricted-syntax` warn-level rule that flags `left-*/right-*/ml-*/mr-*/pl-*/pr-*` in JSX className attributes — permanent exceptions (carousel arrows, eye-toggles, centering idiom, map geo overlays) silenced with `eslint-disable-next-line -- rtl-ok` comments; (3) `frontend/e2e/rtl.spec.ts` adds 4 Playwright tests covering login eye-toggle position, modal close-button side, admin sidebar side, and ProducerCard badge placement; (4) `.github/workflows/deploy.yml` gains a `lint` job that runs `npm run lint` on every PR and push to main/staging (deploy jobs gated to push-only via `github.event_name == 'push'` guard). Pre-existing warnings (files to be fixed by PR #137 rtl-logical-properties) are "warn" not "error" so CI does not block while #137 is pending.
 
+
+## 2026-04-20 — MEH-51 trust ladder + kashrut multi-badge
+
+- **feat: MEH-51 kashrut multi-badge + 5-tier trust ladder (#183)** — producers table gains phone_verified, ambassador, kashrut_badges[], kashrut_verified_at/expires_at; new tables phone_otp_tokens + kashrut_badge_requests; trust_tier computed real-time via Pydantic model_validator (never stored); OTP phone verification via WhatsApp (fail-open, cryptographically secure secrets module); kashrut badge request → admin approve/reject flow with cert upload; TrustBadge + KashrutBadgeStrip frontend components; phone verification step in /register/producer; /admin/kashrut review page; adversarial review fixed 6 issues (rate limiting on OTP confirm, secrets vs random, __dict__ anti-pattern, expiry overwrite logic, Twilio info leak, cert_url validation).
+
+## 2026-04-19 — CSP + Footer + Admin role management + BottomNav
+
+- **fix: CSP style-src missing accounts.google.com (#173)** — `next.config.js` style-src gains `https://accounts.google.com` so the Google GSI stylesheet loads without a CSP violation on `/login`. COOP not set anywhere — no change needed (browser default allows OAuth popup postMessage).
+- **fix: MEH-46 footer RTL + newsletter button (#172)** — CTA row and copyright bar DOM order swapped to correct RTL alignment; newsletter "הצטרפי" button changed from cream to `#4cb08b` white-text for visibility on dark background.
+- **feat: admin role management (#171)** — `/admin/users` promote/demote buttons with confirmation modal; super-admin guard (server-side 403 + hidden UI); "אדמין"/"מוגן" badges.
+- **feat: MEH-47 BottomNav smart auth slot (#170)** — avatar/initials circle for logged-in users; producer routes to `/producer/dashboard`; iOS safe-area; `min-h-[56px]`.

@@ -1,51 +1,20 @@
-"""SMTP notifications for the experiences moderation flow.
+"""Email notifications for the experiences moderation flow.
 
-All sends are best-effort: missing SMTP config or any send error is
-logged and swallowed. The admin_experiences router must never fail
-because an email didn't go out — a stale queue is much better than
-a broken moderation button.
-
-Matches the shape of _send_notification_email() in app/routers/admin.py
-but lives in its own module so the admin_experiences router can call
-it cleanly without importing from admin.py (which would be a circular
-reference risk once admin.py grows).
+All sends are best-effort via the shared send_email() helper (Resend HTTP API).
+The admin_experiences router must never fail because an email didn't go out.
 """
 from __future__ import annotations
 
 import logging
 
 from app.config import settings
+from app.services.email import send_email
 
 logger = logging.getLogger(__name__)
 
 
 def _send_email(to_email: str, subject: str, body: str) -> None:
-    if not to_email:
-        return
-    if not settings.smtp_user:
-        logger.info(
-            "[experience-email] SMTP not configured; would send to %s: %s",
-            to_email, subject,
-        )
-        return
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = settings.smtp_user
-        msg["To"] = to_email
-
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
-        logger.info("[experience-email] sent to %s: %s", to_email, subject)
-    except Exception as e:  # noqa: BLE001 — fail-open
-        logger.warning(
-            "[experience-email] failed to send to %s: %s", to_email, e
-        )
+    send_email(to_email, subject, body)
 
 
 # --- Templates ---
@@ -56,6 +25,7 @@ def notify_admin_new_submission(
 ) -> None:
     """Fired from POST /experiences once the row is persisted."""
     if not settings.admin_email:
+        logger.debug("[notifications] ADMIN_EMAIL not set — admin notification skipped")
         return
     subject = f"מהמקור — חוויה חדשה ממתינה לאישור: {title}"
     flag_line = (
@@ -91,6 +61,7 @@ def notify_host_approved(host_email: str, title: str, experience_id: str) -> Non
 def notify_host_changes_requested(
     host_email: str, title: str, experience_id: str, feedback: str
 ) -> None:
+    feedback = feedback.replace("\r", "").replace("\n", " ")
     subject = f'מהמקור — נדרשים שינויים בחוויה "{title}"'
     body = (
         f"שלום,\n\n"
@@ -105,6 +76,7 @@ def notify_host_changes_requested(
 
 
 def notify_host_rejected(host_email: str, title: str, reason: str) -> None:
+    reason = reason.replace("\r", "").replace("\n", " ") if reason else reason
     subject = f'מהמקור — עדכון לגבי החוויה "{title}"'
     reason_line = f"\nסיבה: {reason}\n" if reason else ""
     body = (

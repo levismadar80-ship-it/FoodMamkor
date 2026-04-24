@@ -10,7 +10,7 @@ DELETE /events/{id}              delete (owner only)
 from datetime import date, datetime, time
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
 
@@ -119,6 +119,7 @@ def list_events(
     category: str | None = None,
     from_date: date | None = None,
     to_date: date | None = None,
+    producer_id: UUID | None = None,
     db: Session = Depends(get_db),
 ):
     q = (
@@ -126,6 +127,8 @@ def list_events(
         .options(joinedload(Event.producer))
         .filter(Event.is_active.is_(True))
     )
+    if producer_id:
+        q = q.filter(Event.producer_id == producer_id)
     if city:
         q = q.filter(Event.city == city)
     if category:
@@ -174,6 +177,7 @@ def get_event(event_id: UUID, db: Session = Depends(get_db)):
 @router.post("/events", response_model=EventOut, status_code=201)
 def create_event(
     data: EventCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -212,6 +216,17 @@ def create_event(
         .filter(Event.id == event.id)
         .first()
     )
+
+    # MEH-54: notify favoriting users who opted in for new-event alerts
+    from app.routers.alerts import fire_alerts
+    producer_name = event.producer.name if event.producer else ""
+    background_tasks.add_task(
+        fire_alerts, db, user.producer_id, "new_event",
+        f"🎉 אירוע חדש: {data.title}",
+        f"{producer_name} — {data.city or ''}\n{data.event_date}",
+        f"/events/{event.id}",
+    )
+
     return _serialize(event)
 
 

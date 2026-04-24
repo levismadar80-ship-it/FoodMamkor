@@ -1,0 +1,129 @@
+name: PR Checks
+
+# Runs on every PR targeting staging or main.
+# Three jobs: build, pytest, adversarial-review.
+# build + pytest are required status checks (configure in branch protection).
+# adversarial-review only runs if .github/scripts/adversarial-review.sh exists —
+# it's a hook point for wiring in the Claude CLI; currently always skipped.
+
+on:
+  pull_request:
+    branches: [staging, main]
+
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1: npm run build
+  # ─────────────────────────────────────────────
+  build:
+    name: Frontend build (Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # Silence telemetry noise in CI logs.
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  # ─────────────────────────────────────────────
+  # JOB 2: pytest
+  # ─────────────────────────────────────────────
+  pytest:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Show installed packages
+        run: uv pip list
+        working-directory: backend
+
+      - name: Run tests
+        run: backend/.venv/bin/python -m pytest tests/test_api.py -v --tb=long -x --timeout=60
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          # Stub secrets so imports don't fail — tests never hit real services.
+          SECRET_KEY: ci-test-secret-not-for-production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+
+  # ─────────────────────────────────────────────
+  # JOB 3: adversarial-review
+  # Only runs when .github/scripts/adversarial-review.sh exists.
+  # To enable: add a shell script at that path that calls the Claude CLI
+  # and exits non-zero on any BLOCK-level finding.
+  # ─────────────────────────────────────────────
+  adversarial-review:
+    name: Adversarial review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for adversarial-review script
+        id: check
+        run: |
+          if [ -f ".github/scripts/adversarial-review.sh" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Adversarial review skipped::.github/scripts/adversarial-review.sh not found. Add a Claude CLI script there to enable automated adversarial review in CI."
+          fi
+
+      - name: Run adversarial review
+        if: steps.check.outputs.exists == 'true'
+        run: bash .github/scripts/adversarial-review.sh
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_BRANCH: ${{ github.base_ref }}

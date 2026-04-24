@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MEH-206 Settings Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=DM+Sans:wght@400;500;600&family=Cormorant+Garamond:ital,wght@1,500&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', Arial, sans-serif; background: #e8e2d8; color: #1C1A17; direction: rtl; padding: 20px; }
+h1.page-title { font-family: 'Frank Ruhl Libre', serif; font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 12px; color: #555; letter-spacing: .02em; }
+
+/* State + role switchers */
+.controls { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+.role-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.sw-btn { border: 1px solid #2e6853; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-family: 'DM Sans', sans-serif; cursor: pointer; background: transparent; color: #2e6853; transition: all .15s; }
+.sw-btn.active { background: #2e6853; color: white; }
+.role-btn { border: 1px solid #7c6; border-radius: 20px; padding: 5px 12px; font-size: 11px; font-family: 'DM Sans', sans-serif; cursor: pointer; background: transparent; color: #2e6853; transition: all .15s; }
+.role-btn.active { background: #2e6853; color: white; }
+
+/* Phone shell */
+.phone { max-width: 390px; margin: 0 auto; background: #F5F0E8; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.18); min-height: 680px; }
+.phone-inner { padding: 24px 16px 40px; }
+
+/* H1 */
+.page-h1 { font-family: 'Frank Ruhl Libre', serif; font-size: 26px; font-weight: 900; color: #1C1A17; margin-bottom: 20px; line-height: 1.2; }
+
+/* Tab bar — scroll when 4 tabs don't fit at 375px */
+.tab-bar-wrap { position: relative; margin-bottom: 20px; }
+.tab-bar-wrap::after { content: ''; position: absolute; left: 4px; top: 4px; bottom: 4px; width: 28px; background: linear-gradient(to right, rgba(255,255,255,.95), transparent); border-radius: 20px 0 0 20px; pointer-events: none; }
+.tab-bar { display: flex; gap: 4px; background: white; border: 1px solid #e5e0d8; border-radius: 40px; padding: 4px; margin-bottom: 0; overflow-x: auto; scrollbar-width: none; }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 10px; border-radius: 40px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .15s; color: #888; border: none; background: transparent; }
+.tab.active { background: #2e6853; color: white; }
+.tab-icon { font-size: 14px; }
+
+/* Cards */
+.card { background: white; border: 1px solid #e5e0d8; border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.card-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #2e6853; margin-bottom: 4px; }
+.card-title { font-size: 15px; font-weight: 600; color: #1C1A17; margin-bottom: 14px; }
+
+/* Avatar row */
+.avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; background: #2e6853; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 700; flex-shrink: 0; position: relative; }
+.avatar-edit { position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background: white; border: 1px solid #e5e0d8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.avatar-info .name { font-weight: 600; font-size: 15px; }
+.avatar-info .email { font-size: 12px; color: #888; direction: ltr; text-align: right; }
+.avatar-info .hint { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+/* Form fields */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px; }
+.field input, .field select { width: 100%; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 9px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: #1C1A17; background: white; outline: none; }
+.field input:focus, .field select:focus { border-color: #2e6853; }
+.field input.readonly { background: #f8f7f5; color: #aaa; cursor: not-allowed; }
+.field .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+/* Buttons */
+.btn-primary { background: #2e6853; color: white; border: none; border-radius: 10px; padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-outline { background: transparent; color: #1C1A17; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+.btn-danger { background: #dc2626; color: white; border: none; border-radius: 10px; padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+.btn-danger-outline { background: transparent; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 10px; padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+
+/* Danger zone card */
+.card-danger { background: white; border: 2px solid #fca5a5; border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.card-danger-title { font-size: 14px; font-weight: 600; color: #dc2626; margin-bottom: 6px; }
+.card-danger-desc { font-size: 12px; color: #1C1A17; margin-bottom: 14px; line-height: 1.5; }
+
+/* Logout all devices row */
+.action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.action-row .action-text { flex: 1; }
+.action-row .action-text .title { font-size: 14px; font-weight: 500; }
+.action-row .action-text .desc { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* City pill */
+.city-search { display: flex; align-items: center; gap: 8px; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 8px 12px; background: white; }
+.city-search input { flex: 1; border: none; outline: none; font-size: 14px; font-family: 'DM Sans', sans-serif; background: transparent; }
+.city-icon { color: #2e6853; font-size: 16px; }
+
+/* Privacy toggles */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0ede8; }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label .tl { font-size: 14px; font-weight: 500; }
+.toggle-label .ts { font-size: 12px; color: #888; margin-top: 2px; }
+.toggle { width: 40px; height: 22px; background: #2e6853; border-radius: 11px; position: relative; flex-shrink: 0; cursor: pointer; }
+.toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: .15s; }
+.toggle.off { background: #d1d5db; }
+.toggle.off::after { left: 20px; }
+
+/* Business tab */
+.stat-grid { display: grid; grid-cols: 3; gap: 8px; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; }
+.stat-box { background: #F5F0E8; border-radius: 10px; padding: 10px; text-align: center; }
+.stat-num { font-size: 22px; font-weight: 700; color: #2e6853; }
+.stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+/* Pending / approved / rejected badges */
+.badge-pending { display: inline-flex; align-items: center; gap: 5px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 20px; padding: 4px 10px; font-size: 11px; color: #c2410c; font-weight: 500; }
+.badge-approved { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+.badge-rejected { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+
+/* Password eye-toggle */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-left: 36px !important; }
+.eye-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #888; font-size: 15px; padding: 0; line-height: 1; } /* rtl-ok: inside dir=ltr password input */
+
+/* States */
+.state { display: none; }
+.state.active { display: block; }
+
+/* Delete modal overlay */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; }
+.modal-sheet { background: white; border-radius: 20px 20px 0 0; padding: 28px 20px 40px; max-width: 390px; width: 100%; }
+.modal-handle { width: 36px; height: 4px; background: #e5e0d8; border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: 'Frank Ruhl Libre', serif; font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+.modal-title.danger { color: #dc2626; }
+.modal-desc { font-size: 13px; color: #555; margin-bottom: 16px; line-height: 1.6; }
+.modal-list { font-size: 13px; color: #555; margin-bottom: 16px; padding-right: 18px; }
+.modal-list li { margin-bottom: 5px; }
+.modal-warn { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #c2410c; margin-bottom: 16px; }
+.modal-input-label { font-size: 12px; font-weight: 500; color: #555; margin-bottom: 5px; }
+.modal-input { width: 100%; border: 1.5px solid #e5e0d8; border-radius: 10px; padding: 9px 12px; font-size: 14px; font-family: 'DM Sans', sans-serif; direction: ltr; text-align: left; outline: none; }
+.modal-input:focus { border-color: #dc2626; }
+.modal-input.match { border-color: #22c55e; }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions button { flex: 1; }
+
+.divider { height: 1px; background: #f0ede8; margin: 12px 0; }
+
+/* Password requirements checklist */
+.pw-req { margin-top: 8px; padding: 0; list-style: none; }
+.pw-req li { font-size: 11px; display: flex; align-items: center; gap: 5px; margin-bottom: 3px; color: #aaa; transition: color .15s; }
+.pw-req li.pass { color: #16a34a; }
+.pw-req li.fail { color: #dc2626; }
+.pw-confirm-err { font-size: 11px; color: #dc2626; margin-top: 4px; min-height: 15px; }
+
+/* Suspended badge */
+.badge-suspended { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+
+/* Support modal */
+.support-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9999; align-items: flex-end; justify-content: center; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">MEH-206 · הגדרות חשבון — Phases 2+3 Mockup</h1>
+
+<!-- State switcher -->
+<div class="controls">
+  <button class="sw-btn active" onclick="showState('profile')">פרטים אישיים</button>
+  <button class="sw-btn" onclick="showState('security')">אבטחה</button>
+  <button class="sw-btn" onclick="showState('privacy')">פרטיות</button>
+  <button class="sw-btn" onclick="showState('delete1')">מחיקה שלב 1</button>
+  <button class="sw-btn" onclick="showState('delete2')">מחיקה שלב 2</button>
+  <button class="sw-btn" onclick="showState('logoutconfirm')">התנתקות אישור</button>
+  <button class="sw-btn" onclick="showState('business-pending')">עסק ממתין</button>
+  <button class="sw-btn" onclick="showState('business-rejected')">עסק נדחה</button>
+  <button class="sw-btn" onclick="showState('business-suspended')">עסק מושעה</button>
+  <button class="sw-btn" onclick="showState('delete3')">מחיקה שלב 3</button>
+  <button class="sw-btn" onclick="showState('forgot-password')">שכחתי סיסמה</button>
+</div>
+<div class="role-row">
+  <span style="font-size:11px;color:#888;align-self:center;">תפקיד:</span>
+  <button class="role-btn active" onclick="setRole('consumer')">צרכנית רגילה</button>
+  <button class="role-btn" onclick="setRole('producer')">בעלת עסק מאושרת</button>
+  <button class="role-btn" onclick="setRole('pending')">בעלת עסק ממתינה</button>
+  <button class="role-btn" onclick="setRole('rejected')">בעלת עסק שנדחתה</button>
+  <button class="role-btn" onclick="setRole('suspended')">בעלת עסק מושעית</button>
+</div>
+
+<div class="phone">
+  <div class="phone-inner">
+    <div class="page-h1">הגדרות חשבון</div>
+
+    <!-- Tab bar (role-aware) — scrollable at 375px when 4 tabs shown -->
+    <div class="tab-bar-wrap">
+    <div class="tab-bar" id="tab-bar">
+      <button class="tab active" id="tab-profile" onclick="showState('profile')">
+        <span class="tab-icon">👤</span> פרטים אישיים
+      </button>
+      <button class="tab" id="tab-security" onclick="showState('security')">
+        <span class="tab-icon">🔒</span> אבטחה
+      </button>
+      <button class="tab" id="tab-privacy" onclick="showState('privacy')">
+        <span class="tab-icon">🛡</span> פרטיות
+      </button>
+      <button class="tab producer-only" id="tab-business" onclick="showState('business')" style="display:none">
+        <span class="tab-icon">🏪</span> עסק
+      </button>
+    </div>
+    </div><!-- /tab-bar-wrap -->
+
+    <!-- ──────────── פרטים אישיים ──────────── -->
+    <div class="state active" id="state-profile">
+      <div class="card">
+        <div class="avatar-row">
+          <div class="avatar">
+            ד
+            <div class="avatar-edit" role="button" tabindex="0" aria-label="שנה תמונת פרופיל">✏️</div>
+          </div>
+          <div class="avatar-info">
+            <div class="name">דנה לוי</div>
+            <div class="email">dana@example.com</div>
+            <div class="hint">לחצי על התמונה לשינוי</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>שם מלא *</label>
+          <input type="text" value="דנה לוי" dir="rtl" />
+        </div>
+        <div class="field">
+          <label>אימייל</label>
+          <input type="email" value="dana@example.com" class="readonly" readonly dir="ltr" />
+          <div class="hint">לשינוי אימייל, פני לתמיכה</div>
+        </div>
+        <button class="btn-primary">שמרי</button>
+      </div>
+
+      <!-- OAuth info card (Google) -->
+      <div class="card" style="display:none" id="oauth-card">
+        <div class="card-label">חשבון מחובר</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;">התחברת דרך Google · שינוי שם ותמונה — דרך הגדרות Google שלך</div>
+      </div>
+    </div>
+
+    <!-- ──────────── אבטחה ──────────── -->
+    <div class="state" id="state-security">
+      <!-- Password change (email users only) -->
+      <div class="card">
+        <div class="card-title">שינוי סיסמה</div>
+        <div class="field">
+          <label for="pw-current">סיסמה נוכחית</label>
+          <div class="pw-wrap">
+            <input id="pw-current" type="password" value="••••••••" dir="ltr" />
+            <button type="button" class="eye-btn" onclick="togglePw('pw-current',this)" aria-label="הצגת סיסמה נוכחית">👁</button>
+          </div>
+          <a href="#" onclick="showState('forgot-password');return false;"
+            style="font-size:11px;color:#2e6853;text-decoration:underline;display:inline-block;margin-top:5px;">שכחת סיסמה נוכחית?</a>
+        </div>
+        <div class="field">
+          <label for="pw-new">סיסמה חדשה</label>
+          <div class="pw-wrap">
+            <input id="pw-new" type="password" placeholder="לפחות 8 תווים" dir="ltr" oninput="validatePasswords()" />
+            <button type="button" class="eye-btn" onclick="togglePw('pw-new',this)" aria-label="הצגת סיסמה חדשה">👁</button>
+          </div>
+          <!-- dynamic requirements checklist — replaces static strength bar -->
+          <ul class="pw-req" id="pw-req-list" aria-live="polite">
+            <li id="req-len">✗ לפחות 8 תווים</li>
+            <li id="req-upper">✗ אות גדולה באנגלית (A–Z)</li>
+            <li id="req-num">✗ לפחות ספרה אחת (0–9)</li>
+            <li id="req-special">✗ תו מיוחד (!@#$%)</li>
+          </ul>
+        </div>
+        <div class="field" style="margin-bottom:6px;">
+          <label for="pw-confirm">אישור סיסמה</label>
+          <div class="pw-wrap">
+            <input id="pw-confirm" type="password" placeholder="" dir="ltr" oninput="validatePasswords()" />
+            <button type="button" class="eye-btn" onclick="togglePw('pw-confirm',this)" aria-label="הצגת אישור סיסמה">👁</button>
+          </div>
+          <div class="pw-confirm-err" id="pw-confirm-err" role="alert"></div>
+        </div>
+        <button class="btn-primary" id="pw-change-btn" disabled style="opacity:.45;">עדכני סיסמה</button>
+      </div>
+
+      <!-- Logout this device -->
+      <div class="card">
+        <div class="action-row">
+          <div class="action-text">
+            <div class="title">התנתקות</div>
+            <div class="desc">מנתקת את המכשיר הזה בלבד</div>
+          </div>
+          <button class="btn-outline">התנתקי</button>
+        </div>
+      </div>
+
+      <!-- Logout ALL devices — NEW in Phase 2 -->
+      <div class="card" style="border-color:#fde68a;border-width:1.5px;">
+        <div class="action-row">
+          <div class="action-text">
+            <div class="title">התנתקות מכל המכשירים</div>
+            <div class="desc">מנתקת את כל הסשנים הפעילים — פלאפון, מחשב, טאבלט</div>
+          </div>
+          <button class="btn-outline" style="border-color:#d97706;color:#d97706;white-space:nowrap;" onclick="showState('logoutconfirm')">התנתקי מכולם</button>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="card-danger">
+        <div class="card-danger-title">אזור מסוכן</div>
+        <div class="card-danger-desc">מחיקת חשבון תסיר לצמיתות את כל הנתונים — מועדפים, דירוגים, עסק (אם יש). לא ניתן לבטל.</div>
+        <button class="btn-danger" onclick="showState('delete1')">מחקי חשבון</button>
+      </div>
+    </div>
+
+    <!-- ──────────── פרטיות — NEW tab ──────────── -->
+    <div class="state" id="state-privacy">
+      <!-- Preferred city — new field for Phase 3 -->
+      <div class="card">
+        <div class="card-label">מיקום מועדף</div>
+        <div class="card-title">עיר מגורים</div>
+        <div class="city-search" id="city-wrap">
+          <span class="city-icon">📍</span>
+          <input type="text" placeholder="חפשי עיר..." value="תל אביב-יפו" dir="rtl" id="city-input" oninput="validateCity(this)" />
+        </div>
+        <div id="city-error" style="display:none;font-size:11px;color:#dc2626;margin-top:4px;">עיר לא מוכרת — בחרי מהרשימה</div>
+        <div class="hint" style="font-size:11px;color:#aaa;margin-top:4px;">
+          משפיעה על תוצאות חיפוש ועל הצגת עסקים קרובים. חייבת להיות עיר קיימת ב-DB.
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn-primary" style="font-size:13px;">שמרי</button>
+        </div>
+      </div>
+
+      <!-- Notification / privacy toggles -->
+      <div class="card">
+        <div class="card-title">הגדרות תקשורת</div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl">עדכונים שבועיים</div>
+            <div class="ts">סיכום מה חדש אצל המועדפים שלך</div>
+          </div>
+          <div class="toggle" role="switch" aria-checked="true" tabindex="0" aria-label="עדכונים שבועיים"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl">חידושים ותוכן</div>
+            <div class="ts">מבצעים, מתכונים וטיפים עונתיים</div>
+          </div>
+          <div class="toggle off" role="switch" aria-checked="false" tabindex="0" aria-label="חידושים ותוכן"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <div class="tl">הצגה ברשימת שכנות</div>
+            <div class="ts">אפשרי לאחרים לראות שאת בסביבה</div>
+          </div>
+          <div class="toggle" role="switch" aria-checked="true" tabindex="0" aria-label="הצגה ברשימת שכנות"></div>
+        </div>
+      </div>
+
+      <!-- Auth provider info (read-only) -->
+      <div class="card">
+        <div class="card-label">ספק זהות</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">✉️</span>
+          <span>חשבון אימייל וסיסמה</span>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px;">כניסה באמצעות: dana@example.com</div>
+      </div>
+    </div>
+
+    <!-- ──────────── העסק שלי (producer-only) ──────────── -->
+    <div class="state" id="state-business">
+      <div class="card">
+        <div class="card-label">העסק שלך</div>
+        <div class="card-title" style="margin-bottom:8px;">מחלבת הגולן</div>
+        <div id="status-badge">
+          <span class="badge-approved">✓ מאושר</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-num">147</div>
+            <div class="stat-lbl">מועדפים</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">1.2k</div>
+            <div class="stat-lbl">צפיות (30י)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">38</div>
+            <div class="stat-lbl">WhatsApp שבוע</div>
+          </div>
+        </div>
+      </div>
+      <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:#2e6853;color:white;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">ניהול מלא →</a>
+    </div>
+
+    <!-- ──────────── מחיקה שלב 1 — Modal Step 1 ──────────── -->
+    <div class="state" id="state-delete1">
+      <!-- background shows security tab -->
+      <div class="card" style="opacity:.4;pointer-events:none;">
+        <div class="card-danger-title">אזור מסוכן</div>
+        <div class="card-danger-desc">מחיקת חשבון תסיר לצמיתות...</div>
+        <button class="btn-danger">מחקי חשבון</button>
+      </div>
+
+      <!-- Bottom sheet modal — step 1 -->
+      <div style="position:relative;margin-top:-20px;">
+        <div class="modal-sheet" style="border-radius:20px;box-shadow:0 -4px 24px rgba(0,0,0,.12);">
+          <div class="modal-handle"></div>
+          <div class="modal-title danger">מחיקת חשבון</div>
+          <div class="modal-desc">פעולה זו <strong>בלתי הפיכה</strong>. מה יימחק:</div>
+          <ul class="modal-list">
+            <li>כל המועדפים שסימנת</li>
+            <li>כל הדירוגים שכתבת</li>
+            <li>ההיסטוריה שלך באתר</li>
+          </ul>
+
+          <!-- Producer-specific warning (shown for producers only) -->
+          <div class="modal-warn" id="producer-warn" style="display:none;">
+            ⚠️ <strong>בעלת עסק:</strong> גם דף העסק, התמונות ואישורי הכשרות שלך יימחקו לצמיתות. לא ניתן לשחזר.
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn-outline" onclick="showState('security')">ביטול</button>
+            <button class="btn-danger" onclick="showState('delete2')">המשיכי למחיקה →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── מחיקה שלב 2 — Modal Step 2 ──────────── -->
+    <div class="state" id="state-delete2">
+      <div class="card" style="opacity:.4;pointer-events:none;">
+        <div class="card-danger-title">אזור מסוכן</div>
+      </div>
+
+      <div style="position:relative;margin-top:-20px;">
+        <div class="modal-sheet" style="border-radius:20px;box-shadow:0 -4px 24px rgba(0,0,0,.12);">
+          <div class="modal-handle"></div>
+          <div class="modal-title danger">אישור סופי</div>
+          <div class="modal-desc">הקלידי את כתובת האימייל שלך כדי לאשר את המחיקה:</div>
+
+          <div class="field" style="margin-bottom:6px;">
+            <label class="modal-input-label">dana@example.com</label>
+            <input class="modal-input" type="email" placeholder="dana@example.com" dir="ltr" id="delete-email-input" oninput="checkEmailMatch(this)" />
+          </div>
+          <div id="email-match-msg" style="font-size:12px;color:#aaa;min-height:16px;margin-bottom:10px;"></div>
+
+          <div class="modal-actions">
+            <button class="btn-outline" onclick="showState('delete1')">→ חזרה</button>
+            <button class="btn-danger" id="confirm-delete-btn" disabled style="opacity:.45;" onclick="showState('delete3')">מחקי לצמיתות</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── התנתקות מכולם — Confirmation ──────────── -->
+    <div class="state" id="state-logoutconfirm">
+      <div class="card" style="border-color:#fde68a;border-width:1.5px;">
+        <div class="card-title" style="color:#d97706;margin-bottom:8px;">אישור התנתקות מכל המכשירים</div>
+        <p style="font-size:13px;color:#1C1A17;line-height:1.6;margin-bottom:16px;">
+          פעולה זו תנתק את <strong>כל הסשנים הפעילים</strong> שלך — פלאפון, מחשב, טאבלט ומחשב נייד. תצטרכי להתחבר מחדש בכל מכשיר.
+        </p>
+        <div style="font-size:12px;color:#888;margin-bottom:18px;">המכשיר הנוכחי יישאר מחובר.</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-outline" style="flex:1;" onclick="showState('security')">ביטול</button>
+          <button style="flex:1;background:#d97706;color:white;border:none;border-radius:10px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;" onclick="showState('security')">כן, התנתקי מכולם</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── עסק ממתין — Pending business tab ──────────── -->
+    <div class="state" id="state-business-pending">
+      <div class="card">
+        <div class="card-label">העסק שלך</div>
+        <div class="card-title" style="margin-bottom:8px;">מחלבת הגולן</div>
+        <span class="badge-pending">⏳ ממתין לאישור</span>
+        <p style="font-size:12px;color:#555;margin-top:10px;margin-bottom:14px;line-height:1.5;">
+          הגשת את פרטי העסק — צוות מהמקור בודק ומאשר תוך 48 שעות. נעדכן אותך במייל.
+        </p>
+        <div class="stat-grid" style="opacity:.5;">
+          <div class="stat-box"><div class="stat-num">—</div><div class="stat-lbl">מועדפים</div></div>
+          <div class="stat-box"><div class="stat-num">—</div><div class="stat-lbl">צפיות</div></div>
+          <div class="stat-box"><div class="stat-num">—</div><div class="stat-lbl">WhatsApp</div></div>
+        </div>
+      </div>
+      <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:#2e6853;color:white;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">עדכני פרטים →</a>
+    </div>
+
+    <!-- ──────────── עסק נדחה ──────────── -->
+    <div class="state" id="state-business-rejected">
+      <div class="card">
+        <div class="card-label">העסק שלך</div>
+        <div class="card-title" style="margin-bottom:8px;">מחלבת הגולן</div>
+        <span class="badge-rejected">✗ לא אושר</span>
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;margin-top:12px;margin-bottom:6px;">
+          <div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:6px;">סיבת הדחייה:</div>
+          <div style="font-size:12px;color:#1C1A17;line-height:1.5;margin-bottom:10px;">המידע שסיפקת אינו מספיק לאימות. אנא עדכני רישיון עסק, היתר, או אסמכתא אחרת.</div>
+          <div style="font-size:11px;font-weight:600;color:#dc2626;margin-bottom:6px;">נדרש לפני אישור מחדש:</div>
+          <ul style="list-style:none;padding:0;margin:0;">
+            <li style="font-size:12px;color:#1C1A17;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px;"><span style="color:#dc2626;flex-shrink:0;margin-top:1px;">◦</span> העלי תעודה עסקית מתוקנת (רישיון עסק / היתר עיסוק)</li>
+            <li style="font-size:12px;color:#1C1A17;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px;"><span style="color:#dc2626;flex-shrink:0;margin-top:1px;">◦</span> הוסיפי תמונה ראשית ברורה לדף העסק</li>
+            <li style="font-size:12px;color:#1C1A17;display:flex;align-items:flex-start;gap:6px;"><span style="color:#dc2626;flex-shrink:0;margin-top:1px;">◦</span> ודאי שהכתובת, הטלפון והתיאור מלאים</li>
+          </ul>
+        </div>
+        <p style="font-size:12px;color:#555;margin-top:10px;margin-bottom:16px;line-height:1.5;">יש שאלות? פני לתמיכה ונשמח לעזור.</p>
+        <div style="display:flex;gap:8px;">
+          <a href="#" style="display:inline-flex;align-items:center;gap:6px;background:#2e6853;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">עדכני פרטים →</a>
+          <button onclick="openSupportModal()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:#2e6853;border:1.5px solid #2e6853;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">דברי איתנו</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── שכחתי סיסמה ──────────── -->
+    <div class="state" id="state-forgot-password">
+      <div class="card">
+        <div class="card-title">שחזור סיסמה</div>
+        <p style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6;">נשלח לינק לאיפוס סיסמה למייל הרשום בחשבון.</p>
+        <div class="field">
+          <label>אימייל</label>
+          <input type="email" value="dana@example.com" class="readonly" readonly dir="ltr" />
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button class="btn-outline" style="flex:1;" onclick="showState('security')">ביטול</button>
+          <button class="btn-primary" style="flex:1;">שלחי לינק</button>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;font-size:12px;color:#15803d;margin-top:14px;display:none;" id="reset-sent-msg">
+          ✓ נשלח! בדקי את תיבת הדואר שלך.
+        </div>
+      </div>
+      <div style="margin-top:12px;text-align:center;font-size:12px;color:#888;">
+        <a href="#" onclick="showState('security');return false;" style="color:#2e6853;text-decoration:underline;">חזרה לאבטחה</a>
+      </div>
+    </div>
+
+    <!-- ──────────── מחיקה שלב 3 — Grace period ──────────── -->
+    <div class="state" id="state-delete3">
+      <div class="card" style="opacity:.4;pointer-events:none;">
+        <div class="card-danger-title">אזור מסוכן</div>
+      </div>
+      <div style="position:relative;margin-top:-20px;">
+        <div class="modal-sheet" style="border-radius:20px;box-shadow:0 -4px 24px rgba(0,0,0,.12);">
+          <div class="modal-handle"></div>
+          <div style="text-align:center;font-size:40px;margin-bottom:12px;">⏳</div>
+          <div class="modal-title" style="text-align:center;color:#1C1A17;">בקשת המחיקה נשלחה</div>
+          <p style="font-size:13px;color:#555;line-height:1.6;margin:12px 0 16px;text-align:center;">
+            שלחנו אימות למייל <strong>dana@example.com</strong>.<br/>
+            החשבון יימחק <strong>תוך 24 שעות</strong> אלא אם תבטלי.
+          </p>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;font-size:12px;color:#15803d;margin-bottom:16px;">
+            ✓ בפרק הזמן הזה תוכלי לבטל בהגדרות חשבון ← אזור מסוכן
+          </div>
+          <div class="modal-actions">
+            <button class="btn-outline" onclick="showState('security')" style="flex:1;">סגרי</button>
+            <button class="btn-danger-outline" onclick="showState('security')" style="flex:1;">בטלי את המחיקה</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── עסק מושעה ──────────── -->
+    <div class="state" id="state-business-suspended">
+      <div class="card">
+        <div class="card-label">העסק שלך</div>
+        <div class="card-title" style="margin-bottom:8px;">מחלבת הגולן</div>
+        <span class="badge-suspended">⏸ מושעה</span>
+        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px;margin-top:12px;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:4px;">דף העסק הוסר זמנית</div>
+          <div style="font-size:12px;color:#1C1A17;line-height:1.5;">אחד מאנשי הצוות השעה את הדף. ייתכן שזה בעקבות תלונה או בעיה טכנית. פני לתמיכה לקבלת פרטים.</div>
+        </div>
+        <div class="stat-grid" style="opacity:.45;margin-bottom:16px;">
+          <div class="stat-box"><div class="stat-num">—</div><div class="stat-lbl">מועדפים</div></div>
+          <div class="stat-box"><div class="stat-num">—</div><div class="stat-lbl">צפיות</div></div>
+          <div class="stat-box"><div class="stat-num">—</div><div class="stat-lbl">WhatsApp</div></div>
+        </div>
+        <button onclick="openSupportModal()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:#2e6853;border:1.5px solid #2e6853;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">דברי איתנו</button>
+      </div>
+    </div>
+
+    <!-- ──────────── הערת backend — logout-all-devices ──────────── -->
+    <!-- BACKEND NOTE (fix #4):
+         POST /auth/logout-all-devices does NOT exist yet.
+         Current tokens are stateless JWT (no jti / token_version).
+         To honour "המכשיר הנוכחי יישאר מחובר" the implementation needs:
+           1. Add users.token_version INT DEFAULT 1
+           2. Encode {"sub":..., "exp":..., "tv": token_version} in every token
+           3. get_current_user validates payload["tv"] == user.token_version
+           4. Endpoint: users.token_version += 1, returns NEW token for caller
+              → caller stays connected (new tv); all other devices get 401
+         See: backend/app/auth.py create_access_token (line 26)
+    -->
+
+  </div><!-- /phone-inner -->
+</div><!-- /phone -->
+
+<script>
+let currentRole = 'consumer';
+
+function showState(s) {
+  document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('state-' + s);
+  if (el) el.classList.add('active');
+
+  // sync state switcher buttons
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.sw-btn').forEach(b => {
+    if (b.textContent.trim().startsWith(stateLabel(s))) b.classList.add('active');
+  });
+
+  // sync tab buttons
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabMap = { profile:'tab-profile', security:'tab-security', privacy:'tab-privacy', business:'tab-business' };
+  if (tabMap[s]) document.getElementById(tabMap[s])?.classList.add('active');
+}
+
+function stateLabel(s) {
+  const m = { profile:'פרטים', security:'אבטחה', privacy:'פרטיות', delete1:'מחיקה', delete2:'מחיקה', delete3:'מחיקה', business:'עסק', logoutconfirm:'התנתקות', 'business-pending':'עסק ממתין', 'business-rejected':'עסק נדחה', 'business-suspended':'עסק מושעה', 'forgot-password':'שכחתי' };
+  return m[s] || s;
+}
+
+function setRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const businessTab = document.getElementById('tab-business');
+  const producerWarn = document.getElementById('producer-warn');
+  const statusBadge = document.getElementById('status-badge');
+
+  if (role === 'consumer') {
+    businessTab.style.display = 'none';
+    if (producerWarn) producerWarn.style.display = 'none';
+  } else if (role === 'producer') {
+    businessTab.style.display = 'flex';
+    if (producerWarn) producerWarn.style.display = 'block';
+    if (statusBadge) statusBadge.innerHTML = '<span class="badge-approved">✓ מאושר</span>';
+  } else if (role === 'pending') {
+    businessTab.style.display = 'flex';
+    if (producerWarn) producerWarn.style.display = 'block';
+    if (statusBadge) statusBadge.innerHTML = '<span class="badge-pending">⏳ ממתין לאישור</span>';
+  } else if (role === 'rejected') {
+    businessTab.style.display = 'flex';
+    if (producerWarn) producerWarn.style.display = 'block';
+    if (statusBadge) statusBadge.innerHTML = '<span class="badge-rejected">✗ לא אושר</span>';
+  } else if (role === 'suspended') {
+    businessTab.style.display = 'flex';
+    if (producerWarn) producerWarn.style.display = 'none';
+    if (statusBadge) statusBadge.innerHTML = '<span class="badge-suspended">⏸ מושעה</span>';
+  }
+}
+
+function checkEmailMatch(input) {
+  const expected = 'dana@example.com';
+  const btn = document.getElementById('confirm-delete-btn');
+  const msg = document.getElementById('email-match-msg');
+  if (input.value.toLowerCase() === expected.toLowerCase()) {
+    input.classList.add('match');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    msg.textContent = '✓ אימייל מאושר';
+    msg.style.color = '#16a34a';
+  } else {
+    input.classList.remove('match');
+    btn.disabled = true;
+    btn.style.opacity = '.45';
+    msg.textContent = input.value.length > 0 ? 'האימייל לא תואם' : '';
+    msg.style.color = '#dc2626';
+  }
+}
+
+// Simulate city validation against /cities endpoint (known cities for mockup)
+const KNOWN_CITIES = ['תל אביב-יפו','ירושלים','חיפה','רמת גן','פתח תקווה','ראשון לציון','אשדוד','באר שבע','הרצליה','נתניה'];
+function validateCity(input) {
+  const err = document.getElementById('city-error');
+  const wrap = document.getElementById('city-wrap');
+  const valid = input.value === '' || KNOWN_CITIES.includes(input.value);
+  err.style.display = valid ? 'none' : 'block';
+  wrap.style.borderColor = valid ? '#e5e0d8' : '#dc2626';
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const showing = inp.type === 'password';
+  inp.type = showing ? 'text' : 'password';
+  btn.textContent = showing ? '🙈' : '👁';
+  btn.setAttribute('aria-label', showing ? 'הסתרת סיסמה' : 'הצגת סיסמה');
+}
+
+function validatePasswords() {
+  const newVal = (document.getElementById('pw-new') || {}).value || '';
+  const conVal = (document.getElementById('pw-confirm') || {}).value || '';
+  const btn = document.getElementById('pw-change-btn');
+  const err = document.getElementById('pw-confirm-err');
+
+  const rules = {
+    'req-len':     newVal.length >= 8,
+    'req-upper':   /[A-Z]/.test(newVal),
+    'req-num':     /[0-9]/.test(newVal),
+    'req-special': /[!@#$%^&*()\-_=+\[\]{};':",.<>/?\\|`~]/.test(newVal),
+  };
+  const labels = {
+    'req-len': 'לפחות 8 תווים',
+    'req-upper': 'אות גדולה באנגלית (A–Z)',
+    'req-num': 'לפחות ספרה אחת (0–9)',
+    'req-special': 'תו מיוחד (!@#$%)',
+  };
+  Object.entries(rules).forEach(([id, pass]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = (pass ? '✓ ' : '✗ ') + labels[id];
+    el.className = newVal.length === 0 ? '' : (pass ? 'pass' : 'fail');
+  });
+
+  const allPass = Object.values(rules).every(Boolean);
+  const match = conVal.length > 0 && newVal === conVal;
+  const mismatch = conVal.length > 0 && newVal !== conVal;
+  err.textContent = mismatch ? 'הסיסמאות לא זהות' : '';
+
+  const canSubmit = allPass && match;
+  btn.disabled = !canSubmit;
+  btn.style.opacity = canSubmit ? '1' : '.45';
+}
+
+function openSupportModal() {
+  document.getElementById('support-modal').style.display = 'flex';
+}
+function closeSupportModal() {
+  document.getElementById('support-modal').style.display = 'none';
+}
+function closeSupportIfOverlay(e) {
+  if (e.target === document.getElementById('support-modal')) closeSupportModal();
+}
+
+// init
+showState('profile');
+</script>
+
+<!-- Support modal — triggered from "דברי איתנו" in rejected/suspended states -->
+<div id="support-modal" class="support-modal" onclick="closeSupportIfOverlay(event)">
+  <div onclick="event.stopPropagation()"
+    style="background:white;border-radius:20px 20px 0 0;padding:28px 20px 40px;max-width:390px;width:100%;direction:rtl;">
+    <div style="width:36px;height:4px;background:#e5e0d8;border-radius:2px;margin:0 auto 20px;"></div>
+    <h2 style="font-family:'Frank Ruhl Libre',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:#1C1A17;">דברי איתנו</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:20px;line-height:1.6;">נשמח לעזור. בחרי את הערוץ הנוח לך:</p>
+    <a href="https://wa.me/972501234567" target="_blank"
+      style="display:flex;align-items:center;gap:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 16px;text-decoration:none;color:#1C1A17;margin-bottom:10px;">
+      <span style="font-size:24px;">💬</span>
+      <div>
+        <div style="font-size:14px;font-weight:600;">WhatsApp</div>
+        <div style="font-size:12px;color:#888;">מענה תוך שעות ספורות</div>
+      </div>
+    </a>
+    <a href="mailto:support@mehamakor.online"
+      style="display:flex;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;text-decoration:none;color:#1C1A17;margin-bottom:20px;">
+      <span style="font-size:24px;">✉️</span>
+      <div>
+        <div style="font-size:14px;font-weight:600;">אימייל</div>
+        <div style="font-size:12px;color:#888;">support@mehamakor.online</div>
+      </div>
+    </a>
+    <button onclick="closeSupportModal()" aria-label="סגרי חלון תמיכה"
+      style="width:100%;background:transparent;color:#888;border:1.5px solid #e5e0d8;border-radius:10px;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;">סגרי</button>
+  </div>
+</div>
+
+</body>
+</html>

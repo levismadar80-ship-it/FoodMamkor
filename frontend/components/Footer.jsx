@@ -73,14 +73,6 @@ export default function Footer() {
             padding: "12px 24px",
           }}
         >
-          <div className="text-center sm:text-right">
-            <p className="font-headline text-white" style={{ fontSize: "14px" }}>
-              יש לך עסק מזון מקומי?
-            </p>
-            <p style={{ fontSize: "11px", color: "#9ab89a" }}>
-              הצטרפי לאלפי בעלות עסק במהמקור
-            </p>
-          </div>
           <Link
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60"
@@ -94,6 +86,14 @@ export default function Footer() {
             הוסיפי את העסק שלך
             <ArrowLeft size={14} weight="bold" aria-hidden="true" />
           </Link>
+          <div className="text-center sm:text-start">
+            <p className="font-headline text-white" style={{ fontSize: "14px" }}>
+              יש לך עסק מזון מקומי?
+            </p>
+            <p style={{ fontSize: "11px", color: "#9ab89a" }}>
+              הצטרפי לאלפי בעלות עסק במהמקור
+            </p>
+          </div>
         </div>
 
         {/* ================= 3-column body ================= */}
@@ -110,7 +110,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-sm leading-relaxed max-w-xs mb-4" style={{ color: "#EAF3DE" }}>
-              ישר מהמקור אליך — בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית.
+              ישר מהמקור אליך — בתי עסק מקומיים, כולם במקום אחד.
             </p>
             <a
               href="https://www.instagram.com/meha_makor"
@@ -156,15 +156,12 @@ export default function Footer() {
           {/* Column 3 — Newsletter */}
           <div>
             <h3
-              className="font-headline text-white mb-1"
+              className="font-headline text-white mb-4"
               style={{ fontSize: "16px" }}
             >
-              הישארי מעודכנת
+              אוכל טוב לא שומרים לעצמנו.
             </h3>
-            <p className="mb-4" style={{ fontSize: "12px", color: "#9ab89a" }}>
-              מוצרים חדשים ועסקים ישר לתיבה
-            </p>
-            <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
+            <form onSubmit={handleSubscribe} className="relative">
               <label htmlFor="footer-newsletter-email" className="sr-only">
                 אימייל לניוזלטר
               </label>
@@ -175,23 +172,17 @@ export default function Footer() {
                 dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="האימייל שלך"
-                className="bg-transparent text-white placeholder:text-white/50 rounded-[8px] px-4 py-2 outline-none focus:border-white focus-visible:ring-2 focus-visible:ring-white/40"
-                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
+                placeholder="האימייל שלך, בבקשה"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-8"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-[#EAF3DE] text-[#2E4A2E] px-5 py-2 rounded-[8px] hover:bg-white transition font-medium disabled:opacity-60"
+                aria-label="שלחי"
+                className="absolute end-0 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition disabled:opacity-40"
               >
-                {status === "loading" ? (
-                  <span className="inline-flex items-center gap-2">
-                    <ButtonSpinner />
-                    מצטרפת...
-                  </span>
-                ) : (
-                  "הצטרפי"
-                )}
+                {status === "loading" ? <ButtonSpinner /> : "→"}
               </button>
             </form>
             {message && (
@@ -215,6 +206,9 @@ export default function Footer() {
             marginTop: "32px",
           }}
         >
+          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
+            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
+          </p>
           <ul className="flex items-center gap-4">
             {[
               { href: "/login", label: "כניסה לחשבון" },
@@ -232,9 +226,6 @@ export default function Footer() {
               </li>
             ))}
           </ul>
-          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
-          </p>
         </div>
       </div>
     </footer>

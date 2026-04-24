@@ -26,9 +26,12 @@ from app.models import (
     StaticPage,
     User,
 )
+from app.models.models import KashrutBadgeRequest
 from app.services.analytics import server_health
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
+
+SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
 
 
 # ============================================================
@@ -102,6 +105,10 @@ def update_user_role(
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    if target.email == SUPER_ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי")
+    if target.id == user.id and data.role != "admin":
+        raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
     target.role = data.role
     db.commit()
     return {"detail": "Role updated", "role": target.role}
@@ -361,6 +368,15 @@ DEFAULT_SETTINGS = {
     "admin_whatsapp": "",
     "freemium_premium_price": "0",
     "freemium_free_image_limit": "3",
+    # MEH-247 — admin-facing holiday + Friday override toggles. Both are
+    # persisted server-side so admin A's toggle is visible to admin B on
+    # next /admin/settings load. Consumer-side reads happen via the
+    # public `GET /holiday-mode` endpoint in main.py (holiday) and
+    # `lib/friday-mode.js` on the frontend (Friday — currently localStorage
+    # + timezone rule; a public /friday-mode endpoint is TODO).
+    "holiday_override_enabled": "false",
+    "holiday_override_key": "",
+    "friday_mode_override": "false",
 }
 
 
@@ -425,7 +441,7 @@ def get_dashboard(
 
     # feature/producer-analytics: pending moderation is the sum across
     # four queues. Individual counts stay available for the alert cards.
-    pending_producers = db.query(func.count(Producer.id)).filter(Producer.status == "pending").scalar() or 0
+    pending_producers = db.query(func.count(Producer.id)).filter(Producer.status.in_(["pending", "pending_whatsapp"])).scalar() or 0
     open_reports = db.query(func.count(Report.id)).scalar() or 0
     flagged_home_products = (
         db.query(func.count(HomeProduct.id))
@@ -439,8 +455,14 @@ def get_dashboard(
         .scalar()
         or 0
     )
+    pending_kashrut_requests = (
+        db.query(func.count(KashrutBadgeRequest.id))
+        .filter(KashrutBadgeRequest.status == "pending")
+        .scalar()
+        or 0
+    )
     pending_moderation_count = int(
-        pending_producers + open_reports + flagged_home_products + pending_experiences
+        pending_producers + open_reports + flagged_home_products + pending_experiences + pending_kashrut_requests
     )
 
     stats = {
@@ -457,12 +479,13 @@ def get_dashboard(
         "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
         "flagged_home_products": int(flagged_home_products),
         "pending_experiences": int(pending_experiences),
+        "pending_kashrut_requests": int(pending_kashrut_requests),
         "pending_moderation_count": pending_moderation_count,
     }
 
     pending = (
         db.query(Producer)
-        .filter(Producer.status == "pending")
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .limit(5)
         .all()

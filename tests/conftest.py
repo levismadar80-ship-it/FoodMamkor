@@ -46,6 +46,19 @@ def _bootstrap_schema():
 
 
 @pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Reset slowapi in-memory counters before each test.
+
+    SlowAPIMiddleware checks limits before Pydantic validation, so every
+    request (including future 422s) burns from the quota. Without this
+    reset, the 12 POST /contact tests exhaust the 5/hour limit by test 6.
+    """
+    from app.rate_limit import limiter
+    limiter._storage.reset()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _clean_tables():
     """Truncate all tables between tests for isolation."""
     with engine.connect() as conn:
@@ -83,6 +96,7 @@ def make_user(
     role: str = "consumer",
     password: str = "Pass1234!",
     is_blocked: bool = False,
+    email_verified: bool = True,
 ) -> User:
     user = User(
         email=email or f"u{uuid.uuid4().hex[:8]}@test.com",
@@ -90,6 +104,7 @@ def make_user(
         password_hash=hash_password(password),
         role=role,
         is_blocked=is_blocked,
+        email_verified=email_verified,
     )
     db.add(user)
     db.commit()
@@ -144,6 +159,36 @@ def make_category(db, name: str = "ירקות אורגניים", emoji: str = "�
 def auth_header(user: User) -> dict:
     token = create_access_token(user.id)
     return {"Authorization": f"Bearer {token}"}
+
+
+# ---------- valid payload fixtures (MEH-241) ----------
+# Guard tests (401/403/409) must use these so schema changes don't silently
+# invalidate security coverage.  Pattern: valid_*_payload() | {"field": bad}
+
+def valid_review_payload() -> dict:
+    """Passes ReviewCreateNested: stars (1-5), body (min 10 chars)."""
+    return {"stars": 5, "body": "מוצר נהדר, ממליצה בחום!"}
+
+
+def valid_user_register_payload() -> dict:
+    """Passes UserRegister: email, name, password (all required)."""
+    return {
+        "email": "valid@example.com",
+        "name": "משתמשת בדיקה",
+        "password": "Pass1234!",
+    }
+
+
+def valid_producer_register_payload() -> dict:
+    """Passes ProducerRegister for a new (unauthenticated) registration."""
+    return {
+        "email": "producer@example.com",
+        "name": "יצרנית בדיקה",
+        "password": "Pass1234!",
+        "producer_name": "חוות הבדיקה",
+        "category_ids": [],
+        "primary_contact_method": "whatsapp",
+    }
 
 
 # Make helpers importable from tests

@@ -2,7 +2,9 @@ import logging
 import re
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 from pydantic import BaseModel
@@ -10,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
+from app.services.email import send_email
 from app.database import get_db
 from app.models import Category, DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
 from app.schemas.schemas import (
@@ -19,6 +22,7 @@ from app.schemas.schemas import (
     ProducerImportResult,
     ProducerUpdate,
 )
+from app.slug_utils import RESERVED_SLUGS
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -47,17 +51,18 @@ def _yes_no(value) -> bool:
 
 
 def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = None) -> str:
-    """Append -2, -3, ... until slug is unique."""
+    """Append -2, -3, ... until slug is unique and not reserved."""
     if not base_slug:
         return base_slug
     candidate = base_slug
     counter = 2
     while True:
-        q = db.query(Producer).filter(Producer.slug == candidate)
-        if exclude_id:
-            q = q.filter(Producer.id != exclude_id)
-        if not q.first():
-            return candidate
+        if candidate not in RESERVED_SLUGS:
+            q = db.query(Producer).filter(Producer.slug == candidate)
+            if exclude_id:
+                q = q.filter(Producer.id != exclude_id)
+            if not q.first():
+                return candidate
         candidate = f"{base_slug}-{counter}"
         counter += 1
 
@@ -79,7 +84,7 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
 
 @router.get("/producers", response_model=list[ProducerDetailOut])
 def list_producers(
-    status: str | None = Query(None, pattern="^(pending|approved|rejected|inactive|all)$"),
+    status: str | None = Query(None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"),
     search: str | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -90,7 +95,10 @@ def list_producers(
         joinedload(Producer.delivery_areas),
     )
     if status and status != "all":
-        q = q.filter(Producer.status == status)
+        if status == "pending":
+            q = q.filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        else:
+            q = q.filter(Producer.status == status)
     if search:
         like = f"%{search}%"
         q = q.filter((Producer.name.ilike(like)) | (Producer.city.ilike(like)))
@@ -105,6 +113,9 @@ def admin_create_producer(
 ):
     """Admin-created producers are auto-approved."""
     slug = data.slug or _slugify(data.name)
+    # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
+    if data.slug and _slugify(data.slug) in RESERVED_SLUGS:
+        raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
     slug = _ensure_unique_slug(db, slug)
 
     producer = Producer(
@@ -134,6 +145,11 @@ def admin_create_producer(
         admin_notes=data.admin_notes,
         is_verified=data.is_verified,
         images=data.images or [],
+        # MEH-213 — location mode
+        has_physical_location=data.has_physical_location,
+        offers_delivery=data.offers_delivery,
+        delivery_nationwide=data.delivery_nationwide,
+        delivery_cities=data.delivery_cities,
         status="approved",  # admin = pre-approved
     )
     db.add(producer)
@@ -162,9 +178,12 @@ def admin_update_producer(
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
 
-    # Keep slug unique if changed
+    # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:
-        payload["slug"] = _ensure_unique_slug(db, _slugify(payload["slug"]), exclude_id=producer.id)
+        candidate = _slugify(payload["slug"])
+        if candidate in RESERVED_SLUGS:
+            raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+        payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
 
     # Mirror price_range → starting_price_label for backward-compat display
     if "price_range" in payload:
@@ -228,6 +247,8 @@ async def import_producers_excel(
         raise HTTPException(status_code=500, detail="openpyxl not installed")
 
     contents = await file.read()
+    if len(contents) > 10_000_000:
+        raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
     try:
         wb = load_workbook(BytesIO(contents), data_only=True)
     except Exception as e:
@@ -251,7 +272,7 @@ def pending_producers(user: User = Depends(require_admin), db: Session = Depends
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
         )
-        .filter(Producer.status == "pending")
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
         .order_by(Producer.created_at.desc())
         .all()
     )
@@ -455,12 +476,70 @@ def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Sess
     return {"detail": "Recipe rejected"}
 
 
+# --- MEH-53: Instagram story card ---
+
+class StoryCardUploadRequest(BaseModel):
+    image_data: str  # base64-encoded JPEG data URI: "data:image/jpeg;base64,..."
+
+
+@router.post("/producers/{producer_id}/story-card")
+def upload_story_card(
+    producer_id: UUID,
+    body: StoryCardUploadRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Accept base64 JPEG canvas export, upload to Cloudinary, persist URL."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # Strip the data-URI prefix to get raw base64
+    data_uri = body.image_data
+    if "," in data_uri:
+        data_uri = data_uri.split(",", 1)[1]
+
+    import base64
+    try:
+        raw = base64.b64decode(data_uri)
+    except Exception:
+        raise HTTPException(status_code=400, detail="נתוני תמונה לא תקינים")
+
+    if not settings.cloudinary_cloud_name:
+        # Dev fallback
+        return {"url": f"/placeholder-image.png?id={producer_id}", "saved": False}
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            raw,
+            folder=f"mehamakor/producers/{producer_id}",
+            public_id="story-card",
+            resource_type="image",
+            overwrite=True,
+            format="jpg",
+        )
+        url = result["secure_url"]
+        producer.story_card_url = url
+        db.commit()
+        return {"url": url, "saved": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
 # --- Stats ---
 @router.get("/stats")
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return {
         "total_producers": db.query(Producer).count(),
-        "pending_producers": db.query(Producer).filter(Producer.status == "pending").count(),
+        "pending_producers": db.query(Producer).filter(Producer.status.in_(["pending", "pending_whatsapp"])).count(),
         "approved_producers": db.query(Producer).filter(Producer.status == "approved").count(),
         "total_users": db.query(User).count(),
         "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),
@@ -468,28 +547,49 @@ def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)
     }
 
 
-def _send_notification_email(to_email: str, subject: str, body: str):
-    """Send email notification."""
-    if not settings.smtp_user:
-        logger.debug(f"[EMAIL] Would send to {to_email}: {subject}")
-        return
+_DATA_GOV_URL = (
+    "https://data.gov.il/api/3/action/datastore_search"
+    "?resource_id=d4901968-dad3-4845-a9b0-a57d027f11ab&limit=1500"
+)
 
+
+@router.post("/seed-cities", status_code=200)
+def seed_cities(
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Idempotent: fetch Israeli localities from data.gov.il and upsert into cities table."""
     try:
-        import smtplib
-        from email.mime.text import MIMEText
+        resp = httpx.get(_DATA_GOV_URL, timeout=30)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"data.gov.il fetch failed: {exc}")
 
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = settings.smtp_user
-        msg["To"] = to_email
+    records = resp.json().get("result", {}).get("records", [])
+    inserted = 0
+    for rec in records:
+        name = (rec.get("שם_יישוב") or rec.get("SHEM_YISHUV") or "").strip()
+        if not name:
+            continue
+        try:
+            lat = float(rec.get("lat") or rec.get("Y") or 0) or None
+            lng = float(rec.get("lon") or rec.get("X") or 0) or None
+        except (TypeError, ValueError):
+            lat = lng = None
+        result = db.execute(
+            text(
+                "INSERT INTO cities (name_he, lat, lng) VALUES (:name_he, :lat, :lng)"
+                " ON CONFLICT (name_he) DO NOTHING"
+            ),
+            {"name_he": name, "lat": lat, "lng": lng},
+        )
+        inserted += result.rowcount
+    db.commit()
+    return {"seeded": inserted}
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
-        logger.info(f"[EMAIL] Sent to {to_email}")
-    except Exception as e:
-        logger.warning(f"[EMAIL] Failed to send to {to_email}: {e}")
+
+def _send_notification_email(to_email: str, subject: str, body: str):
+    send_email(to_email, subject, body)
 
 
 def _send_whatsapp(to: str, body: str):

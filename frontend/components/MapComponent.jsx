@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
@@ -32,81 +33,88 @@ import { CoordSchema } from "@/lib/schemas";
  * doesn't reliably forward refs).
  */
 
-// docs/archive/MAP_IMPROVEMENTS.md #5 — category color + emoji lookup lives in
+// docs/archive/MAP_IMPROVEMENTS.md #5 — category color + icon lookup lives in
 // lib/map-categories.js (shared with MapClient since this component is
 // dynamically loaded with ssr:false).
 
 /**
- * MEH-58 Phase 1 — custom SVG pin marker.
+ * Circle map pin — design system v2 (map page redesign).
  *
- * Anatomy (default 32×40):
- *   - Teardrop body: fill #2e6853
- *   - White disc Ø26px centered in the body
- *   - Category emoji 13px centered in the disc
- *   - Premium ring: stroke #8B6914 2px around disc when plan=premium
- *   - Verified ✓ badge: 9px white circle bottom-right when is_verified
+ * Anatomy:
+ *   - Solid colored circle, category color background
+ *   - White Phosphor icon (weight="fill") centered inside
+ *   - 2px white border, subtle box-shadow
  *
- * States:
- *   default  → 32×40
- *   selected → 44×54, white ring around the teardrop
- *   visited  → opacity 0.4, body fill #7aa298
- *   hover    → scale(1.15) via CSS transition (desktop only)
+ * Sizes:
+ *   default  → 28×28px
+ *   hovered  → 32×32px (desktop hover)
+ *   selected → 36×36px + larger glow ring
+ *   visited  → opacity 0.4 (dimmed)
+ *
+ * Replaces the teardrop+emoji design. Emoji rendered inconsistently
+ * in SVG <text> nodes across platforms (Android, Chrome on Windows).
+ * Phosphor fill icons via renderToStaticMarkup produce crisp, uniform
+ * glyphs at any DPR.
  */
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
 ) {
-  const { emoji } = styleForProducer(producer);
-  const selected = active;
-  const w = selected ? 52 : 44;
-  const h = selected ? 65 : 55;
-  const dimmed = visited && !selected && !hovered;
-  const bodyFill = dimmed ? "#7aa298" : "#2e6853";
+  const { color, icon: IconComponent } = styleForProducer(producer);
+  const size = active ? 36 : hovered ? 32 : 28;
+  const iconSize = Math.round(size * 0.5); // 14px default, 16px selected
+  const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.4 : 1;
   const isPremium = producer.plan === "premium";
   const isVerified = producer.is_verified;
 
-  const discR = selected ? 19 : 18;
-  const discCx = w / 2;
-  const discCy = selected ? 26 : 22;
-  const emojiSize = selected ? 20 : 17;
+  const iconSvg = renderToStaticMarkup(
+    <IconComponent size={iconSize} weight="fill" color="#ffffff" />,
+  );
 
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <!-- teardrop body -->
-  <path d="M${w / 2} ${h} C${w / 2} ${h} 0 ${h * 0.55} 0 ${h * 0.38}
-    A${w / 2} ${w / 2} 0 1 1 ${w} ${h * 0.38}
-    C${w} ${h * 0.55} ${w / 2} ${h} ${w / 2} ${h}Z"
-    fill="${bodyFill}" />
-  ${selected ? `<path d="M${w / 2} ${h} C${w / 2} ${h} 0 ${h * 0.55} 0 ${h * 0.38}
-    A${w / 2} ${w / 2} 0 1 1 ${w} ${h * 0.38}
-    C${w} ${h * 0.55} ${w / 2} ${h} ${w / 2} ${h}Z"
-    fill="none" stroke="white" stroke-width="3" />` : ""}
-  <!-- white disc -->
-  <circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="white" />
-  ${isPremium ? `<circle cx="${discCx}" cy="${discCy}" r="${discR}" fill="none" stroke="#8B6914" stroke-width="2" />` : ""}
-  <!-- emoji via SVG text — avoids foreignObject innerHTML parsing quirks that
-       cause the entire divIcon to throw and fall back to the default PNG icon -->
-  <text x="${discCx}" y="${discCy}" text-anchor="middle" dominant-baseline="central"
-        font-size="${emojiSize}" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">${emoji}</text>
-  ${isVerified ? `
-  <circle cx="${discCx + discR * 0.7}" cy="${discCy + discR * 0.7}" r="5.5" fill="#2e6853" stroke="white" stroke-width="1" />
-  <text x="${discCx + discR * 0.7}" y="${discCy + discR * 0.7 + 3}" text-anchor="middle" fill="white" font-size="7" font-weight="bold">✓</text>
-  ` : ""}
-</svg>`;
+  // Verified badge — tiny white-on-green checkmark, bottom-right.
+  // pointer-events:none prevents intercepting marker clicks.
+  const verifiedBadge = isVerified
+    ? `<div style="
+        position:absolute;bottom:-2px;right:-2px;z-index:1;
+        width:12px;height:12px;border-radius:50%;
+        background:#2e6853;border:1.5px solid #fff;
+        display:flex;align-items:center;justify-content:center;
+        font-size:7px;color:#fff;font-weight:700;line-height:1;
+        pointer-events:none;
+      ">✓</div>`
+    : "";
 
-  const wrapper = `
-    <div class="mehamakor-marker ${selected ? "selected" : ""} ${hovered ? "hovered" : ""} ${dimmed ? "visited" : ""}"
-         style="opacity:${opacity};transition:transform 0.15s ease-out,opacity 0.15s ease-out;${hovered && !selected ? "transform:scale(1.15);" : ""}">
-      ${svg}
+  // Build box-shadow as a single value — avoids the CSS cascade overwrite
+  // that would occur if premiumStyle used a separate "box-shadow:" property.
+  // Active glow ring uses 4px spread; premium gold ring uses 6px so it
+  // appears outside and is visible when both states are true.
+  const baseShadow = active
+    ? "0 4px 14px rgba(0,0,0,0.28),0 0 0 4px rgba(46,104,83,0.18)"
+    : "0 2px 8px rgba(0,0,0,0.2)";
+  const boxShadow = isPremium ? `${baseShadow},0 0 0 6px #8B6914` : baseShadow;
+
+  const html = `
+    <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:${color};
+        border:2px solid #fff;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:${boxShadow};
+        opacity:${opacity};
+        transition:all 0.18s ease-out;
+      ">
+        ${iconSvg}
+      </div>
+      ${verifiedBadge}
     </div>`;
 
   return L.divIcon({
-    html: wrapper,
+    html,
     className: "mehamakor-marker-wrap",
-    iconSize: [w, h],
-    iconAnchor: [w / 2, h],
-    // popupAnchor removed — marker click goes to bottom sheet, not a Leaflet popup
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
@@ -210,6 +218,10 @@ export default function MapComponent({
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
+            if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+              showToast("המיקום שהתקבל אינו תקין", "error");
+              return;
+            }
             const latlng = [latitude, longitude];
             programmaticMoveRef.current = true;
             mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
@@ -230,6 +242,10 @@ export default function MapComponent({
         );
       },
       getMap: () => mapInstanceRef.current,
+      // Used by MapClient.registerMapApi to skip hidden (0×0) containers
+      // so the mobile map (display:none on desktop) never overwrites the
+      // visible desktop map's API reference, and vice-versa on mobile.
+      getContainer: () => containerRef.current,
     };
     registerApi(api);
     return () => registerApi(null);
@@ -252,6 +268,8 @@ export default function MapComponent({
       [31.7683, 35.2137],
       8,
     );
+    // Expose initial center for E2E tests (05-map-navigation.spec.ts)
+    if (typeof window !== "undefined") window.__MAP_CENTER__ = [31.7683, 35.2137];
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
@@ -330,9 +348,14 @@ export default function MapComponent({
       resizeObserver = new ResizeObserver(scheduleInvalidate);
       resizeObserver.observe(containerRef.current);
     }
-    // Expose the Leaflet instance to the caller-owned ref AFTER the map is
-    // fully set up so getBounds() returns a real viewport.
-    if (parentMapRef) parentMapRef.current = mapInstanceRef.current;
+    // Expose the Leaflet instance to the caller-owned ref only when this
+    // container is visible (non-zero size). On desktop the mobile map lives
+    // inside a display:none element — let it win parentMapRef would give
+    // MapClient a degenerate 0×0 Leaflet instance for getBounds() calls.
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (parentMapRef && rect && (rect.width > 0 || rect.height > 0)) {
+      parentMapRef.current = mapInstanceRef.current;
+    }
 
     return () => {
       if (resizeObserver) resizeObserver.disconnect();

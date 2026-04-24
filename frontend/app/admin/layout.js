@@ -15,6 +15,8 @@ import {
   Star,
   Lifebuoy,
   Megaphone,
+  Seal,
+  Tag,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -36,7 +38,9 @@ const NAV = [
   { href: "/admin/users", label: "משתמשים", Icon: Users },
   { href: "/admin/content", label: "תוכן", Icon: Note },
   { href: "/admin/reviews", label: "ביקורות", Icon: Star },
+  { href: "/admin/kashrut", label: "כשרות", Icon: Seal },
   { href: "/admin/reports", label: "דיווחים", Icon: Warning },
+  { href: "/admin/category-requests", label: "בקשות קטגוריה", Icon: Tag },
   { href: "/admin/analytics", label: "אנליטיקס", Icon: ChartLineUp },
   { href: "/admin/settings", label: "הגדרות", Icon: GearSix },
   { href: "/admin/help", label: "עזרה", Icon: Lifebuoy },
@@ -52,6 +56,7 @@ export default function AdminLayout({ children }) {
   // home page already calls — but we call it here too so the badge shows
   // on every /admin/* subpath. Cheap: the endpoint is fast.
   const [pendingModCount, setPendingModCount] = useState(null);
+  const [pendingKashrutCount, setPendingKashrutCount] = useState(null);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) router.push("/login");
@@ -61,8 +66,11 @@ export default function AdminLayout({ children }) {
     if (!user || user.role !== "admin") return;
     api
       .get("/admin/dashboard")
-      .then((r) => setPendingModCount(r.data?.stats?.pending_moderation_count ?? 0))
-      .catch(() => setPendingModCount(null));
+      .then((r) => {
+        setPendingModCount(r.data?.stats?.pending_moderation_count ?? 0);
+        setPendingKashrutCount(r.data?.stats?.pending_kashrut_requests ?? 0);
+      })
+      .catch(() => { setPendingModCount(null); setPendingKashrutCount(null); });
   }, [user, pathname]);
 
   if (loading || !user || user.role !== "admin") {
@@ -79,7 +87,7 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen">
       {/* Dark-green sidebar — RTL, so it's on the right */}
       <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-light flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
@@ -90,7 +98,10 @@ export default function AdminLayout({ children }) {
           {NAV.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
-            const showBadge = n.href === "/admin" && pendingModCount > 0;
+            const showBadge =
+              (n.href === "/admin" && pendingModCount > 0) ||
+              (n.href === "/admin/kashrut" && pendingKashrutCount > 0);
+            const badgeCount = n.href === "/admin/kashrut" ? pendingKashrutCount : pendingModCount;
             return (
               <Link
                 key={n.href}
@@ -107,10 +118,10 @@ export default function AdminLayout({ children }) {
                 {showBadge && (
                   <span
                     className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
-                    aria-label={`${pendingModCount} פריטים לאישור`}
-                    title={`${pendingModCount} פריטים ממתינים לאישור`}
+                    aria-label={`${badgeCount} פריטים לאישור`}
+                    title={`${badgeCount} פריטים ממתינים לאישור`}
                   >
-                    {pendingModCount}
+                    {badgeCount}
                   </span>
                 )}
               </Link>

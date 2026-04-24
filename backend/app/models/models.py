@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -19,6 +20,20 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+
+
+class City(Base):
+    """MEH-213: canonical Israeli city list seeded from data.gov.il.
+    Used to validate delivery_cities on producers — free text is forbidden
+    to prevent duplicates and broken search (e.g. ת״א vs תל אביב-יפו).
+    """
+    __tablename__ = "cities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name_he = Column(String(100), unique=True, nullable=False)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class Producer(Base):
@@ -49,6 +64,8 @@ class Producer(Base):
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)
+    # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
+    story_card_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(String(200), nullable=True)  # featured product for cards/map
@@ -56,6 +73,9 @@ class Producer(Base):
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
+    gluten_free = Column(Boolean, default=False)
+    vegan = Column(Boolean, default=False)
+    lactose_free = Column(Boolean, default=False)
     has_delivery = Column(Boolean, default=False)
     pickup_points = Column(Boolean, default=False)
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
@@ -65,11 +85,31 @@ class Producer(Base):
     # Values: "available" (default) | "full" | "vacation". Rendered as a
     # colored-dot badge on ProducerCard + ProducerDetail.
     availability_status = Column(String(20), default="available")
+    # MEH-155: optional vacation end date — cleared automatically when past.
+    vacation_until = Column(Date, nullable=True)
+    # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+    opening_hours = Column(String, nullable=True)
+    # MEH-213: location mode. Two independent booleans (not an enum) because
+    # a producer can have BOTH a physical store AND offer delivery.
+    # CHECK constraint (has_physical_location OR offers_delivery) enforced in DB.
+    has_physical_location = Column(Boolean, nullable=False, default=True)
+    offers_delivery = Column(Boolean, nullable=False, default=False)
+    # Delivery scope — mutually exclusive: nationwide flag XOR city list.
+    delivery_nationwide = Column(Boolean, nullable=False, default=False)
+    delivery_cities = Column(ARRAY(Text), nullable=False, default=[])
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
+    # MEH-51: trust ladder + kashrut badges
+    phone_verified = Column(Boolean, default=False)
+    ambassador = Column(Boolean, default=False)
+    kashrut_badges = Column(ARRAY(Text), default=[])
+    kashrut_verified_at = Column(DateTime, nullable=True)
+    kashrut_expires_at = Column(DateTime, nullable=True)
+    # MEH-210 Phase 2 — producer-defined WhatsApp question chips (overrides category defaults).
+    custom_questions = Column(ARRAY(Text), nullable=True)
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
@@ -99,6 +139,28 @@ class User(Base):
     # counts on the /admin/dashboard. Nullable for pre-existing users who
     # haven't made a request yet after this column was added.
     last_active_at = Column(DateTime, nullable=True, index=True)
+    # MEH-49: referral code — unique 8-char code generated at registration.
+    # Used to build /ref/{code} links that credit the referrer.
+    referral_code = Column(String(20), unique=True, nullable=True, index=True)
+    # MEH-143: one account / multiple roles. True once the user has ever
+    # registered a producer, even if role is later changed by admin.
+    is_producer = Column(Boolean, default=False)
+    # MEH-138: profile photo. Populated from Google OAuth picture on first
+    # login, or via manual upload through POST /upload/avatar.
+    avatar_url = Column(String, nullable=True)
+    # MEH-166: password reset. Token is a 32-byte URL-safe random string,
+    # expires 1 hour after issue, cleared on redeem or re-issue.
+    reset_token = Column(String(64), nullable=True, index=True)
+    reset_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-206: logout-all-devices. Encoded as `tv` claim in JWT.
+    # POST /auth/logout-all-devices increments this; old tokens with a
+    # stale `tv` value are rejected. Fail-open: tokens without a `tv`
+    # claim (issued before this column) are still accepted.
+    token_version = Column(Integer, default=1, nullable=False, server_default="1")
+    # MEH-192: email verification. Token is cleared on successful verify.
+    email_verified = Column(Boolean, default=False)
+    email_verify_token = Column(String(64), nullable=True, index=True)
+    email_verify_expires = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
@@ -188,6 +250,7 @@ class Product(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text)
     price_range = Column(String(50))
+    image_url = Column(Text)
 
     producer = relationship("Producer", back_populates="products")
 
@@ -213,6 +276,34 @@ class Favorite(Base):
 
     user = relationship("User", back_populates="favorites")
     producer = relationship("Producer", back_populates="favorited_by")
+
+
+class FavoriteAlert(Base):
+    """MEH-54: per-producer alert preferences for favorited producers.
+
+    One row per (user, producer) pair — UNIQUE enforced at DB level.
+    Each bool controls whether that alert type fires for this user+producer.
+    push_subscription stores the Web Push API subscription JSON
+    ({endpoint, keys: {p256dh, auth}}); nullable when push not granted.
+    """
+    __tablename__ = "favorite_alerts"
+    __table_args__ = (
+        UniqueConstraint("user_id", "producer_id", name="uq_favorite_alert_per_producer"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    notify_new_product = Column(Boolean, default=True)
+    notify_new_event = Column(Boolean, default=True)
+    notify_delivery_area = Column(Boolean, default=True)
+    push_subscription = Column(JSON, nullable=True)
+    whatsapp_opt_in = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+    producer = relationship("Producer")
 
 
 class ProducerFollower(Base):
@@ -480,6 +571,7 @@ class ProducerReview(Base):
     stars = Column(Integer, nullable=False)  # 1-5
     title = Column(String(200), nullable=True)
     body = Column(Text, nullable=True)
+    is_hidden = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     producer = relationship("Producer", back_populates="reviews")
@@ -558,7 +650,9 @@ class ProducerWhatsAppClick(Base):
     dashboard's `whatsapp_clicks` metric, no rating loop.
 
     Written from `POST /producers/{id}/whatsapp-click`, which is anonymous
-    and rate-limited 10/minute per IP (slowapi).
+    and rate-limited 10/minute per IP (slowapi). user_id is set when the
+    caller is authenticated (optional JWT) so the producer can see how many
+    unique registered users clicked.
     """
 
     __tablename__ = "producer_whatsapp_clicks"
@@ -570,4 +664,192 @@ class ProducerWhatsAppClick(Base):
         nullable=False,
         index=True,
     )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class ContactClick(Base):
+    """MEH-82: one row per click on a non-WhatsApp contact method (phone/instagram/website/email).
+
+    Tracked via POST /producers/{id}/contact-click so the producer dashboard
+    can show a breakdown by method alongside the existing whatsapp_clicks metric.
+    IP is hashed (SHA-256 + rotating salt) for privacy; user_id is set when the
+    caller is authenticated.
+    """
+
+    __tablename__ = "producer_contact_clicks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    method = Column(String(20), nullable=False)  # phone | instagram | website | email
+    ip_hash = Column(String(64), nullable=True)
+    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("ix_contact_clicks_producer_at", "producer_id", "clicked_at"),
+    )
+
+
+class ReferralClick(Base):
+    """MEH-49: tracks when a referee registers via a referrer's /ref/{code} link."""
+
+    __tablename__ = "referral_clicks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    referrer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    referee_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class GroupBuy(Base):
+    """MEH-52: group purchase with commit counter and price unlock."""
+
+    __tablename__ = "group_buys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    product_name = Column(String(200), nullable=False)
+    unit = Column(String(50), nullable=True)
+    price_per_unit_regular = Column(Numeric(10, 2), nullable=False)
+    price_per_unit_group = Column(Numeric(10, 2), nullable=False)
+    min_participants = Column(Integer, nullable=False)
+    max_participants = Column(Integer, nullable=True)
+    deadline = Column(DateTime, nullable=False)
+    city = Column(String(100), nullable=True)
+    # open | funded | cancelled | fulfilled
+    status = Column(String(20), default="open", nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    producer = relationship("Producer", backref="group_buys")
+    commits = relationship("GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan")
+
+
+class GroupBuyCommit(Base):
+    """MEH-52: a user's commitment to join a group buy."""
+
+    __tablename__ = "group_buy_commits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_buy_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("group_buys.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    quantity = Column(Integer, default=1, nullable=False)
+    phone = Column(String(30), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),)
+
+    group_buy = relationship("GroupBuy", back_populates="commits")
+    user = relationship("User", backref="group_buy_commits")
+
+
+class PhoneOtpToken(Base):
+    """MEH-51: one-time WhatsApp OTP for phone verification."""
+
+    __tablename__ = "phone_otp_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    phone = Column(String(30), nullable=False)
+    code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    producer = relationship("Producer", backref="otp_tokens")
+
+
+class KashrutBadgeRequest(Base):
+    """MEH-51: producer uploads cert → admin approves → badge activates."""
+
+    __tablename__ = "kashrut_badge_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    badge_code = Column(String(50), nullable=False)
+    cert_url = Column(Text, nullable=True)
+    status = Column(String(20), default="pending", nullable=False)  # pending|approved|rejected
+    reviewed_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    producer = relationship("Producer", backref="kashrut_requests")
+    reviewer = relationship("User", backref="kashrut_reviews")
+
+
+class CategoryRequest(Base):
+    """MEH-141: producer signals a missing category during registration."""
+
+    __tablename__ = "category_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    requested_name = Column(String(100), nullable=False)
+    examples = Column(Text, nullable=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    admin_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
+
+    producer = relationship("Producer", backref="category_requests")

@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 
 const EMPTY = {
   name: "",
   contact_name: "",
+  opening_hours: "",
   phone: "",
   instagram: "",
   website: "",
@@ -32,11 +34,22 @@ const EMPTY = {
   kosher: "",
   grass_fed: false,
   organic_certified: false,
+  gluten_free: false,
+  vegan: false,
+  lactose_free: false,
   is_verified: true,
   // MEH-18
   is_recommended: false,
   admin_notes: "",
   images: [],
+  // MEH-213 — location mode
+  has_physical_location: true,
+  offers_delivery: false,
+  delivery_nationwide: false,
+  delivery_cities: [],
+  // MEH-89 — availability
+  availability_status: "available",
+  vacation_until: "",
 };
 
 export default function ProducerForm({ initial = null, producerId = null }) {
@@ -73,6 +86,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
         admin_notes: initial.admin_notes ?? "",
+        opening_hours: initial.opening_hours ?? "",
+        // MEH-213 — location mode
+        has_physical_location: initial.has_physical_location ?? true,
+        offers_delivery: initial.offers_delivery ?? false,
+        delivery_nationwide: initial.delivery_nationwide ?? false,
+        delivery_cities: initial.delivery_cities ?? [],
+        // MEH-89 — availability
+        availability_status: initial.availability_status ?? "available",
+        vacation_until: initial.vacation_until ?? "",
       });
     }
   }, [initial]);
@@ -132,6 +154,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean),
+      // MEH-89 — clear vacation_until when not on vacation
+      vacation_until: form.availability_status === "vacation" && form.vacation_until ? form.vacation_until : null,
     };
 
     try {
@@ -322,6 +346,33 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
+              checked={form.gluten_free}
+              onChange={(e) => update("gluten_free", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🌾 ללא גלוטן
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.vegan}
+              onChange={(e) => update("vegan", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🥦 טבעוני
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.lactose_free}
+              onChange={(e) => update("lactose_free", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🥛 ללא לקטוז
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
               checked={form.is_verified}
               onChange={(e) => update("is_verified", e.target.checked)}
               className="w-4 h-4 accent-primary"
@@ -350,6 +401,61 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               ))}
             </select>
           </Field>
+        </div>
+      </Section>
+
+      {/* MEH-213 — location type */}
+      <Section title="סוג העסק">
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.has_physical_location}
+              onChange={(e) => update("has_physical_location", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🏪 חנות פיזית (קבלת לקוחות)
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.offers_delivery}
+              onChange={(e) => update("offers_delivery", e.target.checked)}
+              className="w-4 h-4 accent-primary"
+            />
+            🚚 משלוחים
+          </label>
+          {!form.has_physical_location && !form.offers_delivery && (
+            <p className="text-xs text-red-600">חייב לסמן לפחות אחד מהשניים</p>
+          )}
+          {form.offers_delivery && (
+            <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.delivery_nationwide}
+                  onChange={(e) => {
+                    update("delivery_nationwide", e.target.checked);
+                    if (e.target.checked) update("delivery_cities", []);
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+                משלוחים לכל הארץ
+              </label>
+              {!form.delivery_nationwide && (
+                <div>
+                  <span className="block text-sm text-text-secondary mb-1">ערים שמשלוחים אליהן</span>
+                  <CitiesAutocomplete
+                    value={form.delivery_cities}
+                    onChange={(cities) => update("delivery_cities", cities)}
+                  />
+                  {form.delivery_cities.length === 0 && (
+                    <p className="text-xs text-red-600 mt-1">יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Section>
 
@@ -452,6 +558,53 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         )}
       </Section>
 
+      <Section title="שעות פעילות">
+        <Field label='שעות פתיחה (פורמט: "Sun-Thu 09:00-18:00, Fri 09:00-14:00")' full>
+          <input
+            value={form.opening_hours}
+            onChange={(e) => update("opening_hours", e.target.value)}
+            className={inputClass}
+            placeholder="Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+            dir="ltr"
+          />
+        </Field>
+      </Section>
+
+      <Section title="זמינות">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[
+            { value: "available", label: "זמינה" },
+            { value: "full", label: "תפוסה" },
+            { value: "vacation", label: "בהפסקה" },
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => update("availability_status", value)}
+              className={`px-4 py-1.5 rounded-full text-sm border transition ${
+                form.availability_status === value
+                  ? "bg-primary text-white border-primary"
+                  : "border-border text-site-text hover:border-primary"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {form.availability_status === "vacation" && (
+          <Field label="תאריך חזרה (אופציונלי)">
+            <input
+              type="date"
+              value={form.vacation_until}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => update("vacation_until", e.target.value)}
+              className={inputClass}
+              dir="ltr"
+            />
+          </Field>
+        )}
+      </Section>
+
       <Section title="הערות פנימיות (לא גלוי למשתמשים)">
         <textarea
           value={form.admin_notes}
@@ -463,7 +616,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={
+            saving ||
+            (!form.has_physical_location && !form.offers_delivery) ||
+            (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
+          }
           className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
           {saving ? "שומר..." : producerId ? "שמור שינויים" : "צור עסק"}

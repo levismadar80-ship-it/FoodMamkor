@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
+import api from "@/lib/api";
 
 /**
  * Header (MEH-29 sticky / active / transparent) — layered on top of the
@@ -43,8 +44,28 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  const [resendSending, setResendSending] = useState(false);
+  const [resendError, setResendError] = useState("");
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
+
+  const handleResend = async () => {
+    if (resendSending) return;
+    setResendSending(true);
+    setResendError("");
+    try {
+      await api.post("/auth/resend-verify");
+      setResendSent(true);
+    } catch (err) {
+      if (err.response?.status === 429) {
+        setResendError("הגעת למגבלה — נסי שוב בעוד שעה");
+      } else {
+        setResendError("שגיאה, נסי שוב");
+      }
+    }
+    setResendSending(false);
+  };
 
   // MEH-39: close the avatar dropdown when the user clicks outside it.
   // Listener is only attached while the menu is open (saves a document
@@ -131,7 +152,7 @@ export default function Header() {
   return (
     <header
       className={[
-        "sticky top-0 z-[1000] transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out h-16",
+        "sticky top-0 z-[1000] transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out",
         transparent
           ? "bg-transparent"
           : scrolled
@@ -157,7 +178,7 @@ export default function Header() {
       )}
 
       {/* Desktop: 3-zone grid. Mobile: plain flex between. */}
-      <div className="relative max-w-7xl mx-auto px-4 h-full md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
+      <div className="relative max-w-7xl mx-auto px-4 h-16 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center flex items-center justify-between">
         {/* LOGO — col 1 = visual RIGHT in RTL. Mobile: RTL flex-between
             puts it at the visual right naturally. When transparent the
             dark `/logo.png` is inverted to white via CSS filter. */}
@@ -338,6 +359,25 @@ export default function Header() {
           )}
         </div>
       )}
+
+      {user && user.email_verified === false && (
+        <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm flex-wrap">
+          <span className="text-amber-800">📧 אמתי את האימייל שלך כדי לפרסם תוכן</span>
+          {resendError ? (
+            <span className="text-red-600 text-xs font-medium">{resendError}</span>
+          ) : !resendSent ? (
+            <button
+              onClick={handleResend}
+              disabled={resendSending}
+              className="text-primary hover:underline text-xs font-medium disabled:opacity-50"
+            >
+              שלחי שוב
+            </button>
+          ) : (
+            <span className="text-green-600 text-xs font-medium">✓ נשלח!</span>
+          )}
+        </div>
+      )}
     </header>
   );
 }
@@ -380,8 +420,8 @@ function LoginPill({ label, transparent }) {
  *     primary circle, white 14px/600.
  *
  * Dropdown items (in order):
- *   1. הפרופיל שלי  → /settings
- *   2. הגדרות       → /settings
+ *   1. הפרופיל שלי  → /producer/dashboard (producers) | /settings?tab=profile (consumers)
+ *   2. הגדרות       → /settings?tab=security
  *   3. לוח הבקרה שלי → /producer/dashboard  (producers only)
  *   4. ממשק אדמין   → /admin                 (admins only)
  *   5. divider
@@ -394,13 +434,13 @@ function LoginPill({ label, transparent }) {
  */
 function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShadow }) {
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
-  const hasAvatar = !!user.avatar;
+  const hasAvatar = !!user.avatar_url;
   const isProducer = user.role === "producer";
   const isAdmin = user.role === "admin";
 
   const items = [
-    { href: "/settings", label: "הפרופיל שלי" },
-    { href: "/settings", label: "הגדרות" },
+    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: "הפרופיל שלי" },
+    { href: "/settings?tab=security", label: "הגדרות" },
     ...(isProducer ? [{ href: "/producer/dashboard", label: "לוח הבקרה שלי" }] : []),
     ...(isAdmin ? [{ href: "/admin", label: "ממשק אדמין" }] : []),
   ];
@@ -422,7 +462,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
         {hasAvatar ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={user.avatar}
+            src={user.avatar_url}
             alt=""
             className="w-full h-full object-cover"
           />

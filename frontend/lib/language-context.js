@@ -29,9 +29,9 @@ const translations = {
     nav_profile: "פרופיל",
 
     // Hero
-    hero_title: "אוכל אמיתי, ישר מהמקור אליך",
-    hero_subtitle: "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית",
-    search_placeholder: "חפשי ירקות טריים, בשר grass-fed...",
+    hero_title: "האוכל הכי טוב קרוב אלייך. פשוט לא ידעת איפה.",
+    hero_subtitle: "בתי עסק מקומיים, כולם במקום אחד.",
+    search_placeholder: "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
     search_sr_label: "חיפוש בתי עסק וערים",
     search_submit: "חיפוש",
 
@@ -54,11 +54,6 @@ const translations = {
     footer_privacy: "מדיניות פרטיות",
     footer_accessibility: "הצהרת נגישות",
     footer_contact: "יצירת קשר",
-    footer_newsletter_title: "הישארי מעודכנת",
-    footer_newsletter_subtitle: "מוצרים חדשים, אירועים ועסקים ישר לתיבה שלך.",
-    footer_newsletter_placeholder: "האימייל שלך",
-    footer_newsletter_submit: "הצטרפי",
-    footer_newsletter_loading: "מצטרפת...",
     footer_copyright: "מהמקור. כל הזכויות שמורות.",
     footer_made_with_love: "נעשה באהבה בישראל 🌿",
 
@@ -83,7 +78,7 @@ const translations = {
 
     // Hero
     hero_title: "Real Food, Straight From the Source",
-    hero_subtitle: "Local producers, small farms & home cooks near you",
+    hero_subtitle: "Local businesses, all in one place.",
     search_placeholder: "Search fresh veggies, grass-fed beef...",
     search_sr_label: "Search businesses and cities",
     search_submit: "Search",
@@ -107,11 +102,6 @@ const translations = {
     footer_privacy: "Privacy Policy",
     footer_accessibility: "Accessibility",
     footer_contact: "Contact Us",
-    footer_newsletter_title: "Stay Updated",
-    footer_newsletter_subtitle: "New products, events and businesses straight to your inbox.",
-    footer_newsletter_placeholder: "Your email",
-    footer_newsletter_submit: "Subscribe",
-    footer_newsletter_loading: "Subscribing...",
     footer_copyright: "Mehamakor. All rights reserved.",
     footer_made_with_love: "Made with love in Israel 🌿",
 

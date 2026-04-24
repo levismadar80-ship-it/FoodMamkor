@@ -1,4 +1,3 @@
-import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
@@ -10,6 +9,9 @@ import CookieBanner from "@/components/CookieBanner";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidget from "@/components/ChatWidget";
+import InstallPrompt from "@/components/InstallPrompt";
+import ClarityScript from "@/components/ClarityScript";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
@@ -18,7 +20,7 @@ import ChatWidget from "@/components/ChatWidget";
 const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
-  "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
+  "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
 // FINAL_AUDIT: OG image lives in /public/og-image.jpg (1200×630 recommended).
 const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
@@ -79,6 +81,12 @@ export const metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+  // iOS Safari: launch in standalone mode (no browser chrome) when added to Home Screen.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "מהמקור",
+  },
 };
 
 export const viewport = {
@@ -123,18 +131,12 @@ export default function RootLayout({ children }) {
             {/* AI Q&A bot — desktop only, floating bottom-left.
                 Self-hides on mobile via `hidden md:flex`. */}
             <ChatWidget />
+            <InstallPrompt />
           </SmoothScrollProvider>
           </LanguageProvider>
         </AuthProvider>
-        {CLARITY_PROJECT_ID && (
-          <Script id="ms-clarity" strategy="afterInteractive">
-            {`(function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");`}
-          </Script>
-        )}
+        {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}
+        <SpeedInsights />
       </body>
     </html>
   );

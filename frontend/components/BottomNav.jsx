@@ -27,8 +27,13 @@ export default function BottomNav() {
   const { t } = useLanguage();
   const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
 
-  // Profile tab is context-aware: guests → login; logged-in → settings.
-  const profileHref = user ? "/settings" : "/login";
+  // Smart auth slot: guest→/login, consumer→/settings, producer→/producer/dashboard.
+  const isProducer = user?.role === "producer";
+  const hasAvatar = !!user?.avatar_url;
+  const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
+  const profileHref = user
+    ? isProducer ? "/producer/dashboard" : "/settings"
+    : "/login";
 
   const tabs = [
     { href: "/", Icon: House, labelKey: "nav_discover", match: (p) => p === "/" },
@@ -38,13 +43,15 @@ export default function BottomNav() {
       href: profileHref,
       Icon: UserCircle,
       labelKey: "nav_profile",
-      match: (p) => p.startsWith("/settings") || p === "/login",
+      match: (p) =>
+        p.startsWith("/settings") || p === "/login" || p.startsWith("/producer/dashboard"),
     },
   ];
 
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-[1000] bg-white border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label={t("nav_mobile_label")}
     >
       <ul className="grid grid-cols-4">
@@ -80,12 +87,27 @@ export default function BottomNav() {
               )}
               <Link
                 href={tab.href}
-                className={`flex flex-col items-center justify-center py-2 min-h-[44px] text-[13px] transition ${
+                className={`flex flex-col items-center justify-center py-2 min-h-[56px] text-[13px] transition ${
                   active ? "text-primary" : "text-site-muted"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon size={22} weight={active ? "fill" : "duotone"} />
+                {/* Profile tab: show avatar when logged in, UserCircle when guest */}
+                {isProfileTab && user ? (
+                  <span
+                    className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center"
+                    style={{ backgroundColor: hasAvatar ? "transparent" : "#2e6853" }}
+                  >
+                    {hasAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white text-xs font-semibold leading-none">{initial}</span>
+                    )}
+                  </span>
+                ) : (
+                  <Icon size={22} weight={active ? "fill" : "duotone"} />
+                )}
                 <span className="mt-1">{t(tab.labelKey)}</span>
               </Link>
             </li>

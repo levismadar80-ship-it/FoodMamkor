@@ -16,7 +16,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Callable, Optional
 
+import structlog
 from sqlalchemy.orm import Session
+
+logger = structlog.get_logger(__name__)
 
 from app.models.models import HomeProductWhatsAppClick
 
@@ -84,10 +87,12 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
         and settings.twilio_auth_token
         and settings.twilio_whatsapp_from
     ):
+        logger.debug("[rating-dispatcher] SMS disabled", reason="Twilio credentials not set")
         return
 
     buyer = click.user
     if not buyer or not buyer.phone:
+        logger.debug("[rating-dispatcher] SMS skipped", reason="buyer has no phone", click_id=str(click.id))
         return
 
     listing = click.home_product
@@ -98,6 +103,12 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
         f"היי! קנית מ{seller_name} ({product_title})? איך היה?\n"
         f"דרגי כאן 👇\n{rate_url}"
     )
+    # MEH-49: append referral link if the buyer has a referral code.
+    if buyer.referral_code:
+        ref_url = f"https://mehamakor.co.il/ref/{buyer.referral_code}"
+        body += (
+            f"\n\nאהבת? שתפי חברה והיא תקבל 10% הנחה בהזמנה הראשונה:\n{ref_url}"
+        )
 
     from twilio.rest import Client
 

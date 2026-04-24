@@ -1,6 +1,9 @@
 const withPWA = require("next-pwa")({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
+  // MEH-54: custom service worker code (push event handlers).
+  // next-pwa bundles worker/index.js and importScripts it in the generated sw.js.
+  customWorkerDir: "worker",
 });
 
 // When deployed to a Vercel preview URL (not production, not local dev),
@@ -53,9 +56,9 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org data: blob:${vercelLiveImg}`,
+      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com data: blob:${vercelLiveImg}`,
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com${vercelLiveStyle}`,
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com${vercelLiveStyle}`,
       `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
       `connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,

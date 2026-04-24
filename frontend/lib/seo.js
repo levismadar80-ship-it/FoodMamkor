@@ -76,56 +76,129 @@ export function buildPageUrl(producer) {
 }
 
 /**
- * Build schema.org LocalBusiness JSON-LD. MEH-9 adds aggregateRating +
- * priceRange + the full image array (was previously just the first image)
- * so Google can surface review stars and price hints in rich results.
+ * Build schema.org JSON-LD for a producer detail page. Returns a single
+ * object with a `@graph` array that Google's parser splits into three
+ * entities — FoodEstablishment, BreadcrumbList, and WebPage — from one
+ * <script type="application/ld+json"> tag.
+ *
+ * MEH-9  — baseline LocalBusiness + aggregateRating + priceRange + images.
+ * MEH-172 — switch to FoodEstablishment subtype (still a LocalBusiness,
+ *           tells Google the page is about food), add BreadcrumbList
+ *           (ישראל → קטגוריה → עיר → שם), and a minimal WebPage wrapper.
  */
 export function buildJsonLd(producer) {
   if (!producer) return null;
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+  const isDeliveryOnly = producer.has_physical_location === false && producer.offers_delivery;
+  const pageUrl = buildPageUrl(producer);
+  const title = buildTitle(producer);
+  const category = producer.categories?.[0]?.name || "";
+  const city = producer.city || "";
+
+  // FoodEstablishment ----------------------------------------------------
+  // schema.org/FoodEstablishment is a valid subtype of LocalBusiness, so
+  // any consumer that only understood LocalBusiness before still works.
+  // The upgrade is purely additive for Google rich results.
+  const business = {
+    "@type": "FoodEstablishment",
+    "@id": `${pageUrl}#business`,
     name: producer.name,
     description: producer.description || "",
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: producer.city || "",
-      addressCountry: "IL",
-    },
+    url: pageUrl,
   };
 
-  if (producer.lat && producer.lng) {
-    jsonLd.geo = {
+  // MEH-213: delivery-only producers have no physical address — use
+  // areaServed instead so Google still understands the service area.
+  if (!isDeliveryOnly) {
+    business.address = {
+      "@type": "PostalAddress",
+      addressLocality: city,
+      addressCountry: "IL",
+    };
+  } else if (producer.delivery_nationwide) {
+    business.areaServed = "Israel";
+  } else if (producer.delivery_cities?.length > 0) {
+    business.areaServed = producer.delivery_cities;
+  }
+
+  if (!isDeliveryOnly && producer.lat && producer.lng) {
+    business.geo = {
       "@type": "GeoCoordinates",
       latitude: producer.lat,
       longitude: producer.lng,
     };
   }
 
-  if (producer.phone) jsonLd.telephone = producer.phone;
+  if (producer.phone) business.telephone = producer.phone;
 
   if (producer.website) {
-    jsonLd.url = producer.website.startsWith("http")
-      ? producer.website
-      : `https://${producer.website}`;
+    business.sameAs = [
+      producer.website.startsWith("http")
+        ? producer.website
+        : `https://${producer.website}`,
+    ];
   }
 
-  if (producer.images?.length > 0) {
-    jsonLd.image = producer.images;
-  }
-
-  if (producer.price_range) jsonLd.priceRange = producer.price_range;
+  if (producer.images?.length > 0) business.image = producer.images;
+  if (producer.price_range) business.priceRange = producer.price_range;
 
   if (producer.avg_rating != null && producer.reviews_count > 0) {
-    jsonLd.aggregateRating = {
+    business.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: Number(producer.avg_rating),
       reviewCount: producer.reviews_count,
     };
   }
 
-  return jsonLd;
+  // BreadcrumbList -------------------------------------------------------
+  // Structure per MEH-172: ישראל → קטגוריה → עיר → שם העסק.
+  // Category and city items are skipped when the source data is missing,
+  // so the list stays valid (Google rejects breadcrumbs with gaps).
+  const crumbs = [
+    { name: "ישראל", item: SITE_URL },
+  ];
+  if (category) {
+    crumbs.push({
+      name: category,
+      item: `${SITE_URL}/producers?category=${encodeURIComponent(category)}`,
+    });
+  }
+  if (city) {
+    crumbs.push({
+      name: city,
+      item: `${SITE_URL}/producers?city=${encodeURIComponent(city)}`,
+    });
+  }
+  crumbs.push({ name: producer.name, item: pageUrl });
+
+  const breadcrumbList = {
+    "@type": "BreadcrumbList",
+    "@id": `${pageUrl}#breadcrumb`,
+    itemListElement: crumbs.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: c.name,
+      item: c.item,
+    })),
+  };
+
+  // WebPage --------------------------------------------------------------
+  const webPage = {
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: title,
+    inLanguage: "he-IL",
+    isPartOf: { "@id": `${SITE_URL}#website` },
+    primaryImageOfPage: producer.images?.[0] || undefined,
+    breadcrumb: { "@id": `${pageUrl}#breadcrumb` },
+    about: { "@id": `${pageUrl}#business` },
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [webPage, breadcrumbList, business],
+  };
 }
 
 /**

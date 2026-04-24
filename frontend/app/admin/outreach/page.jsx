@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Phone } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { getWhatsAppHref } from "@/lib/utils";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -516,8 +517,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
       .replaceAll("{name}", fresh.name)
       .replaceAll("{prefillUrl}", url);
     const phone = (fresh.phone || "").replace(/\D/g, "").replace(/^0/, "972");
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(body)}`;
-    window.open(waUrl, "_blank", "noopener,noreferrer");
+    window.open(getWhatsAppHref(phone, body), "_blank", "noopener,noreferrer");
     onClose();
   };
 
@@ -570,7 +570,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
                 <button
                   type="button"
                   onClick={() => openTemplate(tpl)}
-                  className="text-xs px-2 py-1 rounded bg-[#25D366] text-white hover:bg-[#1ea855]"
+                  className="btn-whatsapp text-xs px-2 py-1 rounded"
                 >
                   פתח ב-WhatsApp
                 </button>

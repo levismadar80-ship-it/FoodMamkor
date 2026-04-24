@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { WhatsappLogo } from "@phosphor-icons/react";
-import { normalizePhone } from "@/lib/utils";
+import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
 
 /**
  * WhatsApp CTA for home-product cards + producer detail pages.
@@ -33,10 +33,10 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
   const cleanPhone = normalizePhone(phone);
   if (!cleanPhone) return null;
 
-  const message = encodeURIComponent(
+  const url = getWhatsAppHref(
+    cleanPhone,
     `היי, ראיתי את "${productTitle}" במהמקור ואשמח לשמוע פרטים!`,
   );
-  const url = `https://wa.me/${cleanPhone}?text=${message}`;
 
   const handleClick = () => {
     if (firedRef.current) return;
@@ -68,8 +68,9 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
+      data-testid="whatsapp-cta"
       aria-disabled={pending || undefined}
-      className={`inline-flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-[12px] hover:bg-[#1ea855] transition text-sm w-full justify-center font-medium focus-visible:ring-2 focus-visible:ring-[#25D366]/40 ${
+      className={`btn-whatsapp inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm w-full justify-center font-medium ${
         pending ? "opacity-70 pointer-events-none" : ""
       }`}
     >

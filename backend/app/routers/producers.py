@@ -1,12 +1,16 @@
 from datetime import datetime
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from sqlalchemy import func
+from pydantic import BaseModel
+from sqlalchemy import exists, func, text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.auth import get_current_user, get_current_user_optional
+from app.auth import get_current_user, get_current_user_optional, require_verified_email
 from app.database import get_db
+
+logger = structlog.get_logger(__name__)
 
 
 def _attach_badge_fields(producer):
@@ -18,10 +22,12 @@ def _attach_badge_fields(producer):
     try:
         producer.products_count = len(producer.products or [])
     except Exception:
+        logger.debug("[producers] products lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
         producer.products_count = 0
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
+        logger.debug("[producers] delivery_areas lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
         producer.delivery_count = 0
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
@@ -29,7 +35,34 @@ def _attach_badge_fields(producer):
     else:
         producer.days_since_created = None
     return producer
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Report, User
+from app.models import Category, ContactClick, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
+from app.services.analytics import hash_ip
+
+
+def _attach_favorites_counts(producers, db):
+    """MEH-106: batch-load favorites_count for a list of producers (single query)."""
+    if not producers:
+        return producers
+    ids = [p.id for p in producers]
+    counts = dict(
+        db.query(Favorite.producer_id, func.count(Favorite.user_id))
+        .filter(Favorite.producer_id.in_(ids))
+        .group_by(Favorite.producer_id)
+        .all()
+    )
+    for p in producers:
+        p.favorites_count = counts.get(p.id, 0)
+    return producers
+
+
+def _attach_favorites_count(producer, db):
+    """MEH-106: load favorites_count for a single producer."""
+    producer.favorites_count = (
+        db.query(func.count(Favorite.user_id))
+        .filter(Favorite.producer_id == producer.id)
+        .scalar() or 0
+    )
+    return producer
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryOut,
@@ -82,13 +115,16 @@ def list_producers(
     city: str | None = None,
     is_available_today: bool | None = None,
     grass_fed: bool | None = None,
+    gluten_free: bool | None = None,
+    vegan: bool | None = None,
+    lactose_free: bool | None = None,
     # Sort for non-geo results. "newest" (default) or "rating".
     sort: str | None = None,
     # MEH-13 — free-text search over name + description, used by /search
     # results page. Aliased as `q` in the URL to match CLAUDE.md's
     # documented API shape, but named `search_q` internally so it doesn't
     # shadow the `q` SQLAlchemy-query-builder local below.
-    search_q: str | None = Query(None, alias="q"),
+    search_q: str | None = Query(None, alias="q", max_length=200),
     # MEH-23 — offset-based pagination. Backwards-compatible: existing
     # callers that don't pass these get the first 100 rows (prior
     # behavior was "everything" which is fine at current scale but
@@ -96,6 +132,8 @@ def list_producers(
     # so the frontend can render "X מתוך Y" and numbered pagination.
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    # MEH-102 — exclude a single producer by UUID (used by similar-producers widget).
+    exclude: UUID | None = None,
     response: Response = None,
     db: Session = Depends(get_db),
 ):
@@ -123,6 +161,9 @@ def list_producers(
                 selectinload(Producer.delivery_areas),
             )
             .filter(Producer.status == "approved")
+            # MEH-213: map pins only for producers with a physical location.
+            # Delivery-only producers have no address to pin on the map.
+            .filter(Producer.has_physical_location.is_(True))
             # Haversine is undefined for NULL coords — exclude them before
             # applying the distance filter.
             .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
@@ -133,6 +174,7 @@ def list_producers(
             db.query(func.count(Producer.id.distinct()))
             .select_from(Producer)
             .filter(Producer.status == "approved")
+            .filter(Producer.has_physical_location.is_(True))
             .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
             .filter(_haversine_km(lat, lng) <= radius_km)
         )
@@ -195,18 +237,83 @@ def list_producers(
         q = q.filter(Producer.grass_fed == grass_fed)
         count_q = count_q.filter(Producer.grass_fed == grass_fed)
 
-    # MEH-13 — free-text search. Case-insensitive ILIKE over name + description.
+    if gluten_free is not None:
+        q = q.filter(Producer.gluten_free == gluten_free)
+        count_q = count_q.filter(Producer.gluten_free == gluten_free)
+
+    if vegan is not None:
+        q = q.filter(Producer.vegan == vegan)
+        count_q = count_q.filter(Producer.vegan == vegan)
+
+    if lactose_free is not None:
+        q = q.filter(Producer.lactose_free == lactose_free)
+        count_q = count_q.filter(Producer.lactose_free == lactose_free)
+
+    # MEH-99 — cross-field search: name · description · city · category names · product names.
     if search_q and search_q.strip():
-        like = f"%{search_q.strip()}%"
-        name_or_desc = (Producer.name.ilike(like)) | (Producer.description.ilike(like))
-        q = q.filter(name_or_desc)
-        count_q = count_q.filter(name_or_desc)
+        clean = search_q.strip()
+        like = f"%{clean}%"
+
+        has_category = (
+            db.query(ProducerCategory)
+            .join(Category, Category.id == ProducerCategory.category_id)
+            .filter(
+                ProducerCategory.producer_id == Producer.id,
+                Category.name.ilike(like),
+            )
+            .exists()
+        )
+        has_product = (
+            db.query(Product)
+            .filter(
+                Product.producer_id == Producer.id,
+                Product.name.ilike(like),
+            )
+            .exists()
+        )
+        search_filter = (
+            Producer.name.ilike(like)
+            | Producer.description.ilike(like)
+            | Producer.city.ilike(like)
+            | has_category
+            | has_product
+        )
+        q = q.filter(search_filter)
+        count_q = count_q.filter(search_filter)
+
+        # Relevance ordering in non-geo mode: exact name first, then prefix, then rating.
+        if not geo_search:
+            q = q.order_by(False).order_by(
+                (func.lower(Producer.name) == clean.lower()).desc(),
+                Producer.name.ilike(f"{clean}%").desc(),
+                Producer.avg_rating.desc(),
+                Producer.created_at.desc(),
+            )
+
+    # MEH-102 — exclude a specific producer (used by similar-producers widget).
+    if exclude is not None:
+        q = q.filter(Producer.id != exclude)
+        count_q = count_q.filter(Producer.id != exclude)
 
     # MEH-23 — total BEFORE applying limit/offset so the frontend can render
     # "X מתוך Y" and numbered pagination.
     total_count = count_q.scalar() or 0
     if response is not None:
         response.headers["X-Total-Count"] = str(total_count)
+
+    # MEH-99 — log every search (zero AND non-zero) so trending has signal.
+    # Zero-result rows are used for discovery; non-zero rows drive /search/trending.
+    if search_q and search_q.strip():
+        try:
+            db.execute(
+                text(
+                    "INSERT INTO search_queries (query, results_count) VALUES (:q, :n)"
+                ),
+                {"q": search_q.strip()[:200], "n": total_count},
+            )
+            db.commit()
+        except Exception:
+            logger.warning("[producers] search_queries INSERT failed", exc_info=True)
 
     if geo_search:
         # A multi-entity query combined with joinedload on a collection
@@ -225,16 +332,27 @@ def list_producers(
             producer.distance_km = round(float(distance_km), 2)
             _attach_badge_fields(producer)
             results.append(producer)
+        _attach_favorites_counts(results, db)
         return results
 
     rows = q.offset(offset).limit(limit).all()
     for p in rows:
         _attach_badge_fields(p)
+    _attach_favorites_counts(rows, db)
     return rows
 
 
+@router.get("/producers/count")
+@limiter.limit("60/minute")
+def producers_count(request: Request, db: Session = Depends(get_db)):
+    """MEH-159 — lightweight total count for keeping pagination fresh client-side."""
+    count = db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar() or 0
+    return {"count": count}
+
+
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
-def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
+@limiter.limit("120/minute")
+def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
     producer = (
         db.query(Producer)
         .options(
@@ -245,11 +363,10 @@ def get_producer_by_slug(slug: str, db: Session = Depends(get_db)):
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
     )
-    if producer:
-        _attach_badge_fields(producer)
     if not producer:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    _attach_badge_fields(producer)
+    _attach_favorites_count(producer, db)
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
@@ -278,8 +395,19 @@ def get_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    # MEH-254 — pending/rejected producers are not consented-to-public. Only
+    # the owner and admins may fetch them by UUID; everyone else sees 404 so
+    # the UUID can't be used to enumerate queue state.
+    if producer.status != "approved":
+        is_admin = getattr(viewer, "role", None) == "admin"
+        is_owner = viewer is not None and viewer.producer_id == producer.id
+        if not (is_admin or is_owner):
+            raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
     # MEH-18 — compute badge fields from the already-loaded relationships.
     _attach_badge_fields(producer)
+    # MEH-106: social proof count.
+    _attach_favorites_count(producer, db)
 
     # Compute report_count from DB
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
@@ -308,26 +436,69 @@ def record_whatsapp_click(
     request: Request,
     producer_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """Log a WhatsApp CTA click for the producer dashboard.
 
-    Anonymous (no auth). Frontend fires this via `navigator.sendBeacon`
-    immediately before opening `wa.me` — fire-and-forget, doesn't block
-    the window. Rate-limited 10/minute per IP to bound abuse. Unknown
-    producer IDs return 404.
+    Auth optional — JWT is accepted when present so the click can be
+    attributed to a registered user. Frontend fires this via
+    `navigator.sendBeacon` immediately before opening `wa.me` —
+    fire-and-forget, doesn't block the window. Rate-limited 10/minute
+    per IP to bound abuse. Unknown producer IDs return 404.
     """
     exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
     if not exists:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    db.add(ProducerWhatsAppClick(producer_id=producer_id))
+    db.add(ProducerWhatsAppClick(
+        producer_id=producer_id,
+        user_id=current_user.id if current_user else None,
+    ))
     db.commit()
     return {"detail": "logged"}
+
+
+_VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email"})
+
+
+class ContactClickIn(BaseModel):
+    method: str
+
+
+@router.post("/producers/{producer_id}/contact-click", status_code=204)
+@limiter.limit("10/minute")
+def record_contact_click(
+    request: Request,
+    producer_id: UUID,
+    data: ContactClickIn,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """Log a contact-method click for the producer dashboard.
+
+    Accepts method ∈ {phone, instagram, website, email}. Auth optional —
+    JWT when present attributes the click to a registered user. IP is
+    SHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited
+    10/minute per IP consistent with whatsapp-click.
+    """
+    if data.method not in _VALID_CONTACT_METHODS:
+        raise HTTPException(status_code=422, detail="method לא חוקי")
+    exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    client_ip = request.client.host if request.client else None
+    db.add(ContactClick(
+        producer_id=producer_id,
+        user_id=current_user.id if current_user else None,
+        method=data.method,
+        ip_hash=hash_ip(client_ip),
+    ))
+    db.commit()
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
 def create_producer(
     data: ProducerCreate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
     """Create a pending producer row.
