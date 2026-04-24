@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from app.auth import create_access_token, hash_password  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
-from app.main import _migrate_columns, app  # noqa: E402
+from app.main import app  # noqa: E402
 from app.models.models import (  # noqa: E402
     Category,
     DeliveryArea,
@@ -40,7 +40,6 @@ def _bootstrap_schema():
     # Drop everything (including admin_settings/static_pages) and recreate.
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    _migrate_columns(engine)
     yield
     Base.metadata.drop_all(bind=engine)
 

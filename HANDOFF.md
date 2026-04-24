@@ -1,9 +1,50 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-23 (MEH-262 GPS test fix + settings/page.jsx broken imports fixed; PR #305 open draft)
+> Last updated: 2026-04-24 (MEH-267 Alembic owns schema — 10 commits; PR #311 open draft, awaiting review)
 
-## Current — MEH-262 GPS test + staging build fix (2026-04-23)
+## Current — MEH-267 Alembic migration scaffold (2026-04-24)
+
+**Branch:** `feature/meh-267-alembic-migration`
+**PR:** #311 (draft) — `feature/meh-267-alembic-migration → staging`
+
+**What was done (10 commits):**
+1. `fb1a0a6` — Alembic scaffold + baseline revision (steps 1-2)
+2. `4b8034b` — promote search_queries to ORM + GIN index, regen baseline (34 tables, `ef8fb1858f5b`)
+3. `e70c862` — delete `_migrate_columns` (258 lines) — Alembic now owns schema
+4. `f4ec1f7` — hotfix: remove `_migrate_columns` import/call from `tests/conftest.py` (ImportError)
+5. `d5a3532` — refactor: remove `Base.metadata.create_all` from boot path + comment rot
+6. `68fd3b8` — Dockerfile: prepend `alembic upgrade head &&` to Railway start command
+7. `09ba725` — CI: migration drift gate (fresh Postgres → upgrade head → verify 34 tables + baseline rev)
+8. `e05036a` — docs: `docs/MIGRATIONS.md` Hebrew developer guide
+9. `ef6d361` — docs: CLAUDE.md adds locked decision + documentation map entry
+
+**Root cause fixed (MEH-206, MEH-192):**
+Dual schema mechanism (`create_all` on boot + `_migrate_columns` DDL) caused silent column drift.
+Both removed. Alembic is the sole schema authority. Baseline `ef8fb1858f5b` stamped on staging + production.
+
+**Known follow-ups (not in this PR):**
+- MEH-269: Playwright E2E flake (~4m31s timeout on PRs #308/#310/#311). Pre-existing, non-blocking.
+- MEH-XXX: Add `alembic check` to CI — catches ORM/migration drift that `upgrade head` misses.
+
+**PR #311 DoD status:**
+- [x] `npm run build` passes (build job green)
+- [x] `pytest tests/test_api.py` passes (migration drift gate + pytest job green)
+- [ ] `/adversarial-review` not yet run
+- [ ] Not yet undrafted/ready for review
+
+**Rollback plan (documented in PR #311 description):**
+If `alembic upgrade head` fails on Railway deploy:
+1. Railway auto-retries per `restartPolicyMaxRetries: 10` — check logs first.
+2. Force-redeploy previous image from Railway dashboard (Deployments → previous → Redeploy).
+3. If migration is the root cause: fix the revision file, push, Railway picks up new image.
+4. For schemata that need explicit downgrade: use Railway Shell → `alembic downgrade -1`.
+
+**Next step:** Run `/adversarial-review` on changed files, then unmark draft and request review.
+
+---
+
+## Previous — MEH-262 GPS test + staging build fix (2026-04-23)
 
 **Branch:** `feature/meh-262-fix-gps-test-modal-handling`
 **PR:** #305 (draft) — `feature/meh-262-fix-gps-test-modal-handling → staging`
@@ -311,7 +352,7 @@ Previous session context:
   MEH-160: SKIPPED (standing instruction from user)
 
 ## Current state
-Branch: feature/meh-84-gps-button (PR #274, CI queued)
+Branch: feature/meh-267-alembic-migration (PR #311, draft, CI green)
 Last branch: feature/meh-83-lightbox (PR #272, CI running)
 Staging HEAD: updated — PR #264 (uv migration) merged this session
 Main HEAD: e42127e (production still behind staging — needs promotion)
@@ -329,7 +370,8 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 - #274 — MEH-84: GPS button on /map (draft, CI queued)
 
 ## Next task
-- Wait for CI on #270, #272, #274 → then review + merge in order
+- Run `/adversarial-review` on PR #311 → unmark draft → request review → merge
+- Open MEH-XXX: "Add `alembic check` to CI — catches ORM/migration drift that `alembic upgrade head` misses"
 - MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
 - MEH-205: /search page redesign (discovery-first) — next feature in queue
 - Review and merge #265 → #268 to staging (older open PRs, still valid)

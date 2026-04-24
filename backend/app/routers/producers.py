@@ -35,7 +35,7 @@ def _attach_badge_fields(producer):
     else:
         producer.days_since_created = None
     return producer
-from app.models import Category, ContactClick, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, User
+from app.models import Category, ContactClick, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, SearchQuery, User
 from app.services.analytics import hash_ip
 
 
@@ -303,16 +303,17 @@ def list_producers(
 
     # MEH-99 — log every search (zero AND non-zero) so trending has signal.
     # Zero-result rows are used for discovery; non-zero rows drive /search/trending.
+    # MEH-267: ORM insert (not raw SQL) so id + searched_at come from Python-side
+    # model defaults — alembic baseline has no server_default on these columns.
     if search_q and search_q.strip():
         try:
-            db.execute(
-                text(
-                    "INSERT INTO search_queries (query, results_count) VALUES (:q, :n)"
-                ),
-                {"q": search_q.strip()[:200], "n": total_count},
-            )
+            db.add(SearchQuery(
+                query=search_q.strip()[:200],
+                results_count=total_count,
+            ))
             db.commit()
         except Exception:
+            db.rollback()
             logger.warning("[producers] search_queries INSERT failed", exc_info=True)
 
     if geo_search:
