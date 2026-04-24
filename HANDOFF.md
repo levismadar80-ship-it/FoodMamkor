@@ -1,7 +1,60 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (MEH-267 Alembic owns schema — 10 commits; PR #311 open draft, awaiting review)
+> Last updated: 2026-04-24 (MEH-277 — reality-check refresh after parallel-session sprawl)
+
+## 2026-04-24 Reality-check (MEH-277)
+
+Audit after multiple parallel sessions landed work without coordinated handoff. The sections below reflect live state as of 2026-04-24 ~10:30 UTC. Older "## Current" / "## Previous" sections below are preserved for history but **superseded** by this block.
+
+### Open PRs (live)
+
+| PR  | MEH     | Title                          | Status | CI blocker        |
+|-----|---------|--------------------------------|--------|-------------------|
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | stale 48h         |
+| 299 | MEH-173 | Install marketing skills (38)  | Ready  | Playwright only   |
+| 306 | MEH-266 | DB migration PR template       | Ready  | build+lint FAIL   |
+| 307 | MEH-264 | Vercel bypass for Playwright   | Ready  | Playwright only   |
+| 309 | (none)  | Replace networkidle waits      | Draft  | Playwright only   |
+| 310 | (none)  | COOP header for Google OAuth   | Draft  | Playwright only   |
+
+Older "## Open PRs" table lower in this file (listing #265–#274) is stale — those PRs have all been resolved long ago.
+
+### Recently merged (this session batch)
+
+- **PR #311 (MEH-267)** — Alembic migration scaffold; `_migrate_columns()` removed, Alembic is sole schema authority. Merged 04-24 09:57.
+- **PR #312 (MEH-275 retroactive; branch said MEH-261)** — "My environment" section added to CLAUDE.md. Merged 04-24 ~10:00.
+- **PR #313 (MEH-276 retroactive; branch said MEH-262)** — "Commit discipline" section added to CLAUDE.md. Merged 04-24 ~10:15.
+
+The `MEH-261` / `MEH-262` numbers on those two branches were **already taken in Linear** when the parallel session picked them — see MEH-275 + MEH-276 for the number-collision story and the retroactive remap.
+
+### Known open issues
+
+- **MEH-274: OAuth regressions post-#302.** Blocked by PR #310 (COOP header) merge — see Linear for full scope. The root-cause DB-column gap from MEH-206/MEH-192 was already resolved via MEH-267 Alembic; MEH-274 covers the remaining OAuth/FedCM surface (COOP, multi-init GSI warnings, 409 on `/register/producer/oauth` when fired from wrong page).
+- **MEH-269: Playwright E2E flake** — non-blocking; tracked.
+
+### Blockers
+
+- **Playwright E2E fails on every recent PR.** PR #307 (Vercel protection bypass) unblocks E2E signal for all others. Merge order: **#307 first → re-run CI on #299 / #309 / #310 / #306** before merging any of them.
+- **PR #306 has Frontend build + Frontend lint failing** despite being a template-only change (`.github/pull_request_template.md`). Investigate before merge — likely base-branch divergence or stale CI cache; the template text itself cannot break the build.
+
+### Stale branches to clean up (cleanup is a separate task)
+
+- `hotfix/meh-206-meh-192-migrate-columns` — **dead code** post-MEH-267. The `_migrate_columns()` function this hotfix patches was deleted in PR #311. Abandon.
+- **11 `claude/*` branches** violate Rule 3 / locked decision ("No `claude/*` branches. Use `feature/*`."). Cleanup candidates after confirming no unique unmerged work.
+- **~60 stale `feature/*` branches** from before 2026-04-22 — most were squash-merged (squash hides original SHA so `git branch --merged` misses them). Cleanup candidates after per-branch SHA verification.
+
+### Lessons learned
+
+> **Before picking a MEH number for a new branch, verify in Linear the number is either unused or already your own ticket.** Collision evidence: MEH-261 and MEH-262 were both stolen by parallel sessions on 2026-04-24 (see MEH-275, MEH-276).
+
+> **Single-session rule still being violated.** At least 3 parallel sessions landed work on 2026-04-24 (Alembic, E2E/OAuth fixes, doc edits). Rule 1 explicitly forbids this — the collision above is the predictable consequence. Every session start must grep remote branches by author+timestamp before picking a task.
+
+### Promotion to main
+
+- Main is behind staging by many commits. No promotion plan recorded yet. Follow-up task.
+
+---
 
 ## Current — MEH-267 Alembic migration scaffold (2026-04-24)
 
