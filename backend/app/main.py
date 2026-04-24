@@ -142,9 +142,9 @@ async def record_request_metrics(request: Request, call_next) -> Response:
 
 app.include_router(auth.router)
 app.include_router(cities.router)
+app.include_router(producer_me.router)
 app.include_router(producers.router)
 app.include_router(favorites.router)
-app.include_router(producer_me.router)
 app.include_router(admin.router)
 app.include_router(admin_extra.router)
 app.include_router(recipes.router)

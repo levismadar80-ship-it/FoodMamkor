@@ -1456,3 +1456,37 @@ class TestContactClickTracking:
         cc = data["contact_clicks"]
         assert "last_7d" in cc and "last_30d" in cc and "total" in cc
         assert cc["total"] >= 1
+
+
+class TestGetProducersMeRouteOrder:
+    """MEH-300 regression — GET /producers/me must not be shadowed by
+    GET /producers/{producer_id} due to router registration order."""
+
+    def test_authenticated_producer_returns_200(self, client, db):
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+
+        resp = client.get("/producers/me", headers=auth_header(user))
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["id"] == str(producer.id)
+        assert body["name"] == producer.name
+
+    def test_no_auth_returns_401(self, client, db):
+        resp = client.get("/producers/me")
+        assert resp.status_code == 401
+
+    def test_consumer_returns_403(self, client, db):
+        user = make_user(db, role="consumer")
+        resp = client.get("/producers/me", headers=auth_header(user))
+        assert resp.status_code == 403
+
+    def test_uuid_route_not_broken(self, client, db):
+        """Ensure GET /producers/{uuid} still resolves after reorder."""
+        producer = make_producer(db)
+        resp = client.get(f"/producers/{producer.id}")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(producer.id)
