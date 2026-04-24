@@ -139,6 +139,7 @@ File edit safety — read before write, diff after write, no silent deletions. F
 | [docs/DATA.md](./docs/DATA.md) | DB schema, all API endpoints, request/response shapes |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Branch strategy, Railway/Vercel/GitHub setup, cold-start, dev workflow |
 | [docs/SECURITY.md](./docs/SECURITY.md) | JWT, rate limits, CORS, IDOR, file uploads, headers, CSP, 3-step audit |
+| [docs/SECURITY-CHECKLIST.md](./docs/SECURITY-CHECKLIST.md) | 7 concrete traps (MEH-256/254/248/163/241/249/244) — broken→fix→verify per trap |
 | [docs/TESTING.md](./docs/TESTING.md) | pytest + playwright commands, smoke checklists, Lighthouse |
 | [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md) | Per-feature manual QA checklist — updated on every PR |
 | [docs/ADMIN.md](./docs/ADMIN.md) | Admin pages, seed instructions, role enforcement |
