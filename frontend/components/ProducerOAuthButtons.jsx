@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
+import { useGoogleSignIn } from "@/lib/use-google-sign-in";
 
 /**
  * MEH-170 — Google + Apple buttons for Step 0 of /register/producer.
@@ -57,20 +58,14 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
     }
   };
 
-  // Google GSI — mount the official button; on credential, forward to our
-  // producer OAuth endpoint.
-  useEffect(() => {
-    if (!googleId || typeof window === "undefined") return;
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
-      window.google?.accounts.id.initialize({
-        client_id: googleId,
-        callback: (response) => finish("google", response.credential),
-      });
+  // Google GSI — uses shared hook so only one initialize() fires per page,
+  // and cancel() clears any stale producer callback before mounting.
+  useGoogleSignIn(
+    googleId,
+    (response) => finish("google", response.credential),
+    () => {
       if (googleBtnRef.current) {
-        window.google?.accounts.id.renderButton(googleBtnRef.current, {
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
           theme: "outline",
           size: "large",
           width: googleBtnRef.current.offsetWidth,
@@ -78,11 +73,8 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
           locale: "he",
         });
       }
-    };
-    document.body.appendChild(script);
-    return () => script.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [googleId]);
+    },
+  );
 
   // Apple JS — mount the SDK, listen to success/failure events, forward
   // to our producer endpoint.
