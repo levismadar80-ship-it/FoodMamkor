@@ -199,6 +199,17 @@ function ProfileTab() {
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED.includes(file.type)) {
+      setError("רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("הקובץ גדול מדי — מקסימום 5MB");
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -210,8 +221,8 @@ function ProfileTab() {
       await refreshUser();
       setMessage("תמונת הפרופיל עודכנה");
       setTimeout(() => setMessage(null), 3000);
-    } catch {
-      setError("שגיאה בהעלאת התמונה, נסי שוב");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "שגיאה בהעלאת התמונה — נסי שוב");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -817,6 +828,17 @@ function ProductsSection() {
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED.includes(file.type)) {
+      setError("רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("הקובץ גדול מדי — מקסימום 5MB");
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     setError("");
     try {
@@ -824,8 +846,8 @@ function ProductsSection() {
       fd.append("file", file);
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setForm((f) => ({ ...f, image_url: r.data.url }));
-    } catch {
-      setError("שגיאה בהעלאת תמונה");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "שגיאה בהעלאת תמונה — נסי שוב");
     } finally {
       setUploading(false);
       e.target.value = "";
