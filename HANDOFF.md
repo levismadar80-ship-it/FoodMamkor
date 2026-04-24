@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (Session 5 — MEH-300 routing fix + MEH-299 Cloudinary avatar self-hosting)
+> Last updated: 2026-04-25 (Session 4 — MEH-271 arch smell detection + MEH-258 security checklist)
 
 ## 2026-04-24 Session 5 update
 
@@ -36,7 +36,7 @@ After Railway staging deploy: log in with Google → DevTools → `GET /auth/me`
 1. Merge PR #322 (HANDOFF update — docs only, no CI gate needed)
 2. Verify MEH-299 on staging: Google login → `avatar_url` = Cloudinary URL
 3. Verify MEH-300 on staging: `/producer/dashboard` no longer shows 422 in Network tab
-4. Consider removing `*.googleusercontent.com` from CSP `img-src` in `next.config.js` once MEH-299 is confirmed working (MEH-298 added the wildcard as a stopgap — MEH-299 makes it unnecessary for new logins; keep it until all existing users have re-logged in)
+4. Consider removing `*.googleusercontent.com` from CSP `img-src` in `next.config.js` once MEH-299 is confirmed working
 
 ### Decisions this session
 
@@ -48,7 +48,57 @@ After Railway staging deploy: log in with Google → DevTools → `GET /auth/me`
 
 ---
 
+## 2026-04-25 Session 4 update (MEH-271 + MEH-258)
 
+## 2026-04-25 Session 4 update
+
+### Opened this session
+
+| PR  | MEH     | Title                                              | Status |
+|-----|---------|----------------------------------------------------|--------|
+| —   | MEH-271 | Arch smell detection section in workflow.md        | Pushed, not yet opened as PR — branch `feature/meh-271-arch-smell-detection` |
+| —   | MEH-258 | SECURITY-CHECKLIST.md (7 traps, broken→fix→verify) | Pushed, not yet opened as PR — branch `feature/meh-258-security-checklist` |
+
+### Linear tickets closed this session
+
+- **MEH-271** — marked Done ✅
+- **MEH-258** — pending close (after this commit)
+
+### What was done
+
+**MEH-271** — new `## Architectural smell detection` section in `.claude/rules/workflow.md`.
+Two smells: (1) two parallel mechanisms owning the same state, (2) "remember to update X when Y" phrases in docs.
+Includes grep commands to detect, and escalation rule (open Linear ticket, don't fix inline).
+
+**MEH-258** — rewrote `docs/SECURITY-CHECKLIST.md` from scratch to match Linear spec:
+7 past-incident traps (MEH-256/254/248/163/241/249/244), each with broken pattern → why → fix → question → verify command.
+Also: CLAUDE.md docs map pointer added, PR template reference added, env-var table, copy-paste PR checklist.
+
+### DoD status (MEH-258)
+
+- [x] `docs/SECURITY-CHECKLIST.md` — 7 concrete traps, broken→fix→verify format
+- [x] `CLAUDE.md` docs map — pointer added after `SECURITY.md` row
+- [x] `.github/pull_request_template.md` — reference added under "auth or permissions changed"
+- [x] `HANDOFF.md` — this update
+- [ ] Build green — docs-only, no code changed, CI should pass trivially
+- [ ] PRs not yet opened — both branches pushed
+
+### Next tasks
+
+1. Open PRs for MEH-271 + MEH-258 (branches already pushed)
+2. Continue session 3 follow-ups:
+   - Verify staging `/auth/me` 200 for a producer user (MEH-283 post-merge check)
+   - Verify staging `/login` + Google OAuth on staging.mehamakor.online (MEH-274)
+   - Merge PR #320 (MEH-286) after CI green — docs-only
+3. MEH-280 + MEH-281 — two remaining failing Playwright specs
+
+### Note on PR template stale section
+
+`.github/pull_request_template.md` still references `_migrate_columns()` in the Database Checklist
+section (lines 50–55). That function was deleted in MEH-267 (PR #311). The section is now misleading.
+Separate cleanup task needed — not in scope of MEH-258.
+
+---
 
 ## 2026-04-24 Session 3 update
 
