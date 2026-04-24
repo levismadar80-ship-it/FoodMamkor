@@ -1,167 +1,334 @@
-# 📋 Security Checklist (MEH-258)
+# Security Checklist — מהמקור (MEH-258)
 
-> **Pre-merge checklist, not a reference doc.** The full threat model
-> and header lists live in [SECURITY.md](./SECURITY.md); the narrative
-> traps with full context live in
-> [LOCKED_DECISIONS.md](./LOCKED_DECISIONS.md). This file is what you
-> actually tick off before opening a PR that touches auth, uploads,
-> rate limits, headers, or any mutation endpoint.
+> **When to use this doc:**
+> Does your PR touch any of these? → check the relevant traps below.
 >
-> **How to use:** for each category below, tick every box that applies
-> to your PR. If a box describes a trap you don't understand, **stop
-> and read the referenced file:line before continuing** — the trap is
-> invisible until it costs a production incident.
+> | Touched file/area | Traps to check |
+> |---|---|
+> | `backend/app/rate_limit.py` or any rate-limited endpoint | TRAP 1 |
+> | Any GET endpoint with a UUID param | TRAP 2 |
+> | Any new field on a Pydantic schema | TRAP 3 |
+> | Any `if settings.X:` or `if env_var:` branch | TRAP 4 |
+> | Any new auth/guard test (401/403/409) | TRAP 5 |
+> | Any `db.delete(user)` or parent-row delete | TRAP 6 |
+> | Any merge to `main` | TRAP 7 |
+>
+> **Forbidden:** abstract advice, generic OWASP links, traps we haven't
+> actually hit. Every trap here has a MEH number — it happened.
 
 ---
 
-## 1. Auth / JWT
+## TRAP 1 — Rate limiter behind proxy (MEH-256)
 
-- [ ] **Never hardcode a JWT secret.** Secret comes from
-  `JWT_SECRET_KEY` (or `SECRET_KEY`) env var only.
-  - **How to test:** run `ENV=production` locally with no
-    `JWT_SECRET_KEY` set → app must refuse to start with
-    `RuntimeError`.
-  - **File:** `backend/app/config.py:14` (`_validate_production_secrets`)
-- [ ] **Dev ephemeral secret is fine for dev, never for prod.** The
-  `_DEV_SECRET_SENTINEL` path generates a per-process random secret
-  and logs a loud warning. Tokens invalidate on restart.
-  - **File:** `backend/app/config.py:15`
-- [ ] **Token TTL stays at 24h.** Do not extend to 7 days without a
-  refresh-token design first (v2 scope).
-  - **File:** `backend/app/config.py` (`ACCESS_TOKEN_EXPIRE_MINUTES`)
-- [ ] **`get_current_user_optional` must re-raise 403.** Blocked
-  users must never be treated as anonymous (MEH-143 adversarial
-  finding).
+**The broken pattern:**
+```python
+# ❌ BROKEN behind Railway/Cloudflare/Nginx
+limiter = Limiter(key_func=get_remote_address)
+```
 
----
+**Why it breaks:** `request.client.host` returns the proxy's own IP
+(`100.64.0.X` on Railway's CGN range) — all users collapse into one
+bucket. Rate limiting stops working for everyone simultaneously.
 
-## 2. Rate limiting
+**The fix:**
+```python
+# ✅ CORRECT
+from app.rate_limit import get_real_client_ip
+limiter = Limiter(key_func=get_real_client_ip)
+```
+File: `backend/app/rate_limit.py:83`
 
-- [ ] **Never use `get_remote_address` directly behind Railway.**
-  Behind the Railway edge, `request.client.host` resolves to the
-  proxy's own IP (`100.64.0.X` CGN range) — every user collapses
-  into one rate-limit bucket.
-  - **Use:** `get_real_client_ip` from `backend/app/rate_limit.py:54`
-  - **File:** `backend/app/rate_limit.py:83` (limiter wiring)
-- [ ] **`TRUSTED_PROXY=1` must be set on Railway staging + prod.**
-  Without it, the key function falls through to
-  `get_remote_address` and the bypass bug returns.
-  - **How to test:** hit a rate-limited endpoint 10× from the same
-    client → the 11th call must 429.
-  - **File:** `backend/app/rate_limit.py:50` (`_trusted_proxy_enabled`)
-- [ ] **Per-route limits defined in the router file, not inline.**
-  Adversarial review flags inline limits as an anti-pattern.
+**Also required:** `TRUSTED_PROXY=1` in Railway env vars (staging +
+prod). Without it `get_real_client_ip` falls through to
+`get_remote_address` and the bug returns silently.
 
----
+**Question to ask yourself:**
+"If I send 10 requests from 10 different IPs through Railway, will
+slowapi see 10 different IPs or 1?"
 
-## 3. IDOR (ownership checks on mutations)
-
-- [ ] **Every PUT / PATCH / DELETE checks ownership.** Pattern:
-  ```python
-  is_owner = resource.owner_id == current_user.id
-  is_admin = getattr(current_user, "role", None) == "admin"
-  if not (is_owner or is_admin):
-      raise HTTPException(403)
-  ```
-  - **Canonical examples:**
-    - `backend/app/routers/events.py:272`
-    - `backend/app/routers/experiences.py:189`
-    - `backend/app/routers/producers.py:403`
-    - `backend/app/routers/reviews.py:347`
-- [ ] **Tested with a second user's token.** A 200 for the owner is
-  not proof — write a test that uses User B's JWT to mutate User A's
-  resource and asserts 403.
-- [ ] **Guard tests send schema-valid payloads.** A 422 proves
-  nothing about the guard (regression rule 6). Use
-  `valid_*_payload()` fixtures from `tests/conftest.py`.
+**How to verify:**
+```bash
+for i in 1 2 3 4 5 6; do
+  curl -sI -X POST https://staging.mehamakor.online/api/auth/login \
+    -H "Content-Type: application/json" \
+    --data '{"email":"x@x.com","password":"wrongpass"}'
+done
+# All 6 should return 401. If 2nd+ return 429 from the first loop
+# iteration, the limiter is keyed on proxy IP — bug is present.
+```
 
 ---
 
-## 4. File upload
+## TRAP 2 — IDOR on GET by UUID (MEH-254)
 
-- [ ] **Magic-byte sniff, not MIME header.** `content_type` is
-  client-supplied and spoofable. Read the first bytes and match
-  against the allowed set (`\x89PNG`, `\xFF\xD8\xFF` for JPEG,
-  `RIFF....WEBP`, `GIF8`).
-  - **File:** `backend/app/routers/upload.py:33` (`_sniff_image_type`)
-  - **File:** `backend/app/routers/upload.py:70` (sniff before accept)
-- [ ] **`MAX_FILE_SIZE + 1` read guard.** Reading exactly
-  `MAX_FILE_SIZE` hides files that are exactly at the limit + 1
-  byte from the size check.
-  - **File:** `backend/app/routers/upload.py:61`
-- [ ] **Cloudinary upload, not local disk.** Never write user files
-  to the app's filesystem — Railway's ephemeral FS loses them on
-  redeploy and opens a traversal surface.
+**The broken pattern:**
+```python
+# ❌ BROKEN — any UUID visitor can access draft/pending records
+@router.get("/producers/{producer_id}")
+def get_producer(producer_id: UUID, db: Session = Depends(get_db)):
+    return db.query(Producer).filter(Producer.id == producer_id).first()
+```
 
----
+**Why it breaks:** pending/rejected producers are exposed to anyone
+with the UUID. Privacy leak and GDPR risk — status filter is missing.
 
-## 5. Headers / CSP
+**The fix:**
+```python
+# ✅ CORRECT — filter by status + owner/admin overrides
+producer = db.query(Producer).filter(Producer.id == producer_id).first()
+if not producer:
+    raise HTTPException(404)
 
-- [ ] **CSP allows Google GSI + Cloudinary explicitly.** Breaking
-  either silently kills OAuth or image rendering.
-  - **Full allowlist:** [SECURITY.md](./SECURITY.md) § "HTTP Security
-    Headers"
-- [ ] **COOP header is `same-origin-allow-popups`** for Google One
-  Tap / FedCM (MEH-278). Do not revert to `same-origin`.
-  - **File:** `next.config.js`
-- [ ] **CORS is strict — no `*`.** Allowed origins are the canonical
-  domain + preview subdomain only.
+is_public = producer.status == "approved"
+is_owner = viewer and viewer.producer_id == producer.id
+is_admin = getattr(viewer, "role", None) == "admin"
 
----
+if not (is_public or is_owner or is_admin):
+    raise HTTPException(404)  # 404 not 403 — don't confirm existence
+```
+File: `backend/app/routers/producers.py:403`
 
-## 6. Secrets / config
+**Question to ask yourself:**
+"If an anonymous user has this UUID, should they see it? If not —
+does my filter block it?"
 
-- [ ] **`TRUSTED_PROXY=1`** — required for rate-limit correctness
-  (see §2). Not set = bug returns.
-- [ ] **`RESEND_API_KEY`** — unset = email fail-open (silent
-  failure). Verify Railway env before shipping an email feature.
-  - **File:** `backend/app/services/email.py`
-- [ ] **`ANTHROPIC_API_KEY`** — unset = AI fail-open (moderation
-  approves, chat returns Hebrew offline msg). Acceptable by design
-  — never let this degrade auth.
-- [ ] **No secrets in commits.** Grep before commit:
-  `git diff --cached | grep -Ei "api[_-]?key|secret|password|token"`
-- [ ] **No secrets in error messages / logs.** `print(exc)` on a
-  5xx path can leak JWT tokens from request headers. Use structured
-  logging with allowlisted fields only.
+**How to verify:**
+```bash
+# Create a producer in 'pending' status, capture its UUID.
+# Hit GET /api/producers/{uuid} with no auth token.
+# Expect 404. If you get 200 → IDOR present.
+```
 
 ---
 
-## 7. AI fail-open
+## TRAP 3 — Validation only in frontend (MEH-248)
 
-- [ ] **AI failure never touches the auth path.** Missing
-  `ANTHROPIC_API_KEY` degrades AI features (moderation → APPROVED,
-  chat → offline msg) — it must **not** grant access or skip a
-  permission check.
-- [ ] **Anthropic client always gets `http_client=httpx.Client()`.**
-  anthropic 0.39 calls `httpx.Client(proxies=...)` internally,
-  which raises `TypeError` against httpx 0.28+. The fail-open path
-  hides this — you won't see a 5xx.
-  - **File:** `backend/app/routers/chat.py`
-  - **File:** `backend/app/services/home_product_moderation.py`
-  - **Full trap:** [LOCKED_DECISIONS.md](./LOCKED_DECISIONS.md) §
-    "Anthropic client"
-- [ ] **Moderation result logged even on fail-open.** If moderation
-  returns APPROVED because the API key is missing, the log line
-  must say so — otherwise a future incident looks like "moderation
-  passed" when it never ran.
+**The broken pattern:**
+```python
+# ❌ BROKEN — password accepts any length
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str  # no min_length!
+```
+
+**Why it breaks:** attacker bypasses the frontend and registers with
+a 1-character password directly via `curl`. Frontend validation is
+cosmetic — the schema is the contract.
+
+**The fix:**
+```python
+# ✅ CORRECT — validation in the schema, not the component
+from pydantic import Field
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=200)
+```
+
+**Question to ask yourself:**
+"What happens if someone bypasses the frontend and calls my endpoint
+directly with `curl`? Does my Pydantic schema catch the bad input?"
+
+**How to verify:**
+```bash
+curl -X POST https://staging.mehamakor.online/api/auth/register \
+  -H "Content-Type: application/json" \
+  --data '{"email":"test@test.com","password":"x"}'
+# Expect 422 with a validation error. If you get 201 → TRAP 3 present.
+```
 
 ---
 
-## When this checklist is required
+## TRAP 4 — Silent failures (MEH-163, MEH-240)
 
-Mandatory for any PR that touches:
+**The broken pattern:**
+```python
+# ❌ BROKEN — silent skip when env var is missing
+if settings.admin_email:
+    send_email(settings.admin_email, subject, body)
+# No else — if ADMIN_EMAIL is deleted from Railway env,
+# notifications stop with zero indication.
+```
 
-- `backend/app/auth.py`
-- `backend/app/routers/upload.py`
-- `backend/app/rate_limit.py`
-- `backend/app/config.py`
-- `next.config.js` (CSP / COOP / CORS headers)
-- Any new mutation endpoint (POST/PUT/PATCH/DELETE)
+**Why it breaks:** env var deleted from Railway → feature silently
+stops → discovered weeks later when a moderation queue fills up
+with no admin notification. Zero logs, zero errors, zero alerts.
 
-Optional (but recommended) for any PR that touches a `backend/app/routers/*`
-file with existing auth decorators.
+**The fix:**
+```python
+# ✅ CORRECT — log every skip
+if settings.admin_email:
+    send_email(settings.admin_email, subject, body)
+else:
+    logger.warning(
+        "admin_notify_skipped",
+        reason="admin_email_not_configured",
+        context={"producer_id": str(producer.id)},
+    )
+```
 
-Workflow rule 5a already requires `/adversarial-review` for these
-files. Use this checklist **before** adversarial review — it catches
-the easy traps so adversarial can focus on logic.
+**Question to ask yourself:**
+"For every `if settings.X:` branch in my PR — what happens in
+the `else`? Is it observable? Would I know within 24h if it
+silently stopped working?"
+
+**How to verify:**
+Temporarily unset the env var in `.env.local` and trigger the
+flow manually. Check logs — you must see the skip logged.
+
+---
+
+## TRAP 5 — Test doesn't exercise the assumption (MEH-241)
+
+**The broken pattern:**
+```python
+# ❌ BROKEN — claims to test 401 guard, actually tests schema
+def test_post_review_requires_auth():
+    response = client.post("/reviews", json={"stars": 5})
+    assert response.status_code == 401
+    # Actually returns 422 — schema rejects {"stars":5} missing "body".
+    # The 401 guard is never reached.
+```
+
+**Why it breaks:** FastAPI validates the request body before running
+`Depends(get_current_user)` when the body param precedes the auth dep
+in the function signature. A 422 proves nothing about the guard.
+Schema evolves → test silently becomes meaningless.
+
+**The fix:**
+```python
+# ✅ CORRECT — schema-valid payload so the guard is actually reached
+def test_post_review_requires_auth():
+    response = client.post("/reviews", json=valid_review_payload())
+    assert response.status_code == 401
+```
+Use `valid_*_payload()` fixtures from `tests/conftest.py`. Schema
+changes must update fixtures — not silently invalidate the test.
+
+**Question to ask yourself:**
+"If I change the schema tomorrow and add a required field, will my
+guard test still reach the auth check? Or will it return 422 first?"
+
+**How to verify:**
+Add a required field to the schema temporarily. Re-run the guard
+test. If the status code changes from 401 to 422 → TRAP 5 present.
+
+---
+
+## TRAP 6 — Cascade forgotten (MEH-249)
+
+**The broken pattern:**
+```python
+# ❌ BROKEN — delete user, Producer row stays forever
+@router.delete("/auth/me")
+def delete_account(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.delete(user)
+    db.commit()
+    # Producer row still in DB → ghost listing in directory
+```
+
+**Why it breaks:** user's Producer row survives — public browse shows
+listings for deleted accounts. `/auth/me` 404s but the producer page
+still returns data.
+
+**The fix:**
+```python
+# ✅ CORRECT — explicit cleanup before deleting parent
+if producer := db.query(Producer).filter(
+    Producer.user_id == user.id
+).first():
+    db.delete(producer)
+    db.flush()
+db.delete(user)
+db.commit()
+```
+Or add `ondelete="CASCADE"` to the FK at the model level — but verify
+Railway's Postgres version supports it before relying on it.
+
+**Question to ask yourself:**
+"What rows in other tables have a FK pointing at the row I'm deleting?
+Do I have `ondelete=CASCADE`, `SET NULL`, or explicit cleanup code?"
+
+**How to verify:**
+```bash
+# After deleting a producer account via the API:
+psql $DATABASE_URL -c "SELECT id FROM producers WHERE user_id = '<deleted-user-id>'"
+# Expect 0 rows. Any result → TRAP 6 present.
+```
+
+---
+
+## TRAP 7 — Staging ≠ Production (MEH-244, MEH-260)
+
+**The broken pattern:**
+Merged to `staging`, verified on `staging.mehamakor.online`, assumed
+`mehamakor.online` reflects the same code.
+
+**Why it breaks:** Railway auto-deploy can fail silently — wrong
+branch configured, BuildKit rejection, or deploy succeeded but
+container crashed before health check. We ran staging-only for
+*weeks* without knowing production was stale (MEH-260).
+
+**The fix (process):**
+```bash
+# After every merge to main, run:
+python scripts/check_api_contract.py \
+  --cross-env \
+  --staging https://foodmamkor-staging.up.railway.app/ \
+  --prod https://mehamakor.online/
+# Any endpoint that returns 200 on staging but 404 on prod → deploy drift.
+```
+
+**Question to ask yourself:**
+"Is the code I see on GitHub actually running in production right now?
+When did Railway last deploy to prod — and did it succeed?"
+
+**How to verify:**
+```bash
+curl -sI https://mehamakor.online/api/health | grep -E "200|date"
+# Check the `date` header — if it's more than 30 min old after a push,
+# the deploy didn't fire. Check Railway dashboard → Deployments.
+```
+
+---
+
+## Required env vars (staging vs prod)
+
+Vars that are frequently missing and cause silent bugs:
+
+| Var | Missing → | Staging set? | Prod set? |
+|---|---|---|---|
+| `JWT_SECRET_KEY` | App refuses to start (prod) or ephemeral secret (dev) | ✅ | ✅ |
+| `TRUSTED_PROXY` | Rate limit bypass (TRAP 1) | must be `1` | must be `1` |
+| `RESEND_API_KEY` | Email silent-fail | ✅ | ✅ |
+| `ANTHROPIC_API_KEY` | AI fail-open (moderation=APPROVED) | optional | optional |
+| `ADMIN_EMAIL` | Moderation notifications silent-fail (TRAP 4) | verify | verify |
+| `CORS_ORIGINS` | Frontend blocked by CORS | ✅ | ✅ |
+
+---
+
+## PR checklist (copy into PR description when touching auth/security)
+
+```
+- [ ] TRAP 1 (rate limit): `get_real_client_ip` preserved, `TRUSTED_PROXY=1` set
+- [ ] TRAP 2 (IDOR): GET-by-UUID endpoints filter by status + owner/admin
+- [ ] TRAP 3 (validation): schema-level, not frontend-only
+- [ ] TRAP 4 (silent failures): every `if settings.X:` has a logged else
+- [ ] TRAP 5 (tests): guard tests send schema-valid payloads
+- [ ] TRAP 6 (cascade): parent-row deletes clean up FKs
+- [ ] TRAP 7 (deploy): verified prod post-merge via cross-env probe
+```
+
+---
+
+## Adding a new trap
+
+When a new production incident happens, add here:
+
+1. `## TRAP N — Name (MEH-XXX)`
+2. Broken pattern code block — the exact code that shipped
+3. Why it breaks — one concrete sentence, no abstract theory
+4. Fix code block — the exact replacement
+5. File:line of the canonical fix in this codebase
+6. Question to ask yourself — one line
+7. How to verify — a runnable command or step

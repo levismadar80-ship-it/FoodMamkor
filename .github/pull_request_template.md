@@ -36,6 +36,7 @@ Example:
   - `docs/DESIGN.md` if UI/UX changed
   - `docs/ADMIN.md` if admin panel changed
   - `docs/SECURITY.md` if auth or permissions changed
+  - `docs/SECURITY-CHECKLIST.md` — run the trap checklist if touching auth, rate limit, IDOR, or mutation endpoints
   - `docs/DEPLOYMENT.md` if env vars or infra changed
   - `docs/MANUAL_TESTING.md` if new user-facing flows added
 
