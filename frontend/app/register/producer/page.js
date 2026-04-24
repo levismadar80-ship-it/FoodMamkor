@@ -54,9 +54,6 @@ function RegisterProducerPageBody() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [emailExistsWarning, setEmailExistsWarning] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  // MEH-287: true when server confirms Twilio config is present (WhatsApp
-  // expected to arrive). False → show dashboard-fallback banner on step 3.
-  const [whatsappSent, setWhatsappSent] = useState(true);
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -159,8 +156,6 @@ function RegisterProducerPageBody() {
       const res = await api.post("/auth/register/producer", body);
       localStorage.setItem("token", res.data.access_token);
       localStorage.removeItem(DRAFT_KEY);
-      // MEH-287: default true for older servers that don't return the flag.
-      setWhatsappSent(res.data.whatsapp_sent ?? true);
       // Refresh auth context so user.role reflects the upgrade immediately.
       await refreshUser();
       setStep(3);
@@ -469,25 +464,8 @@ function RegisterProducerPageBody() {
             </div>
             <h2 className="font-headline text-2xl font-bold text-site-text mb-2">הצטרפת!</h2>
             <p className="text-site-muted mb-6">
-              {whatsappSent
-                ? "שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים."
-                : "הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים."}
+              שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים.
             </p>
-            {!whatsappSent && (
-              <div
-                role="status"
-                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-[12px] px-4 py-3 mb-6 text-sm text-right"
-              >
-                לא קיבלת הודעת WhatsApp?{" "}
-                <button
-                  type="button"
-                  onClick={() => router.push("/producer/dashboard")}
-                  className="underline font-medium hover:text-amber-800"
-                >
-                  השלימי את הפרופיל ישירות מהדשבורד ←
-                </button>
-              </div>
-            )}
             <div className="bg-light rounded-[16px] p-5 text-right mb-6">
               <h3 className="font-semibold text-site-text mb-3">מה הלאה?</h3>
               <ul className="text-sm text-site-muted space-y-2">

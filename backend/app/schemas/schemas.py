@@ -85,14 +85,6 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
-# MEH-287: producer registration returns whether the WhatsApp welcome
-# is expected to be delivered. False when phone/Twilio env vars are
-# missing — the frontend uses it to show a dashboard-fallback banner
-# instead of the default "we sent you a WhatsApp" message.
-class ProducerRegistrationResponse(Token):
-    whatsapp_sent: bool
-
-
 # --- Category ---
 class CategoryOut(BaseModel):
     id: int

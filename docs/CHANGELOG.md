@@ -12,8 +12,6 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
-## 2026-04-25 — MEH-287: Producer registration — `whatsapp_sent` flag in response + loud `logger.error` when Twilio env missing/fails (was silent `return`/`warning`); frontend shows dashboard-fallback banner on step 3 when `whatsapp_sent=false` instead of the default "sent you WhatsApp" copy
-
 ## 2026-04-23 — MEH-262: Playwright GPS-button test fix — LocationModal dismiss + dual-MapClient :visible scoping; fix broken settings/page.jsx imports (Image, Plus, Package, Trash, X, phone state) lost in MEH-206 overwrite; MEH-263 (LocationModal z-index doc) + MEH-264 (Vercel bypass) filed (PR #305)
 
 ## 2026-04-22 — MEH-210 Phase 2: producer custom WhatsApp question chips — producers.custom_questions TEXT[] nullable; validator (max 5, ≤80 chars, blanks stripped); exposed in ProducerDetailOut; CustomQuestionsCard on /producer/dashboard (5 inputs, saves via PUT /producers/me); getProducerQuestions() checks custom_questions first, falls back to category defaults, then global defaults (#252)
