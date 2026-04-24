@@ -8,7 +8,7 @@ Admin moderation routes for experiences (community workshops).
 
 Every state-changing action sends a best-effort email to the host
 (see app/services/experience_notifications.py). Emails are fail-open:
-if SMTP isn't configured the log line is still written but the router
+if RESEND_API_KEY isn't configured the log line is still written but the router
 always returns 200 so the admin UI can move on.
 """
 from uuid import UUID

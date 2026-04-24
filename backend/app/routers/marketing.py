@@ -131,7 +131,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     db.add(msg)
     db.commit()
 
-    # Always log so the message is visible in Railway logs even if SMTP
+    # Always log so the message is visible in Railway logs even if Resend
     # is unconfigured or fails.
     logger.info(
         "New contact message: name=%s email=%s", msg.name, msg.email
@@ -139,7 +139,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
 
     # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
     # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,
-    # so SMTP problems must never break the public form.
+    # so Resend errors must never break the public form.
     _send_contact_email(msg)
 
     return {"detail": "תודה! נחזור אליך בקרוב 🌿"}
