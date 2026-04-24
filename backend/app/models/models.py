@@ -111,6 +111,11 @@ class Producer(Base):
     kashrut_expires_at = Column(DateTime, nullable=True)
     # MEH-210 Phase 2 — producer-defined WhatsApp question chips (overrides category defaults).
     custom_questions = Column(ARRAY(Text), nullable=True)
+    # MEH-283 — admin reject reason surfaced on /auth/me as producer_rejection_reason.
+    # Accessed in auth.py::get_me; missing column was raising AttributeError for any
+    # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
+    # never added it to the DB, baseline didn't pick it up).
+    rejection_reason = Column(Text, nullable=True)
 
     categories = relationship("Category", secondary="producer_categories", back_populates="producers")
     products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
