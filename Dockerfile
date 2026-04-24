@@ -58,4 +58,4 @@ ENV PYTHONUNBUFFERED=1
 #   - DO NOT also set `startCommand` in railway.json — Railway runs
 #     that without a shell and ${PORT:-8000} would be passed literally,
 #     causing "Invalid value for '--port'". Let the Dockerfile CMD win.
-CMD ["sh", "-c", "exec python -u -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && exec python -u -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

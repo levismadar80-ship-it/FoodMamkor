@@ -25,6 +25,7 @@ from app.models.models import (
     Recipe,
     RecipeIngredient,
     Report,
+    SearchQuery,
     StaticPage,
     User,
 )
@@ -58,4 +59,5 @@ __all__ = [
     "OutreachLead",
     "PhoneOtpToken",
     "KashrutBadgeRequest",
+    "SearchQuery",
 ]
