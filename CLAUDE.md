@@ -49,6 +49,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 - **AI fail-open** — missing `ANTHROPIC_API_KEY` → moderation=APPROVED, chat=Hebrew offline msg.
 - **Security invariants** (JWT secret from env, rate limiting, IDOR checks, magic-byte uploads, CSP) — see [.claude/rules/security.md](./.claude/rules/security.md) + [docs/SECURITY.md](./docs/SECURITY.md). Never weaken to "make a test pass".
 - **No `claude/*` branches.** Use `feature/*`.
+- **Schema changes via Alembic only.** `_migrate_columns()` removed in MEH-267. Guide: [docs/MIGRATIONS.md](./docs/MIGRATIONS.md).
 - **Docs audit April 2026 complete** — trust `docs/` as of 2026-04-11. Post-April: trust `git log` + the relevant code file.
 
 ## Branch strategy
@@ -84,6 +85,13 @@ When a bug is found and fixed:
 5. **Update docs** if the fix reveals a non-obvious convention (e.g. physical `right-3` for LTR password toggles on RTL pages).
 
 Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md).
+
+## Commit discipline
+- Hotfixes get their own commit — never bundled with a refactor.
+- When Claude Code suggests "let's do both together" — say split.
+- The temptation to combine is always there. The rule is: no.
+
+_Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns` drift broke production login; the hotfix PR bundled a 7-call-site refactor under pressure._
 
 ## Execution principles (exec §7–13)
 > Workflow rules 1–20 cover *structure*. These cover *execution*. Use "exec §N" to avoid collision with workflow rule N.
@@ -124,6 +132,7 @@ Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BU
 | [docs/CHANGELOG.md](./docs/CHANGELOG.md) + [docs/archive/](./docs/archive/) | Session log + historical session specs |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) | Known bug patterns — cross-ref before touching |
 | [docs/LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md) | Railway port, Anthropic http_client, Resend, PostGIS, AI fail-open — full traps |
+| [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) | Alembic workflow: add column, local check, rollback, CI gate, troubleshooting |
 | [.claude/rules/](./.claude/rules/) | Domain rules: rtl · security · testing · deployment · frontend · backend · workflow |
 | [.ai/diagrams/](./.ai/diagrams/) | Auth flow, DB schema, API routes — Mermaid sources of truth |
 
