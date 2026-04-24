@@ -1490,3 +1490,69 @@ class TestGetProducersMeRouteOrder:
         resp = client.get(f"/producers/{producer.id}")
         assert resp.status_code == 200
         assert resp.json()["id"] == str(producer.id)
+
+
+class TestUploadGoogleAvatarOrNone:
+    """MEH-299 — _upload_google_avatar_or_none helper unit tests.
+
+    Login must never be blocked regardless of Cloudinary / network state.
+    """
+
+    def test_none_input_returns_none(self):
+        from app.routers.auth import _upload_google_avatar_or_none
+        assert _upload_google_avatar_or_none(None) is None
+
+    def test_empty_string_returns_none(self):
+        from app.routers.auth import _upload_google_avatar_or_none
+        assert _upload_google_avatar_or_none("") is None
+
+    def test_no_cloudinary_config_returns_url_unchanged(self, monkeypatch):
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", None)
+        url = "https://lh3.googleusercontent.com/photo.jpg"
+        assert _upload_google_avatar_or_none(url) == url
+
+    def test_httpx_error_is_fail_open(self, monkeypatch):
+        from unittest.mock import patch
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        with patch("httpx.get", side_effect=Exception("network error")):
+            result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None
+
+    def test_cloudinary_error_is_fail_open(self, monkeypatch):
+        from unittest.mock import patch, MagicMock
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        mock_resp = MagicMock()
+        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
+        mock_resp.raise_for_status.return_value = None
+        with patch("httpx.get", return_value=mock_resp):
+            with patch("cloudinary.uploader.upload", side_effect=Exception("Cloudinary down")):
+                with patch("cloudinary.config"):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None
+
+    def test_success_returns_cloudinary_url(self, monkeypatch):
+        from unittest.mock import patch, MagicMock
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        mock_resp = MagicMock()
+        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
+        mock_resp.raise_for_status.return_value = None
+        expected = "https://res.cloudinary.com/test-cloud/image/upload/mehamakor/avatars/abc.jpg"
+        with patch("httpx.get", return_value=mock_resp):
+            with patch("cloudinary.config"):
+                with patch("cloudinary.uploader.upload", return_value={"secure_url": expected}):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result == expected
