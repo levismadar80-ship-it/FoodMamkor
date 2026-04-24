@@ -27,6 +27,7 @@ from app.schemas.schemas import (
     LoginRequest,
     ProducerOAuthSignupRequest,
     ProducerRegister,
+    ProducerRegistrationResponse,
     ResetPasswordRequest,
     Token,
     UserOut,
@@ -64,7 +65,7 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
-@router.post("/register/producer", response_model=Token)
+@router.post("/register/producer", response_model=ProducerRegistrationResponse)
 @limiter.limit("3/hour")  # SECURITY FIX #2
 def register_producer(
     request: Request,
@@ -190,7 +191,17 @@ def register_producer(
         background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
         background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    # MEH-287: pre-flight check — whether the background task has the
+    # config it needs to send. True = expected to send (Twilio may still
+    # fail async, logged as ERROR). False = known not-sent (missing env
+    # vars or no phone); frontend shows a dashboard-fallback banner.
+    whatsapp_expected = bool(
+        p_phone and settings.twilio_account_sid and settings.twilio_whatsapp_from
+    )
+    return ProducerRegistrationResponse(
+        access_token=create_access_token(user.id, user.token_version),
+        whatsapp_sent=whatsapp_expected,
+    )
 
 
 @router.get("/email-exists")
@@ -685,10 +696,25 @@ def _verify_google_token(id_token: str) -> dict | None:
         return None
 
 
-def _notify_producer_registered(name: str, phone: str | None):
-    """Send WhatsApp welcome + profile-completion link to the new producer."""
-    if not (phone and settings.twilio_account_sid and settings.twilio_whatsapp_from):
-        return
+def _notify_producer_registered(name: str, phone: str | None) -> bool:
+    """Send WhatsApp welcome + profile-completion link to the new producer.
+
+    MEH-287: returns True on success, False on skip/failure. Any skip
+    now emits logger.error with the exact missing piece so Railway /
+    Sentry surfaces the misconfiguration instead of silently failing.
+    """
+    missing = []
+    if not phone:
+        missing.append("phone")
+    if not settings.twilio_account_sid:
+        missing.append("TWILIO_ACCOUNT_SID")
+    if not settings.twilio_whatsapp_from:
+        missing.append("TWILIO_WHATSAPP_FROM")
+    if missing:
+        logger.error(
+            f"[WHATSAPP] Producer welcome SKIPPED for '{name}' — missing: {', '.join(missing)}"
+        )
+        return False
     phone = phone.replace("-", "").strip()
     if not phone.startswith("+"):
         phone = "+972" + phone.lstrip("0")
@@ -706,8 +732,12 @@ def _notify_producer_registered(name: str, phone: str | None):
             to=f"whatsapp:{phone}",
         )
         logger.info("[WHATSAPP] Producer welcome sent")
+        return True
     except Exception as e:
-        logger.warning(f"[WHATSAPP] Producer welcome failed: {e}")
+        logger.error(
+            f"[WHATSAPP] Producer welcome FAILED for {phone}: {e}", exc_info=True
+        )
+        return False
 
 
 def _notify_admin_new_producer(name: str, city: str | None):

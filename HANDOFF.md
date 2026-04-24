@@ -1,7 +1,38 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (Session 3 — MEH-283 hotfix + MEH-286 file-preservation protocol)
+> Last updated: 2026-04-25 (MEH-287 — producer WhatsApp welcome silent-fail fix)
+
+## 2026-04-25 Session — MEH-287 WhatsApp welcome
+
+### Opened this session
+
+| PR  | MEH     | Title                                                                  | Status |
+|-----|---------|------------------------------------------------------------------------|--------|
+| TBD | MEH-287 | Producer registration — `whatsapp_sent` flag + loud errors + UI banner | Draft — awaiting Vercel preview QA on mobile |
+
+**Branch:** `feature/meh-287-whatsapp-welcome-fix` (from staging)
+
+**What shipped:**
+- `backend/app/schemas/schemas.py` — new `ProducerRegistrationResponse(Token)` adds `whatsapp_sent: bool`
+- `backend/app/routers/auth.py`:
+  - `POST /auth/register/producer` now returns `ProducerRegistrationResponse` with pre-flight `whatsapp_expected = bool(phone AND TWILIO_ACCOUNT_SID AND TWILIO_WHATSAPP_FROM)`
+  - `_notify_producer_registered()` replaces silent `return` with `logger.error("SKIPPED — missing: ...")` and `logger.warning` → `logger.error(..., exc_info=True)` in the except path; returns bool
+- `frontend/app/register/producer/page.js` — new `whatsappSent` state (default `true` for backwards compat); step-3 success screen copy + dashboard-fallback banner are conditional
+- `tests/test_whatsapp_notify.py` — 3 cases: missing Twilio env, full env + Twilio stubbed, missing phone
+- `docs/MANUAL_TESTING.md` — new "MEH-287" section with 5 checks
+- `docs/CHANGELOG.md` — one-line entry
+
+**Sibling audit (Bug Protocol step 2):** 6 endpoints in `auth.py` still return naked `Token` with silent-fail email/WhatsApp side effects — `/register`, `/register/producer/oauth`, `/google`, `/apple`. Same pattern as MEH-287. **Not fixed in this PR** — proposed Linear follow-ups below.
+
+**Proposed Linear follow-ups (ship MEH-287 first):**
+- MEH-XXX (Medium) — mirror MEH-287 on `/auth/register` + OAuth endpoints: add `email_sent`/`whatsapp_sent` to their response shapes, loud errors on silent-fail paths.
+- MEH-XXX (Low) — producer registration success screen: dedupe main paragraph vs fallback banner when `whatsapp_sent=false` (small UX polish).
+- MEH-XXX (Low, defense-in-depth) — mask/hash phone in WhatsApp error logs (currently logged in plaintext; Railway/Sentry = admin-only, acceptable but could be tighter).
+
+---
+
+## 2026-04-24 Session 3 update
 
 ## 2026-04-24 Session 3 update
 
