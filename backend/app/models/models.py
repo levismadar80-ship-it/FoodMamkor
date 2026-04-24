@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
 from sqlalchemy.orm import relationship
@@ -117,6 +118,17 @@ class Producer(Base):
     favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
     reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
+
+    # Full-text search on producer name (Hebrew-friendly via 'simple' config).
+    # Historically created via raw DDL in main.py::_migrate_columns; mirrored
+    # here so Alembic autogenerate detects it and future migrations can diff.
+    __table_args__ = (
+        Index(
+            "idx_producers_name",
+            text("to_tsvector('simple', name)"),
+            postgresql_using="gin",
+        ),
+    )
 
 
 class User(Base):
@@ -853,3 +865,21 @@ class CategoryRequest(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", backref="category_requests")
+
+
+class SearchQuery(Base):
+    """Search telemetry — one row per /producers?search=... query.
+
+    Historically created via raw DDL in main.py::_migrate_columns (no ORM class).
+    Promoted to a first-class model as part of MEH-267 so Alembic autogenerate
+    picks it up and the table participates in the migration graph.
+
+    Written from producers.py:310 (after search).  Read from search.py:218 to
+    compute /search/trending.
+    """
+    __tablename__ = "search_queries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    query = Column(Text, nullable=False)
+    results_count = Column(Integer, nullable=False, default=0)
+    searched_at = Column(DateTime, nullable=False, default=datetime.utcnow)

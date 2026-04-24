@@ -1,8 +1,8 @@
 """baseline
 
-Revision ID: a1826c5022c0
+Revision ID: ef8fb1858f5b
 Revises: 
-Create Date: 2026-04-24 08:07:19.825592+00:00
+Create Date: 2026-04-24 08:15:32.029430+00:00
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'a1826c5022c0'
+revision: str = 'ef8fb1858f5b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -129,6 +129,14 @@ def upgrade() -> None:
     sa.Column('custom_questions', postgresql.ARRAY(sa.Text()), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('slug')
+    )
+    op.create_index('idx_producers_name', 'producers', [sa.text("to_tsvector('simple', name)")], unique=False, postgresql_using='gin')
+    op.create_table('search_queries',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('query', sa.Text(), nullable=False),
+    sa.Column('results_count', sa.Integer(), nullable=False),
+    sa.Column('searched_at', sa.DateTime(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('static_pages',
     sa.Column('slug', sa.String(length=50), nullable=False),
@@ -569,6 +577,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_category_requests_producer_id'), table_name='category_requests')
     op.drop_table('category_requests')
     op.drop_table('static_pages')
+    op.drop_table('search_queries')
+    op.drop_index('idx_producers_name', table_name='producers', postgresql_using='gin')
     op.drop_table('producers')
     op.drop_index(op.f('ix_outreach_leads_prefill_token'), table_name='outreach_leads')
     op.drop_table('outreach_leads')
