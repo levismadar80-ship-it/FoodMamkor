@@ -40,6 +40,20 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 | Auth | JWT (24h, secret from env) + Google OAuth + Apple OAuth |
 | AI | Anthropic SDK — Opus for moderation, Haiku for chat widget |
 
+## My environment
+- **OS:** Windows 11, Git Bash (MinGW)
+- **Python 3.14:** `/c/Users/topaz/AppData/Local/Python/pythoncore-3.14-64/`
+- **pip:** `/c/Users/topaz/AppData/Local/Python/pythoncore-3.14-64/Scripts/`
+- **PostgreSQL 18:** `/c/Program Files/PostgreSQL/18/bin/` — `psql`, `pg_dump` need manual PATH export each session
+- **Node.js:** installed. **Railway CLI:** installed.
+- **NO uv, NO venv at repo root, NO PATH auto-exports**
+
+Before suggesting any shell command to Smadar:
+1. Check this section first
+2. Use explicit paths, not assumed commands
+3. One command at a time — not chained with `&&`
+4. If a tool might be missing, verify with `which <tool>` before proceeding
+
 ## Key locked decisions (1-liners — full context in [docs/LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md))
 - **Brand palette:** primary `#2e6853`, primary-dark `#2E4A2E`, bg `#F5F0E8`, text `#1C1A17`. Full tokens: [docs/DESIGN.md](./docs/DESIGN.md).
 - **No PostGIS** — Haversine in raw SQL on `producers.lat/lng`. Reverting breaks Railway.
@@ -92,6 +106,8 @@ Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BU
 - The temptation to combine is always there. The rule is: no.
 
 _Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns` drift broke production login; the hotfix PR bundled a 7-call-site refactor under pressure._
+
+File edit safety — read before write, diff after write, no silent deletions. Full protocol: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md)
 
 ## Execution principles (exec §7–13)
 > Workflow rules 1–20 cover *structure*. These cover *execution*. Use "exec §N" to avoid collision with workflow rule N.

@@ -1,7 +1,149 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (MEH-267 Alembic owns schema — 10 commits; PR #311 open draft, awaiting review)
+> Last updated: 2026-04-24 (Session 3 — MEH-283 hotfix + MEH-286 file-preservation protocol)
+
+## 2026-04-24 Session 3 update
+
+### Merged this session
+
+| PR  | MEH     | Title                                         | Notes |
+|-----|---------|-----------------------------------------------|-------|
+| 318 | MEH-274 | `useGoogleSignIn` singleton hook + COOP fix   | Merged to staging. Preview OAuth skipped — Google doesn't allow wildcard origins |
+| 306 | MEH-266 | DB migration PR template                      | Rebased onto staging (`git rebase origin/staging`), CI passed, merged |
+| 319 | MEH-283 | `rejection_reason` ORM column + Alembic migration `b2e8f947c316` | URGENT hotfix — `/auth/me` returned 500 for all producer users post MEH-267. Two commits: ORM model + migration file, then CI drift gate update (`EXPECTED_REV`) |
+
+### Opened this session
+
+| PR  | MEH     | Title                                | Status |
+|-----|---------|--------------------------------------|--------|
+| 320 | MEH-286 | File preservation protocol           | Draft — docs/config only, CI running |
+
+### Critical follow-up (MEH-283)
+
+Railway auto-runs `alembic upgrade head` on every deploy (wired in MEH-267 Dockerfile). Merging PR #319 to staging triggers a Railway redeploy which applies migration `b2e8f947c316` (adds `producers.rejection_reason`). **Verify staging `/auth/me` returns 200 for a producer account** — if still 500, check Railway deploy logs.
+
+### New Alembic convention established
+
+Every new Alembic migration PR must update `EXPECTED_REV` in `.github/workflows/pr-checks.yml`. Current head: `b2e8f947c316`. Table count: 34.
+
+### MEH-286 Linear ticket
+
+Marked **Done**. PR #320 linked.
+
+### Open PRs (live)
+
+| PR  | MEH     | Title                          | Status | Notes |
+|-----|---------|--------------------------------|--------|-------|
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | Stale 48h+ |
+| 299 | MEH-173 | Install marketing skills (38)  | Ready  | MEH-280/281 specs blocking |
+| 320 | MEH-286 | File preservation protocol     | Draft  | CI running |
+
+### Next tasks
+
+1. Verify staging `/auth/me` 200 for a producer user (MEH-283 post-merge check)
+2. Verify staging `/login` console clean + Google OAuth works on staging.mehamakor.online (MEH-274 post-merge manual check)
+3. Merge PR #320 (MEH-286) after CI green — docs-only, no mobile testing needed
+4. MEH-280 (`08-calendar-view` aria-label mismatch) + MEH-281 (`07-gps-button` NaN race) — pre-existing Playwright flakes
+
+---
+
+## 2026-04-24 Session 2 update (post-merge batch)
+
+Updated ~15:00 UTC. Supersedes the MEH-277 reality-check block below.
+
+### Open PRs (live)
+
+| PR  | MEH     | Title                          | Status | CI blocker        |
+|-----|---------|--------------------------------|--------|-------------------|
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | stale 48h         |
+| 299 | MEH-173 | Install marketing skills (38)  | Ready  | MEH-280/281 specs |
+| 306 | MEH-266 | DB migration PR template       | Ready  | build+lint FAIL — needs rebase onto staging |
+
+### Recently merged (session 2 batch — 2026-04-24)
+
+- **PR #315 (MEH-277)** — HANDOFF.md reality-check refresh. Merged ~10:50.
+- **PR #307 (MEH-264)** — Vercel Automation Bypass Secret wired into `e2e.yml` + `playwright.config`. Playwright bypass now working. Merged ~11:30.
+- **PR #316 (MEH-278)** — COOP header `same-origin-allow-popups` in `next.config.js` for Google One Tap / FedCM. Merged ~15:00.
+- **PR #317 (MEH-279)** — Replace `networkidle` with `domcontentloaded` + explicit `waitForSelector` in `07-gps-button` and `08-calendar-view` E2E specs. Merged ~15:00.
+
+PRs #309 and #310 (old branch names without MEH numbers) were closed and replaced by #317 and #316 respectively.
+
+### Known open issues
+
+- **MEH-274: OAuth regressions post-#302.** PR #316 (COOP header) now merged — covers Bug 3 (postMessage block). Remaining scope: multi-init GSI warning, 409 on `/register/producer/oauth`. No branch yet.
+- **MEH-280: `08-calendar-view.spec.ts` — `role="grid" aria-label="לוח שנה"` not found.** Test/component mismatch from MEH-107 (PR #298). Playwright now runs but spec fails. Do not block other PRs on this — it predates all recent work.
+- **MEH-281: `07-gps-button.spec.ts` mobile — Leaflet `NaN,NaN` console errors.** Race condition between geolocation mock and Leaflet map init in CI. Mobile viewport only. Same status as MEH-280.
+- **MEH-269: Playwright E2E flake** — partially resolved. MEH-280 + MEH-281 are the two remaining known-failing specs. Once those are fixed, E2E should be clean.
+
+### Blockers
+
+- **PR #306 build+lint failing** — template-only change (`.github/pull_request_template.md`) but base is stale. Needs `git rebase origin/staging` before CI will pass.
+- **MEH-280 + MEH-281** — two Playwright specs now known-failing. Any PR that touches calendar or GPS map will show Playwright red until these are fixed. They are pre-existing and unrelated to recent merges.
+
+### Linear tickets created this session
+
+- MEH-278: COOP header for Google OAuth (retroactive — PR #316 merged)
+- MEH-279: Replace networkidle in Playwright (retroactive — PR #317 merged)
+- MEH-280: Fix `08-calendar-view` spec aria-label mismatch
+- MEH-281: Fix `07-gps-button` mobile Leaflet NaN race condition
+
+Note: MEH-278 and MEH-279 were created retroactively (Linear free-tier blocked earlier; resolved later in session).
+
+---
+
+## 2026-04-24 Reality-check (MEH-277)
+
+Audit after multiple parallel sessions landed work without coordinated handoff. The sections below reflect live state as of 2026-04-24 ~10:30 UTC. Older "## Current" / "## Previous" sections below are preserved for history but **superseded** by this block.
+
+### Open PRs (live) — superseded, see block above
+
+| PR  | MEH     | Title                          | Status | CI blocker        |
+|-----|---------|--------------------------------|--------|-------------------|
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | stale 48h         |
+| 299 | MEH-173 | Install marketing skills (38)  | Ready  | Playwright only   |
+| 306 | MEH-266 | DB migration PR template       | Ready  | build+lint FAIL   |
+| 307 | MEH-264 | Vercel bypass for Playwright   | **MERGED** | —            |
+| 309 | (none)  | Replace networkidle waits      | **CLOSED** (→ #317) | —     |
+| 310 | (none)  | COOP header for Google OAuth   | **CLOSED** (→ #316) | —     |
+
+Older "## Open PRs" table lower in this file (listing #265–#274) is stale — those PRs have all been resolved long ago.
+
+### Recently merged (this session batch)
+
+- **PR #311 (MEH-267)** — Alembic migration scaffold; `_migrate_columns()` removed, Alembic is sole schema authority. Merged 04-24 09:57.
+- **PR #312 (MEH-275 retroactive; branch said MEH-261)** — "My environment" section added to CLAUDE.md. Merged 04-24 ~10:00.
+- **PR #313 (MEH-276 retroactive; branch said MEH-262)** — "Commit discipline" section added to CLAUDE.md. Merged 04-24 ~10:15.
+
+The `MEH-261` / `MEH-262` numbers on those two branches were **already taken in Linear** when the parallel session picked them — see MEH-275 + MEH-276 for the number-collision story and the retroactive remap.
+
+### Known open issues
+
+- **MEH-274: OAuth regressions post-#302.** Blocked by PR #310 (COOP header) merge — see Linear for full scope. The root-cause DB-column gap from MEH-206/MEH-192 was already resolved via MEH-267 Alembic; MEH-274 covers the remaining OAuth/FedCM surface (COOP, multi-init GSI warnings, 409 on `/register/producer/oauth` when fired from wrong page).
+- **MEH-269: Playwright E2E flake** — non-blocking; tracked.
+
+### Blockers
+
+- **Playwright E2E fails on every recent PR.** PR #307 (Vercel protection bypass) unblocks E2E signal for all others. Merge order: **#307 first → re-run CI on #299 / #309 / #310 / #306** before merging any of them. (**RESOLVED — #307 merged this session.**)
+- **PR #306 has Frontend build + Frontend lint failing** despite being a template-only change (`.github/pull_request_template.md`). Investigate before merge — likely base-branch divergence or stale CI cache; the template text itself cannot break the build.
+
+### Stale branches to clean up (cleanup is a separate task)
+
+- `hotfix/meh-206-meh-192-migrate-columns` — **dead code** post-MEH-267. The `_migrate_columns()` function this hotfix patches was deleted in PR #311. Abandon.
+- **11 `claude/*` branches** violate Rule 3 / locked decision ("No `claude/*` branches. Use `feature/*`."). Cleanup candidates after confirming no unique unmerged work.
+- **~60 stale `feature/*` branches** from before 2026-04-22 — most were squash-merged (squash hides original SHA so `git branch --merged` misses them). Cleanup candidates after per-branch SHA verification.
+
+### Lessons learned
+
+> **Before picking a MEH number for a new branch, verify in Linear the number is either unused or already your own ticket.** Collision evidence: MEH-261 and MEH-262 were both stolen by parallel sessions on 2026-04-24 (see MEH-275, MEH-276).
+
+> **Single-session rule still being violated.** At least 3 parallel sessions landed work on 2026-04-24 (Alembic, E2E/OAuth fixes, doc edits). Rule 1 explicitly forbids this — the collision above is the predictable consequence. Every session start must grep remote branches by author+timestamp before picking a task.
+
+### Promotion to main
+
+- Main is behind staging by many commits. No promotion plan recorded yet. Follow-up task.
+
+---
 
 ## Current — MEH-267 Alembic migration scaffold (2026-04-24)
 

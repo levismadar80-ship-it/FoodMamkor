@@ -40,6 +40,30 @@ controls.
 
 ---
 
+## GSI initialize() must be singleton (MEH-274)
+
+**Pattern:** Two components each call `window.google.accounts.id.initialize()`
+independently. On client-side navigation between them (e.g. `/register/producer`
+→ `/login`), the second component's script tag is removed on unmount but the
+`window.google.accounts.id` global persists. The browser may not re-fire
+`onload` for the cached GSI script URL, leaving the first component's
+callback (producer OAuth) active. GSI's One Tap then auto-fires with the
+wrong callback on the new page → 409 on `/login`, plus a double-init warning.
+
+**Files:** `frontend/components/GoogleAuthButton.jsx`,
+`frontend/components/ProducerOAuthButtons.jsx`.
+
+**Fix:** Use the `useGoogleSignIn` hook (`frontend/lib/use-google-sign-in.js`)
+which calls `cancel()` before every `initialize()` and on unmount. Only one
+call site for `initialize()` — in the hook. No component may call it directly.
+
+**Regression spec:** `frontend/e2e/flows/09-login-console-clean.spec.ts`
+
+**Rule:** Any new component that renders a Google Sign-In button must use
+`useGoogleSignIn`, never `window.google.accounts.id.initialize()` directly.
+
+---
+
 ## Undefined vars after refactor
 
 **Pattern:** deleting/renaming a prop, variable, or function without

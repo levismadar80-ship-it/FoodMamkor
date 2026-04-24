@@ -105,7 +105,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          EXPECTED_REV="ef8fb1858f5b"
+          EXPECTED_REV="b2e8f947c316"
           EXPECTED_TABLES=34
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
