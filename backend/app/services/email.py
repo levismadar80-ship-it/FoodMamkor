@@ -40,6 +40,15 @@ def send_email(to: str, subject: str, body: str, html: str | None = None) -> Non
         }
         if html:
             params["html"] = html
+            # MEH-331 attempt #2: ask Resend's MTA to use base64 (not the
+            # default quoted-printable) for the HTML part. QP wraps lines
+            # at 76 chars by inserting "=\r\n", which truncates URLs in
+            # href values mid-token. PR #347 (HTML <a href> body) didn't
+            # fix it — QP encoding happens AFTER our HTML construction,
+            # at the MTA layer. Untested whether Resend honors a
+            # top-level CTE header for the HTML part; if not, fall back
+            # to a short-code redirect (Option 1).
+            params["headers"] = {"Content-Transfer-Encoding": "base64"}
         resend.Emails.send(params)
         logger.info("[EMAIL] Sent to %s", to.split("@")[0] + "***")
     except Exception as e:  # noqa: BLE001 — fail-open by design
