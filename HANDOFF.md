@@ -16,12 +16,15 @@
 **MEH-258 confirmed live on staging** (PR #331, commit `89cad07`):
 `docs/SECURITY-CHECKLIST.md`, `CLAUDE.md` docs map pointer, `.github/pull_request_template.md` trap reference.
 
+### Staging verifications (2026-04-25, end of session)
+
+- ✅ **MEH-299 verified** — Google login → `avatar_url` starts with `https://res.cloudinary.com`
+- ✅ **MEH-300 verified** — `/producer/dashboard` loads with no 422 in Network tab
+
 ### Next tasks
 
-1. **Verify MEH-299 on staging (manual):** Log in with Google → DevTools → `GET /auth/me` → `avatar_url` must start with `https://res.cloudinary.com`. Existing users need to log out + back in (backfill only runs when `avatar_url` is empty).
-2. **Verify MEH-300 on staging (manual):** `/producer/dashboard` → Network tab → no 422 on page load.
-3. **CSP cleanup (MEH-298 follow-up):** Once MEH-299 confirmed, consider removing `*.googleusercontent.com` from `img-src` in `next.config.js` — it was a stopgap; keep until all existing users have re-logged in.
-4. **PR #271 (MEH-271)** — branch `feature/meh-271-arch-smell-detection` was pushed in Session 4 but no PR was opened. Check if it landed via another path (like MEH-258 did via PR #334 in `e5cb9c1`).
+1. **CSP cleanup (MEH-298 follow-up):** Remove `*.googleusercontent.com` from `img-src` in `next.config.js` — MEH-299 confirmed working, stopgap no longer needed for new logins. Keep entry until old users have cycled through (safe to remove in next session).
+2. **MEH-271 check** — branch `feature/meh-271-arch-smell-detection` was pushed in Session 4. Verify it landed via PR #334 (`e5cb9c1` in staging log) or open a PR if still pending.
 
 ### Open PRs
 
