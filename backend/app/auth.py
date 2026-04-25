@@ -35,8 +35,36 @@ def _jwt_key() -> OctKey:
 
 def create_access_token(user_id: UUID, token_version: int = 1) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": str(user_id), "exp": expire, "tv": token_version}
+    # MEH-326: scope="access" disambiguates from refresh tokens. Old tokens
+    # issued before this change have no scope claim — get_current_user treats
+    # absence as access (backward compat) so existing sessions don't break.
+    payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "access"}
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
+
+
+def create_refresh_token(user_id: UUID, token_version: int) -> str:
+    """MEH-326: issue a 14-day refresh token. Same HS256 + JWT_SECRET_KEY
+    as access tokens (one secret to rotate). Carried in an HttpOnly cookie
+    set by every login/register endpoint and by /auth/refresh on rotation.
+    """
+    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "refresh"}
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
+
+
+def decode_refresh_token(token: str) -> dict | None:
+    """MEH-326: validate a refresh token. Returns claims on success, None
+    on any failure (invalid signature, expired, wrong scope). Never raises
+    — callers branch on None.
+    """
+    try:
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+        JWTClaimsRegistry().validate(token_obj.claims)
+    except JoseError:
+        return None
+    if token_obj.claims.get("scope") != "refresh":
+        return None
+    return token_obj.claims
 
 
 # feature/producer-analytics: throttle last_active_at writes to at most
@@ -75,6 +103,15 @@ def get_current_user(
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
     except JoseError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
+    # MEH-326: only access-scope tokens are valid here. Refresh tokens go
+    # to /auth/refresh; presenting one as a Bearer access token is rejected.
+    # Fail-open on missing scope claim — pre-MEH-326 tokens (no scope) are
+    # treated as access so existing 24h sessions don't get invalidated by
+    # the deploy. This mirrors the MEH-206 fail-open pattern below.
+    scope = token_obj.claims.get("scope")
+    if scope is not None and scope != "access":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
     user = db.query(User).filter(User.id == user_id).first()

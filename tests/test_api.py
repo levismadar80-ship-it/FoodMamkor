@@ -1613,3 +1613,167 @@ class TestResetPasswordFlow:
         db.commit()
         res = client.post("/auth/reset-password", json={"token": token, "new_password": "short"})
         assert res.status_code == 422
+
+
+# ---------- MEH-326: JWT Refresh Token flow ----------
+
+class TestRefreshTokenFlow:
+    """Regression tests for the HttpOnly refresh-token cookie flow.
+
+    _reset_rate_limiter and _clean_tables are autouse — each test
+    gets a fresh DB and a clean slowapi counter.
+    """
+
+    def _login(self, client, email, password="Pass1234!"):
+        return client.post("/auth/login", json={"email": email, "password": password})
+
+    def _refresh_cookies(self, response):
+        """Extract all Set-Cookie header values from a response."""
+        return [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+
+    def test_login_sets_refresh_cookie(self, client, db):
+        make_user(db, email="t1@test.com", password="Pass1234!")
+        res = self._login(client, "t1@test.com")
+        assert res.status_code == 200
+        cookies = self._refresh_cookies(res)
+        refresh = next((c for c in cookies if c.startswith("refresh_token=")), None)
+        assert refresh is not None, "No refresh_token Set-Cookie header"
+        low = refresh.lower()
+        assert "httponly" in low
+        assert "secure" in low
+        assert "samesite=lax" in low
+        assert "path=/api/auth" in low
+        # 14 days = 1 209 600 seconds
+        assert "max-age=1209600" in low
+
+    def test_refresh_returns_new_access_token(self, client, db):
+        from datetime import datetime, timedelta
+        from joserfc import jwt as jose_jwt
+        from joserfc.jwk import OctKey
+        from joserfc.jwt import JWTClaimsRegistry
+        from app.config import settings
+
+        make_user(db, email="t2@test.com", password="Pass1234!")
+        login_res = self._login(client, "t2@test.com")
+        refresh_cookie = login_res.cookies.get("refresh_token")
+        assert refresh_cookie, "Login did not return a refresh_token cookie"
+
+        res = client.post("/auth/refresh", cookies={"refresh_token": refresh_cookie})
+        assert res.status_code == 200
+        access_token = res.json().get("access_token")
+        assert access_token
+
+        # Verify the returned token carries scope=access
+        key = OctKey.import_key(settings.secret_key.encode())
+        token_obj = jose_jwt.decode(access_token, key, algorithms=[settings.algorithm])
+        JWTClaimsRegistry().validate(token_obj.claims)
+        assert token_obj.claims.get("scope") == "access"
+
+    def test_refresh_without_cookie_returns_401(self, client):
+        res = client.post("/auth/refresh")
+        assert res.status_code == 401
+
+    def test_refresh_rejects_access_token_in_cookie(self, client, db):
+        from app.auth import create_access_token
+        user = make_user(db, email="t4@test.com")
+        access_token = create_access_token(user.id, user.token_version)
+        res = client.post("/auth/refresh", cookies={"refresh_token": access_token})
+        assert res.status_code == 401
+
+    def test_refresh_rejects_after_token_version_bump(self, client, db):
+        make_user(db, email="t5@test.com", password="Pass1234!")
+        login_res = self._login(client, "t5@test.com")
+        refresh_cookie = login_res.cookies.get("refresh_token")
+
+        # Fetch the user and bump token_version directly
+        from app.models.models import User
+        user = db.query(User).filter(User.email == "t5@test.com").first()
+        user.token_version = (user.token_version or 1) + 1
+        db.commit()
+
+        res = client.post("/auth/refresh", cookies={"refresh_token": refresh_cookie})
+        assert res.status_code == 401
+
+    def test_refresh_rejects_blocked_user(self, client, db):
+        make_user(db, email="t6@test.com", password="Pass1234!")
+        login_res = self._login(client, "t6@test.com")
+        refresh_cookie = login_res.cookies.get("refresh_token")
+
+        from app.models.models import User
+        user = db.query(User).filter(User.email == "t6@test.com").first()
+        user.is_blocked = True
+        db.commit()
+
+        res = client.post("/auth/refresh", cookies={"refresh_token": refresh_cookie})
+        assert res.status_code == 403
+
+    def test_refresh_rate_limited(self, client):
+        # _reset_rate_limiter autouse fixture resets the counter before this test.
+        # /auth/refresh limit: 30/minute. Call it 30 times (all 401 — no cookie),
+        # then verify the 31st is 429.
+        for _ in range(30):
+            client.post("/auth/refresh")
+        res = client.post("/auth/refresh")
+        assert res.status_code == 429
+
+    def test_old_24h_access_token_still_validates(self, client, db):
+        """BACKWARD COMPAT GUARD — pre-MEH-326 tokens had no scope claim.
+
+        get_current_user must fail-open on absent scope (treat as access)
+        so existing 24h sessions don't get invalidated by the deploy.
+        """
+        from datetime import datetime, timedelta
+        from joserfc import jwt as jose_jwt
+        from joserfc.jwk import OctKey
+        from app.config import settings
+
+        user = make_user(db, email="t8@test.com")
+        # Craft token with only sub/exp/tv — no scope claim (pre-MEH-326 shape)
+        expire = datetime.utcnow() + timedelta(hours=24)
+        payload = {"sub": str(user.id), "exp": expire, "tv": user.token_version}
+        key = OctKey.import_key(settings.secret_key.encode())
+        old_token = jose_jwt.encode({"alg": settings.algorithm}, payload, key)
+
+        res = client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"})
+        assert res.status_code == 200
+        assert res.json()["email"] == "t8@test.com"
+
+    def test_logout_clears_refresh_cookie(self, client, db):
+        make_user(db, email="t9@test.com", password="Pass1234!")
+        self._login(client, "t9@test.com")  # sets cookie in client session
+
+        res = client.post("/auth/logout")
+        assert res.status_code == 204
+
+        cookies = self._refresh_cookies(res)
+        refresh = next((c for c in cookies if "refresh_token" in c), None)
+        assert refresh is not None, "No Set-Cookie header for refresh_token on logout"
+        low = refresh.lower()
+        # Defensive: accept Max-Age=0 OR an expires in the past
+        assert "max-age=0" in low or "expires=" in low
+
+    def test_logout_all_devices_rotates_refresh_cookie(self, client, db):
+        make_user(db, email="t10@test.com", password="Pass1234!")
+        login_res = self._login(client, "t10@test.com")
+        old_refresh = login_res.cookies.get("refresh_token")
+        access_token = login_res.json()["access_token"]
+
+        res = client.post(
+            "/auth/logout-all-devices",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        assert res.status_code == 200
+        new_refresh = res.cookies.get("refresh_token")
+        assert new_refresh is not None, "logout-all-devices did not set a new refresh cookie"
+        assert new_refresh != old_refresh, "refresh cookie was not rotated"
+
+        # Old cookie must now be rejected (token_version was bumped).
+        # Fresh client: the session `client` already stored new_refresh from
+        # the logout-all-devices response. Passing old_refresh via cookies=
+        # on top would send both cookies with the same name — non-deterministic.
+        # A new TestClient(app) has no stored cookies, so only old_refresh travels.
+        from fastapi.testclient import TestClient
+        from app.main import app as _app
+        fresh_client = TestClient(_app)
+        res2 = fresh_client.post("/auth/refresh", cookies={"refresh_token": old_refresh})
+        assert res2.status_code == 401

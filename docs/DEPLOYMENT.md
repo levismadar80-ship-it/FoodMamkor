@@ -853,10 +853,12 @@ DATABASE_URL=${{mehamakor-db.DATABASE_URL}}
 # Generate locally:  python -c "import secrets; print(secrets.token_urlsafe(64))"
 SECRET_KEY=<paste generated secret>
 ALGORITHM=HS256
-# 24 hours — matches backend/app/config.py default; was 10080 (7 days) in
-# older snapshots but was shortened per SECURITY.md JWT fix. Longer
-# sessions are rejected by the config loader.
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
+# MEH-326: 15-min access token (was 1440/24h pre-MEH-326). Paired with a
+# 14-day HttpOnly refresh cookie; the frontend interceptor rotates silently.
+# Changing these values requires a Railway service restart:
+# Settings → Variables → save → container auto-restarts within seconds.
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=14
 
 GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 
