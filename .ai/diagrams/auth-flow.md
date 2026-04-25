@@ -20,7 +20,7 @@ flowchart TD
     ConsumerForm --> CP[POST /auth/register]
     CP --> CreateConsumer[Create User<br/>role=consumer]
     CreateConsumer --> IssueJWTc[create_access_token user.id]
-    IssueJWTc --> ReturnTokenC[Return Token<br/>access_token 24h]
+    IssueJWTc --> ReturnTokenC[Return Token<br/>access_token 15min +<br/>HttpOnly refresh cookie 14d]
 
     Choice -->|Business owner — multi-step| ProducerForm[/register/producer page.js<br/>4 steps: account → business → delivery → consents]
     ProducerForm --> PP[POST /auth/register/producer]
@@ -31,7 +31,7 @@ flowchart TD
     LinkCats --> TxEnd[Commit tx]
     TxEnd --> NotifyAdmin[Optional: Twilio WhatsApp + SMTP<br/>admin notification<br/>fail-open on missing config]
     NotifyAdmin --> IssueJWTp[create_access_token user.id]
-    IssueJWTp --> ReturnTokenP[Return Token<br/>access_token 24h]
+    IssueJWTp --> ReturnTokenP[Return Token<br/>access_token 15min +<br/>HttpOnly refresh cookie 14d]
 
     Choice -->|OAuth one-click| OAuthChoice{Google or Apple?}
     OAuthChoice -->|Google| GoogleFlow[POST /auth/google<br/>body: id_token]
@@ -42,7 +42,7 @@ flowchart TD
     VerifyA --> UpsertA[Upsert User by apple_id<br/>role=consumer]
     UpsertG --> IssueJWTo[create_access_token user.id]
     UpsertA --> IssueJWTo
-    IssueJWTo --> ReturnTokenO[Return Token<br/>access_token 24h]
+    IssueJWTo --> ReturnTokenO[Return Token<br/>access_token 15min +<br/>HttpOnly refresh cookie 14d]
 
     ReturnTokenC --> Client[Frontend stores JWT<br/>in auth-context]
     ReturnTokenP --> Client
@@ -54,8 +54,8 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     actor U as User
-    participant FE as Frontend<br/>app/login/page.js
-    participant BE as Backend<br/>POST /auth/login
+    participant FE as "Frontend (app/login/page.js)"
+    participant BE as "Backend (POST /auth/login)"
     participant DB as PostgreSQL
 
     U->>FE: email + password
@@ -69,8 +69,8 @@ sequenceDiagram
     else password mismatch
         BE-->>FE: 401 Invalid credentials
     else all good
-        BE->>BE: create_access_token(user.id)<br/>HS256, 24h exp, JWT_SECRET_KEY
-        BE-->>FE: {access_token, token_type: "bearer"}
+        BE->>BE: create_access_token(user.id)<br/>HS256, 15min exp, JWT_SECRET_KEY
+        BE-->>FE: {access_token, token_type: "bearer"}<br/>+ Set-Cookie: refresh_token (14d, HttpOnly)
         FE->>FE: store in auth-context<br/>+ localStorage
     end
 ```
@@ -115,6 +115,37 @@ flowchart TD
     UseEnv --> Tokens[Used for both:<br/>1 JWT sign/verify<br/>2 analytics IP hash salt]
     Ephemeral --> Tokens
 
-    Tokens --> TTL[Token TTL = 24h<br/>ACCESS_TOKEN_EXPIRE_MINUTES=1440<br/>no refresh token, re-login daily]
+    Tokens --> TTL[Token TTL = 15min access<br/>+ 14d refresh cookie<br/>ACCESS_TOKEN_EXPIRE_MINUTES=15<br/>REFRESH_TOKEN_EXPIRE_DAYS=14]
     TTL --> Rotation[Rotate secret →<br/>invalidates all tokens +<br/>resets analytics hash salt]
+```
+
+## 5. Refresh token rotation (MEH-326)
+
+```mermaid
+sequenceDiagram
+    actor C as "Client (browser)"
+    participant AX as "axios interceptor (lib/api.js)"
+    participant BE as Backend
+    participant DB as PostgreSQL
+
+    C->>AX: Any authenticated request
+    AX->>BE: Request + Authorization: Bearer <access_token>
+    BE-->>AX: 401 (access token expired)
+
+    Note over AX: 401 on non-skip URL →<br/>refresh flow starts.<br/>Concurrent 401s share<br/>one refreshPromise.
+
+    AX->>BE: POST /auth/refresh<br/>(no body; refresh_token cookie auto-attached<br/>because withCredentials: true)
+    BE->>BE: decode_refresh_token(cookie)<br/>validate scope=refresh, exp, tv
+    BE->>DB: SELECT User WHERE id=sub
+    alt user not found / blocked / tv drift
+        BE-->>AX: 401 / 403
+        AX->>AX: _expireSession()<br/>fire auth:expired event
+        AX-->>C: Show toast + redirect /login
+    else valid
+        BE->>BE: create_access_token (15min)<br/>create_refresh_token (14d, rotated)
+        BE-->>AX: {access_token}<br/>+ Set-Cookie: refresh_token (new, 14d, HttpOnly)
+        AX->>AX: localStorage.setItem("token", access_token)
+        AX->>BE: Retry original request<br/>with new Bearer token
+        BE-->>C: Original response (transparent to user)
+    end
 ```
