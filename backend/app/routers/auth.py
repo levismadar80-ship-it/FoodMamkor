@@ -159,6 +159,19 @@ def refresh_token(
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute")
+def logout(request: Request, response: Response):
+    """MEH-326: clear the HttpOnly refresh-token cookie.
+
+    No auth required — stale-cookie holders (expired access token but
+    valid refresh cookie) must still be able to log out cleanly.
+    Path must match _set_refresh_cookie exactly or the browser won't
+    delete the cookie (Path is part of the cookie identity).
+    """
+    response.delete_cookie("refresh_token", path="/api/auth")
+
+
 @router.post("/register", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
 def register(request: Request, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
