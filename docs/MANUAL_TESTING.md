@@ -898,3 +898,28 @@ Added with `feature/session-handoff`.
 - [ ] Staging ללא `TWILIO_WHATSAPP_FROM` מוגדר → הרשמה חוזרת 200 + `whatsapp_sent: false` → success screen מציג banner צהוב "לא קיבלת הודעת WhatsApp?" עם קישור לדשבורד
 - [ ] Railway logs בזמן ההרשמה ה-"חסרה" → `[WHATSAPP] Producer welcome SKIPPED — missing: TWILIO_WHATSAPP_FROM` ברמת ERROR (לא warning)
 - [ ] הרשמה עם `whatsapp_sent: true` → success screen מציג את הטקסט המקורי "שלחנו לך הודעת WhatsApp..." ללא banner
+
+---
+
+## MEH-326 — JWT refresh token flow
+
+### Case A — Silent refresh on access expiry
+- [ ] Login on staging, note timestamp
+- [ ] Wait 16 minutes (access TTL = 15min)
+- [ ] Click any protected action (e.g. favorite a producer)
+- [ ] EXPECT: Action succeeds. No "פג תוקף ההתחברות" toast.
+- [ ] DevTools → Network → `/auth/refresh` returned 200 immediately before the retried action request
+
+### Case B — Forced logout when refresh expired / missing
+- [ ] Login on staging
+- [ ] DevTools → Application → Cookies → delete `refresh_token` cookie
+- [ ] Edit `localStorage.token` to garbage (or wait for access to expire)
+- [ ] Click any protected action
+- [ ] EXPECT: "פג תוקף ההתחברות" toast appears. Page redirects to `/login`.
+
+### Case C — logout-all-devices stays authenticated on current device
+- [ ] Login on staging in browser A; login on staging in browser B (same account)
+- [ ] In browser A: call `POST /auth/logout-all-devices`
+- [ ] EXPECT browser A: stays authenticated (new access token + rotated refresh cookie)
+- [ ] In browser B: click any protected action
+- [ ] EXPECT browser B: receives 401 on next refresh attempt → "פג תוקף" toast + redirect to `/login`

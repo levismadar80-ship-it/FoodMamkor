@@ -1,7 +1,80 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (end-of-day — MEH-331 closed, QP root cause, lessons learned)
+> Last updated: 2026-04-26 (MEH-326 code complete, awaiting pytest + push + preview)
+
+## 2026-04-26 — MEH-326 JWT refresh tokens (code complete, not yet merged)
+
+### Status
+- **MEH-326 code complete** — all backend, frontend, tests, docs done.
+- **Awaiting:** local pytest on Smadar's Windows machine, then push + Vercel preview.
+- **Branch:** `feature/meh-326-jwt-refresh` — 12 local commits, 1 pushed (5bdca16), draft PR #349 open.
+
+### What's done this session
+
+**Backend — `backend/app/auth.py`**
+- `create_access_token`: added `scope="access"` claim, TTL 15min
+- `create_refresh_token`: new — 14d TTL, `scope="refresh"`, same HS256 key
+- `decode_refresh_token`: new — returns claims or None, never raises
+- `get_current_user`: rejects `scope != "access"`; absent scope → fail-open (backward compat)
+
+**Backend — `backend/app/config.py`**
+- `access_token_expire_minutes` default: 1440 → 15
+- `refresh_token_expire_days`: new, default 14
+
+**Backend — `backend/app/routers/auth.py`**
+- `_set_refresh_cookie(response, user)`: new helper, single source of truth for cookie attrs
+- `POST /auth/refresh`: new endpoint, rotates both tokens, rate-limited 30/min
+- `POST /auth/logout`: new endpoint, 204, no auth required, clears cookie
+- 7 token-issuing endpoints wired: login, register, register_producer, register_producer_oauth, google_auth, apple_auth, logout_all_devices (with db.refresh belt-and-suspenders on the last one)
+
+**Frontend — `frontend/lib/api.js`**
+- `withCredentials: true` on axios instance
+- Replaced simple 401 handler with refresh-aware interceptor: SKIP_REFRESH list, `refreshPromise` dedup, retry-on-success, `_expireSession` on failure
+
+**Frontend — `frontend/lib/auth-context.js`**
+- `logout`: fire-and-forget `api.post("/auth/logout")` after state clear
+- `deleteAccount`: same pattern after `api.delete("/auth/me")`
+
+**Tests — `tests/test_api.py`**
+- 10 new tests in `TestRefreshTokenFlow` class (lines 1620–1780)
+- Critical: `test_old_24h_access_token_still_validates` guards backward compat
+- Fixed: `test_logout_all_devices_rotates_refresh_cookie` uses fresh `TestClient` to avoid cookie-jar collision
+
+**Docs updated:**
+- `docs/DEPLOYMENT.md`: ACCESS_TOKEN_EXPIRE_MINUTES=15, REFRESH_TOKEN_EXPIRE_DAYS=14
+- `docs/AUDIT-SECURITY-FOLLOWUP.md`: §3 MEDIUM finding #2 marked RESOLVED
+- `.ai/diagrams/auth-flow.md`: all 24h refs updated, §5 refresh sequence diagram added
+- `docs/SECURITY.md`: token lifetime + CSRF caveat
+- `docs/MANUAL_TESTING.md`: Cases A/B/C
+- `docs/CHANGELOG.md`: one-line entry
+
+### Pending before merge
+1. `cd backend && backend/.venv/bin/python -m pytest tests/test_api.py -q` — run on Smadar's Windows (Postgres required)
+2. `cd frontend && npm run build` — verify no build errors
+3. `git push origin feature/meh-326-jwt-refresh` — push remaining 11 local commits
+4. Share Vercel preview URL with Smadar
+5. Manual test cases A/B/C from `docs/MANUAL_TESTING.md`
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| No sessionStorage flag | Skip list + in-flight Promise sufficient loop guard |
+| `api.post("/auth/logout")` fire-and-forget in logout | Header.jsx callers are sync onClick; state must update instantly |
+| `db.refresh(user)` in logout_all_devices | Belt-and-suspenders against expire_on_commit drift; MEH-265 lesson |
+| `SameSite=Lax` not Strict | Strict breaks top-level navigation flows |
+| axios PR #2391: config.url stays relative | Skip list with `/auth/refresh` prefix is safe; no infinite recursion risk |
+| fresh TestClient for tv-bump 401 assertion | Session client stores new_refresh; sending old_refresh on top = non-deterministic |
+
+### Lessons learned
+- Stop hook auto-pushes; needed explicit "no push until approved" rule per chunk
+- axios `config.url` verified relative (not absolute) via PR #2391 — critical for SKIP_REFRESH correctness
+- TestClient cookie-jar collision: session client accumulates cookies across requests; stale-cookie tests need fresh client
+
+### Next session start
+Read HANDOFF.md → confirm pytest passed on Windows → push → Vercel preview URL to Smadar → manual tests A/B/C.
+
+---
 
 ## 2026-04-25 End-of-day — MEH-331 closed
 

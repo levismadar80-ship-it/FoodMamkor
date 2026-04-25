@@ -20,7 +20,8 @@ reference; the issue below no longer exists in the codebase.
 ```python
 # backend/app/config.py — current behavior
 SECRET_KEY = os.environ["JWT_SECRET_KEY"]    # required in production
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 15              # MEH-326: 15min (was 1440/24h)
+REFRESH_TOKEN_EXPIRE_DAYS = 14               # MEH-326: 14d HttpOnly refresh cookie
 ```
 
 - **Dev:** if `JWT_SECRET_KEY` is unset, `_load_settings()` generates an
@@ -30,14 +31,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
   **refuses to start** with a `RuntimeError` ("SECURITY: JWT_SECRET_KEY
   must be set in production"). This is the key fail-fast guarantee.
 - **Generation:** `python -c "import secrets; print(secrets.token_hex(32))"`
-- **Token lifetime:** 24 hours (was 7 days; shortened in this fix). No
-  refresh-token infra yet — users re-login daily. A 15-minute ideal
-  would require implementing refresh tokens first; tracked as a v2
-  item in ROADMAP.md, not a security blocker.
+- **Token lifetime (MEH-326):** 15-minute access token + 14-day HttpOnly
+  refresh cookie with rotation. Backend: `POST /auth/refresh` rotates both
+  tokens on each use. Frontend: `withCredentials: true` + axios interceptor
+  silently refreshes on 401. Backward compat: pre-MEH-326 tokens (no `scope`
+  claim) still validate via fail-open in `get_current_user`.
 
 > Historical note: earlier snapshots used a hardcoded dev default
 > (`"mehamakor123"`-style). That has been replaced — see the
 > `_DEV_SECRET_SENTINEL` + `_load_settings()` flow in `config.py`.
+
+> **MEH-326 CSRF note:** The refresh cookie uses `SameSite=Lax`. Combined
+> with the same-origin Next.js proxy (`/api/*` → Railway) and POST-only
+> `/auth/refresh`, cross-site requests cannot trigger token rotation —
+> no separate CSRF token needed. `SameSite=Strict` was rejected: it
+> breaks legitimate top-level navigation flows.
 
 ### ✅ 2. Rate Limiting — SHIPPED (SECURITY FIX #2, corrected in MEH-256)
 
