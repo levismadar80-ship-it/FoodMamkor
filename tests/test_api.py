@@ -1556,3 +1556,60 @@ class TestUploadGoogleAvatarOrNone:
                 with patch("cloudinary.uploader.upload", return_value={"secure_url": expected}):
                     result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result == expected
+
+
+class TestResetPasswordFlow:
+    """MEH-304 / MEH-191: end-to-end reset-password tests (gap closed)."""
+
+    def test_happy_path(self, client, db):
+        import secrets
+        from datetime import datetime, timedelta
+        user = make_user(db, password="OldPass1!")
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!"})
+        assert res.status_code == 200
+        db.refresh(user)
+        assert user.reset_token is None
+
+        # old password must no longer work
+        login_old = client.post("/auth/login", data={"username": user.email, "password": "OldPass1!"})
+        assert login_old.status_code == 401
+
+        # new password must work
+        login_new = client.post("/auth/login", data={"username": user.email, "password": "NewPass1!"})
+        assert login_new.status_code == 200
+
+    def test_unknown_token_returns_404(self, client, db):
+        res = client.post("/auth/reset-password", json={"token": "nonexistent_token_abc", "new_password": "NewPass1!"})
+        assert res.status_code == 404
+
+    def test_expired_token_returns_410(self, client, db):
+        import secrets
+        from datetime import datetime, timedelta
+        user = make_user(db)
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
+        db.commit()
+
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!"})
+        assert res.status_code == 410
+
+    def test_invalid_body_returns_422(self, client, db):
+        res = client.post("/auth/reset-password", json={"token": "abc"})
+        assert res.status_code == 422
+
+    def test_short_password_returns_422(self, client, db):
+        import secrets
+        from datetime import datetime, timedelta
+        user = make_user(db)
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "short"})
+        assert res.status_code == 422

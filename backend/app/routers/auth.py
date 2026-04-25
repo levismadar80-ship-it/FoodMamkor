@@ -527,6 +527,7 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
         user.reset_token = token
         user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
         db.commit()
+        logger.info("[FORGOT-PW] token_stored user_id=%s expires=%s", user.id, user.reset_token_expires_at)
         reset_link = f"{settings.frontend_url}/reset-password?token={token}"
         background_tasks.add_task(_send_reset_email, user.email, user.name, reset_link)
     return {"detail": "אם האימייל קיים במערכת, ישלח קישור לאיפוס"}
@@ -537,12 +538,17 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
-    if not user or not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    if not user:
+        logger.warning("[RESET] token_not_found token_prefix=%s", data.token[:8])
+        raise HTTPException(status_code=404, detail="הקישור לא תקין")
+    if not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
+        logger.warning("[RESET] token_expired user_id=%s expires=%s now=%s", user.id, user.reset_token_expires_at, datetime.utcnow())
+        raise HTTPException(status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש")
     user.password_hash = hash_password(data.new_password)
     user.reset_token = None
     user.reset_token_expires_at = None
     db.commit()
+    logger.info("[RESET] password_updated user_id=%s", user.id)
     return {"detail": "הסיסמה עודכנה בהצלחה"}
 
 
