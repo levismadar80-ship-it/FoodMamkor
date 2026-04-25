@@ -36,12 +36,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Only run on successful Vercel Preview deployments.
-    # Vercel sets environment to "Preview" (or "Preview – <slug>") for branch
-    # previews, and "Production" for main. Skip Production and non-success states.
-    if: >-
-      github.event.deployment_status.state == 'success' &&
-      startsWith(github.event.deployment_status.environment, 'Preview')
+    # Only run on successful deployments (preview or production).
+    # The environment filter `startsWith(environment, 'Preview')` was removed
+    # because Vercel's environment naming is inconsistent across SDK versions
+    # and caused the condition to evaluate false → 2-second failure on every run.
+    # Tests are read-only so running against production is safe; the concurrency
+    # group (e2e-${{ deployment.ref }}) ensures no two runs race on the same ref.
+    if: github.event.deployment_status.state == 'success'
 
     steps:
       - uses: actions/checkout@v4
