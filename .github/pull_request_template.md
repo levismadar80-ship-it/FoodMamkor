@@ -42,18 +42,16 @@ Example:
 
 ## Database Checklist (MEH-266 — skip only when truthfully not relevant)
 
-Production broke on 2026-04-24 because MEH-206 + MEH-192 added columns to
-the `User` model without updating `_migrate_columns()`. Railway container
-booted fine but every `/auth/login` returned 500 "column does not exist".
-Full post-mortem: MEH-265. Until we migrate to Alembic (MEH-267), this
-checklist is the contract.
+Production broke on 2026-04-23 because MEH-206 + MEH-192 added columns to
+the `User` model without an Alembic revision. Railway container booted fine
+but every `/auth/login` returned 500 "column does not exist".
+Full post-mortem: [docs/INCIDENTS/2026-04-migrate-columns-drift.md](../docs/INCIDENTS/2026-04-migrate-columns-drift.md)
+Alembic guide: [docs/MIGRATIONS.md](../docs/MIGRATIONS.md)
 
 - [ ] PR does **not** touch `backend/app/models/*.py` — **OR** —
-- [ ] `backend/app/main.py:_migrate_columns()` has an `ALTER TABLE ADD
-      COLUMN` entry for every new column added to a model in this PR
-- [ ] Verified the migration runs on an **existing** DB (not just on
-      `create_all` in pytest — pytest builds a fresh DB every run and
-      silently hides missing migration entries)
+- [ ] An Alembic revision file exists for every new column / table in this PR
+- [ ] `alembic upgrade head` tested against an **existing** DB locally
+      (`create_all` in pytest builds fresh — it silently hides missing migrations)
 - [ ] Any endpoint that queries the new column(s) was hit manually after
       the migration ran
 
