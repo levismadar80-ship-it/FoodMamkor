@@ -162,6 +162,14 @@ summary + pointer here.
     [.claude/rules/frontend.md](./frontend.md).
 20. **Review order — CI before adversarial (mandatory).** See
     [.claude/rules/testing.md](./testing.md).
+21. **Never merge without a verified green CI signal.** If all CI jobs
+    complete in <2 seconds with `conclusion: failure` and no log output,
+    that is **budget exhaustion** — not a real failure and not a real
+    pass. Check `Settings → Billing & plans → Spending limits` first.
+    Do not merge on a "green" signal you cannot explain. Do not merge
+    on a "failing" signal you cannot read logs for. Wait for budget
+    resolution before proceeding. (Root cause: MEH-314/317, 2026-04-25 —
+    test bug was masked by budget exhaustion and shipped in PR #337.)
 
 ---
 
