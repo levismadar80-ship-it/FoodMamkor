@@ -1,9 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-331 — HTML email to fix URL line-wrapping)
+> Last updated: 2026-04-25 (MEH-331 attempt #2 — Resend base64 CTE header)
 
-## 2026-04-25 Session — MEH-331 HTML email fix (verify + reset links)
+## 2026-04-25 Session — MEH-331 attempt #2 (Resend CTE base64 header)
+
+### What shipped
+- Branch: `feature/meh-331-cte-base64-attempt` → draft PR to `staging`
+- **Reversal**: PR #347's diagnosis was wrong. Plain-text line-wrapping was a red herring. Real root cause: **Resend's MTA applies quoted-printable encoding to the HTML body** AFTER our `<a href>` is built. QP inserts `=\r\n` soft breaks at 76-char boundaries, which can land inside an href attribute value, truncating the URL.
+- Evidence: user repro showed truncation persists with HTML emails (`?token=PHJuHuDN...sraTQMg` → submitted as `qaoEAG8LG8sraTQMg`). QP break math matches.
+- Research (resend.com/docs, GitHub issues): Resend API has no documented `content_transfer_encoding` parameter. The `headers` field is the only knob.
+- This PR: pass `headers={"Content-Transfer-Encoding": "base64"}` to `resend.Emails.send` when html is set. **Untested** — Resend may not propagate this to the HTML MIME part. If Gmail "Show original" still shows QP, fall back to Option 1.
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| Try CTE-base64 header first (1-line, 30-second test) | Costs nothing if Resend ignores it; fixes the bug if Resend honors it |
+| Reject Option 2 (shorter token) | OWASP Forgot Password Cheat Sheet recommends 128+ bits; 88-bit reset tokens borderline. Also fragile to URL prefix changes |
+| If Option 3 fails → Option 1 (short-code redirect, separate column) | 95-bit base62 code, no token entropy reduction, industry standard |
+| CHANGELOG must explicitly note PR #347 was incomplete | Future sessions need to know the previous "fix" didn't work |
+
+### Verification protocol (BEFORE merge)
+1. Fresh register on staging → open Gmail → "Show original"
+2. Confirm `Content-Transfer-Encoding: base64` on the `text/html` MIME part (not `quoted-printable`)
+3. Confirm raw source has no `=\r\n` mid-URL
+4. Click button → "האימייל אומת בהצלחה"
+5. Same for reset-password flow
+6. Mobile Gmail (iOS + Android)
+7. ONLY after all pass: merge
+
+### Next session
+- If CTE-base64 worked: close MEH-331, move to MEH-305/306 (password policy)
+- If CTE-base64 failed: open MEH-XXX for short-code redirect, implement Option 1
+
+---
+
+## 2026-04-25 Session — MEH-331 HTML email fix (verify + reset links) — INCOMPLETE
 
 ### What shipped
 - Branch: `feature/meh-331-email-html-fallback` → draft PR to `staging`
