@@ -77,7 +77,7 @@ export default function RegisterPage() {
     }
   };
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   // tasks_for_claude_code.md task 8 — inline field-level validity.
   // *Invalid flags only go true after the field has been touched (i.e.

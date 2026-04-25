@@ -40,8 +40,13 @@ function RegisterProducerPageBody() {
   const isUpgrade = !!user;
   // Initialize step from localStorage token so there's no flicker — auth
   // context loads async, but the token presence is synchronous.
+  // Wrapped in try/catch — localStorage can throw on quota / private-mode.
   const [step, setStep] = useState(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("token")) return 2;
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("token")) return 2;
+    } catch {
+      // private browsing / storage disabled — fall through to step 1
+    }
     return 1;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
@@ -101,19 +106,52 @@ function RegisterProducerPageBody() {
   const restoreDraft = () => {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
-      if (saved) setForm((prev) => ({ ...prev, ...JSON.parse(saved) }));
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Validate shape — reject anything that isn't a plain object,
+        // or that has a non-array category_ids. Drop garbage drafts so
+        // we don't merge stale schemas (e.g. from before category_ids
+        // existed) into form state.
+        const shapeOk =
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed) &&
+          (parsed.category_ids === undefined || Array.isArray(parsed.category_ids));
+        if (shapeOk) {
+          setForm((prev) => ({ ...prev, ...parsed }));
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+        }
+      }
+    } catch {
+      // Bad JSON or storage disabled — clear and ignore.
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    }
     setShowDraftBanner(false);
   };
 
+  // Functional updater + draft save in one step. Used for every field —
+  // text inputs, checkboxes, multi-select category list — so draft
+  // persistence covers all writes uniformly (previously only text inputs
+  // hit saveDraft, so checkboxes/categories were silently lost on refresh).
+  // saveDraft is called inside the updater; in React strict mode the
+  // updater can run twice — localStorage writes are idempotent so the
+  // duplicate write is harmless.
+  const setAndSave = (updater) => {
+    setForm((prev) => {
+      const next = updater(prev);
+      saveDraft(next);
+      return next;
+    });
+  };
+
   const set = (field) => (e) => {
-    const updated = { ...form, [field]: e.target.value };
-    setForm(updated);
-    saveDraft(updated);
+    const value = e.target.value;
+    setAndSave((prev) => ({ ...prev, [field]: value }));
   };
 
   const toggleCategory = (id) => {
-    setForm((prev) => ({
+    setAndSave((prev) => ({
       ...prev,
       category_ids: prev.category_ids.includes(id)
         ? prev.category_ids.filter((c) => c !== id)
@@ -122,6 +160,10 @@ function RegisterProducerPageBody() {
   };
 
   const handleEmailBlur = async () => {
+    // Clear stale warning first — covers the case where the user erased
+    // the email after a previous "exists" check; the early return below
+    // would otherwise leave the warning stuck on screen.
+    setEmailExistsWarning("");
     if (!form.email || !validateEmail(form.email)) return;
     try {
       const res = await api.get(`/auth/email-exists?email=${encodeURIComponent(form.email)}`);
@@ -129,11 +171,9 @@ function RegisterProducerPageBody() {
         setEmailExistsWarning(
           "האימייל הזה כבר רשום. התחברי לחשבון שלך — ותוכלי להוסיף עסק ישירות מדף ההרשמה."
         );
-      } else {
-        setEmailExistsWarning("");
       }
     } catch {
-      setEmailExistsWarning("");
+      // Network/API failure — leave the warning cleared (nothing to show).
     }
   };
 
@@ -369,7 +409,7 @@ function RegisterProducerPageBody() {
                   <input
                     type="checkbox"
                     checked={form.gluten_free}
-                    onChange={(e) => setForm((prev) => ({ ...prev, gluten_free: e.target.checked }))}
+                    onChange={(e) => setAndSave((prev) => ({ ...prev, gluten_free: e.target.checked }))}
                     className="w-4 h-4 accent-primary"
                   />
                   🌾 ללא גלוטן
@@ -378,7 +418,7 @@ function RegisterProducerPageBody() {
                   <input
                     type="checkbox"
                     checked={form.vegan}
-                    onChange={(e) => setForm((prev) => ({ ...prev, vegan: e.target.checked }))}
+                    onChange={(e) => setAndSave((prev) => ({ ...prev, vegan: e.target.checked }))}
                     className="w-4 h-4 accent-primary"
                   />
                   🥦 טבעוני
@@ -387,7 +427,7 @@ function RegisterProducerPageBody() {
                   <input
                     type="checkbox"
                     checked={form.lactose_free}
-                    onChange={(e) => setForm((prev) => ({ ...prev, lactose_free: e.target.checked }))}
+                    onChange={(e) => setAndSave((prev) => ({ ...prev, lactose_free: e.target.checked }))}
                     className="w-4 h-4 accent-primary"
                   />
                   🥛 ללא לקטוז
@@ -416,10 +456,15 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
+                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
               )}
               <button
                 onClick={() => {
+                  // Clear stale error first so the next failure renders a
+                  // visible reset (otherwise the same error text appears
+                  // to "stick" across submit attempts even after the user
+                  // fixes one field).
+                  setError("");
                   if (!form.producer_name) {
                     setError("יש למלא שם עסק");
                     return;
@@ -436,7 +481,6 @@ function RegisterProducerPageBody() {
                     setError("יש לאשר את תנאי השימוש לפני ההצטרפות");
                     return;
                   }
-                  setError("");
                   handleSubmit();
                 }}
                 disabled={loading}
