@@ -1576,11 +1576,11 @@ class TestResetPasswordFlow:
         assert user.reset_token is None
 
         # old password must no longer work
-        login_old = client.post("/auth/login", data={"username": user.email, "password": "OldPass1!"})
+        login_old = client.post("/auth/login", json={"email": user.email, "password": "OldPass1!"})
         assert login_old.status_code == 401
 
         # new password must work
-        login_new = client.post("/auth/login", data={"username": user.email, "password": "NewPass1!"})
+        login_new = client.post("/auth/login", json={"email": user.email, "password": "NewPass1!"})
         assert login_new.status_code == 200
 
     def test_unknown_token_returns_404(self, client, db):
