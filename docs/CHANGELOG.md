@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-25 — MEH-326: feat(auth): JWT refresh tokens with HttpOnly cookie rotation. Access TTL 15min + 14d refresh cookie. Backward compat preserved for pre-deploy 24h tokens (no `scope` claim). PR #349 (draft, pending pytest + preview).
+
 ## 2026-04-25 — MEH-331 attempt #2: ask Resend MTA to use base64 (not QP) for HTML part. **PR #347 was incomplete — its premise (plain-text line-wrapping) was wrong.** Real root cause: Resend's MTA applies quoted-printable encoding to the HTML body AFTER our `<a href>` is constructed. QP wraps lines at 76 chars by inserting `=\r\n` soft breaks, which can land inside an href attribute value. Some email clients parse the href before QP-decoding the attribute, yielding a truncated URL. Fix attempt: pass `headers={"Content-Transfer-Encoding": "base64"}` to `resend.Emails.send` when html is set. Untested whether Resend honors a top-level CTE header for the HTML part — if rejected by Gmail "Show original" inspection, fall back to Option 1 (short-code redirect, MEH-XXX). Single file: `email.py`.
 
 ## 2026-04-25 — MEH-331: HTML email for verify + reset links. Root cause of verify-email 400: plain-text SMTP line-wrapping truncated the 87-char verify URL at ~72 chars; email client made the continuation line clickable as a standalone token. Fix: `send_email` now accepts optional `html=` parameter; `_send_verify_email` and `_send_reset_email` both send RTL HTML with `<a href>` button (full URL in href, immune to line-folding) + plain-text fallback unchanged. Two files: `email.py`, `auth.py`.
