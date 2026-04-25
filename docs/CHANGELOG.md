@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-25 — MEH-318: Form state bug sweep — register flows (pre-RHF cleanup). 7 fixes across `frontend/app/register/page.js` and `frontend/app/register/producer/page.js`: stale-closure `set()` (both files), draft-save now covers checkbox/category writes via `setAndSave` helper, `handleEmailBlur` clears stale warning at top, back button clears `error` alongside `stepError`, `useState` initializer wrapped in try/catch, `restoreDraft` validates parsed shape, step-2 submit chain clears `error` for visible reset cycle. No password-rule changes (deferred to MEH-306).
+
 ## 2026-04-25 — MEH-313: `recipes.submitted_by` FK now `ON DELETE CASCADE` (was: no ondelete → FK violation on DELETE /auth/me for any user with recipes). Alembic revision `c9e3a1b5d72f`. 2 regression tests added (`test_recipe_cascade.py`).
 
 ## 2026-04-25 — MEH-311: `recipe_ingredients.producer_id` FK now `ON DELETE SET NULL` (was: no ondelete → FK violation potential when MEH-249's `db.delete(producer)` ran). Alembic revision `a4c7d2f9e1b8` + matching `EXPECTED_REV` bump in pr-checks.yml. 2 sibling tests added.
