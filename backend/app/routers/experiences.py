@@ -263,7 +263,7 @@ def submit_experience(
     )
 
     # Best-effort admin email. Never blocks the submission — the service
-    # fails open on missing SMTP / send errors.
+    # fails open on missing RESEND_API_KEY / send errors.
     notify_admin_new_submission(
         title=ex.title,
         host_name=user.name,
