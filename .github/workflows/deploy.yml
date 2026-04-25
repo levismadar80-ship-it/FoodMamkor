@@ -96,14 +96,13 @@ jobs:
   # API CONTRACT (STATIC) — runs on every PR and push to main/staging.
   # MEH-245 — diffs frontend API calls against backend FastAPI routes,
   # flags orphan calls + method mismatches without hitting the network.
-  # Warn-only until MEH-244 confirms production has no deploy drift;
-  # flip `continue-on-error` to `false` after that.
+  # MEH-244 confirmed 0 drift (2026-04-25) — hard failure enabled.
   # ──────────────────────────────────────────────────────────────────
   api-contract-static:
     name: API contract audit (static)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    continue-on-error: true
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
 
@@ -224,7 +223,7 @@ jobs:
   # MEH-245 — hits every unique frontend path against the staging domain
   # and flags any 404. Catches deploy drift the static check cannot see
   # (a route missing from the running container even though the code
-  # has it). Warn-only until probe baseline is stable.
+  # has it). MEH-244 confirmed 0 drift (2026-04-25) — hard failure enabled.
   # ──────────────────────────────────────────────────────────────────
   api-contract-probe-staging:
     name: API contract probe (staging)
@@ -232,7 +231,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
 

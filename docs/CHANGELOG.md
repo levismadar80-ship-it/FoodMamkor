@@ -14,6 +14,8 @@
 
 ## 2026-04-25 — MEH-304: add structured logging + differentiated status codes (404/410) to /auth/reset-password to diagnose 400s in production. Closes the MEH-191 test gap.
 
+## 2026-04-25 — MEH-244: Cross-env probe confirmed 0 drift (staging = production); both `api-contract-static` + `api-contract-probe-staging` CI jobs flipped from `continue-on-error: true` to `false`; 23 dead backend routes triaged (4 delete candidates noted, 19 keep)
+
 ## 2026-04-25 — MEH-287: Producer registration — `whatsapp_sent` flag in response + loud `logger.error` when Twilio env missing/fails (was silent `return`/`warning`); frontend shows dashboard-fallback banner on step 3 when `whatsapp_sent=false` instead of the default "sent you WhatsApp" copy
 
 ## 2026-04-24 — MEH-150: email provider switch — SMTP → Resend HTTP API; update .env.example (remove SMTP_* vars, add RESEND_API_KEY); fix stale SMTP comments in marketing.py / experiences.py / admin_experiences.py (PR #335)

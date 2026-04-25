@@ -85,52 +85,54 @@ needed for `--probe` / `--cross-env`.
 A static run on `staging` is expected to exit 0 until a PR removes a
 backend route or changes a path a caller still uses.
 
-### Dead backend routes (flag only — deletion is a separate decision)
+### Dead backend routes — triage (MEH-244, 2026-04-25)
 
-Grouped by likely reason. None are deleted by this PR.
+Keep or schedule for deletion. No routes are deleted by this PR.
 
-**Infra-only / intentionally uncalled by the browser client**
+**Infra-only / intentionally uncalled by the browser client — KEEP FOREVER**
 
-| Route | Location | Notes |
+| Route | Location | Decision |
 |---|---|---|
-| `GET /health` | `backend/app/main.py:434` | Railway healthcheck — never called from JS. |
-| `HEAD /health` | `backend/app/main.py:434` | Same. |
+| `GET /health` | `backend/app/main.py:434` | ✅ Keep — Railway healthcheck. |
+| `HEAD /health` | `backend/app/main.py:434` | ✅ Keep — same. |
 
-**v2 features — tables and endpoints exist, no UI yet**
+**v2 features — tables and endpoints exist, no UI yet — KEEP (v2 scope)**
 
-| Route | Location |
-|---|---|
-| `GET /recipes` | `backend/app/routers/recipes.py:15` |
-| `GET /recipes/{_}` | `backend/app/routers/recipes.py:23` |
-| `POST /recipes` | `backend/app/routers/recipes.py:36` |
-| `GET /admin/recipes/pending` | `backend/app/routers/admin.py:454` |
-| `POST /admin/recipes/{_}/approve` | `backend/app/routers/admin.py:459` |
-| `POST /admin/recipes/{_}/reject` | `backend/app/routers/admin.py:469` |
-
-**CRUD endpoints whose UI was never built**
-
-| Route | Location |
-|---|---|
-| `GET /experiences/mine` | `backend/app/routers/experiences.py:142` |
-| `GET /home-products/{_}` | `backend/app/routers/home_products.py:167` |
-| `PUT /home-products/{_}` | `backend/app/routers/home_products.py:239` |
-| `DELETE /home-products/{_}` | `backend/app/routers/home_products.py:260` |
-| `GET /home-products/{_}/ratings` | `backend/app/routers/home_products.py:298` |
-| `GET /users/me/following` | `backend/app/routers/producers.py:575` |
-| `POST /producers/me/verify-phone` | `backend/app/routers/producer_me.py:498` |
-| `POST /producers/me/verify-phone/confirm` | `backend/app/routers/producer_me.py:534` |
-| `POST /producers/me/kashrut-request` | `backend/app/routers/producer_me.py:571` |
-
-**Admin aliases the UI never adopted**
-
-| Route | Location | Note |
+| Route | Location | Decision |
 |---|---|---|
-| `GET /admin/producers/pending` | `backend/app/routers/admin.py:266` | UI uses `GET /admin/producers?status=pending`. |
-| `POST /admin/producers/{_}/reject` | `backend/app/routers/admin.py:309` | No reject button wired in admin producers page. |
-| `GET /admin/stats` | `backend/app/routers/admin.py:538` | UI uses `GET /admin/dashboard`. |
-| `POST /admin/seed-cities` | `backend/app/routers/admin.py:556` | Seed-only; called from scripts, not the browser. |
-| `GET /reviews` | `backend/app/routers/reviews.py:203` | Publicly-listable reviews endpoint with no consumer yet. |
-| `PUT /admin/reviews/{_}/hide` | `backend/app/routers/reviews.py:361` | Admin hide-review action not wired. |
+| `GET /recipes` | `backend/app/routers/recipes.py:15` | ✅ Keep — v2 recipe feature. |
+| `GET /recipes/{_}` | `backend/app/routers/recipes.py:23` | ✅ Keep — v2. |
+| `POST /recipes` | `backend/app/routers/recipes.py:36` | ✅ Keep — v2. |
+| `GET /admin/recipes/pending` | `backend/app/routers/admin.py:454` | ✅ Keep — v2 admin. |
+| `POST /admin/recipes/{_}/approve` | `backend/app/routers/admin.py:459` | ✅ Keep — v2 admin. |
+| `POST /admin/recipes/{_}/reject` | `backend/app/routers/admin.py:469` | ✅ Keep — v2 admin. |
+
+**CRUD endpoints whose UI was never built — KEEP (needed when UI ships)**
+
+| Route | Location | Decision |
+|---|---|---|
+| `GET /experiences/mine` | `backend/app/routers/experiences.py:142` | ✅ Keep — UI not yet built. |
+| `GET /home-products/{_}` | `backend/app/routers/home_products.py:167` | ✅ Keep — needed for detail page. |
+| `PUT /home-products/{_}` | `backend/app/routers/home_products.py:239` | ✅ Keep — edit flow not wired yet. |
+| `DELETE /home-products/{_}` | `backend/app/routers/home_products.py:260` | ✅ Keep — delete flow not wired yet. |
+| `GET /home-products/{_}/ratings` | `backend/app/routers/home_products.py:298` | ✅ Keep — ratings display not wired. |
+| `GET /users/me/following` | `backend/app/routers/producers.py:575` | ✅ Keep — following list not built. |
+| `POST /producers/me/verify-phone` | `backend/app/routers/producer_me.py:498` | ✅ Keep — OTP flow (MEH-51, shipped). |
+| `POST /producers/me/verify-phone/confirm` | `backend/app/routers/producer_me.py:534` | ✅ Keep — OTP confirm. |
+| `POST /producers/me/kashrut-request` | `backend/app/routers/producer_me.py:571` | ✅ Keep — kashrut badge flow (MEH-51). |
+
+**Admin aliases the UI never adopted — CANDIDATES FOR DELETION (v2 cleanup)**
+
+| Route | Location | Decision |
+|---|---|---|
+| `GET /admin/producers/pending` | `backend/app/routers/admin.py:266` | 🗑 Delete candidate — UI uses `?status=pending`. |
+| `POST /admin/producers/{_}/reject` | `backend/app/routers/admin.py:309` | 🗑 Delete candidate — no reject button in admin UI. |
+| `GET /admin/stats` | `backend/app/routers/admin.py:538` | 🗑 Delete candidate — UI uses `/admin/dashboard`. |
+| `POST /admin/seed-cities` | `backend/app/routers/admin.py:556` | ✅ Keep — scripts-only, not a dead route. |
+| `GET /reviews` | `backend/app/routers/reviews.py:203` | ✅ Keep — public listing, wire UI before deleting. |
+| `PUT /admin/reviews/{_}/hide` | `backend/app/routers/reviews.py:361` | 🗑 Delete candidate — hide action not wired in admin. |
+
+Delete candidates (4 routes): open a separate MEH ticket before removing — each needs a IDOR/test audit first.
 
 ---
 
@@ -142,32 +144,32 @@ Grouped by likely reason. None are deleted by this PR.
 | `GET /admin/group-buys` | same | same |
 | `GET /auth/profile-image` | none of the above today | No caller in `staging`, no route in `staging`; MEH-243 owns the feature and will add both sides together. |
 
-MEH-244 becomes a probe + diagnosis task after this PR merges:
+**MEH-244 closed 2026-04-25** — cross-env probe returned **Drift count: 0**.
+All routes return identical status codes on staging and production (403 on
+auth-protected endpoints is expected; the probe runs without a token).
 
-```bash
-python scripts/check_api_contract.py --cross-env \
-  --staging https://staging.mehamakor.online \
-  --prod    https://mehamakor.online
 ```
-
-If the two paths above show `200 / 404`, the fix is a Railway redeploy of
-production, not a code change — the routes are already in `main`.
+python scripts/check_api_contract.py \
+  --cross-env \
+  --staging https://foodmamkor-staging.up.railway.app \
+  --prod    https://mehamakor.online
+# Drift count: 0
+```
 
 ---
 
 ## CI integration
 
 Both steps are wired in `.github/workflows/deploy.yml` and are
-**warn-only** (`continue-on-error: true`) until MEH-244 confirms production
-is clean. Flip to hard failure after.
+**hard-failing** (`continue-on-error: false`) as of MEH-244 (2026-04-25).
 
 | Step | Trigger | Mode |
 |---|---|---|
 | `api-contract-static` | Every push and PR to `main` / `staging`. | Static — always runs, no network. |
 | `api-contract-probe` | Staging redeploy job (`push` to `staging`). | Probe against `https://staging.mehamakor.online` after redeploy. |
 
-Cross-env mode is manual (`workflow_dispatch`) for now; promote to scheduled
-once staging + prod probe baselines are stable.
+Cross-env mode is manual (`workflow_dispatch`). Run it after any
+production-only change (e.g. direct hotfix to `main`) to confirm no drift.
 
 ---
 
