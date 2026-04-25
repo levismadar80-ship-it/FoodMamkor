@@ -351,7 +351,7 @@ def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db
 
 @router.post("/google", response_model=Token)
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
-def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends(get_db)):
+def google_auth(request: Request, response: Response, data: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
     # MEH-253 — distinguish "Google OAuth isn't configured on this server"
     # (503) from "the token you sent is invalid" (401). Before this check,
@@ -407,6 +407,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
         user.avatar_url = picture
         db.commit()
 
+    _set_refresh_cookie(response, user)
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
@@ -556,7 +557,7 @@ def logout_all_devices(
 
 @router.post("/apple", response_model=Token)
 @limiter.limit("10/minute")  # SECURITY FIX #2
-def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(get_db)):
+def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
     # MEH-253 — 503 when the provider isn't configured (see google_auth).
     if not settings.apple_client_id:
@@ -600,6 +601,7 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
             db.commit()
             db.refresh(user)
 
+    _set_refresh_cookie(response, user)
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
