@@ -664,7 +664,41 @@ def _send_reset_email(email: str, name: str, reset_link: str):
         f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    send_email(email, "מהמקור - איפוס סיסמה", body)
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לחצי על הכפתור לאיפוס הסיסמה (תוקף: שעה אחת):</p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{reset_link}"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  איפוס סיסמה
+                </a>
+              </div>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
+              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
+              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
+                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
+                <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
 
 
 def _send_verify_email(email: str, name: str, token: str):
@@ -678,7 +712,42 @@ def _send_verify_email(email: str, name: str, token: str):
         f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    send_email(email, "מהמקור - אמתי את האימייל שלך", body)
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך, לחצי על הכפתור:</p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{verify_url}"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  אמתי את האימייל שלך
+                </a>
+              </div>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
+              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
+              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
+                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
+                <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, "מהמקור - אמתי את האימייל שלך", body, html=html_body)
 
 
 def _send_welcome_email(email: str, name: str, role: str = "consumer"):
