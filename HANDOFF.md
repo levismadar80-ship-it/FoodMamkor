@@ -55,7 +55,7 @@ All 5 CI failures are **pre-existing on staging** — same pattern as PR #335 (d
 | PR  | MEH     | Title                                                       | Status |
 |-----|---------|-------------------------------------------------------------|--------|
 | 337 | MEH-304 | obs: structured logging + 404/410 split for /auth/reset-password | Draft — needs Vercel preview test + merge |
-| 339 | MEH-244 | ci: flip api-contract CI to hard failure after 0-drift confirmation | Draft — merge after CI green |
+| 339 | MEH-244 | ci: flip api-contract CI to hard failure after 0-drift confirmation | ✅ Merged to staging 2026-04-25 |
 
 ### Decisions this session
 
