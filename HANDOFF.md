@@ -1,7 +1,52 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-265 post-mortem + PR cleanup batch)
+> Last updated: 2026-04-25 (MEH-150 paper trail + MEH-304 observability PR)
+
+## 2026-04-25 Session — MEH-150 + MEH-304
+
+### What shipped
+
+**MEH-150 (PR #335 — merged to staging):** Completed Resend migration paper trail.
+- `backend/.env.example`: removed SMTP_* vars, added RESEND_API_KEY section
+- `marketing.py`, `experiences.py`, `admin_experiences.py`: stale "SMTP" comments → "Resend / RESEND_API_KEY"
+- `docs/CHANGELOG.md`: entry added
+
+**MEH-304 (PR #337 — draft, open):** Observability-first diagnosis PR for `/auth/reset-password` returning 400 in production.
+- `backend/app/routers/auth.py`: split combined `400` into `404` (token not found, `[RESET] token_not_found`) and `410` (token expired, `[RESET] token_expired`). Added `[FORGOT-PW] token_stored` and `[RESET] password_updated` log lines.
+- `frontend/app/reset-password/page.js`: error handler now checks HTTP status codes (404/410) instead of Hebrew string matching.
+- `tests/test_api.py`: `TestResetPasswordFlow` — 5 test cases: happy path, 404, 410, 422, short password. Closes MEH-191 test gap.
+
+### PR #337 CI status
+
+All 5 CI failures are **pre-existing on staging** — same pattern as PR #335 (docs-only). All complete in <2 seconds (physically impossible for real test runs). No action needed.
+
+### Next task (MANDATORY after PR #337 merges to staging)
+
+1. Wait for Railway redeploy to complete
+2. Trigger forgot-password for a real user on staging (e.g. `sapir000s@gmail.com`)
+3. Open Railway logs → paste the `[FORGOT-PW] token_stored` log line here
+4. Click the reset link from the email → submit the form
+5. Paste the resulting log line (`[RESET] token_not_found` OR `[RESET] token_expired` OR `[RESET] password_updated`)
+6. Based on the log: write the actual fix (MEH-304 root cause fix — separate PR)
+
+**If `[RESET] token_not_found` fires:** token is not being written to DB, or a different token is stored than the one in the email. Check `forgot_password` → `user.reset_token = token` → `db.commit()` path, and compare token in `[FORGOT-PW] token_stored` log vs token prefix in `[RESET] token_not_found` log.
+
+**If `[RESET] token_expired` fires:** `reset_token_expires_at` is in the past when reset is attempted. Check timezone drift (DB `now()` vs Python `datetime.utcnow()`).
+
+### Open PRs
+
+| PR  | MEH     | Title                                                       | Status |
+|-----|---------|-------------------------------------------------------------|--------|
+| 337 | MEH-304 | obs: structured logging + 404/410 split for /auth/reset-password | Draft — needs Vercel preview test + merge |
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Observability-first for MEH-304 (no fix yet) | Root cause cannot be determined from static analysis; DB query confirmed code bug but not which branch fires | 2026-04-25 |
+| No token_version increment in reset flow | Out of scope per user direction — pending separate session-invalidation policy research | 2026-04-25 |
+| Frontend error handler: HTTP status codes not Hebrew string matching | Status codes are stable; Hebrew string matching is fragile across content changes | 2026-04-25 |
 
 ## 2026-04-25 Session — MEH-287 WhatsApp welcome
 
