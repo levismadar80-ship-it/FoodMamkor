@@ -1,7 +1,47 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-244 close production drift + MEH-304 observability)
+> Last updated: 2026-04-25 (Session 1 — research-6 followup + MEH-308/311)
+
+## 2026-04-25 Session 1 update (Claude Chat research-6 + MEH-308 follow-up)
+
+### Issues closed today
+
+| MEH | Title | Status | Notes |
+|-----|-------|--------|-------|
+| 287 | Producer registration WhatsApp welcome | Done | yesterday actually, missed in last HANDOFF |
+| 191 | Real forgot password flow | Done 10:46 | + MEH-304 reset-password 400 fix |
+| 304 | reset-password 400 bug | Done 10:46 | follow-up to MEH-191 |
+| 150 | Email provider migration to Resend | Done 10:18 | |
+| 308 | DELETE /auth/me cascade Producer | DUPLICATE | already fixed in MEH-249 |
+
+### Issues opened today
+
+| MEH | Title | Status | Notes |
+|-----|-------|--------|-------|
+| 307 | Forgot password frontend | DUPLICATE of 191 | Claude Chat blind spot |
+| 308 | DELETE cascade Producer | DUPLICATE of 249 | found via investigation |
+| 309 | OAuth ghost users | Backlog Medium | blocked on MEH-297 |
+| 311 | RecipeIngredient FK gap | Backlog High | new finding from MEH-308 investigation; 2 sibling FKs (`recipes.category_id`, `recipes.submitted_by`) flagged in description for separate MEHs |
+
+### Research artifact created
+
+- `research-6-registration-flow.md` (16KB) — registration flow E2E audit
+- **Caveat:** based on AUDIT-EDGE-CASES.md (April) without cross-checking Linear Done state. 2 of 6 recommendations were duplicates of already-fixed issues. Future Claude Chat research sessions: search Linear FIRST, audit docs SECOND.
+
+### Lessons learned
+
+- **HANDOFF.md must be updated at end of every session** (CLAUDE.md Rule 9). 24h drift caused 2 duplicate issues to be opened today.
+- **Claude Chat ≠ Claude Code.** Chat doesn't have visibility into recent commits or Linear state changes — must search before opening issues.
+- **Bug Protocol step 2 (grep siblings) catches real gaps.** MEH-308 investigation found RecipeIngredient FK gap that no audit caught, plus 2 additional sibling FKs missing `ondelete` (`recipes.category_id`, `recipes.submitted_by`).
+
+### Next session
+
+- Decide: which High-priority issue from Backlog ships next?
+  Candidates: MEH-198 (email verify resend), MEH-258 (SECURITY-CHECKLIST), MEH-301 (mirror loud-error pattern), MEH-272 (Producer CHECK constraints), MEH-311 (RecipeIngredient FK gap — quick win, scoped tightly).
+- MEH-297 + MEH-290 are big features — separate planning needed.
+
+---
 
 ## 2026-04-25 Session — MEH-244 production drift diagnosis
 
