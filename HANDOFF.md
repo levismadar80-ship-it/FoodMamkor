@@ -1,9 +1,9 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (Session 2 — MEH-311/317 shipped)
+> Last updated: 2026-04-25 (Session 2 — MEH-311/317/313 shipped)
 
-## 2026-04-25 Session 2 update (MEH-311 + MEH-317)
+## 2026-04-25 Session 2 update (MEH-311 + MEH-317 + MEH-313)
 
 ### What shipped
 
@@ -11,6 +11,7 @@
 |----|-----|-------|--------|
 | #341 | MEH-311 | RecipeIngredient.producer_id ON DELETE SET NULL | Merged to staging |
 | #342 | MEH-317 | Fix test_happy_path data= → json= | Merged to staging |
+| #344 | MEH-313 | recipes.submitted_by ON DELETE CASCADE | Merged to staging |
 
 ### MEH-311 details
 
@@ -25,11 +26,18 @@
 Root cause: `test_happy_path` sent `data={"username": ...}` (form-encoded) to `/auth/login`
 but `LoginRequest` expects JSON body with `email` field. Fixed 2 lines at `tests/test_api.py:1579,1583`.
 
-### Sibling FKs still open
+### MEH-313 details
 
-From MEH-311 grep siblings investigation:
-- **MEH-312** — `recipes.category_id` missing `ondelete` (Backlog)
-- **MEH-313** — `recipes.submitted_by` missing `ondelete` — needs product decision (CASCADE vs SET NULL+nullable) before coding
+- `backend/app/models/models.py:355` — `ForeignKey("users.id", ondelete="CASCADE")`
+- Alembic migration `c9e3a1b5d72f` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `c9e3a1b5d72f`
+- Product decision: CASCADE (recipes are user-owned content, full GDPR wipe)
+- Linear MEH-313 → Done
+
+### Sibling FK remaining open
+
+- **MEH-312** — `recipes.category_id` missing `ondelete` (Backlog, Low — category deletion unlikely, non-blocking)
 
 ### Rule added
 
@@ -37,8 +45,8 @@ From MEH-311 grep siblings investigation:
 
 ### Next session candidates
 
-- MEH-313 — product decision needed first (ask user: CASCADE or SET NULL?)
 - MEH-304 root cause — paste Railway logs from forgot-password on staging to diagnose actual 400 cause
+- MEH-312 — `recipes.category_id` quick SET NULL fix (low priority)
 - MEH-198 (email verify resend), MEH-258 (SECURITY-CHECKLIST), MEH-272 (Producer CHECK constraints)
 
 ---
