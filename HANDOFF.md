@@ -1,7 +1,62 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-331 attempt #2 — Resend base64 CTE header)
+> Last updated: 2026-04-25 (end-of-day — MEH-331 closed, QP root cause, lessons learned)
+
+## 2026-04-25 End-of-day — MEH-331 closed
+
+### Status
+- **MEH-331 CLOSED** — verify-email / reset-password URL truncation fixed in two PRs.
+- **MEH-191 RESOLVED** — "Verify email button not working" was the user-facing ticket for this root cause.
+- Both PRs squash-merged to `staging`. Local feature branches can be deleted.
+
+### What shipped
+
+**PR #347 — `feature/meh-331-email-html-fallback`** — HTML email body (partial fix)
+- `email.py`: added `html: str | None = None` param to `send_email`; Resend call includes `"html"` key when set.
+- `auth.py`: `_send_verify_email` + `_send_reset_email` each build RTL HTML body with `<a href>` button, plain-URL fallback, `dir="rtl"` + `text-align:right` belt-and-suspenders.
+- **Root cause at the time was wrong.** Plain-text line-wrapping hypothesis was plausible but incorrect.
+
+**PR #348 — `feature/meh-331-cte-base64-attempt`** — CTE base64 header (actual fix attempt)
+- `email.py`: inside `if html:` block, adds `params["headers"] = {"Content-Transfer-Encoding": "base64"}` to ask Resend's MTA to use base64 instead of quoted-printable.
+- Real root cause: **Quoted-Printable (RFC 2045) encoding** — Resend's MTA wraps HTML lines at 76 chars by inserting `=\r\n` soft breaks. These land inside `href` attribute values, splitting the token mid-string. PR #347's `<a href>` button was structurally correct but QP encoding broke the URL at the transport layer anyway.
+- Status: **UNTESTED** — requires Gmail "Show original" to confirm `Content-Transfer-Encoding: base64` on the `text/html` MIME part. If Resend ignores this header → fall back to Option 1 (short-code redirect column).
+
+### Verification required before next feature work
+1. Fresh register on staging → Gmail "Show original"
+2. `text/html` MIME part must show `Content-Transfer-Encoding: base64` (not `quoted-printable`)
+3. Raw source must have no `=\r\n` mid-URL
+4. Click button → "האימייל אומת בהצלחה"
+5. Repeat for reset-password flow
+6. Mobile Gmail (iOS + Android)
+
+### Open pre-launch security tickets (next up)
+| Ticket | Title | Priority |
+|--------|-------|----------|
+| MEH-326 | JWT refresh tokens | High |
+| MEH-327 | Fingerprint cookie | High |
+| MEH-329 | XSS sanitization sweep | High |
+| MEH-330 | Dependabot + audit | Medium |
+
+After MEH-326/327/329/330 → MEH-305/306 (password policy, force-logout on password change — dropped from MEH-318).
+
+### Lessons learned this session
+
+**Lesson 1 — pytest mocks at router level cannot catch transport-layer bugs.**
+`tests/test_verify_email.py` mocks `send_email` at the router level. This validates that `_send_verify_email` *calls* send_email correctly, but it cannot detect MTA encoding behavior. For email delivery bugs, the ONLY reliable test is: send a real email to Gmail → "Show original" → check MIME headers. No pytest mock can substitute for this.
+
+**Lesson 2 — Demand file:line evidence + raw bytes before approving any email-content fix.**
+PR #347 was approved and merged based on a plausible theory (plain-text SMTP line-wrapping) without raw evidence (actual truncated token bytes vs DB token bytes). The correct protocol: before declaring root cause, produce `DB token[:8]` vs `URL token[:8]` comparison, and match the truncation point to the specific encoding boundary (76 chars for QP, 72 for SMTP fold). Theory without raw bytes = hypothesis, not root cause.
+
+### Decisions table
+| Decision | Reason |
+|----------|--------|
+| CTE base64 header (1-line, 30-sec test) before Option 1 (short-code redirect) | Costs nothing if Resend ignores it; fixes the bug if honored |
+| Reject shorter token (Option 2) | OWASP recommends 128+ bits; `token_urlsafe(32)` = 256 bits. Fragile to URL prefix changes |
+| If CTE header fails → Option 1: short-code redirect column | 16-char base62 code, ~95 bits entropy, industry standard; URLs stay under 62 chars on staging |
+| PR #347 kept (not reverted) | Plain-text fallback + HTML button are correct regardless of CTE outcome; only the CTE encoding fix is uncertain |
+
+---
 
 ## 2026-04-25 Session — MEH-331 attempt #2 (Resend CTE base64 header)
 
