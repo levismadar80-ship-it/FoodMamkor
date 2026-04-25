@@ -46,7 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.deployment.sha }}
+          # deployment.sha is the commit Vercel deployed. Fall back to
+          # github.sha (same value for deployment_status events) in case
+          # Vercel omits it on fast deploys — avoids an instant failure
+          # from checkout receiving an empty ref string.
+          ref: ${{ github.event.deployment.sha || github.sha }}
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
