@@ -3,13 +3,21 @@ import secrets
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-from app.auth import create_access_token, get_current_user, get_current_user_optional, hash_password, verify_password
+from app.auth import (
+    create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
+    get_current_user,
+    get_current_user_optional,
+    hash_password,
+    verify_password,
+)
 from app.config import settings
 from app.services.email import send_email
 from app.database import get_db
@@ -85,7 +93,69 @@ from app.schemas.schemas import (
     UserRegister,
 )
 
+def _set_refresh_cookie(response: Response, user: User) -> None:
+    """MEH-326: attach a fresh refresh-token cookie to the outgoing response.
+
+    Single source of truth for cookie attributes used by every endpoint
+    that issues an access token (login/register/OAuth/refresh/logout-all).
+    SameSite=Lax + HttpOnly + Secure + same-origin Next.js proxy means no
+    separate CSRF token is needed as long as /auth/refresh is POST-only.
+    Path is scoped to /api/auth so the cookie isn't sent on unrelated
+    /api/* requests. No `domain` attribute — host-only is more secure.
+    """
+    response.set_cookie(
+        key="refresh_token",
+        value=create_refresh_token(user.id, user.token_version),
+        max_age=settings.refresh_token_expire_days * 24 * 3600,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/api/auth",
+    )
+
+
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/refresh", response_model=Token)
+@limiter.limit("30/minute")
+def refresh_token(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """MEH-326: rotate access + refresh tokens via the HttpOnly cookie.
+
+    No request body. Reads `refresh_token` from cookies. On success:
+    issues a new access token (returned in JSON body) AND rotates the
+    refresh cookie (new value, sliding 14d TTL). Failures: 401 (cookie
+    absent / decode failure / user not found / token_version drift) or
+    403 (user blocked).
+
+    Refresh tokens are post-MEH-326 only — no in-the-wild tokens predate
+    this code, so we strictly require the `tv` claim (unlike access
+    tokens which fail-open on missing `tv` for backward compat).
+    """
+    cookie = request.cookies.get("refresh_token")
+    if not cookie:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="לא מחובר")
+    claims = decode_refresh_token(cookie)
+    if claims is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    user_id = claims.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
+    tv = claims.get("tv")
+    if tv is None or tv != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
+    _set_refresh_cookie(response, user)
+    return Token(access_token=create_access_token(user.id, user.token_version))
 
 
 @router.post("/register", response_model=Token)
