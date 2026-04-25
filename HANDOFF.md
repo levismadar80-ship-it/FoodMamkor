@@ -1,7 +1,32 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-265 post-mortem + PR cleanup batch)
+> Last updated: 2026-04-25 (MEH-244 — close production drift / flip CI to hard failure)
+
+## 2026-04-25 Session — MEH-244 production drift diagnosis
+
+### What shipped
+- PR #339 (draft) — `feature/meh-244-close-production-drift → staging`
+- Cross-env probe confirmed **Drift count: 0** — staging and production are in sync
+- `.github/workflows/deploy.yml` — `continue-on-error: true → false` on both `api-contract-static` and `api-contract-probe-staging`; CI now gates PRs as intended
+- `docs/AUDIT-API-CONTRACT.md` — MEH-244 closed with probe result; 23 dead routes triaged (4 delete candidates: `GET /admin/producers/pending`, `POST /admin/producers/{id}/reject`, `GET /admin/stats`, `PUT /admin/reviews/{id}/hide`)
+- `docs/CHANGELOG.md` — one-line entry added
+
+### Next tasks
+
+1. **Review + merge PR #339** (docs + CI config only — no mobile testing needed, no adversarial needed since no code changed)
+2. **4 delete-candidate routes** — open a separate MEH ticket before removing (each needs IDOR/test audit first per security rule); routes: `GET /admin/producers/pending`, `POST /admin/producers/{_}/reject`, `GET /admin/stats`, `PUT /admin/reviews/{_}/hide`
+3. **Merge PR #322** (HANDOFF update — docs only)
+4. **staging → main promotion** — main is behind staging by many commits (MEH-287 content on staging but not main post-revert)
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Cross-env probe via `foodmamkor-staging.up.railway.app` (not `staging.mehamakor.online`) | The Railway URL returned responses; both point to same container | 2026-04-25 |
+| All 4 admin alias delete candidates need separate MEH ticket | Deletion requires IDOR/test audit; can't do inline | 2026-04-25 |
+
+---
 
 ## 2026-04-25 Session — MEH-287 WhatsApp welcome
 
