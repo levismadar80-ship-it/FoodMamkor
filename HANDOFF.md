@@ -34,6 +34,20 @@ PR #329 was accidentally merged to `main` instead of `staging`.
 **MEH-258 confirmed live on staging** (PR #331, commit `89cad07`):
 `docs/SECURITY-CHECKLIST.md`, `CLAUDE.md` docs map pointer, `.github/pull_request_template.md` trap reference.
 
+### Staging verifications (2026-04-25, end of session)
+
+- ✅ **MEH-299 verified** — Google login → `avatar_url` starts with `https://res.cloudinary.com`
+- ✅ **MEH-300 verified** — `/producer/dashboard` loads with no 422 in Network tab
+
+### Next tasks
+
+1. **CSP cleanup (MEH-298 follow-up):** Remove `*.googleusercontent.com` from `img-src` in `next.config.js` — MEH-299 confirmed working, stopgap no longer needed for new logins. Keep entry until old users have cycled through (safe to remove in next session).
+2. **MEH-271 check** — branch `feature/meh-271-arch-smell-detection` was pushed in Session 4. Verify it landed via PR #334 (`e5cb9c1` in staging log) or open a PR if still pending.
+
+### Open PRs
+
+None actionable. All stale drafts closed.
+
 ### Decisions this session
 
 | Decision | Reason | Date |
