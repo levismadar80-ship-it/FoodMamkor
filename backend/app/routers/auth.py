@@ -555,16 +555,31 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
 @router.get("/verify-email")
 @limiter.limit("10/minute")
 def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
-    """Consume email verification token. Clears token on success."""
+    """Consume email verification token. Clears token on success.
+
+    MEH-320: 404 (not_found) / 410 (expired) split + structured logging,
+    same pattern MEH-304 applied to /auth/reset-password. Diagnostics
+    only — does not change happy-path behavior. The actual root cause
+    of the staging 400 will be identified from the [VERIFY-EMAIL]
+    log entries this surfaces.
+    """
     user = db.query(User).filter(User.email_verify_token == token).first()
     if not user:
-        raise HTTPException(status_code=400, detail="קישור האימות לא תקין")
+        logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
+        raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
     if user.email_verify_expires is None or user.email_verify_expires < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="קישור האימות פג תוקף")
+        logger.warning(
+            "[VERIFY-EMAIL] token_expired user_id=%s expires=%s now=%s",
+            user.id,
+            user.email_verify_expires,
+            datetime.utcnow(),
+        )
+        raise HTTPException(status_code=410, detail="קישור האימות פג תוקף")
     user.email_verified = True
     user.email_verify_token = None
     user.email_verify_expires = None
     db.commit()
+    logger.info("[VERIFY-EMAIL] verified user_id=%s", user.id)
     return {"detail": "האימייל אומת בהצלחה"}
 
 
