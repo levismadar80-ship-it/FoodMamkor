@@ -21,6 +21,29 @@ PR #329 was accidentally merged to `main` instead of `staging`.
 
 ---
 
+## 2026-04-25 Session 6 update — PR cleanup batch
+
+### What was done
+
+**PR cleanup batch:**
+- PR #332 merged to `main` — reverted accidental MEH-287 merge (#329) to production
+- PR #333 merged to `staging` — MEH-287 (whatsapp_sent flag) via correct flow; all CI green
+- PR #330 closed as duplicate — same branch/HEAD as already-merged PR #331 (MEH-258)
+- PR #322 closed as stale — Session 4 HANDOFF draft, superseded by Session 5 + this session
+
+**MEH-258 confirmed live on staging** (PR #331, commit `89cad07`):
+`docs/SECURITY-CHECKLIST.md`, `CLAUDE.md` docs map pointer, `.github/pull_request_template.md` trap reference.
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Close PR #330 instead of rebasing | Same branch/HEAD already merged as PR #331; conflict was "add/add" on SECURITY-CHECKLIST.md | 2026-04-25 |
+| Close PR #322 instead of merging | Session 4 HANDOFF content superseded; staging HEAD already has Session 5 updates | 2026-04-25 |
+| Revert PR #329 via PR #332 to main | MEH-287 was accidentally merged to main instead of staging; revert restores production to correct state | 2026-04-25 |
+
+---
+
 ## 2026-04-24 Session 5 update
 
 ### Merged this session
