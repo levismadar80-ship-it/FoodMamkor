@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-287 — producer WhatsApp welcome silent-fail fix)
+> Last updated: 2026-04-25 (MEH-265 post-mortem + PR cleanup batch)
 
 ## 2026-04-25 Session — MEH-287 WhatsApp welcome
 
@@ -21,7 +21,7 @@ PR #329 was accidentally merged to `main` instead of `staging`.
 
 ---
 
-## 2026-04-25 Session 6 update — PR cleanup batch
+## 2026-04-25 Session 6 update — PR cleanup batch + MEH-265
 
 ### What was done
 
@@ -33,6 +33,11 @@ PR #329 was accidentally merged to `main` instead of `staging`.
 
 **MEH-258 confirmed live on staging** (PR #331, commit `89cad07`):
 `docs/SECURITY-CHECKLIST.md`, `CLAUDE.md` docs map pointer, `.github/pull_request_template.md` trap reference.
+
+**MEH-265 post-mortem written** — `docs/INCIDENTS/2026-04-migrate-columns-drift.md`:
+covers the 2026-04-23 `/auth/login` 500 incident, why CI didn't catch it, the bundled-hotfix
+mistake, and prevention (MEH-266 checklist + MEH-267 Alembic). PR template Database Checklist
+updated to reference Alembic instead of stale `_migrate_columns()` wording.
 
 ### Staging verifications (2026-04-25, end of session)
 
