@@ -3,6 +3,17 @@
 
 ---
 
+## Recipe ingredient cascade (MEH-311)
+
+- [ ] FK violation regression — sanity check ידני בstaging:
+  1. בקונסולת DB ב-Railway: צרי `RecipeIngredient` שמצביע על producer קיים — `INSERT INTO recipe_ingredients (id, recipe_id, ingredient_name, producer_id) VALUES (gen_random_uuid(), '<existing-recipe-id>', 'בדיקה', '<producer-id>');`
+  2. דרך אדמין UI או DB: `DELETE FROM producers WHERE id = '<producer-id>';`
+  3. **תוצאה מצופה:** Producer נמחק. RecipeIngredient נשאר. `SELECT producer_id FROM recipe_ingredients WHERE id = '<ingredient-id>';` → `NULL`.
+  4. **בלי הfix:** היה נכשל בFK violation. אם זה עובד — הfix תקין.
+- [ ] DELETE /auth/me regression — producer-user מוחקת חשבון דרך setting → "מחיקת חשבון" כשיש לה RecipeIngredient שמצביע אליה: ה-deletion מצליח (היה נכשל בFK violation לפני הfix).
+
+---
+
 ## MEH-51 — Trust Ladder + Kashrut Badges (PR #183)
 
 - [ ] ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard צריכה להציג badge ירוק
