@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 _FROM_ADDRESS = "מהמקור <noreply@mehamakor.online>"
 
 
-def send_email(to: str, subject: str, body: str) -> None:
-    """Send a plain-text email via Resend. Always fail-open."""
+def send_email(to: str, subject: str, body: str, html: str | None = None) -> None:
+    """Send a plain-text (+ optional HTML) email via Resend. Always fail-open."""
     if not to:
         return
     if not settings.resend_api_key:
@@ -32,12 +32,15 @@ def send_email(to: str, subject: str, body: str) -> None:
     try:
         import resend  # lazy import — only installed when key is configured
         resend.api_key = settings.resend_api_key
-        resend.Emails.send({
+        params: dict = {
             "from": _FROM_ADDRESS,
             "to": to,
             "subject": subject,
             "text": body,
-        })
+        }
+        if html:
+            params["html"] = html
+        resend.Emails.send(params)
         logger.info("[EMAIL] Sent to %s", to.split("@")[0] + "***")
     except Exception as e:  # noqa: BLE001 — fail-open by design
         logger.warning("[EMAIL] Failed to send to %s: %s", to, e)

@@ -1,7 +1,30 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-320 — verify-email 400 diagnostics, PR1)
+> Last updated: 2026-04-25 (MEH-331 — HTML email to fix URL line-wrapping)
+
+## 2026-04-25 Session — MEH-331 HTML email fix (verify + reset links)
+
+### What shipped
+- Branch: `feature/meh-331-email-html-fallback` → draft PR to `staging`
+- Root cause confirmed: plain-text SMTP line-wrapping truncated 87-char verify URL at ~72 chars. Email client auto-detected the continuation fragment as a standalone clickable URL. Frontend received partial token → backend 404.
+- Fix: `email.py:send_email` now accepts optional `html: str | None = None`; Resend call conditionally includes `"html"` key when set.
+- `auth.py:_send_verify_email` + `auth.py:_send_reset_email` both now build RTL HTML body (table layout, `dir="rtl"` + `text-align:right` belt-and-suspenders, `#2e6853` button, plain-URL fallback). Plain-text body unchanged.
+- Same fix applied to `_send_reset_email` (same root cause, same overflow: 89 chars).
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| HTML email via `html=` param on `send_email` (not a separate function) | All callers remain backward-compatible; optional param with default None |
+| `text-align:right` AND `dir="rtl"` on both table AND td | Gmail forces `dir="ltr"` on outer body; belt-and-suspenders per user clarification |
+| Fix `_send_reset_email` in same PR | Same root cause (89-char URL); same fix; single PR scope |
+| Plain-text body kept as fallback | Resend sends both; some clients prefer text-only |
+
+### Next session
+- Wait for Gmail live test (fresh register → verify link; forgot-password → reset link)
+- After BOTH pass on Gmail → user says "merge" → merge to staging
+- After staging deploy: smoke test on staging.mehamakor.online
+- Then: pick up MEH-305/306 (password policy)
 
 ## 2026-04-25 Session — MEH-320 verify-email 400 diagnostics (PR1 of 2)
 
