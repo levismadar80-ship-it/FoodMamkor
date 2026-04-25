@@ -132,6 +132,20 @@ File edit safety — read before write, diff after write, no silent deletions. F
 | Backend change | Affected API endpoint | Yes |
 | Hotfix | Only the broken thing | Minimal |
 
+## PR Review Workflow
+
+When asked to generate a PR review bundle for Claude.ai, run:
+
+  git diff staging [changed-code-files]
+  git diff staging docs/CHANGELOG.md
+  git diff staging HANDOFF.md
+
+Paste all output in one message with clear section headers:
+  === DIFF: [filename] ===
+
+This is the standard handoff to Claude.ai for code review.
+GitHub MCP is not available in the Claude.ai web interface.
+
 ## Documentation map
 | File | What's in it |
 |---|---|
