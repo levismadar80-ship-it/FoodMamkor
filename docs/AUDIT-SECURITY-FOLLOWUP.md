@@ -71,6 +71,14 @@ expired token. **No refresh-token issuance anywhere.**
 frontend 401 interceptor that redirects to `/login` with a friendly
 "הסשן שלך פג" toast. The latter is cheaper and unblocks MEH-250.
 
+> **✅ RESOLVED — MEH-326 (PR #349):** HttpOnly refresh cookie (14d) +
+> 15min access TTL + axios 401 interceptor with silent rotation.
+> Backend: `POST /auth/refresh`, `POST /auth/logout`,
+> `_set_refresh_cookie` on all 7 token endpoints.
+> Frontend: `withCredentials: true` + `refreshPromise` dedup in
+> `lib/api.js`. Backward compat: tokens without `scope` claim
+> (pre-MEH-326) still validate via fail-open in `get_current_user`.
+
 ---
 
 ## 4. Login rate-limit on Railway — **HIGH finding #1**
