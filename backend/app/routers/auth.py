@@ -93,6 +93,7 @@ from app.schemas.schemas import (
     UserRegister,
 )
 
+
 def _set_refresh_cookie(response: Response, user: User) -> None:
     """MEH-326: attach a fresh refresh-token cookie to the outgoing response.
 
