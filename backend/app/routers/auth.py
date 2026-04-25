@@ -174,7 +174,7 @@ def logout(request: Request, response: Response):
 
 @router.post("/register", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
-def register(request: Request, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
@@ -197,6 +197,7 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
     db.refresh(user)
     background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+    _set_refresh_cookie(response, user)
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
@@ -513,12 +514,13 @@ def register_producer_oauth(
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
-def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, response: Response, data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
+    _set_refresh_cookie(response, user)
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
