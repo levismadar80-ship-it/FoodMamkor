@@ -352,7 +352,7 @@ class Recipe(Base):
     description = Column(Text)
     steps = Column(JSON)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    submitted_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    submitted_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(20), default="pending")  # pending | approved | rejected
     created_at = Column(DateTime, default=datetime.utcnow)
 

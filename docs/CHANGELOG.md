@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-25 — MEH-313: `recipes.submitted_by` FK now `ON DELETE CASCADE` (was: no ondelete → FK violation on DELETE /auth/me for any user with recipes). Alembic revision `c9e3a1b5d72f`. 2 regression tests added (`test_recipe_cascade.py`).
+
 ## 2026-04-25 — MEH-311: `recipe_ingredients.producer_id` FK now `ON DELETE SET NULL` (was: no ondelete → FK violation potential when MEH-249's `db.delete(producer)` ran). Alembic revision `a4c7d2f9e1b8` + matching `EXPECTED_REV` bump in pr-checks.yml. 2 sibling tests added.
 
 ## 2026-04-25 — MEH-304: add structured logging + differentiated status codes (404/410) to /auth/reset-password to diagnose 400s in production. Closes the MEH-191 test gap.
