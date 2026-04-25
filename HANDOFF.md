@@ -1,7 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (Session 4 — MEH-271 arch smell detection + MEH-258 security checklist)
+> Last updated: 2026-04-25 (Session 6 — PR cleanup + MEH-287 to staging)
+
+## 2026-04-25 Session 6 update
+
+### What was done
+
+**PR cleanup batch:**
+- PR #332 merged to `main` — reverted accidental MEH-287 merge (#329) to production
+- PR #333 merged to `staging` — MEH-287 (whatsapp_sent flag) via correct flow; all CI green
+- PR #330 closed as duplicate — same branch/HEAD as already-merged PR #331 (MEH-258)
+- PR #322 closed as stale — Session 4 HANDOFF draft, superseded by Session 5 + this session
+
+**MEH-258 confirmed live on staging** (PR #331, commit `89cad07`):
+`docs/SECURITY-CHECKLIST.md`, `CLAUDE.md` docs map pointer, `.github/pull_request_template.md` trap reference.
+
+### Next tasks
+
+1. **Verify MEH-299 on staging (manual):** Log in with Google → DevTools → `GET /auth/me` → `avatar_url` must start with `https://res.cloudinary.com`. Existing users need to log out + back in (backfill only runs when `avatar_url` is empty).
+2. **Verify MEH-300 on staging (manual):** `/producer/dashboard` → Network tab → no 422 on page load.
+3. **CSP cleanup (MEH-298 follow-up):** Once MEH-299 confirmed, consider removing `*.googleusercontent.com` from `img-src` in `next.config.js` — it was a stopgap; keep until all existing users have re-logged in.
+4. **PR #271 (MEH-271)** — branch `feature/meh-271-arch-smell-detection` was pushed in Session 4 but no PR was opened. Check if it landed via another path (like MEH-258 did via PR #334 in `e5cb9c1`).
+
+### Open PRs
+
+None actionable. All stale drafts closed.
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Close PR #330 instead of rebasing | Same branch/HEAD already merged as PR #331; conflict was "add/add" on SECURITY-CHECKLIST.md | 2026-04-25 |
+| Close PR #322 instead of merging | Session 4 HANDOFF content superseded; staging HEAD already has Session 5 updates | 2026-04-25 |
+| Revert PR #329 via PR #332 to main | MEH-287 was accidentally merged to main instead of staging; revert restores production to correct state | 2026-04-25 |
+
+---
 
 ## 2026-04-24 Session 5 update
 
