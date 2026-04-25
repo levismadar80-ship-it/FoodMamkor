@@ -169,7 +169,13 @@ def logout(request: Request, response: Response):
     Path must match _set_refresh_cookie exactly or the browser won't
     delete the cookie (Path is part of the cookie identity).
     """
-    response.delete_cookie("refresh_token", path="/api/auth")
+    response.delete_cookie(
+        "refresh_token",
+        path="/api/auth",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
 
 
 @router.post("/register", response_model=Token)
