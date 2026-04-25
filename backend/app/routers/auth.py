@@ -205,6 +205,7 @@ def register(request: Request, response: Response, data: UserRegister, backgroun
 @limiter.limit("3/hour")  # SECURITY FIX #2
 def register_producer(
     request: Request,
+    response: Response,
     data: ProducerRegister,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -334,6 +335,7 @@ def register_producer(
     whatsapp_expected = bool(
         p_phone and settings.twilio_account_sid and settings.twilio_whatsapp_from
     )
+    _set_refresh_cookie(response, user)
     return ProducerRegistrationResponse(
         access_token=create_access_token(user.id, user.token_version),
         whatsapp_sent=whatsapp_expected,
@@ -415,6 +417,7 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
 @limiter.limit("10/minute")
 def register_producer_oauth(
     request: Request,
+    response: Response,
     data: ProducerOAuthSignupRequest,
     db: Session = Depends(get_db),
 ):
@@ -510,6 +513,7 @@ def register_producer_oauth(
             user.avatar_url = picture_for_google
             db.commit()
 
+    _set_refresh_cookie(response, user)
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
