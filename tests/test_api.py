@@ -1767,6 +1767,13 @@ class TestRefreshTokenFlow:
         assert new_refresh is not None, "logout-all-devices did not set a new refresh cookie"
         assert new_refresh != old_refresh, "refresh cookie was not rotated"
 
-        # Old cookie must now be rejected (token_version was bumped)
-        res2 = client.post("/auth/refresh", cookies={"refresh_token": old_refresh})
+        # Old cookie must now be rejected (token_version was bumped).
+        # Fresh client: the session `client` already stored new_refresh from
+        # the logout-all-devices response. Passing old_refresh via cookies=
+        # on top would send both cookies with the same name — non-deterministic.
+        # A new TestClient(app) has no stored cookies, so only old_refresh travels.
+        from fastapi.testclient import TestClient
+        from app.main import app as _app
+        fresh_client = TestClient(_app)
+        res2 = fresh_client.post("/auth/refresh", cookies={"refresh_token": old_refresh})
         assert res2.status_code == 401
