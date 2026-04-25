@@ -1,7 +1,43 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-318 — form state bug sweep, register flows)
+> Last updated: 2026-04-25 (MEH-320 — verify-email 400 diagnostics, PR1)
+
+## 2026-04-25 Session — MEH-320 verify-email 400 diagnostics (PR1 of 2)
+
+### What shipped
+- Branch: `feature/meh-320-verify-email-400-fix` → draft PR to `staging`
+- Backend: `/auth/verify-email` now logs `[VERIFY-EMAIL] token_not_found ...` / `token_expired ...` / `verified ...` and returns 404 (not found) or 410 (expired) instead of bare 400. Same MEH-304 pattern applied to reset-password.
+- Tests: new `tests/test_verify_email.py` — 5 cases (valid token, single-use, expired, invalid, register fires email with stored token).
+- No frontend changes — `verify-email/page.js:30` reads `err.response?.data?.detail` regardless of status code; verified via grep that nothing else branches on the response status.
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| URL-encoding hypothesis (from task brief) DISPROVED | `secrets.token_urlsafe(32)` produces only `[A-Za-z0-9_-]` — RFC 3986 unreserved chars, never re-encoded by Axios `params` or FastAPI query parser |
+| Two-PR sequence: diagnostics first, fix second | Static analysis cannot identify the staging root cause; the endpoint logic appears correct. Logging is the diagnostic tool; the actual fix waits on Railway log evidence |
+| Status-code split 404 / 410 (not bare 400) | Same as MEH-304 reset-password. Lets the frontend distinguish "wrong link" from "expired link" if we ever want to show different copy |
+| No frontend change in this PR | `err.response?.data?.detail` works identically for 400/404/410; `Header.jsx:363` reads `email_verified` from `/auth/me`, unrelated to this endpoint |
+
+### Next steps after merge (decision tree for PR2)
+After deploy, click a real verification link in staging and check Railway logs for `[VERIFY-EMAIL]` entries:
+
+**If `token_not_found token_prefix=...` →**
+- Query staging DB: `SELECT email_verify_token FROM users WHERE email = '<test_email>'` — is the token actually stored?
+- Compare DB value vs the value in the email URL (`token_prefix` in log) — any mismatch means storage / transmission bug.
+- Check whether `_send_verify_email` fired with the same token that was stored (the new `test_register_stores_token_and_sends_email` test guards this at the unit level — if it passes locally but staging mismatches, the issue is environmental).
+- Check for a duplicate background task firing twice → token rewritten between email send and click.
+
+**If `token_expired user_id=… expires=… now=…` →**
+- If `expires=None`: register path didn't write `email_verify_expires` — check `auth.py:104` (consumer) and `auth.py:206` (producer); also check whether the staging DB column is missing (run `\d users` in psql).
+- If `expires < now`: check Railway server timezone vs `datetime.utcnow()`. Both columns are naive UTC; staging running non-UTC TZ would skew the comparison. Compare `now=` from the log against current real wall-clock UTC.
+- If `expires > now` but still rejected: shouldn't be possible — re-read the comparison logic.
+
+### Next session
+- Wait on Vercel preview + CI on PR.
+- After merge: pop a fresh registration in staging, watch Railway logs for `[VERIFY-EMAIL]` line, file MEH-320 follow-up with the evidence and the targeted fix.
+
+---
 
 ## 2026-04-25 Session — MEH-318 form state bug sweep (pre-RHF cleanup)
 
