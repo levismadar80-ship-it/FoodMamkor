@@ -546,6 +546,7 @@ def get_me(request: Request, user: User = Depends(get_current_user), db: Session
 @limiter.limit("5/hour")
 def logout_all_devices(
     request: Request,
+    response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -556,6 +557,8 @@ def logout_all_devices(
     """
     user.token_version = (user.token_version or 1) + 1
     db.commit()
+    db.refresh(user)
+    _set_refresh_cookie(response, user)
     return Token(access_token=create_access_token(user.id, user.token_version))
 
 
