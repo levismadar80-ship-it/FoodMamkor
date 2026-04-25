@@ -1,7 +1,34 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (Session 1 — research-6 followup + MEH-308/311)
+> Last updated: 2026-04-25 (MEH-318 — form state bug sweep, register flows)
+
+## 2026-04-25 Session — MEH-318 form state bug sweep (pre-RHF cleanup)
+
+### What shipped
+- Branch: `feature/meh-318-form-state-bug-sweep` → draft PR to `staging`
+- 7 fixes across `frontend/app/register/page.js` and `frontend/app/register/producer/page.js`. No password-rule changes (deferred to MEH-306). No backend, no new deps.
+- Fix #2: dietary checkboxes + category multi-select now route through new `setAndSave` helper → draft persistence covers all writes (was: only text fields hit `saveDraft`)
+- Fix #5: `handleEmailBlur` clears `emailExistsWarning` before early-return guard (erasing the email no longer leaves the warning stuck)
+- Fix #6: back button (step 2 → step 1) clears `error` alongside `stepError`
+- Fix #7: `useState` step initializer wrapped in try/catch (private mode / quota crash guard)
+- Fix #8: `restoreDraft` validates parsed object shape; bad drafts dropped from localStorage
+- Fix #9: step-2 submit chain clears `error` once at top for visible reset cycle
+- Fix #10: stale-closure footgun on `set()` removed in BOTH register forms (functional updater)
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| Drop the password-rule fixes (#1, #3, #4) from this PR | MEH-305 / MEH-306 will replace `passwordValid()` + `<PasswordStrength>` within days; touching either today would conflict |
+| Defer the upgrade-loophole fix (consumer→producer with weak password) | Closed implicitly by MEH-306's force-logout-on-password-change design; no separate ticket needed |
+| 2 commits for code (producer / consumer) instead of finer splits | Producer-file changes are interlinked via the `setAndSave` helper; artificial split would obscure intent |
+| Skip local Playwright run | Sandbox has no localhost dev server or Vercel preview; CI will run on the preview |
+
+### Next session
+- Wait on Vercel preview for PR; smoke-test the 7 fixes per the format in the PR body
+- After MEH-318 lands: pick up MEH-305 / MEH-306 password-policy work (the dropped Fix #1 ground)
+
+---
 
 ## 2026-04-25 Session 1 update (Claude Chat research-6 + MEH-308 follow-up)
 
