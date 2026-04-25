@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-25 — MEH-320: `/auth/verify-email` diagnostics — structured logging + 404/410 status-code split (was: bare 400). Same MEH-304 pattern previously applied to `/auth/reset-password`. Token-not-found logs `[VERIFY-EMAIL] token_not_found token_prefix=...` and returns 404; expired logs `token_expired user_id=… expires=… now=…` and returns 410. New `tests/test_verify_email.py` covering 5 cases. URL-encoding hypothesis disproved (`token_urlsafe(32)` produces only `[A-Za-z0-9_-]`). Actual root cause identification deferred to PR2 — needs Railway log evidence from a real staging click.
+
 ## 2026-04-25 — MEH-318: Form state bug sweep — register flows (pre-RHF cleanup). 7 fixes across `frontend/app/register/page.js` and `frontend/app/register/producer/page.js`: stale-closure `set()` (both files), draft-save now covers checkbox/category writes via `setAndSave` helper, `handleEmailBlur` clears stale warning at top, back button clears `error` alongside `stepError`, `useState` initializer wrapped in try/catch, `restoreDraft` validates parsed shape, step-2 submit chain clears `error` for visible reset cycle. No password-rule changes (deferred to MEH-306).
 
 ## 2026-04-25 — MEH-313: `recipes.submitted_by` FK now `ON DELETE CASCADE` (was: no ondelete → FK violation on DELETE /auth/me for any user with recipes). Alembic revision `c9e3a1b5d72f`. 2 regression tests added (`test_recipe_cascade.py`).
