@@ -57,9 +57,11 @@ function ResetPasswordForm() {
       setDone(true);
       setTimeout(() => router.push("/login?reset=1"), 2000);
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      if (detail?.includes("תקין") || detail?.includes("תוקף")) {
-        setError("קישור האיפוס לא תקין או שפג תוקפו. בקשי קישור חדש.");
+      const status = err.response?.status;
+      if (status === 404) {
+        setError("קישור האיפוס לא תקין. בקשי קישור חדש.");
+      } else if (status === 410) {
+        setError("קישור האיפוס פג תוקף. בקשי קישור חדש.");
       } else {
         setError("שגיאה בעדכון הסיסמה, נסי שוב");
       }
