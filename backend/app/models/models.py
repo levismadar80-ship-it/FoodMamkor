@@ -367,7 +367,7 @@ class RecipeIngredient(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     recipe_id = Column(UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
     ingredient_name = Column(String(200), nullable=False)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id"), nullable=True)
+    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="SET NULL"), nullable=True)
     notes = Column(Text)
 
     recipe = relationship("Recipe", back_populates="ingredients")
