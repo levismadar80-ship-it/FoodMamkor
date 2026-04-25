@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-25 (MEH-244 — close production drift / flip CI to hard failure)
+> Last updated: 2026-04-25 (MEH-244 close production drift + MEH-304 observability)
 
 ## 2026-04-25 Session — MEH-244 production drift diagnosis
 
@@ -11,13 +11,51 @@
 - `.github/workflows/deploy.yml` — `continue-on-error: true → false` on both `api-contract-static` and `api-contract-probe-staging`; CI now gates PRs as intended
 - `docs/AUDIT-API-CONTRACT.md` — MEH-244 closed with probe result; 23 dead routes triaged (4 delete candidates: `GET /admin/producers/pending`, `POST /admin/producers/{id}/reject`, `GET /admin/stats`, `PUT /admin/reviews/{id}/hide`)
 - `docs/CHANGELOG.md` — one-line entry added
+- `.github/workflows/e2e.yml` — removed `startsWith(environment, 'Preview')` filter that caused 2-second failure on every E2E run (confirmed root cause)
 
 ### Next tasks
 
 1. **Review + merge PR #339** (docs + CI config only — no mobile testing needed, no adversarial needed since no code changed)
 2. **4 delete-candidate routes** — open a separate MEH ticket before removing (each needs IDOR/test audit first per security rule); routes: `GET /admin/producers/pending`, `POST /admin/producers/{_}/reject`, `GET /admin/stats`, `PUT /admin/reviews/{_}/hide`
-3. **Merge PR #322** (HANDOFF update — docs only)
-4. **staging → main promotion** — main is behind staging by many commits (MEH-287 content on staging but not main post-revert)
+3. **staging → main promotion** — main is behind staging by many commits
+
+## 2026-04-25 Session — MEH-150 + MEH-304
+
+### What shipped
+
+**MEH-150 (PR #335 — merged to staging):** Completed Resend migration paper trail.
+- `backend/.env.example`: removed SMTP_* vars, added RESEND_API_KEY section
+- `marketing.py`, `experiences.py`, `admin_experiences.py`: stale "SMTP" comments → "Resend / RESEND_API_KEY"
+- `docs/CHANGELOG.md`: entry added
+
+**MEH-304 (PR #337 — draft, open):** Observability-first diagnosis PR for `/auth/reset-password` returning 400 in production.
+- `backend/app/routers/auth.py`: split combined `400` into `404` (token not found, `[RESET] token_not_found`) and `410` (token expired, `[RESET] token_expired`). Added `[FORGOT-PW] token_stored` and `[RESET] password_updated` log lines.
+- `frontend/app/reset-password/page.js`: error handler now checks HTTP status codes (404/410) instead of Hebrew string matching.
+- `tests/test_api.py`: `TestResetPasswordFlow` — 5 test cases: happy path, 404, 410, 422, short password. Closes MEH-191 test gap.
+
+### PR #337 CI status
+
+All 5 CI failures are **pre-existing on staging** — same pattern as PR #335 (docs-only). All complete in <2 seconds (physically impossible for real test runs). No action needed.
+
+### Next task (MANDATORY after PR #337 merges to staging)
+
+1. Wait for Railway redeploy to complete
+2. Trigger forgot-password for a real user on staging (e.g. `sapir000s@gmail.com`)
+3. Open Railway logs → paste the `[FORGOT-PW] token_stored` log line here
+4. Click the reset link from the email → submit the form
+5. Paste the resulting log line (`[RESET] token_not_found` OR `[RESET] token_expired` OR `[RESET] password_updated`)
+6. Based on the log: write the actual fix (MEH-304 root cause fix — separate PR)
+
+**If `[RESET] token_not_found` fires:** token is not being written to DB, or a different token is stored than the one in the email. Check `forgot_password` → `user.reset_token = token` → `db.commit()` path, and compare token in `[FORGOT-PW] token_stored` log vs token prefix in `[RESET] token_not_found` log.
+
+**If `[RESET] token_expired` fires:** `reset_token_expires_at` is in the past when reset is attempted. Check timezone drift (DB `now()` vs Python `datetime.utcnow()`).
+
+### Open PRs
+
+| PR  | MEH     | Title                                                       | Status |
+|-----|---------|-------------------------------------------------------------|--------|
+| 337 | MEH-304 | obs: structured logging + 404/410 split for /auth/reset-password | Draft — needs Vercel preview test + merge |
+| 339 | MEH-244 | ci: flip api-contract CI to hard failure after 0-drift confirmation | Draft — merge after CI green |
 
 ### Decisions this session
 
@@ -25,6 +63,10 @@
 |----------|--------|------|
 | Cross-env probe via `foodmamkor-staging.up.railway.app` (not `staging.mehamakor.online`) | The Railway URL returned responses; both point to same container | 2026-04-25 |
 | All 4 admin alias delete candidates need separate MEH ticket | Deletion requires IDOR/test audit; can't do inline | 2026-04-25 |
+| Observability-first for MEH-304 (no fix yet) | Root cause cannot be determined from static analysis; DB query confirmed code bug but not which branch fires | 2026-04-25 |
+| No token_version increment in reset flow | Out of scope per user direction — pending separate session-invalidation policy research | 2026-04-25 |
+| Frontend error handler: HTTP status codes not Hebrew string matching | Status codes are stable; Hebrew string matching is fragile across content changes | 2026-04-25 |
+| Remove `startsWith(environment, 'Preview')` from e2e.yml | Vercel environment naming inconsistent across SDK versions; filter always false; tests are read-only, safe against any deployment | 2026-04-25 |
 
 ---
 
