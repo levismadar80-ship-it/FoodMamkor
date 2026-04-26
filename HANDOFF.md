@@ -1,7 +1,46 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-329 merged to staging — squash 8deb697)
+> Last updated: 2026-04-26 (MEH-333 merged to staging — squash 8bca8cc)
+
+## 2026-04-26 — MEH-333 merged (inline login link on email-exists error)
+
+### Status
+- **PR #355** — `feat(MEH-333): inline login link on email-exists error, pre-fill email from URL` — **merged to `staging`** (squash, commit `8bca8cc`).
+- **Branch:** `feature/meh-333-inline-login-link` (off `staging`); now stale — local branch can be deleted.
+- All CI green at merge: Frontend build, Frontend lint (RTL + Next.js), Backend tests (pytest), Adversarial review, API contract audit (static), Playwright E2E (Vercel preview).
+- **Mobile QA: DEFERRED** to staging deployment verification (per Smadar's "skip mobile QA" call this session). Spot-check on `staging.mehamakor.online` after Railway redeploy: register existing email as consumer + producer, click `התחברי` link, confirm landing on `/login` with email pre-filled (test `user+tag@gmail.com` for `+` survival through `encodeURIComponent`).
+
+### What shipped
+- **`frontend/app/register/page.js`** (consumer register): added `emailExistsError` boolean state. On submit catch, detect `status === 400 && detail.startsWith("האימייל כבר קיים")` → set boolean (vs. plain `setError`). Renders amber `<p>` + inline `<Link href="/login?email=...">התחברי</Link>`. Clears on email-field edit.
+- **`frontend/app/register/producer/page.js`** (producer register): added `import Link from "next/link"`. Two display surfaces — (a) blur warning (`emailExistsWarning`): `<a>` → `<Link>` swap, href changed from `?redirect=` to `?email=`. (b) submit 409 (`!isUpgrade` branch): added `emailExistsSubmitError` boolean, renders same amber `<p>` + `<Link>` pattern as consumer for visual consistency. The `isUpgrade` 409 branch ("כבר יש לך עסק רשום") unchanged.
+- **`frontend/app/login/page.js`**: `useState("")` → `useState(params.get("email") || "")` (line 39). `LoginPageBody` already wrapped in `<Suspense>` (line 28), so `useSearchParams` was safe — no new wrapping needed.
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| URL `?email=...` over `sessionStorage` | Email is not sensitive enough to warrant cross-tab state complexity; matches existing `?redirect=` pattern on `/login`; shareable links work. Tradeoff: email lands in browser history + server logs. |
+| Detection by HTTP status, not message string | Initial plan used `detail === "האימייל כבר קיים במערכת"` exact match; would have failed on producer 409 (which appends suffix). Fixed pre-implementation: consumer = `status === 400 && detail.startsWith("האימייל כבר קיים")`, producer = existing `status === 409` path (no string match). |
+| Producer submit 409: convert from `setError(string)` to `emailExistsSubmitError` boolean for `!isUpgrade` branch | Visual consistency with consumer — same JSX render pattern, same link styling. The `isUpgrade` 409 ("כבר יש לך עסק רשום") stays as a plain string error since no email-exists context applies. |
+| Mobile QA deferred to staging verification | Sandbox can't reach `staging.mehamakor.online` (egress firewall, same as MEH-329). Smadar to spot-check after Railway redeploy. |
+
+### Audit finding (out of scope, future ticket recommended)
+Backend status-code drift detected during MEH-333 audit:
+- `backend/app/routers/auth.py:223` (consumer register POST `/auth/register`) returns **400** for email-exists.
+- `backend/app/routers/auth.py:281` (producer register POST `/auth/register/producer`) returns **409** for the same condition.
+Both interpreted as "email already in system". Recommend a future Linear ticket to normalize to **409** across both endpoints. Frontend currently handles both via separate code paths (the prefix-match on consumer is defensive against future suffix changes).
+
+### Linear status
+- **MEH-333:** to be moved to Done manually (no Linear MCP integration available in this session).
+
+### Next task
+- Pending Smadar's call. MEH-330 (Dependabot + audit) is still **code complete, not pushed** per pre-MEH-329 HANDOFF entry below — picking that up is one option. MEH-336 / MEH-337 / MEH-338 audit-baseline backlog is another.
+
+### Pending verifications carried forward
+- **MEH-329 spot-check** still pending: paste `<script>alert(1)</script>` into producer description / contact form / home-product description on staging; confirm DB stores stripped text and frontend renders safely.
+- **MEH-333 spot-check** (this session): see "Mobile QA: DEFERRED" above.
+
+---
 
 ## 2026-04-26 — MEH-329 merged (XSS sanitization sweep)
 
