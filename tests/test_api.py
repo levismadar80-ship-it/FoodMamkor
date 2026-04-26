@@ -1631,6 +1631,19 @@ class TestRefreshTokenFlow:
         """Extract all Set-Cookie header values from a response."""
         return [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
 
+    def _fp_value(self, response):
+        """Extract the raw __Secure-Fgp value from a Set-Cookie header.
+
+        httpx (Starlette TestClient) does not forward Secure cookies over
+        http://testserver — must be passed explicitly on subsequent requests.
+        Mirror of TestFingerprintCookie._fp_value; kept here so this class
+        is self-contained.
+        """
+        for v in self._refresh_cookies(response):
+            if v.startswith("__Secure-Fgp="):
+                return v.split("=", 1)[1].split(";")[0].strip()
+        return None
+
     def test_login_sets_refresh_cookie(self, client, db):
         make_user(db, email="t1@test.com", password="Pass1234!")
         res = self._login(client, "t1@test.com")
@@ -1757,10 +1770,13 @@ class TestRefreshTokenFlow:
         login_res = self._login(client, "t10@test.com")
         old_refresh = login_res.cookies.get("refresh_token")
         access_token = login_res.json()["access_token"]
+        fp_value = self._fp_value(login_res)
+        assert fp_value is not None, "Login did not return __Secure-Fgp cookie"
 
         res = client.post(
             "/auth/logout-all-devices",
             headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": fp_value},
         )
         assert res.status_code == 200
         new_refresh = res.cookies.get("refresh_token")
