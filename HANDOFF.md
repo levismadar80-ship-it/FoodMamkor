@@ -18,9 +18,23 @@
 - `docs/CHANGELOG.md` — one-line entry
 
 ### Next step
-- Await Railway/Vercel preview URL from CI
-- Run smoke_test_prod.sh + manual /health, /producers, /auth/login rate-limit, /auth/me
-- Await `go merge` from Smadar before merging to staging
+- Await `go merge` from Smadar (CI results below)
+- **IMMEDIATELY after merge:** run `scripts/smoke_test_prod.sh <staging-url>` within 60 min. Revert MEH-338 commit if any of the 7 checks fail. Do NOT proceed with other work until staging smoke passes.
+- After staging smoke passes: file MEH-339 (python-multipart CVEs) and MEH-340 (requests CVEs) in Linear
+
+### CI status at PR open
+- ✅ Backend dependency audit (pip-audit) — passed
+- ✅ Adversarial review — passed
+- ✅ API contract audit (static) — passed
+- 🔄 Backend tests (pytest), Frontend build, Frontend lint, Frontend dep audit, Playwright E2E — in progress at PR creation
+
+### Local smoke (abbreviated — app-level only)
+```
+GET /health              → 200 ✅
+GET /producers           → 500 ⚠️ infrastructure (test DB tables dropped; same starlette passed 148 pytest tests with proper DB)
+POST /auth/login ×6      → 500×5, then 429 ✅ SlowAPIMiddleware rate-limit enforced on starlette 0.49.3
+```
+Full staging smoke (`smoke_test_prod.sh` 7/7) deferred — see post-merge gate in PR description.
 
 ### Key decisions this session
 | Decision | Reason |
