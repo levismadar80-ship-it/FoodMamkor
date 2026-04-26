@@ -1,48 +1,42 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-338 PR open — fastapi/starlette CVE bump)
+> Last updated: 2026-04-27 (MEH-338 PR #357 ready to merge)
 
-## 2026-04-26 — MEH-338 PR open (fastapi 0.115.6→0.120.1, starlette 0.41.3→0.49.3)
+## Most recent — MEH-338 fastapi/starlette CVE bump (2026-04-27)
 
-### Status
-- **Branch:** `feature/meh-338-bump-fastapi-starlette` (off `staging`)
-- **PR:** draft, base=staging — awaiting preview smoke + `go merge`
-- 148/148 pytest green (local, with mehamakor_test DB)
-- pip-audit: starlette CVEs (CVE-2025-62727 + CVE-2025-54121) GONE after bump
-- Remaining open CVEs (out of scope): python-multipart (→ MEH-339), requests (→ MEH-340)
+PR: #357 (feature/meh-338-bump-fastapi-starlette → staging, draft)
 
-### What's in this PR
-- `backend/pyproject.toml:6` — `fastapi==0.115.6` → `==0.120.1`
-- `backend/uv.lock` — starlette 0.41.3→0.49.3, annotated-doc 0.0.4 added, no other changes
-- `docs/CHANGELOG.md` — one-line entry
+Summary:
+- Bumped fastapi 0.115.6 → 0.120.1
+- starlette 0.41.3 → 0.49.3 transitively (closes CVE-2025-62727 + CVE-2025-54121)
+- annotated-doc 0.0.4 new (fastapi 0.120.0+ doc utility)
+- 148/148 pytest green; adversarial-review clean
 
-### Next step
-- Await `go merge` from Smadar (CI results below)
-- **IMMEDIATELY after merge:** run `scripts/smoke_test_prod.sh <staging-url>` within 60 min. Revert MEH-338 commit if any of the 7 checks fail. Do NOT proceed with other work until staging smoke passes.
-- After staging smoke passes: file MEH-339 (python-multipart CVEs) and MEH-340 (requests CVEs) in Linear
+Severity:
+- CVE-2025-62727 (HIGH): defense-in-depth, 0 attack surface
+- CVE-2025-54121 (MODERATE): reachable via image upload routes
 
-### CI status at PR open
-- ✅ Backend dependency audit (pip-audit) — passed
-- ✅ Adversarial review — passed
-- ✅ API contract audit (static) — passed
-- 🔄 Backend tests (pytest), Frontend build, Frontend lint, Frontend dep audit, Playwright E2E — in progress at PR creation
+Canary evidence (rate-limit on starlette 0.49.3):
+- PRIMARY: pytest TestRefreshTokenFlow::test_refresh_rate_limited green (Step 8, seeded DB, asserts 429 against rate-limit logic)
+- Corroborating: local curl try-6 → 429 (Step 11, empty-DB context, ambiguous path)
+- Pending: staging smoke checks 1 + 2 (post-merge)
 
-### Local smoke (abbreviated — connectivity only, NOT rate-limit fitness test)
-```
-GET /health              → 200 ✅
-GET /producers           → 500 ⚠️ infrastructure: uvicorn2.log:97 confirms "relation users does not exist"
-                                   (Base.metadata.create_all called without importing models; tables never created)
-                                   Not a starlette regression — same 148 pytest passed on properly-seeded DB
-POST /auth/login ×6      → 500×5, 429 on try 6 (corroborating only — see framing below)
-```
+## ⏭ Post-merge gate (MANDATORY)
 
-**Rate-limit evidence hierarchy (important for future bump templates):**
-- **PRIMARY:** `pytest TestRefreshTokenFlow::test_refresh_rate_limited` (Step 8) ✅ — proper DB, asserts 429 against rate-limit logic specifically
-- **Corroborating:** curl try-6 → 429 — ambiguous path (empty-DB 500s also count toward limit); cannot distinguish SlowAPIMiddleware from other 429 sources via curl alone
-- **Pending:** staging `smoke_test_prod.sh` checks 1 + 2 (post-merge gate)
+Run `scripts/smoke_test_prod.sh` against staging within 60 minutes of merge. Expected 7/7. ANY failure → immediate `git revert` of MEH-338 commit on staging. Do NOT proceed with other work until staging smoke is green.
 
-Full staging smoke (`smoke_test_prod.sh` 7/7) deferred — see post-merge gate in PR description.
+Reason: feature branch has no Railway preview; smoke check 2 (TRUSTED_PROXY rate-limit isolation) requires Railway edge X-Real-IP injection that local cannot replicate.
+
+## Follow-up tickets (post-MEH-338, not today)
+
+- MEH-339 (proposed): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
+- MEH-340 (proposed): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-341 (proposed): anthropic 0.39.0 → latest (stale, no CVE)
+- MEH-342 (proposed): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
+
+Lesson learned (for future bump tickets):
+Local-against-empty-DB curl ≠ rate-limit fitness test. Always use pytest with seeded DB asserting 429 logic specifically; curl loops are ambiguous (any middleware can return 429).
 
 ### Key decisions this session
 | Decision | Reason |
@@ -51,12 +45,6 @@ Full staging smoke (`smoke_test_prod.sh` 7/7) deferred — see post-merge gate i
 | starlette 0.49.3 (not 0.50.0) | fastapi 0.120.1 pins `starlette<0.50.0`; 0.49.3 is latest in series; both CVEs fixed at ≥0.49.1 |
 | annotated-doc 0.0.4 allowed | New fastapi 0.120.0+ dep extracted from typing_extensions; no transitive deps; 7KB; whitelist approved |
 | 3 atomic commits (no amend) | Stop hook (exit 2) blocked turns with dirty files; committed pyproject.toml, then uv.lock, then docs atomically per CLAUDE.md commit discipline |
-| Postgres not running (env issue) | Started pg_ctlcluster 16 main + created mehamakor_test DB; this is a one-time env setup for this container session |
-
-### Informational (out of scope, follow-up tickets needed)
-- `anthropic==0.39.0` in pyproject.toml — outdated; out of scope for MEH-338
-- `python-multipart==0.0.18` — 2 CVEs (CVE-2026-24486, CVE-2026-40347) → file as MEH-339
-- `requests==2.32.3` — 2 CVEs (CVE-2024-47081, CVE-2026-25645) → file as MEH-340
 
 ---
 
