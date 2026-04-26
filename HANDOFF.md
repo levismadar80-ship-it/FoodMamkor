@@ -1,7 +1,64 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-327 merged to staging — `f1982d2`)
+> Last updated: 2026-04-26 (MEH-330 in progress — feature branch, no push yet)
+
+## 2026-04-26 — Session in progress (MEH-330: Dependabot + audit)
+
+### Status
+- **MEH-330** — pip-audit + npm audit CI workflow + Dependabot config — **code complete, NOT pushed.** Awaiting Smadar's push approval.
+- **Current branch:** `feature/meh-330-dependabot-audit` (off `staging`).
+- **Files added/changed:**
+  - **NEW** `.github/workflows/dependency-audit.yml` — 2 jobs (`pip-audit` + `npm-audit`), `pull_request` (paths-filtered) + weekly cron + `workflow_dispatch`, `permissions: contents: read` per job, both `continue-on-error: true` with `TODO(MEH-336)`.
+  - **NEW** `.github/dependabot.yml` — 3 ecosystems (pip / npm / github-actions), weekly Mon 06:00 Asia/Jerusalem, target `staging`, limit 5 PRs.
+  - `docs/SECURITY.md` — new §8c "Dependency audits + Dependabot".
+  - `docs/SECURITY-CHECKLIST.md` — TRAP 8 + checklist row + table-of-contents row.
+  - `docs/DEPLOYMENT.md` — branch-protection note explaining audits are NOT required checks (sprint 1, MEH-336 to flip).
+  - `docs/CHANGELOG.md` — one-line entry.
+  - `HANDOFF.md` — this entry.
+
+### Baseline counts at MEH-330 ship (2026-04-26)
+- **Frontend (`npm audit --audit-level=high`):** 13 high / 6 moderate (19 total at high+).
+- **Backend (`uv run --with pip-audit pip-audit`):** 8 vulns across 5 packages.
+
+### New tickets opened this session (Linear, pre-merge per Smadar)
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| **MEH-336** | umbrella | Clear MEH-330 audit baseline + flip CI gate from warn-only to required. Tracks frontend 13 high / 6 moderate + backend 8-vuln backlog. Closes when both CI jobs flip `continue-on-error: false`. |
+| **MEH-337** | High | `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597). Auth-critical; touches `backend/app/auth.py`. Run full `tests/test_api.py` regression on bump. |
+| **MEH-338** | High | `starlette 0.41.3 → 0.49.1` (CVE-2025-62727). Framework; coordinate with `fastapi==0.115.6` compat — likely requires fastapi bump. |
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| `uv run --with pip-audit pip-audit` (not `pip-audit -r <(uv export ...)`) | Audits the actually-installed venv, not the requirements file. Backend has no `requirements.txt`; uv is the only dep manager (`backend/pyproject.toml` + `uv.lock`). Mirrors what CI installs for pytest in `pr-checks.yml:78–84`. |
+| `npm audit --audit-level=high` with NO `--omit=dev` | Spec is explicit. Dev-tool CVEs (e.g. `glob` command injection) execute on dev + CI machines that build the production artifact — supply-chain risk, not just runtime. Hiding 3 highs to make CI green = "weaken to make a test pass" anti-pattern. |
+| Warn-only gate (`continue-on-error: true`) for sprint 1 | Avoids one giant unmergeable PR. TODO comment + umbrella MEH-336 force the flip later. |
+| Separate workflow file (not folded into `pr-checks.yml`) | Combining `on: pull_request` + `on: schedule` in pr-checks.yml would either trigger build/pytest/adversarial on cron, or require per-job `if:` guards — both worse. Different gate semantics: pr-checks = required, dependency-audit = warn→required. |
+| `permissions: contents: read` per-job (not workflow-level) | Least-privilege `GITHUB_TOKEN`. Per-job (not workflow-level) so a future job added to the file is independently scoped. Supply-chain hardening extension to spec. |
+| Dependabot weekly (not daily) | Matches `dependency-audit.yml` cron cadence; `open-pull-requests-limit: 5` per ecosystem prevents queue overflow. |
+| All Dependabot PRs target `staging` | CLAUDE.md branch strategy — never `main`. |
+
+### Pending before push (in order)
+1. Local verification (yaml lint, `npm run build`, `pytest tests/test_api.py`, re-run both audits).
+2. `/adversarial-review` on changed files (rule 5a).
+3. Stage + commit (one commit per logical unit: workflow+dependabot YAML, then docs).
+4. **Wait for Smadar's push approval.**
+5. After push: open draft PR → `staging` (PR description per plan v2 §16).
+6. Post Vercel preview URL once Vercel publishes the hash.
+
+### Lessons learned
+- `uv` ships pip-audit cleanly via `uv run --with` — no need to install pip-audit separately into the project, no need to maintain a dev-deps entry. CI step is one line.
+- `npm audit` with `--omit=dev` excludes 3 highs in this codebase — `glob` (`@next/eslint-plugin-next`), `picomatch` (`@typescript-eslint`), `brace-expansion` — all of which still execute during the build. Confirms the spec's no-omit choice was right.
+- `pr-checks.yml` already wires `astral-sh/setup-uv@v3` with cache key `backend/uv.lock`. New `dependency-audit.yml` reuses that cache transparently — verified by reading the action docs (cache-by-key shared across workflows in the same repo).
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin`
+3. If MEH-330 PR merged → `git pull origin staging` and pick next ROADMAP ticket. If not merged → resume on `feature/meh-330-dependabot-audit`.
+4. Pre-launch order from MEH-327 close: MEH-329 (XSS sweep) is next non-MEH-330 pre-launch item.
+
+---
 
 ## 2026-04-26 — Session close (MEH-327 merged)
 

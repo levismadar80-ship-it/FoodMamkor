@@ -236,6 +236,14 @@ this codebase. Open:
 > when `.github/scripts/adversarial-review.sh` exists (see workflow). The check
 > is informational until that script is added.
 
+> **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
+> (npm audit)` are intentionally NOT required checks (MEH-330, sprint 1).**
+> Both jobs run with `continue-on-error: true` while the existing CVE
+> backlog (frontend 13 high / 6 moderate, backend 8 vulns at 2026-04-26)
+> is paid down under umbrella ticket **MEH-336**. Once the baseline
+> clears, flip both jobs' `continue-on-error` to `false` and add the two
+> job names as required checks under `staging` *and* `main` rules above.
+
 After saving both rules, verify by attempting a direct push from a feature branch
 to `staging` — it should be rejected with "protected branch" error.
 
