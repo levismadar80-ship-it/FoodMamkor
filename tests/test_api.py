@@ -1777,3 +1777,132 @@ class TestRefreshTokenFlow:
         fresh_client = TestClient(_app)
         res2 = fresh_client.post("/auth/refresh", cookies={"refresh_token": old_refresh})
         assert res2.status_code == 401
+
+
+class TestFingerprintCookie:
+    """MEH-327: OWASP JWT token-sidejacking fingerprint defence.
+
+    Covers: cookie set on login/register, valid fingerprint accepted,
+    wrong fingerprint rejected (core security invariant), pre-MEH-327
+    tokens fail-open, logout clears the cookie.
+    """
+
+    def _login(self, client, email, password="Pass1234!"):
+        return client.post("/auth/login", json={"email": email, "password": password})
+
+    def _all_set_cookies(self, response):
+        return [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+
+    def _fp_cookie_header(self, response):
+        cookies = self._all_set_cookies(response)
+        return next((c for c in cookies if c.startswith("__Secure-Fgp=")), None)
+
+    def _fp_value(self, response):
+        """Extract the raw fingerprint value from the Set-Cookie header."""
+        header = self._fp_cookie_header(response)
+        if header is None:
+            return None
+        return header.split("=", 1)[1].split(";")[0].strip()
+
+    def test_login_sets_fingerprint_cookie(self, client, db):
+        make_user(db, email="fp1@test.com", password="Pass1234!")
+        res = self._login(client, "fp1@test.com")
+        assert res.status_code == 200
+        fp_hdr = self._fp_cookie_header(res)
+        assert fp_hdr is not None, "No __Secure-Fgp Set-Cookie header on login"
+        low = fp_hdr.lower()
+        assert "httponly" in low
+        assert "secure" in low
+        assert "samesite=lax" in low
+        assert "path=/" in low
+        # 14 days = 1 209 600 seconds — must match refresh cookie TTL
+        assert "max-age=1209600" in low
+
+    def test_register_sets_fingerprint_cookie(self, client):
+        res = client.post(
+            "/auth/register",
+            json={"email": "fp2@test.com", "name": "FP Test", "password": "Pass1234!"},
+        )
+        assert res.status_code == 200
+        fp_hdr = self._fp_cookie_header(res)
+        assert fp_hdr is not None, "No __Secure-Fgp Set-Cookie header on register"
+        low = fp_hdr.lower()
+        assert "httponly" in low
+        assert "secure" in low
+        assert "samesite=lax" in low
+        assert "path=/" in low
+
+    def test_authenticated_request_valid_fingerprint_passes(self, client, db):
+        make_user(db, email="fp3@test.com", password="Pass1234!")
+        login_res = self._login(client, "fp3@test.com")
+        access_token = login_res.json()["access_token"]
+        fp = self._fp_value(login_res)
+        assert fp is not None, "Login did not return __Secure-Fgp cookie"
+
+        res = client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": fp},
+        )
+        assert res.status_code == 200
+        assert res.json()["email"] == "fp3@test.com"
+
+    def test_authenticated_request_wrong_fingerprint_rejected(self, client, db):
+        """Core security invariant: a stolen access token cannot be replayed
+        without also stealing the HttpOnly __Secure-Fgp cookie.
+        """
+        make_user(db, email="fp4@test.com", password="Pass1234!")
+        login_res = self._login(client, "fp4@test.com")
+        access_token = login_res.json()["access_token"]
+
+        # Fresh client — empty cookie jar — so only the wrong fp is sent.
+        from fastapi.testclient import TestClient
+        from app.main import app as _app
+        attack_client = TestClient(_app)
+        res = attack_client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": "a" * 100},  # valid length, wrong value
+        )
+        assert res.status_code == 401
+
+    def test_token_without_fingerprint_claim_fails_open(self, client, db):
+        """Backward-compat guard: pre-MEH-327 tokens (no userFingerprint
+        claim) must still pass even with no fp cookie present.
+
+        Fail-open window: max 15 min (access token TTL). After expiry the
+        next login issues a fingerprinted token and the guard is active.
+        """
+        from datetime import datetime, timedelta
+        from joserfc import jwt as jose_jwt
+        from joserfc.jwk import OctKey
+        from app.config import settings
+
+        user = make_user(db, email="fp5@test.com")
+        expire = datetime.utcnow() + timedelta(minutes=15)
+        payload = {
+            "sub": str(user.id),
+            "exp": expire,
+            "tv": user.token_version,
+            "scope": "access",
+        }
+        key = OctKey.import_key(settings.secret_key.encode())
+        old_token = jose_jwt.encode({"alg": settings.algorithm}, payload, key)
+
+        # No fp cookie — fail-open should pass
+        res = client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"})
+        assert res.status_code == 200
+        assert res.json()["email"] == "fp5@test.com"
+
+    def test_logout_clears_fingerprint_cookie(self, client, db):
+        make_user(db, email="fp6@test.com", password="Pass1234!")
+        self._login(client, "fp6@test.com")
+
+        res = client.post("/auth/logout")
+        assert res.status_code == 204
+
+        cookies = self._all_set_cookies(res)
+        fp_hdr = next((c for c in cookies if "__Secure-Fgp" in c), None)
+        assert fp_hdr is not None, "No Set-Cookie header for __Secure-Fgp on logout"
+        low = fp_hdr.lower()
+        assert "max-age=0" in low or "expires=" in low
