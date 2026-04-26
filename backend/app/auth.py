@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -33,12 +35,19 @@ def _jwt_key() -> OctKey:
     return OctKey.import_key(settings.secret_key.encode())
 
 
-def create_access_token(user_id: UUID, token_version: int = 1) -> str:
+def create_access_token(
+    user_id: UUID, token_version: int = 1, fingerprint_hash: str | None = None
+) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     # MEH-326: scope="access" disambiguates from refresh tokens. Old tokens
     # issued before this change have no scope claim — get_current_user treats
     # absence as access (backward compat) so existing sessions don't break.
     payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "access"}
+    # MEH-327: bind token to fingerprint cookie via SHA-256 hash claim.
+    # Callers that don't pass fingerprint_hash → claim absent → fail-open
+    # in get_current_user (15-min TTL window for pre-MEH-327 tokens).
+    if fingerprint_hash is not None:
+        payload["userFingerprint"] = fingerprint_hash
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
@@ -65,6 +74,26 @@ def decode_refresh_token(token: str) -> dict | None:
     if token_obj.claims.get("scope") != "refresh":
         return None
     return token_obj.claims
+
+
+def generate_fingerprint() -> str:
+    """MEH-327: 50 random bytes (100 hex chars) per OWASP JWT Cheat
+    Sheet "Token Sidejacking". Sent to the browser as an HttpOnly
+    __Secure-Fgp cookie; the SHA-256 hash is embedded in the access
+    token as the `userFingerprint` claim and validated on every
+    authenticated request, so a stolen access token alone cannot be
+    replayed without also stealing the cookie.
+    """
+    return secrets.token_hex(50)
+
+
+def hash_fingerprint(fp: str) -> str:
+    """MEH-327: SHA-256 hex digest of the raw fingerprint. The hash —
+    not the raw value — goes into the JWT, so an attacker who reads
+    the token (e.g. via XSS) cannot recover the cookie value needed
+    to forge requests.
+    """
+    return hashlib.sha256(fp.encode()).hexdigest()
 
 
 # feature/producer-analytics: throttle last_active_at writes to at most
