@@ -1,0 +1,124 @@
+name: Dependency Audit
+
+# MEH-330 — supply-chain CVE gate (warn-only baseline).
+# Two jobs:
+#   pip-audit  — backend, uv-managed venv, runs `uv run --with pip-audit pip-audit`
+#   npm-audit  — frontend, runs `npm audit --audit-level=high` (NO --omit=dev; spec)
+# Both jobs are `continue-on-error: true` for sprint 1 — see umbrella ticket
+# MEH-336 to flip to required after the baseline (frontend 13 high / 6 moderate,
+# backend 8 vulns) is cleared. High-priority sub-tickets pre-merge:
+# MEH-337 (pyjwt CVE-2026-32597) + MEH-338 (starlette CVE-2025-62727).
+
+on:
+  pull_request:
+    branches: [staging, main]
+    paths:
+      - 'backend/pyproject.toml'
+      - 'backend/uv.lock'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - '.github/workflows/dependency-audit.yml'
+  schedule:
+    # Weekly Mon 03:00 UTC = Mon 06:00 Asia/Jerusalem.
+    # Catches new CVEs published after a PR merges.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: dependency-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1: pip-audit (backend, uv-managed)
+  # ─────────────────────────────────────────────
+  pip-audit:
+    name: Backend dependency audit (pip-audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Mirrors pr-checks.yml job 2 setup so cache is shared.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies (uv sync --frozen)
+        run: uv sync --frozen
+        working-directory: backend
+
+      # `uv run --with pip-audit pip-audit` audits the installed venv
+      # (the same one CI installs for pytest), not the requirements file.
+      # Backend has no requirements.txt; uv is the only dep manager.
+      - name: Run pip-audit
+        working-directory: backend
+        # TODO(MEH-336): flip continue-on-error → false once baseline cleared
+        continue-on-error: true
+        run: |
+          # Capture exit code so the Step Summary write below ALWAYS runs
+          # even when pip-audit finds vulns (it will, while baseline holds).
+          # Without this, default `bash -eo pipefail` aborts before summary.
+          AUDIT_EXIT=0
+          uv run --with pip-audit pip-audit --strict 2>&1 | tee pip-audit-report.txt || AUDIT_EXIT=$?
+          {
+            echo "## pip-audit (backend)"
+            echo ""
+            echo '```'
+            cat pip-audit-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$AUDIT_EXIT"
+
+  # ─────────────────────────────────────────────
+  # JOB 2: npm audit (frontend)
+  # ─────────────────────────────────────────────
+  npm-audit:
+    name: Frontend dependency audit (npm audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+        working-directory: frontend
+
+      # Spec: --audit-level=high, NO --omit=dev. Dev-tool CVEs (e.g. glob
+      # command injection) execute on dev + CI machines that build the
+      # production artifact — supply-chain risk, not just runtime risk.
+      - name: Run npm audit
+        working-directory: frontend
+        # TODO(MEH-336): flip continue-on-error → false once baseline cleared
+        continue-on-error: true
+        run: |
+          # Capture exit code so the Step Summary write below ALWAYS runs
+          # even when npm audit finds vulns (it will, while baseline holds).
+          # Without this, default `bash -eo pipefail` aborts before summary.
+          AUDIT_EXIT=0
+          npm audit --audit-level=high 2>&1 | tee npm-audit-report.txt || AUDIT_EXIT=$?
+          {
+            echo "## npm audit (frontend)"
+            echo ""
+            echo '```'
+            cat npm-audit-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$AUDIT_EXIT"

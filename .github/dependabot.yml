@@ -1,0 +1,56 @@
+# MEH-330 — Dependabot config.
+# Three ecosystems, weekly cadence, all PRs target staging (never main —
+# CLAUDE.md branch strategy). Limit per ecosystem keeps the queue manageable.
+# Companion CI gate: .github/workflows/dependency-audit.yml (warn-only sprint 1,
+# flipped to required after umbrella ticket MEH-336 clears the baseline).
+
+version: 2
+updates:
+  # Backend — uv-managed, audited via pip-audit in CI
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Jerusalem"
+    target-branch: "staging"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "meh-330"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Frontend — Next.js, audited via npm audit in CI
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Jerusalem"
+    target-branch: "staging"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "meh-330"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions — keep workflow action versions current
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Jerusalem"
+    target-branch: "staging"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+      - "meh-330"
+    commit-message:
+      prefix: "chore(ci-deps)"

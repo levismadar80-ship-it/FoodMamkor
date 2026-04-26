@@ -413,6 +413,44 @@ response as the new access token.
   sites, logout deletion
 - `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
 
+### ✅ 8c. Dependency audits + Dependabot (MEH-330, April 2026)
+
+Supply-chain CVE gate — pip-audit (backend) + npm audit (frontend) run
+per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
+`pip`, `npm`, and `github-actions`.
+
+**CI workflow:** `.github/workflows/dependency-audit.yml`
+- Triggers: `pull_request` (paths-filtered to dep manifests), `schedule`
+  (Mon 03:00 UTC = Mon 06:00 Asia/Jerusalem), `workflow_dispatch`.
+- Two parallel jobs, each with `permissions: contents: read`
+  (least-privilege `GITHUB_TOKEN`).
+- Backend job: `uv run --with pip-audit pip-audit --strict` — audits the
+  uv-managed venv directly (matches what ships).
+- Frontend job: `npm audit --audit-level=high` — **NO `--omit=dev`**
+  (dev-tool CVEs execute on machines that build the production
+  artifact; supply-chain risk).
+- **Sprint 1 mode: warn-only** (`continue-on-error: true`). Umbrella
+  ticket MEH-336 tracks the baseline cleanup; flips to required after
+  baseline cleared.
+
+**Dependabot:** `.github/dependabot.yml`
+- 3 ecosystems × weekly Mon 06:00 Asia/Jerusalem.
+- All PRs target `staging` (never `main` per CLAUDE.md branch strategy).
+- `open-pull-requests-limit: 5` per ecosystem.
+- Labels: `dependencies` + `meh-330` (+ `ci` for actions).
+
+**Baseline at MEH-330 ship (2026-04-26):**
+- Frontend: 13 high / 6 moderate (`next`, `lodash`, `picomatch`,
+  `rollup`, `serialize-javascript`, `glob`, etc.).
+- Backend: 8 vulns across 5 packages (`pip`, `pyjwt`, `python-multipart`,
+  `requests`, `starlette`).
+
+**High-priority sub-tickets (auth-critical, opened pre-merge):**
+- **MEH-337** — `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597, touches
+  `backend/app/auth.py`).
+- **MEH-338** — `starlette 0.41.3 → 0.49.1` (CVE-2025-62727, framework;
+  coordinate FastAPI 0.115.6 compatibility).
+
 ## 🟡 בינוני — תקן החודש
 
 ### 9. XSS — ניקוי input מהמשתמש
