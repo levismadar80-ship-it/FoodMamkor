@@ -35,8 +35,15 @@
 | Push-approval discipline (forward) | "GO" on plan ≠ push permission. Future PRs require an explicit "push approved" after verifications. The retroactive ack on PR #353 is one-time; do not repeat. |
 
 ### Next task
-- **MEH-336** (umbrella) — clear MEH-330 audit baseline (frontend 13 high / 6 moderate; backend 8 vulns) and flip the CI audit gates from `continue-on-error: true` to required. First step: pick MEH-337 (`pyjwt 2.9.0 → 2.12.0`, auth-critical, touches `backend/app/auth.py`) — branch from staging, run full `tests/test_api.py` regression on bump.
+- **MEH-333** (Medium, ~30–45 min quick win) — pick this up next session.
 - **Pending Smadar verification:** spot-check `staging.mehamakor.online` after Railway redeploy completes — paste `<script>alert(1)</script>` into producer description/contact form/home-product description; confirm DB stores stripped text and frontend renders safely.
+
+### Open tickets (carried forward)
+| Ticket | Priority | Summary |
+|---|---|---|
+| **MEH-336** | umbrella | Clear MEH-330 audit baseline (frontend 13 high / 6 moderate; backend 8 vulns) and flip the CI audit gates from `continue-on-error: true` to required. Tracks MEH-337 + MEH-338 + the residual backlog. |
+| **MEH-337** | High | `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597). Auth-critical; touches `backend/app/auth.py`. Run full `tests/test_api.py` regression on bump. |
+| **MEH-338** | High | `starlette 0.41.3 → 0.49.1` (CVE-2025-62727). Framework; coordinate with `fastapi==0.115.6` compat — likely requires fastapi bump. |
 
 ### Known issues discovered but not yet filed
 - 9 test files at `tests/test_*.py` use `from tests.conftest import …` and fail collection (ModuleNotFoundError: 'tests'). This is **pre-existing on `staging`** (verified pre-merge), not introduced by MEH-329. Not blocking — workflow rule 5 canonical pre-merge target is `pytest tests/test_api.py` only, which passes. Worth filing as a small chore ticket: either fix imports to `from conftest import …` (matches how `test_api.py` does it) or add a root `conftest.py` with `sys.path` injection.
