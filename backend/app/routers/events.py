@@ -11,12 +11,13 @@ from datetime import date, datetime, time
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_producer
 from app.database import get_db
 from app.models import Event, Producer, User
+from app.services.sanitization import sanitize_text
 
 router = APIRouter(tags=["events"])
 
@@ -44,6 +45,16 @@ class EventCreate(BaseModel):
     max_participants: int | None = None
     registration_url: str | None = None
 
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
+    @field_validator("location")
+    @classmethod
+    def _sanitize_location(cls, v):
+        return sanitize_text(v, max_length=200)
+
 
 class EventUpdate(BaseModel):
     title: str | None = None
@@ -60,6 +71,16 @@ class EventUpdate(BaseModel):
     max_participants: int | None = None
     registration_url: str | None = None
     is_active: bool | None = None
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
+    @field_validator("location")
+    @classmethod
+    def _sanitize_location(cls, v):
+        return sanitize_text(v, max_length=200)
 
 
 class EventOut(BaseModel):
