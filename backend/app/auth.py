@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
@@ -120,6 +120,7 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
 
 
 def get_current_user(
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
@@ -153,19 +154,31 @@ def get_current_user(
     tv = token_obj.claims.get("tv")
     if tv is not None and tv != user.token_version:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    # MEH-327: fingerprint check — fail-open for tokens without the claim
+    # (pre-MEH-327, max 15-min window). Mirrors MEH-206/MEH-326 fail-open
+    # patterns. Gate runs before _maybe_bump_last_active so invalid tokens
+    # never write to the DB.
+    fp_claim = token_obj.claims.get("userFingerprint")
+    if fp_claim is not None:
+        cookie_fp = request.cookies.get("__Secure-Fgp")
+        if cookie_fp is None or hash_fingerprint(cookie_fp) != fp_claim:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    else:
+        logger.info("[auth] fingerprint absent — fail-open (pre-MEH-327 token)")
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
     return user
 
 
 def get_current_user_optional(
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
     if token is None:
         return None
     try:
-        return get_current_user(token=token, db=db)
+        return get_current_user(request=request, token=token, db=db)
     except HTTPException as exc:
         # Blocked users must never be treated as anonymous — re-raise 403.
         if exc.status_code == status.HTTP_403_FORBIDDEN:
