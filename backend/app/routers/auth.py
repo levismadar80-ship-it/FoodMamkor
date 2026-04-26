@@ -206,6 +206,14 @@ def logout(request: Request, response: Response):
         secure=True,
         samesite="lax",
     )
+    # MEH-327: path must match _set_fingerprint_cookie exactly.
+    response.delete_cookie(
+        "__Secure-Fgp",
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
 
 
 @router.post("/register", response_model=Token)
