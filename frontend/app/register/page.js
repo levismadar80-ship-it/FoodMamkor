@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
+  const [emailExistsError, setEmailExistsError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState(null);
 
@@ -41,6 +42,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setEmailExistsError(false);
 
     // Client-side validation. The inline onBlur rules below already
     // disable the submit button when any field fails, so this is a
@@ -71,13 +73,22 @@ export default function RegisterPage() {
       }
       setEmailSent(true);
     } catch (err) {
-      setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 400 && typeof detail === "string" && detail.startsWith("האימייל כבר קיים")) {
+        setEmailExistsError(true);
+      } else {
+        setError(detail || "משהו השתבש, נסי שוב");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const set = (field) => (e) => {
+    if (field === "email") setEmailExistsError(false);
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
 
   // tasks_for_claude_code.md task 8 — inline field-level validity.
   // *Invalid flags only go true after the field has been touched (i.e.
@@ -262,6 +273,17 @@ export default function RegisterPage() {
               </a>
             </span>
           </label>
+          {emailExistsError && (
+            <p className="text-sm text-amber-700 mt-2">
+              האימייל הזה כבר רשום אצלנו.{" "}
+              <Link
+                href={`/login?email=${encodeURIComponent(form.email || "")}`}
+                className="underline font-medium"
+              >
+                התחברי
+              </Link>
+            </p>
+          )}
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"

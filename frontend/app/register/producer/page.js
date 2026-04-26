@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -58,6 +59,7 @@ function RegisterProducerPageBody() {
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [emailExistsWarning, setEmailExistsWarning] = useState("");
+  const [emailExistsSubmitError, setEmailExistsSubmitError] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   // MEH-287: true when server confirms Twilio config is present (WhatsApp
   // expected to arrive). False → show dashboard-fallback banner on step 3.
@@ -147,6 +149,7 @@ function RegisterProducerPageBody() {
 
   const set = (field) => (e) => {
     const value = e.target.value;
+    if (field === "email") setEmailExistsSubmitError(false);
     setAndSave((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -179,6 +182,7 @@ function RegisterProducerPageBody() {
 
   const handleSubmit = async () => {
     setError("");
+    setEmailExistsSubmitError(false);
     setLoading(true);
     try {
       const body = {
@@ -208,11 +212,11 @@ function RegisterProducerPageBody() {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
       if (status === 409) {
-        setError(
-          isUpgrade
-            ? "כבר יש לך עסק רשום בחשבון זה."
-            : "האימייל הזה כבר רשום. התחברי לחשבון שלך ותוכלי להוסיף עסק מהדשבורד."
-        );
+        if (isUpgrade) {
+          setError("כבר יש לך עסק רשום בחשבון זה.");
+        } else {
+          setEmailExistsSubmitError(true);
+        }
       } else {
         setError(detail || "שגיאת תקשורת — נסי שוב.");
       }
@@ -311,12 +315,12 @@ function RegisterProducerPageBody() {
             {emailExistsWarning && (
               <p className="text-amber-600 text-xs mt-1">
                 יש לך כבר חשבון במהמקור.{" "}
-                <a
-                  href={`/login?redirect=${encodeURIComponent("/register/producer")}`}
+                <Link
+                  href={`/login?email=${encodeURIComponent(form.email || "")}`}
                   className="underline font-medium hover:text-amber-700"
                 >
                   התחברי ←
-                </a>
+                </Link>
                 {" "}והוסיפי את העסק שלך
               </p>
             )}
@@ -452,11 +456,22 @@ function RegisterProducerPageBody() {
               </span>
             </label>
 
+            {emailExistsSubmitError && (
+              <p className="text-sm text-amber-700 mt-2">
+                האימייל הזה כבר רשום אצלנו.{" "}
+                <Link
+                  href={`/login?email=${encodeURIComponent(form.email || "")}`}
+                  className="underline font-medium"
+                >
+                  התחברי
+                </Link>
+              </p>
+            )}
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
+                <button onClick={() => { setStepError(""); setError(""); setEmailExistsSubmitError(false); setStep(1); }} className="text-text-secondary">שלב קודם</button>
               )}
               <button
                 onClick={() => {
