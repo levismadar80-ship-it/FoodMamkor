@@ -13,8 +13,10 @@ from app.auth import (
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
+    generate_fingerprint,
     get_current_user,
     get_current_user_optional,
+    hash_fingerprint,
     hash_password,
     verify_password,
 )
@@ -115,6 +117,32 @@ def _set_refresh_cookie(response: Response, user: User) -> None:
     )
 
 
+def _set_fingerprint_cookie(response: Response, fingerprint: str) -> None:
+    """MEH-327: attach the raw fingerprint as an HttpOnly cookie.
+
+    The SHA-256 hash of this value is embedded in the access token as the
+    `userFingerprint` claim. On every authenticated request get_current_user
+    hashes the cookie value and compares it to the claim, so a stolen access
+    token cannot be replayed without also stealing this HttpOnly cookie.
+
+    Path=/ (required by the __Secure- prefix, RFC 6265bis) so the browser
+    sends it on all /api/* requests, not only /api/auth.
+    max_age matches the refresh cookie so the fingerprint outlives any access
+    token, avoiding the timing edge-case where a valid 15-min access token
+    arrives with an already-expired fingerprint cookie.
+    SameSite=Lax matches _set_refresh_cookie — see its docstring for rationale.
+    """
+    response.set_cookie(
+        key="__Secure-Fgp",
+        value=fingerprint,
+        max_age=settings.refresh_token_expire_days * 24 * 3600,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+    )
+
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
@@ -155,8 +183,10 @@ def refresh_token(
     if tv is None or tv != user.token_version:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -203,8 +233,10 @@ def register(request: Request, response: Response, data: UserRegister, backgroun
     db.refresh(user)
     background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/register/producer", response_model=ProducerRegistrationResponse)
@@ -341,9 +373,11 @@ def register_producer(
     whatsapp_expected = bool(
         p_phone and settings.twilio_account_sid and settings.twilio_whatsapp_from
     )
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
     return ProducerRegistrationResponse(
-        access_token=create_access_token(user.id, user.token_version),
+        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
         whatsapp_sent=whatsapp_expected,
     )
 
@@ -415,8 +449,10 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
         user.avatar_url = picture
         db.commit()
 
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/register/producer/oauth", response_model=Token)
@@ -519,8 +555,10 @@ def register_producer_oauth(
             user.avatar_url = picture_for_google
             db.commit()
 
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/login", response_model=Token)
@@ -531,8 +569,10 @@ def login(request: Request, response: Response, data: LoginRequest, db: Session 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.get("/me", response_model=UserOut)
@@ -564,8 +604,10 @@ def logout_all_devices(
     user.token_version = (user.token_version or 1) + 1
     db.commit()
     db.refresh(user)
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/apple", response_model=Token)
@@ -614,8 +656,10 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
             db.commit()
             db.refresh(user)
 
+    fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/forgot-password")
