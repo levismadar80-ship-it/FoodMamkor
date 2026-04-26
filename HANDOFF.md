@@ -1,7 +1,52 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-337 merged to staging — squash 6f7d859)
+> Last updated: 2026-04-27 (MEH-338 PR #357 ready to merge)
+
+## Most recent — MEH-338 fastapi/starlette CVE bump (2026-04-27)
+
+PR: #357 (feature/meh-338-bump-fastapi-starlette → staging, draft)
+
+Summary:
+- Bumped fastapi 0.115.6 → 0.120.1
+- starlette 0.41.3 → 0.49.3 transitively (closes CVE-2025-62727 + CVE-2025-54121)
+- annotated-doc 0.0.4 new (fastapi 0.120.0+ doc utility)
+- 148/148 pytest green; adversarial-review clean
+
+Severity:
+- CVE-2025-62727 (HIGH): defense-in-depth, 0 attack surface
+- CVE-2025-54121 (MODERATE): reachable via image upload routes
+
+Canary evidence (rate-limit on starlette 0.49.3):
+- PRIMARY: pytest TestRefreshTokenFlow::test_refresh_rate_limited green (Step 8, seeded DB, asserts 429 against rate-limit logic)
+- Corroborating: local curl try-6 → 429 (Step 11, empty-DB context, ambiguous path)
+- Pending: staging smoke checks 1 + 2 (post-merge)
+
+## ⏭ Post-merge gate (MANDATORY)
+
+Run `scripts/smoke_test_prod.sh` against staging within 60 minutes of merge. Expected 7/7. ANY failure → immediate `git revert` of MEH-338 commit on staging. Do NOT proceed with other work until staging smoke is green.
+
+Reason: feature branch has no Railway preview; smoke check 2 (TRUSTED_PROXY rate-limit isolation) requires Railway edge X-Real-IP injection that local cannot replicate.
+
+## Follow-up tickets (post-MEH-338, not today)
+
+- MEH-339 (proposed): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
+- MEH-340 (proposed): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-341 (proposed): anthropic 0.39.0 → latest (stale, no CVE)
+- MEH-342 (proposed): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
+
+Lesson learned (for future bump tickets):
+Local-against-empty-DB curl ≠ rate-limit fitness test. Always use pytest with seeded DB asserting 429 logic specifically; curl loops are ambiguous (any middleware can return 429).
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| fastapi 0.120.1 (not 0.121+) | Avoids Pydantic 1 deprecation noise; 0.120.x is the stable CVE-fix target per fastapi upstream |
+| starlette 0.49.3 (not 0.50.0) | fastapi 0.120.1 pins `starlette<0.50.0`; 0.49.3 is latest in series; both CVEs fixed at ≥0.49.1 |
+| annotated-doc 0.0.4 allowed | New fastapi 0.120.0+ dep extracted from typing_extensions; no transitive deps; 7KB; whitelist approved |
+| 3 atomic commits (no amend) | Stop hook (exit 2) blocked turns with dirty files; committed pyproject.toml, then uv.lock, then docs atomically per CLAUDE.md commit discipline |
+
+---
 
 ## 2026-04-26 — MEH-337 merged (pyjwt bump 2.9.0 → 2.12.0, CVE-2026-32597)
 
