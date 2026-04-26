@@ -36,7 +36,7 @@ function LoginPageBody() {
   const params = useSearchParams();
   const redirectTo = params.get("redirect") || "/";
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
