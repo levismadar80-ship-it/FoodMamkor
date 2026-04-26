@@ -1,7 +1,99 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-333 merged to staging — squash 8bca8cc)
+> Last updated: 2026-04-26 (MEH-337 merged to staging — squash 6f7d859)
+
+## 2026-04-26 — MEH-337 merged (pyjwt bump 2.9.0 → 2.12.0, CVE-2026-32597)
+
+### Status
+- **PR #356** — `feat(MEH-337): bump pyjwt 2.9.0 → 2.12.0 (CVE-2026-32597)` — **merged to `staging`** (squash, commit `6f7d859`).
+- **Branch:** `feature/meh-337-pyjwt-bump` (off `staging`); now stale — local branch can be deleted.
+- All CI green at merge: Frontend build, Frontend lint, Backend tests (pytest, 148 passed), Backend dependency audit (pip-audit), Frontend dependency audit (npm audit), Adversarial review, API contract audit (static), Playwright E2E.
+- **Apple OAuth functional smoke: DEFERRED** to follow-up ticket (see "Linked follow-up" below). The pyjwt code path is dormant in production due to unset `APPLE_CLIENT_ID` / `NEXT_PUBLIC_APPLE_CLIENT_ID` env vars — the Apple Sign-In button doesn't render, so no functional verification was physically possible. Mock-only wrapper tests + pyjwt's upstream test suite + CHANGELOG audit form the confidence basis for the merge (Option 3 of the 3-option investigation framework).
+
+### What shipped
+- `backend/pyproject.toml:21` — `PyJWT[crypto]==2.9.0` → `==2.12.0`
+- `backend/uv.lock` — regenerated; ONLY pyjwt moved (no transitive bumps; cryptography stayed pinned)
+- `tests/test_api.py` — new `TestAppleTokenVerification` class, 4 cases: `test_returns_payload_on_valid_token`, `test_returns_none_when_apple_client_id_unset`, `test_returns_none_on_invalid_signature`, `test_returns_none_on_unknown_kid`. Locks the wrapper in `routers/auth.py:_verify_apple_token` (lines 944-975) so future pyjwt bumps surface regressions in the Apple OAuth path.
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| Bump despite production-dormant code path | Defense in depth; clean pip-audit baseline (unblocks MEH-336); zero production user impact either way; when Apple OAuth is provisioned later, no scramble. |
+| Mock-based wrapper tests instead of full pyjwt integration tests | Apple Sign-In button doesn't render in production (env var unset), so iPhone smoke is physically impossible today. Wrappers + CHANGELOG audit + pyjwt's upstream test suite are the next-best confidence basis. Catch wrapper drift on next bump; functional verification deferred to provisioning ticket. |
+| One-commit, one-PR (clean diff) | Per workflow rule 5a + plan §3 acceptance criteria. uv.lock diff verified to ONLY move pyjwt; no transitive deps moved. |
+| 4 wrapper test cases, not more | Cover happy path + 3 distinct sad paths (no client_id, decode exception, unknown kid). Testing more would expand into pyjwt-internal territory which is the upstream maintainer's job. |
+
+### Dormant code path discovery (pre-merge investigation)
+During pre-merge mobile QA prep, an iPhone screenshot of `/login` showed only Email + Google buttons — no Apple Sign-In. Investigation across the codebase:
+- `backend/app/config.py:47` — `apple_client_id: str = ""` (empty default)
+- `frontend/components/AppleAuthButton.jsx:8, 54` — `if (!clientId) return null;` (button hidden when env var unset)
+- `backend/app/routers/auth.py:626` — `/auth/apple` POST endpoint early-exits on empty `apple_client_id` (HTTP 503 per MEH-253)
+- `backend/app/routers/auth.py:946-948` — `_verify_apple_token` returns `None` before reaching `pyjwt.decode` (line 965)
+- `docs/DEPLOYMENT.md` — confirms Apple keys are "optional for first launch — leave blank"
+
+**Conclusion:** Apple OAuth code is fully wired (frontend AppleAuthButton + backend `/auth/apple` endpoint per MEH-170 PR #302) but dormant in production. CVE-2026-32597 is unexploitable in our deployment until Apple OAuth is provisioned.
+
+### Linked follow-up — REQUIRES MANUAL FILING IN LINEAR (no Linear MCP this session)
+
+**TODO for Smadar:** file the following ticket in Linear, then update PR #356 description (replace "MEH-XXX" placeholder with actual number). The PR is already merged but its description is editable.
+
+```
+Title: 🍎 Provision Apple OAuth — env vars + iPhone smoke vs pyjwt 2.12
+Priority: 4 (Low) — only relevant if/when Apple OAuth becomes a product priority. Not a launch blocker.
+
+## מטרה
+Apple OAuth is wired in code (frontend AppleAuthButton + backend /auth/apple endpoint) but dormant in production due to unset env vars. This ticket is the gate to enabling it.
+
+## Prerequisite (HARD GATE — do not skip)
+Before flipping NEXT_PUBLIC_APPLE_CLIENT_ID on Vercel or APPLE_CLIENT_ID on Railway, run iPhone manual smoke against:
+- /login → tap "Sign in with Apple" → complete Apple ID auth
+- Verify redirect to /producers, logged-in state, no 500 errors
+- Check Railway logs for [APPLE AUTH] entries
+
+This validates pyjwt 2.12.0 on its actual code path — coverage that MEH-337 PR #356 deferred. If smoke fails: revisit MEH-337, re-test pyjwt bump on real Apple flow before re-enabling.
+
+## Provisioning steps
+1. Apple Developer Account ($99/year)
+2. Services ID + Sign in with Apple key in Apple console
+3. Configure redirect URIs (production + staging)
+4. Add env vars:
+   - Vercel: NEXT_PUBLIC_APPLE_CLIENT_ID (production + preview)
+   - Railway: APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (production + staging)
+5. Run prerequisite smoke (above) on Vercel preview FIRST
+6. Deploy to staging, smoke again
+7. Deploy to production
+
+## Linked tickets
+- MEH-337 (pyjwt bump, deferred Apple smoke to this ticket)
+- MEH-170 (original Apple wiring)
+- MEH-253 (503 fix when unconfigured)
+
+## Branch
+feature/meh-XXX-provision-apple-oauth (when triggered)
+
+## Definition of Done
+- [ ] Env vars set on Vercel + Railway (production)
+- [ ] iPhone smoke passes on production preview BEFORE prod env enable
+- [ ] iPhone smoke passes on production after env enable
+- [ ] Railway logs show successful [APPLE AUTH] entry
+- [ ] No 500s on /auth/apple endpoint
+- [ ] HANDOFF.md + CHANGELOG.md updated
+```
+
+### Audit findings (out of scope, future tickets)
+- **Architectural smell flag (MEH-271 audit):** the codebase carries TWO JWT libraries — `joserfc` (primary, all our token issuance/decode) and `pyjwt` (one Apple OAuth call site). Worth a future ticket to consolidate to one library.
+- **Linear MEH-337 ticket text drift:** the auto-posted description (linear-bot comment on PR #356) calls pyjwt the "primary library". Stale — actual primary is joserfc. Worth a Linear-side cleanup post-merge.
+- **Other CVEs unchanged in pip-audit AFTER:** pip / python-multipart / requests / starlette — tracked under MEH-336 / MEH-338. Out of scope for MEH-337.
+
+### Next task
+- Pending Smadar's call. Options:
+  - File the Apple OAuth provisioning follow-up ticket in Linear, link it back to PR #356
+  - MEH-338 (`starlette 0.41.3 → 0.49.1`, CVE-2025-62727 — needs FastAPI compat coordination)
+  - MEH-336 umbrella (flip CI audit gates from `continue-on-error: true` to required, after backend audit baseline is reduced)
+  - Carry-over: MEH-329 + MEH-333 spot-checks on staging once Railway redeploys
+
+---
 
 ## 2026-04-26 — MEH-333 merged (inline login link on email-exists error)
 
