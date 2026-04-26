@@ -3,6 +3,17 @@
 
 ---
 
+## XSS sanitization sweep (MEH-329)
+
+- [ ] HTML stripped server-side — איך לבדוק:
+  1. בדף הרשמת בית עסק, הזיני בתיאור: `<script>alert(1)</script>תיאור עם הסבר`
+  2. שמרי וצפי בפרופיל הציבורי
+  3. **תוצאה מצופה:** הטקסט מוצג ללא אזהרת alert; ה-`<script>` נחתך ב-DB; רואים רק את הטקסט הנקי
+- [ ] טופס "מהמטבח של השכן" — אותו דבר על `description` ו-`location_notes`
+- [ ] טופס "צרי קשר" (`/contact`) — הזיני `<img src=x onerror=alert(1)>` בתוכן ההודעה; **תוצאה:** ההודעה נשמרת ב-DB ללא ה-tag
+
+---
+
 ## Recipe ingredient cascade (MEH-311)
 
 - [ ] FK violation regression — sanity check ידני בstaging:

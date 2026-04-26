@@ -1929,3 +1929,78 @@ class TestFingerprintCookie:
         assert fp_hdr is not None, "No Set-Cookie header for __Secure-Fgp on logout"
         low = fp_hdr.lower()
         assert "max-age=0" in low or "expires=" in low
+
+
+# ============================================================
+# MEH-329 — XSS sanitization sweep (integration tests)
+# ============================================================
+
+
+class TestSanitizationIntegration:
+    """End-to-end checks that @field_validator sanitizers actually
+    strip HTML before the row hits the DB. Unit-level coverage is in
+    tests/test_sanitization.py; these tests lock the wire-to-row path
+    for the three highest-risk surfaces.
+    """
+
+    def test_producer_description_sanitized(self, client, db):
+        from app.models.models import Producer
+        payload = {
+            "email": "xss-producer@test.com",
+            "name": "ניסוי",
+            "password": "Pass1234!",
+            "producer_name": "חוות הסקריפט",
+            "description": "<script>alert(1)</script>טקסט נקי",
+            "phone": "0501234567",
+            "category_ids": [],
+            "primary_contact_method": "whatsapp",
+        }
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 200, resp.text
+        row = db.query(Producer).filter(Producer.name == "חוות הסקריפט").first()
+        assert row is not None
+        assert "<script>" not in (row.description or "")
+        assert "</script>" not in (row.description or "")
+        assert "טקסט נקי" in (row.description or "")
+
+    def test_home_product_description_sanitized(self, client, db, monkeypatch):
+        from app.models.models import HomeProduct
+        # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="xss-hp@test.com")
+        resp = client.post(
+            "/home-products",
+            json={
+                "title": "עוגה ביתית",
+                "description": "<img src=x onerror=alert(1)>טעימה ביותר",
+                "price": "30",
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
+        row = db.query(HomeProduct).filter(HomeProduct.user_id == user.id).first()
+        assert row is not None
+        assert "<img" not in (row.description or "")
+        assert "onerror" not in (row.description or "")
+        assert "טעימה ביותר" in (row.description or "")
+
+    def test_contact_message_sanitized(self, client, db):
+        resp = client.post(
+            "/contact",
+            json={
+                "name": "רות",
+                "email": "ruth-xss@example.com",
+                "message": "<script>alert(1)</script>שאלה רגילה על פלטפורמה",
+            },
+        )
+        assert resp.status_code == 200, resp.text
+        row = db.query(ContactMessage).filter(
+            ContactMessage.email == "ruth-xss@example.com"
+        ).first()
+        assert row is not None
+        assert "<script>" not in row.message
+        assert "</script>" not in row.message
+        assert "שאלה רגילה על פלטפורמה" in row.message
