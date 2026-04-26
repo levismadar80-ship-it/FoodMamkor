@@ -137,6 +137,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
+   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `TWILIO_*` | Use **Twilio test credentials** so staging WhatsApp messages don't go out for real. |
