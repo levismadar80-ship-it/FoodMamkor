@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-26 — MEH-332: docs: staging email links now point to staging.mehamakor.online (was incorrectly pointing to production). Root cause: `FRONTEND_URL` misconfigured on Railway staging — `docs/DEPLOYMENT.md` §A staging env var table did not list `FRONTEND_URL`, so it was bulk-copied from production. Env-only fix on Railway (manual) + docs/DEPLOYMENT.md row added + backend/.env.example annotated with per-env override warning. No code changes.
+
 ## 2026-04-25 — MEH-326: feat(auth): JWT refresh tokens with HttpOnly cookie rotation. Access TTL 15min + 14d refresh cookie. Backward compat preserved for pre-deploy 24h tokens (no `scope` claim). PR #349 (draft, pending pytest + preview).
 
 ## 2026-04-25 — MEH-331 attempt #2: ask Resend MTA to use base64 (not QP) for HTML part. **PR #347 was incomplete — its premise (plain-text line-wrapping) was wrong.** Real root cause: Resend's MTA applies quoted-printable encoding to the HTML body AFTER our `<a href>` is constructed. QP wraps lines at 76 chars by inserting `=\r\n` soft breaks, which can land inside an href attribute value. Some email clients parse the href before QP-decoding the attribute, yielding a truncated URL. Fix attempt: pass `headers={"Content-Transfer-Encoding": "base64"}` to `resend.Emails.send` when html is set. Untested whether Resend honors a top-level CTE header for the HTML part — if rejected by Gmail "Show original" inspection, fall back to Option 1 (short-code redirect, MEH-XXX). Single file: `email.py`.

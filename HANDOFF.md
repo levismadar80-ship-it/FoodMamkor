@@ -1,7 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-326 ✅ MERGED, session closed)
+> Last updated: 2026-04-26 (MEH-332 ✅ CLOSED, docs-only PR pending review)
+
+## 2026-04-26 — Session close (MEH-332 closed, docs-only)
+
+### Status
+- **MEH-332 ✅ FIXED** — root cause: `FRONTEND_URL=https://mehamakor.online` was set on Railway staging environment (bulk-copied from production). Smadar fixed manually on Railway → `https://staging.mehamakor.online`. Verified: staging reset-password + verify-email links now point to staging.
+- **Branch:** `feature/meh-332-staging-reset-url` — docs-only PR (no code changes).
+- **Files changed:** `docs/DEPLOYMENT.md` (added FRONTEND_URL row to staging env var table), `backend/.env.example` (added per-env override warning + Staging line), `docs/CHANGELOG.md` (one-line entry), `HANDOFF.md` (this entry).
+- **Next task:** MEH-327 — Ultra Plan #2: fingerprint cookie (next pre-launch security ticket).
+
+### New tickets opened this session
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| MEH-334 | Low (post-launch) | Boot-time guard for `FRONTEND_URL` / `ENV` mismatch — warn on startup if `ENV=staging` but `FRONTEND_URL` lacks `staging.` (or `ENV=production` but `FRONTEND_URL` contains `staging.`). Defense-in-depth against the MEH-332 class of misconfiguration. |
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| Docs-only fix (no code change to `_send_reset_email` / `_send_verify_email`) | Single source of truth = `settings.frontend_url` from env. Deriving from request `Host` header opens host-header-injection / password-reset-poisoning class of bugs. Env var stays the right answer. |
+| Add row to `docs/DEPLOYMENT.md` staging table, not a new "do not copy" section | Discoverability: anyone setting up staging reads that table top-to-bottom. Separate warning section gets skipped. |
+| Keep `backend/.env.example` default at production value | Matches existing convention; the new comment block is the affirmative override warning. |
+| Defer boot-time mismatch guard to MEH-334 (post-launch) | Today's docs fix prevents recurrence; runtime guard is defense-in-depth, not blocking launch. |
+
+### Lessons learned
+- **Env var docs must list per-environment overrides, not just production values.** The staging env var table in `docs/DEPLOYMENT.md` §A listed `DATABASE_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, `ENV`, etc. — but omitted `FRONTEND_URL` because it was treated as a "set once, same everywhere" var. Result: staging silently inherited the production hostname for ~3 weeks, breaking every email link from staging. Going forward: any env var that differs between environments MUST appear in the staging table with the staging value spelled out.
+- **Grep for siblings before closing.** `settings.frontend_url` is referenced in 7 places (`backend/app/routers/auth.py:632, 807, 861, 862, 874, 971, 993` + `backend/app/services/experience_notifications.py:43, 55, 72`). One env-var fix repaired all of them — but if any of them had a hardcoded fallback, the bug would have persisted. Audit confirmed clean.
+- **Pytest mocks don't catch env-config bugs (MEH-331 lesson echoes here).** `tests/test_api.py` mocks `send_email` at the router level. The URL string passed in is asserted, but the test fixture sets its own `FRONTEND_URL` — so a wrong production value in Railway is invisible to the test suite. Only a live email or a Railway env var snapshot in CI would catch this. Manual verification on staging is non-optional for any env-derived behavior.
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin && git pull origin staging`
+3. Branch: `git checkout -b feature/meh-327-fingerprint-cookie`
+4. Read MEH-327 ticket for next-task spec.
+
+---
 
 ## 2026-04-26 — Session close (MEH-326 merged, next: MEH-332)
 
