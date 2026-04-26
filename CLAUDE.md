@@ -132,6 +132,8 @@ File edit safety — read before write, diff after write, no silent deletions. F
 | Backend change | Affected API endpoint | Yes |
 | Hotfix | Only the broken thing | Minimal |
 
+Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`, `MANUAL_TESTING.md`): commit directly to `staging` — no PR needed.
+
 ## PR Review Workflow
 
 When asked to generate a PR review bundle for Claude.ai, run:
