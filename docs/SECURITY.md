@@ -359,6 +359,60 @@ Both invariants are compatible with the April 2026 `/privacy` page
 (`חוק הגנת הפרטיות תיקון 13, 2025`), which lists IP as "data collected"
 — minimized + time-limited, not stored raw.
 
+### ✅ 8b. Token Sidejacking Protection (MEH-327, April 2026)
+
+**Threat:** attacker steals the JWT access token from `localStorage`
+(e.g. via XSS) and replays it from a different origin or device. The
+token alone was sufficient for full account access.
+
+**Defence:** OWASP JWT Cheat Sheet "Token Sidejacking" pattern — bind
+each access token to a browser-only HttpOnly cookie via SHA-256 hash.
+
+**Mechanism:**
+1. On every token-issuing event (login, register, OAuth, refresh,
+   logout-all-devices), the backend generates a 50-byte random
+   fingerprint (`secrets.token_hex(50)`), embeds its SHA-256 hash as
+   the `userFingerprint` JWT claim, and sets the raw value as the
+   HttpOnly `__Secure-Fgp` cookie.
+2. `get_current_user` reads the cookie, hashes it, and compares to the
+   claim. Mismatch or absent cookie → `401`. This gate runs **before**
+   `_maybe_bump_last_active` so rejected tokens never write to the DB.
+
+**`__Secure-Fgp` cookie spec:**
+
+| Attribute | Value | Reason |
+|---|---|---|
+| `HttpOnly` | `True` | Not readable by JS — the whole point |
+| `Secure` | `True` | Required by `__Secure-` prefix (RFC 6265bis) |
+| `SameSite` | `Lax` | See deviation note below |
+| `Path` | `/` | Required by `__Secure-` prefix |
+| `max-age` | 14 days | Matches refresh cookie TTL — fingerprint must outlive the 15-min access token to avoid a timing edge-case where a live token arrives with an already-expired fp cookie |
+
+**SameSite=Lax deviation from OWASP (which recommends Strict):**
+`GET` cross-site navigations from email links (`/verify-email`,
+`/reset-password`) arrive from the user's email client — a cross-site
+top-level navigation. `SameSite=Strict` drops the cookie on those
+navigations, breaking email verification and password-reset UX.
+`Lax` still blocks cross-site `POST`/`AJAX` (the primary CSRF vector).
+This deviation is intentional and documented here to prevent future
+"simplification" to Strict without understanding the breakage.
+
+**Backward compat (fail-open):** if `userFingerprint` is absent (pre-
+MEH-327 tokens; max 15-min TTL window), `get_current_user` logs info
+and passes. Mirrors the MEH-206 (`tv`) and MEH-326 (`scope`) patterns.
+
+**Logout:** `POST /auth/logout` deletes `__Secure-Fgp` with `path=/`
+matching `_set_fingerprint_cookie` exactly (wrong path = silent no-op).
+`POST /auth/logout-all-devices` overwrites the cookie in the same
+response as the new access token.
+
+**Code locations:**
+- `backend/app/auth.py` — `generate_fingerprint`, `hash_fingerprint`,
+  `create_access_token(fingerprint_hash=)`, `get_current_user` gate
+- `backend/app/routers/auth.py` — `_set_fingerprint_cookie`, 8 call
+  sites, logout deletion
+- `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
+
 ## 🟡 בינוני — תקן החודש
 
 ### 9. XSS — ניקוי input מהמשתמש

@@ -1,7 +1,37 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-332 ✅ CLOSED, docs-only PR pending review)
+> Last updated: 2026-04-26 (MEH-327 chunks A–F committed locally, awaiting CI + merge approval)
+
+## 2026-04-26 — Session in progress (MEH-327 fingerprint cookie)
+
+### Status
+- **MEH-327 — chunks A–F committed locally on `feature/meh-327-fingerprint-cookie`, NOT yet pushed**
+  - Chunk A `da4b2bc`: `generate_fingerprint`, `hash_fingerprint`, `create_access_token(fingerprint_hash=)` in `backend/app/auth.py`
+  - Chunk B `acca872`: `_set_fingerprint_cookie` helper + 8 call sites in `backend/app/routers/auth.py`
+  - Chunk C `7b97c5a`: `get_current_user` fingerprint gate (before `_maybe_bump_last_active`) in `backend/app/auth.py`
+  - Chunk D `7100725`: logout clears `__Secure-Fgp` in `backend/app/routers/auth.py`
+  - Chunk E `93531f0`: `TestFingerprintCookie` (6 tests) in `tests/test_api.py`
+  - Chunk F (this entry): docs — `docs/SECURITY.md §8b`, `docs/CHANGELOG.md`, `HANDOFF.md`, `.ai/diagrams/auth-flow.md`
+- **Tests:** `TestFingerprintCookie` fails at DB-connection setup in sandbox (no local PostgreSQL). Must run on CI after push.
+- **Next action:** Smadar approves Chunk F diff → push + open PR → CI green → merge.
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| `SameSite=Lax` (not Strict) for `__Secure-Fgp` | `Strict` breaks cross-site GET navigations from email links (`/verify-email`, `/reset-password`). Deviation documented in `docs/SECURITY.md §8b`. |
+| `max_age` matches refresh cookie (14d) | Fingerprint must outlive the 15-min access token — 15-min TTL would create a timing edge-case where a live token arrives with an expired fp cookie. |
+| Fail-open for missing `userFingerprint` claim | Pre-MEH-327 tokens (15-min max window) have no claim — mirrors MEH-206 (`tv`) and MEH-326 (`scope`) fail-open patterns. |
+| Fingerprint gate before `_maybe_bump_last_active` | Invalid tokens must not write to the DB. |
+
+### Next session start
+1. Read HANDOFF.md
+2. Confirm Smadar approves Chunk F diff
+3. `git push -u origin feature/meh-327-fingerprint-cookie`
+4. Open PR against staging
+5. CI must pass `TestFingerprintCookie` before merge
+
+---
 
 ## 2026-04-26 — Session close (MEH-332 closed, docs-only)
 
