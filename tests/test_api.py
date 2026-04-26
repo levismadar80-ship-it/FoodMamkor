@@ -1628,8 +1628,13 @@ class TestRefreshTokenFlow:
         return client.post("/auth/login", json={"email": email, "password": password})
 
     def _refresh_cookies(self, response):
-        """Extract all Set-Cookie header values from a response."""
-        return [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+        """Extract all Set-Cookie header values from a response.
+
+        httpx's Headers.items() joins multiple Set-Cookie values into a
+        single comma-separated string, breaking startswith() filters on
+        any cookie after the first. get_list() returns each individually.
+        """
+        return response.headers.get_list("set-cookie")
 
     def _fp_value(self, response):
         """Extract the raw __Secure-Fgp value from a Set-Cookie header.
@@ -1807,7 +1812,9 @@ class TestFingerprintCookie:
         return client.post("/auth/login", json={"email": email, "password": password})
 
     def _all_set_cookies(self, response):
-        return [v for k, v in response.headers.items() if k.lower() == "set-cookie"]
+        # httpx's Headers.items() joins multiple Set-Cookie values into one
+        # comma-separated string; get_list() returns them individually.
+        return response.headers.get_list("set-cookie")
 
     def _fp_cookie_header(self, response):
         cookies = self._all_set_cookies(response)
