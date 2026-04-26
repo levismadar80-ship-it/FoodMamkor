@@ -455,31 +455,40 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 
 ### 9. XSS — ניקוי input מהמשתמש
 
+**SHIPPED — MEH-329 (April 2026).** Defense-in-depth per ASVS V13.
+React's automatic encoding remains the primary defense; this strips
+HTML tags at the input layer so stored content is safe even if a
+future component renders it via `dangerouslySetInnerHTML`.
+
+- **Helper:** `backend/app/services/sanitization.py` →
+  `sanitize_text(value, max_length)`. Strips all HTML tags via
+  `bleach.clean(value, tags=[], strip=True)` and caps length.
+- **Applied to** 30 fields across 11 schemas covering producers,
+  home-products, experiences, events, reviews, ratings, and the
+  contact form. See `CHANGELOG.md` MEH-329 entry for the full list,
+  or `grep -rn "sanitize_text" backend/` for current coverage.
+- **NOT applied to** email, phone, instagram, website, image URLs,
+  slug, city, or user/producer name fields — see `<forbidden>` in
+  the MEH-329 task spec for rationale.
+- **Existing rows are NOT backfilled.** Sanitization runs on write
+  only. There is no exploit vector today (React encodes everything);
+  this is monitored if `dangerouslySetInnerHTML` is ever added to a
+  user-supplied field. Two existing dSIH usages render `ld+json`
+  schema only — see the eslint-disable comments in
+  `frontend/app/[slug]/page.js` and `frontend/app/producer/[id]/page.js`.
+
 ```python
-# pip install bleach
+# Pattern used across the codebase (Pydantic v2):
+from pydantic import field_validator
+from app.services.sanitization import sanitize_text
 
-import bleach
+class HomeProductCreate(BaseModel):
+    description: str | None = None
 
-def sanitize_text(text: str, max_length: int = 1000) -> str:
-    # הסר HTML tags לגמרי
-    cleaned = bleach.clean(text, tags=[], strip=True)
-    # חתוך לאורך מקסימלי
-    return cleaned[:max_length].strip()
-
-# בכל Pydantic model — הוסף validator:
-from pydantic import validator
-
-class HomeListing(BaseModel):
-    title: str
-    description: str
-    
-    @validator('title')
-    def clean_title(cls, v):
-        return sanitize_text(v, max_length=100)
-    
-    @validator('description')
-    def clean_description(cls, v):
-        return sanitize_text(v, max_length=500)
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=1000)
 ```
 
 ### 10. Environment Variables — אל תדליפי secrets
