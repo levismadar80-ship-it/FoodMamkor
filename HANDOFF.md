@@ -1,7 +1,51 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-326 code complete, awaiting pytest + push + preview)
+> Last updated: 2026-04-26 (MEH-326 ✅ MERGED, session closed)
+
+## 2026-04-26 — Session close (MEH-326 merged, next: MEH-332)
+
+### Status
+- **MEH-326 ✅ MERGED** — PR #349 merged to staging. SHA `7b7f880`. Manual tests A/B/C passed on staging.
+- **Current branch:** `staging` (clean, up to date)
+- **Next task:** MEH-332 — reset-password email URL points to production from staging (blocks staging email tests, HIGH)
+
+### New tickets opened this session
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| MEH-332 | High | Reset-password email URL hardcoded to production — breaks staging email tests |
+| MEH-333 | Medium | Inline login link in "email exists" error (UX, low urgency) |
+
+### Pre-launch order
+1. **MEH-332** — blocks staging email flow, fix first
+2. **MEH-327** — Ultra Plan #2: fingerprint cookie
+3. **MEH-329** — XSS sweep
+4. **MEH-330** — Dependabot
+5. **MEH-333** — UX polish, low urgency
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| No sessionStorage flag in refresh interceptor | SKIP_REFRESH list + in-flight `refreshPromise` sufficient; no extra storage needed |
+| `api.post("/auth/logout")` fire-and-forget in logout | Header.jsx callers are sync onClick; state must clear instantly |
+| `db.refresh(user)` in logout_all_devices | Belt-and-suspenders against expire_on_commit stale-tv; MEH-265 lesson |
+| `SameSite=Lax` not Strict | Strict breaks legitimate top-level navigation flows |
+| `delete_cookie` with symmetric attrs (R1 adversarial) | RFC 6265 doesn't require it, but defense-in-depth + symmetry with `_set_refresh_cookie` |
+| Defer R2 (axios retry loop guard) | Rate-limited at 30/min; no known production scenario triggers it; file as follow-up |
+
+### Lessons learned
+- **Stop hook no-push rule:** during multi-chunk features, stop hook fires after every commit and prompted auto-push. Needed explicit "no push until approved" rule per chunk. Consider documenting in CLAUDE.md workflow rules.
+- **axios `config.url` stays relative** (verified via axios PR #2391): SKIP_REFRESH list with `/auth/refresh` prefix is safe against infinite recursion.
+- **TestClient cookie-jar collision:** session client accumulates Set-Cookie headers across requests. Stale-cookie rotation tests need `fresh_client = TestClient(app)` with no prior history.
+- **Adversarial review caught R1** (`delete_cookie` missing symmetric attrs) that chunk-by-chunk review missed. `/adversarial-review` before push is load-bearing, not ceremonial.
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin && git pull origin staging`
+3. Branch: `git checkout -b feature/meh-332-reset-password-url`
+4. Investigate: check `FRONTEND_URL` env var in Railway staging environment — `_send_reset_email` uses `settings.frontend_url` which should already be correct if env var is set.
+
+---
 
 ## 2026-04-26 — MEH-326 JWT refresh tokens (code complete, not yet merged)
 
