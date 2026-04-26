@@ -186,6 +186,9 @@ summary + pointer here.
    parameter precedes the auth dep in the function signature. Use
    `valid_*_payload()` fixtures from `tests/conftest.py`; schema
    changes must not silently invalidate security tests.
+7. **Docs-only files → direct commit to staging, no PR.**
+   `HANDOFF.md` / `CHANGELOG.md` / `ROADMAP.md` / `MANUAL_TESTING.md`
+   do not need a PR.
 
 ---
 
