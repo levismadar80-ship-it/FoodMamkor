@@ -69,8 +69,8 @@ sequenceDiagram
     else password mismatch
         BE-->>FE: 401 Invalid credentials
     else all good
-        BE->>BE: create_access_token(user.id)<br/>HS256, 15min exp, JWT_SECRET_KEY
-        BE-->>FE: {access_token, token_type: "bearer"}<br/>+ Set-Cookie: refresh_token (14d, HttpOnly)
+        BE->>BE: create_access_token(user.id, fp_hash)<br/>HS256, 15min exp, userFingerprint claim (MEH-327)
+        BE-->>FE: {access_token, token_type: "bearer"}<br/>+ Set-Cookie: refresh_token (14d, HttpOnly)<br/>+ Set-Cookie: __Secure-Fgp (14d, HttpOnly, MEH-327)
         FE->>FE: store in auth-context<br/>+ localStorage
     end
 ```
@@ -87,7 +87,11 @@ flowchart LR
     Decode -->|Invalid/expired| Raise401[HTTPException 401]
     Decode -->|Valid| LoadUser[SELECT User WHERE id=sub]
     LoadUser -->|Not found| Raise401b[HTTPException 401]
-    LoadUser -->|Found| BumpLastActive[_maybe_bump_last_active<br/>throttled 5 min<br/>feeds /admin DAU chart]
+    LoadUser -->|Found| FpGate{MEH-327:<br/>userFingerprint<br/>claim present?}
+    FpGate -->|No — fail-open<br/>pre-MEH-327 token| BumpLastActive[_maybe_bump_last_active<br/>throttled 5 min<br/>feeds /admin DAU chart]
+    FpGate -->|Yes| CookieCheck{hash(__Secure-Fgp)<br/>== claim?}
+    CookieCheck -->|match| BumpLastActive
+    CookieCheck -->|mismatch or<br/>cookie absent| Raise401fp[HTTPException 401]
 
     BumpLastActive --> RoleDep{Which dep<br/>was called?}
     RoleDep -->|get_current_user| Pass[Return User]
@@ -142,10 +146,10 @@ sequenceDiagram
         AX->>AX: _expireSession()<br/>fire auth:expired event
         AX-->>C: Show toast + redirect /login
     else valid
-        BE->>BE: create_access_token (15min)<br/>create_refresh_token (14d, rotated)
-        BE-->>AX: {access_token}<br/>+ Set-Cookie: refresh_token (new, 14d, HttpOnly)
+        BE->>BE: generate_fingerprint()<br/>create_access_token (15min, fp hash in claim)<br/>create_refresh_token (14d, rotated)
+        BE-->>AX: {access_token}<br/>+ Set-Cookie: refresh_token (new, 14d, HttpOnly)<br/>+ Set-Cookie: __Secure-Fgp (new, 14d, HttpOnly, MEH-327)
         AX->>AX: localStorage.setItem("token", access_token)
-        AX->>BE: Retry original request<br/>with new Bearer token
+        AX->>BE: Retry original request<br/>with new Bearer token + __Secure-Fgp cookie
         BE-->>C: Original response (transparent to user)
     end
 ```

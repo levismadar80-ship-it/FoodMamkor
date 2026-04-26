@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-26 — MEH-327: feat(auth): OWASP JWT token-sidejacking fingerprint defence. `__Secure-Fgp` HttpOnly cookie bound to every access token via SHA-256 hash claim (`userFingerprint`). Gate in `get_current_user` runs before `_maybe_bump_last_active`. 8 token-issuing call sites wired (login/register/OAuth/refresh/logout-all). Fail-open for pre-MEH-327 tokens (15-min window). Logout clears cookie. `SameSite=Lax` deviation documented in `docs/SECURITY.md §8b`. 6 regression tests in `TestFingerprintCookie`.
+
 ## 2026-04-26 — MEH-332: docs: staging email links now point to staging.mehamakor.online (was incorrectly pointing to production). Root cause: `FRONTEND_URL` misconfigured on Railway staging — `docs/DEPLOYMENT.md` §A staging env var table did not list `FRONTEND_URL`, so it was bulk-copied from production. Env-only fix on Railway (manual) + docs/DEPLOYMENT.md row added + backend/.env.example annotated with per-env override warning. No code changes.
 
 ## 2026-04-25 — MEH-326: feat(auth): JWT refresh tokens with HttpOnly cookie rotation. Access TTL 15min + 14d refresh cookie. Backward compat preserved for pre-deploy 24h tokens (no `scope` claim). PR #349 (draft, pending pytest + preview).
