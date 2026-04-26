@@ -2004,3 +2004,98 @@ class TestSanitizationIntegration:
         assert "<script>" not in row.message
         assert "</script>" not in row.message
         assert "שאלה רגילה על פלטפורמה" in row.message
+
+
+class TestAppleTokenVerification:
+    """MEH-337: pyjwt 2.9.0 → 2.12.0 bump (CVE-2026-32597).
+
+    Apple OAuth (routers/auth.py:_verify_apple_token, lines 944-975) is
+    the ONLY pyjwt code path in the backend — primary auth uses joserfc.
+    These tests lock the _verify_apple_token WRAPPER behavior; functional
+    verification of pyjwt internals is delegated to pyjwt's upstream test
+    suite + manual Apple OAuth smoke on Vercel preview.
+    """
+
+    APPLE_JWK = {
+        "kid": "test-kid",
+        "kty": "RSA",
+        "alg": "RS256",
+        "use": "sig",
+        "n": "placeholder-modulus-not-real",
+        "e": "AQAB",
+    }
+    # All call sites MUST monkeypatch
+    # pyjwt.algorithms.RSAAlgorithm.from_jwk; placeholder "n" will
+    # not parse as a real RSA modulus.
+
+    def _setup_mocks(self, monkeypatch, *, decoded_payload=None, decode_exc=None, jwks=None, header=None):
+        from app import config
+        import jwt as pyjwt
+        import requests as req_mod
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        class _FakeResp:
+            def __init__(self, payload):
+                self._p = payload
+
+            def json(self):
+                return self._p
+
+        keys_payload = jwks if jwks is not None else [self.APPLE_JWK]
+        monkeypatch.setattr(req_mod, "get", lambda url, **kw: _FakeResp({"keys": keys_payload}))
+        monkeypatch.setattr(
+            pyjwt,
+            "get_unverified_header",
+            lambda token: header if header is not None else {"kid": "test-kid"},
+        )
+        monkeypatch.setattr(
+            pyjwt.algorithms.RSAAlgorithm,
+            "from_jwk",
+            lambda *a, **kw: object(),
+        )
+        if decode_exc is not None:
+            def _decode(*a, **kw):
+                raise decode_exc
+        else:
+            payload = decoded_payload or {"sub": "user-123", "email": "u@apple.com"}
+
+            def _decode(*a, **kw):
+                return payload
+        monkeypatch.setattr(pyjwt, "decode", _decode)
+
+    def test_returns_payload_on_valid_token(self, monkeypatch):
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(
+            monkeypatch,
+            decoded_payload={"sub": "u1", "email": "u@apple.com"},
+        )
+        result = _verify_apple_token("dummy.token.value")
+        assert result == {"sub": "u1", "email": "u@apple.com"}
+
+    def test_returns_none_when_apple_client_id_unset(self, monkeypatch):
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "")
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None
+
+    def test_returns_none_on_invalid_signature(self, monkeypatch):
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(monkeypatch, decode_exc=Exception("invalid signature"))
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None
+
+    def test_returns_none_on_unknown_kid(self, monkeypatch):
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(
+            monkeypatch,
+            jwks=[{**self.APPLE_JWK, "kid": "OTHER"}],
+            header={"kid": "test-kid"},
+        )
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None
