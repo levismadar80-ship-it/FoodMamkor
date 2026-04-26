@@ -28,12 +28,20 @@
 - ✅ API contract audit (static) — passed
 - 🔄 Backend tests (pytest), Frontend build, Frontend lint, Frontend dep audit, Playwright E2E — in progress at PR creation
 
-### Local smoke (abbreviated — app-level only)
+### Local smoke (abbreviated — connectivity only, NOT rate-limit fitness test)
 ```
 GET /health              → 200 ✅
-GET /producers           → 500 ⚠️ infrastructure (test DB tables dropped; same starlette passed 148 pytest tests with proper DB)
-POST /auth/login ×6      → 500×5, then 429 ✅ SlowAPIMiddleware rate-limit enforced on starlette 0.49.3
+GET /producers           → 500 ⚠️ infrastructure: uvicorn2.log:97 confirms "relation users does not exist"
+                                   (Base.metadata.create_all called without importing models; tables never created)
+                                   Not a starlette regression — same 148 pytest passed on properly-seeded DB
+POST /auth/login ×6      → 500×5, 429 on try 6 (corroborating only — see framing below)
 ```
+
+**Rate-limit evidence hierarchy (important for future bump templates):**
+- **PRIMARY:** `pytest TestRefreshTokenFlow::test_refresh_rate_limited` (Step 8) ✅ — proper DB, asserts 429 against rate-limit logic specifically
+- **Corroborating:** curl try-6 → 429 — ambiguous path (empty-DB 500s also count toward limit); cannot distinguish SlowAPIMiddleware from other 429 sources via curl alone
+- **Pending:** staging `smoke_test_prod.sh` checks 1 + 2 (post-merge gate)
+
 Full staging smoke (`smoke_test_prod.sh` 7/7) deferred — see post-merge gate in PR description.
 
 ### Key decisions this session
