@@ -1,7 +1,42 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-337 merged to staging — squash 6f7d859)
+> Last updated: 2026-04-26 (MEH-338 PR open — fastapi/starlette CVE bump)
+
+## 2026-04-26 — MEH-338 PR open (fastapi 0.115.6→0.120.1, starlette 0.41.3→0.49.3)
+
+### Status
+- **Branch:** `feature/meh-338-bump-fastapi-starlette` (off `staging`)
+- **PR:** draft, base=staging — awaiting preview smoke + `go merge`
+- 148/148 pytest green (local, with mehamakor_test DB)
+- pip-audit: starlette CVEs (CVE-2025-62727 + CVE-2025-54121) GONE after bump
+- Remaining open CVEs (out of scope): python-multipart (→ MEH-339), requests (→ MEH-340)
+
+### What's in this PR
+- `backend/pyproject.toml:6` — `fastapi==0.115.6` → `==0.120.1`
+- `backend/uv.lock` — starlette 0.41.3→0.49.3, annotated-doc 0.0.4 added, no other changes
+- `docs/CHANGELOG.md` — one-line entry
+
+### Next step
+- Await Railway/Vercel preview URL from CI
+- Run smoke_test_prod.sh + manual /health, /producers, /auth/login rate-limit, /auth/me
+- Await `go merge` from Smadar before merging to staging
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| fastapi 0.120.1 (not 0.121+) | Avoids Pydantic 1 deprecation noise; 0.120.x is the stable CVE-fix target per fastapi upstream |
+| starlette 0.49.3 (not 0.50.0) | fastapi 0.120.1 pins `starlette<0.50.0`; 0.49.3 is latest in series; both CVEs fixed at ≥0.49.1 |
+| annotated-doc 0.0.4 allowed | New fastapi 0.120.0+ dep extracted from typing_extensions; no transitive deps; 7KB; whitelist approved |
+| 3 atomic commits (no amend) | Stop hook (exit 2) blocked turns with dirty files; committed pyproject.toml, then uv.lock, then docs atomically per CLAUDE.md commit discipline |
+| Postgres not running (env issue) | Started pg_ctlcluster 16 main + created mehamakor_test DB; this is a one-time env setup for this container session |
+
+### Informational (out of scope, follow-up tickets needed)
+- `anthropic==0.39.0` in pyproject.toml — outdated; out of scope for MEH-338
+- `python-multipart==0.0.18` — 2 CVEs (CVE-2026-24486, CVE-2026-40347) → file as MEH-339
+- `requests==2.32.3` — 2 CVEs (CVE-2024-47081, CVE-2026-25645) → file as MEH-340
+
+---
 
 ## 2026-04-26 — MEH-337 merged (pyjwt bump 2.9.0 → 2.12.0, CVE-2026-32597)
 
