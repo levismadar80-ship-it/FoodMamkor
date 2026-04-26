@@ -1,20 +1,34 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-26 (MEH-327 chunks A–F committed locally, awaiting CI + merge approval)
+> Last updated: 2026-04-26 (MEH-327 merged to staging — `f1982d2`)
 
-## 2026-04-26 — Session in progress (MEH-327 fingerprint cookie)
+## 2026-04-26 — Session close (MEH-327 merged)
 
 ### Status
-- **MEH-327 — chunks A–F committed locally on `feature/meh-327-fingerprint-cookie`, NOT yet pushed**
-  - Chunk A `da4b2bc`: `generate_fingerprint`, `hash_fingerprint`, `create_access_token(fingerprint_hash=)` in `backend/app/auth.py`
-  - Chunk B `acca872`: `_set_fingerprint_cookie` helper + 8 call sites in `backend/app/routers/auth.py`
-  - Chunk C `7b97c5a`: `get_current_user` fingerprint gate (before `_maybe_bump_last_active`) in `backend/app/auth.py`
-  - Chunk D `7100725`: logout clears `__Secure-Fgp` in `backend/app/routers/auth.py`
-  - Chunk E `93531f0`: `TestFingerprintCookie` (6 tests) in `tests/test_api.py`
-  - Chunk F (this entry): docs — `docs/SECURITY.md §8b`, `docs/CHANGELOG.md`, `HANDOFF.md`, `.ai/diagrams/auth-flow.md`
-- **Tests:** `TestFingerprintCookie` fails at DB-connection setup in sandbox (no local PostgreSQL). Must run on CI after push.
-- **Next action:** Smadar approves Chunk F diff → push + open PR → CI green → merge.
+- **MEH-327 ✅ MERGED** — PR #351 squashed to `staging` as `f1982d2`. Token Sidejacking defence (OWASP JWT Cheat Sheet) live on staging.
+  - 8 token-issuing endpoints emit `__Secure-Fgp` cookie + `userFingerprint` claim
+  - `get_current_user` validates the SHA-256 binding before any DB write (fail-open for pre-MEH-327 tokens, max 15-min window)
+  - `/auth/logout` clears the cookie
+  - 7 tests in `TestFingerprintCookie` + 1 fix to `test_logout_all_devices_rotates_refresh_cookie`
+  - Docs synced: `SECURITY.md §8b`, `CHANGELOG.md`, `.ai/diagrams/auth-flow.md`
+- **Current branch:** `staging` (clean, post-merge)
+- **Next task:** TBD — MEH-335 hardening items are post-launch (Medium); next pre-launch ticket per ROADMAP.
+
+### CI iteration log (4 fix cycles before green)
+The first green CI run came after 4 separate diagnoses. **Root cause** of the long chain: httpx's `Headers.items()` joins multiple `Set-Cookie` headers into a single comma-separated string, breaking every `startswith()` filter on any cookie after the first. Symptom masked by `pytest -x` — failures in `TestRefreshTokenFlow` blocked `TestFingerprintCookie` from ever running, hiding 4 sibling tests with the same broken extraction. Documented in MEH-335 description for future reference.
+
+| Iter | Commit | Fix | Outcome |
+|------|--------|-----|---------|
+| 1 | `b6ca28a` | Initial chunks A–F | CI red: `test_logout_all_devices_rotates_refresh_cookie` 401≠200 (TestClient drops `Secure` cookies over `http://testserver`) |
+| 2 | `2a0ddfe` | Pass `__Secure-Fgp` explicitly via `cookies={...}` | CI red: `_fp_value` returned `None` (root cause not yet found) |
+| 3 | (diagnosis) | Standalone repro showed `headers.items()` joins multiple Set-Cookie headers — `headers.get_list("set-cookie")` returns them individually | — |
+| 4 | `bb184bb` | Replace `[v for k,v in headers.items() if k=="set-cookie"]` with `headers.get_list("set-cookie")` in both `_refresh_cookies` AND `_all_set_cookies` helpers | CI green ✅ |
+
+### New tickets opened this session
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| MEH-335 | Medium (post-launch hardening) | MEH-327 follow-ups: (1) **P2** add `logger.warning` on fingerprint mismatch in `auth.py:163-165` — the actual attack signature currently has zero security log signal; (2) **P3** downgrade `logger.info` fail-open log to `debug` (fires per-request during 15-min transition window); (3) **P3** missing test: `get_current_user_optional` with mismatched fp cookie (current behavior correct but untested); (4) **process** — root cause of the 4-iteration debug chain (httpx headers.items() Set-Cookie joining + `pytest -x` masking sibling failures) — consider running pytest without `-x` on auth-touching PRs to surface all related failures up front. |
 
 ### Key decisions this session
 | Decision | Reason |
@@ -23,13 +37,19 @@
 | `max_age` matches refresh cookie (14d) | Fingerprint must outlive the 15-min access token — 15-min TTL would create a timing edge-case where a live token arrives with an expired fp cookie. |
 | Fail-open for missing `userFingerprint` claim | Pre-MEH-327 tokens (15-min max window) have no claim — mirrors MEH-206 (`tv`) and MEH-326 (`scope`) fail-open patterns. |
 | Fingerprint gate before `_maybe_bump_last_active` | Invalid tokens must not write to the DB. |
+| `secure=True` unconditional on fp cookie (rejected conditional `secure=(env != "development")`) | Conditional `secure` recreates the env-drift class of bug caught in MEH-332. Tests must adapt to the cookie attrs, not the other way around. Dev workflow constraint: must use HTTPS. |
+
+### Lessons learned
+- **httpx `Headers.items()` joins multiple `Set-Cookie` headers** into one comma-separated string. Use `Headers.get_list("set-cookie")` for individual entries. Critical for any test that asserts on cookies set alongside another cookie in the same response.
+- **`pytest -x` hides sibling failures with the same root cause.** When debugging an auth/cookie change that touches multiple tests, run without `-x` on the first failure to see whether the same bug has spread.
+- **`__Secure-` cookie prefix REQUIRES `Secure=True` per RFC 6265bis.** Browsers reject `__Secure-*` cookies without the flag — conditional `secure` is not a viable test workaround. Adapt the test, not the production cookie attrs.
+- **TestClient `http://testserver` drops `Secure` cookies via httpx (RFC 6265bis enforcement).** Tests that need a Secure cookie carried forward must pass it explicitly via `cookies={...}`, mirroring the established MEH-326 refresh-token test pattern.
 
 ### Next session start
 1. Read HANDOFF.md
-2. Confirm Smadar approves Chunk F diff
-3. `git push -u origin feature/meh-327-fingerprint-cookie`
-4. Open PR against staging
-5. CI must pass `TestFingerprintCookie` before merge
+2. `git fetch --prune origin && git pull origin staging`
+3. Review MEH-335 hardening backlog (Medium, post-launch — defer until pre-launch tickets clear)
+4. Pick next ROADMAP ticket per priority
 
 ---
 
