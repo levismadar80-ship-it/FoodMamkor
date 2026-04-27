@@ -3,13 +3,23 @@ import secrets
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-from app.auth import create_access_token, get_current_user, get_current_user_optional, hash_password, verify_password
+from app.auth import (
+    create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
+    generate_fingerprint,
+    get_current_user,
+    get_current_user_optional,
+    hash_fingerprint,
+    hash_password,
+    verify_password,
+)
 from app.config import settings
 from app.services.email import send_email
 from app.database import get_db
@@ -20,6 +30,57 @@ from app.rate_limit import limiter
 
 def _gen_referral_code() -> str:
     return uuid.uuid4().hex[:8]
+
+
+_MAX_AVATAR_BYTES = 1 * 1024 * 1024  # 1 MB — Google avatars are tiny
+
+
+def _upload_google_avatar_or_none(picture_url: str | None) -> str | None:
+    """Download a Google profile picture and re-host it on Cloudinary.
+
+    Fail-open: any network or API error returns None so OAuth login is
+    never blocked. Returns the Cloudinary secure_url on success, or
+    picture_url unchanged when Cloudinary is not configured (dev only).
+    """
+    if not picture_url:
+        return None
+    if not settings.cloudinary_cloud_name:
+        return picture_url  # dev fallback — Cloudinary not wired up
+    try:
+        import httpx
+        import cloudinary
+        import cloudinary.uploader
+
+        resp = httpx.get(picture_url, timeout=5, follow_redirects=True)
+        resp.raise_for_status()
+        contents = resp.content
+        if len(contents) > _MAX_AVATAR_BYTES:
+            logger.warning(
+                "Google avatar too large (%d bytes), skipping Cloudinary re-host",
+                len(contents),
+            )
+            return None
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor/avatars",
+            public_id=uuid.uuid4().hex,
+            resource_type="image",
+            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+        )
+        return result["secure_url"]
+    except Exception:
+        logger.exception(
+            "Failed to re-host Google avatar from %s — login continues without avatar",
+            picture_url,
+        )
+        return None
+
+
 from app.schemas.schemas import (
     AppleAuthRequest,
     ForgotPasswordRequest,
@@ -27,18 +88,137 @@ from app.schemas.schemas import (
     LoginRequest,
     ProducerOAuthSignupRequest,
     ProducerRegister,
+    ProducerRegistrationResponse,
     ResetPasswordRequest,
     Token,
     UserOut,
     UserRegister,
 )
 
+
+def _set_refresh_cookie(response: Response, user: User) -> None:
+    """MEH-326: attach a fresh refresh-token cookie to the outgoing response.
+
+    Single source of truth for cookie attributes used by every endpoint
+    that issues an access token (login/register/OAuth/refresh/logout-all).
+    SameSite=Lax + HttpOnly + Secure + same-origin Next.js proxy means no
+    separate CSRF token is needed as long as /auth/refresh is POST-only.
+    Path is scoped to /api/auth so the cookie isn't sent on unrelated
+    /api/* requests. No `domain` attribute — host-only is more secure.
+    """
+    response.set_cookie(
+        key="refresh_token",
+        value=create_refresh_token(user.id, user.token_version),
+        max_age=settings.refresh_token_expire_days * 24 * 3600,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/api/auth",
+    )
+
+
+def _set_fingerprint_cookie(response: Response, fingerprint: str) -> None:
+    """MEH-327: attach the raw fingerprint as an HttpOnly cookie.
+
+    The SHA-256 hash of this value is embedded in the access token as the
+    `userFingerprint` claim. On every authenticated request get_current_user
+    hashes the cookie value and compares it to the claim, so a stolen access
+    token cannot be replayed without also stealing this HttpOnly cookie.
+
+    Path=/ (required by the __Secure- prefix, RFC 6265bis) so the browser
+    sends it on all /api/* requests, not only /api/auth.
+    max_age matches the refresh cookie so the fingerprint outlives any access
+    token, avoiding the timing edge-case where a valid 15-min access token
+    arrives with an already-expired fingerprint cookie.
+    SameSite=Lax matches _set_refresh_cookie — see its docstring for rationale.
+    """
+    response.set_cookie(
+        key="__Secure-Fgp",
+        value=fingerprint,
+        max_age=settings.refresh_token_expire_days * 24 * 3600,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+    )
+
+
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/refresh", response_model=Token)
+@limiter.limit("30/minute")
+def refresh_token(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """MEH-326: rotate access + refresh tokens via the HttpOnly cookie.
+
+    No request body. Reads `refresh_token` from cookies. On success:
+    issues a new access token (returned in JSON body) AND rotates the
+    refresh cookie (new value, sliding 14d TTL). Failures: 401 (cookie
+    absent / decode failure / user not found / token_version drift) or
+    403 (user blocked).
+
+    Refresh tokens are post-MEH-326 only — no in-the-wild tokens predate
+    this code, so we strictly require the `tv` claim (unlike access
+    tokens which fail-open on missing `tv` for backward compat).
+    """
+    cookie = request.cookies.get("refresh_token")
+    if not cookie:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="לא מחובר")
+    claims = decode_refresh_token(cookie)
+    if claims is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    user_id = claims.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
+    tv = claims.get("tv")
+    if tv is None or tv != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute")
+def logout(request: Request, response: Response):
+    """MEH-326: clear the HttpOnly refresh-token cookie.
+
+    No auth required — stale-cookie holders (expired access token but
+    valid refresh cookie) must still be able to log out cleanly.
+    Path must match _set_refresh_cookie exactly or the browser won't
+    delete the cookie (Path is part of the cookie identity).
+    """
+    response.delete_cookie(
+        "refresh_token",
+        path="/api/auth",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    # MEH-327: path must match _set_fingerprint_cookie exactly.
+    response.delete_cookie(
+        "__Secure-Fgp",
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
 
 
 @router.post("/register", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
-def register(request: Request, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
@@ -61,13 +241,17 @@ def register(request: Request, data: UserRegister, background_tasks: BackgroundT
     db.refresh(user)
     background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
-@router.post("/register/producer", response_model=Token)
+@router.post("/register/producer", response_model=ProducerRegistrationResponse)
 @limiter.limit("3/hour")  # SECURITY FIX #2
 def register_producer(
     request: Request,
+    response: Response,
     data: ProducerRegister,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -190,7 +374,20 @@ def register_producer(
         background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
         background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
 
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    # MEH-287: pre-flight check — whether the background task has the
+    # config it needs to send. True = expected to send (Twilio may still
+    # fail async, logged as ERROR). False = known not-sent (missing env
+    # vars or no phone); frontend shows a dashboard-fallback banner.
+    whatsapp_expected = bool(
+        p_phone and settings.twilio_account_sid and settings.twilio_whatsapp_from
+    )
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return ProducerRegistrationResponse(
+        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        whatsapp_sent=whatsapp_expected,
+    )
 
 
 @router.get("/email-exists")
@@ -204,7 +401,7 @@ def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db
 
 @router.post("/google", response_model=Token)
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
-def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends(get_db)):
+def google_auth(request: Request, response: Response, data: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
     # MEH-253 — distinguish "Google OAuth isn't configured on this server"
     # (503) from "the token you sent is invalid" (401). Before this check,
@@ -222,7 +419,7 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
     google_id = user_info["sub"]
     email = user_info.get("email", "")
     name = user_info.get("name", "")
-    picture = user_info.get("picture") or None
+    picture = _upload_google_avatar_or_none(user_info.get("picture"))
 
     # Check if user exists by google_id or email
     user = db.query(User).filter(User.google_id == google_id).first()
@@ -260,13 +457,17 @@ def google_auth(request: Request, data: GoogleAuthRequest, db: Session = Depends
         user.avatar_url = picture
         db.commit()
 
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/register/producer/oauth", response_model=Token)
 @limiter.limit("10/minute")
 def register_producer_oauth(
     request: Request,
+    response: Response,
     data: ProducerOAuthSignupRequest,
     db: Session = Depends(get_db),
 ):
@@ -311,6 +512,11 @@ def register_producer_oauth(
     # it explicitly via `name`. Fall back to the Google "name" claim or
     # the email local-part so the User.name NOT NULL constraint holds.
     full_name = data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
+    # Re-host the Google avatar once here so both new-user creation and the
+    # MEH-138 backfill use the same Cloudinary URL without a double upload.
+    picture_for_google = _upload_google_avatar_or_none(
+        user_info.get("picture") if provider == "google" else None
+    )
 
     # 1. Look up by provider sub first (stable identifier).
     user = db.query(User).filter(getattr(User, sub_field) == oauth_sub).first()
@@ -335,7 +541,7 @@ def register_producer_oauth(
                 sub_field: oauth_sub,
             }
             if provider == "google":
-                kwargs["avatar_url"] = user_info.get("picture") or None
+                kwargs["avatar_url"] = picture_for_google
             user = User(**kwargs)
             db.add(user)
             db.commit()
@@ -353,23 +559,28 @@ def register_producer_oauth(
     # MEH-138 — backfill the Google avatar once, without overwriting a
     # manually-uploaded photo.
     if provider == "google":
-        picture = user_info.get("picture")
-        if picture and not user.avatar_url:
-            user.avatar_url = picture
+        if picture_for_google and not user.avatar_url:
+            user.avatar_url = picture_for_google
             db.commit()
 
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
-def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, response: Response, data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.get("/me", response_model=UserOut)
@@ -389,6 +600,7 @@ def get_me(request: Request, user: User = Depends(get_current_user), db: Session
 @limiter.limit("5/hour")
 def logout_all_devices(
     request: Request,
+    response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -399,12 +611,16 @@ def logout_all_devices(
     """
     user.token_version = (user.token_version or 1) + 1
     db.commit()
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    db.refresh(user)
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/apple", response_model=Token)
 @limiter.limit("10/minute")  # SECURITY FIX #2
-def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(get_db)):
+def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
     # MEH-253 — 503 when the provider isn't configured (see google_auth).
     if not settings.apple_client_id:
@@ -448,7 +664,10 @@ def apple_auth(request: Request, data: AppleAuthRequest, db: Session = Depends(g
             db.commit()
             db.refresh(user)
 
-    return Token(access_token=create_access_token(user.id, user.token_version))
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
+    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
 @router.post("/forgot-password")
@@ -461,6 +680,7 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
         user.reset_token = token
         user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
         db.commit()
+        logger.info("[FORGOT-PW] token_stored user_id=%s expires=%s", user.id, user.reset_token_expires_at)
         reset_link = f"{settings.frontend_url}/reset-password?token={token}"
         background_tasks.add_task(_send_reset_email, user.email, user.name, reset_link)
     return {"detail": "אם האימייל קיים במערכת, ישלח קישור לאיפוס"}
@@ -471,28 +691,48 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
-    if not user or not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    if not user:
+        logger.warning("[RESET] token_not_found token_prefix=%s", data.token[:8])
+        raise HTTPException(status_code=404, detail="הקישור לא תקין")
+    if not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
+        logger.warning("[RESET] token_expired user_id=%s expires=%s now=%s", user.id, user.reset_token_expires_at, datetime.utcnow())
+        raise HTTPException(status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש")
     user.password_hash = hash_password(data.new_password)
     user.reset_token = None
     user.reset_token_expires_at = None
     db.commit()
+    logger.info("[RESET] password_updated user_id=%s", user.id)
     return {"detail": "הסיסמה עודכנה בהצלחה"}
 
 
 @router.get("/verify-email")
 @limiter.limit("10/minute")
 def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
-    """Consume email verification token. Clears token on success."""
+    """Consume email verification token. Clears token on success.
+
+    MEH-320: 404 (not_found) / 410 (expired) split + structured logging,
+    same pattern MEH-304 applied to /auth/reset-password. Diagnostics
+    only — does not change happy-path behavior. The actual root cause
+    of the staging 400 will be identified from the [VERIFY-EMAIL]
+    log entries this surfaces.
+    """
     user = db.query(User).filter(User.email_verify_token == token).first()
     if not user:
-        raise HTTPException(status_code=400, detail="קישור האימות לא תקין")
+        logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
+        raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
     if user.email_verify_expires is None or user.email_verify_expires < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="קישור האימות פג תוקף")
+        logger.warning(
+            "[VERIFY-EMAIL] token_expired user_id=%s expires=%s now=%s",
+            user.id,
+            user.email_verify_expires,
+            datetime.utcnow(),
+        )
+        raise HTTPException(status_code=410, detail="קישור האימות פג תוקף")
     user.email_verified = True
     user.email_verify_token = None
     user.email_verify_expires = None
     db.commit()
+    logger.info("[VERIFY-EMAIL] verified user_id=%s", user.id)
     return {"detail": "האימייל אומת בהצלחה"}
 
 
@@ -577,7 +817,41 @@ def _send_reset_email(email: str, name: str, reset_link: str):
         f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    send_email(email, "מהמקור - איפוס סיסמה", body)
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לחצי על הכפתור לאיפוס הסיסמה (תוקף: שעה אחת):</p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{reset_link}"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  איפוס סיסמה
+                </a>
+              </div>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
+              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
+              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
+                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
+                <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
 
 
 def _send_verify_email(email: str, name: str, token: str):
@@ -591,7 +865,42 @@ def _send_verify_email(email: str, name: str, token: str):
         f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
-    send_email(email, "מהמקור - אמתי את האימייל שלך", body)
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך, לחצי על הכפתור:</p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{verify_url}"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  אמתי את האימייל שלך
+                </a>
+              </div>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
+              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
+              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
+                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
+                <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, "מהמקור - אמתי את האימייל שלך", body, html=html_body)
 
 
 def _send_welcome_email(email: str, name: str, role: str = "consumer"):
@@ -685,10 +994,25 @@ def _verify_google_token(id_token: str) -> dict | None:
         return None
 
 
-def _notify_producer_registered(name: str, phone: str | None):
-    """Send WhatsApp welcome + profile-completion link to the new producer."""
-    if not (phone and settings.twilio_account_sid and settings.twilio_whatsapp_from):
-        return
+def _notify_producer_registered(name: str, phone: str | None) -> bool:
+    """Send WhatsApp welcome + profile-completion link to the new producer.
+
+    MEH-287: returns True on success, False on skip/failure. Any skip
+    now emits logger.error with the exact missing piece so Railway /
+    Sentry surfaces the misconfiguration instead of silently failing.
+    """
+    missing = []
+    if not phone:
+        missing.append("phone")
+    if not settings.twilio_account_sid:
+        missing.append("TWILIO_ACCOUNT_SID")
+    if not settings.twilio_whatsapp_from:
+        missing.append("TWILIO_WHATSAPP_FROM")
+    if missing:
+        logger.error(
+            f"[WHATSAPP] Producer welcome SKIPPED for '{name}' — missing: {', '.join(missing)}"
+        )
+        return False
     phone = phone.replace("-", "").strip()
     if not phone.startswith("+"):
         phone = "+972" + phone.lstrip("0")
@@ -706,8 +1030,12 @@ def _notify_producer_registered(name: str, phone: str | None):
             to=f"whatsapp:{phone}",
         )
         logger.info("[WHATSAPP] Producer welcome sent")
+        return True
     except Exception as e:
-        logger.warning(f"[WHATSAPP] Producer welcome failed: {e}")
+        logger.error(
+            f"[WHATSAPP] Producer welcome FAILED for {phone}: {e}", exc_info=True
+        )
+        return False
 
 
 def _notify_admin_new_producer(name: str, city: str | None):

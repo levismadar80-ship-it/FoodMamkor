@@ -20,7 +20,8 @@ reference; the issue below no longer exists in the codebase.
 ```python
 # backend/app/config.py — current behavior
 SECRET_KEY = os.environ["JWT_SECRET_KEY"]    # required in production
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 15              # MEH-326: 15min (was 1440/24h)
+REFRESH_TOKEN_EXPIRE_DAYS = 14               # MEH-326: 14d HttpOnly refresh cookie
 ```
 
 - **Dev:** if `JWT_SECRET_KEY` is unset, `_load_settings()` generates an
@@ -30,14 +31,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440            # 24h — shortened from 7 days
   **refuses to start** with a `RuntimeError` ("SECURITY: JWT_SECRET_KEY
   must be set in production"). This is the key fail-fast guarantee.
 - **Generation:** `python -c "import secrets; print(secrets.token_hex(32))"`
-- **Token lifetime:** 24 hours (was 7 days; shortened in this fix). No
-  refresh-token infra yet — users re-login daily. A 15-minute ideal
-  would require implementing refresh tokens first; tracked as a v2
-  item in ROADMAP.md, not a security blocker.
+- **Token lifetime (MEH-326):** 15-minute access token + 14-day HttpOnly
+  refresh cookie with rotation. Backend: `POST /auth/refresh` rotates both
+  tokens on each use. Frontend: `withCredentials: true` + axios interceptor
+  silently refreshes on 401. Backward compat: pre-MEH-326 tokens (no `scope`
+  claim) still validate via fail-open in `get_current_user`.
 
 > Historical note: earlier snapshots used a hardcoded dev default
 > (`"mehamakor123"`-style). That has been replaced — see the
 > `_DEV_SECRET_SENTINEL` + `_load_settings()` flow in `config.py`.
+
+> **MEH-326 CSRF note:** The refresh cookie uses `SameSite=Lax`. Combined
+> with the same-origin Next.js proxy (`/api/*` → Railway) and POST-only
+> `/auth/refresh`, cross-site requests cannot trigger token rotation —
+> no separate CSRF token needed. `SameSite=Strict` was rejected: it
+> breaks legitimate top-level navigation flows.
 
 ### ✅ 2. Rate Limiting — SHIPPED (SECURITY FIX #2, corrected in MEH-256)
 
@@ -351,35 +359,136 @@ Both invariants are compatible with the April 2026 `/privacy` page
 (`חוק הגנת הפרטיות תיקון 13, 2025`), which lists IP as "data collected"
 — minimized + time-limited, not stored raw.
 
+### ✅ 8b. Token Sidejacking Protection (MEH-327, April 2026)
+
+**Threat:** attacker steals the JWT access token from `localStorage`
+(e.g. via XSS) and replays it from a different origin or device. The
+token alone was sufficient for full account access.
+
+**Defence:** OWASP JWT Cheat Sheet "Token Sidejacking" pattern — bind
+each access token to a browser-only HttpOnly cookie via SHA-256 hash.
+
+**Mechanism:**
+1. On every token-issuing event (login, register, OAuth, refresh,
+   logout-all-devices), the backend generates a 50-byte random
+   fingerprint (`secrets.token_hex(50)`), embeds its SHA-256 hash as
+   the `userFingerprint` JWT claim, and sets the raw value as the
+   HttpOnly `__Secure-Fgp` cookie.
+2. `get_current_user` reads the cookie, hashes it, and compares to the
+   claim. Mismatch or absent cookie → `401`. This gate runs **before**
+   `_maybe_bump_last_active` so rejected tokens never write to the DB.
+
+**`__Secure-Fgp` cookie spec:**
+
+| Attribute | Value | Reason |
+|---|---|---|
+| `HttpOnly` | `True` | Not readable by JS — the whole point |
+| `Secure` | `True` | Required by `__Secure-` prefix (RFC 6265bis) |
+| `SameSite` | `Lax` | See deviation note below |
+| `Path` | `/` | Required by `__Secure-` prefix |
+| `max-age` | 14 days | Matches refresh cookie TTL — fingerprint must outlive the 15-min access token to avoid a timing edge-case where a live token arrives with an already-expired fp cookie |
+
+**SameSite=Lax deviation from OWASP (which recommends Strict):**
+`GET` cross-site navigations from email links (`/verify-email`,
+`/reset-password`) arrive from the user's email client — a cross-site
+top-level navigation. `SameSite=Strict` drops the cookie on those
+navigations, breaking email verification and password-reset UX.
+`Lax` still blocks cross-site `POST`/`AJAX` (the primary CSRF vector).
+This deviation is intentional and documented here to prevent future
+"simplification" to Strict without understanding the breakage.
+
+**Backward compat (fail-open):** if `userFingerprint` is absent (pre-
+MEH-327 tokens; max 15-min TTL window), `get_current_user` logs info
+and passes. Mirrors the MEH-206 (`tv`) and MEH-326 (`scope`) patterns.
+
+**Logout:** `POST /auth/logout` deletes `__Secure-Fgp` with `path=/`
+matching `_set_fingerprint_cookie` exactly (wrong path = silent no-op).
+`POST /auth/logout-all-devices` overwrites the cookie in the same
+response as the new access token.
+
+**Code locations:**
+- `backend/app/auth.py` — `generate_fingerprint`, `hash_fingerprint`,
+  `create_access_token(fingerprint_hash=)`, `get_current_user` gate
+- `backend/app/routers/auth.py` — `_set_fingerprint_cookie`, 8 call
+  sites, logout deletion
+- `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
+
+### ✅ 8c. Dependency audits + Dependabot (MEH-330, April 2026)
+
+Supply-chain CVE gate — pip-audit (backend) + npm audit (frontend) run
+per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
+`pip`, `npm`, and `github-actions`.
+
+**CI workflow:** `.github/workflows/dependency-audit.yml`
+- Triggers: `pull_request` (paths-filtered to dep manifests), `schedule`
+  (Mon 03:00 UTC = Mon 06:00 Asia/Jerusalem), `workflow_dispatch`.
+- Two parallel jobs, each with `permissions: contents: read`
+  (least-privilege `GITHUB_TOKEN`).
+- Backend job: `uv run --with pip-audit pip-audit --strict` — audits the
+  uv-managed venv directly (matches what ships).
+- Frontend job: `npm audit --audit-level=high` — **NO `--omit=dev`**
+  (dev-tool CVEs execute on machines that build the production
+  artifact; supply-chain risk).
+- **Sprint 1 mode: warn-only** (`continue-on-error: true`). Umbrella
+  ticket MEH-336 tracks the baseline cleanup; flips to required after
+  baseline cleared.
+
+**Dependabot:** `.github/dependabot.yml`
+- 3 ecosystems × weekly Mon 06:00 Asia/Jerusalem.
+- All PRs target `staging` (never `main` per CLAUDE.md branch strategy).
+- `open-pull-requests-limit: 5` per ecosystem.
+- Labels: `dependencies` + `meh-330` (+ `ci` for actions).
+
+**Baseline at MEH-330 ship (2026-04-26):**
+- Frontend: 13 high / 6 moderate (`next`, `lodash`, `picomatch`,
+  `rollup`, `serialize-javascript`, `glob`, etc.).
+- Backend: 8 vulns across 5 packages (`pip`, `pyjwt`, `python-multipart`,
+  `requests`, `starlette`).
+
+**High-priority sub-tickets (auth-critical, opened pre-merge):**
+- **MEH-337** — `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597, touches
+  `backend/app/auth.py`).
+- **MEH-338** — `starlette 0.41.3 → 0.49.1` (CVE-2025-62727, framework;
+  coordinate FastAPI 0.115.6 compatibility).
+
 ## 🟡 בינוני — תקן החודש
 
 ### 9. XSS — ניקוי input מהמשתמש
 
+**SHIPPED — MEH-329 (April 2026).** Defense-in-depth per ASVS V13.
+React's automatic encoding remains the primary defense; this strips
+HTML tags at the input layer so stored content is safe even if a
+future component renders it via `dangerouslySetInnerHTML`.
+
+- **Helper:** `backend/app/services/sanitization.py` →
+  `sanitize_text(value, max_length)`. Strips all HTML tags via
+  `bleach.clean(value, tags=[], strip=True)` and caps length.
+- **Applied to** 30 fields across 11 schemas covering producers,
+  home-products, experiences, events, reviews, ratings, and the
+  contact form. See `CHANGELOG.md` MEH-329 entry for the full list,
+  or `grep -rn "sanitize_text" backend/` for current coverage.
+- **NOT applied to** email, phone, instagram, website, image URLs,
+  slug, city, or user/producer name fields — see `<forbidden>` in
+  the MEH-329 task spec for rationale.
+- **Existing rows are NOT backfilled.** Sanitization runs on write
+  only. There is no exploit vector today (React encodes everything);
+  this is monitored if `dangerouslySetInnerHTML` is ever added to a
+  user-supplied field. Two existing dSIH usages render `ld+json`
+  schema only — see the eslint-disable comments in
+  `frontend/app/[slug]/page.js` and `frontend/app/producer/[id]/page.js`.
+
 ```python
-# pip install bleach
+# Pattern used across the codebase (Pydantic v2):
+from pydantic import field_validator
+from app.services.sanitization import sanitize_text
 
-import bleach
+class HomeProductCreate(BaseModel):
+    description: str | None = None
 
-def sanitize_text(text: str, max_length: int = 1000) -> str:
-    # הסר HTML tags לגמרי
-    cleaned = bleach.clean(text, tags=[], strip=True)
-    # חתוך לאורך מקסימלי
-    return cleaned[:max_length].strip()
-
-# בכל Pydantic model — הוסף validator:
-from pydantic import validator
-
-class HomeListing(BaseModel):
-    title: str
-    description: str
-    
-    @validator('title')
-    def clean_title(cls, v):
-        return sanitize_text(v, max_length=100)
-    
-    @validator('description')
-    def clean_description(cls, v):
-        return sanitize_text(v, max_length=500)
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=1000)
 ```
 
 ### 10. Environment Variables — אל תדליפי secrets

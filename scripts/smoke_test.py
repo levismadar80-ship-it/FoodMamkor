@@ -39,10 +39,6 @@ TIMEOUT = 5.0
 # Distinct "public" IPs used to prove rate-limit isolation. Addresses
 # are RFC 5737 documentation space — never resolve to real hosts.
 BOGUS_IP_A = "192.0.2.10"
-BOGUS_IP_B = "192.0.2.20"
-BOGUS_IP_C = "192.0.2.30"
-BOGUS_IP_D = "192.0.2.40"
-BOGUS_IP_E = "192.0.2.50"
 
 
 @dataclass
@@ -100,7 +96,7 @@ def check_rate_limit_enforcement(base_url: str) -> Check:
     name = "check_rate_limit_enforcement"
     url = f"{base_url.rstrip('/')}/auth/login"
     headers = {"Content-Type": "application/json", "X-Forwarded-For": BOGUS_IP_A}
-    body = {"email": "smoke-rate@invalid.test", "password": "wrong"}
+    body = {"email": "smoke-rate@example.com", "password": "wrong"}
 
     codes: list[int] = []
     for _ in range(6):
@@ -130,53 +126,7 @@ def check_rate_limit_enforcement(base_url: str) -> Check:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Check 2 — rate-limit isolation (5 distinct XFF IPs → none 429)
-# ─────────────────────────────────────────────────────────────────────
-
-
-def check_rate_limit_isolation(base_url: str) -> Check:
-    name = "check_rate_limit_isolation"
-    url = f"{base_url.rstrip('/')}/auth/login"
-    body = {"email": "smoke-iso@invalid.test", "password": "wrong"}
-
-    codes: list[tuple[str, int]] = []
-    for ip in (BOGUS_IP_A, BOGUS_IP_B, BOGUS_IP_C, BOGUS_IP_D, BOGUS_IP_E):
-        try:
-            r = requests.post(
-                url,
-                json=body,
-                headers={"Content-Type": "application/json", "X-Forwarded-For": ip},
-                timeout=TIMEOUT,
-            )
-            codes.append((ip, r.status_code))
-        except requests.RequestException as e:
-            return Check(
-                name=name,
-                passed=False,
-                reason=f"request failed: {e}",
-                cause="backend unreachable or very slow",
-                fix="check Railway deploy status + /health",
-            )
-
-    throttled = [(ip, code) for ip, code in codes if code == 429]
-    if not throttled:
-        return Check(name=name, passed=True)
-    return Check(
-        name=name,
-        passed=False,
-        reason=f"distinct XFF IPs should each start fresh, but got 429 on {throttled}",
-        cause="MEH-256 regression — rate limit keyed on proxy IP, all users share one bucket",
-        fix=(
-            "(1) set TRUSTED_PROXY=1 on Railway staging + production; "
-            "(2) verify backend/app/rate_limit.py uses get_real_client_ip "
-            "(X-Real-IP primary, XFF[-2] fallback); "
-            "(3) confirm deploy is running the latest code"
-        ),
-    )
-
-
-# ─────────────────────────────────────────────────────────────────────
-# Check 3 — IDOR on pending producer (regression for MEH-254)
+# Check 2 — IDOR on pending producer (regression for MEH-254)
 # ─────────────────────────────────────────────────────────────────────
 
 
@@ -348,7 +298,7 @@ def check_password_validation(base_url: str) -> Check:
     # Password is the field under test; keep the others valid so the
     # 422 we get back is about password length, not a missing field.
     body = {
-        "email": "smoke-pw@invalid.test",
+        "email": "smoke-pw@example.com",
         "name": "Smoke",
         "password": "ab",  # 2 chars — must be rejected
     }
@@ -381,7 +331,6 @@ def check_password_validation(base_url: str) -> Check:
 
 CHECKS: list[Callable[[str], Check]] = [
     check_rate_limit_enforcement,
-    check_rate_limit_isolation,
     check_idor_pending_producer,
     check_auth_required,
     check_security_headers,

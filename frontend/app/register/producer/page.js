@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -40,8 +41,13 @@ function RegisterProducerPageBody() {
   const isUpgrade = !!user;
   // Initialize step from localStorage token so there's no flicker — auth
   // context loads async, but the token presence is synchronous.
+  // Wrapped in try/catch — localStorage can throw on quota / private-mode.
   const [step, setStep] = useState(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("token")) return 2;
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("token")) return 2;
+    } catch {
+      // private browsing / storage disabled — fall through to step 1
+    }
     return 1;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
@@ -53,7 +59,11 @@ function RegisterProducerPageBody() {
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [emailExistsWarning, setEmailExistsWarning] = useState("");
+  const [emailExistsSubmitError, setEmailExistsSubmitError] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  // MEH-287: true when server confirms Twilio config is present (WhatsApp
+  // expected to arrive). False → show dashboard-fallback banner on step 3.
+  const [whatsappSent, setWhatsappSent] = useState(true);
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -98,19 +108,53 @@ function RegisterProducerPageBody() {
   const restoreDraft = () => {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
-      if (saved) setForm((prev) => ({ ...prev, ...JSON.parse(saved) }));
-    } catch {}
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Validate shape — reject anything that isn't a plain object,
+        // or that has a non-array category_ids. Drop garbage drafts so
+        // we don't merge stale schemas (e.g. from before category_ids
+        // existed) into form state.
+        const shapeOk =
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed) &&
+          (parsed.category_ids === undefined || Array.isArray(parsed.category_ids));
+        if (shapeOk) {
+          setForm((prev) => ({ ...prev, ...parsed }));
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+        }
+      }
+    } catch {
+      // Bad JSON or storage disabled — clear and ignore.
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    }
     setShowDraftBanner(false);
   };
 
+  // Functional updater + draft save in one step. Used for every field —
+  // text inputs, checkboxes, multi-select category list — so draft
+  // persistence covers all writes uniformly (previously only text inputs
+  // hit saveDraft, so checkboxes/categories were silently lost on refresh).
+  // saveDraft is called inside the updater; in React strict mode the
+  // updater can run twice — localStorage writes are idempotent so the
+  // duplicate write is harmless.
+  const setAndSave = (updater) => {
+    setForm((prev) => {
+      const next = updater(prev);
+      saveDraft(next);
+      return next;
+    });
+  };
+
   const set = (field) => (e) => {
-    const updated = { ...form, [field]: e.target.value };
-    setForm(updated);
-    saveDraft(updated);
+    const value = e.target.value;
+    if (field === "email") setEmailExistsSubmitError(false);
+    setAndSave((prev) => ({ ...prev, [field]: value }));
   };
 
   const toggleCategory = (id) => {
-    setForm((prev) => ({
+    setAndSave((prev) => ({
       ...prev,
       category_ids: prev.category_ids.includes(id)
         ? prev.category_ids.filter((c) => c !== id)
@@ -119,6 +163,10 @@ function RegisterProducerPageBody() {
   };
 
   const handleEmailBlur = async () => {
+    // Clear stale warning first — covers the case where the user erased
+    // the email after a previous "exists" check; the early return below
+    // would otherwise leave the warning stuck on screen.
+    setEmailExistsWarning("");
     if (!form.email || !validateEmail(form.email)) return;
     try {
       const res = await api.get(`/auth/email-exists?email=${encodeURIComponent(form.email)}`);
@@ -126,16 +174,15 @@ function RegisterProducerPageBody() {
         setEmailExistsWarning(
           "האימייל הזה כבר רשום. התחברי לחשבון שלך — ותוכלי להוסיף עסק ישירות מדף ההרשמה."
         );
-      } else {
-        setEmailExistsWarning("");
       }
     } catch {
-      setEmailExistsWarning("");
+      // Network/API failure — leave the warning cleared (nothing to show).
     }
   };
 
   const handleSubmit = async () => {
     setError("");
+    setEmailExistsSubmitError(false);
     setLoading(true);
     try {
       const body = {
@@ -156,6 +203,8 @@ function RegisterProducerPageBody() {
       const res = await api.post("/auth/register/producer", body);
       localStorage.setItem("token", res.data.access_token);
       localStorage.removeItem(DRAFT_KEY);
+      // MEH-287: default true for older servers that don't return the flag.
+      setWhatsappSent(res.data.whatsapp_sent ?? true);
       // Refresh auth context so user.role reflects the upgrade immediately.
       await refreshUser();
       setStep(3);
@@ -163,11 +212,11 @@ function RegisterProducerPageBody() {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
       if (status === 409) {
-        setError(
-          isUpgrade
-            ? "כבר יש לך עסק רשום בחשבון זה."
-            : "האימייל הזה כבר רשום. התחברי לחשבון שלך ותוכלי להוסיף עסק מהדשבורד."
-        );
+        if (isUpgrade) {
+          setError("כבר יש לך עסק רשום בחשבון זה.");
+        } else {
+          setEmailExistsSubmitError(true);
+        }
       } else {
         setError(detail || "שגיאת תקשורת — נסי שוב.");
       }
@@ -266,12 +315,12 @@ function RegisterProducerPageBody() {
             {emailExistsWarning && (
               <p className="text-amber-600 text-xs mt-1">
                 יש לך כבר חשבון במהמקור.{" "}
-                <a
-                  href={`/login?redirect=${encodeURIComponent("/register/producer")}`}
+                <Link
+                  href={`/login?email=${encodeURIComponent(form.email || "")}`}
                   className="underline font-medium hover:text-amber-700"
                 >
                   התחברי ←
-                </a>
+                </Link>
                 {" "}והוסיפי את העסק שלך
               </p>
             )}
@@ -364,7 +413,7 @@ function RegisterProducerPageBody() {
                   <input
                     type="checkbox"
                     checked={form.gluten_free}
-                    onChange={(e) => setForm((prev) => ({ ...prev, gluten_free: e.target.checked }))}
+                    onChange={(e) => setAndSave((prev) => ({ ...prev, gluten_free: e.target.checked }))}
                     className="w-4 h-4 accent-primary"
                   />
                   🌾 ללא גלוטן
@@ -373,7 +422,7 @@ function RegisterProducerPageBody() {
                   <input
                     type="checkbox"
                     checked={form.vegan}
-                    onChange={(e) => setForm((prev) => ({ ...prev, vegan: e.target.checked }))}
+                    onChange={(e) => setAndSave((prev) => ({ ...prev, vegan: e.target.checked }))}
                     className="w-4 h-4 accent-primary"
                   />
                   🥦 טבעוני
@@ -382,7 +431,7 @@ function RegisterProducerPageBody() {
                   <input
                     type="checkbox"
                     checked={form.lactose_free}
-                    onChange={(e) => setForm((prev) => ({ ...prev, lactose_free: e.target.checked }))}
+                    onChange={(e) => setAndSave((prev) => ({ ...prev, lactose_free: e.target.checked }))}
                     className="w-4 h-4 accent-primary"
                   />
                   🥛 ללא לקטוז
@@ -407,14 +456,30 @@ function RegisterProducerPageBody() {
               </span>
             </label>
 
+            {emailExistsSubmitError && (
+              <p className="text-sm text-amber-700 mt-2">
+                האימייל הזה כבר רשום אצלנו.{" "}
+                <Link
+                  href={`/login?email=${encodeURIComponent(form.email || "")}`}
+                  className="underline font-medium"
+                >
+                  התחברי
+                </Link>
+              </p>
+            )}
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
+                <button onClick={() => { setStepError(""); setError(""); setEmailExistsSubmitError(false); setStep(1); }} className="text-text-secondary">שלב קודם</button>
               )}
               <button
                 onClick={() => {
+                  // Clear stale error first so the next failure renders a
+                  // visible reset (otherwise the same error text appears
+                  // to "stick" across submit attempts even after the user
+                  // fixes one field).
+                  setError("");
                   if (!form.producer_name) {
                     setError("יש למלא שם עסק");
                     return;
@@ -431,7 +496,6 @@ function RegisterProducerPageBody() {
                     setError("יש לאשר את תנאי השימוש לפני ההצטרפות");
                     return;
                   }
-                  setError("");
                   handleSubmit();
                 }}
                 disabled={loading}
@@ -464,8 +528,25 @@ function RegisterProducerPageBody() {
             </div>
             <h2 className="font-headline text-2xl font-bold text-site-text mb-2">הצטרפת!</h2>
             <p className="text-site-muted mb-6">
-              שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים.
+              {whatsappSent
+                ? "שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים."
+                : "הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים."}
             </p>
+            {!whatsappSent && (
+              <div
+                role="status"
+                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-[12px] px-4 py-3 mb-6 text-sm text-right"
+              >
+                לא קיבלת הודעת WhatsApp?{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push("/producer/dashboard")}
+                  className="underline font-medium hover:text-amber-800"
+                >
+                  השלימי את הפרופיל ישירות מהדשבורד ←
+                </button>
+              </div>
+            )}
             <div className="bg-light rounded-[16px] p-5 text-right mb-6">
               <h3 className="font-semibold text-site-text mb-3">מה הלאה?</h3>
               <ul className="text-sm text-site-muted space-y-2">

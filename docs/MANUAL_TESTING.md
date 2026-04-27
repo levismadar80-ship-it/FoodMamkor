@@ -3,6 +3,28 @@
 
 ---
 
+## XSS sanitization sweep (MEH-329)
+
+- [ ] HTML stripped server-side — איך לבדוק:
+  1. בדף הרשמת בית עסק, הזיני בתיאור: `<script>alert(1)</script>תיאור עם הסבר`
+  2. שמרי וצפי בפרופיל הציבורי
+  3. **תוצאה מצופה:** הטקסט מוצג ללא אזהרת alert; ה-`<script>` נחתך ב-DB; רואים רק את הטקסט הנקי
+- [ ] טופס "מהמטבח של השכן" — אותו דבר על `description` ו-`location_notes`
+- [ ] טופס "צרי קשר" (`/contact`) — הזיני `<img src=x onerror=alert(1)>` בתוכן ההודעה; **תוצאה:** ההודעה נשמרת ב-DB ללא ה-tag
+
+---
+
+## Recipe ingredient cascade (MEH-311)
+
+- [ ] FK violation regression — sanity check ידני בstaging:
+  1. בקונסולת DB ב-Railway: צרי `RecipeIngredient` שמצביע על producer קיים — `INSERT INTO recipe_ingredients (id, recipe_id, ingredient_name, producer_id) VALUES (gen_random_uuid(), '<existing-recipe-id>', 'בדיקה', '<producer-id>');`
+  2. דרך אדמין UI או DB: `DELETE FROM producers WHERE id = '<producer-id>';`
+  3. **תוצאה מצופה:** Producer נמחק. RecipeIngredient נשאר. `SELECT producer_id FROM recipe_ingredients WHERE id = '<ingredient-id>';` → `NULL`.
+  4. **בלי הfix:** היה נכשל בFK violation. אם זה עובד — הfix תקין.
+- [ ] DELETE /auth/me regression — producer-user מוחקת חשבון דרך setting → "מחיקת חשבון" כשיש לה RecipeIngredient שמצביע אליה: ה-deletion מצליח (היה נכשל בFK violation לפני הfix).
+
+---
+
 ## MEH-51 — Trust Ladder + Kashrut Badges (PR #183)
 
 - [ ] ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard צריכה להציג badge ירוק
@@ -877,3 +899,38 @@ Added with `feature/session-handoff`.
 - [ ] /login — open DevTools Console → zero CSP violations when page loads
 - [ ] /login — click "כניסה עם Google" → Google popup opens and completes without postMessage error
 - [ ] /login — Network tab → `accounts.google.com/gsi/style` loads with status 200 (not blocked)
+
+---
+
+## MEH-287 — Producer registration WhatsApp welcome
+
+- [ ] `/register/producer` → submit הרשמה תקינה עם טלפון אמיתי → תוך 60 שניות מתקבלת הודעת WhatsApp "ברוכה הבאה למהמקור 🌿" — ודאי ש-TWILIO_* vars מוגדרים ב-Railway
+- [ ] Response של `POST /auth/register/producer` בDevTools → Network → מכיל `whatsapp_sent: true` (כשTwilio מוגדר) או `whatsapp_sent: false` (כשחסר)
+- [ ] Staging ללא `TWILIO_WHATSAPP_FROM` מוגדר → הרשמה חוזרת 200 + `whatsapp_sent: false` → success screen מציג banner צהוב "לא קיבלת הודעת WhatsApp?" עם קישור לדשבורד
+- [ ] Railway logs בזמן ההרשמה ה-"חסרה" → `[WHATSAPP] Producer welcome SKIPPED — missing: TWILIO_WHATSAPP_FROM` ברמת ERROR (לא warning)
+- [ ] הרשמה עם `whatsapp_sent: true` → success screen מציג את הטקסט המקורי "שלחנו לך הודעת WhatsApp..." ללא banner
+
+---
+
+## MEH-326 — JWT refresh token flow
+
+### Case A — Silent refresh on access expiry
+- [ ] Login on staging, note timestamp
+- [ ] Wait 16 minutes (access TTL = 15min)
+- [ ] Click any protected action (e.g. favorite a producer)
+- [ ] EXPECT: Action succeeds. No "פג תוקף ההתחברות" toast.
+- [ ] DevTools → Network → `/auth/refresh` returned 200 immediately before the retried action request
+
+### Case B — Forced logout when refresh expired / missing
+- [ ] Login on staging
+- [ ] DevTools → Application → Cookies → delete `refresh_token` cookie
+- [ ] Edit `localStorage.token` to garbage (or wait for access to expire)
+- [ ] Click any protected action
+- [ ] EXPECT: "פג תוקף ההתחברות" toast appears. Page redirects to `/login`.
+
+### Case C — logout-all-devices stays authenticated on current device
+- [ ] Login on staging in browser A; login on staging in browser B (same account)
+- [ ] In browser A: call `POST /auth/logout-all-devices`
+- [ ] EXPECT browser A: stays authenticated (new access token + rotated refresh cookie)
+- [ ] In browser B: click any protected action
+- [ ] EXPECT browser B: receives 401 on next refresh attempt → "פג תוקף" toast + redirect to `/login`

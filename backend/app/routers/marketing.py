@@ -6,12 +6,13 @@ about page contact form). All endpoints are anonymous — no auth required.
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.email import send_email
+from app.services.sanitization import sanitize_text
 from app.database import get_db
 from app.models import Category, ContactMessage, DeliveryArea, NewsletterSubscriber, Producer
 from app.rate_limit import limiter
@@ -84,6 +85,16 @@ class ContactIn(BaseModel):
     email: EmailStr
     message: str = Field(..., min_length=1, max_length=5000)
 
+    @field_validator("name")
+    @classmethod
+    def _sanitize_name(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("message")
+    @classmethod
+    def _sanitize_message(cls, v):
+        return sanitize_text(v, max_length=5000)
+
 
 # ============================================================
 # CITIES — GET /cities
@@ -131,7 +142,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     db.add(msg)
     db.commit()
 
-    # Always log so the message is visible in Railway logs even if SMTP
+    # Always log so the message is visible in Railway logs even if Resend
     # is unconfigured or fails.
     logger.info(
         "New contact message: name=%s email=%s", msg.name, msg.email
@@ -139,7 +150,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
 
     # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
     # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,
-    # so SMTP problems must never break the public form.
+    # so Resend errors must never break the public form.
     _send_contact_email(msg)
 
     return {"detail": "תודה! נחזור אליך בקרוב 🌿"}

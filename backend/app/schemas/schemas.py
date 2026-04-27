@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
+from app.services.sanitization import sanitize_text
+
 
 # --- Auth ---
 class UserRegister(BaseModel):
@@ -55,6 +57,11 @@ class ProducerRegister(BaseModel):
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
 
 class GoogleAuthRequest(BaseModel):
     id_token: str
@@ -83,6 +90,14 @@ class LoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# MEH-287: producer registration returns whether the WhatsApp welcome
+# is expected to be delivered. False when phone/Twilio env vars are
+# missing — the frontend uses it to show a dashboard-fallback banner
+# instead of the default "we sent you a WhatsApp" message.
+class ProducerRegistrationResponse(Token):
+    whatsapp_sent: bool
 
 
 # --- Category ---
@@ -199,6 +214,21 @@ class ProducerAdminCreate(BaseModel):
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
 
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
+    @field_validator("short_description")
+    @classmethod
+    def _sanitize_short_description(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("admin_notes")
+    @classmethod
+    def _sanitize_admin_notes(cls, v):
+        return sanitize_text(v, max_length=2000)
+
     @model_validator(mode="after")
     def _validate_location_mode(self):
         if not self.has_physical_location and not self.offers_delivery:
@@ -268,6 +298,16 @@ class ProducerUpdate(BaseModel):
     # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
     availability_status: str | None = None
     vacation_until: date | None = None
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
+    @field_validator("short_description")
+    @classmethod
+    def _sanitize_short_description(cls, v):
+        return sanitize_text(v, max_length=200)
 
     @field_validator("availability_status")
     @classmethod
@@ -547,6 +587,26 @@ class HomeProductCreate(BaseModel):
     location_notes: str | None = None
     images: list[str] = []
 
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+    @field_validator("location_notes")
+    @classmethod
+    def _sanitize_location_notes(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("allergens")
+    @classmethod
+    def _sanitize_allergens(cls, v):
+        return sanitize_text(v, max_length=200)
+
 
 class HomeProductUpdate(BaseModel):
     title: str | None = None
@@ -570,6 +630,26 @@ class HomeProductUpdate(BaseModel):
     delivery_method: str | None = None
     location_notes: str | None = None
     images: list[str] | None = None
+
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+    @field_validator("location_notes")
+    @classmethod
+    def _sanitize_location_notes(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("allergens")
+    @classmethod
+    def _sanitize_allergens(cls, v):
+        return sanitize_text(v, max_length=200)
 
 
 class HomeProductRatingOut(BaseModel):
@@ -649,6 +729,11 @@ class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     comment: str | None = Field(None, max_length=100)
 
+    @field_validator("comment")
+    @classmethod
+    def _sanitize_comment(cls, v):
+        return sanitize_text(v, max_length=100)
+
 
 # --- Experiences (community-submitted workshops) ---
 class ExperienceCreate(BaseModel):
@@ -670,6 +755,26 @@ class ExperienceCreate(BaseModel):
     is_recurring: bool = False
     recurring_schedule: str | None = None
 
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=300)
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=5000)
+
+    @field_validator("requirements")
+    @classmethod
+    def _sanitize_requirements(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+    @field_validator("address")
+    @classmethod
+    def _sanitize_address(cls, v):
+        return sanitize_text(v, max_length=300)
+
 
 class ExperienceUpdate(BaseModel):
     title: str | None = Field(None, min_length=4, max_length=300)
@@ -689,6 +794,26 @@ class ExperienceUpdate(BaseModel):
     requirements: str | None = None
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=300)
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=5000)
+
+    @field_validator("requirements")
+    @classmethod
+    def _sanitize_requirements(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+    @field_validator("address")
+    @classmethod
+    def _sanitize_address(cls, v):
+        return sanitize_text(v, max_length=300)
 
 
 class ExperienceModerationAction(BaseModel):

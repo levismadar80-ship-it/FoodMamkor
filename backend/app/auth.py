@@ -1,8 +1,10 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
@@ -33,10 +35,65 @@ def _jwt_key() -> OctKey:
     return OctKey.import_key(settings.secret_key.encode())
 
 
-def create_access_token(user_id: UUID, token_version: int = 1) -> str:
+def create_access_token(
+    user_id: UUID, token_version: int = 1, fingerprint_hash: str | None = None
+) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": str(user_id), "exp": expire, "tv": token_version}
+    # MEH-326: scope="access" disambiguates from refresh tokens. Old tokens
+    # issued before this change have no scope claim — get_current_user treats
+    # absence as access (backward compat) so existing sessions don't break.
+    payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "access"}
+    # MEH-327: bind token to fingerprint cookie via SHA-256 hash claim.
+    # Callers that don't pass fingerprint_hash → claim absent → fail-open
+    # in get_current_user (15-min TTL window for pre-MEH-327 tokens).
+    if fingerprint_hash is not None:
+        payload["userFingerprint"] = fingerprint_hash
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
+
+
+def create_refresh_token(user_id: UUID, token_version: int) -> str:
+    """MEH-326: issue a 14-day refresh token. Same HS256 + JWT_SECRET_KEY
+    as access tokens (one secret to rotate). Carried in an HttpOnly cookie
+    set by every login/register endpoint and by /auth/refresh on rotation.
+    """
+    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "refresh"}
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
+
+
+def decode_refresh_token(token: str) -> dict | None:
+    """MEH-326: validate a refresh token. Returns claims on success, None
+    on any failure (invalid signature, expired, wrong scope). Never raises
+    — callers branch on None.
+    """
+    try:
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+        JWTClaimsRegistry().validate(token_obj.claims)
+    except JoseError:
+        return None
+    if token_obj.claims.get("scope") != "refresh":
+        return None
+    return token_obj.claims
+
+
+def generate_fingerprint() -> str:
+    """MEH-327: 50 random bytes (100 hex chars) per OWASP JWT Cheat
+    Sheet "Token Sidejacking". Sent to the browser as an HttpOnly
+    __Secure-Fgp cookie; the SHA-256 hash is embedded in the access
+    token as the `userFingerprint` claim and validated on every
+    authenticated request, so a stolen access token alone cannot be
+    replayed without also stealing the cookie.
+    """
+    return secrets.token_hex(50)
+
+
+def hash_fingerprint(fp: str) -> str:
+    """MEH-327: SHA-256 hex digest of the raw fingerprint. The hash —
+    not the raw value — goes into the JWT, so an attacker who reads
+    the token (e.g. via XSS) cannot recover the cookie value needed
+    to forge requests.
+    """
+    return hashlib.sha256(fp.encode()).hexdigest()
 
 
 # feature/producer-analytics: throttle last_active_at writes to at most
@@ -63,6 +120,7 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
 
 
 def get_current_user(
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
@@ -77,6 +135,15 @@ def get_current_user(
     except JoseError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
+    # MEH-326: only access-scope tokens are valid here. Refresh tokens go
+    # to /auth/refresh; presenting one as a Bearer access token is rejected.
+    # Fail-open on missing scope claim — pre-MEH-326 tokens (no scope) are
+    # treated as access so existing 24h sessions don't get invalidated by
+    # the deploy. This mirrors the MEH-206 fail-open pattern below.
+    scope = token_obj.claims.get("scope")
+    if scope is not None and scope != "access":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
@@ -87,19 +154,31 @@ def get_current_user(
     tv = token_obj.claims.get("tv")
     if tv is not None and tv != user.token_version:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    # MEH-327: fingerprint check — fail-open for tokens without the claim
+    # (pre-MEH-327, max 15-min window). Mirrors MEH-206/MEH-326 fail-open
+    # patterns. Gate runs before _maybe_bump_last_active so invalid tokens
+    # never write to the DB.
+    fp_claim = token_obj.claims.get("userFingerprint")
+    if fp_claim is not None:
+        cookie_fp = request.cookies.get("__Secure-Fgp")
+        if cookie_fp is None or hash_fingerprint(cookie_fp) != fp_claim:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    else:
+        logger.info("[auth] fingerprint absent — fail-open (pre-MEH-327 token)")
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
     return user
 
 
 def get_current_user_optional(
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
     if token is None:
         return None
     try:
-        return get_current_user(token=token, db=db)
+        return get_current_user(request=request, token=token, db=db)
     except HTTPException as exc:
         # Blocked users must never be treated as anonymous — re-raise 403.
         if exc.status_code == status.HTTP_403_FORBIDDEN:

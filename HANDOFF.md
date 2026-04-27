@@ -1,7 +1,1120 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-24 (Session 3 — MEH-283 hotfix + MEH-286 file-preservation protocol)
+> Last updated: 2026-04-27 (MEH-346 /permissions allowlist — PR open, draft)
+
+## 2026-04-27 — MEH-346 feat(claude-code): /permissions allowlist
+
+**Branch:** `feature/meh-346-permissions-allowlist` off staging `b481f81`. **PR:** to be opened (draft).
+
+**Goal:** Add `permissions` block to `.claude/settings.json` with 38 allowed Bash patterns + 14 deny patterns. Eliminates 5-10 confirmation prompts per session for safe commands (npm run build, pytest, git status) without unsafe `--dangerously-skip-permissions`.
+
+**Decisions made this session:**
+1. **Drop `Bash(npm install:*)` from allow** (Option A). `--ignore-scripts` wrapper unenforceable by permission system; one-time prompt is acceptable friction. Postinstall script supply-chain risk avoided.
+2. **Omit ASK list.** Allow + deny only per spec. If npm install friction proves annoying, separate follow-up ticket.
+3. **Add `Bash(git commit:*)` to allow.** Existing PreToolUse hook fires CLAUDE.md update reminder regardless (hooks before permissions); permission prompt on every commit = redundant friction.
+
+**Result:** settings.json 8996 → 10487 bytes (+1491). `permissions` block added as new top-level sibling AFTER `hooks`. `hooks` field byte-identical (jq diff empty). Allow count: 38 (1 more than spec's 37; +`Bash(git commit:*)`). Deny count: 14 (matches spec).
+
+**Count discrepancy flagged:** Smadar's GO message said "Final allow count: 36 entries (was 35)" — actual spec proposal had 37 entries, +git commit = 38. Off by 2 in both directions; proceeded with 38 (verbatim spec + git commit). Surface in PR for prune-or-accept call.
+
+**Verification (all pass):**
+- `jq .` parses clean ✓
+- `diff jq hooks before/after` → empty ✓
+- `diff jq keys before/after` → only +"permissions" ✓
+- `wc -c` 8996 → 10487 ✓
+- `jq '.permissions.allow | length'` = 38 ✓
+- `jq '.permissions.deny | length'` = 14 ✓
+- Single Edit, atomic, wide anchor (SessionStart key + closing braces) ✓
+
+**Sandbox limitation:** cannot trigger an actual permission prompt to verify scenario 1 (live Claude Code session required). Scenarios 2-4 verifiable via dry-reasoning against settings.json content.
+
+---
+
+## 2026-04-27 — MEH-353 + MEH-357 (post-MEH-351 batch)
+
+**MEH-353 (Done — PR #365, squash-merged SHA 6eaea83):**
+Replaced `@invalid.test` → `@example.com` in 3 smoke fixtures
+(`scripts/smoke_test.py:103` smoke-rate, `:140` smoke-iso, `:351` smoke-pw).
+Root cause: Pydantic `email-validator` rejects `.test` TLD before requests
+reach the rate limiter — `check_rate_limit_enforcement` was false-passing pre-fix.
+
+**Smoke baseline change: 7/7 → 6/7 (honest).**
+`check_rate_limit_enforcement` now passes ✓.
+`check_rate_limit_isolation` now correctly fails — was a false-positive pre-MEH-353;
+methodology incompatible with `X-Real-IP` keying established in MEH-256.
+`X-Real-IP` is set by Railway's edge from TCP peer and cannot be spoofed
+by a single-source smoke client setting different `X-Forwarded-For` values.
+
+**MEH-357 (Done — PR #368, squash-merged SHA c728e38):**
+Deleted `check_rate_limit_isolation` smoke check + updated docs.
+`test_isolates_different_client_ips_via_x_real_ip` (test_rate_limit.py:150) already
+covered the intent. 7 → 6 smoke checks. `smoke_test_prod.sh` + `docs/SMOKE-TEST.md` updated.
+
+**Open audit question:** PR #365 timestamps show ~6-second delta between open
+and merge. Verify branch protection on staging requires CI green before merge.
+If gap exists, add to pre-launch checklist.
+
+## 2026-04-27 — MEH-342 refactor(docs): CLAUDE.md → modular .claude/rules/
+
+**Branch:** `feature/meh-342-split-claude-md` off staging `ff5c566`. **PR:** to be opened (draft).
+
+**Goal:** trim CLAUDE.md from 197 → ≤80 lines per Linear MEH-342 spec; add lazy-load `paths` frontmatter on domain-specific rule files; preserve all rule content via splits to `.claude/rules/`.
+
+**Result:** CLAUDE.md = **75 lines** (≤80 cap, 5-line headroom). 3 new rule files: `db.md` (56 L, lazy-load), `code-execution.md` (47 L, lazy-load), `prompting.md` (20 L, always-load). `rtl.md` got 7-extension paths frontmatter (52 → 63 L). `workflow.md` absorbed 5 sections (Bug Protocol, Commit discipline, PR approval/DoD, PR Review Workflow, /loop usage patterns) and got 2 pointer-replacements (exec §7-13 + Rule 15 body). Net: rule files 706 → 900 L, CLAUDE.md 197 → 75 L.
+
+**Process:** Pre-go scope-match check (workflow.md:45-54) executed twice — first attempt surfaced 6 spec gaps (corrected paths frontmatter syntax, sources, content per Smadar's review). Second skeptic round found env-vars rule + Templates 01-07 list don't actually exist in repo (only in Smadar's separate project instructions); both **descoped** to follow-up tickets per Smadar's call.
+
+**Verification:** zero-content-loss grep per section — Bug Protocol/Commit discipline/PR Review/`/loop`/DoD all in workflow.md; exec §7-13 in code-execution.md; Caveman in prompting.md; `_migrate_columns` rule in db.md. Verbatim spot-checks pass (`Hotfixes get their own commit`, `Deploy babysit`, `Identify the root cause`, `Trust strip MAX 2`, `=== DIFF: `).
+
+**DoD status (sandbox limitation):** `npm run build` + `pytest tests/test_api.py` could not run locally — sandbox lacks node_modules + Python deps. Docs-only PR (no code touched) so CI on push will be the gate. Smadar to verify CI green before merge.
+
+**Follow-up tickets to open** (per descope):
+1. **MEH-XXX** — Add env vars rule to `.claude/rules/db.md` (content from Smadar's project instructions; not present in repo at MEH-342 split time)
+2. **MEH-XXX** — Add Templates 01-07 reference list to `.claude/rules/prompting.md` (content from Smadar's project instructions; not present in repo at MEH-342 split time)
+3. **MEH-XXX** — Add `paths` frontmatter to `.claude/rules/frontend.md` and `.claude/rules/backend.md` (logical lazy-load consistency; deferred from MEH-342 to keep this PR scope-tight)
+
+**Linear update needed:** Smadar to update MEH-342 description before merging — remove "env vars rule" line from db.md spec + remove "Templates 01-07 reference" line from prompting.md spec; add note "env vars + Templates deferred to follow-up tickets — content not present in repo at split time."
+
+---
+
+## 2026-04-27 — MEH-352 fix(local dev DB init)
+
+**Branch:** feature/meh-352-fix-local-db-init off staging. **PR:** open (draft).
+
+**Reproduction (verified):** psql `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` → uvicorn startup → `_run_db_init_sync` imports models, calls `seed_data.seed()` → `psycopg2.errors.UndefinedTable: relation "categories" does not exist` → `app.state.db_init_status = "failed"` → GET /producers → 500 (`relation "producers" does not exist`).
+
+**Root cause:** `_run_db_init_sync()` in `backend/app/main.py:42-50` imported model classes (populating `Base.metadata`) but never invoked `Base.metadata.create_all(bind=engine)`. Tables never existed. The ticket's stated hypothesis ("import models before create_all") was partially wrong — there was no `create_all` to put models before. Fix is the same one-liner the hypothesis anticipated, but for a different reason: add the missing call.
+
+**Fix (2-line insertion at backend/app/main.py:45-46):**
+
+```python
+from app.database import Base, engine
+Base.metadata.create_all(bind=engine)  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
+```
+
+**Verification:** Dropped schema → uvicorn restarted → `/health` shows `db_init: "ready"`, GET /producers → 200 with seeded producers.
+
+**Regression test:** `tests/test_lifespan_init.py` — drops all tables, starts lifespan via TestClient context manager, polls `/health` until `db_init` settles, asserts `/producers` returns 200 with non-empty list.
+
+### Lessons learned
+
+> MEH-352: `Base.metadata.create_all()` in `main.py` is intentional dev-only safety net.
+> Production uses Alembic migrations exclusively. `create_all` uses `checkfirst=True` so
+> it's a no-op when tables exist — but it does NOT detect column-level drift.
+> Fresh local dev → tables created. Stale local dev (missing migration) → still
+> requires `alembic upgrade head` manually.
+
+## 2026-04-27 — MEH-355 RTL allowlist for *.md merged to staging
+
+**PR:** #360 (squash-merged) **SHA:** eda6d90 **Branch:** feature/meh-355-rtl-allowlist-md (deleted)
+
+**Why:** MEH-342 (CLAUDE.md trim) blocked when moving Bug Protocol verbatim to workflow.md — the rule text contains a physical-class string as a documentation example. Anticipated in MEH-341 closing note.
+
+**Change:** 5-line insertion to .claude/hooks/check-rtl.sh between the empty-content check and the path-substring ALLOWLIST loop. Categorical extension-based exemption: any file ending in lowercase `.md` is auto-allowlisted. README.md updated with rationale + scope (uppercase MD, .markdown, .mdx not auto-allowed).
+
+**Tests (production, post-merge):**
+- 8/8 RTL hook tests pass on staging branch
+  - RTL-1..6: pre-existing enforcement intact (5 blocks, 1 path-allowlist allow)
+  - RTL-7 NEW: physical class string in `.claude/rules/workflow.md` → allowed (exit 0)
+  - RTL-8 NEW: physical class string in non-allowlisted `.jsx` → blocked (exit 2) — proves *.md exemption doesn't leak
+- Smoke test live on staging branch: workflow.md edit with physical class string → exit 0 ✅
+- ALLOWLIST array verified byte-identical to staging (no path entries reordered/changed)
+
+**CI:** 7/7 green (Frontend build, Frontend lint, Backend pytest, API contract static, CI Adversarial review, Vercel Preview, Playwright E2E). 3 deploy jobs skipped pre-merge (expected).
+
+**Adversarial review:** 18 findings considered, all disproved (filename-rename bypass, URL suffix bypass, symlink bypass, case sensitivity, position dependency, empty FILE_PATH, multi-step rename, etc.). Zero REFEREE verdicts.
+
+**Polish item logged (not a ticket):** README.md:73 "add them here" is mildly ambiguous — could read better as "add them to check-rtl.sh". Future drive-by improvement; correctness intact.
+
+**MEH-342 status:** UNBLOCKED. Resume in fresh session per PR-per-logical-change discipline. Branch `feature/meh-342-split-claude-md` exists locally with no commits; rebase onto staging, then proceed per the originally approved numbered plan unchanged.
+
+## 2026-04-27 — MEH-338 deployed to staging ✅
+
+**SHA:** d438876 (PR #357, squash-merged)
+**Railway deploy ID:** 3d0cc178-7d28-42e6-a76b-7d8ecf3689a3
+
+**Shipped:**
+- fastapi 0.115.6 → 0.120.1
+- starlette 0.41.3 → 0.49.3 (CVE-2025-62727 + CVE-2025-54121 closed)
+- annotated-doc 0.0.4 (legitimate fastapi 0.120.0+ transitive dep)
+- 148/148 pytest green · 12/12 CI checks (9 green + 3 expected skips)
+
+**Smoke:** 6/7 — `check_rate_limit_enforcement` pre-existing bug (MEH-353).
+`check_rate_limit_isolation` ✅ confirms limiter functional. Not a regression.
+
+**Ticket numbers correction:** HANDOFF MEH-339–342 → corrected to MEH-349–352.
+
+**Follow-up queue (Backlog):**
+- MEH-349 (High) — python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486 + CVE-2026-40347)
+- MEH-350 (High) — requests 2.32.3 → 2.33.0 (CVE-2024-47081 + CVE-2026-25645) ⚠️ highest blast radius
+- MEH-352 (Normal) — local dev DB init: import models before create_all()
+- MEH-351 (Low) — anthropic 0.39.0 → latest (no CVE)
+- MEH-353 (Low) — smoke_test.py fix: @invalid.test → @example.com
+
+**Recommended order:** 349 → 352 → 350 → 351 → 353
+
+## Most recent — MEH-349 python-multipart CVE bump (2026-04-27)
+
+PR: (draft, branch: claude/bump-python-multipart-aqmRO → staging)
+
+Summary:
+- Bumped python-multipart 0.0.18 → 0.0.26
+- Closes CVE-2026-24486 (path traversal/RCE, fixed in 0.0.22) + CVE-2026-40347 (DoS, fixed in 0.0.26)
+- FastAPI 0.120.1 allows >=0.0.18; constraint satisfied
+- pip-audit BEFORE: 2 python-multipart CVEs present
+- pip-audit AFTER: both gone; requests CVEs remain (deferred to MEH-350)
+- Adversarial review: 0 blocking issues; Starlette CVE-2025-62727 not applicable (running 0.49.3)
+- pytest: 148 passed locally (PostgreSQL service started: `mehamakor_test` DB)
+
+Follow-up tickets deferred from this PR:
+- MEH-350: requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+
+## ⏭ Previous — MEH-338 fastapi/starlette CVE bump (2026-04-27)
+
+PR: #357 (feature/meh-338-bump-fastapi-starlette → staging, draft)
+
+Summary:
+- Bumped fastapi 0.115.6 → 0.120.1
+- starlette 0.41.3 → 0.49.3 transitively (closes CVE-2025-62727 + CVE-2025-54121)
+- annotated-doc 0.0.4 new (fastapi 0.120.0+ doc utility)
+- 148/148 pytest green; adversarial-review clean
+
+Severity:
+- CVE-2025-62727 (HIGH): defense-in-depth, 0 attack surface
+- CVE-2025-54121 (MODERATE): reachable via image upload routes
+
+Canary evidence (rate-limit on starlette 0.49.3):
+- PRIMARY: pytest TestRefreshTokenFlow::test_refresh_rate_limited green (Step 8, seeded DB, asserts 429 against rate-limit logic)
+- Corroborating: local curl try-6 → 429 (Step 11, empty-DB context, ambiguous path)
+- Pending: staging smoke checks 1 + 2 (post-merge)
+
+## ⏭ Post-merge gate (MANDATORY)
+
+Run `scripts/smoke_test_prod.sh` against staging within 60 minutes of merge. Expected 7/7. ANY failure → immediate `git revert` of MEH-338 commit on staging. Do NOT proceed with other work until staging smoke is green.
+
+Reason: feature branch has no Railway preview; smoke check 2 (TRUSTED_PROXY rate-limit isolation) requires Railway edge X-Real-IP injection that local cannot replicate.
+
+## Follow-up tickets (post-MEH-338, not today)
+
+- MEH-349 (High): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
+- MEH-350 (High): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-351 (Low): anthropic 0.39.0 → latest (stale, no CVE)
+- MEH-352 (Normal): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
+
+Lesson learned (for future bump tickets):
+Local-against-empty-DB curl ≠ rate-limit fitness test. Always use pytest with seeded DB asserting 429 logic specifically; curl loops are ambiguous (any middleware can return 429).
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| fastapi 0.120.1 (not 0.121+) | Avoids Pydantic 1 deprecation noise; 0.120.x is the stable CVE-fix target per fastapi upstream |
+| starlette 0.49.3 (not 0.50.0) | fastapi 0.120.1 pins `starlette<0.50.0`; 0.49.3 is latest in series; both CVEs fixed at ≥0.49.1 |
+| annotated-doc 0.0.4 allowed | New fastapi 0.120.0+ dep extracted from typing_extensions; no transitive deps; 7KB; whitelist approved |
+| 3 atomic commits (no amend) | Stop hook (exit 2) blocked turns with dirty files; committed pyproject.toml, then uv.lock, then docs atomically per CLAUDE.md commit discipline |
+
+---
+
+## 2026-04-26 — MEH-337 merged (pyjwt bump 2.9.0 → 2.12.0, CVE-2026-32597)
+
+### Status
+- **PR #356** — `feat(MEH-337): bump pyjwt 2.9.0 → 2.12.0 (CVE-2026-32597)` — **merged to `staging`** (squash, commit `6f7d859`).
+- **Branch:** `feature/meh-337-pyjwt-bump` (off `staging`); now stale — local branch can be deleted.
+- All CI green at merge: Frontend build, Frontend lint, Backend tests (pytest, 148 passed), Backend dependency audit (pip-audit), Frontend dependency audit (npm audit), Adversarial review, API contract audit (static), Playwright E2E.
+- **Apple OAuth functional smoke: DEFERRED** to follow-up ticket (see "Linked follow-up" below). The pyjwt code path is dormant in production due to unset `APPLE_CLIENT_ID` / `NEXT_PUBLIC_APPLE_CLIENT_ID` env vars — the Apple Sign-In button doesn't render, so no functional verification was physically possible. Mock-only wrapper tests + pyjwt's upstream test suite + CHANGELOG audit form the confidence basis for the merge (Option 3 of the 3-option investigation framework).
+
+### What shipped
+- `backend/pyproject.toml:21` — `PyJWT[crypto]==2.9.0` → `==2.12.0`
+- `backend/uv.lock` — regenerated; ONLY pyjwt moved (no transitive bumps; cryptography stayed pinned)
+- `tests/test_api.py` — new `TestAppleTokenVerification` class, 4 cases: `test_returns_payload_on_valid_token`, `test_returns_none_when_apple_client_id_unset`, `test_returns_none_on_invalid_signature`, `test_returns_none_on_unknown_kid`. Locks the wrapper in `routers/auth.py:_verify_apple_token` (lines 944-975) so future pyjwt bumps surface regressions in the Apple OAuth path.
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| Bump despite production-dormant code path | Defense in depth; clean pip-audit baseline (unblocks MEH-336); zero production user impact either way; when Apple OAuth is provisioned later, no scramble. |
+| Mock-based wrapper tests instead of full pyjwt integration tests | Apple Sign-In button doesn't render in production (env var unset), so iPhone smoke is physically impossible today. Wrappers + CHANGELOG audit + pyjwt's upstream test suite are the next-best confidence basis. Catch wrapper drift on next bump; functional verification deferred to provisioning ticket. |
+| One-commit, one-PR (clean diff) | Per workflow rule 5a + plan §3 acceptance criteria. uv.lock diff verified to ONLY move pyjwt; no transitive deps moved. |
+| 4 wrapper test cases, not more | Cover happy path + 3 distinct sad paths (no client_id, decode exception, unknown kid). Testing more would expand into pyjwt-internal territory which is the upstream maintainer's job. |
+
+### Dormant code path discovery (pre-merge investigation)
+During pre-merge mobile QA prep, an iPhone screenshot of `/login` showed only Email + Google buttons — no Apple Sign-In. Investigation across the codebase:
+- `backend/app/config.py:47` — `apple_client_id: str = ""` (empty default)
+- `frontend/components/AppleAuthButton.jsx:8, 54` — `if (!clientId) return null;` (button hidden when env var unset)
+- `backend/app/routers/auth.py:626` — `/auth/apple` POST endpoint early-exits on empty `apple_client_id` (HTTP 503 per MEH-253)
+- `backend/app/routers/auth.py:946-948` — `_verify_apple_token` returns `None` before reaching `pyjwt.decode` (line 965)
+- `docs/DEPLOYMENT.md` — confirms Apple keys are "optional for first launch — leave blank"
+
+**Conclusion:** Apple OAuth code is fully wired (frontend AppleAuthButton + backend `/auth/apple` endpoint per MEH-170 PR #302) but dormant in production. CVE-2026-32597 is unexploitable in our deployment until Apple OAuth is provisioned.
+
+### Linked follow-up — REQUIRES MANUAL FILING IN LINEAR (no Linear MCP this session)
+
+**TODO for Smadar:** file the following ticket in Linear, then update PR #356 description (replace "MEH-XXX" placeholder with actual number). The PR is already merged but its description is editable.
+
+```
+Title: 🍎 Provision Apple OAuth — env vars + iPhone smoke vs pyjwt 2.12
+Priority: 4 (Low) — only relevant if/when Apple OAuth becomes a product priority. Not a launch blocker.
+
+## מטרה
+Apple OAuth is wired in code (frontend AppleAuthButton + backend /auth/apple endpoint) but dormant in production due to unset env vars. This ticket is the gate to enabling it.
+
+## Prerequisite (HARD GATE — do not skip)
+Before flipping NEXT_PUBLIC_APPLE_CLIENT_ID on Vercel or APPLE_CLIENT_ID on Railway, run iPhone manual smoke against:
+- /login → tap "Sign in with Apple" → complete Apple ID auth
+- Verify redirect to /producers, logged-in state, no 500 errors
+- Check Railway logs for [APPLE AUTH] entries
+
+This validates pyjwt 2.12.0 on its actual code path — coverage that MEH-337 PR #356 deferred. If smoke fails: revisit MEH-337, re-test pyjwt bump on real Apple flow before re-enabling.
+
+## Provisioning steps
+1. Apple Developer Account ($99/year)
+2. Services ID + Sign in with Apple key in Apple console
+3. Configure redirect URIs (production + staging)
+4. Add env vars:
+   - Vercel: NEXT_PUBLIC_APPLE_CLIENT_ID (production + preview)
+   - Railway: APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (production + staging)
+5. Run prerequisite smoke (above) on Vercel preview FIRST
+6. Deploy to staging, smoke again
+7. Deploy to production
+
+## Linked tickets
+- MEH-337 (pyjwt bump, deferred Apple smoke to this ticket)
+- MEH-170 (original Apple wiring)
+- MEH-253 (503 fix when unconfigured)
+
+## Branch
+feature/meh-XXX-provision-apple-oauth (when triggered)
+
+## Definition of Done
+- [ ] Env vars set on Vercel + Railway (production)
+- [ ] iPhone smoke passes on production preview BEFORE prod env enable
+- [ ] iPhone smoke passes on production after env enable
+- [ ] Railway logs show successful [APPLE AUTH] entry
+- [ ] No 500s on /auth/apple endpoint
+- [ ] HANDOFF.md + CHANGELOG.md updated
+```
+
+### Audit findings (out of scope, future tickets)
+- **Architectural smell flag (MEH-271 audit):** the codebase carries TWO JWT libraries — `joserfc` (primary, all our token issuance/decode) and `pyjwt` (one Apple OAuth call site). Worth a future ticket to consolidate to one library.
+- **Linear MEH-337 ticket text drift:** the auto-posted description (linear-bot comment on PR #356) calls pyjwt the "primary library". Stale — actual primary is joserfc. Worth a Linear-side cleanup post-merge.
+- **Other CVEs unchanged in pip-audit AFTER:** pip / python-multipart / requests / starlette — tracked under MEH-336 / MEH-338. Out of scope for MEH-337.
+
+### Next task
+- Pending Smadar's call. Options:
+  - File the Apple OAuth provisioning follow-up ticket in Linear, link it back to PR #356
+  - MEH-338 (`starlette 0.41.3 → 0.49.1`, CVE-2025-62727 — needs FastAPI compat coordination)
+  - MEH-336 umbrella (flip CI audit gates from `continue-on-error: true` to required, after backend audit baseline is reduced)
+  - Carry-over: MEH-329 + MEH-333 spot-checks on staging once Railway redeploys
+
+---
+
+## 2026-04-26 — MEH-333 merged (inline login link on email-exists error)
+
+### Status
+- **PR #355** — `feat(MEH-333): inline login link on email-exists error, pre-fill email from URL` — **merged to `staging`** (squash, commit `8bca8cc`).
+- **Branch:** `feature/meh-333-inline-login-link` (off `staging`); now stale — local branch can be deleted.
+- All CI green at merge: Frontend build, Frontend lint (RTL + Next.js), Backend tests (pytest), Adversarial review, API contract audit (static), Playwright E2E (Vercel preview).
+- **Mobile QA: DEFERRED** to staging deployment verification (per Smadar's "skip mobile QA" call this session). Spot-check on `staging.mehamakor.online` after Railway redeploy: register existing email as consumer + producer, click `התחברי` link, confirm landing on `/login` with email pre-filled (test `user+tag@gmail.com` for `+` survival through `encodeURIComponent`).
+
+### What shipped
+- **`frontend/app/register/page.js`** (consumer register): added `emailExistsError` boolean state. On submit catch, detect `status === 400 && detail.startsWith("האימייל כבר קיים")` → set boolean (vs. plain `setError`). Renders amber `<p>` + inline `<Link href="/login?email=...">התחברי</Link>`. Clears on email-field edit.
+- **`frontend/app/register/producer/page.js`** (producer register): added `import Link from "next/link"`. Two display surfaces — (a) blur warning (`emailExistsWarning`): `<a>` → `<Link>` swap, href changed from `?redirect=` to `?email=`. (b) submit 409 (`!isUpgrade` branch): added `emailExistsSubmitError` boolean, renders same amber `<p>` + `<Link>` pattern as consumer for visual consistency. The `isUpgrade` 409 branch ("כבר יש לך עסק רשום") unchanged.
+- **`frontend/app/login/page.js`**: `useState("")` → `useState(params.get("email") || "")` (line 39). `LoginPageBody` already wrapped in `<Suspense>` (line 28), so `useSearchParams` was safe — no new wrapping needed.
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| URL `?email=...` over `sessionStorage` | Email is not sensitive enough to warrant cross-tab state complexity; matches existing `?redirect=` pattern on `/login`; shareable links work. Tradeoff: email lands in browser history + server logs. |
+| Detection by HTTP status, not message string | Initial plan used `detail === "האימייל כבר קיים במערכת"` exact match; would have failed on producer 409 (which appends suffix). Fixed pre-implementation: consumer = `status === 400 && detail.startsWith("האימייל כבר קיים")`, producer = existing `status === 409` path (no string match). |
+| Producer submit 409: convert from `setError(string)` to `emailExistsSubmitError` boolean for `!isUpgrade` branch | Visual consistency with consumer — same JSX render pattern, same link styling. The `isUpgrade` 409 ("כבר יש לך עסק רשום") stays as a plain string error since no email-exists context applies. |
+| Mobile QA deferred to staging verification | Sandbox can't reach `staging.mehamakor.online` (egress firewall, same as MEH-329). Smadar to spot-check after Railway redeploy. |
+
+### Audit finding (out of scope, future ticket recommended)
+Backend status-code drift detected during MEH-333 audit:
+- `backend/app/routers/auth.py:223` (consumer register POST `/auth/register`) returns **400** for email-exists.
+- `backend/app/routers/auth.py:281` (producer register POST `/auth/register/producer`) returns **409** for the same condition.
+Both interpreted as "email already in system". Recommend a future Linear ticket to normalize to **409** across both endpoints. Frontend currently handles both via separate code paths (the prefix-match on consumer is defensive against future suffix changes).
+
+### Linear status
+- **MEH-333:** to be moved to Done manually (no Linear MCP integration available in this session).
+
+### Next task
+- Pending Smadar's call. MEH-330 (Dependabot + audit) is still **code complete, not pushed** per pre-MEH-329 HANDOFF entry below — picking that up is one option. MEH-336 / MEH-337 / MEH-338 audit-baseline backlog is another.
+
+### Pending verifications carried forward
+- **MEH-329 spot-check** still pending: paste `<script>alert(1)</script>` into producer description / contact form / home-product description on staging; confirm DB stores stripped text and frontend renders safely.
+- **MEH-333 spot-check** (this session): see "Mobile QA: DEFERRED" above.
+
+---
+
+## 2026-04-26 — MEH-329 merged (XSS sanitization sweep)
+
+### Status
+- **PR #353** — `feat(MEH-329): XSS sanitization sweep — bleach 6.3.0 input-layer defense` — **merged to `staging`** (squash, commit `8deb697`).
+- **Branch:** `feature/meh-329-xss-sweep` (off `staging`); now stale — local branch can be deleted.
+- All CI green at merge: pytest (155 passed), Next build, ESLint, pip-audit, npm audit, Playwright E2E, Adversarial review.
+- Post-merge: sandbox could not reach `staging.mehamakor.online` (egress firewall, 403 `host_not_allowed`) so the rule-17 health Monitor was skipped. Smadar to spot-check staging.mehamakor.online manually after Railway redeploy completes.
+
+### What shipped
+- **NEW** `backend/app/services/sanitization.py` — `sanitize_text` helper. Strips HTML tags via `bleach.clean(value, tags=[], strip=True)`, caps length, returns `None` on empty.
+- **NEW** dependency: `bleach==6.3.0` (latest stable per pip index 2026-04-26; strict-pinned in `backend/pyproject.toml` + `backend/uv.lock`).
+- **30 `@field_validator` decorations across 11 schemas:**
+  - `backend/app/schemas/schemas.py`: `ProducerRegister.description`; `ProducerAdminCreate.description`/`short_description`/`admin_notes`; `ProducerUpdate.description`/`short_description`; `HomeProductCreate`/`Update.title`/`description`/`location_notes`/`allergens`; `RatingSubmit.comment`; `ExperienceCreate`/`Update.title`/`description`/`requirements`/`address`.
+  - `backend/app/routers/marketing.py`: `ContactIn.name`/`message`.
+  - `backend/app/routers/events.py`: `EventCreate`/`Update.description`/`location`.
+  - `backend/app/routers/reviews.py`: `ReviewCreateNested.body`.
+- **Tests:** new `tests/test_sanitization.py` (11 unit tests pinning bleach 6.3.0 behavior); 3 integration tests appended to `tests/test_api.py::TestSanitizationIntegration`.
+- **Frontend:** 0 unsafe `dangerouslySetInnerHTML` matches. 2 `ld+json` renders (`frontend/app/[slug]/page.js:43`, `frontend/app/producer/[id]/page.js:28`) annotated with `// eslint-disable-next-line react/no-danger -- ld+json schema; producer text fields sanitized server-side (MEH-329)`.
+- **Docs:** `docs/CHANGELOG.md` entry; `docs/SECURITY.md` § 9 placeholder replaced with shipped pointer; `docs/MANUAL_TESTING.md` 3 manual-XSS check cases.
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| `bleach==6.3.0` (not `>=6.1.0` per spec) | Latest stable per `pip index versions bleach` on 2026-04-26; matches project's `==`-only pin style. |
+| `HomeProduct.title` capped at 200, not 100 (spec asked 100) | Column is `String(200)` (`models.py:385`); existing `HomeProductModerationRequest.title` is `max_length=200`. Lowering to 100 would silently truncate legitimate 101–200-char titles without raising 422 — that's a behavior change, not defense-in-depth. Approved by reviewer pre-implementation. |
+| Scope expansion (5 fields beyond spec): `ProducerAdminCreate.admin_notes`, `ExperienceCreate`/`Update.requirements`, `ExperienceCreate`/`Update.address` | Same DB columns / same risk surface as in-spec siblings. Approved by reviewer. |
+| No DB backfill of existing rows with stored HTML | Sanitization on write only. No exploit vector today (React encodes); risk monitored if `dangerouslySetInnerHTML` ever added to a user-supplied field. Two existing dSIH usages render `JSON.stringify(jsonLd)` only. |
+| Behavior-lock unit tests (not modify `sanitize_text` to match spec expectations) | bleach 6.3.0 with `tags=[], strip=True` (a) preserves inner text of stripped tags — `<script>alert(1)</script>hello` → `"alert(1)hello"`; (b) does NOT decode HTML entities — `&lt;b&gt;` stays as-is. Both XSS-safe (literal text, not executable). Tests `test_strips_script_tags` and `test_html_entities_decoded` lock the actual bleach output, per reviewer rule "behavior lock, not security requirement". |
+| Integration test gap (acceptable): no POST `/reviews` or POST `/rate/{token}` integration test | Reviews + ratings sanitization covered by unit tests + validator-decoration code review. Approved by reviewer. |
+| Push-approval discipline (forward) | "GO" on plan ≠ push permission. Future PRs require an explicit "push approved" after verifications. The retroactive ack on PR #353 is one-time; do not repeat. |
+
+### Next task
+- **MEH-333** (Medium, ~30–45 min quick win) — pick this up next session.
+- **Pending Smadar verification:** spot-check `staging.mehamakor.online` after Railway redeploy completes — paste `<script>alert(1)</script>` into producer description/contact form/home-product description; confirm DB stores stripped text and frontend renders safely.
+
+### Open tickets (carried forward)
+| Ticket | Priority | Summary |
+|---|---|---|
+| **MEH-336** | umbrella | Clear MEH-330 audit baseline (frontend 13 high / 6 moderate; backend 8 vulns) and flip the CI audit gates from `continue-on-error: true` to required. Tracks MEH-337 + MEH-338 + the residual backlog. |
+| **MEH-337** | High | `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597). Auth-critical; touches `backend/app/auth.py`. Run full `tests/test_api.py` regression on bump. |
+| **MEH-338** | High | `starlette 0.41.3 → 0.49.1` (CVE-2025-62727). Framework; coordinate with `fastapi==0.115.6` compat — likely requires fastapi bump. |
+
+### Known issues discovered but not yet filed
+- 9 test files at `tests/test_*.py` use `from tests.conftest import …` and fail collection (ModuleNotFoundError: 'tests'). This is **pre-existing on `staging`** (verified pre-merge), not introduced by MEH-329. Not blocking — workflow rule 5 canonical pre-merge target is `pytest tests/test_api.py` only, which passes. Worth filing as a small chore ticket: either fix imports to `from conftest import …` (matches how `test_api.py` does it) or add a root `conftest.py` with `sys.path` injection.
+
+---
+
+## 2026-04-26 — Session in progress (MEH-330: Dependabot + audit)
+
+### Status
+- **MEH-330** — pip-audit + npm audit CI workflow + Dependabot config — **code complete, NOT pushed.** Awaiting Smadar's push approval.
+- **Current branch:** `feature/meh-330-dependabot-audit` (off `staging`).
+- **Files added/changed:**
+  - **NEW** `.github/workflows/dependency-audit.yml` — 2 jobs (`pip-audit` + `npm-audit`), `pull_request` (paths-filtered) + weekly cron + `workflow_dispatch`, `permissions: contents: read` per job, both `continue-on-error: true` with `TODO(MEH-336)`.
+  - **NEW** `.github/dependabot.yml` — 3 ecosystems (pip / npm / github-actions), weekly Mon 06:00 Asia/Jerusalem, target `staging`, limit 5 PRs.
+  - `docs/SECURITY.md` — new §8c "Dependency audits + Dependabot".
+  - `docs/SECURITY-CHECKLIST.md` — TRAP 8 + checklist row + table-of-contents row.
+  - `docs/DEPLOYMENT.md` — branch-protection note explaining audits are NOT required checks (sprint 1, MEH-336 to flip).
+  - `docs/CHANGELOG.md` — one-line entry.
+  - `HANDOFF.md` — this entry.
+
+### Baseline counts at MEH-330 ship (2026-04-26)
+- **Frontend (`npm audit --audit-level=high`):** 13 high / 6 moderate (19 total at high+).
+- **Backend (`uv run --with pip-audit pip-audit`):** 8 vulns across 5 packages.
+
+### New tickets opened this session (Linear, pre-merge per Smadar)
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| **MEH-336** | umbrella | Clear MEH-330 audit baseline + flip CI gate from warn-only to required. Tracks frontend 13 high / 6 moderate + backend 8-vuln backlog. Closes when both CI jobs flip `continue-on-error: false`. |
+| **MEH-337** | High | `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597). Auth-critical; touches `backend/app/auth.py`. Run full `tests/test_api.py` regression on bump. |
+| **MEH-338** | High | `starlette 0.41.3 → 0.49.1` (CVE-2025-62727). Framework; coordinate with `fastapi==0.115.6` compat — likely requires fastapi bump. |
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| `uv run --with pip-audit pip-audit` (not `pip-audit -r <(uv export ...)`) | Audits the actually-installed venv, not the requirements file. Backend has no `requirements.txt`; uv is the only dep manager (`backend/pyproject.toml` + `uv.lock`). Mirrors what CI installs for pytest in `pr-checks.yml:78–84`. |
+| `npm audit --audit-level=high` with NO `--omit=dev` | Spec is explicit. Dev-tool CVEs (e.g. `glob` command injection) execute on dev + CI machines that build the production artifact — supply-chain risk, not just runtime. Hiding 3 highs to make CI green = "weaken to make a test pass" anti-pattern. |
+| Warn-only gate (`continue-on-error: true`) for sprint 1 | Avoids one giant unmergeable PR. TODO comment + umbrella MEH-336 force the flip later. |
+| Separate workflow file (not folded into `pr-checks.yml`) | Combining `on: pull_request` + `on: schedule` in pr-checks.yml would either trigger build/pytest/adversarial on cron, or require per-job `if:` guards — both worse. Different gate semantics: pr-checks = required, dependency-audit = warn→required. |
+| `permissions: contents: read` per-job (not workflow-level) | Least-privilege `GITHUB_TOKEN`. Per-job (not workflow-level) so a future job added to the file is independently scoped. Supply-chain hardening extension to spec. |
+| Dependabot weekly (not daily) | Matches `dependency-audit.yml` cron cadence; `open-pull-requests-limit: 5` per ecosystem prevents queue overflow. |
+| All Dependabot PRs target `staging` | CLAUDE.md branch strategy — never `main`. |
+
+### Pending before push (in order)
+1. Local verification (yaml lint, `npm run build`, `pytest tests/test_api.py`, re-run both audits).
+2. `/adversarial-review` on changed files (rule 5a).
+3. Stage + commit (one commit per logical unit: workflow+dependabot YAML, then docs).
+4. **Wait for Smadar's push approval.**
+5. After push: open draft PR → `staging` (PR description per plan v2 §16).
+6. Post Vercel preview URL once Vercel publishes the hash.
+
+### Lessons learned
+- `uv` ships pip-audit cleanly via `uv run --with` — no need to install pip-audit separately into the project, no need to maintain a dev-deps entry. CI step is one line.
+- `npm audit` with `--omit=dev` excludes 3 highs in this codebase — `glob` (`@next/eslint-plugin-next`), `picomatch` (`@typescript-eslint`), `brace-expansion` — all of which still execute during the build. Confirms the spec's no-omit choice was right.
+- `pr-checks.yml` already wires `astral-sh/setup-uv@v3` with cache key `backend/uv.lock`. New `dependency-audit.yml` reuses that cache transparently — verified by reading the action docs (cache-by-key shared across workflows in the same repo).
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin`
+3. If MEH-330 PR merged → `git pull origin staging` and pick next ROADMAP ticket. If not merged → resume on `feature/meh-330-dependabot-audit`.
+4. Pre-launch order from MEH-327 close: MEH-329 (XSS sweep) is next non-MEH-330 pre-launch item.
+
+---
+
+## 2026-04-26 — Session close (MEH-327 merged)
+
+### Status
+- **MEH-327 ✅ MERGED** — PR #351 squashed to `staging` as `f1982d2`. Token Sidejacking defence (OWASP JWT Cheat Sheet) live on staging.
+  - 8 token-issuing endpoints emit `__Secure-Fgp` cookie + `userFingerprint` claim
+  - `get_current_user` validates the SHA-256 binding before any DB write (fail-open for pre-MEH-327 tokens, max 15-min window)
+  - `/auth/logout` clears the cookie
+  - 7 tests in `TestFingerprintCookie` + 1 fix to `test_logout_all_devices_rotates_refresh_cookie`
+  - Docs synced: `SECURITY.md §8b`, `CHANGELOG.md`, `.ai/diagrams/auth-flow.md`
+- **Current branch:** `staging` (clean, post-merge)
+- **Next task:** TBD — MEH-335 hardening items are post-launch (Medium); next pre-launch ticket per ROADMAP.
+
+### CI iteration log (4 fix cycles before green)
+The first green CI run came after 4 separate diagnoses. **Root cause** of the long chain: httpx's `Headers.items()` joins multiple `Set-Cookie` headers into a single comma-separated string, breaking every `startswith()` filter on any cookie after the first. Symptom masked by `pytest -x` — failures in `TestRefreshTokenFlow` blocked `TestFingerprintCookie` from ever running, hiding 4 sibling tests with the same broken extraction. Documented in MEH-335 description for future reference.
+
+| Iter | Commit | Fix | Outcome |
+|------|--------|-----|---------|
+| 1 | `b6ca28a` | Initial chunks A–F | CI red: `test_logout_all_devices_rotates_refresh_cookie` 401≠200 (TestClient drops `Secure` cookies over `http://testserver`) |
+| 2 | `2a0ddfe` | Pass `__Secure-Fgp` explicitly via `cookies={...}` | CI red: `_fp_value` returned `None` (root cause not yet found) |
+| 3 | (diagnosis) | Standalone repro showed `headers.items()` joins multiple Set-Cookie headers — `headers.get_list("set-cookie")` returns them individually | — |
+| 4 | `bb184bb` | Replace `[v for k,v in headers.items() if k=="set-cookie"]` with `headers.get_list("set-cookie")` in both `_refresh_cookies` AND `_all_set_cookies` helpers | CI green ✅ |
+
+### New tickets opened this session
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| MEH-335 | Medium (post-launch hardening) | MEH-327 follow-ups: (1) **P2** add `logger.warning` on fingerprint mismatch in `auth.py:163-165` — the actual attack signature currently has zero security log signal; (2) **P3** downgrade `logger.info` fail-open log to `debug` (fires per-request during 15-min transition window); (3) **P3** missing test: `get_current_user_optional` with mismatched fp cookie (current behavior correct but untested); (4) **process** — root cause of the 4-iteration debug chain (httpx headers.items() Set-Cookie joining + `pytest -x` masking sibling failures) — consider running pytest without `-x` on auth-touching PRs to surface all related failures up front. |
+
+### Key decisions this session
+| Decision | Reason |
+|----------|--------|
+| `SameSite=Lax` (not Strict) for `__Secure-Fgp` | `Strict` breaks cross-site GET navigations from email links (`/verify-email`, `/reset-password`). Deviation documented in `docs/SECURITY.md §8b`. |
+| `max_age` matches refresh cookie (14d) | Fingerprint must outlive the 15-min access token — 15-min TTL would create a timing edge-case where a live token arrives with an expired fp cookie. |
+| Fail-open for missing `userFingerprint` claim | Pre-MEH-327 tokens (15-min max window) have no claim — mirrors MEH-206 (`tv`) and MEH-326 (`scope`) fail-open patterns. |
+| Fingerprint gate before `_maybe_bump_last_active` | Invalid tokens must not write to the DB. |
+| `secure=True` unconditional on fp cookie (rejected conditional `secure=(env != "development")`) | Conditional `secure` recreates the env-drift class of bug caught in MEH-332. Tests must adapt to the cookie attrs, not the other way around. Dev workflow constraint: must use HTTPS. |
+
+### Lessons learned
+- **httpx `Headers.items()` joins multiple `Set-Cookie` headers** into one comma-separated string. Use `Headers.get_list("set-cookie")` for individual entries. Critical for any test that asserts on cookies set alongside another cookie in the same response.
+- **`pytest -x` hides sibling failures with the same root cause.** When debugging an auth/cookie change that touches multiple tests, run without `-x` on the first failure to see whether the same bug has spread.
+- **`__Secure-` cookie prefix REQUIRES `Secure=True` per RFC 6265bis.** Browsers reject `__Secure-*` cookies without the flag — conditional `secure` is not a viable test workaround. Adapt the test, not the production cookie attrs.
+- **TestClient `http://testserver` drops `Secure` cookies via httpx (RFC 6265bis enforcement).** Tests that need a Secure cookie carried forward must pass it explicitly via `cookies={...}`, mirroring the established MEH-326 refresh-token test pattern.
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin && git pull origin staging`
+3. Review MEH-335 hardening backlog (Medium, post-launch — defer until pre-launch tickets clear)
+4. Pick next ROADMAP ticket per priority
+
+---
+
+## 2026-04-26 — Session close (MEH-332 closed, docs-only)
+
+### Status
+- **MEH-332 ✅ FIXED** — root cause: `FRONTEND_URL=https://mehamakor.online` was set on Railway staging environment (bulk-copied from production). Smadar fixed manually on Railway → `https://staging.mehamakor.online`. Verified: staging reset-password + verify-email links now point to staging.
+- **Branch:** `feature/meh-332-staging-reset-url` — docs-only PR (no code changes).
+- **Files changed:** `docs/DEPLOYMENT.md` (added FRONTEND_URL row to staging env var table), `backend/.env.example` (added per-env override warning + Staging line), `docs/CHANGELOG.md` (one-line entry), `HANDOFF.md` (this entry).
+- **Next task:** MEH-327 — Ultra Plan #2: fingerprint cookie (next pre-launch security ticket).
+
+### New tickets opened this session
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| MEH-334 | Low (post-launch) | Boot-time guard for `FRONTEND_URL` / `ENV` mismatch — warn on startup if `ENV=staging` but `FRONTEND_URL` lacks `staging.` (or `ENV=production` but `FRONTEND_URL` contains `staging.`). Defense-in-depth against the MEH-332 class of misconfiguration. |
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| Docs-only fix (no code change to `_send_reset_email` / `_send_verify_email`) | Single source of truth = `settings.frontend_url` from env. Deriving from request `Host` header opens host-header-injection / password-reset-poisoning class of bugs. Env var stays the right answer. |
+| Add row to `docs/DEPLOYMENT.md` staging table, not a new "do not copy" section | Discoverability: anyone setting up staging reads that table top-to-bottom. Separate warning section gets skipped. |
+| Keep `backend/.env.example` default at production value | Matches existing convention; the new comment block is the affirmative override warning. |
+| Defer boot-time mismatch guard to MEH-334 (post-launch) | Today's docs fix prevents recurrence; runtime guard is defense-in-depth, not blocking launch. |
+
+### Lessons learned
+- **Env var docs must list per-environment overrides, not just production values.** The staging env var table in `docs/DEPLOYMENT.md` §A listed `DATABASE_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, `ENV`, etc. — but omitted `FRONTEND_URL` because it was treated as a "set once, same everywhere" var. Result: staging silently inherited the production hostname for ~3 weeks, breaking every email link from staging. Going forward: any env var that differs between environments MUST appear in the staging table with the staging value spelled out.
+- **Grep for siblings before closing.** `settings.frontend_url` is referenced in 7 places (`backend/app/routers/auth.py:632, 807, 861, 862, 874, 971, 993` + `backend/app/services/experience_notifications.py:43, 55, 72`). One env-var fix repaired all of them — but if any of them had a hardcoded fallback, the bug would have persisted. Audit confirmed clean.
+- **Pytest mocks don't catch env-config bugs (MEH-331 lesson echoes here).** `tests/test_api.py` mocks `send_email` at the router level. The URL string passed in is asserted, but the test fixture sets its own `FRONTEND_URL` — so a wrong production value in Railway is invisible to the test suite. Only a live email or a Railway env var snapshot in CI would catch this. Manual verification on staging is non-optional for any env-derived behavior.
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin && git pull origin staging`
+3. Branch: `git checkout -b feature/meh-327-fingerprint-cookie`
+4. Read MEH-327 ticket for next-task spec.
+
+---
+
+## 2026-04-26 — Session close (MEH-326 merged, next: MEH-332)
+
+### Status
+- **MEH-326 ✅ MERGED** — PR #349 merged to staging. SHA `7b7f880`. Manual tests A/B/C passed on staging.
+- **Current branch:** `staging` (clean, up to date)
+- **Next task:** MEH-332 — reset-password email URL points to production from staging (blocks staging email tests, HIGH)
+
+### New tickets opened this session
+| Ticket | Priority | Summary |
+|--------|----------|---------|
+| MEH-332 | High | Reset-password email URL hardcoded to production — breaks staging email tests |
+| MEH-333 | Medium | Inline login link in "email exists" error (UX, low urgency) |
+
+### Pre-launch order
+1. **MEH-332** — blocks staging email flow, fix first
+2. **MEH-327** — Ultra Plan #2: fingerprint cookie
+3. **MEH-329** — XSS sweep
+4. **MEH-330** — Dependabot
+5. **MEH-333** — UX polish, low urgency
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| No sessionStorage flag in refresh interceptor | SKIP_REFRESH list + in-flight `refreshPromise` sufficient; no extra storage needed |
+| `api.post("/auth/logout")` fire-and-forget in logout | Header.jsx callers are sync onClick; state must clear instantly |
+| `db.refresh(user)` in logout_all_devices | Belt-and-suspenders against expire_on_commit stale-tv; MEH-265 lesson |
+| `SameSite=Lax` not Strict | Strict breaks legitimate top-level navigation flows |
+| `delete_cookie` with symmetric attrs (R1 adversarial) | RFC 6265 doesn't require it, but defense-in-depth + symmetry with `_set_refresh_cookie` |
+| Defer R2 (axios retry loop guard) | Rate-limited at 30/min; no known production scenario triggers it; file as follow-up |
+
+### Lessons learned
+- **Stop hook no-push rule:** during multi-chunk features, stop hook fires after every commit and prompted auto-push. Needed explicit "no push until approved" rule per chunk. Consider documenting in CLAUDE.md workflow rules.
+- **axios `config.url` stays relative** (verified via axios PR #2391): SKIP_REFRESH list with `/auth/refresh` prefix is safe against infinite recursion.
+- **TestClient cookie-jar collision:** session client accumulates Set-Cookie headers across requests. Stale-cookie rotation tests need `fresh_client = TestClient(app)` with no prior history.
+- **Adversarial review caught R1** (`delete_cookie` missing symmetric attrs) that chunk-by-chunk review missed. `/adversarial-review` before push is load-bearing, not ceremonial.
+
+### Next session start
+1. Read HANDOFF.md
+2. `git fetch --prune origin && git pull origin staging`
+3. Branch: `git checkout -b feature/meh-332-reset-password-url`
+4. Investigate: check `FRONTEND_URL` env var in Railway staging environment — `_send_reset_email` uses `settings.frontend_url` which should already be correct if env var is set.
+
+---
+
+## 2026-04-26 — MEH-326 JWT refresh tokens (code complete, not yet merged)
+
+### Status
+- **MEH-326 code complete** — all backend, frontend, tests, docs done.
+- **Awaiting:** local pytest on Smadar's Windows machine, then push + Vercel preview.
+- **Branch:** `feature/meh-326-jwt-refresh` — 12 local commits, 1 pushed (5bdca16), draft PR #349 open.
+
+### What's done this session
+
+**Backend — `backend/app/auth.py`**
+- `create_access_token`: added `scope="access"` claim, TTL 15min
+- `create_refresh_token`: new — 14d TTL, `scope="refresh"`, same HS256 key
+- `decode_refresh_token`: new — returns claims or None, never raises
+- `get_current_user`: rejects `scope != "access"`; absent scope → fail-open (backward compat)
+
+**Backend — `backend/app/config.py`**
+- `access_token_expire_minutes` default: 1440 → 15
+- `refresh_token_expire_days`: new, default 14
+
+**Backend — `backend/app/routers/auth.py`**
+- `_set_refresh_cookie(response, user)`: new helper, single source of truth for cookie attrs
+- `POST /auth/refresh`: new endpoint, rotates both tokens, rate-limited 30/min
+- `POST /auth/logout`: new endpoint, 204, no auth required, clears cookie
+- 7 token-issuing endpoints wired: login, register, register_producer, register_producer_oauth, google_auth, apple_auth, logout_all_devices (with db.refresh belt-and-suspenders on the last one)
+
+**Frontend — `frontend/lib/api.js`**
+- `withCredentials: true` on axios instance
+- Replaced simple 401 handler with refresh-aware interceptor: SKIP_REFRESH list, `refreshPromise` dedup, retry-on-success, `_expireSession` on failure
+
+**Frontend — `frontend/lib/auth-context.js`**
+- `logout`: fire-and-forget `api.post("/auth/logout")` after state clear
+- `deleteAccount`: same pattern after `api.delete("/auth/me")`
+
+**Tests — `tests/test_api.py`**
+- 10 new tests in `TestRefreshTokenFlow` class (lines 1620–1780)
+- Critical: `test_old_24h_access_token_still_validates` guards backward compat
+- Fixed: `test_logout_all_devices_rotates_refresh_cookie` uses fresh `TestClient` to avoid cookie-jar collision
+
+**Docs updated:**
+- `docs/DEPLOYMENT.md`: ACCESS_TOKEN_EXPIRE_MINUTES=15, REFRESH_TOKEN_EXPIRE_DAYS=14
+- `docs/AUDIT-SECURITY-FOLLOWUP.md`: §3 MEDIUM finding #2 marked RESOLVED
+- `.ai/diagrams/auth-flow.md`: all 24h refs updated, §5 refresh sequence diagram added
+- `docs/SECURITY.md`: token lifetime + CSRF caveat
+- `docs/MANUAL_TESTING.md`: Cases A/B/C
+- `docs/CHANGELOG.md`: one-line entry
+
+### Pending before merge
+1. `cd backend && backend/.venv/bin/python -m pytest tests/test_api.py -q` — run on Smadar's Windows (Postgres required)
+2. `cd frontend && npm run build` — verify no build errors
+3. `git push origin feature/meh-326-jwt-refresh` — push remaining 11 local commits
+4. Share Vercel preview URL with Smadar
+5. Manual test cases A/B/C from `docs/MANUAL_TESTING.md`
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| No sessionStorage flag | Skip list + in-flight Promise sufficient loop guard |
+| `api.post("/auth/logout")` fire-and-forget in logout | Header.jsx callers are sync onClick; state must update instantly |
+| `db.refresh(user)` in logout_all_devices | Belt-and-suspenders against expire_on_commit drift; MEH-265 lesson |
+| `SameSite=Lax` not Strict | Strict breaks top-level navigation flows |
+| axios PR #2391: config.url stays relative | Skip list with `/auth/refresh` prefix is safe; no infinite recursion risk |
+| fresh TestClient for tv-bump 401 assertion | Session client stores new_refresh; sending old_refresh on top = non-deterministic |
+
+### Lessons learned
+- Stop hook auto-pushes; needed explicit "no push until approved" rule per chunk
+- axios `config.url` verified relative (not absolute) via PR #2391 — critical for SKIP_REFRESH correctness
+- TestClient cookie-jar collision: session client accumulates cookies across requests; stale-cookie tests need fresh client
+
+### Next session start
+Read HANDOFF.md → confirm pytest passed on Windows → push → Vercel preview URL to Smadar → manual tests A/B/C.
+
+---
+
+## 2026-04-25 End-of-day — MEH-331 closed
+
+### Status
+- **MEH-331 CLOSED** — verify-email / reset-password URL truncation fixed in two PRs.
+- **MEH-191 RESOLVED** — "Verify email button not working" was the user-facing ticket for this root cause.
+- Both PRs squash-merged to `staging`. Local feature branches can be deleted.
+
+### What shipped
+
+**PR #347 — `feature/meh-331-email-html-fallback`** — HTML email body (partial fix)
+- `email.py`: added `html: str | None = None` param to `send_email`; Resend call includes `"html"` key when set.
+- `auth.py`: `_send_verify_email` + `_send_reset_email` each build RTL HTML body with `<a href>` button, plain-URL fallback, `dir="rtl"` + `text-align:right` belt-and-suspenders.
+- **Root cause at the time was wrong.** Plain-text line-wrapping hypothesis was plausible but incorrect.
+
+**PR #348 — `feature/meh-331-cte-base64-attempt`** — CTE base64 header (actual fix attempt)
+- `email.py`: inside `if html:` block, adds `params["headers"] = {"Content-Transfer-Encoding": "base64"}` to ask Resend's MTA to use base64 instead of quoted-printable.
+- Real root cause: **Quoted-Printable (RFC 2045) encoding** — Resend's MTA wraps HTML lines at 76 chars by inserting `=\r\n` soft breaks. These land inside `href` attribute values, splitting the token mid-string. PR #347's `<a href>` button was structurally correct but QP encoding broke the URL at the transport layer anyway.
+- Status: **UNTESTED** — requires Gmail "Show original" to confirm `Content-Transfer-Encoding: base64` on the `text/html` MIME part. If Resend ignores this header → fall back to Option 1 (short-code redirect column).
+
+### Verification required before next feature work
+1. Fresh register on staging → Gmail "Show original"
+2. `text/html` MIME part must show `Content-Transfer-Encoding: base64` (not `quoted-printable`)
+3. Raw source must have no `=\r\n` mid-URL
+4. Click button → "האימייל אומת בהצלחה"
+5. Repeat for reset-password flow
+6. Mobile Gmail (iOS + Android)
+
+### Open pre-launch security tickets (next up)
+| Ticket | Title | Priority |
+|--------|-------|----------|
+| MEH-326 | JWT refresh tokens | High |
+| MEH-327 | Fingerprint cookie | High |
+| MEH-329 | XSS sanitization sweep | High |
+| MEH-330 | Dependabot + audit | Medium |
+
+After MEH-326/327/329/330 → MEH-305/306 (password policy, force-logout on password change — dropped from MEH-318).
+
+### Lessons learned this session
+
+**Lesson 1 — pytest mocks at router level cannot catch transport-layer bugs.**
+`tests/test_verify_email.py` mocks `send_email` at the router level. This validates that `_send_verify_email` *calls* send_email correctly, but it cannot detect MTA encoding behavior. For email delivery bugs, the ONLY reliable test is: send a real email to Gmail → "Show original" → check MIME headers. No pytest mock can substitute for this.
+
+**Lesson 2 — Demand file:line evidence + raw bytes before approving any email-content fix.**
+PR #347 was approved and merged based on a plausible theory (plain-text SMTP line-wrapping) without raw evidence (actual truncated token bytes vs DB token bytes). The correct protocol: before declaring root cause, produce `DB token[:8]` vs `URL token[:8]` comparison, and match the truncation point to the specific encoding boundary (76 chars for QP, 72 for SMTP fold). Theory without raw bytes = hypothesis, not root cause.
+
+### Decisions table
+| Decision | Reason |
+|----------|--------|
+| CTE base64 header (1-line, 30-sec test) before Option 1 (short-code redirect) | Costs nothing if Resend ignores it; fixes the bug if honored |
+| Reject shorter token (Option 2) | OWASP recommends 128+ bits; `token_urlsafe(32)` = 256 bits. Fragile to URL prefix changes |
+| If CTE header fails → Option 1: short-code redirect column | 16-char base62 code, ~95 bits entropy, industry standard; URLs stay under 62 chars on staging |
+| PR #347 kept (not reverted) | Plain-text fallback + HTML button are correct regardless of CTE outcome; only the CTE encoding fix is uncertain |
+
+---
+
+## 2026-04-25 Session — MEH-331 attempt #2 (Resend CTE base64 header)
+
+### What shipped
+- Branch: `feature/meh-331-cte-base64-attempt` → draft PR to `staging`
+- **Reversal**: PR #347's diagnosis was wrong. Plain-text line-wrapping was a red herring. Real root cause: **Resend's MTA applies quoted-printable encoding to the HTML body** AFTER our `<a href>` is built. QP inserts `=\r\n` soft breaks at 76-char boundaries, which can land inside an href attribute value, truncating the URL.
+- Evidence: user repro showed truncation persists with HTML emails (`?token=PHJuHuDN...sraTQMg` → submitted as `qaoEAG8LG8sraTQMg`). QP break math matches.
+- Research (resend.com/docs, GitHub issues): Resend API has no documented `content_transfer_encoding` parameter. The `headers` field is the only knob.
+- This PR: pass `headers={"Content-Transfer-Encoding": "base64"}` to `resend.Emails.send` when html is set. **Untested** — Resend may not propagate this to the HTML MIME part. If Gmail "Show original" still shows QP, fall back to Option 1.
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| Try CTE-base64 header first (1-line, 30-second test) | Costs nothing if Resend ignores it; fixes the bug if Resend honors it |
+| Reject Option 2 (shorter token) | OWASP Forgot Password Cheat Sheet recommends 128+ bits; 88-bit reset tokens borderline. Also fragile to URL prefix changes |
+| If Option 3 fails → Option 1 (short-code redirect, separate column) | 95-bit base62 code, no token entropy reduction, industry standard |
+| CHANGELOG must explicitly note PR #347 was incomplete | Future sessions need to know the previous "fix" didn't work |
+
+### Verification protocol (BEFORE merge)
+1. Fresh register on staging → open Gmail → "Show original"
+2. Confirm `Content-Transfer-Encoding: base64` on the `text/html` MIME part (not `quoted-printable`)
+3. Confirm raw source has no `=\r\n` mid-URL
+4. Click button → "האימייל אומת בהצלחה"
+5. Same for reset-password flow
+6. Mobile Gmail (iOS + Android)
+7. ONLY after all pass: merge
+
+### Next session
+- If CTE-base64 worked: close MEH-331, move to MEH-305/306 (password policy)
+- If CTE-base64 failed: open MEH-XXX for short-code redirect, implement Option 1
+
+---
+
+## 2026-04-25 Session — MEH-331 HTML email fix (verify + reset links) — INCOMPLETE
+
+### What shipped
+- Branch: `feature/meh-331-email-html-fallback` → draft PR to `staging`
+- Root cause confirmed: plain-text SMTP line-wrapping truncated 87-char verify URL at ~72 chars. Email client auto-detected the continuation fragment as a standalone clickable URL. Frontend received partial token → backend 404.
+- Fix: `email.py:send_email` now accepts optional `html: str | None = None`; Resend call conditionally includes `"html"` key when set.
+- `auth.py:_send_verify_email` + `auth.py:_send_reset_email` both now build RTL HTML body (table layout, `dir="rtl"` + `text-align:right` belt-and-suspenders, `#2e6853` button, plain-URL fallback). Plain-text body unchanged.
+- Same fix applied to `_send_reset_email` (same root cause, same overflow: 89 chars).
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| HTML email via `html=` param on `send_email` (not a separate function) | All callers remain backward-compatible; optional param with default None |
+| `text-align:right` AND `dir="rtl"` on both table AND td | Gmail forces `dir="ltr"` on outer body; belt-and-suspenders per user clarification |
+| Fix `_send_reset_email` in same PR | Same root cause (89-char URL); same fix; single PR scope |
+| Plain-text body kept as fallback | Resend sends both; some clients prefer text-only |
+
+### Next session
+- Wait for Gmail live test (fresh register → verify link; forgot-password → reset link)
+- After BOTH pass on Gmail → user says "merge" → merge to staging
+- After staging deploy: smoke test on staging.mehamakor.online
+- Then: pick up MEH-305/306 (password policy)
+
+## 2026-04-25 Session — MEH-320 verify-email 400 diagnostics (PR1 of 2)
+
+### What shipped
+- Branch: `feature/meh-320-verify-email-400-fix` → draft PR to `staging`
+- Backend: `/auth/verify-email` now logs `[VERIFY-EMAIL] token_not_found ...` / `token_expired ...` / `verified ...` and returns 404 (not found) or 410 (expired) instead of bare 400. Same MEH-304 pattern applied to reset-password.
+- Tests: new `tests/test_verify_email.py` — 5 cases (valid token, single-use, expired, invalid, register fires email with stored token).
+- No frontend changes — `verify-email/page.js:30` reads `err.response?.data?.detail` regardless of status code; verified via grep that nothing else branches on the response status.
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| URL-encoding hypothesis (from task brief) DISPROVED | `secrets.token_urlsafe(32)` produces only `[A-Za-z0-9_-]` — RFC 3986 unreserved chars, never re-encoded by Axios `params` or FastAPI query parser |
+| Two-PR sequence: diagnostics first, fix second | Static analysis cannot identify the staging root cause; the endpoint logic appears correct. Logging is the diagnostic tool; the actual fix waits on Railway log evidence |
+| Status-code split 404 / 410 (not bare 400) | Same as MEH-304 reset-password. Lets the frontend distinguish "wrong link" from "expired link" if we ever want to show different copy |
+| No frontend change in this PR | `err.response?.data?.detail` works identically for 400/404/410; `Header.jsx:363` reads `email_verified` from `/auth/me`, unrelated to this endpoint |
+
+### Next steps after merge (decision tree for PR2)
+After deploy, click a real verification link in staging and check Railway logs for `[VERIFY-EMAIL]` entries:
+
+**If `token_not_found token_prefix=...` →**
+- Query staging DB: `SELECT email_verify_token FROM users WHERE email = '<test_email>'` — is the token actually stored?
+- Compare DB value vs the value in the email URL (`token_prefix` in log) — any mismatch means storage / transmission bug.
+- Check whether `_send_verify_email` fired with the same token that was stored (the new `test_register_stores_token_and_sends_email` test guards this at the unit level — if it passes locally but staging mismatches, the issue is environmental).
+- Check for a duplicate background task firing twice → token rewritten between email send and click.
+
+**If `token_expired user_id=… expires=… now=…` →**
+- If `expires=None`: register path didn't write `email_verify_expires` — check `auth.py:104` (consumer) and `auth.py:206` (producer); also check whether the staging DB column is missing (run `\d users` in psql).
+- If `expires < now`: check Railway server timezone vs `datetime.utcnow()`. Both columns are naive UTC; staging running non-UTC TZ would skew the comparison. Compare `now=` from the log against current real wall-clock UTC.
+- If `expires > now` but still rejected: shouldn't be possible — re-read the comparison logic.
+
+### Next session
+- Wait on Vercel preview + CI on PR.
+- After merge: pop a fresh registration in staging, watch Railway logs for `[VERIFY-EMAIL]` line, file MEH-320 follow-up with the evidence and the targeted fix.
+
+---
+
+## 2026-04-25 Session — MEH-318 form state bug sweep (pre-RHF cleanup)
+
+### What shipped
+- Branch: `feature/meh-318-form-state-bug-sweep` → draft PR to `staging`
+- 7 fixes across `frontend/app/register/page.js` and `frontend/app/register/producer/page.js`. No password-rule changes (deferred to MEH-306). No backend, no new deps.
+- Fix #2: dietary checkboxes + category multi-select now route through new `setAndSave` helper → draft persistence covers all writes (was: only text fields hit `saveDraft`)
+- Fix #5: `handleEmailBlur` clears `emailExistsWarning` before early-return guard (erasing the email no longer leaves the warning stuck)
+- Fix #6: back button (step 2 → step 1) clears `error` alongside `stepError`
+- Fix #7: `useState` step initializer wrapped in try/catch (private mode / quota crash guard)
+- Fix #8: `restoreDraft` validates parsed object shape; bad drafts dropped from localStorage
+- Fix #9: step-2 submit chain clears `error` once at top for visible reset cycle
+- Fix #10: stale-closure footgun on `set()` removed in BOTH register forms (functional updater)
+
+### Decisions this session
+| Decision | Reason |
+|----------|--------|
+| Drop the password-rule fixes (#1, #3, #4) from this PR | MEH-305 / MEH-306 will replace `passwordValid()` + `<PasswordStrength>` within days; touching either today would conflict |
+| Defer the upgrade-loophole fix (consumer→producer with weak password) | Closed implicitly by MEH-306's force-logout-on-password-change design; no separate ticket needed |
+| 2 commits for code (producer / consumer) instead of finer splits | Producer-file changes are interlinked via the `setAndSave` helper; artificial split would obscure intent |
+| Skip local Playwright run | Sandbox has no localhost dev server or Vercel preview; CI will run on the preview |
+
+### Next session
+- Wait on Vercel preview for PR; smoke-test the 7 fixes per the format in the PR body
+- After MEH-318 lands: pick up MEH-305 / MEH-306 password-policy work (the dropped Fix #1 ground)
+
+---
+
+## 2026-04-25 Session 1 update (Claude Chat research-6 + MEH-308 follow-up)
+
+### Issues closed today
+
+| MEH | Title | Status | Notes |
+|-----|-------|--------|-------|
+| 287 | Producer registration WhatsApp welcome | Done | yesterday actually, missed in last HANDOFF |
+| 191 | Real forgot password flow | Done 10:46 | + MEH-304 reset-password 400 fix |
+| 304 | reset-password 400 bug | Done 10:46 | follow-up to MEH-191 |
+| 150 | Email provider migration to Resend | Done 10:18 | |
+| 308 | DELETE /auth/me cascade Producer | DUPLICATE | already fixed in MEH-249 |
+
+### Issues opened today
+
+| MEH | Title | Status | Notes |
+|-----|-------|--------|-------|
+| 307 | Forgot password frontend | DUPLICATE of 191 | Claude Chat blind spot |
+| 308 | DELETE cascade Producer | DUPLICATE of 249 | found via investigation |
+| 309 | OAuth ghost users | Backlog Medium | blocked on MEH-297 |
+| 311 | RecipeIngredient FK gap | Backlog High | new finding from MEH-308 investigation; 2 sibling FKs (`recipes.category_id`, `recipes.submitted_by`) flagged in description for separate MEHs |
+
+### Research artifact created
+
+- `research-6-registration-flow.md` (16KB) — registration flow E2E audit
+- **Caveat:** based on AUDIT-EDGE-CASES.md (April) without cross-checking Linear Done state. 2 of 6 recommendations were duplicates of already-fixed issues. Future Claude Chat research sessions: search Linear FIRST, audit docs SECOND.
+
+### Lessons learned
+
+- **HANDOFF.md must be updated at end of every session** (CLAUDE.md Rule 9). 24h drift caused 2 duplicate issues to be opened today.
+- **Claude Chat ≠ Claude Code.** Chat doesn't have visibility into recent commits or Linear state changes — must search before opening issues.
+- **Bug Protocol step 2 (grep siblings) catches real gaps.** MEH-308 investigation found RecipeIngredient FK gap that no audit caught, plus 2 additional sibling FKs missing `ondelete` (`recipes.category_id`, `recipes.submitted_by`).
+
+### Next session
+
+- Decide: which High-priority issue from Backlog ships next?
+  Candidates: MEH-198 (email verify resend), MEH-258 (SECURITY-CHECKLIST), MEH-301 (mirror loud-error pattern), MEH-272 (Producer CHECK constraints), MEH-311 (RecipeIngredient FK gap — quick win, scoped tightly).
+- MEH-297 + MEH-290 are big features — separate planning needed.
+
+---
+
+## 2026-04-25 Session — MEH-244 production drift diagnosis
+
+### What shipped
+- PR #339 (draft) — `feature/meh-244-close-production-drift → staging`
+- Cross-env probe confirmed **Drift count: 0** — staging and production are in sync
+- `.github/workflows/deploy.yml` — `continue-on-error: true → false` on both `api-contract-static` and `api-contract-probe-staging`; CI now gates PRs as intended
+- `docs/AUDIT-API-CONTRACT.md` — MEH-244 closed with probe result; 23 dead routes triaged (4 delete candidates: `GET /admin/producers/pending`, `POST /admin/producers/{id}/reject`, `GET /admin/stats`, `PUT /admin/reviews/{id}/hide`)
+- `docs/CHANGELOG.md` — one-line entry added
+- `.github/workflows/e2e.yml` — removed `startsWith(environment, 'Preview')` filter that caused 2-second failure on every E2E run (confirmed root cause)
+
+### Next tasks
+
+1. **Review + merge PR #339** (docs + CI config only — no mobile testing needed, no adversarial needed since no code changed)
+2. **4 delete-candidate routes** — open a separate MEH ticket before removing (each needs IDOR/test audit first per security rule); routes: `GET /admin/producers/pending`, `POST /admin/producers/{_}/reject`, `GET /admin/stats`, `PUT /admin/reviews/{_}/hide`
+3. **staging → main promotion** — main is behind staging by many commits
+
+## 2026-04-25 Session — MEH-150 + MEH-304
+
+### What shipped
+
+**MEH-150 (PR #335 — merged to staging):** Completed Resend migration paper trail.
+- `backend/.env.example`: removed SMTP_* vars, added RESEND_API_KEY section
+- `marketing.py`, `experiences.py`, `admin_experiences.py`: stale "SMTP" comments → "Resend / RESEND_API_KEY"
+- `docs/CHANGELOG.md`: entry added
+
+**MEH-304 (PR #337 — draft, open):** Observability-first diagnosis PR for `/auth/reset-password` returning 400 in production.
+- `backend/app/routers/auth.py`: split combined `400` into `404` (token not found, `[RESET] token_not_found`) and `410` (token expired, `[RESET] token_expired`). Added `[FORGOT-PW] token_stored` and `[RESET] password_updated` log lines.
+- `frontend/app/reset-password/page.js`: error handler now checks HTTP status codes (404/410) instead of Hebrew string matching.
+- `tests/test_api.py`: `TestResetPasswordFlow` — 5 test cases: happy path, 404, 410, 422, short password. Closes MEH-191 test gap.
+
+### PR #337 CI status
+
+All 5 CI failures are **pre-existing on staging** — same pattern as PR #335 (docs-only). All complete in <2 seconds (physically impossible for real test runs). No action needed.
+
+### Next task (MANDATORY after PR #337 merges to staging)
+
+1. Wait for Railway redeploy to complete
+2. Trigger forgot-password for a real user on staging (e.g. `sapir000s@gmail.com`)
+3. Open Railway logs → paste the `[FORGOT-PW] token_stored` log line here
+4. Click the reset link from the email → submit the form
+5. Paste the resulting log line (`[RESET] token_not_found` OR `[RESET] token_expired` OR `[RESET] password_updated`)
+6. Based on the log: write the actual fix (MEH-304 root cause fix — separate PR)
+
+**If `[RESET] token_not_found` fires:** token is not being written to DB, or a different token is stored than the one in the email. Check `forgot_password` → `user.reset_token = token` → `db.commit()` path, and compare token in `[FORGOT-PW] token_stored` log vs token prefix in `[RESET] token_not_found` log.
+
+**If `[RESET] token_expired` fires:** `reset_token_expires_at` is in the past when reset is attempted. Check timezone drift (DB `now()` vs Python `datetime.utcnow()`).
+
+### Open PRs
+
+| PR  | MEH     | Title                                                       | Status |
+|-----|---------|-------------------------------------------------------------|--------|
+| 337 | MEH-304 | obs: structured logging + 404/410 split for /auth/reset-password | Draft — needs Vercel preview test + merge |
+| 339 | MEH-244 | ci: flip api-contract CI to hard failure after 0-drift confirmation | ✅ Merged to staging 2026-04-25 |
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Cross-env probe via `foodmamkor-staging.up.railway.app` (not `staging.mehamakor.online`) | The Railway URL returned responses; both point to same container | 2026-04-25 |
+| All 4 admin alias delete candidates need separate MEH ticket | Deletion requires IDOR/test audit; can't do inline | 2026-04-25 |
+| Observability-first for MEH-304 (no fix yet) | Root cause cannot be determined from static analysis; DB query confirmed code bug but not which branch fires | 2026-04-25 |
+| No token_version increment in reset flow | Out of scope per user direction — pending separate session-invalidation policy research | 2026-04-25 |
+| Frontend error handler: HTTP status codes not Hebrew string matching | Status codes are stable; Hebrew string matching is fragile across content changes | 2026-04-25 |
+| Remove `startsWith(environment, 'Preview')` from e2e.yml | Vercel environment naming inconsistent across SDK versions; filter always false; tests are read-only, safe against any deployment | 2026-04-25 |
+
+---
+
+## 2026-04-25 Session — MEH-287 WhatsApp welcome
+
+### What shipped
+- `backend/app/schemas/schemas.py` — new `ProducerRegistrationResponse(Token)` adds `whatsapp_sent: bool`
+- `backend/app/routers/auth.py`: pre-flight `whatsapp_expected`; silent return → `logger.error`; `logger.warning` → `logger.error(exc_info=True)`; returns bool
+- `frontend/app/register/producer/page.js` — step-3 success screen copy + banner conditional on `whatsapp_sent` (default `true` for older servers)
+- `tests/test_whatsapp_notify.py` — 3 cases: missing Twilio env, full env + Twilio stubbed, missing phone
+
+### Accident + fix
+PR #329 was accidentally merged to `main` instead of `staging`.
+- PR #332 (hotfix/revert-pr-329) reverted it from `main` ✅
+- PR #333 (feature/meh-287-whatsapp-welcome-fix → staging) re-landed it correctly ✅
+
+### Sibling audit findings
+6 endpoints in `auth.py` still return naked `Token` with silent-fail side effects (`/register`, OAuth). Proposed follow-ups logged in Linear.
+
+---
+
+## 2026-04-25 Session 6 update — PR cleanup batch + MEH-265
+
+### What was done
+
+**PR cleanup batch:**
+- PR #332 merged to `main` — reverted accidental MEH-287 merge (#329) to production
+- PR #333 merged to `staging` — MEH-287 (whatsapp_sent flag) via correct flow; all CI green
+- PR #330 closed as duplicate — same branch/HEAD as already-merged PR #331 (MEH-258)
+- PR #322 closed as stale — Session 4 HANDOFF draft, superseded by Session 5 + this session
+
+**MEH-258 confirmed live on staging** (PR #331, commit `89cad07`):
+`docs/SECURITY-CHECKLIST.md`, `CLAUDE.md` docs map pointer, `.github/pull_request_template.md` trap reference.
+
+**MEH-265 post-mortem written** — `docs/INCIDENTS/2026-04-migrate-columns-drift.md`:
+covers the 2026-04-23 `/auth/login` 500 incident, why CI didn't catch it, the bundled-hotfix
+mistake, and prevention (MEH-266 checklist + MEH-267 Alembic). PR template Database Checklist
+updated to reference Alembic instead of stale `_migrate_columns()` wording.
+
+### Staging verifications (2026-04-25, end of session)
+
+- ✅ **MEH-299 verified** — Google login → `avatar_url` starts with `https://res.cloudinary.com`
+- ✅ **MEH-300 verified** — `/producer/dashboard` loads with no 422 in Network tab
+
+### Next tasks
+
+1. **CSP cleanup (MEH-298 follow-up):** Remove `*.googleusercontent.com` from `img-src` in `next.config.js` — MEH-299 confirmed working, stopgap no longer needed for new logins. Keep entry until old users have cycled through (safe to remove in next session).
+2. **MEH-271 check** — branch `feature/meh-271-arch-smell-detection` was pushed in Session 4. Verify it landed via PR #334 (`e5cb9c1` in staging log) or open a PR if still pending.
+
+### Open PRs
+
+None actionable. All stale drafts closed.
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Close PR #330 instead of rebasing | Same branch/HEAD already merged as PR #331; conflict was "add/add" on SECURITY-CHECKLIST.md | 2026-04-25 |
+| Close PR #322 instead of merging | Session 4 HANDOFF content superseded; staging HEAD already has Session 5 updates | 2026-04-25 |
+| Revert PR #329 via PR #332 to main | MEH-287 was accidentally merged to main instead of staging; revert restores production to correct state | 2026-04-25 |
+
+---
+
+## 2026-04-24 Session 6 update
+
+### Opened this session
+
+| PR  | MEH     | Title                                                       | Status |
+|-----|---------|-------------------------------------------------------------|--------|
+| 335 | MEH-150 | docs: complete Resend migration — .env.example + stale SMTP comments | Draft, CI green |
+
+### What was done
+
+**MEH-150** — The core email migration (email.py, config.py, pyproject.toml `resend==2.29.0`, tests) was already complete from a prior session. This PR finishes the paper trail:
+- `backend/.env.example`: removed `SMTP_HOST/PORT/USER/PASSWORD`, added `RESEND_API_KEY` section with setup instructions
+- `marketing.py`, `experiences.py`, `admin_experiences.py`: updated in-code comments that still referenced "SMTP" → "Resend / RESEND_API_KEY"
+- `docs/CHANGELOG.md`: entry added
+
+Sentry logging skipped — Sentry is not installed anywhere in this project.
+
+### Vercel preview
+`food-mamkor-git-feature-m-4f9aa8-levismadar80-ship-its-projects.vercel.app` (building at session end)
+
+### Next tasks (after PR #335 merges)
+1. Merge PR #322 (HANDOFF docs-only, no CI gate needed)
+2. Verify MEH-299 on staging: Google login → `avatar_url` starts with `https://res.cloudinary.com`
+3. Verify MEH-300 on staging: `/producer/dashboard` no longer shows 422
+4. Manual email test: trigger welcome email on staging → confirm received (check Resend dashboard → Emails tab)
+
+---
+
+## 2026-04-24 Session 5 update
+
+### Merged this session
+
+| PR  | MEH     | Title                                              | Notes |
+|-----|---------|----------------------------------------------------|-------|
+| 327 | MEH-300 | Fix GET /producers/me → 422 (router ordering)      | `producer_me.router` moved before `producers.router` in `main.py:143–147`. 4 regression tests added. |
+| 328 | MEH-299 | Self-host Google OAuth avatars to Cloudinary       | `_upload_google_avatar_or_none()` helper in `auth.py`. 5 call sites patched. 5 unit tests added. |
+
+### Task 2 (MEH-298)
+Already completed as PR #325 in a prior session. Skipped.
+
+### What was fixed
+
+**MEH-300 root cause:** `producers.router` has no prefix and registers `/producers/{producer_id}` (catch-all). It was included at `main.py:145` before `producer_me.router` at `main.py:147`. FastAPI matches in registration order, so `GET /producers/me` was captured with `producer_id="me"`, failing UUID parse → 422. Fix: swap include order.
+
+**MEH-299 design:** New `_upload_google_avatar_or_none(picture_url)` helper in `auth.py` (lines ~22–69). Downloads via `httpx.get(timeout=5)`, uploads to `mehamakor/avatars/` (400×400 face crop), returns Cloudinary `secure_url`. Fail-open on any error — login never blocked. Dev fallback (no `CLOUDINARY_CLOUD_NAME`) returns original URL unchanged. Computed once per OAuth flow to avoid double-upload for new users.
+
+### Verification for MEH-299
+After Railway staging deploy: log in with Google → DevTools → `GET /auth/me` → `avatar_url` should start with `https://res.cloudinary.com`. Existing users with old `googleusercontent.com` URLs need to log out + back in (backfill only runs when `avatar_url` is empty).
+
+### Open PRs (live)
+
+| PR  | MEH     | Title                          | Status | Notes |
+|-----|---------|--------------------------------|--------|-------|
+| 322 | —       | Session 4 HANDOFF update       | Draft  | Docs-only, needs merge |
+| 273 | MEH-242 | Pre-launch edge cases audit    | Draft  | Stale 48h+ |
+
+### Next tasks
+
+1. Merge PR #322 (HANDOFF update — docs only, no CI gate needed)
+2. Verify MEH-299 on staging: Google login → `avatar_url` = Cloudinary URL
+3. Verify MEH-300 on staging: `/producer/dashboard` no longer shows 422 in Network tab
+4. Consider removing `*.googleusercontent.com` from CSP `img-src` in `next.config.js` once MEH-299 is confirmed working
+
+### Decisions this session
+
+| Decision | Reason | Date |
+|----------|--------|------|
+| Fix MEH-300 via router reorder (not adding a new route) | `producer_me.py` already had `@router.get("")` — bug was purely in `main.py` include order | 2026-04-24 |
+| MEH-299 helper in `auth.py` (not a shared util file) | Single call site in one module; extraction would add a file for no reuse benefit | 2026-04-24 |
+| MEH-299 fail-open on any error | Login must never be blocked by a non-auth service; Cloudinary/httpx errors are non-critical | 2026-04-24 |
+
+---
+
+## 2026-04-25 Session 4 update (MEH-271 + MEH-258)
+
+## 2026-04-25 Session 4 update
+
+### Opened this session
+
+| PR  | MEH     | Title                                              | Status |
+|-----|---------|----------------------------------------------------|--------|
+| —   | MEH-271 | Arch smell detection section in workflow.md        | Pushed, not yet opened as PR — branch `feature/meh-271-arch-smell-detection` |
+| —   | MEH-258 | SECURITY-CHECKLIST.md (7 traps, broken→fix→verify) | Pushed, not yet opened as PR — branch `feature/meh-258-security-checklist` |
+
+### Linear tickets closed this session
+
+- **MEH-271** — marked Done ✅
+- **MEH-258** — pending close (after this commit)
+
+### What was done
+
+**MEH-271** — new `## Architectural smell detection` section in `.claude/rules/workflow.md`.
+Two smells: (1) two parallel mechanisms owning the same state, (2) "remember to update X when Y" phrases in docs.
+Includes grep commands to detect, and escalation rule (open Linear ticket, don't fix inline).
+
+**MEH-258** — rewrote `docs/SECURITY-CHECKLIST.md` from scratch to match Linear spec:
+7 past-incident traps (MEH-256/254/248/163/241/249/244), each with broken pattern → why → fix → question → verify command.
+Also: CLAUDE.md docs map pointer added, PR template reference added, env-var table, copy-paste PR checklist.
+
+### DoD status (MEH-258)
+
+- [x] `docs/SECURITY-CHECKLIST.md` — 7 concrete traps, broken→fix→verify format
+- [x] `CLAUDE.md` docs map — pointer added after `SECURITY.md` row
+- [x] `.github/pull_request_template.md` — reference added under "auth or permissions changed"
+- [x] `HANDOFF.md` — this update
+- [ ] Build green — docs-only, no code changed, CI should pass trivially
+- [ ] PRs not yet opened — both branches pushed
+
+### Next tasks
+
+1. Open PRs for MEH-271 + MEH-258 (branches already pushed)
+2. Continue session 3 follow-ups:
+   - Verify staging `/auth/me` 200 for a producer user (MEH-283 post-merge check)
+   - Verify staging `/login` + Google OAuth on staging.mehamakor.online (MEH-274)
+   - Merge PR #320 (MEH-286) after CI green — docs-only
+3. MEH-280 + MEH-281 — two remaining failing Playwright specs
+
+### Note on PR template stale section
+
+`.github/pull_request_template.md` still references `_migrate_columns()` in the Database Checklist
+section (lines 50–55). That function was deleted in MEH-267 (PR #311). The section is now misleading.
+Separate cleanup task needed — not in scope of MEH-258.
+
+---
 
 ## 2026-04-24 Session 3 update
 
@@ -501,23 +1614,42 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 
 ## PRs merged this session
 - #264 — uv migration (claude/migrate-pip-to-uv-8p7aT) ✅
+- #358 — MEH-341: Claude Code hooks (squash-merged to staging 2026-04-27) ✅ SHA: 5f1e4ce
 
-## Open PRs
-- #265 — MEH-236: CardHeart can't undo favorite (draft)
+## Current branch
+`staging`
+
+## What shipped (MEH-341 — live on staging)
+- `.claude/hooks/session-start.sh` — SessionStart: injects branch + CHANGELOG + HANDOFF tail into every session
+- `.claude/hooks/check-rtl.sh` — PreToolUse RTL guard: blocks physical directional Tailwind classes (allowlist 9 files). MultiEdit-aware (adversarial review caught bypass, fixed before merge).
+- `.claude/hooks/check-bash-safety.sh` — PreToolUse Bash guard: blocks DDL + destructive filesystem commands. Git commands exempt. TRUNCATE-without-TABLE gap documented as accept-risk.
+- `.claude/settings.json` — 9 hooks total (3 new + 8 existing preserved)
+- `.gitattributes` — LF enforcement for shell scripts
+- `CLAUDE.md` — /loop usage patterns section
+- 12/12 manual tests pass. Adversarial review: 1 HIGH (MultiEdit bypass) caught + fixed before merge, 1 LOW (CHANGELOG head skip) fixed, 1 accept-risk documented.
+
+## Smoke tests (post-merge, on staging branch)
+- SMOKE-1 (RTL block): Edit ProducerCard.jsx with physical margin class in comment → **blocked exit 2** ✅
+- SMOKE-2 (RTL allowlist): Hook payload with horizontal-center idiom in MapClient.jsx → **allowed exit 0** ✅
+- SessionStart: auto-fired → emitted branch + active issue + CHANGELOG + HANDOFF tail ✅
+
+## Linear MEH-341
+No Linear MCP in this session. Mark MEH-341 as "Done" manually in Linear.
+
+## Open PRs (still pending)
+- #265 — MEH-236: CardHeart undo favorite (draft)
 - #266 — MEH-187: Vercel Speed Insights (draft)
-- #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
-- #268 — MEH-89: vacation return date in banner + admin form (draft)
-- #270 — MEH-87: LoginPromptModal Tab focus trap (draft, CI pending)
-- #272 — MEH-83: Lightbox on gallery images (draft, CI running)
-- #274 — MEH-84: GPS button on /map (draft, CI queued)
+- #267 — MEH-88: products.image_url + CRUD — CI green (draft)
+- #268 — MEH-89: vacation return date banner + admin form (draft)
+- #270 — MEH-87: LoginPromptModal Tab focus trap (draft)
+- #272 — MEH-83: Lightbox on gallery images (draft)
+- #274 — MEH-84: GPS button on /map (draft)
 
-## Next task
-- Run `/adversarial-review` on PR #311 → unmark draft → request review → merge
-- Open MEH-XXX: "Add `alembic check` to CI — catches ORM/migration drift that `alembic upgrade head` misses"
-- MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
-- MEH-205: /search page redesign (discovery-first) — next feature in queue
-- Review and merge #265 → #268 to staging (older open PRs, still valid)
+## Next task — start fresh session
+- MEH-342: CLAUDE.md is at 197 lines (over 150-line cap) — split overflow into `.claude/rules/`. First step: `wc -l CLAUDE.md` + identify sections ≥15 lines to move.
+- Review and merge #265 → #268 to staging (older open PRs, all valid)
 - Promote staging → main (production is behind)
+- Run `/adversarial-review` on PR #311 → unmark draft → merge
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |

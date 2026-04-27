@@ -1456,3 +1456,646 @@ class TestContactClickTracking:
         cc = data["contact_clicks"]
         assert "last_7d" in cc and "last_30d" in cc and "total" in cc
         assert cc["total"] >= 1
+
+
+class TestGetProducersMeRouteOrder:
+    """MEH-300 regression — GET /producers/me must not be shadowed by
+    GET /producers/{producer_id} due to router registration order."""
+
+    def test_authenticated_producer_returns_200(self, client, db):
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+
+        resp = client.get("/producers/me", headers=auth_header(user))
+
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["id"] == str(producer.id)
+        assert body["name"] == producer.name
+
+    def test_no_auth_returns_401(self, client, db):
+        resp = client.get("/producers/me")
+        assert resp.status_code == 401
+
+    def test_consumer_returns_403(self, client, db):
+        user = make_user(db, role="consumer")
+        resp = client.get("/producers/me", headers=auth_header(user))
+        assert resp.status_code == 403
+
+    def test_uuid_route_not_broken(self, client, db):
+        """Ensure GET /producers/{uuid} still resolves after reorder."""
+        producer = make_producer(db)
+        resp = client.get(f"/producers/{producer.id}")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(producer.id)
+
+
+class TestUploadGoogleAvatarOrNone:
+    """MEH-299 — _upload_google_avatar_or_none helper unit tests.
+
+    Login must never be blocked regardless of Cloudinary / network state.
+    """
+
+    def test_none_input_returns_none(self):
+        from app.routers.auth import _upload_google_avatar_or_none
+        assert _upload_google_avatar_or_none(None) is None
+
+    def test_empty_string_returns_none(self):
+        from app.routers.auth import _upload_google_avatar_or_none
+        assert _upload_google_avatar_or_none("") is None
+
+    def test_no_cloudinary_config_returns_url_unchanged(self, monkeypatch):
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", None)
+        url = "https://lh3.googleusercontent.com/photo.jpg"
+        assert _upload_google_avatar_or_none(url) == url
+
+    def test_httpx_error_is_fail_open(self, monkeypatch):
+        from unittest.mock import patch
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        with patch("httpx.get", side_effect=Exception("network error")):
+            result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None
+
+    def test_cloudinary_error_is_fail_open(self, monkeypatch):
+        from unittest.mock import patch, MagicMock
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        mock_resp = MagicMock()
+        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
+        mock_resp.raise_for_status.return_value = None
+        with patch("httpx.get", return_value=mock_resp):
+            with patch("cloudinary.uploader.upload", side_effect=Exception("Cloudinary down")):
+                with patch("cloudinary.config"):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None
+
+    def test_success_returns_cloudinary_url(self, monkeypatch):
+        from unittest.mock import patch, MagicMock
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        mock_resp = MagicMock()
+        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
+        mock_resp.raise_for_status.return_value = None
+        expected = "https://res.cloudinary.com/test-cloud/image/upload/mehamakor/avatars/abc.jpg"
+        with patch("httpx.get", return_value=mock_resp):
+            with patch("cloudinary.config"):
+                with patch("cloudinary.uploader.upload", return_value={"secure_url": expected}):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result == expected
+
+
+class TestResetPasswordFlow:
+    """MEH-304 / MEH-191: end-to-end reset-password tests (gap closed)."""
+
+    def test_happy_path(self, client, db):
+        import secrets
+        from datetime import datetime, timedelta
+        user = make_user(db, password="OldPass1!")
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!"})
+        assert res.status_code == 200
+        db.refresh(user)
+        assert user.reset_token is None
+
+        # old password must no longer work
+        login_old = client.post("/auth/login", json={"email": user.email, "password": "OldPass1!"})
+        assert login_old.status_code == 401
+
+        # new password must work
+        login_new = client.post("/auth/login", json={"email": user.email, "password": "NewPass1!"})
+        assert login_new.status_code == 200
+
+    def test_unknown_token_returns_404(self, client, db):
+        res = client.post("/auth/reset-password", json={"token": "nonexistent_token_abc", "new_password": "NewPass1!"})
+        assert res.status_code == 404
+
+    def test_expired_token_returns_410(self, client, db):
+        import secrets
+        from datetime import datetime, timedelta
+        user = make_user(db)
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
+        db.commit()
+
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!"})
+        assert res.status_code == 410
+
+    def test_invalid_body_returns_422(self, client, db):
+        res = client.post("/auth/reset-password", json={"token": "abc"})
+        assert res.status_code == 422
+
+    def test_short_password_returns_422(self, client, db):
+        import secrets
+        from datetime import datetime, timedelta
+        user = make_user(db)
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "short"})
+        assert res.status_code == 422
+
+
+# ---------- MEH-326: JWT Refresh Token flow ----------
+
+class TestRefreshTokenFlow:
+    """Regression tests for the HttpOnly refresh-token cookie flow.
+
+    _reset_rate_limiter and _clean_tables are autouse — each test
+    gets a fresh DB and a clean slowapi counter.
+    """
+
+    def _login(self, client, email, password="Pass1234!"):
+        return client.post("/auth/login", json={"email": email, "password": password})
+
+    def _refresh_cookies(self, response):
+        """Extract all Set-Cookie header values from a response.
+
+        httpx's Headers.items() joins multiple Set-Cookie values into a
+        single comma-separated string, breaking startswith() filters on
+        any cookie after the first. get_list() returns each individually.
+        """
+        return response.headers.get_list("set-cookie")
+
+    def _fp_value(self, response):
+        """Extract the raw __Secure-Fgp value from a Set-Cookie header.
+
+        httpx (Starlette TestClient) does not forward Secure cookies over
+        http://testserver — must be passed explicitly on subsequent requests.
+        Mirror of TestFingerprintCookie._fp_value; kept here so this class
+        is self-contained.
+        """
+        for v in self._refresh_cookies(response):
+            if v.startswith("__Secure-Fgp="):
+                return v.split("=", 1)[1].split(";")[0].strip()
+        return None
+
+    def test_login_sets_refresh_cookie(self, client, db):
+        make_user(db, email="t1@test.com", password="Pass1234!")
+        res = self._login(client, "t1@test.com")
+        assert res.status_code == 200
+        cookies = self._refresh_cookies(res)
+        refresh = next((c for c in cookies if c.startswith("refresh_token=")), None)
+        assert refresh is not None, "No refresh_token Set-Cookie header"
+        low = refresh.lower()
+        assert "httponly" in low
+        assert "secure" in low
+        assert "samesite=lax" in low
+        assert "path=/api/auth" in low
+        # 14 days = 1 209 600 seconds
+        assert "max-age=1209600" in low
+
+    def test_refresh_returns_new_access_token(self, client, db):
+        from datetime import datetime, timedelta
+        from joserfc import jwt as jose_jwt
+        from joserfc.jwk import OctKey
+        from joserfc.jwt import JWTClaimsRegistry
+        from app.config import settings
+
+        make_user(db, email="t2@test.com", password="Pass1234!")
+        login_res = self._login(client, "t2@test.com")
+        refresh_cookie = login_res.cookies.get("refresh_token")
+        assert refresh_cookie, "Login did not return a refresh_token cookie"
+
+        res = client.post("/auth/refresh", cookies={"refresh_token": refresh_cookie})
+        assert res.status_code == 200
+        access_token = res.json().get("access_token")
+        assert access_token
+
+        # Verify the returned token carries scope=access
+        key = OctKey.import_key(settings.secret_key.encode())
+        token_obj = jose_jwt.decode(access_token, key, algorithms=[settings.algorithm])
+        JWTClaimsRegistry().validate(token_obj.claims)
+        assert token_obj.claims.get("scope") == "access"
+
+    def test_refresh_without_cookie_returns_401(self, client):
+        res = client.post("/auth/refresh")
+        assert res.status_code == 401
+
+    def test_refresh_rejects_access_token_in_cookie(self, client, db):
+        from app.auth import create_access_token
+        user = make_user(db, email="t4@test.com")
+        access_token = create_access_token(user.id, user.token_version)
+        res = client.post("/auth/refresh", cookies={"refresh_token": access_token})
+        assert res.status_code == 401
+
+    def test_refresh_rejects_after_token_version_bump(self, client, db):
+        make_user(db, email="t5@test.com", password="Pass1234!")
+        login_res = self._login(client, "t5@test.com")
+        refresh_cookie = login_res.cookies.get("refresh_token")
+
+        # Fetch the user and bump token_version directly
+        from app.models.models import User
+        user = db.query(User).filter(User.email == "t5@test.com").first()
+        user.token_version = (user.token_version or 1) + 1
+        db.commit()
+
+        res = client.post("/auth/refresh", cookies={"refresh_token": refresh_cookie})
+        assert res.status_code == 401
+
+    def test_refresh_rejects_blocked_user(self, client, db):
+        make_user(db, email="t6@test.com", password="Pass1234!")
+        login_res = self._login(client, "t6@test.com")
+        refresh_cookie = login_res.cookies.get("refresh_token")
+
+        from app.models.models import User
+        user = db.query(User).filter(User.email == "t6@test.com").first()
+        user.is_blocked = True
+        db.commit()
+
+        res = client.post("/auth/refresh", cookies={"refresh_token": refresh_cookie})
+        assert res.status_code == 403
+
+    def test_refresh_rate_limited(self, client):
+        # _reset_rate_limiter autouse fixture resets the counter before this test.
+        # /auth/refresh limit: 30/minute. Call it 30 times (all 401 — no cookie),
+        # then verify the 31st is 429.
+        for _ in range(30):
+            client.post("/auth/refresh")
+        res = client.post("/auth/refresh")
+        assert res.status_code == 429
+
+    def test_old_24h_access_token_still_validates(self, client, db):
+        """BACKWARD COMPAT GUARD — pre-MEH-326 tokens had no scope claim.
+
+        get_current_user must fail-open on absent scope (treat as access)
+        so existing 24h sessions don't get invalidated by the deploy.
+        """
+        from datetime import datetime, timedelta
+        from joserfc import jwt as jose_jwt
+        from joserfc.jwk import OctKey
+        from app.config import settings
+
+        user = make_user(db, email="t8@test.com")
+        # Craft token with only sub/exp/tv — no scope claim (pre-MEH-326 shape)
+        expire = datetime.utcnow() + timedelta(hours=24)
+        payload = {"sub": str(user.id), "exp": expire, "tv": user.token_version}
+        key = OctKey.import_key(settings.secret_key.encode())
+        old_token = jose_jwt.encode({"alg": settings.algorithm}, payload, key)
+
+        res = client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"})
+        assert res.status_code == 200
+        assert res.json()["email"] == "t8@test.com"
+
+    def test_logout_clears_refresh_cookie(self, client, db):
+        make_user(db, email="t9@test.com", password="Pass1234!")
+        self._login(client, "t9@test.com")  # sets cookie in client session
+
+        res = client.post("/auth/logout")
+        assert res.status_code == 204
+
+        cookies = self._refresh_cookies(res)
+        refresh = next((c for c in cookies if "refresh_token" in c), None)
+        assert refresh is not None, "No Set-Cookie header for refresh_token on logout"
+        low = refresh.lower()
+        # Defensive: accept Max-Age=0 OR an expires in the past
+        assert "max-age=0" in low or "expires=" in low
+
+    def test_logout_all_devices_rotates_refresh_cookie(self, client, db):
+        make_user(db, email="t10@test.com", password="Pass1234!")
+        login_res = self._login(client, "t10@test.com")
+        old_refresh = login_res.cookies.get("refresh_token")
+        access_token = login_res.json()["access_token"]
+        fp_value = self._fp_value(login_res)
+        assert fp_value is not None, "Login did not return __Secure-Fgp cookie"
+
+        res = client.post(
+            "/auth/logout-all-devices",
+            headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": fp_value},
+        )
+        assert res.status_code == 200
+        new_refresh = res.cookies.get("refresh_token")
+        assert new_refresh is not None, "logout-all-devices did not set a new refresh cookie"
+        assert new_refresh != old_refresh, "refresh cookie was not rotated"
+
+        # Old cookie must now be rejected (token_version was bumped).
+        # Fresh client: the session `client` already stored new_refresh from
+        # the logout-all-devices response. Passing old_refresh via cookies=
+        # on top would send both cookies with the same name — non-deterministic.
+        # A new TestClient(app) has no stored cookies, so only old_refresh travels.
+        from fastapi.testclient import TestClient
+        from app.main import app as _app
+        fresh_client = TestClient(_app)
+        res2 = fresh_client.post("/auth/refresh", cookies={"refresh_token": old_refresh})
+        assert res2.status_code == 401
+
+
+class TestFingerprintCookie:
+    """MEH-327: OWASP JWT token-sidejacking fingerprint defence.
+
+    Covers: cookie set on login/register, valid fingerprint accepted,
+    wrong fingerprint rejected (core security invariant), pre-MEH-327
+    tokens fail-open, logout clears the cookie.
+    """
+
+    def _login(self, client, email, password="Pass1234!"):
+        return client.post("/auth/login", json={"email": email, "password": password})
+
+    def _all_set_cookies(self, response):
+        # httpx's Headers.items() joins multiple Set-Cookie values into one
+        # comma-separated string; get_list() returns them individually.
+        return response.headers.get_list("set-cookie")
+
+    def _fp_cookie_header(self, response):
+        cookies = self._all_set_cookies(response)
+        return next((c for c in cookies if c.startswith("__Secure-Fgp=")), None)
+
+    def _fp_value(self, response):
+        """Extract the raw fingerprint value from the Set-Cookie header."""
+        header = self._fp_cookie_header(response)
+        if header is None:
+            return None
+        return header.split("=", 1)[1].split(";")[0].strip()
+
+    def test_login_sets_fingerprint_cookie(self, client, db):
+        make_user(db, email="fp1@test.com", password="Pass1234!")
+        res = self._login(client, "fp1@test.com")
+        assert res.status_code == 200
+        fp_hdr = self._fp_cookie_header(res)
+        assert fp_hdr is not None, "No __Secure-Fgp Set-Cookie header on login"
+        low = fp_hdr.lower()
+        assert "httponly" in low
+        assert "secure" in low
+        assert "samesite=lax" in low
+        assert "path=/" in low
+        # 14 days = 1 209 600 seconds — must match refresh cookie TTL
+        assert "max-age=1209600" in low
+
+    def test_register_sets_fingerprint_cookie(self, client):
+        res = client.post(
+            "/auth/register",
+            json={"email": "fp2@test.com", "name": "FP Test", "password": "Pass1234!"},
+        )
+        assert res.status_code == 200
+        fp_hdr = self._fp_cookie_header(res)
+        assert fp_hdr is not None, "No __Secure-Fgp Set-Cookie header on register"
+        low = fp_hdr.lower()
+        assert "httponly" in low
+        assert "secure" in low
+        assert "samesite=lax" in low
+        assert "path=/" in low
+
+    def test_authenticated_request_valid_fingerprint_passes(self, client, db):
+        make_user(db, email="fp3@test.com", password="Pass1234!")
+        login_res = self._login(client, "fp3@test.com")
+        access_token = login_res.json()["access_token"]
+        fp = self._fp_value(login_res)
+        assert fp is not None, "Login did not return __Secure-Fgp cookie"
+
+        res = client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": fp},
+        )
+        assert res.status_code == 200
+        assert res.json()["email"] == "fp3@test.com"
+
+    def test_authenticated_request_wrong_fingerprint_rejected(self, client, db):
+        """Core security invariant: a stolen access token cannot be replayed
+        without also stealing the HttpOnly __Secure-Fgp cookie.
+        """
+        make_user(db, email="fp4@test.com", password="Pass1234!")
+        login_res = self._login(client, "fp4@test.com")
+        access_token = login_res.json()["access_token"]
+
+        # Fresh client — empty cookie jar — so only the wrong fp is sent.
+        from fastapi.testclient import TestClient
+        from app.main import app as _app
+        attack_client = TestClient(_app)
+        res = attack_client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": "a" * 100},  # valid length, wrong value
+        )
+        assert res.status_code == 401
+
+    def test_token_without_fingerprint_claim_fails_open(self, client, db):
+        """Backward-compat guard: pre-MEH-327 tokens (no userFingerprint
+        claim) must still pass even with no fp cookie present.
+
+        Fail-open window: max 15 min (access token TTL). After expiry the
+        next login issues a fingerprinted token and the guard is active.
+        """
+        from datetime import datetime, timedelta
+        from joserfc import jwt as jose_jwt
+        from joserfc.jwk import OctKey
+        from app.config import settings
+
+        user = make_user(db, email="fp5@test.com")
+        expire = datetime.utcnow() + timedelta(minutes=15)
+        payload = {
+            "sub": str(user.id),
+            "exp": expire,
+            "tv": user.token_version,
+            "scope": "access",
+        }
+        key = OctKey.import_key(settings.secret_key.encode())
+        old_token = jose_jwt.encode({"alg": settings.algorithm}, payload, key)
+
+        # No fp cookie — fail-open should pass
+        res = client.get("/auth/me", headers={"Authorization": f"Bearer {old_token}"})
+        assert res.status_code == 200
+        assert res.json()["email"] == "fp5@test.com"
+
+    def test_logout_clears_fingerprint_cookie(self, client, db):
+        make_user(db, email="fp6@test.com", password="Pass1234!")
+        self._login(client, "fp6@test.com")
+
+        res = client.post("/auth/logout")
+        assert res.status_code == 204
+
+        cookies = self._all_set_cookies(res)
+        fp_hdr = next((c for c in cookies if "__Secure-Fgp" in c), None)
+        assert fp_hdr is not None, "No Set-Cookie header for __Secure-Fgp on logout"
+        low = fp_hdr.lower()
+        assert "max-age=0" in low or "expires=" in low
+
+
+# ============================================================
+# MEH-329 — XSS sanitization sweep (integration tests)
+# ============================================================
+
+
+class TestSanitizationIntegration:
+    """End-to-end checks that @field_validator sanitizers actually
+    strip HTML before the row hits the DB. Unit-level coverage is in
+    tests/test_sanitization.py; these tests lock the wire-to-row path
+    for the three highest-risk surfaces.
+    """
+
+    def test_producer_description_sanitized(self, client, db):
+        from app.models.models import Producer
+        payload = {
+            "email": "xss-producer@test.com",
+            "name": "ניסוי",
+            "password": "Pass1234!",
+            "producer_name": "חוות הסקריפט",
+            "description": "<script>alert(1)</script>טקסט נקי",
+            "phone": "0501234567",
+            "category_ids": [],
+            "primary_contact_method": "whatsapp",
+        }
+        resp = client.post("/auth/register/producer", json=payload)
+        assert resp.status_code == 200, resp.text
+        row = db.query(Producer).filter(Producer.name == "חוות הסקריפט").first()
+        assert row is not None
+        assert "<script>" not in (row.description or "")
+        assert "</script>" not in (row.description or "")
+        assert "טקסט נקי" in (row.description or "")
+
+    def test_home_product_description_sanitized(self, client, db, monkeypatch):
+        from app.models.models import HomeProduct
+        # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="xss-hp@test.com")
+        resp = client.post(
+            "/home-products",
+            json={
+                "title": "עוגה ביתית",
+                "description": "<img src=x onerror=alert(1)>טעימה ביותר",
+                "price": "30",
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
+        row = db.query(HomeProduct).filter(HomeProduct.user_id == user.id).first()
+        assert row is not None
+        assert "<img" not in (row.description or "")
+        assert "onerror" not in (row.description or "")
+        assert "טעימה ביותר" in (row.description or "")
+
+    def test_contact_message_sanitized(self, client, db):
+        resp = client.post(
+            "/contact",
+            json={
+                "name": "רות",
+                "email": "ruth-xss@example.com",
+                "message": "<script>alert(1)</script>שאלה רגילה על פלטפורמה",
+            },
+        )
+        assert resp.status_code == 200, resp.text
+        row = db.query(ContactMessage).filter(
+            ContactMessage.email == "ruth-xss@example.com"
+        ).first()
+        assert row is not None
+        assert "<script>" not in row.message
+        assert "</script>" not in row.message
+        assert "שאלה רגילה על פלטפורמה" in row.message
+
+
+class TestAppleTokenVerification:
+    """MEH-337: pyjwt 2.9.0 → 2.12.0 bump (CVE-2026-32597).
+
+    Apple OAuth (routers/auth.py:_verify_apple_token, lines 944-975) is
+    the ONLY pyjwt code path in the backend — primary auth uses joserfc.
+    These tests lock the _verify_apple_token WRAPPER behavior; functional
+    verification of pyjwt internals is delegated to pyjwt's upstream test
+    suite + manual Apple OAuth smoke on Vercel preview.
+    """
+
+    APPLE_JWK = {
+        "kid": "test-kid",
+        "kty": "RSA",
+        "alg": "RS256",
+        "use": "sig",
+        "n": "placeholder-modulus-not-real",
+        "e": "AQAB",
+    }
+    # All call sites MUST monkeypatch
+    # pyjwt.algorithms.RSAAlgorithm.from_jwk; placeholder "n" will
+    # not parse as a real RSA modulus.
+
+    def _setup_mocks(self, monkeypatch, *, decoded_payload=None, decode_exc=None, jwks=None, header=None):
+        from app import config
+        import jwt as pyjwt
+        import requests as req_mod
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        class _FakeResp:
+            def __init__(self, payload):
+                self._p = payload
+
+            def json(self):
+                return self._p
+
+        keys_payload = jwks if jwks is not None else [self.APPLE_JWK]
+        monkeypatch.setattr(req_mod, "get", lambda url, **kw: _FakeResp({"keys": keys_payload}))
+        monkeypatch.setattr(
+            pyjwt,
+            "get_unverified_header",
+            lambda token: header if header is not None else {"kid": "test-kid"},
+        )
+        monkeypatch.setattr(
+            pyjwt.algorithms.RSAAlgorithm,
+            "from_jwk",
+            lambda *a, **kw: object(),
+        )
+        if decode_exc is not None:
+            def _decode(*a, **kw):
+                raise decode_exc
+        else:
+            payload = decoded_payload or {"sub": "user-123", "email": "u@apple.com"}
+
+            def _decode(*a, **kw):
+                return payload
+        monkeypatch.setattr(pyjwt, "decode", _decode)
+
+    def test_returns_payload_on_valid_token(self, monkeypatch):
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(
+            monkeypatch,
+            decoded_payload={"sub": "u1", "email": "u@apple.com"},
+        )
+        result = _verify_apple_token("dummy.token.value")
+        assert result == {"sub": "u1", "email": "u@apple.com"}
+
+    def test_returns_none_when_apple_client_id_unset(self, monkeypatch):
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "")
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None
+
+    def test_returns_none_on_invalid_signature(self, monkeypatch):
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(monkeypatch, decode_exc=Exception("invalid signature"))
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None
+
+    def test_returns_none_on_unknown_kid(self, monkeypatch):
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(
+            monkeypatch,
+            jwks=[{**self.APPLE_JWK, "kid": "OTHER"}],
+            header={"kid": "test-kid"},
+        )
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None

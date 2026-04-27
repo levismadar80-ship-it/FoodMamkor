@@ -16,7 +16,7 @@ import math
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -25,6 +25,7 @@ from app.auth import get_current_user, require_admin
 from app.database import get_db
 from app.models import Producer, ProducerReview, ProducerWhatsAppClick, User
 from app.rate_limit import limiter
+from app.services.sanitization import sanitize_text
 
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
@@ -92,6 +93,11 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
 class ReviewCreateNested(BaseModel):
     stars: int = Field(..., ge=1, le=5)
     body: str = Field(..., min_length=10, max_length=500)
+
+    @field_validator("body")
+    @classmethod
+    def _sanitize_body(cls, v):
+        return sanitize_text(v, max_length=500)
 
 
 class ReviewOut(BaseModel):

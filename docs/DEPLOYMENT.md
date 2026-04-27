@@ -137,6 +137,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `JWT_SECRET_KEY` | **Generate fresh:** `python -c "import secrets; print(secrets.token_hex(32))"`. Do NOT reuse production. |
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
+   | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `TWILIO_*` | Use **Twilio test credentials** so staging WhatsApp messages don't go out for real. |
@@ -234,6 +235,14 @@ this codebase. Open:
 > **`Adversarial review` is intentionally NOT a required check.** It only runs
 > when `.github/scripts/adversarial-review.sh` exists (see workflow). The check
 > is informational until that script is added.
+
+> **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
+> (npm audit)` are intentionally NOT required checks (MEH-330, sprint 1).**
+> Both jobs run with `continue-on-error: true` while the existing CVE
+> backlog (frontend 13 high / 6 moderate, backend 8 vulns at 2026-04-26)
+> is paid down under umbrella ticket **MEH-336**. Once the baseline
+> clears, flip both jobs' `continue-on-error` to `false` and add the two
+> job names as required checks under `staging` *and* `main` rules above.
 
 After saving both rules, verify by attempting a direct push from a feature branch
 to `staging` — it should be rejected with "protected branch" error.
@@ -853,10 +862,12 @@ DATABASE_URL=${{mehamakor-db.DATABASE_URL}}
 # Generate locally:  python -c "import secrets; print(secrets.token_urlsafe(64))"
 SECRET_KEY=<paste generated secret>
 ALGORITHM=HS256
-# 24 hours — matches backend/app/config.py default; was 10080 (7 days) in
-# older snapshots but was shortened per SECURITY.md JWT fix. Longer
-# sessions are rejected by the config loader.
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
+# MEH-326: 15-min access token (was 1440/24h pre-MEH-326). Paired with a
+# 14-day HttpOnly refresh cookie; the frontend interceptor rotates silently.
+# Changing these values requires a Railway service restart:
+# Settings → Variables → save → container auto-restarts within seconds.
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=14
 
 GOOGLE_CLIENT_ID=591935721343-jjrco2vpmok72to1fm8rq1ss0i2s0cj7.apps.googleusercontent.com
 

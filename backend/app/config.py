@@ -19,10 +19,14 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5432/mehamakor"
     secret_key: str = _DEV_SECRET_SENTINEL  # overridden by SECRET_KEY / JWT_SECRET_KEY env
     algorithm: str = "HS256"
-    # SECURITY FIX #1: access tokens used to live 7 days. Shortened to 24h
-    # as a compromise — no refresh-token infra yet, so 15min (the spec ideal)
-    # would cause constant re-login. Rotate by re-login once a day.
-    access_token_expire_minutes: int = 60 * 24  # 24 hours
+    # MEH-326: short-TTL access token (15 min) paired with a 14-day refresh
+    # token delivered via HttpOnly cookie. The frontend axios interceptor
+    # silently calls /auth/refresh on 401 and retries the original request,
+    # so users no longer feel the rotation. Backward compat: tokens issued
+    # before this PR (no `scope` claim) keep validating until natural expiry
+    # — see get_current_user fail-open at backend/app/auth.py.
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 14
 
     # Environment flag (dev|staging|production). Set via ENV=production.
     env: str = "development"

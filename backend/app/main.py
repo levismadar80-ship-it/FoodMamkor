@@ -42,6 +42,8 @@ def _redacted_db_url() -> str:
 def _run_db_init_sync() -> None:
     log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
+    from app.database import Base, engine
+    Base.metadata.create_all(bind=engine)  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
     log.info("[bg 1/2] models imported OK")
 
     log.info("[bg 2/2] running seed_data.seed()...")
@@ -142,9 +144,9 @@ async def record_request_metrics(request: Request, call_next) -> Response:
 
 app.include_router(auth.router)
 app.include_router(cities.router)
+app.include_router(producer_me.router)
 app.include_router(producers.router)
 app.include_router(favorites.router)
-app.include_router(producer_me.router)
 app.include_router(admin.router)
 app.include_router(admin_extra.router)
 app.include_router(recipes.router)

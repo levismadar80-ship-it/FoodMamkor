@@ -120,6 +120,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("user");
     resetFavoritesCache();
     setUser(null);
+    api.post("/auth/logout").catch(() => {});
   };
 
   const logout = () => {
@@ -127,6 +128,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("user");
     resetFavoritesCache();
     setUser(null);
+    api.post("/auth/logout").catch(() => {});
   };
 
   // MEH-16 — profile update. Backend returns the full UserOut so we
