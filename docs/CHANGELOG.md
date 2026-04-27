@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-100: feat(about) — replace Leaf placeholder with founder photo. Path C editorial 3:4 portrait (280×373 / 360×480 md), Cloudinary c_fill,g_auto,ar_3:4, next/image with imgFailed Leaf fallback. Build ✅.
+
 ## 2026-04-27 — PR #394: fix(docs): revert premature MEH-351 CHANGELOG entry. Entry was written before PR #364 merged; `uv.lock` confirmed `anthropic==0.39.0` on staging HEAD. Placeholder replaces full entry until #364 actually merges.
 
 ## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking remediation

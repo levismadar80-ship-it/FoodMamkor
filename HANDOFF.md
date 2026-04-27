@@ -1,7 +1,26 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (PR #394 merged — doc integrity fix; 9 PRs today)
+> Last updated: 2026-04-27 (MEH-100 — founder photo PR opened as draft)
+
+## 2026-04-27 — MEH-100: founder photo on /about (draft PR open)
+
+**Branch:** `claude/replace-leaf-founder-photo-kYxNg` off staging.
+**Status:** draft PR open, pending Vercel preview review.
+
+**What shipped:** Replaced `<Leaf>` placeholder in `AboutClient.jsx:88-93` with
+real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
+- Container: `relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl border border-primary/15 overflow-hidden`
+- Cloudinary URL with `c_fill,g_auto,ar_3:4` server-side face-aware crop
+- `imgFailed` useState fallback → `<Leaf>` rendered on `onError`
+- `Leaf` import kept (fallback + decorative Leaf at line 262 both use it)
+- Build ✅ PASS, no new warnings
+
+**Deferred:** imgFailed browser fallback visual test (CC sandbox can't open browser) — verify on Vercel preview by temporarily breaking public_id.
+
+**Next:** Vercel preview review on mobile (390px) + desktop (1440px). Approve → merge to staging.
+
+---
 
 ## 2026-04-27 — PR #394: CHANGELOG doc integrity fix (MEH-351 revert)
 
