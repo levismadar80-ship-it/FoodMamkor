@@ -38,3 +38,18 @@ expected_assertion: Output contains "Build: ❌ FAIL". Output includes at least 
   first error line from npm output (must reference the file or error type, not just
   "failed"). Verdict reads NEEDS-FIX. Lint section is present in the report.
   No files are modified.
+
+---
+
+## T4 — rtl-allowlist.txt missing → loud failure (regression test for MEH-368 FIX 2)
+
+prompt: Run the frontend verification suite on the current branch.
+  Pre-condition: `.claude/hooks/rtl-allowlist.txt` has been temporarily moved to
+  `.claude/hooks/rtl-allowlist.txt.bak` (file does not exist at expected path).
+  Build and lint pass cleanly.
+
+expected_assertion: RTL section of the report reads exactly
+  "❌ ERROR: rtl-allowlist.txt missing — RTL scan aborted" (no violation count
+  is reported). Verdict reads NEEDS-FIX. Output does NOT include
+  "RTL violations outside allowlist: 0" or any READY-FOR-PR verdict.
+  No files are modified by the agent.

@@ -36,6 +36,48 @@ guard. Pre-existing, surfaced during MEH-350 adversarial review.
 
 ---
 
+## 2026-04-27 — MEH-345 merged + 6 follow-ups opened
+
+### Status
+- PR #387 merged to staging (post-SMOKE A verification on Sapir's local)
+- 3 subagents added at `.claude/agents/`: verify-frontend, code-simplifier, i18n-scanner
+- Each with matching `.eval.md` (9 eval cases total)
+- Supporting file: `.claude/hooks/rtl-allowlist.txt` (9 paths)
+- Final strict scores: vf 3/3, cs 3/3, i18n 3/3 — all cleared 80% base-model gate
+
+### Discoveries during MEH-345
+- **Invocation:** Agents accessible via `Agent(subagent_type="<name>")` in CC 2.1.119. Spec's `/agent <name>` syntax not in `claude --help`. Files at `.claude/agents/<name>.md` work via Agent tool.
+- **Tools enforcement:** `tools:` frontmatter is advisory in CC 2.1.119, not enforced at agent level. Real enforcement is `settings.json permissions.allow` (MEH-346 layer). Investigated in MEH-363.
+- **Frontmatter field:** Spec used `allowed-tools:`; live repo uses `tools:` (verified `design-review.md:4`). All 3 new agents use `tools:`.
+- **i18n reality:** Repo has ZERO t() infrastructure. 0 packages, 0 locale dirs, 0 t() matches. Older "44 keys / 11 components" claim was stale. i18n-scanner found 2,284 hardcoded Hebrew strings across 124 files. Future work, not in progress.
+- **Pre-existing RTL:** verify-frontend found 11 violations on staging not in allowlist — all are JSDoc/centering/skip-link patterns (false positives needing rtl-ok). Owned by MEH-364.
+- **Dependencies:** `npm audit` baseline = 19 vulnerabilities (6 moderate + 13 high). Pre-existing tech debt — `git diff staging...feature/meh-345-subagents -- frontend/package-lock.json` returned 0. Owned by MEH-362.
+
+### Follow-up tickets
+| Ticket | Priority | Description |
+|---|---|---|
+| MEH-362 | High | Dependency vulnerability triage + remediation |
+| MEH-363 | High | Agent `tools:` enforcement security investigation |
+| MEH-364 | Medium | Resolve 11 RTL violations (rtl-ok annotations) |
+| MEH-365 | Medium | Consolidate RTL allowlist (single source) |
+| MEH-366 | Medium | i18n migration scoping plan |
+| MEH-367 | Low | Agent runtime budgets (scope + fast path) |
+
+### Recommended execution order
+- **Wave 1 (parallel):** MEH-362 + MEH-363 + MEH-366 (no file conflicts)
+- **Wave 2 (parallel, after Wave 1 lands):** MEH-364 + MEH-365
+- **Deferred:** MEH-367
+
+### Local environment notes
+- `@vercel/speed-insights` installed locally to fix Sapir's build (`npm install` added 1 package, no commit)
+- npm audit baseline JSON to be saved at `.claude/audit-baseline-2026-04-27.json` per MEH-362 plan
+- CC 2.1.119 auto-update warning observed — run `claude doctor` post-merge
+
+### Memory state correction
+Memory entry #12 added: i18n state correction (zero t() infra). Older userMemories[1] still references stale "44 keys / 11 components" — entry #12 is authoritative going forward.
+
+---
+
 ## 2026-04-27 — MEH-361 harden anthropic content[0].text guard
 
 **Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** #388 (draft, open).

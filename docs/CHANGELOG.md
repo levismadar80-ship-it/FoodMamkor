@@ -12,6 +12,26 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-369: hotfix MEH-345 (hardcoded paths + silent allowlist guard)
+
+Adversarial review of MEH-345 (PR #387) surfaced 3 bugs in the new subagents:
+1. `/home/user/FoodMamkor` hardcoded in 5 executable bash blocks across
+   `verify-frontend.md` (4) and `code-simplifier.md` (1) — agents non-functional
+   outside Linux sandbox.
+2. `grep -v -f rtl-allowlist.txt` had no existence guard — file missing →
+   silent false PASS (worst-category bug).
+
+Fixes:
+- All 5 hardcoded paths replaced with `git rev-parse --show-toplevel`
+  resolution (portable across Linux sandbox, Windows + Git Bash, CI).
+- RTL scan wrapped in `[ -f "$ALLOWLIST" ]` guard. On missing file:
+  loud failure (verdict NEEDS-FIX, explicit ERROR message), never silent
+  false PASS.
+- New eval T4 added to `verify-frontend.eval.md` as regression test for
+  the guard.
+
+Closes MEH-369. Bundled `HANDOFF.md` content held since MEH-345 merge.
+
 ## 2026-04-27 — MEH-350 / PR #389
 feat(deps): bump requests 2.32.3 → 2.33.1. Resolves
 CVE-2024-47081 + CVE-2026-25645 (both deferred from MEH-351).

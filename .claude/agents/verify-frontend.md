@@ -12,7 +12,7 @@ You do NOT fix issues — report only.
 
 1. Run the build:
    ```
-   cd /home/user/FoodMamkor/frontend && npm run build 2>&1
+   cd "$(git rev-parse --show-toplevel)/frontend" && npm run build 2>&1
    ```
    Note exit code (0 = pass, non-zero = fail).
    If fail: extract the first error line (first line containing "error", "Error",
@@ -20,17 +20,28 @@ You do NOT fix issues — report only.
 
 2. Run the linter:
    ```
-   cd /home/user/FoodMamkor/frontend && npm run lint 2>&1
+   cd "$(git rev-parse --show-toplevel)/frontend" && npm run lint 2>&1
    ```
    Note exit code. If fail: count error lines and capture first 5.
 
-3. Run RTL class scan from repo root:
+3. Run RTL class scan:
    ```
-   cd /home/user/FoodMamkor && grep -rEn '\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]' \
-     frontend/components frontend/app \
-     | grep -v -f .claude/hooks/rtl-allowlist.txt
+   REPO_ROOT="$(git rev-parse --show-toplevel)"
+   ALLOWLIST="$REPO_ROOT/.claude/hooks/rtl-allowlist.txt"
+   if [ ! -f "$ALLOWLIST" ]; then
+     RTL_RESULT="ALLOWLIST_MISSING"
+   else
+     RTL_RESULT=$(grep -rEn '\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]' \
+       "$REPO_ROOT/frontend/components" "$REPO_ROOT/frontend/app" \
+       | grep -v -f "$ALLOWLIST")
+   fi
    ```
-   Each remaining output line is a violation. Format each as: `file:line — class`.
+   If `RTL_RESULT == "ALLOWLIST_MISSING"`: do NOT report a count. The RTL
+   section of the report must read exactly:
+   `❌ ERROR: rtl-allowlist.txt missing — RTL scan aborted`
+   and the verdict MUST be NEEDS-FIX.
+   Otherwise, each non-empty line in `RTL_RESULT` is a violation. Format each
+   as: `file:line — class`.
 
 4. Return this exact report and nothing else:
 
@@ -44,5 +55,6 @@ You do NOT fix issues — report only.
 Verdict: READY-FOR-PR / NEEDS-FIX
 ```
 
-Verdict is READY-FOR-PR only when Build=PASS AND Lint=PASS AND RTL count=0.
+Verdict is READY-FOR-PR only when Build=PASS AND Lint=PASS AND
+RTL_RESULT is set (not ALLOWLIST_MISSING) AND RTL count=0.
 Otherwise verdict is NEEDS-FIX.
