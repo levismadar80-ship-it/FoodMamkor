@@ -12,7 +12,7 @@ files — suggest only. You do NOT comment on style (Prettier handles formatting
 
 1. Get the diff:
    ```
-   git -C /home/user/FoodMamkor diff staging...HEAD
+   git diff staging...HEAD
    ```
 
 2. For each modified file in the diff, look for:
