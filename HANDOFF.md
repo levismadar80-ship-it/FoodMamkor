@@ -1,7 +1,28 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-371 ready, MEH-370 unblocked, MEH-376 opened)
+> Last updated: 2026-04-27 (MEH-379 CSP fix, PR open, awaiting Smadar verify)
+
+## 2026-04-27 — MEH-379: CSP Sentry allowlist (PR open)
+
+`connect-src` was missing `*.ingest.us.sentry.io` + `*.sentry.io` — browser blocked Sentry envelopes despite DSN being wired (root cause of MEH-376 observability gap). One-line fix in `frontend/next.config.js:67`. Build ✅ PASS, lint ✅ no new warnings.
+
+**Branch:** `feature/meh-379-csp-sentry-allowlist`
+**Status:** PR open (draft) — awaiting Smadar merge + production verify.
+
+**Post-merge manual verify (Smadar):**
+1. Open mehamakor.online in browser (or staging)
+2. F12 → Network tab → filter `sentry`
+3. Trigger a JS error (e.g. `/debug-sentry` route or console: `Sentry.captureException(new Error("test"))`)
+4. Confirm POST to `*.ingest.*.sentry.io/api/*/envelope/` returns **200**
+5. Confirm event appears in Sentry dashboard within ~30s
+
+**Next after verify:**
+- Close MEH-379 Done
+- Mark MEH-376 verified retroactively
+- Proceed to MEH-370 PHASE B codemods
+
+---
 
 ## 2026-04-27 — MEH-371 ready, MEH-370 unblocked, MEH-376 opened
 

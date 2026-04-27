@@ -64,7 +64,7 @@ const securityHeaders = [
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
       `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com${vercelLiveStyle}`,
       `font-src 'self' https://fonts.gstatic.com data:${vercelLiveFont}`,
-      `connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org${vercelLiveConnect}`,
+      `connect-src 'self' https://accounts.google.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.us.sentry.io https://*.sentry.io${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,
       "object-src 'none'",
       "base-uri 'self'",

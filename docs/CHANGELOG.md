@@ -12,6 +12,10 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-379: CSP allowlist Sentry ingest
+
+`connect-src` in `frontend/next.config.js:67` — added `https://*.ingest.us.sentry.io https://*.sentry.io` so browser can POST error envelopes to Sentry ingest. Previous CSP blocked all outbound XHR to sentry.io → events silently dropped despite DSN being wired (MEH-376). One-line edit, unconditional (all envs). Build ✅ PASS.
+
 ## 2026-04-27 — MEH-371: Sentry SDK v8 → v10 upgrade
 
 `@sentry/nextjs` 8.55.1 → 10.50.0 (2-major bump). Vulns 14 → 10
