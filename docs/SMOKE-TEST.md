@@ -36,10 +36,10 @@ python scripts/smoke_test.py https://mehamakor.online
 
 Output ends in a summary block. Example failure:
 ```
-❌ FAIL: check_rate_limit_isolation
-     Reason: distinct XFF IPs should each start fresh, but got 429 on [('192.0.2.20', 429)]
-     Likely cause: MEH-256 regression — rate limit keyed on proxy IP, all users share one bucket
-     How to fix: (1) set TRUSTED_PROXY=1 on Railway staging + production; (2) verify …
+❌ FAIL: check_rate_limit_enforcement
+     Reason: expected 429 on the 6th login but all 6 returned 200
+     Likely cause: rate limiter not firing — @limiter.limit removed from /auth/login, or key function broken
+     How to fix: (1) verify @limiter.limit("5/minute") on backend/app/routers/auth.py::login; (2) check TRUSTED_PROXY=1 on Railway
 ```
 
 ## The seven checks
@@ -47,12 +47,11 @@ Output ends in a summary block. Example failure:
 | # | Name | Passing behavior | Regression from |
 |---|---|---|---|
 | 1 | `check_rate_limit_enforcement` | 6 bad logins from same XFF IP → 6th returns 429 | — (invariant) |
-| 2 | `check_rate_limit_isolation` | 5 bad logins from 5 distinct XFF IPs → none 429 | MEH-256 |
-| 3 | `check_idor_pending_producer` | `GET /producers/<pending-uuid>` anonymously → 404 | MEH-254 |
-| 4 | `check_auth_required` | `GET /auth/me` without token → 401 | — (invariant) |
-| 5 | `check_security_headers` | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` set | — (invariant) |
-| 6 | `check_cors_strict` | Preflight with `Origin: https://evil.example.com` → no `Access-Control-Allow-Origin: evil.example.com` echo | — (invariant) |
-| 7 | `check_password_validation` | `POST /auth/register` with `password: "ab"` → 422 | MEH-248 |
+| 2 | `check_idor_pending_producer` | `GET /producers/<pending-uuid>` anonymously → 404 | MEH-254 |
+| 3 | `check_auth_required` | `GET /auth/me` without token → 401 | — (invariant) |
+| 4 | `check_security_headers` | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` set | — (invariant) |
+| 5 | `check_cors_strict` | Preflight with `Origin: https://evil.example.com` → no `Access-Control-Allow-Origin: evil.example.com` echo | — (invariant) |
+| 6 | `check_password_validation` | `POST /auth/register` with `password: "ab"` → 422 | MEH-248 |
 
 Each failure prints a `cause:` (what likely went wrong) and a `fix:`
 (where to look in the codebase or ops config). The fix hints are the
