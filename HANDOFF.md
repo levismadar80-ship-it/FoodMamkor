@@ -1,7 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-371 ready, MEH-370 unblocked, MEH-376 opened)
+> Last updated: 2026-04-27 (MEH-379 + MEH-380 + MEH-381 bundle in PR #399, awaiting Smadar verify)
+
+## 2026-04-27 — MEH-379+380+381 bundle (PR #399, merged-pending-Smadar-verify)
+
+**Status:** merged-pending-Smadar-verify. Three CSP gaps fixed in single squash commit on `feature/meh-379-csp-sentry-allowlist`.
+
+- **MEH-379 (HIGH)** — `connect-src` += `*.ingest.sentry.io` + `*.ingest.us.sentry.io`
+- **MEH-380 (LOW)** — `worker-src 'self' blob:` for Sentry Replay
+- **MEH-381 (LOW)** — DSN-derived `report-uri` (Path A, fail-soft)
+
+**Branch:** `feature/meh-379-csp-sentry-allowlist`
+**PR:** #399 (https://github.com/levismadar80-ship-it/FoodMamkor/pull/399)
+
+**Retroactive dependency:** MEH-376 verification waits on this PR's production verify (Sentry dashboard receipt was the gating test that exposed all three CSP gaps).
+
+**Verification done in CC sandbox:**
+- 3 build modes via `node -e "require('./next.config.js').headers().then(...)"`: no DSN, valid DSN, garbage DSN — all green
+- `npm run build` ✅ PASS (default env)
+- `npm run lint` ✅ no new warnings
+
+**Post-merge 7-step verify protocol — production:**
+1. F12 → Network → filter `sentry`
+2. Console: `Sentry.captureException(new Error("MEH-379+380+381 verify"))`
+3. POST to `o<orgid>.ingest.us.sentry.io/api/.../envelope/` → **200** (MEH-379)
+4. Sentry event in dashboard within ~30s
+5. Open event → Replay tab populated (MEH-380)
+6. Inject violation: console → `fetch("https://evil.example")` → CSP block expected
+7. Sentry dashboard "Security" issues → CSP report appears (MEH-381)
+
+**If 1-7 green:**
+- Close MEH-379, MEH-380, MEH-381 Done
+- Retroactively mark MEH-376 verified
+- Proceed to MEH-370 PHASE B codemods
+
+---
 
 ## 2026-04-27 — MEH-371 ready, MEH-370 unblocked, MEH-376 opened
 
