@@ -1,11 +1,11 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-361 harden anthropic content guard — PR open, draft)
+> Last updated: 2026-04-27 (MEH-345 merged → staging; MEH-361 PR #388 open, draft)
 
 ## 2026-04-27 — MEH-361 harden anthropic content[0].text guard
 
-**Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** to be opened (draft).
+**Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** #388 (draft, open).
 
 **Goal:** MEH-351 (anthropic SDK 0.39 → 0.97) audit surfaced 2 unguarded `msg.content[0].text` accesses (bio_generator.py:125, reviews.py:84). Apply the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from chat.py:246 so non-text-first responses (tool_use, image, etc.) don't `AttributeError` before the surrounding fail-open path catches them.
 
@@ -20,6 +20,25 @@
 ## 2026-04-27 — MEH-360 docs: document CC sandbox egress limitation
 
 **MEH-357 follow-up — MEH-360:** Documented CC sandbox egress limitation. CC's envoy proxy blocks `*.up.railway.app` egress. All smoke verification must run from user's local machine. Reference: anthropics/claude-code#19087. Updated CLAUDE.md + docs/SMOKE-TEST.md to prevent repeat diagnosis loops.
+
+---
+
+## 2026-04-27 — MEH-345 feat(claude-code): 3 project-scoped subagents — MERGED
+
+**Branch:** `feature/meh-345-subagents`. **PR:** #387 (merged to staging).
+
+**What shipped:** 3 subagents in `.claude/agents/` — `verify-frontend`, `code-simplifier`, `i18n-scanner` — using Skills 2.0 eval-driven methodology. 9 eval test cases before agent bodies. `.claude/hooks/rtl-allowlist.txt` supporting file.
+
+**Go/no-go (final):**
+| Agent | Agent score | Base rate | Decision |
+|-------|-------------|-----------|---------|
+| verify-frontend | 3/3 strict (T2 re-run in fixture-isolated env) | ~50% | SHIP ✅ |
+| code-simplifier | 3/3 + real PR #369 clean verdict | ~33% | SHIP ✅ |
+| i18n-scanner | 3/3 strict | ~67% | SHIP ✅ |
+
+**Post-merge action required (Smadar):** Restart session → verify `Agent(subagent_type="verify-frontend")` resolves.
+
+**Follow-up tickets (Smadar to open):** rtl-allowlist.txt sync automation; 11 pre-existing RTL violations on staging; agent-level Bash restriction security implications; i18n greenfield migration (2,284 strings / 124 files); i18n-T2 budget overrun (372s).
 
 ---
 
