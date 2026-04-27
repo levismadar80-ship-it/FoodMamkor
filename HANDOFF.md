@@ -1,7 +1,31 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-349 python-multipart bump — PR #359 open, draft)
+> Last updated: 2026-04-27 (MEH-355 RTL allowlist — PR #360 merged, MEH-342 unblocked)
+
+## 2026-04-27 — MEH-355 RTL allowlist for *.md merged to staging
+
+**PR:** #360 (squash-merged) **SHA:** eda6d90 **Branch:** feature/meh-355-rtl-allowlist-md (deleted)
+
+**Why:** MEH-342 (CLAUDE.md trim) blocked when moving Bug Protocol verbatim to workflow.md — the rule text contains a physical-class string as a documentation example. Anticipated in MEH-341 closing note.
+
+**Change:** 5-line insertion to .claude/hooks/check-rtl.sh between the empty-content check and the path-substring ALLOWLIST loop. Categorical extension-based exemption: any file ending in lowercase `.md` is auto-allowlisted. README.md updated with rationale + scope (uppercase MD, .markdown, .mdx not auto-allowed).
+
+**Tests (production, post-merge):**
+- 8/8 RTL hook tests pass on staging branch
+  - RTL-1..6: pre-existing enforcement intact (5 blocks, 1 path-allowlist allow)
+  - RTL-7 NEW: physical class string in `.claude/rules/workflow.md` → allowed (exit 0)
+  - RTL-8 NEW: physical class string in non-allowlisted `.jsx` → blocked (exit 2) — proves *.md exemption doesn't leak
+- Smoke test live on staging branch: workflow.md edit with physical class string → exit 0 ✅
+- ALLOWLIST array verified byte-identical to staging (no path entries reordered/changed)
+
+**CI:** 7/7 green (Frontend build, Frontend lint, Backend pytest, API contract static, CI Adversarial review, Vercel Preview, Playwright E2E). 3 deploy jobs skipped pre-merge (expected).
+
+**Adversarial review:** 18 findings considered, all disproved (filename-rename bypass, URL suffix bypass, symlink bypass, case sensitivity, position dependency, empty FILE_PATH, multi-step rename, etc.). Zero REFEREE verdicts.
+
+**Polish item logged (not a ticket):** README.md:73 "add them here" is mildly ambiguous — could read better as "add them to check-rtl.sh". Future drive-by improvement; correctness intact.
+
+**MEH-342 status:** UNBLOCKED. Resume in fresh session per PR-per-logical-change discipline. Branch `feature/meh-342-split-claude-md` exists locally with no commits; rebase onto staging, then proceed per the originally approved numbered plan unchanged.
 
 ## 2026-04-27 — MEH-338 deployed to staging ✅
 
