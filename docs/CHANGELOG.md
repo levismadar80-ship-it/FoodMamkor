@@ -12,6 +12,34 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-371: Sentry SDK v8 → v10 upgrade
+
+`@sentry/nextjs` 8.55.1 → 10.50.0 (2-major bump). Vulns 14 → 10
+(4 sorted: `@sentry/nextjs`, `@sentry/webpack-plugin`, `uuid`, `rollup`
+via transitive). `npm ci` now resolves with `next@16` peer dep —
+unblocks MEH-370.
+
+Migration applied:
+- `frontend/instrumentation.js` wrapper (v8→v9 server hook
+  requirement, 8 lines, dynamic-imports existing configs)
+- Removed deprecated `hideSourceMaps` option (v10 default
+  `deleteSourcemapsAfterUpload=true` preserves intent —
+  different mechanism, equivalent outcome for Mehamakor)
+- 12 v8→v10 changes confirmed NO-OP (grep-verified, see
+  `docs/upgrade-baselines/meh-371/migration-changes.md`)
+
+Behavior change: v10 strictly gates IP capture by `sendDefaultPii`.
+Existing `sentry.{client,server,edge}.config.js` unchanged.
+Lockfile +2508 lines — Sentry v10 OpenTelemetry expansion.
+
+Adversarial review: 24 candidates, 22 FALSE with evidence,
+2 advisory accepted (try/catch deferred, doc polish applied).
+
+Dashboard receipt: DEFERRED. Pre-existing observability gap
+discovered — Sentry DSN never configured in Vercel env vars.
+Tracked in MEH-376 (HIGH). Dashboard verification will
+retroactively confirm MEH-371 + MEH-376 once DSN wired.
+
 ## 2026-04-27 — PR #394: fix(docs): revert premature MEH-351 CHANGELOG entry. Entry was written before PR #364 merged; `uv.lock` confirmed `anthropic==0.39.0` on staging HEAD. Placeholder replaces full entry until #364 actually merges.
 
 ## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking remediation
