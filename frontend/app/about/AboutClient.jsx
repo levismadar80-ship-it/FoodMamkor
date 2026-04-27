@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Leaf, Plus, Minus } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -35,6 +36,7 @@ export default function AboutPage() {
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
   const [openTip, setOpenTip] = useState(null);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const handleContact = async (e) => {
     e.preventDefault();
@@ -83,13 +85,25 @@ export default function AboutPage() {
       <section className="bg-background section-y">
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-            {/* Founder photo — real photo tracked in MEH-188 */}
+            {/* Founder photo — Path C editorial portrait (MEH-100) */}
             <div className="flex justify-center md:justify-start order-1">
               <div
-                className="w-[280px] h-[280px] md:w-[360px] md:h-[360px] rounded-full bg-light flex items-center justify-center border-4 border-primary/10 overflow-hidden shadow-[0_8px_32px_rgba(46,104,83,0.12)]"
+                className="relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl bg-light flex items-center justify-center border border-primary/15 overflow-hidden"
                 aria-label="תמונה של ספיר, מייסדת מהמקור"
               >
-                <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
+                {imgFailed ? (
+                  <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
+                ) : (
+                  <Image
+                    src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
+                    alt="ספיר, מייסדת מהמקור"
+                    fill
+                    sizes="(min-width: 768px) 360px, 280px"
+                    className="object-cover"
+                    priority={false}
+                    onError={() => setImgFailed(true)}
+                  />
+                )}
               </div>
             </div>
             <div className="order-2 text-right">
