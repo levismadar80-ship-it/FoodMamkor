@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-361 / PR #XXX — fix(anthropic): harden `msg.content[0].text` access in `bio_generator.py:125` + `reviews.py:84` with the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from `chat.py:246`. Post-MEH-351 audit hardening — 3 of 5 anthropic content access sites were already guarded (chat.py:246, home_product_moderation.py:181, experience_moderation.py:187); this brings the remaining 2 in line. No behavior change for typical responses; non-text-first / empty content now degrades to existing fail-open path (bio="", review status="APPROVED") instead of `AttributeError`/`IndexError` (caught either way by surrounding try/except, but cleaner control flow). `chat.py:246` itself uses bare `b.type` (not the defensive `getattr`) — not harmonized here per scope discipline.
+
 ## 2026-04-27 — MEH-360 / PR #XXX — docs: Document CC sandbox egress block for Railway URLs. Smoke verification must run from user's local machine. See anthropics/claude-code#19087.
 
 ## 2026-04-27 — MEH-357 / PR #368: fix(smoke): delete dead-letter `check_rate_limit_isolation` check + update docs. `check_rate_limit_isolation` tested XFF spoofing but Railway's edge sets `X-Real-IP` from TCP peer (unspoofable); single-source smoke client can't fake per-user isolation. Existing `test_isolates_different_client_ips_via_x_real_ip` (test_rate_limit.py:150) already covers the intent via X-Real-IP mock. 7 → 6 smoke checks. Updated `smoke_test_prod.sh` comment + `docs/SMOKE-TEST.md` table.
