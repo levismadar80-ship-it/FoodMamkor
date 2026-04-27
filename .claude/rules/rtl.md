@@ -1,3 +1,14 @@
+---
+paths:
+  - "frontend/**/*.jsx"
+  - "frontend/**/*.js"
+  - "frontend/**/*.ts"
+  - "frontend/**/*.tsx"
+  - "frontend/**/*.css"
+  - "frontend/**/*.html"
+  - "frontend/**/*.scss"
+---
+
 # RTL rules
 
 Hebrew is RTL. Every positional class, every map layer, every password
