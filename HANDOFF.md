@@ -3,6 +3,29 @@
 > Read this before starting any work.
 > Last updated: 2026-04-27 (MEH-342 CLAUDE.md modular split — PR open, draft)
 
+## 2026-04-27 — MEH-353 + MEH-357 (post-MEH-351 batch)
+
+**MEH-353 (Done — PR #365, squash-merged SHA 6eaea83):**
+Replaced `@invalid.test` → `@example.com` in 3 smoke fixtures
+(`scripts/smoke_test.py:103` smoke-rate, `:140` smoke-iso, `:351` smoke-pw).
+Root cause: Pydantic `email-validator` rejects `.test` TLD before requests
+reach the rate limiter — `check_rate_limit_enforcement` was false-passing pre-fix.
+
+**Smoke baseline change: 7/7 → 6/7 (honest).**
+`check_rate_limit_enforcement` now passes ✓.
+`check_rate_limit_isolation` now correctly fails — was a false-positive pre-MEH-353;
+methodology incompatible with `X-Real-IP` keying established in MEH-256.
+`X-Real-IP` is set by Railway's edge from TCP peer and cannot be spoofed
+by a single-source smoke client setting different `X-Forwarded-For` values.
+
+**MEH-357 (Backlog, Medium):** Follow-up — convert `check_rate_limit_isolation`
+from smoke to pytest unit test that mocks `X-Real-IP` directly. Spec embedded
+in Linear ticket.
+
+**Open audit question:** PR #365 timestamps show ~6-second delta between open
+and merge. Verify branch protection on staging requires CI green before merge.
+If gap exists, add to pre-launch checklist.
+
 ## 2026-04-27 — MEH-342 refactor(docs): CLAUDE.md → modular .claude/rules/
 
 **Branch:** `feature/meh-342-split-claude-md` off staging `ff5c566`. **PR:** to be opened (draft).
