@@ -45,7 +45,7 @@ jobs:
     if: github.event.deployment_status.state == 'success'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # deployment.sha is the commit Vercel deployed. Fall back to
           # github.sha (same value for deployment_status events) in case
