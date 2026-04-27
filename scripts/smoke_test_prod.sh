@@ -10,7 +10,7 @@
 #   PENDING_PRODUCER_UUID   Required for check 3; unset → check is skipped.
 #
 # Exit codes:
-#   0   all 7 checks passed (or skipped)
+#   0   all 6 checks passed (or skipped)
 #   1   one or more failures — see stdout for details + fix hints
 #   2   config error (bad URL, missing python)
 #
