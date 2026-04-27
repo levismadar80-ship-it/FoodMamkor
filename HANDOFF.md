@@ -1,12 +1,33 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-100 — founder photo PR opened as draft)
+> Last updated: 2026-04-27 (MEH-371 ready, MEH-370 unblocked, MEH-376 opened)
 
-## 2026-04-27 — MEH-100: founder photo on /about (draft PR open)
+## 2026-04-27 — MEH-371 ready, MEH-370 unblocked, MEH-376 opened
+
+Sentry v8 → v10 migration complete. PR #396 ready for review.
+`npm ci` passes with `next@16` peer dep — MEH-370 install blocker
+resolved.
+
+Vuln delta: 14 → 10 (4 sorted). Existing Sentry config files
+unchanged.
+
+Dashboard receipt deferred — pre-existing DSN gap discovered
+during STEP 9 verification. Tracked in **MEH-376** (HIGH priority,
+~15 min work, env-var only).
+
+Order:
+1. **MEH-371 merge** (PR #396) → next ci unblocks MEH-370
+2. **MEH-376** → wire DSN, verify Sentry receives errors
+3. **MEH-370 resume** → codemods C1–C4 → push → CI
+
+PR #395 (MEH-370 draft) preserved with all PHASE A baselines
++ breaking-changes-inventory + reconnaissance.
+
+## 2026-04-27 — MEH-100: founder photo on /about (PR #397 merged)
 
 **Branch:** `claude/replace-leaf-founder-photo-kYxNg` off staging.
-**Status:** draft PR open, pending Vercel preview review.
+**Status:** merged via PR #397.
 
 **What shipped:** Replaced `<Leaf>` placeholder in `AboutClient.jsx:88-93` with
 real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
@@ -17,8 +38,6 @@ real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
 - Build ✅ PASS, no new warnings
 
 **Deferred:** imgFailed browser fallback visual test (CC sandbox can't open browser) — verify on Vercel preview by temporarily breaking public_id.
-
-**Next:** Vercel preview review on mobile (390px) + desktop (1440px). Approve → merge to staging.
 
 ---
 
