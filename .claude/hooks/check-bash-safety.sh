@@ -42,6 +42,8 @@ check_pattern 'DROP[[:space:]]+TABLE'         "DROP TABLE"                      
 check_pattern 'DROP[[:space:]]+COLUMN'        "DROP COLUMN"                          "$DB_GUIDANCE"
 check_pattern 'DROP[[:space:]]+DATABASE'      "DROP DATABASE"                        "$DB_GUIDANCE"
 check_pattern 'TRUNCATE[[:space:]]+TABLE'     "TRUNCATE TABLE"                       "$DB_GUIDANCE"
+# Accept-risk (MEH-341 review): `TRUNCATE tablename` without the TABLE keyword is valid PostgreSQL
+# but not blocked here. Rare in practice; Alembic migrations are the enforced path anyway.
 
 check_pattern 'rm[[:space:]]+-rf[[:space:]]+/'      "rm -rf /"            "$FS_GUIDANCE"
 check_pattern 'rm[[:space:]]+-rf[[:space:]]+~'      "rm -rf ~ (home dir)" "$FS_GUIDANCE"
