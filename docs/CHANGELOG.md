@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-368 / PR #392: fix(auth): harden Apple JWKS fetch. `requests.get(apple_keys_url)` had no timeout (worker blocked 60-120s on stalled endpoint), bare `["keys"]` raised `KeyError` on unexpected shapes, no HTTP status check. Two atomic edits in `_verify_apple_token` (auth.py:955-956): `timeout=8`, `raise_for_status()`, `.get("keys")` + None guard. `TestAppleTokenVerification` 4 → 8 tests. CI all green. Surfaced during MEH-350 adversarial review.
+
 ## 2026-04-27 — MEH-369: hotfix MEH-345 (hardcoded paths + silent allowlist guard)
 
 Adversarial review of MEH-345 (PR #387) surfaced 3 bugs in the new subagents:
