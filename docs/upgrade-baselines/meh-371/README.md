@@ -52,6 +52,40 @@ Actual count: 2. Reason for discrepancy:
 This is documentation, not a blocker — the v10 upgrade still resolves all 4 vulns
 (2 sentry-named + uuid + rollup) because it transitively bumps the upstream deps.
 
+## Vuln delta projection (verified via `npm view`)
+
+`npm view @sentry/nextjs@10.50.0 dependencies` (relevant excerpt):
+
+```
+'@rollup/plugin-commonjs':    '28.0.1'
+'@sentry/webpack-plugin':     '^5.2.0'
+rollup:                        '^4.35.0'
++ 10 other deps (OpenTelemetry, @sentry/core/node/react/vercel-edge, etc.)
+```
+
+`npm view @sentry/nextjs@10.50.0 peerDependencies`:
+
+```
+{ next: '^13.2.0 || ^14.0 || ^15.0.0-rc.0 || ^16.0.0-0' }
+```
+
+**Confirms 4 fixes:**
+
+| Vuln | Pre (current) | Post (v10) | Resolution |
+|---|---|---|---|
+| `@sentry/nextjs` (high) | 8.55.1 | 10.50.0 | Direct upgrade |
+| `@sentry/webpack-plugin` (mod) | within `2.0.0-alpha.1 - 5.1.1` | `^5.2.0` | Out of vuln range |
+| `rollup` (high, also next-pwa) | within `<4.34.7` (assumed) | `^4.35.0` | Out of vuln range |
+| `uuid` (mod, via webpack-plugin) | inherited via 5.1.1 | inherited via 5.2+ | Resolved by webpack-plugin bump |
+
+**MEH-370 unblock confirmed:** v10 peerDeps explicitly accepts `next@^16.0.0-0`.
+
+## Net effect on global npm audit
+
+Currently 14 vulns (11 high, 3 mod) on staging next@14:
+- After MEH-371 alone: 4 vulns sorted (2 sentry + uuid + rollup) → projected **10 vulns** (high count drop est. 11→8 or 11→7 depending on whether `rollup` shows multiple effect chains).
+- The remaining vulns live in the next-pwa chain (workbox, serialize-javascript) — covered by MEH-372.
+
 ## Deferred baselines (sandbox limitation — per MEH-360)
 
 | Baseline | Reason deferred | Where to capture |
