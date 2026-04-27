@@ -2039,6 +2039,9 @@ class TestAppleTokenVerification:
             def __init__(self, payload):
                 self._p = payload
 
+            def raise_for_status(self):
+                pass
+
             def json(self):
                 return self._p
 
@@ -2099,3 +2102,70 @@ class TestAppleTokenVerification:
         )
         result = _verify_apple_token("dummy.token.value")
         assert result is None
+
+    def test_returns_none_on_http_error(self, monkeypatch):
+        """raise_for_status on 4xx/5xx → fail-open None (MEH-368)."""
+        import requests as req_mod
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        class _ErrorResp:
+            def raise_for_status(self):
+                raise req_mod.exceptions.HTTPError("503 Service Unavailable")
+
+            def json(self):
+                raise AssertionError("json() must not be called after raise_for_status")
+
+        monkeypatch.setattr(req_mod, "get", lambda url, **kw: _ErrorResp())
+        result = _verify_apple_token("dummy.token.value")
+        assert result is None
+
+    def test_returns_none_on_missing_keys_field(self, monkeypatch):
+        """'keys' absent from JWKS body → None guard fires (MEH-368)."""
+        import requests as req_mod
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        class _BadKeysResp:
+            def raise_for_status(self): pass
+            def json(self): return {}
+
+        monkeypatch.setattr(req_mod, "get", lambda url, **kw: _BadKeysResp())
+        assert _verify_apple_token("dummy.token.value") is None
+
+    def test_returns_none_on_empty_keys_list(self, monkeypatch):
+        """Empty 'keys' list in JWKS body → None guard fires (MEH-368)."""
+        import requests as req_mod
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        class _BadKeysResp:
+            def raise_for_status(self): pass
+            def json(self): return {"keys": []}
+
+        monkeypatch.setattr(req_mod, "get", lambda url, **kw: _BadKeysResp())
+        assert _verify_apple_token("dummy.token.value") is None
+
+    def test_requests_get_called_with_timeout(self, monkeypatch):
+        """requests.get receives timeout=8 (MEH-368)."""
+        import requests as req_mod
+        from app.routers.auth import _verify_apple_token
+
+        # _setup_mocks patches req_mod.get; capture its result then wrap it
+        self._setup_mocks(monkeypatch)
+        original_fake = req_mod.get
+        captured = {}
+
+        def _capturing_get(url, **kw):
+            captured["timeout"] = kw.get("timeout")
+            return original_fake(url, **kw)
+
+        monkeypatch.setattr(req_mod, "get", _capturing_get)
+        _verify_apple_token("dummy.token.value")
+        assert captured.get("timeout") == 8
