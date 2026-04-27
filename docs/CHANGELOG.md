@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-360 / PR #XXX — docs: Document CC sandbox egress block for Railway URLs. Smoke verification must run from user's local machine. See anthropics/claude-code#19087.
+
 ## 2026-04-27 — MEH-357 / PR #368: fix(smoke): delete dead-letter `check_rate_limit_isolation` check + update docs. `check_rate_limit_isolation` tested XFF spoofing but Railway's edge sets `X-Real-IP` from TCP peer (unspoofable); single-source smoke client can't fake per-user isolation. Existing `test_isolates_different_client_ips_via_x_real_ip` (test_rate_limit.py:150) already covers the intent via X-Real-IP mock. 7 → 6 smoke checks. Updated `smoke_test_prod.sh` comment + `docs/SMOKE-TEST.md` table.
 
 ## 2026-04-27 — MEH-346: feat(claude-code): add `/permissions` allowlist to `.claude/settings.json` (38 allow + 14 deny). Boris pattern — pointed pre-allowlist of safe Bash commands eliminates 5-10 confirmation prompts per session (npm run build, pytest, git status, etc.) without unsafe `--dangerously-skip-permissions`. Deny rules block destructive ops (`git push --force`, `rm -rf`, `cat .env*`, direct push to main/staging, prod deploys). Defense-in-depth with MEH-341 bash safety hook — hook fires before permission check, so `DROP TABLE` etc. still blocked even if hypothetically allowed. `hooks` field byte-identical (jq diff verified); only top-level `permissions` field added. `cat .env.local` and `git push --force` confirmed blocked; `npm run build` runs without prompt; manual scenario 1 (npm run build = no prompt) requires live Claude Code session to verify post-merge.

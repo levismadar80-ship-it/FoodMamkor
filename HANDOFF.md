@@ -1,7 +1,13 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-346 /permissions allowlist — PR open, draft)
+> Last updated: 2026-04-27 (MEH-360 docs: CC sandbox egress limitation — PR open, draft)
+
+## 2026-04-27 — MEH-360 docs: document CC sandbox egress limitation
+
+**MEH-357 follow-up — MEH-360:** Documented CC sandbox egress limitation. CC's envoy proxy blocks `*.up.railway.app` egress. All smoke verification must run from user's local machine. Reference: anthropics/claude-code#19087. Updated CLAUDE.md + docs/SMOKE-TEST.md to prevent repeat diagnosis loops.
+
+---
 
 ## 2026-04-27 — MEH-346 feat(claude-code): /permissions allowlist
 
