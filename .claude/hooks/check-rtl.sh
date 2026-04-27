@@ -28,7 +28,14 @@ fi
 INPUT=$(cat)
 
 FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""')
-CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""')
+
+# Extract content for both Edit/Write (new_string/content) and MultiEdit (edits[].new_string)
+CONTENT=$(printf '%s' "$INPUT" | jq -r '
+  if .tool_input.edits then
+    [.tool_input.edits[]?.new_string // empty] | join("\n")
+  else
+    .tool_input.new_string // .tool_input.content // ""
+  end')
 
 # Empty content → nothing to check
 if [ -z "$CONTENT" ]; then
@@ -37,8 +44,6 @@ fi
 
 # Check allowlist
 for allowed in "${ALLOWLIST[@]}"; do
-  # Strip leading comment lines
-  [[ "$allowed" == \#* ]] && continue
   if [[ "$FILE_PATH" == *"$allowed"* ]]; then
     exit 0
   fi

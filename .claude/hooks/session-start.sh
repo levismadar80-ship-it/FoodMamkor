@@ -22,7 +22,8 @@ OUTPUT="## Auto-loaded session context
 
 CHANGELOG="$ROOT/docs/CHANGELOG.md"
 if [ -f "$CHANGELOG" ]; then
-  OUTPUT="${OUTPUT}$(head -15 "$CHANGELOG")"
+  # Skip 13-line header preamble; show the 17 lines of actual entries after it
+  OUTPUT="${OUTPUT}$(head -30 "$CHANGELOG" | tail -17)"
 else
   OUTPUT="${OUTPUT}(docs/CHANGELOG.md not found)"
 fi
