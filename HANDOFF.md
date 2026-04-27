@@ -16,14 +16,14 @@
 - `.claude/hooks/rtl-allowlist.txt` (extracted from check-rtl.sh ALLOWLIST — 9 paths)
 - `docs/CHANGELOG.md` updated (MEH-345 entry prepended)
 
-**Go/no-go results:**
-| Agent | Agent pass rate | Base model pass rate | Decision |
-|-------|----------------|---------------------|---------|
-| verify-frontend | 2/3 confirmed + T2 conditional | ~50% (well below 80%) | SHIP ✅ |
-| code-simplifier | 3/3 (100%) | ~33% (well below 80%) | SHIP ✅ |
-| i18n-scanner | 2/3 confirmed + T2 pending | ~67% (below 80%) | SHIP ✅ |
+**Go/no-go results (final, post-corrections):**
+| Agent | Agent strict score | Base model rate | Decision |
+|-------|-------------------|-----------------|---------|
+| verify-frontend | strict 2/3 on initial T2 (env-infeasible: no node_modules + 11 pre-existing violations); **T2 re-run in fixture-isolated env (npm ci + 17-path extended allowlist) → READY-FOR-PR strict pass → strict 3/3 confirmed** | ~50% (below 80%) | SHIP ✅ |
+| code-simplifier | 3/3 strict + clean verdict on real PR #369 (MEH-346) — 25k tokens, 0 tool uses, 2.7s | ~33% (below 80%) | SHIP ✅ |
+| i18n-scanner | 3/3 strict (T2 background task confirmed PASS post-session) | ~67% (below 80%) | SHIP ✅ |
 
-**⚠️ PENDING — i18n-scanner T2 WITH agent:** Background agent task (aec894c21cb3e0ca2) was launched but session ended before notification. T2 scenario: t()-wrapped Hebrew should NOT be reported. T1 (filter t()-wrapper logic present) and T3 (skip comments) both PASS — T2 is virtually certain to PASS. Next session: verify the output file or re-run T2 manually before final PR merge sign-off.
+**Strict 3/3 gate satisfied for all 3 agents. Pre-merge smoke sequence per F1 still required (Smadar to run on restarted session before merge).**
 
 **Decisions made this session:**
 1. `tools:` field name (not `allowed-tools:`) per live repo evidence `design-review.md:4` — all 3 agents use `tools:`.
