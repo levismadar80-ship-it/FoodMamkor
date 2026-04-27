@@ -1,7 +1,34 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-355 RTL allowlist — PR #360 merged, MEH-342 unblocked)
+> Last updated: 2026-04-27 (MEH-352 lifespan db init fix — PR open, draft)
+
+## 2026-04-27 — MEH-352 fix(local dev DB init)
+
+**Branch:** feature/meh-352-fix-local-db-init off staging. **PR:** open (draft).
+
+**Reproduction (verified):** psql `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` → uvicorn startup → `_run_db_init_sync` imports models, calls `seed_data.seed()` → `psycopg2.errors.UndefinedTable: relation "categories" does not exist` → `app.state.db_init_status = "failed"` → GET /producers → 500 (`relation "producers" does not exist`).
+
+**Root cause:** `_run_db_init_sync()` in `backend/app/main.py:42-50` imported model classes (populating `Base.metadata`) but never invoked `Base.metadata.create_all(bind=engine)`. Tables never existed. The ticket's stated hypothesis ("import models before create_all") was partially wrong — there was no `create_all` to put models before. Fix is the same one-liner the hypothesis anticipated, but for a different reason: add the missing call.
+
+**Fix (2-line insertion at backend/app/main.py:45-46):**
+
+```python
+from app.database import Base, engine
+Base.metadata.create_all(bind=engine)  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
+```
+
+**Verification:** Dropped schema → uvicorn restarted → `/health` shows `db_init: "ready"`, GET /producers → 200 with seeded producers.
+
+**Regression test:** `tests/test_lifespan_init.py` — drops all tables, starts lifespan via TestClient context manager, polls `/health` until `db_init` settles, asserts `/producers` returns 200 with non-empty list.
+
+### Lessons learned
+
+> MEH-352: `Base.metadata.create_all()` in `main.py` is intentional dev-only safety net.
+> Production uses Alembic migrations exclusively. `create_all` uses `checkfirst=True` so
+> it's a no-op when tables exist — but it does NOT detect column-level drift.
+> Fresh local dev → tables created. Stale local dev (missing migration) → still
+> requires `alembic upgrade head` manually.
 
 ## 2026-04-27 — MEH-355 RTL allowlist for *.md merged to staging
 
