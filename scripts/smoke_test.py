@@ -100,7 +100,7 @@ def check_rate_limit_enforcement(base_url: str) -> Check:
     name = "check_rate_limit_enforcement"
     url = f"{base_url.rstrip('/')}/auth/login"
     headers = {"Content-Type": "application/json", "X-Forwarded-For": BOGUS_IP_A}
-    body = {"email": "smoke-rate@invalid.test", "password": "wrong"}
+    body = {"email": "smoke-rate@example.com", "password": "wrong"}
 
     codes: list[int] = []
     for _ in range(6):
@@ -137,7 +137,7 @@ def check_rate_limit_enforcement(base_url: str) -> Check:
 def check_rate_limit_isolation(base_url: str) -> Check:
     name = "check_rate_limit_isolation"
     url = f"{base_url.rstrip('/')}/auth/login"
-    body = {"email": "smoke-iso@invalid.test", "password": "wrong"}
+    body = {"email": "smoke-iso@example.com", "password": "wrong"}
 
     codes: list[tuple[str, int]] = []
     for ip in (BOGUS_IP_A, BOGUS_IP_B, BOGUS_IP_C, BOGUS_IP_D, BOGUS_IP_E):
@@ -348,7 +348,7 @@ def check_password_validation(base_url: str) -> Check:
     # Password is the field under test; keep the others valid so the
     # 422 we get back is about password length, not a missing field.
     body = {
-        "email": "smoke-pw@invalid.test",
+        "email": "smoke-pw@example.com",
         "name": "Smoke",
         "password": "ab",  # 2 chars — must be rejected
     }
