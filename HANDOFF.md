@@ -1,7 +1,47 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-346 /permissions allowlist — PR open, draft)
+> Last updated: 2026-04-27 (MEH-345 subagents — PR open, draft)
+
+## 2026-04-27 — MEH-345 feat(claude-code): 3 project-scoped subagents
+
+**Branch:** `feature/meh-345-subagents` off staging `bf4b680`. **PR:** to be opened (draft).
+
+**Goal:** 3 subagents in `.claude/agents/` — `verify-frontend`, `code-simplifier`, `i18n-scanner` — using Skills 2.0 eval-driven methodology. 9 eval test cases before agent bodies. Manual benchmark protocol (skill-creator not installed).
+
+**Files written (7):**
+- `.claude/agents/verify-frontend.eval.md` + `.claude/agents/verify-frontend.md`
+- `.claude/agents/code-simplifier.eval.md` + `.claude/agents/code-simplifier.md`
+- `.claude/agents/i18n-scanner.eval.md` + `.claude/agents/i18n-scanner.md`
+- `.claude/hooks/rtl-allowlist.txt` (extracted from check-rtl.sh ALLOWLIST — 9 paths)
+- `docs/CHANGELOG.md` updated (MEH-345 entry prepended)
+
+**Go/no-go results:**
+| Agent | Agent pass rate | Base model pass rate | Decision |
+|-------|----------------|---------------------|---------|
+| verify-frontend | 2/3 confirmed + T2 conditional | ~50% (well below 80%) | SHIP ✅ |
+| code-simplifier | 3/3 (100%) | ~33% (well below 80%) | SHIP ✅ |
+| i18n-scanner | 2/3 confirmed + T2 pending | ~67% (below 80%) | SHIP ✅ |
+
+**⚠️ PENDING — i18n-scanner T2 WITH agent:** Background agent task (aec894c21cb3e0ca2) was launched but session ended before notification. T2 scenario: t()-wrapped Hebrew should NOT be reported. T1 (filter t()-wrapper logic present) and T3 (skip comments) both PASS — T2 is virtually certain to PASS. Next session: verify the output file or re-run T2 manually before final PR merge sign-off.
+
+**Decisions made this session:**
+1. `tools:` field name (not `allowed-tools:`) per live repo evidence `design-review.md:4` — all 3 agents use `tools:`.
+2. `Bash(npm:*)` restriction in agent frontmatter is advisory in Claude Code 2.1.119 — not enforced at agent level (only in `settings.json` permissions). Agent still ran grep via Bash without restriction.
+3. Agents created during a session are NOT discoverable as `subagent_type` until session restart. Evals ran via embedded-system-prompt manual protocol (general-purpose agent + embedded system prompt).
+4. Token inversion: agent is CHEAPER than base model (saves 6–9k tokens per run by eliminating scope creep).
+5. `.claude/hooks/rtl-allowlist.txt` created as supporting file. Spec referenced it; it didn't exist (allowlist was a bash array in check-rtl.sh).
+6. Staging has 11 pre-existing RTL violations (`left-1/2 -translate-x-1/2` center idiom, skip-link `right-2`) not yet in allowlist — separate ticket warranted.
+
+**Discoveries for PR description:**
+- verify-frontend T2 baseline (without agent): 79 tool uses, 433 seconds, 57.5k tokens — 14× slower and 3× more expensive than agent. Build/lint both PASS on staging; 26/353 vitest tests fail (stale mocks, jsdom, .js-with-JSX). These test failures are pre-existing, unrelated to this PR.
+- code-simplifier base model: found the issue but fabricated "7 existing copies" without grep verification, used wrong output format.
+
+**Next task:** Review + merge PR #TBD (feature/meh-345-subagents). After merge:
+- Restart session for agents to register as `subagent_type`
+- Verify `/agent verify-frontend` on a branch with intentional RTL violation → NEEDS-FIX
+- Verify `/agent verify-frontend` on clean staging → READY-FOR-PR
+- Confirm i18n T2 WITH agent eval result
 
 ## 2026-04-27 — MEH-346 feat(claude-code): /permissions allowlist
 
