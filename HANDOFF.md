@@ -1,7 +1,32 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-349 python-multipart bump — PR open, draft)
+> Last updated: 2026-04-27 (MEH-349 python-multipart bump — PR #359 open, draft)
+
+## 2026-04-27 — MEH-338 deployed to staging ✅
+
+**SHA:** d438876 (PR #357, squash-merged)
+**Railway deploy ID:** 3d0cc178-7d28-42e6-a76b-7d8ecf3689a3
+
+**Shipped:**
+- fastapi 0.115.6 → 0.120.1
+- starlette 0.41.3 → 0.49.3 (CVE-2025-62727 + CVE-2025-54121 closed)
+- annotated-doc 0.0.4 (legitimate fastapi 0.120.0+ transitive dep)
+- 148/148 pytest green · 12/12 CI checks (9 green + 3 expected skips)
+
+**Smoke:** 6/7 — `check_rate_limit_enforcement` pre-existing bug (MEH-353).
+`check_rate_limit_isolation` ✅ confirms limiter functional. Not a regression.
+
+**Ticket numbers correction:** HANDOFF MEH-339–342 → corrected to MEH-349–352.
+
+**Follow-up queue (Backlog):**
+- MEH-349 (High) — python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486 + CVE-2026-40347)
+- MEH-350 (High) — requests 2.32.3 → 2.33.0 (CVE-2024-47081 + CVE-2026-25645) ⚠️ highest blast radius
+- MEH-352 (Normal) — local dev DB init: import models before create_all()
+- MEH-351 (Low) — anthropic 0.39.0 → latest (no CVE)
+- MEH-353 (Low) — smoke_test.py fix: @invalid.test → @example.com
+
+**Recommended order:** 349 → 352 → 350 → 351 → 353
 
 ## Most recent — MEH-349 python-multipart CVE bump (2026-04-27)
 
@@ -46,10 +71,10 @@ Reason: feature branch has no Railway preview; smoke check 2 (TRUSTED_PROXY rate
 
 ## Follow-up tickets (post-MEH-338, not today)
 
-- MEH-339 (proposed): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
-- MEH-350 (proposed): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
-- MEH-341 (proposed): anthropic 0.39.0 → latest (stale, no CVE)
-- MEH-342 (proposed): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
+- MEH-349 (High): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
+- MEH-350 (High): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-351 (Low): anthropic 0.39.0 → latest (stale, no CVE)
+- MEH-352 (Normal): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
 
 Lesson learned (for future bump tickets):
 Local-against-empty-DB curl ≠ rate-limit fitness test. Always use pytest with seeded DB asserting 429 logic specifically; curl loops are ambiguous (any middleware can return 429).
@@ -1463,23 +1488,42 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 
 ## PRs merged this session
 - #264 — uv migration (claude/migrate-pip-to-uv-8p7aT) ✅
+- #358 — MEH-341: Claude Code hooks (squash-merged to staging 2026-04-27) ✅ SHA: 5f1e4ce
 
-## Open PRs
-- #265 — MEH-236: CardHeart can't undo favorite (draft)
+## Current branch
+`staging`
+
+## What shipped (MEH-341 — live on staging)
+- `.claude/hooks/session-start.sh` — SessionStart: injects branch + CHANGELOG + HANDOFF tail into every session
+- `.claude/hooks/check-rtl.sh` — PreToolUse RTL guard: blocks physical directional Tailwind classes (allowlist 9 files). MultiEdit-aware (adversarial review caught bypass, fixed before merge).
+- `.claude/hooks/check-bash-safety.sh` — PreToolUse Bash guard: blocks DDL + destructive filesystem commands. Git commands exempt. TRUNCATE-without-TABLE gap documented as accept-risk.
+- `.claude/settings.json` — 9 hooks total (3 new + 8 existing preserved)
+- `.gitattributes` — LF enforcement for shell scripts
+- `CLAUDE.md` — /loop usage patterns section
+- 12/12 manual tests pass. Adversarial review: 1 HIGH (MultiEdit bypass) caught + fixed before merge, 1 LOW (CHANGELOG head skip) fixed, 1 accept-risk documented.
+
+## Smoke tests (post-merge, on staging branch)
+- SMOKE-1 (RTL block): Edit ProducerCard.jsx with physical margin class in comment → **blocked exit 2** ✅
+- SMOKE-2 (RTL allowlist): Hook payload with horizontal-center idiom in MapClient.jsx → **allowed exit 0** ✅
+- SessionStart: auto-fired → emitted branch + active issue + CHANGELOG + HANDOFF tail ✅
+
+## Linear MEH-341
+No Linear MCP in this session. Mark MEH-341 as "Done" manually in Linear.
+
+## Open PRs (still pending)
+- #265 — MEH-236: CardHeart undo favorite (draft)
 - #266 — MEH-187: Vercel Speed Insights (draft)
-- #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
-- #268 — MEH-89: vacation return date in banner + admin form (draft)
-- #270 — MEH-87: LoginPromptModal Tab focus trap (draft, CI pending)
-- #272 — MEH-83: Lightbox on gallery images (draft, CI running)
-- #274 — MEH-84: GPS button on /map (draft, CI queued)
+- #267 — MEH-88: products.image_url + CRUD — CI green (draft)
+- #268 — MEH-89: vacation return date banner + admin form (draft)
+- #270 — MEH-87: LoginPromptModal Tab focus trap (draft)
+- #272 — MEH-83: Lightbox on gallery images (draft)
+- #274 — MEH-84: GPS button on /map (draft)
 
-## Next task
-- Run `/adversarial-review` on PR #311 → unmark draft → request review → merge
-- Open MEH-XXX: "Add `alembic check` to CI — catches ORM/migration drift that `alembic upgrade head` misses"
-- MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
-- MEH-205: /search page redesign (discovery-first) — next feature in queue
-- Review and merge #265 → #268 to staging (older open PRs, still valid)
+## Next task — start fresh session
+- MEH-342: CLAUDE.md is at 197 lines (over 150-line cap) — split overflow into `.claude/rules/`. First step: `wc -l CLAUDE.md` + identify sections ≥15 lines to move.
+- Review and merge #265 → #268 to staging (older open PRs, all valid)
 - Promote staging → main (production is behind)
+- Run `/adversarial-review` on PR #311 → unmark draft → merge
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
