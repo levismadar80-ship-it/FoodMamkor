@@ -3,6 +3,22 @@
 > Read this before starting any work.
 > Last updated: 2026-04-27 (MEH-345 merged → staging; MEH-361 PR #388 open, draft)
 
+## 2026-04-27 — MEH-350 chore(deps): bump requests 2.32.3 → 2.33.1
+
+**Branch:** `feature/meh-350-bump-requests` off staging `2414b91`. **PR #389:** approved by user 2026-04-27, merged to staging.
+
+**Goal:** Bump requests from 2.32.3 to 2.33.1. Three intermediate releases (2.32.4, 2.32.5, 2.33.0): urllib3 compat fix, Windows proxy fix, PEP 517 migration + empty netrc bugfix. No breaking changes. CVE-2024-47081 + CVE-2026-25645 remediated.
+
+**Files:** `backend/pyproject.toml:22` (1 line), `backend/uv.lock` (4 lines: requires-dist specifier + version + sdist + wheel). Total: 2 files, 5/5 lines.
+
+**EV3:** twilio 9.3.0 + resend 2.29.0 declare `{ name = "requests" }` (no upper-bound specifier). google-auth 2.34.0 + cloudinary 1.40.0 have no requests dep at all. uv lock resolved cleanly in 1.72s.
+
+**Drift lesson:** Stop hook emits "commit AND push" but only commit is required. Push step gated on explicit user go — treated hook as auth for both. Pattern documented here for future sessions.
+
+**False scope-violation incident:** User compared `git diff main` (not `git diff origin/staging`) and flagged 5 out-of-scope changes. Those changes (fastapi/PyJWT/bleach/python-multipart/pip-audit) were already in staging from prior PRs (MEH-338 chain, MEH-329). PR was actually clean against staging: 1 line pyproject.toml + 4 lines uv.lock. Correct action: verify `git diff origin/staging...HEAD` before accepting scope-violation claim.
+
+---
+
 ## 2026-04-27 — MEH-361 harden anthropic content[0].text guard
 
 **Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** #388 (draft, open).
