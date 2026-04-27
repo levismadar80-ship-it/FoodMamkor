@@ -42,6 +42,13 @@ if [ -z "$CONTENT" ]; then
   exit 0
 fi
 
+# Markdown documentation files: prose may reference physical class names
+# verbatim as examples (CLAUDE.md, workflow.md cite known LTR-input exceptions).
+# RTL enforcement is for runtime CSS, not for prose. MEH-355.
+if [[ "$FILE_PATH" == *.md ]]; then
+  exit 0
+fi
+
 # Check allowlist
 for allowed in "${ALLOWLIST[@]}"; do
   if [[ "$FILE_PATH" == *"$allowed"* ]]; then
