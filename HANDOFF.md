@@ -1,7 +1,30 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-352 lifespan db init fix — PR open, draft)
+> Last updated: 2026-04-27 (MEH-342 CLAUDE.md modular split — PR open, draft)
+
+## 2026-04-27 — MEH-342 refactor(docs): CLAUDE.md → modular .claude/rules/
+
+**Branch:** `feature/meh-342-split-claude-md` off staging `ff5c566`. **PR:** to be opened (draft).
+
+**Goal:** trim CLAUDE.md from 197 → ≤80 lines per Linear MEH-342 spec; add lazy-load `paths` frontmatter on domain-specific rule files; preserve all rule content via splits to `.claude/rules/`.
+
+**Result:** CLAUDE.md = **75 lines** (≤80 cap, 5-line headroom). 3 new rule files: `db.md` (56 L, lazy-load), `code-execution.md` (47 L, lazy-load), `prompting.md` (20 L, always-load). `rtl.md` got 7-extension paths frontmatter (52 → 63 L). `workflow.md` absorbed 5 sections (Bug Protocol, Commit discipline, PR approval/DoD, PR Review Workflow, /loop usage patterns) and got 2 pointer-replacements (exec §7-13 + Rule 15 body). Net: rule files 706 → 900 L, CLAUDE.md 197 → 75 L.
+
+**Process:** Pre-go scope-match check (workflow.md:45-54) executed twice — first attempt surfaced 6 spec gaps (corrected paths frontmatter syntax, sources, content per Smadar's review). Second skeptic round found env-vars rule + Templates 01-07 list don't actually exist in repo (only in Smadar's separate project instructions); both **descoped** to follow-up tickets per Smadar's call.
+
+**Verification:** zero-content-loss grep per section — Bug Protocol/Commit discipline/PR Review/`/loop`/DoD all in workflow.md; exec §7-13 in code-execution.md; Caveman in prompting.md; `_migrate_columns` rule in db.md. Verbatim spot-checks pass (`Hotfixes get their own commit`, `Deploy babysit`, `Identify the root cause`, `Trust strip MAX 2`, `=== DIFF: `).
+
+**DoD status (sandbox limitation):** `npm run build` + `pytest tests/test_api.py` could not run locally — sandbox lacks node_modules + Python deps. Docs-only PR (no code touched) so CI on push will be the gate. Smadar to verify CI green before merge.
+
+**Follow-up tickets to open** (per descope):
+1. **MEH-XXX** — Add env vars rule to `.claude/rules/db.md` (content from Smadar's project instructions; not present in repo at MEH-342 split time)
+2. **MEH-XXX** — Add Templates 01-07 reference list to `.claude/rules/prompting.md` (content from Smadar's project instructions; not present in repo at MEH-342 split time)
+3. **MEH-XXX** — Add `paths` frontmatter to `.claude/rules/frontend.md` and `.claude/rules/backend.md` (logical lazy-load consistency; deferred from MEH-342 to keep this PR scope-tight)
+
+**Linear update needed:** Smadar to update MEH-342 description before merging — remove "env vars rule" line from db.md spec + remove "Templates 01-07 reference" line from prompting.md spec; add note "env vars + Templates deferred to follow-up tickets — content not present in repo at split time."
+
+---
 
 ## 2026-04-27 — MEH-352 fix(local dev DB init)
 
