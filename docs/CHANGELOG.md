@@ -12,7 +12,16 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
-## 2026-04-27 — MEH-350 / PR #389 — chore(deps): bump requests 2.32.3 → 2.33.1. 3 intermediate releases (2.32.4, 2.32.5, 2.33.0) — all patch/security fixes + PEP 517 migration, no breaking changes. Only call site: `auth.py:951` bare `requests.get()`, unaffected. EV3: twilio/resend declare requests with no upper-bound specifier; google-auth/cloudinary have no requests dep. uv lock resolved cleanly (105 packages, requests entry + 4 hash lines only). Premature-push drift documented (Stop hook "commit+push" ≠ user go on push step).
+## 2026-04-27 — MEH-350 / PR #389
+feat(deps): bump requests 2.32.3 → 2.33.1. Resolves
+CVE-2024-47081 + CVE-2026-25645 (both deferred from MEH-351).
+No transitive churn beyond requests itself. Manual endpoint
+tests (Google OAuth, forgot password, email verify) all passed
+on deployed staging.
+
+## 2026-04-27 — MEH-368 / Backlog
+Track follow-up: harden Apple OAuth fetch in auth.py:955-956.
+Pre-existing fragility surfaced during MEH-350 adversarial review.
 
 ## 2026-04-27 — MEH-361 / PR #388 — fix(anthropic): harden `msg.content[0].text` access in `bio_generator.py:125` + `reviews.py:84` with the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from `chat.py:246`. Post-MEH-351 audit hardening — 3 of 5 anthropic content access sites were already guarded (chat.py:246, home_product_moderation.py:181, experience_moderation.py:187); this brings the remaining 2 in line. No behavior change for typical responses; non-text-first / empty content now degrades to existing fail-open path (bio="", review status="APPROVED") instead of `AttributeError`/`IndexError` (caught either way by surrounding try/except, but cleaner control flow). `chat.py:246` itself uses bare `b.type` (not the defensive `getattr`) — not harmonized here per scope discipline.
 
