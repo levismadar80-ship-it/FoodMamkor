@@ -42,16 +42,16 @@ Note: Sentry docs returned HTTP 503 directly; details synthesized from GitHub MI
 | v9→v10 | PII / IP | IP address inference now controlled by top-level `sendDefaultPii` (was implicit). | Mehamakor doesn't set `sendDefaultPii` in any of the 3 init blocks → defaults to `false` → **no IP collection** (consistent with prior implicit behavior for browser). | `sentry.client.config.js:10`, `sentry.server.config.js:7`, `sentry.edge.config.js:7` | **NO-OP** — default behavior preserved. Decision: leave unset; if dashboard shows missing user.ip and that was relied on, set `sendDefaultPii: true` post-migration. |
 | v9→v10 | Removed APIs | `BaseClient` → `Client`; `hasTracingEnabled()` → `hasSpansEnabled()`; `logger`/`Logger` → `debug`/`SentryDebugLogger`. | Mehamakor doesn't import any of these (verified by grep). | n/a | **NO-OP**. |
 | v9→v10 | `_experiments` | `_experiments.enableLogs` / `beforeSendLog` → top-level. `_experiments.autoFlushOnFeedback` removed (now default). | Mehamakor doesn't use `_experiments` in any init block. | n/a | **NO-OP**. |
-| v9→v10 | `withSentryConfig` options | Need to verify `silent`, `org`, `project`, `widenClientFileUpload`, `hideSourceMaps`, `disableLogger` still accepted. | Mehamakor uses all 6 options at `next.config.js:124–129`. | `next.config.js:124–129` | **VERIFIED 2026-04-27**: 5 of 6 still in v10 types (`SentryBuildOptions` at `node_modules/@sentry/nextjs/build/types-ts3.8/config/types.d.ts`): `silent` (line 194), `org` (151), `project` (157), `widenClientFileUpload` (476), `disableLogger` (522). **`hideSourceMaps` REMOVED in v9** (no replacement; v10 emits hidden sourcemaps by default via `sourcemaps.deleteSourcemapsAfterUpload: true`). **MANUAL** — delete `hideSourceMaps: true` line from `next.config.js:128`. Default v10 behavior preserves intent. |
+| v9→v10 | `withSentryConfig` options | Need to verify `silent`, `org`, `project`, `widenClientFileUpload`, `hideSourceMaps`, `disableLogger` still accepted. | Mehamakor uses all 6 options at `next.config.js:124–129`. | `next.config.js:124–129` | **RESOLVED 2026-04-27** (commit `a002d5f`): 5 of 6 still in v10 types (`SentryBuildOptions` at `node_modules/@sentry/nextjs/build/types-ts3.8/config/types.d.ts`): `silent` (L194), `org` (L151), `project` (L157), `widenClientFileUpload` (L476), `disableLogger` (L522). **`hideSourceMaps` REMOVED in v9** without replacement; v10 default `sourcemaps.deleteSourcemapsAfterUpload: true` (types.d.ts:230–235) preserves bundle-hiding intent. Applied: deleted `hideSourceMaps: true` line. Build exit 0, no warnings. |
 | v9→v10 | `replayIntegration` | API name unchanged from v8 (`replayIntegration()` factory). v10 OpenTelemetry overhaul does not touch the browser replay surface. | Mehamakor uses `Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false })`. | `sentry.client.config.js:17–20` | **NO-OP** — API stable. Verify in PHASE B build. |
 
 ## Summary
 
 - **NO-OPs:** 12 rows (most v8→v9 changes don't apply; most v9→v10 OpenTelemetry-internal changes don't surface).
-- **MANUAL edits (post-verification):** 2:
-  1. instrumentation.js wrapper (applied — commit `f34020d`)
-  2. Delete `hideSourceMaps: true` line from `next.config.js:128` (pending Smadar decision per spec stop condition)
-- **VERIFIED:** 1 — `withSentryConfig` option keys in v10 (5 of 6 stable; `hideSourceMaps` removed in v9).
+- **MANUAL edits applied:** 2:
+  1. instrumentation.js wrapper — commit `f34020d`
+  2. Delete `hideSourceMaps: true` from `next.config.js:128` — commit `a002d5f`
+- **VERIFIED + RESOLVED:** 1 — `withSentryConfig` option keys in v10 (5 of 6 stable; `hideSourceMaps` removed in v9, default `deleteSourcemapsAfterUpload=true` preserves intent).
 
 ## ⚠️ Spec stop condition triggered
 
