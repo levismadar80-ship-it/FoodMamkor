@@ -46,9 +46,10 @@ methodology incompatible with `X-Real-IP` keying established in MEH-256.
 `X-Real-IP` is set by Railway's edge from TCP peer and cannot be spoofed
 by a single-source smoke client setting different `X-Forwarded-For` values.
 
-**MEH-357 (Backlog, Medium):** Follow-up — convert `check_rate_limit_isolation`
-from smoke to pytest unit test that mocks `X-Real-IP` directly. Spec embedded
-in Linear ticket.
+**MEH-357 (Done — PR #368, squash-merged SHA c728e38):**
+Deleted `check_rate_limit_isolation` smoke check + updated docs.
+`test_isolates_different_client_ips_via_x_real_ip` (test_rate_limit.py:150) already
+covered the intent. 7 → 6 smoke checks. `smoke_test_prod.sh` + `docs/SMOKE-TEST.md` updated.
 
 **Open audit question:** PR #365 timestamps show ~6-second delta between open
 and merge. Verify branch protection on staging requires CI green before merge.
