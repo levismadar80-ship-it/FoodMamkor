@@ -1472,40 +1472,42 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 
 ## PRs merged this session
 - #264 — uv migration (claude/migrate-pip-to-uv-8p7aT) ✅
-
-## Open PRs
-- MEH-341 — Claude Code hooks (feature/meh-341-claude-code-hooks) — **THIS SESSION** (draft, CI pending)
-- #265 — MEH-236: CardHeart can't undo favorite (draft)
-- #266 — MEH-187: Vercel Speed Insights (draft)
-- #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
-- #268 — MEH-89: vacation return date in banner + admin form (draft)
-- #270 — MEH-87: LoginPromptModal Tab focus trap (draft, CI pending)
-- #272 — MEH-83: Lightbox on gallery images (draft, CI running)
-- #274 — MEH-84: GPS button on /map (draft, CI queued)
+- #358 — MEH-341: Claude Code hooks (squash-merged to staging 2026-04-27) ✅ SHA: 5f1e4ce
 
 ## Current branch
-`feature/meh-341-claude-code-hooks` (renamed from `claude/add-code-hooks-wru95`)
+`staging`
 
-## What's done (MEH-341)
-- `.claude/hooks/session-start.sh` — SessionStart context injection (branch + CHANGELOG + HANDOFF tail)
-- `.claude/hooks/check-rtl.sh` — PreToolUse RTL guard (blocks physical left-*/right-*/ml-*/mr-*, allowlist of 9 files)
-- `.claude/hooks/check-bash-safety.sh` — PreToolUse Bash guard (blocks DROP TABLE / rm -rf / etc.)
-- `.claude/hooks/README.md` — disable + allowlist documentation
-- `.claude/settings.json` — merged 3 new hooks (SessionStart + 2 PreToolUse), 8 existing hooks preserved
-- `.gitattributes` — `*.sh text eol=lf` for Windows Git Bash compatibility
-- `CLAUDE.md` — `/loop usage patterns` section appended
-- `docs/CHANGELOG.md` — Unreleased entry added
-- All 9 manual tests passed (3 per hook), all hooks run <100ms
+## What shipped (MEH-341 — live on staging)
+- `.claude/hooks/session-start.sh` — SessionStart: injects branch + CHANGELOG + HANDOFF tail into every session
+- `.claude/hooks/check-rtl.sh` — PreToolUse RTL guard: blocks physical directional Tailwind classes (allowlist 9 files). MultiEdit-aware (adversarial review caught bypass, fixed before merge).
+- `.claude/hooks/check-bash-safety.sh` — PreToolUse Bash guard: blocks DDL + destructive filesystem commands. Git commands exempt. TRUNCATE-without-TABLE gap documented as accept-risk.
+- `.claude/settings.json` — 9 hooks total (3 new + 8 existing preserved)
+- `.gitattributes` — LF enforcement for shell scripts
+- `CLAUDE.md` — /loop usage patterns section
+- 12/12 manual tests pass. Adversarial review: 1 HIGH (MultiEdit bypass) caught + fixed before merge, 1 LOW (CHANGELOG head skip) fixed, 1 accept-risk documented.
 
-## Next task
-- Merge MEH-341 PR after CI green + adversarial-review
-- Run `/adversarial-review` on PR #311 → unmark draft → request review → merge
-- Open MEH-XXX: "Add `alembic check` to CI — catches ORM/migration drift that `alembic upgrade head` misses"
-- MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
-- MEH-205: /search page redesign (discovery-first) — next feature in queue
-- Review and merge #265 → #268 to staging (older open PRs, still valid)
+## Smoke tests (post-merge, on staging branch)
+- SMOKE-1 (RTL block): Edit ProducerCard.jsx with physical margin class in comment → **blocked exit 2** ✅
+- SMOKE-2 (RTL allowlist): Hook payload with horizontal-center idiom in MapClient.jsx → **allowed exit 0** ✅
+- SessionStart: auto-fired → emitted branch + active issue + CHANGELOG + HANDOFF tail ✅
+
+## Linear MEH-341
+No Linear MCP in this session. Mark MEH-341 as "Done" manually in Linear.
+
+## Open PRs (still pending)
+- #265 — MEH-236: CardHeart undo favorite (draft)
+- #266 — MEH-187: Vercel Speed Insights (draft)
+- #267 — MEH-88: products.image_url + CRUD — CI green (draft)
+- #268 — MEH-89: vacation return date banner + admin form (draft)
+- #270 — MEH-87: LoginPromptModal Tab focus trap (draft)
+- #272 — MEH-83: Lightbox on gallery images (draft)
+- #274 — MEH-84: GPS button on /map (draft)
+
+## Next task — start fresh session
+- MEH-342: CLAUDE.md is at 197 lines (over 150-line cap) — split overflow into `.claude/rules/`. First step: `wc -l CLAUDE.md` + identify sections ≥15 lines to move.
+- Review and merge #265 → #268 to staging (older open PRs, all valid)
 - Promote staging → main (production is behind)
-- File separate issue: CLAUDE.md is at 197 lines (over 150-line cap) — needs splitting into `.claude/rules/`
+- Run `/adversarial-review` on PR #311 → unmark draft → merge
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
