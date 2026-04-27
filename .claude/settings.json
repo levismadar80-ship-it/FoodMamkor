@@ -33,6 +33,28 @@
             "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/pre-edit-guard.js\""
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "Bash safety guard — blocks dangerous DDL and destructive filesystem commands. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-bash-safety.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "RTL physical-property guard — blocks physical left-*/right-*/ml-*/mr-* in non-allowlisted files. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-rtl.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -69,6 +91,18 @@
             "type": "command",
             "_comment": "Backend pytest. Blocks on real test failures. Graceful skip if pytest not installed or test file missing. Install pytest via: pip install pytest pytest-asyncio httpx -r backend/requirements.txt --break-system-packages",
             "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if ! python -m pytest --version >/dev/null 2>&1; then echo \"Warning: pytest not available — install via: pip install pytest pytest-asyncio httpx --break-system-packages\"; exit 0; fi; if [ ! -d \"$root/backend\" ]; then echo \"Warning: backend/ not found, skipping\"; exit 0; fi; if [ ! -f \"$root/backend/tests/test_api.py\" ]; then echo \"Warning: backend/tests/test_api.py not found, skipping backend tests\"; exit 0; fi; cd \"$root/backend\" && python -m pytest tests/test_api.py -q --tb=short 2>&1 | tail -20; test ${PIPESTATUS[0]} -eq 0 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "Session start context injection — loads branch, CHANGELOG head, HANDOFF tail. Always exits 0.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/session-start.sh\""
           }
         ]
       }
