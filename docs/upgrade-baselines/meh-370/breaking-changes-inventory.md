@@ -36,6 +36,7 @@ Unexpected transitive change (package-lock only): `typescript 5.9.3 → 6.0.3`
 | 3 | App Router | **`params` is now a `Promise`** in Server Component pages/layouts — synchronous access (`params.slug`) throws in Next.js 15+ | 6 call sites: `app/[slug]/page.js:31,48`, `app/producer/[id]/page.js:16,33`, `app/p/[slug]/page.js:5`, `app/group-buys/[id]/page.js:3` | Codemod: `npx @next/codemod@latest next-async-request-api .` | **MUST-FIX** |
 | 4 | App Router | **`searchParams` is now a `Promise`** in Server Component pages — synchronous access throws in Next.js 15+ | 2 call sites: `app/producers/page.jsx:37,55` | Same codemod as #3 | **MUST-FIX** |
 | 5 | Build | **`next-pwa@5.6.0` peer dep mismatch** — `withPWA` wrapper in `next.config.js` is the outermost wrapper; if it throws on Next.js 16 startup, the build fails entirely | `next.config.js` line 1: `const withPWA = require("next-pwa")({...})` wraps `nextConfig` at export | MEH-372 — upgrade to `next-pwa@2.0.2` or `@ducanh2912/next-pwa`. Do NOT address in this PR. Must be fixed before `npm run build` can pass. | **MUST-FIX** |
+| 6 | Build | **Turbopack default + webpack config conflict** — Next.js 16 enables Turbopack for `next build` by default; `withSentryConfig` injects a webpack plugin with no turbopack equivalent | Local build shows: `⨯ ERROR: This build is using Turbopack, with a \`webpack\` config and no \`turbopack\` config` → "WorkerError: Call retries were exceeded" (Sentry's webpack worker crashes the build) | Two options: (A) add `turbopack: {}` to `next.config.js` nextConfig, OR (B) disable Turbopack with `experimental: { turbopack: false }` in nextConfig. Option B is safe until MEH-371 (Sentry v10 upgrade) provides native turbopack support. Confirm by running `npm run build` after applying. | **MUST-FIX** |
 
 ### WARNINGS (non-blocking but require monitoring)
 
@@ -180,9 +181,14 @@ npx @next/codemod@latest next-async-request-api .
 # C3 — next-pwa disable/replace (coordinate with MEH-372)
 # Either: upgrade next-pwa OR temporarily disable withPWA in next.config.js
 # commit: "fix(meh-370): disable withPWA wrapper pending MEH-372 next-pwa upgrade"
+
+# C4 — Turbopack disable (MUST-FIX — no codemod, manual)
+# Add experimental: { turbopack: false } to nextConfig in next.config.js
+# (Turbopack conflicts with withSentryConfig webpack plugin; revert after MEH-371)
+# commit: "fix(meh-370): disable Turbopack to unblock build pending MEH-371 Sentry upgrade"
 ```
 
-After C1+C2+C3: run `npm run build` (Phase B step 4) to catch any remaining compile errors.
+After C1+C2+C3+C4: run `npm run build` (Phase B step 4) to catch any remaining compile errors.
 
 ---
 
@@ -190,7 +196,8 @@ After C1+C2+C3: run `npm run build` (Phase B step 4) to catch any remaining comp
 
 | Risk | Likelihood | Before codemod | After codemod |
 |---|---|---|---|
-| Build fails due to `next-pwa@5.6.0` | HIGH | ❌ | Mitigated by disabling wrapper |
+| Build fails due to `next-pwa@5.6.0` | HIGH | ❌ | Mitigated by disabling wrapper (C3) |
+| Build fails: Turbopack + Sentry webpack conflict | CERTAIN | ❌ | Mitigated by disabling Turbopack (C4) |
 | Runtime crash: params/searchParams not awaited | HIGH | ❌ pages throw | ✅ C1 codemod fixes |
 | `npm run lint` fails (next lint removed) | CERTAIN | ❌ | ✅ C2 manual fix |
 | Sentry not wrapping errors | MEDIUM | warning only | ❌ until MEH-371 |
