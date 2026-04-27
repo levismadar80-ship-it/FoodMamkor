@@ -81,7 +81,7 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
             max_tokens=100,
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = msg.content[0].text.strip()
+        raw = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "").strip()
         data = json.loads(raw)
         status = data.get("status", "APPROVED")
         return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"

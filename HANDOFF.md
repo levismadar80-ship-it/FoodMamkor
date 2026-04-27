@@ -1,7 +1,21 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-360 docs: CC sandbox egress limitation — PR open, draft)
+> Last updated: 2026-04-27 (MEH-361 harden anthropic content guard — PR open, draft)
+
+## 2026-04-27 — MEH-361 harden anthropic content[0].text guard
+
+**Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** to be opened (draft).
+
+**Goal:** MEH-351 (anthropic SDK 0.39 → 0.97) audit surfaced 2 unguarded `msg.content[0].text` accesses (bio_generator.py:125, reviews.py:84). Apply the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from chat.py:246 so non-text-first responses (tool_use, image, etc.) don't `AttributeError` before the surrounding fail-open path catches them.
+
+**Result:** 2 files, 1 line each, minimal RHS substitution preserving `.strip()`. No behavior change for typical responses; edge cases (non-text-first / empty content) now produce empty string → existing fail-open path (bio="", review status="APPROVED") instead of a caught exception. Both modules import cleanly post-edit.
+
+**Sandbox limitation (per MEH-360):** pytest baseline can't run from CC sandbox — tests need live Postgres at localhost:5432. Static-verified: modules import + guard expression returns correct value across 4 content shapes (typical, tool-then-text, empty, no-text). CI on push is the gate.
+
+**Out of scope (intentional):** chat.py:246 uses bare `b.type == "text"` (vs the more defensive `getattr` form); not harmonized here per "no while-I'm-here" — separate ticket if desired. home_product_moderation.py:181 + experience_moderation.py:187 already guarded via `for block in message.content` loop pattern; left untouched.
+
+---
 
 ## 2026-04-27 — MEH-360 docs: document CC sandbox egress limitation
 

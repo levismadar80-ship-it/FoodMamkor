@@ -122,7 +122,7 @@ def generate_bio(source: str) -> str:
                 }
             ],
         )
-        bio = msg.content[0].text.strip()
+        bio = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "").strip()
         return bio[:150]
     except Exception as e:
         logger.warning("[BIO] Haiku call failed: %s", e)
