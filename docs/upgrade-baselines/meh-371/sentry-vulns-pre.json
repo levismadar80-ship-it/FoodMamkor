@@ -1,0 +1,45 @@
+{
+  "key": "@sentry/nextjs",
+  "value": {
+    "name": "@sentry/nextjs",
+    "severity": "high",
+    "isDirect": true,
+    "via": [
+      "@sentry/webpack-plugin",
+      "rollup"
+    ],
+    "effects": [],
+    "range": "8.0.0-alpha.2 - 10.39.0",
+    "nodes": [
+      "node_modules/@sentry/nextjs"
+    ],
+    "fixAvailable": {
+      "name": "@sentry/nextjs",
+      "version": "10.50.0",
+      "isSemVerMajor": true
+    }
+  }
+}
+{
+  "key": "@sentry/webpack-plugin",
+  "value": {
+    "name": "@sentry/webpack-plugin",
+    "severity": "moderate",
+    "isDirect": false,
+    "via": [
+      "uuid"
+    ],
+    "effects": [
+      "@sentry/nextjs"
+    ],
+    "range": "2.0.0-alpha.1 - 5.1.1",
+    "nodes": [
+      "node_modules/@sentry/webpack-plugin"
+    ],
+    "fixAvailable": {
+      "name": "@sentry/nextjs",
+      "version": "10.50.0",
+      "isSemVerMajor": true
+    }
+  }
+}

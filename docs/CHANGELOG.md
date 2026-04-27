@@ -12,13 +12,105 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-371: Sentry SDK v8 → v10 upgrade
+
+`@sentry/nextjs` 8.55.1 → 10.50.0 (2-major bump). Vulns 14 → 10
+(4 sorted: `@sentry/nextjs`, `@sentry/webpack-plugin`, `uuid`, `rollup`
+via transitive). `npm ci` now resolves with `next@16` peer dep —
+unblocks MEH-370.
+
+Migration applied:
+- `frontend/instrumentation.js` wrapper (v8→v9 server hook
+  requirement, 8 lines, dynamic-imports existing configs)
+- Removed deprecated `hideSourceMaps` option (v10 default
+  `deleteSourcemapsAfterUpload=true` preserves intent —
+  different mechanism, equivalent outcome for Mehamakor)
+- 12 v8→v10 changes confirmed NO-OP (grep-verified, see
+  `docs/upgrade-baselines/meh-371/migration-changes.md`)
+
+Behavior change: v10 strictly gates IP capture by `sendDefaultPii`.
+Existing `sentry.{client,server,edge}.config.js` unchanged.
+Lockfile +2508 lines — Sentry v10 OpenTelemetry expansion.
+
+Adversarial review: 24 candidates, 22 FALSE with evidence,
+2 advisory accepted (try/catch deferred, doc polish applied).
+
+Dashboard receipt: DEFERRED. Pre-existing observability gap
+discovered — Sentry DSN never configured in Vercel env vars.
+Tracked in MEH-376 (HIGH). Dashboard verification will
+retroactively confirm MEH-371 + MEH-376 once DSN wired.
+
+## 2026-04-27 — MEH-100: feat(about) — replace Leaf placeholder with founder photo. Path C editorial 3:4 portrait (280×373 / 360×480 md), Cloudinary c_fill,g_auto,ar_3:4, next/image with imgFailed Leaf fallback. Build ✅.
+
+## 2026-04-27 — PR #394: fix(docs): revert premature MEH-351 CHANGELOG entry. Entry was written before PR #364 merged; `uv.lock` confirmed `anthropic==0.39.0` on staging HEAD. Placeholder replaces full entry until #364 actually merges.
+
+## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking remediation
+
+`npm audit fix` (no `--force`) on `frontend/`. Vuln count **19 → 14**
+(5 fixed: 3 mod + 2 high). Bumps: axios 1.13.6→1.15.2, follow-redirects
+1.15.11→1.16.0, lodash 4.17.23→4.18.1, brace-expansion (1.x/2.x/5.x patches),
+picomatch 2.3.1→2.3.2 + 4.0.3→4.0.4, postcss 8.5.8→8.5.12. All same-major
+(no breaking). `package.json` untouched — only `package-lock.json` (37+/28-).
+New transitive: `proxy-from-env@2.1.0` (axios dep).
+
+Build ✅ PASS, Lint ✅ PASS (warnings only, matches MEH-345 baseline).
+Backend pytest deferred to CI (sandbox lacks fastapi per MEH-360); changes
+are frontend-only — no backend impact possible.
+
+Audit-trail JSON files committed: `.claude/audit-baseline-2026-04-27.json`
+(pre-fix), `.claude/audit-after-2026-04-27.json` (post-fix).
+
+Phase 2/3 (separate tickets, deferred): 14 remaining vulns all need
+breaking upgrades — `next@16` (covers glob + next + postcss chain),
+`@sentry/nextjs@10` (covers uuid + sentry/webpack-plugin), `next-pwa@2`
+(covers workbox/rollup-plugin-terser/serialize-javascript chain).
+
+## 2026-04-27 — MEH-368 / PR #392: fix(auth): harden Apple JWKS fetch. `requests.get(apple_keys_url)` had no timeout (worker blocked 60-120s on stalled endpoint), bare `["keys"]` raised `KeyError` on unexpected shapes, no HTTP status check. Two atomic edits in `_verify_apple_token` (auth.py:955-956): `timeout=8`, `raise_for_status()`, `.get("keys")` + None guard. `TestAppleTokenVerification` 4 → 8 tests. CI all green. Surfaced during MEH-350 adversarial review.
+
+## 2026-04-27 — MEH-369: hotfix MEH-345 (hardcoded paths + silent allowlist guard)
+
+Adversarial review of MEH-345 (PR #387) surfaced 3 bugs in the new subagents:
+1. `/home/user/FoodMamkor` hardcoded in 5 executable bash blocks across
+   `verify-frontend.md` (4) and `code-simplifier.md` (1) — agents non-functional
+   outside Linux sandbox.
+2. `grep -v -f rtl-allowlist.txt` had no existence guard — file missing →
+   silent false PASS (worst-category bug).
+
+Fixes:
+- All 5 hardcoded paths replaced with `git rev-parse --show-toplevel`
+  resolution (portable across Linux sandbox, Windows + Git Bash, CI).
+- RTL scan wrapped in `[ -f "$ALLOWLIST" ]` guard. On missing file:
+  loud failure (verdict NEEDS-FIX, explicit ERROR message), never silent
+  false PASS.
+- New eval T4 added to `verify-frontend.eval.md` as regression test for
+  the guard.
+
+Closes MEH-369. Bundled `HANDOFF.md` content held since MEH-345 merge.
+
+## 2026-04-27 — MEH-350 / PR #389
+feat(deps): bump requests 2.32.3 → 2.33.1. Resolves
+CVE-2024-47081 + CVE-2026-25645 (both deferred from MEH-351).
+No transitive churn beyond requests itself. Manual endpoint
+tests (Google OAuth, forgot password, email verify) all passed
+on deployed staging.
+
+## 2026-04-27 — MEH-368 / Backlog
+Track follow-up: harden Apple OAuth fetch in auth.py:955-956.
+Pre-existing fragility surfaced during MEH-350 adversarial review.
+
+## 2026-04-27 — MEH-361 / PR #388 — fix(anthropic): harden `msg.content[0].text` access in `bio_generator.py:125` + `reviews.py:84` with the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from `chat.py:246`. Post-MEH-351 audit hardening — 3 of 5 anthropic content access sites were already guarded (chat.py:246, home_product_moderation.py:181, experience_moderation.py:187); this brings the remaining 2 in line. No behavior change for typical responses; non-text-first / empty content now degrades to existing fail-open path (bio="", review status="APPROVED") instead of `AttributeError`/`IndexError` (caught either way by surrounding try/except, but cleaner control flow). `chat.py:246` itself uses bare `b.type` (not the defensive `getattr`) — not harmonized here per scope discipline.
+
+## 2026-04-27 — MEH-360 / PR #386 — docs: Document CC sandbox egress block for Railway URLs. Smoke verification must run from user's local machine. See anthropics/claude-code#19087.
+
+## 2026-04-27 — MEH-345: feat(claude-code): 3 project-scoped subagents in `.claude/agents/` — `verify-frontend`, `code-simplifier`, `i18n-scanner`. Skills 2.0 eval-driven build: 9 eval test cases written before agent bodies; manual benchmark ran with vs. without agent per invocation. **Base model rates measured: vf 50%, cs 33%, i18n 67% — all below 80% gate.** **Agent rates: vf 3/3 (post T2 re-run in fixture-isolated env), cs 3/3 + clean verdict on real PR #369, i18n 3/3.** Supporting file `.claude/hooks/rtl-allowlist.txt` added (extracted from `check-rtl.sh` ALLOWLIST array — enables `grep -v -f` piping in verify-frontend). **Security finding:** `tools: Bash(npm:*)` frontmatter restriction observed advisory-only in Claude Code 2.1.119, NOT enforced at agent level. Permission enforcement happens in `settings.json` only. Follow-up ticket TBD by Smadar to verify and document security implications for read-only agent contract. Discovery: agents created in a session are not discoverable as `subagent_type` until session restart. Token finding: structured agent prompt saves 6–9k tokens per run for code-simplifier (scope-bounded prompt prevents base-model rambling); other agents may use more tokens than base when their system prompt mandates a broader scan than the prompt asks for (e.g. i18n-scanner Step 1 globs all files).
+
 ## 2026-04-27 — MEH-357 / PR #368: fix(smoke): delete dead-letter `check_rate_limit_isolation` check + update docs. `check_rate_limit_isolation` tested XFF spoofing but Railway's edge sets `X-Real-IP` from TCP peer (unspoofable); single-source smoke client can't fake per-user isolation. Existing `test_isolates_different_client_ips_via_x_real_ip` (test_rate_limit.py:150) already covers the intent via X-Real-IP mock. 7 → 6 smoke checks. Updated `smoke_test_prod.sh` comment + `docs/SMOKE-TEST.md` table.
 
 ## 2026-04-27 — MEH-346: feat(claude-code): add `/permissions` allowlist to `.claude/settings.json` (38 allow + 14 deny). Boris pattern — pointed pre-allowlist of safe Bash commands eliminates 5-10 confirmation prompts per session (npm run build, pytest, git status, etc.) without unsafe `--dangerously-skip-permissions`. Deny rules block destructive ops (`git push --force`, `rm -rf`, `cat .env*`, direct push to main/staging, prod deploys). Defense-in-depth with MEH-341 bash safety hook — hook fires before permission check, so `DROP TABLE` etc. still blocked even if hypothetically allowed. `hooks` field byte-identical (jq diff verified); only top-level `permissions` field added. `cat .env.local` and `git push --force` confirmed blocked; `npm run build` runs without prompt; manual scenario 1 (npm run build = no prompt) requires live Claude Code session to verify post-merge.
 
 ## 2026-04-27 — MEH-353 / PR #365: fix(smoke): replace `@invalid.test` → `@example.com` in 3 smoke fixtures (`scripts/smoke_test.py:103`, `:140`, `:351`). Pydantic `email-validator` rejected the reserved `.test` TLD before requests reached the rate limiter — `check_rate_limit_enforcement` was a false-positive pass. Now passes correctly. Discovered: `check_rate_limit_isolation` is dead-letter from single-source clients post MEH-256 (X-Real-IP keying overrides XFF spoofing); tracked as MEH-357. New smoke baseline: 6/7.
 
-## 2026-04-27 — MEH-351 / PR #364: feat(deps): bump anthropic SDK 0.39.0 → 0.97.0. Zero breaking changes affecting this codebase (full CHANGELOG audit in issue #363). New transitive dep: `docstring-parser 0.18.0`. pip-audit before/after identical (2 pre-existing `requests` CVEs deferred to MEH-350).
+## 2026-04-27 — MEH-351 (PR #364 in flight, NOT merged)
 
 ## 2026-04-27 — MEH-342: refactor(docs): trim CLAUDE.md 197 → 75 lines (≤80 cap), split into modular `.claude/rules/`. Three new rule files: `db.md` (lazy-load `backend/**/*.py`, contains `_migrate_columns` rule + post-mortem note + migration-safety pointer), `code-execution.md` (lazy-load `**/*.{py,jsx,js,ts,tsx,sh}`, exec §7-13 + execution order — canonical source, replaces duplicate in workflow.md), `prompting.md` (always-load, Caveman Rule 15 body). `rtl.md` gets paths frontmatter (7 frontend extensions: jsx/js/ts/tsx/css/html/scss). `workflow.md` absorbs Bug Protocol + Commit discipline + PR approval/DoD + PR Review Workflow + /loop usage patterns from CLAUDE.md, + 2 pointers replacing exec §7-13 and Rule 15 body. Zero content loss verified per-section via grep. Out-of-scope deferred to follow-up tickets: env vars rule (db.md), Templates 01-07 list (prompting.md), `frontend.md`/`backend.md` paths frontmatter (separate ticket).
 

@@ -952,8 +952,11 @@ def _verify_apple_token(id_token: str) -> dict | None:
 
         # Fetch Apple's public keys
         apple_keys_url = "https://appleid.apple.com/auth/keys"
-        keys_response = requests.get(apple_keys_url)
-        apple_keys = keys_response.json()["keys"]
+        keys_response = requests.get(apple_keys_url, timeout=8)
+        keys_response.raise_for_status()
+        apple_keys = keys_response.json().get("keys")
+        if not apple_keys:
+            return None
 
         # Decode header to find the right key
         header = pyjwt.get_unverified_header(id_token)

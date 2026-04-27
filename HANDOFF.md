@@ -1,7 +1,193 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-346 /permissions allowlist — PR open, draft)
+> Last updated: 2026-04-27 (MEH-371 ready, MEH-370 unblocked, MEH-376 opened)
+
+## 2026-04-27 — MEH-371 ready, MEH-370 unblocked, MEH-376 opened
+
+Sentry v8 → v10 migration complete. PR #396 ready for review.
+`npm ci` passes with `next@16` peer dep — MEH-370 install blocker
+resolved.
+
+Vuln delta: 14 → 10 (4 sorted). Existing Sentry config files
+unchanged.
+
+Dashboard receipt deferred — pre-existing DSN gap discovered
+during STEP 9 verification. Tracked in **MEH-376** (HIGH priority,
+~15 min work, env-var only).
+
+Order:
+1. **MEH-371 merge** (PR #396) → next ci unblocks MEH-370
+2. **MEH-376** → wire DSN, verify Sentry receives errors
+3. **MEH-370 resume** → codemods C1–C4 → push → CI
+
+PR #395 (MEH-370 draft) preserved with all PHASE A baselines
++ breaking-changes-inventory + reconnaissance.
+
+## 2026-04-27 — MEH-100: founder photo on /about (PR #397 merged)
+
+**Branch:** `claude/replace-leaf-founder-photo-kYxNg` off staging.
+**Status:** merged via PR #397.
+
+**What shipped:** Replaced `<Leaf>` placeholder in `AboutClient.jsx:88-93` with
+real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
+- Container: `relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl border border-primary/15 overflow-hidden`
+- Cloudinary URL with `c_fill,g_auto,ar_3:4` server-side face-aware crop
+- `imgFailed` useState fallback → `<Leaf>` rendered on `onError`
+- `Leaf` import kept (fallback + decorative Leaf at line 262 both use it)
+- Build ✅ PASS, no new warnings
+
+**Deferred:** imgFailed browser fallback visual test (CC sandbox can't open browser) — verify on Vercel preview by temporarily breaking public_id.
+
+---
+
+## 2026-04-27 — PR #394: CHANGELOG doc integrity fix (MEH-351 revert)
+
+**Done — squash `bfb4596`:** Reverted premature CHANGELOG entry for MEH-351.
+Entry was written before PR #364 actually merged. Verified: `uv.lock` on
+staging HEAD still pins `anthropic==0.39.0`. PR #364 is open/draft, needs
+rebase onto current staging before it can merge.
+
+**Next on MEH-351 / PR #364:** rebase `feature/meh-351-bump-anthropic-0.97.0`
+onto staging HEAD (67+ commits behind), re-verify breaking-changes list, push,
+wait for CI, merge. CHANGELOG entry to be written at that point.
+
+## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking
+
+**Branch:** `feature/meh-362-npm-audit-remediation` off staging `f83dbec`. **PR:** TBD (draft).
+
+**Result:** vuln count **19 → 14** (5 fixed: 3 mod + 2 high). `npm audit fix` only — no `--force`. Bumps within same major: axios, follow-redirects, lodash, brace-expansion (×3 paths), picomatch (×2), postcss. `package.json` untouched. `package-lock.json` 37+/28-. New transitive: `proxy-from-env@2.1.0` (axios).
+
+**Verification:** Build ✅, Lint ✅ (warnings unchanged from MEH-345 baseline). Backend pytest sandbox-blocked (no fastapi env per MEH-360) — changes frontend-only, deferred to CI.
+
+**Audit-trail JSONs committed:** `.claude/audit-baseline-2026-04-27.json` + `.claude/audit-after-2026-04-27.json`.
+
+**Phase 2/3 candidates (14 remaining vulns, all need breaking upgrades):**
+- `next@16.2.4` — covers glob + next + postcss chain (own ticket)
+- `@sentry/nextjs@10.50.0` — covers uuid + sentry/webpack-plugin (own ticket)
+- `next-pwa@2.0.2` — covers workbox/rollup-plugin-terser/serialize-javascript chain (own ticket)
+
+---
+
+## 2026-04-27 — MEH-368 (Done — PR #392)
+
+**MEH-368 (Done — PR #392, squash a0c9123, merged 2026-04-27):**
+Hardened Apple OAuth public-key fetch in auth.py:955-956: `timeout=8`
+on `requests.get` (prevents indefinite worker block), `raise_for_status()`
+(4xx/5xx → HTTPError, caught by existing fail-open), `.get("keys")` +
+None guard (replaces bare `["keys"]` KeyError risk). `TestAppleTokenVerification`
+grown 4 → 8 tests. CI: all 7 checks green. Google OAuth path untouched.
+Surfaced during MEH-350 adversarial review.
+
+## 2026-04-27 — MEH-350 + MEH-368 (pre-merge context)
+
+**MEH-350 (Done — PR #389):** Bumped requests 2.32.3 → 2.33.1.
+Blast radius dependents (twilio/resend/google-auth/cloudinary)
+verified compatible via uv lock graph + manual endpoint tests.
+pip-audit clean (resolved CVE-2024-47081 + CVE-2026-25645).
+Adversarial review: zero REFEREE-confirmed issues, 2 pre-existing
+fragilities surfaced and tracked as MEH-368.
+
+**Manual endpoint verifications (user-executed, browser):**
+- Google OAuth login flow ✓
+- Forgot password email delivery ✓
+- Email verify flow ✓
+
+**Drift lessons for next session:**
+- High-blast-radius dependency bumps should NOT come after
+  5 PRs in same day — operator fatigue degrades skepticism quality
+- CC's premature push (treating Stop hook commit+push as auth for
+  both, when push needs explicit user "go") — documented for
+  workflow.md update consideration
+- User's Skeptic Mode false-positive (scope-violation alarm based
+  on `git diff main` instead of `git diff origin/staging`) —
+  CC correctly refused destructive action without evidence
+
+**Today's batch summary:** MEH-351, 353, 357, 360, 361, 350 —
+6 PRs merged, zero production regressions.
+
+---
+
+## 2026-04-27 — MEH-345 merged + 6 follow-ups opened
+
+### Status
+- PR #387 merged to staging (post-SMOKE A verification on Sapir's local)
+- 3 subagents added at `.claude/agents/`: verify-frontend, code-simplifier, i18n-scanner
+- Each with matching `.eval.md` (9 eval cases total)
+- Supporting file: `.claude/hooks/rtl-allowlist.txt` (9 paths)
+- Final strict scores: vf 3/3, cs 3/3, i18n 3/3 — all cleared 80% base-model gate
+
+### Discoveries during MEH-345
+- **Invocation:** Agents accessible via `Agent(subagent_type="<name>")` in CC 2.1.119. Spec's `/agent <name>` syntax not in `claude --help`. Files at `.claude/agents/<name>.md` work via Agent tool.
+- **Tools enforcement:** `tools:` frontmatter is advisory in CC 2.1.119, not enforced at agent level. Real enforcement is `settings.json permissions.allow` (MEH-346 layer). Investigated in MEH-363.
+- **Frontmatter field:** Spec used `allowed-tools:`; live repo uses `tools:` (verified `design-review.md:4`). All 3 new agents use `tools:`.
+- **i18n reality:** Repo has ZERO t() infrastructure. 0 packages, 0 locale dirs, 0 t() matches. Older "44 keys / 11 components" claim was stale. i18n-scanner found 2,284 hardcoded Hebrew strings across 124 files. Future work, not in progress.
+- **Pre-existing RTL:** verify-frontend found 11 violations on staging not in allowlist — all are JSDoc/centering/skip-link patterns (false positives needing rtl-ok). Owned by MEH-364.
+- **Dependencies:** `npm audit` baseline = 19 vulnerabilities (6 moderate + 13 high). Pre-existing tech debt — `git diff staging...feature/meh-345-subagents -- frontend/package-lock.json` returned 0. Owned by MEH-362.
+
+### Follow-up tickets
+| Ticket | Priority | Description |
+|---|---|---|
+| MEH-362 | High | Dependency vulnerability triage + remediation |
+| MEH-363 | High | Agent `tools:` enforcement security investigation |
+| MEH-364 | Medium | Resolve 11 RTL violations (rtl-ok annotations) |
+| MEH-365 | Medium | Consolidate RTL allowlist (single source) |
+| MEH-366 | Medium | i18n migration scoping plan |
+| MEH-367 | Low | Agent runtime budgets (scope + fast path) |
+
+### Recommended execution order
+- **Wave 1 (parallel):** MEH-362 + MEH-363 + MEH-366 (no file conflicts)
+- **Wave 2 (parallel, after Wave 1 lands):** MEH-364 + MEH-365
+- **Deferred:** MEH-367
+
+### Local environment notes
+- `@vercel/speed-insights` installed locally to fix Sapir's build (`npm install` added 1 package, no commit)
+- npm audit baseline JSON to be saved at `.claude/audit-baseline-2026-04-27.json` per MEH-362 plan
+- CC 2.1.119 auto-update warning observed — run `claude doctor` post-merge
+
+### Memory state correction
+Memory entry #12 added: i18n state correction (zero t() infra). Older userMemories[1] still references stale "44 keys / 11 components" — entry #12 is authoritative going forward.
+
+---
+
+## 2026-04-27 — MEH-361 harden anthropic content[0].text guard
+
+**Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** #388 (draft, open).
+
+**Goal:** MEH-351 (anthropic SDK 0.39 → 0.97) audit surfaced 2 unguarded `msg.content[0].text` accesses (bio_generator.py:125, reviews.py:84). Apply the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from chat.py:246 so non-text-first responses (tool_use, image, etc.) don't `AttributeError` before the surrounding fail-open path catches them.
+
+**Result:** 2 files, 1 line each, minimal RHS substitution preserving `.strip()`. No behavior change for typical responses; edge cases (non-text-first / empty content) now produce empty string → existing fail-open path (bio="", review status="APPROVED") instead of a caught exception. Both modules import cleanly post-edit.
+
+**Sandbox limitation (per MEH-360):** pytest baseline can't run from CC sandbox — tests need live Postgres at localhost:5432. Static-verified: modules import + guard expression returns correct value across 4 content shapes (typical, tool-then-text, empty, no-text). CI on push is the gate.
+
+**Out of scope (intentional):** chat.py:246 uses bare `b.type == "text"` (vs the more defensive `getattr` form); not harmonized here per "no while-I'm-here" — separate ticket if desired. home_product_moderation.py:181 + experience_moderation.py:187 already guarded via `for block in message.content` loop pattern; left untouched.
+
+---
+
+## 2026-04-27 — MEH-360 docs: document CC sandbox egress limitation
+
+**MEH-357 follow-up — MEH-360:** Documented CC sandbox egress limitation. CC's envoy proxy blocks `*.up.railway.app` egress. All smoke verification must run from user's local machine. Reference: anthropics/claude-code#19087. Updated CLAUDE.md + docs/SMOKE-TEST.md to prevent repeat diagnosis loops.
+
+---
+
+## 2026-04-27 — MEH-345 feat(claude-code): 3 project-scoped subagents — MERGED
+
+**Branch:** `feature/meh-345-subagents`. **PR:** #387 (merged to staging).
+
+**What shipped:** 3 subagents in `.claude/agents/` — `verify-frontend`, `code-simplifier`, `i18n-scanner` — using Skills 2.0 eval-driven methodology. 9 eval test cases before agent bodies. `.claude/hooks/rtl-allowlist.txt` supporting file.
+
+**Go/no-go (final):**
+| Agent | Agent score | Base rate | Decision |
+|-------|-------------|-----------|---------|
+| verify-frontend | 3/3 strict (T2 re-run in fixture-isolated env) | ~50% | SHIP ✅ |
+| code-simplifier | 3/3 + real PR #369 clean verdict | ~33% | SHIP ✅ |
+| i18n-scanner | 3/3 strict | ~67% | SHIP ✅ |
+
+**Post-merge action required (Smadar):** Restart session → verify `Agent(subagent_type="verify-frontend")` resolves.
+
+**Follow-up tickets (Smadar to open):** rtl-allowlist.txt sync automation; 11 pre-existing RTL violations on staging; agent-level Bash restriction security implications; i18n greenfield migration (2,284 strings / 124 files); i18n-T2 budget overrun (372s).
+
+---
 
 ## 2026-04-27 — MEH-346 feat(claude-code): /permissions allowlist
 
