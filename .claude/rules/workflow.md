@@ -307,3 +307,42 @@ Session lifecycle helpers in `.claude/commands/`, invoked via
   real imports only
 - **After:** file:line evidence per claim → build + tests → preview
   URL → HANDOFF update
+
+---
+
+## Bug Protocol (unified)
+When a bug is found and fixed:
+1. **Identify the root cause** — don't just fix the symptom. Document *why* the bug happened.
+2. **Grep for siblings (MANDATORY before closing task).** `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx"` and report findings to user before marking done.
+3. **Add a regression rule** to [.claude/rules/workflow.md](./workflow.md) if the pattern is likely to recur.
+4. **Add a test** that would have caught the bug. If no automated test is possible → add a manual test case to [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md).
+5. **Update docs** if the fix reveals a non-obvious convention (e.g. physical `right-3` for LTR password toggles on RTL pages).
+
+Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md).
+
+---
+
+## Commit discipline
+- Hotfixes get their own commit — never bundled with a refactor.
+- When Claude Code suggests "let's do both together" — say split.
+- The temptation to combine is always there. The rule is: no.
+
+_Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns` drift broke production login; the hotfix PR bundled a 7-call-site refactor under pressure._
+
+---
+
+## /loop — usage patterns
+
+`/loop` runs prompts on a cron interval. Each iteration = full Claude Code session = quota usage. Use on-demand, never always-on.
+
+**Approved patterns:**
+- Deploy babysit: `/loop check Railway /health, stop after 3x 200 OK`
+- PR CI watch: `/loop 5m check gh pr checks <PR>` — Esc when green
+- One-shot poll: `/loop 10m check if migration finished`
+
+**Forbidden:**
+- Always-on monitors (production observability → use Sentry/Vercel instead)
+- `/loop` with no exit condition
+- 5+ concurrent loops in same session
+
+Tasks auto-expire after 7 days.

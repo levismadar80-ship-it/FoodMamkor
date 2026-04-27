@@ -88,65 +88,14 @@ Never push directly to `main` or `staging` — both PR-only. Hotfixes must be ba
 8. **After every PR — Vercel preview URL.** `"בדיקי על: https://food-mamkor-[hash].vercel.app"`. Wait for approval before merging. Update MANUAL_TESTING.md + every doc your code touched, same PR.
 9. **End of session (MANDATORY — same priority as Rule 1).** Update HANDOFF.md: last PR + number, current branch, next task + first step, decisions, known issues not yet filed. No HANDOFF update = incomplete session.
 10. **One branch per feature** (frontend + backend together). `gh pr list --state open` before opening a new branch — if open PR exists for same feature, add to that branch.
-- *Rules 11–20 (doc sync, diagrams, context reset, caveman prompts, worktrees, Monitor/loop/ultraplan, zod, CI order), regression rules, Vibe guardrails, custom commands, exec §7–13 — all in [.claude/rules/workflow.md](./.claude/rules/workflow.md).*
-
-## Bug Protocol (unified)
-When a bug is found and fixed:
-1. **Identify the root cause** — don't just fix the symptom. Document *why* the bug happened.
-2. **Grep for siblings (MANDATORY before closing task).** `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx"` and report findings to user before marking done.
-3. **Add a regression rule** to [.claude/rules/workflow.md](./.claude/rules/workflow.md) if the pattern is likely to recur.
-4. **Add a test** that would have caught the bug. If no automated test is possible → add a manual test case to [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md).
-5. **Update docs** if the fix reveals a non-obvious convention (e.g. physical `right-3` for LTR password toggles on RTL pages).
-
-Known Bug Patterns (cross-ref before touching): [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md).
-
-## Commit discipline
-- Hotfixes get their own commit — never bundled with a refactor.
-- When Claude Code suggests "let's do both together" — say split.
-- The temptation to combine is always there. The rule is: no.
-
-_Source: post-mortem PR #304 (MEH-265), 2026-04-24 — `_migrate_columns` drift broke production login; the hotfix PR bundled a 7-call-site refactor under pressure._
+- *Rules 11–20, Bug Protocol, Commit discipline, /loop patterns, exec §7–13, regression rules, Vibe guardrails, custom commands — all in [.claude/rules/workflow.md](./.claude/rules/workflow.md). PR Review Workflow (Claude.ai handoff): [.claude/rules/deployment.md](./.claude/rules/deployment.md).*
 
 File edit safety — read before write, diff after write, no silent deletions. Full protocol: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md)
 
-## Execution principles (exec §7–13)
-> Workflow rules 1–20 cover *structure*. These cover *execution*. Use "exec §N" to avoid collision with workflow rule N.
-
-7. **Lazy Edit** — changed lines + `// ... existing code ...` markers only. Never return a full file.
-8. **Atomic Edits** — 3 changes in one file = 1 edit call, not 3.
-9. **Skeptic Mode** — "Haven't verified X" > "X probably works". Declare uncertainty.
-10. **File:Line Evidence** — every code claim needs `file:line`. No citation = guess.
-11. **Numbered Plan First** — numbered steps before any code, even "small" tasks. Wait for `go`.
-12. **Narrated Actions** — one line per action ("Reading X… Found Y… Fixing Z…"). No black-box turns.
-13. **Real Imports Only** — verify file exists before writing `import`. Never import imaginary modules.
-
-**Execution order per task:** before → numbered plan + grep siblings + wait for `go`; during → lazy edit (1 call/file/turn) + narrate + real imports; after → file:line evidence + build + tests + preview URL + HANDOFF update.
-
 ## PR approval guide
-**Definition of Done** (every PR, no exceptions): `npm run build` passes; `pytest tests/test_api.py` passes; `/adversarial-review` passed with all REFEREE verdicts fixed.
-
-| PR type | Check | Testing? |
-|---|---|---|
-| docs-only / infra-only | Read the diff | None |
-| UI change | Vercel preview on mobile | Yes |
-| Backend change | Affected API endpoint | Yes |
-| Hotfix | Only the broken thing | Minimal |
+**Definition of Done** (every PR): `npm run build` passes; `pytest tests/test_api.py` passes; `/adversarial-review` passed with all REFEREE verdicts fixed. Full PR-type table: [.claude/rules/testing.md](./.claude/rules/testing.md) + [.claude/rules/deployment.md](./.claude/rules/deployment.md).
 
 Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`, `MANUAL_TESTING.md`): commit directly to `staging` — no PR needed.
-
-## PR Review Workflow
-
-When asked to generate a PR review bundle for Claude.ai, run:
-
-  git diff staging [changed-code-files]
-  git diff staging docs/CHANGELOG.md
-  git diff staging HANDOFF.md
-
-Paste all output in one message with clear section headers:
-  === DIFF: [filename] ===
-
-This is the standard handoff to Claude.ai for code review.
-GitHub MCP is not available in the Claude.ai web interface.
 
 ## Documentation map
 | File | What's in it |
@@ -175,23 +124,6 @@ Long-form Mermaid diagrams (auth-flow / db-schema / api-routes) live in [.ai/dia
 ## Vibe Coding Guardrails (MEH-128)
 `.claude/pre-edit-guard.js` (PreToolUse hook) warns non-blocking on edits to central components. 4-step protocol: [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md). Emergency skips: [docs/EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md).
 
-## /loop — usage patterns
-
-`/loop` runs prompts on a cron interval. Each iteration = full Claude Code session = quota usage. Use on-demand, never always-on.
-
-**Approved patterns:**
-- Deploy babysit: `/loop check Railway /health, stop after 3x 200 OK`
-- PR CI watch: `/loop 5m check gh pr checks <PR>` — Esc when green
-- One-shot poll: `/loop 10m check if migration finished`
-
-**Forbidden:**
-- Always-on monitors (production observability → use Sentry/Vercel instead)
-- `/loop` with no exit condition
-- 5+ concurrent loops in same session
-
-Tasks auto-expire after 7 days.
-
 ## How to update this file
 - Cap: **≤ 150 lines**. If you need more space → domain rule goes in `.claude/rules/`; long-form context goes in `docs/`. Never back here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
-- Note: file is currently over the 150-line cap (needs splitting into `.claude/rules/` — tracked separately, not in scope here).
