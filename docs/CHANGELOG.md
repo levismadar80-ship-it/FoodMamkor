@@ -12,13 +12,17 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
-## 2026-04-27 — MEH-379 + MEH-380 + MEH-381: Sentry observability CSP bundle
+## 2026-04-27 — MEH-379+380+381: Sentry observability CSP hardening
 
-Single PR (#399) hardens CSP across three surfaces so Sentry observability works end-to-end. All edits in `frontend/next.config.js`.
+Three CSP gaps blocking Sentry observability fixed in single PR (#399).
 
-- **MEH-379** (`next.config.js:67`) — `connect-src` += `https://*.ingest.sentry.io https://*.ingest.us.sentry.io`. Round-1 used `*.sentry.io` which doesn't match two-level subdomains (`o<orgid>.ingest.sentry.io`); round-2 swap to `*.ingest.sentry.io` fixes it. Envelope POSTs now reach ingest.
-- **MEH-380** (`next.config.js:91`) — added `worker-src 'self' blob:`. Sentry Replay loads its worker from a `blob:` URL; `default-src 'self'` was blocking it.
-- **MEH-381** (`next.config.js:30-46, 93`) — DSN-derived `report-uri` (Path A, Sentry-hosted). Parser fail-opens on missing/malformed DSN. Verified across 3 build modes: no DSN / valid DSN / garbage DSN — all green, only valid DSN emits `report-uri`.
+- **MEH-379 (HIGH)** — `connect-src` allowlist for `*.ingest.us.sentry.io` + `*.ingest.sentry.io` (`next.config.js:67`). Browser was blocking event envelope POST → events dropped silently despite DSN wired (MEH-376). Round-1 used `*.sentry.io` which doesn't match two-level subdomains (`o<orgid>.ingest.sentry.io`); round-2 swap fixes it.
+- **MEH-380 (LOW)** — `worker-src 'self' blob:` directive (`next.config.js:91`). Sentry Replay worker (`replayIntegration` in `sentry.client.config.js:13-15`) needs `blob:` for compression; was falling back to `default-src 'self'` and failing to spawn.
+- **MEH-381 (LOW)** — `report-uri` derived from `NEXT_PUBLIC_SENTRY_DSN` at next.config boot (`next.config.js:30-46, 93`). Future CSP violations now reported to same Sentry dashboard. **Path A (Sentry-hosted)** — Path B (FastAPI route) rejected. Fail-soft: missing/malformed DSN → no `report-uri`, no build crash.
+
+Single file changed: `frontend/next.config.js`. No logic touched, no backend changes, no new env vars. CSP additions verified via `node -e "require('./next.config.js').headers().then(...)"` across 3 DSN env modes (set/unset/garbage).
+
+**Discovery context:** MEH-371 STEP 9 dashboard verify protocol caught the silent observability failure that survived MEH-255/326/327/371. Dashboard receipt protocol now standard before closing any observability ticket.
 
 ## 2026-04-27 — MEH-371: Sentry SDK v8 → v10 upgrade
 
