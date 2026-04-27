@@ -1,7 +1,32 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-338 PR #357 ready to merge)
+> Last updated: 2026-04-27 (MEH-338 deployed to staging)
+
+## 2026-04-27 — MEH-338 deployed to staging ✅
+
+**SHA:** d438876 (PR #357, squash-merged)
+**Railway deploy ID:** 3d0cc178-7d28-42e6-a76b-7d8ecf3689a3
+
+**Shipped:**
+- fastapi 0.115.6 → 0.120.1
+- starlette 0.41.3 → 0.49.3 (CVE-2025-62727 + CVE-2025-54121 closed)
+- annotated-doc 0.0.4 (legitimate fastapi 0.120.0+ transitive dep)
+- 148/148 pytest green · 12/12 CI checks (9 green + 3 expected skips)
+
+**Smoke:** 6/7 — `check_rate_limit_enforcement` pre-existing bug (MEH-353).
+`check_rate_limit_isolation` ✅ confirms limiter functional. Not a regression.
+
+**Ticket numbers correction:** HANDOFF MEH-339–342 → corrected to MEH-349–352.
+
+**Follow-up queue (Backlog):**
+- MEH-349 (High) — python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486 + CVE-2026-40347)
+- MEH-350 (High) — requests 2.32.3 → 2.33.0 (CVE-2024-47081 + CVE-2026-25645) ⚠️ highest blast radius
+- MEH-352 (Normal) — local dev DB init: import models before create_all()
+- MEH-351 (Low) — anthropic 0.39.0 → latest (no CVE)
+- MEH-353 (Low) — smoke_test.py fix: @invalid.test → @example.com
+
+**Recommended order:** 349 → 352 → 350 → 351 → 353
 
 ## Most recent — MEH-338 fastapi/starlette CVE bump (2026-04-27)
 
@@ -30,10 +55,10 @@ Reason: feature branch has no Railway preview; smoke check 2 (TRUSTED_PROXY rate
 
 ## Follow-up tickets (post-MEH-338, not today)
 
-- MEH-339 (proposed): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
-- MEH-340 (proposed): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
-- MEH-341 (proposed): anthropic 0.39.0 → latest (stale, no CVE)
-- MEH-342 (proposed): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
+- MEH-349 (High): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
+- MEH-350 (High): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-351 (Low): anthropic 0.39.0 → latest (stale, no CVE)
+- MEH-352 (Normal): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
 
 Lesson learned (for future bump tickets):
 Local-against-empty-DB curl ≠ rate-limit fitness test. Always use pytest with seeded DB asserting 429 logic specifically; curl loops are ambiguous (any middleware can return 429).
