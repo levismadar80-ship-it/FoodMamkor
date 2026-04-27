@@ -12,9 +12,13 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
-## 2026-04-27 — MEH-379: CSP allowlist Sentry ingest
+## 2026-04-27 — MEH-379 + MEH-380 + MEH-381: Sentry observability CSP bundle
 
-`connect-src` in `frontend/next.config.js:67` — added `https://*.ingest.us.sentry.io https://*.sentry.io` so browser can POST error envelopes to Sentry ingest. Previous CSP blocked all outbound XHR to sentry.io → events silently dropped despite DSN being wired (MEH-376). One-line edit, unconditional (all envs). Build ✅ PASS.
+Single PR (#399) hardens CSP across three surfaces so Sentry observability works end-to-end. All edits in `frontend/next.config.js`.
+
+- **MEH-379** (`next.config.js:67`) — `connect-src` += `https://*.ingest.sentry.io https://*.ingest.us.sentry.io`. Round-1 used `*.sentry.io` which doesn't match two-level subdomains (`o<orgid>.ingest.sentry.io`); round-2 swap to `*.ingest.sentry.io` fixes it. Envelope POSTs now reach ingest.
+- **MEH-380** (`next.config.js:91`) — added `worker-src 'self' blob:`. Sentry Replay loads its worker from a `blob:` URL; `default-src 'self'` was blocking it.
+- **MEH-381** (`next.config.js:30-46, 93`) — DSN-derived `report-uri` (Path A, Sentry-hosted). Parser fail-opens on missing/malformed DSN. Verified across 3 build modes: no DSN / valid DSN / garbage DSN — all green, only valid DSN emits `report-uri`.
 
 ## 2026-04-27 — MEH-371: Sentry SDK v8 → v10 upgrade
 

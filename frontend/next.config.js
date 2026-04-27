@@ -27,6 +27,25 @@ const vercelLiveImg = isVercelPreview
   : "";
 const vercelLiveFont = isVercelPreview ? " https://vercel.live" : "";
 
+// MEH-381: derive Sentry CSP report-uri from NEXT_PUBLIC_SENTRY_DSN at boot.
+// Path A (Sentry-hosted): report goes to the same ingest host the SDK uses.
+// Fail-open: missing/malformed DSN → cspReportUri stays "" → directive omitted.
+let cspReportUri = "";
+try {
+  const dsnRaw = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (dsnRaw) {
+    const dsnUrl = new URL(dsnRaw);
+    const key = dsnUrl.username;
+    const host = dsnUrl.host;
+    const project = dsnUrl.pathname.replace(/^\//, "");
+    if (key && host && project) {
+      cspReportUri = `report-uri https://${host}/api/${project}/security/?sentry_key=${key}`;
+    }
+  }
+} catch (_) {
+  // malformed DSN — fail open, no report-uri emitted
+}
+
 // SECURITY FIX #8 (SECURITY.md): HTTP security headers applied by Next.js
 // on every HTML/asset response. Paired with backend/app/main.py which sets
 // the same family of headers on API responses. HSTS is included here for
@@ -69,6 +88,10 @@ const securityHeaders = [
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      // MEH-380: Sentry Replay loads its worker from a blob: URL.
+      "worker-src 'self' blob:",
+      // MEH-381: report-uri appended only when DSN parsed successfully.
+      ...(cspReportUri ? [cspReportUri] : []),
     ].join("; "),
   },
 ];

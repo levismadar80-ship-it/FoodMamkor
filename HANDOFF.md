@@ -1,25 +1,36 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-379 CSP fix, PR open, awaiting Smadar verify)
+> Last updated: 2026-04-27 (MEH-379 + MEH-380 + MEH-381 bundle in PR #399, awaiting Smadar verify)
 
-## 2026-04-27 — MEH-379: CSP Sentry allowlist (PR open)
+## 2026-04-27 — MEH-379 + MEH-380 + MEH-381 bundle (PR #399 open)
 
-`connect-src` was missing `*.ingest.us.sentry.io` + `*.sentry.io` — browser blocked Sentry envelopes despite DSN being wired (root cause of MEH-376 observability gap). One-line fix in `frontend/next.config.js:67`. Build ✅ PASS, lint ✅ no new warnings.
+CSP hardening across three surfaces so Sentry observability works end-to-end. All edits in `frontend/next.config.js`. Single squash commit covers all three tickets.
+
+- **MEH-379** — `connect-src` allows `*.ingest.sentry.io` + `*.ingest.us.sentry.io`. Round-2 swap from `*.sentry.io` (didn't match two-level subdomains).
+- **MEH-380** — `worker-src 'self' blob:` for Sentry Replay worker (loaded from blob URL).
+- **MEH-381** — DSN-parsed `report-uri` (Path A Sentry-hosted). Fail-open on missing/malformed DSN.
+
+**Verification done in CC sandbox:**
+- 3 build modes via `node -e "require('./next.config.js').headers().then(...)"`: no DSN, valid DSN, garbage DSN — all green
+- `npm run build` ✅ PASS (default env)
+- `npm run lint` ✅ no new warnings
 
 **Branch:** `feature/meh-379-csp-sentry-allowlist`
-**Status:** PR open (draft) — awaiting Smadar merge + production verify.
+**Status:** PR #399 open (draft) — awaiting Smadar merge + production verify.
 
-**Post-merge manual verify (Smadar):**
-1. Open mehamakor.online in browser (or staging)
-2. F12 → Network tab → filter `sentry`
-3. Trigger a JS error (e.g. `/debug-sentry` route or console: `Sentry.captureException(new Error("test"))`)
-4. Confirm POST to `*.ingest.*.sentry.io/api/*/envelope/` returns **200**
-5. Confirm event appears in Sentry dashboard within ~30s
+**Post-merge manual verify (Smadar) — production:**
+1. F12 → Network → filter `sentry`
+2. Console: `Sentry.captureException(new Error("MEH-379+380+381 verify"))`
+3. POST to `o<orgid>.ingest.us.sentry.io/api/.../envelope/` → **200** (MEH-379)
+4. Sentry event in dashboard within ~30s
+5. Open event → Replay tab populated (MEH-380)
+6. Inject violation: console → `fetch("https://evil.example")` → CSP block expected
+7. Sentry dashboard "Security" issues → CSP report appears (MEH-381)
 
-**Next after verify:**
-- Close MEH-379 Done
-- Mark MEH-376 verified retroactively
+**If 1-7 green:**
+- Close MEH-379, MEH-380, MEH-381 Done
+- Retroactively mark MEH-376 verified
 - Proceed to MEH-370 PHASE B codemods
 
 ---
