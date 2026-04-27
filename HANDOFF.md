@@ -12,12 +12,12 @@ Summary:
 - Closes CVE-2026-24486 (path traversal/RCE, fixed in 0.0.22) + CVE-2026-40347 (DoS, fixed in 0.0.26)
 - FastAPI 0.120.1 allows >=0.0.18; constraint satisfied
 - pip-audit BEFORE: 2 python-multipart CVEs present
-- pip-audit AFTER: both gone; requests CVEs remain (deferred to MEH-340)
+- pip-audit AFTER: both gone; requests CVEs remain (deferred to MEH-350)
 - Adversarial review: 0 blocking issues; Starlette CVE-2025-62727 not applicable (running 0.49.3)
-- pytest: 148 DB-connection errors (pre-existing, no local PostgreSQL in CI env)
+- pytest: 148 passed locally (PostgreSQL service started: `mehamakor_test` DB)
 
 Follow-up tickets deferred from this PR:
-- MEH-340: requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-350: requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
 
 ## ⏭ Previous — MEH-338 fastapi/starlette CVE bump (2026-04-27)
 
@@ -47,7 +47,7 @@ Reason: feature branch has no Railway preview; smoke check 2 (TRUSTED_PROXY rate
 ## Follow-up tickets (post-MEH-338, not today)
 
 - MEH-339 (proposed): python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486, CVE-2026-40347)
-- MEH-340 (proposed): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+- MEH-350 (proposed): requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
 - MEH-341 (proposed): anthropic 0.39.0 → latest (stale, no CVE)
 - MEH-342 (proposed): local dev DB init imports models before create_all() (one-line fix in _run_db_init_sync; surfaced during MEH-338 local smoke)
 
