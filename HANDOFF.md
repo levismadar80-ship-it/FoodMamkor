@@ -1,9 +1,25 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-338 PR #357 ready to merge)
+> Last updated: 2026-04-27 (MEH-349 python-multipart bump — PR open, draft)
 
-## Most recent — MEH-338 fastapi/starlette CVE bump (2026-04-27)
+## Most recent — MEH-349 python-multipart CVE bump (2026-04-27)
+
+PR: (draft, branch: claude/bump-python-multipart-aqmRO → staging)
+
+Summary:
+- Bumped python-multipart 0.0.18 → 0.0.26
+- Closes CVE-2026-24486 (path traversal/RCE, fixed in 0.0.22) + CVE-2026-40347 (DoS, fixed in 0.0.26)
+- FastAPI 0.120.1 allows >=0.0.18; constraint satisfied
+- pip-audit BEFORE: 2 python-multipart CVEs present
+- pip-audit AFTER: both gone; requests CVEs remain (deferred to MEH-340)
+- Adversarial review: 0 blocking issues; Starlette CVE-2025-62727 not applicable (running 0.49.3)
+- pytest: 148 DB-connection errors (pre-existing, no local PostgreSQL in CI env)
+
+Follow-up tickets deferred from this PR:
+- MEH-340: requests 2.32.3 → 2.33.0 (CVE-2024-47081, CVE-2026-25645)
+
+## ⏭ Previous — MEH-338 fastapi/starlette CVE bump (2026-04-27)
 
 PR: #357 (feature/meh-338-bump-fastapi-starlette → staging, draft)
 
