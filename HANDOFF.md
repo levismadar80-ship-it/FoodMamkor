@@ -1,7 +1,24 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-368 merged — 7 PRs total today)
+> Last updated: 2026-04-27 (MEH-362 Phase 1 PR open — 8 PRs today)
+
+## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking
+
+**Branch:** `feature/meh-362-npm-audit-remediation` off staging `f83dbec`. **PR:** TBD (draft).
+
+**Result:** vuln count **19 → 14** (5 fixed: 3 mod + 2 high). `npm audit fix` only — no `--force`. Bumps within same major: axios, follow-redirects, lodash, brace-expansion (×3 paths), picomatch (×2), postcss. `package.json` untouched. `package-lock.json` 37+/28-. New transitive: `proxy-from-env@2.1.0` (axios).
+
+**Verification:** Build ✅, Lint ✅ (warnings unchanged from MEH-345 baseline). Backend pytest sandbox-blocked (no fastapi env per MEH-360) — changes frontend-only, deferred to CI.
+
+**Audit-trail JSONs committed:** `.claude/audit-baseline-2026-04-27.json` + `.claude/audit-after-2026-04-27.json`.
+
+**Phase 2/3 candidates (14 remaining vulns, all need breaking upgrades):**
+- `next@16.2.4` — covers glob + next + postcss chain (own ticket)
+- `@sentry/nextjs@10.50.0` — covers uuid + sentry/webpack-plugin (own ticket)
+- `next-pwa@2.0.2` — covers workbox/rollup-plugin-terser/serialize-javascript chain (own ticket)
+
+---
 
 ## 2026-04-27 — MEH-368 (Done — PR #392)
 

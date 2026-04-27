@@ -12,6 +12,27 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking remediation
+
+`npm audit fix` (no `--force`) on `frontend/`. Vuln count **19 → 14**
+(5 fixed: 3 mod + 2 high). Bumps: axios 1.13.6→1.15.2, follow-redirects
+1.15.11→1.16.0, lodash 4.17.23→4.18.1, brace-expansion (1.x/2.x/5.x patches),
+picomatch 2.3.1→2.3.2 + 4.0.3→4.0.4, postcss 8.5.8→8.5.12. All same-major
+(no breaking). `package.json` untouched — only `package-lock.json` (37+/28-).
+New transitive: `proxy-from-env@2.1.0` (axios dep).
+
+Build ✅ PASS, Lint ✅ PASS (warnings only, matches MEH-345 baseline).
+Backend pytest deferred to CI (sandbox lacks fastapi per MEH-360); changes
+are frontend-only — no backend impact possible.
+
+Audit-trail JSON files committed: `.claude/audit-baseline-2026-04-27.json`
+(pre-fix), `.claude/audit-after-2026-04-27.json` (post-fix).
+
+Phase 2/3 (separate tickets, deferred): 14 remaining vulns all need
+breaking upgrades — `next@16` (covers glob + next + postcss chain),
+`@sentry/nextjs@10` (covers uuid + sentry/webpack-plugin), `next-pwa@2`
+(covers workbox/rollup-plugin-terser/serialize-javascript chain).
+
 ## 2026-04-27 — MEH-368 / PR #392: fix(auth): harden Apple JWKS fetch. `requests.get(apple_keys_url)` had no timeout (worker blocked 60-120s on stalled endpoint), bare `["keys"]` raised `KeyError` on unexpected shapes, no HTTP status check. Two atomic edits in `_verify_apple_token` (auth.py:955-956): `timeout=8`, `raise_for_status()`, `.get("keys")` + None guard. `TestAppleTokenVerification` 4 → 8 tests. CI all green. Surfaced during MEH-350 adversarial review.
 
 ## 2026-04-27 — MEH-369: hotfix MEH-345 (hardcoded paths + silent allowlist guard)
