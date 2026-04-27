@@ -60,6 +60,18 @@ intentional (centering idiom, carousel arrow, eye-toggle inside `dir="ltr"`,
 or geographic map control). If it's a new use case, update
 `.claude/rules/rtl.md` with the exception and its rationale.
 
+### Auto-allowlisted: `*.md` files
+
+Any file ending in `.md` is auto-allowlisted by the hook. Documentation
+files reference class names verbatim as examples (CLAUDE.md and the rule
+files in `.claude/rules/` cite known LTR-input exceptions in prose). RTL
+enforcement targets runtime CSS, not prose. Added in MEH-355 after
+MEH-342 hit this friction moving rule examples between docs.
+
+The auto-allowlist matches the trailing `.md` only (case-sensitive,
+lowercase). Other doc extensions (`.MD`, `.markdown`, `.mdx`) are not
+recognized — add them here if they appear in the repo.
+
 ## How to extend the bash safety blocklist
 
 Edit `check-bash-safety.sh` and add a new `check_pattern` call:
