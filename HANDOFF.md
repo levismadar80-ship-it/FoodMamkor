@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Last updated: 2026-04-27 (MEH-379 + MEH-380 + MEH-381 bundle in PR #399, awaiting Smadar verify)
 
+## 2026-04-27 — MEH-382: Railway redeploy retry (CI race fix)
+
+**Status:** PR draft open, separate from PR #400 (release).
+
+Race condition surfaced when Smadar's empty cache-bust push (`131c92f`) on staging hit Railway's own watch + workflow CLI redeploy simultaneously. Workflow CLI got "cannot be redeployed" → CI failure → noise blocking otherwise-clean release.
+
+Fix: `.github/workflows/deploy.yml` — wrap both Redeploy steps in 5-attempt retry loop (30s between, ~2 min max wait). Catches transient race-condition errors via regex match on Railway CLI v4.42 wording. Non-transient errors fail fast. Regex fragility tracked inline (CLI version drift could silently lose retry path).
+
+**Branch:** `feature/meh-382-fix-railway-redeploy-race`
+**Files changed:** `.github/workflows/deploy.yml` only.
+**Independent of PR #400:** the two PRs do not block each other and can land in any order.
+**FINDER → ADVERSARY → REFEREE:** 10 findings, 10 disproved.
+
 ## 2026-04-27 — MEH-379+380+381 bundle (PR #399, merged-pending-Smadar-verify)
 
 **Status:** merged-pending-Smadar-verify. Three CSP gaps fixed in single squash commit on `feature/meh-379-csp-sentry-allowlist`.
