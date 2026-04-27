@@ -21,7 +21,28 @@ Remaining warning (non-blocking): `@sentry/nextjs@8.55.1` peer dep doesn't cover
 (covered by MEH-371 — Sentry upgrade).
 
 Unexpected transitive change (package-lock only): `typescript 5.9.3 → 6.0.3`
-— pulled in by eslint-config-next@16. Project uses JS (not TS) so risk is low.
+— pulled in by eslint-config-next@16. Project uses JS (not TS); verified zero impact
+(no `tsconfig.json`, only Playwright e2e .ts files which use Playwright's own transpiler).
+
+## Vuln delta verification (post-install vs MEH-362 baseline)
+
+`npm audit` count: **14 → 12** (high `11 → 7`, moderate `3 → 5`).
+
+Sorted by `next@16` + `eslint-config-next@16`:
+- `glob` (high) — eslint-config-next transitive fix
+- `@next/eslint-plugin-next` (high) — eslint-config-next@16
+- `eslint-config-next` (high) — direct upgrade
+
+Still present (require MEH-371 + MEH-372):
+- Sentry chain: `@sentry/nextjs`, `@sentry/webpack-plugin` (2)
+- next-pwa chain: `next-pwa`, `rollup`, `rollup-plugin-terser`, `serialize-javascript`, `workbox-build`, `workbox-webpack-plugin` (6)
+- Other: `postcss`, `uuid` (2)
+
+Newly listed but not new:
+- `next` (was high, now moderate — range `>=9.3.4-canary.0`, no upstream fix yet; high CVEs ARE patched by 16.2.4)
+- `@vercel/speed-insights` (transitive only — listed because `next` has a moderate; not a separate vuln)
+
+**Conclusion:** the spec's "5 high CVEs in next" are in fact resolved (severity dropped from high → moderate). The remaining 7 high vulns all live in chains owned by MEH-371 or MEH-372. **No unexpected new vulns introduced.**
 
 ---
 
@@ -45,7 +66,7 @@ Unexpected transitive change (package-lock only): `typescript 5.9.3 → 6.0.3`
 | 6 | Monitoring | **`@sentry/nextjs@8` unsupported on Next 16** — peer dep warning at install; `withSentryConfig` in `next.config.js` is inside a try/catch that gracefully skips it | Sentry error reporting will silently degrade (no crash, just no Sentry wrapping) until MEH-371 | MEH-371 — upgrade `@sentry/nextjs` to `^10.50.0` | NICE-TO-HAVE (MEH-371) |
 | 7 | Build | **Node.js `>=20.9.0` required** — Next.js 16 engine field is `>=20.9.0` | CI uses `node-version: "20"` in workflow — need to confirm actual patch version | Verify Railway production/staging Node.js version. Node 20.18.x (current LTS) satisfies this. | LOW |
 | 8 | Build | **`fetch()` default cache changed** — 14 used `force-cache`, 15+ uses `no-store` as default | Mehamakor uses **axios** for all API calls — no native `fetch()` in app code | N/A for this codebase — axios is unaffected | N/A |
-| 9 | Build | **TypeScript 6.0.3** — pulled in as transitive dep by `eslint-config-next@16` (package-lock only) | Project uses JS/JSDoc not TypeScript — risk is low. ESLint type-checking uses TypeScript under the hood. | Monitor for any eslint TypeScript-parser errors on build | LOW |
+| 9 | Build | **TypeScript 6.0.3** — pulled in as transitive dep by `eslint-config-next@16` (package-lock only) | **Verified zero impact** (2026-04-27): no `tsconfig.json` anywhere in `frontend/`; only `.ts` files are Playwright e2e tests which use Playwright's own internal transpiler (Playwright 1.56.0 ships its own TS handling). `npx tsc --noEmit` finds no project to compile. ESLint 9 + `eslint-config-next@16` use TS for type-checking internally but expose no parser errors. | N/A — verified safe | N/A |
 | 10 | Build | **New native packages** — `sharp` (image optimization), `lightningcss-*` (CSS), `@rolldown/binding-*` (Rolldown bundler), `@unrs/resolver-*` added to lock file | These are platform binaries bundled with Next 16. Larger `node_modules`. No code changes needed. | N/A — auto-handled by Next 16 | N/A |
 
 ### N/A (verified not applicable to Mehamakor)
