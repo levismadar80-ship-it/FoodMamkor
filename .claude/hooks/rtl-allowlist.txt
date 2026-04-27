@@ -1,0 +1,9 @@
+frontend/app/map/MapClient.jsx
+frontend/components/ImageGallery.jsx
+frontend/components/Lightbox.jsx
+frontend/components/LoginPromptModal.jsx
+frontend/app/login/page.js
+frontend/app/register/page.js
+frontend/app/settings/page.jsx
+frontend/app/reset-password/page.js
+frontend/components/CategorySelector.jsx
