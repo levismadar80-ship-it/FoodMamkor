@@ -1,47 +1,46 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-345 subagents — PR open, draft)
+> Last updated: 2026-04-27 (MEH-345 merged → staging; MEH-361 PR #388 open, draft)
 
-## 2026-04-27 — MEH-345 feat(claude-code): 3 project-scoped subagents
+## 2026-04-27 — MEH-361 harden anthropic content[0].text guard
 
-**Branch:** `feature/meh-345-subagents` off staging `bf4b680`. **PR:** to be opened (draft).
+**Branch:** `feature/meh-361-harden-content-guard` off staging `78fabef`. **PR:** #388 (draft, open).
 
-**Goal:** 3 subagents in `.claude/agents/` — `verify-frontend`, `code-simplifier`, `i18n-scanner` — using Skills 2.0 eval-driven methodology. 9 eval test cases before agent bodies. Manual benchmark protocol (skill-creator not installed).
+**Goal:** MEH-351 (anthropic SDK 0.39 → 0.97) audit surfaced 2 unguarded `msg.content[0].text` accesses (bio_generator.py:125, reviews.py:84). Apply the guarded `next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")` pattern from chat.py:246 so non-text-first responses (tool_use, image, etc.) don't `AttributeError` before the surrounding fail-open path catches them.
 
-**Files written (7):**
-- `.claude/agents/verify-frontend.eval.md` + `.claude/agents/verify-frontend.md`
-- `.claude/agents/code-simplifier.eval.md` + `.claude/agents/code-simplifier.md`
-- `.claude/agents/i18n-scanner.eval.md` + `.claude/agents/i18n-scanner.md`
-- `.claude/hooks/rtl-allowlist.txt` (extracted from check-rtl.sh ALLOWLIST — 9 paths)
-- `docs/CHANGELOG.md` updated (MEH-345 entry prepended)
+**Result:** 2 files, 1 line each, minimal RHS substitution preserving `.strip()`. No behavior change for typical responses; edge cases (non-text-first / empty content) now produce empty string → existing fail-open path (bio="", review status="APPROVED") instead of a caught exception. Both modules import cleanly post-edit.
 
-**Go/no-go results (final, post-corrections):**
-| Agent | Agent strict score | Base model rate | Decision |
-|-------|-------------------|-----------------|---------|
-| verify-frontend | strict 2/3 on initial T2 (env-infeasible: no node_modules + 11 pre-existing violations); **T2 re-run in fixture-isolated env (npm ci + 17-path extended allowlist) → READY-FOR-PR strict pass → strict 3/3 confirmed** | ~50% (below 80%) | SHIP ✅ |
-| code-simplifier | 3/3 strict + clean verdict on real PR #369 (MEH-346) — 25k tokens, 0 tool uses, 2.7s | ~33% (below 80%) | SHIP ✅ |
-| i18n-scanner | 3/3 strict (T2 background task confirmed PASS post-session) | ~67% (below 80%) | SHIP ✅ |
+**Sandbox limitation (per MEH-360):** pytest baseline can't run from CC sandbox — tests need live Postgres at localhost:5432. Static-verified: modules import + guard expression returns correct value across 4 content shapes (typical, tool-then-text, empty, no-text). CI on push is the gate.
 
-**Strict 3/3 gate satisfied for all 3 agents. Pre-merge smoke sequence per F1 still required (Smadar to run on restarted session before merge).**
+**Out of scope (intentional):** chat.py:246 uses bare `b.type == "text"` (vs the more defensive `getattr` form); not harmonized here per "no while-I'm-here" — separate ticket if desired. home_product_moderation.py:181 + experience_moderation.py:187 already guarded via `for block in message.content` loop pattern; left untouched.
 
-**Decisions made this session:**
-1. `tools:` field name (not `allowed-tools:`) per live repo evidence `design-review.md:4` — all 3 agents use `tools:`.
-2. `Bash(npm:*)` restriction in agent frontmatter is advisory in Claude Code 2.1.119 — not enforced at agent level (only in `settings.json` permissions). Agent still ran grep via Bash without restriction.
-3. Agents created during a session are NOT discoverable as `subagent_type` until session restart. Evals ran via embedded-system-prompt manual protocol (general-purpose agent + embedded system prompt).
-4. Token inversion: agent is CHEAPER than base model (saves 6–9k tokens per run by eliminating scope creep).
-5. `.claude/hooks/rtl-allowlist.txt` created as supporting file. Spec referenced it; it didn't exist (allowlist was a bash array in check-rtl.sh).
-6. Staging has 11 pre-existing RTL violations (`left-1/2 -translate-x-1/2` center idiom, skip-link `right-2`) not yet in allowlist — separate ticket warranted.
+---
 
-**Discoveries for PR description:**
-- verify-frontend T2 baseline (without agent): 79 tool uses, 433 seconds, 57.5k tokens — 14× slower and 3× more expensive than agent. Build/lint both PASS on staging; 26/353 vitest tests fail (stale mocks, jsdom, .js-with-JSX). These test failures are pre-existing, unrelated to this PR.
-- code-simplifier base model: found the issue but fabricated "7 existing copies" without grep verification, used wrong output format.
+## 2026-04-27 — MEH-360 docs: document CC sandbox egress limitation
 
-**Next task:** Review + merge PR #TBD (feature/meh-345-subagents). After merge:
-- Restart session for agents to register as `subagent_type`
-- Verify `/agent verify-frontend` on a branch with intentional RTL violation → NEEDS-FIX
-- Verify `/agent verify-frontend` on clean staging → READY-FOR-PR
-- Confirm i18n T2 WITH agent eval result
+**MEH-357 follow-up — MEH-360:** Documented CC sandbox egress limitation. CC's envoy proxy blocks `*.up.railway.app` egress. All smoke verification must run from user's local machine. Reference: anthropics/claude-code#19087. Updated CLAUDE.md + docs/SMOKE-TEST.md to prevent repeat diagnosis loops.
+
+---
+
+## 2026-04-27 — MEH-345 feat(claude-code): 3 project-scoped subagents — MERGED
+
+**Branch:** `feature/meh-345-subagents`. **PR:** #387 (merged to staging).
+
+**What shipped:** 3 subagents in `.claude/agents/` — `verify-frontend`, `code-simplifier`, `i18n-scanner` — using Skills 2.0 eval-driven methodology. 9 eval test cases before agent bodies. `.claude/hooks/rtl-allowlist.txt` supporting file.
+
+**Go/no-go (final):**
+| Agent | Agent score | Base rate | Decision |
+|-------|-------------|-----------|---------|
+| verify-frontend | 3/3 strict (T2 re-run in fixture-isolated env) | ~50% | SHIP ✅ |
+| code-simplifier | 3/3 + real PR #369 clean verdict | ~33% | SHIP ✅ |
+| i18n-scanner | 3/3 strict | ~67% | SHIP ✅ |
+
+**Post-merge action required (Smadar):** Restart session → verify `Agent(subagent_type="verify-frontend")` resolves.
+
+**Follow-up tickets (Smadar to open):** rtl-allowlist.txt sync automation; 11 pre-existing RTL violations on staging; agent-level Bash restriction security implications; i18n greenfield migration (2,284 strings / 124 files); i18n-T2 budget overrun (372s).
+
+---
 
 ## 2026-04-27 — MEH-346 feat(claude-code): /permissions allowlist
 

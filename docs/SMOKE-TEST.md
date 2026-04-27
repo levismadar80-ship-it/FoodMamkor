@@ -1,6 +1,6 @@
 # Smoke Test — post-deploy security-posture verification (MEH-259)
 
-Seven assertions against a running backend. Runs after every production
+Six assertions against a running backend. Runs after every production
 deploy. Exits 0 if all pass, 1 if any fail, 2 if misconfigured.
 
 - Script: `scripts/smoke_test.py` (Python, logic)
@@ -76,38 +76,28 @@ Look at:
 - `backend/app/routers/auth.py::login` — still has `@limiter.limit("5/minute")`?
 - `backend/app/rate_limit.py::get_real_client_ip` — same return value for same XFF?
 
-### Check 2 fails (rate-limit isolation)
-**This is the MEH-256 regression.** Rate limits are being keyed on a
-value that is constant across all users (Railway's internal proxy IP,
-most likely). Distinct real users → one bucket.
-
-Look at:
-- Is `TRUSTED_PROXY=1` set on the Railway service? If unset, `get_real_client_ip` falls through to `get_remote_address` → bug.
-- Is the deployed commit recent enough to include `get_real_client_ip`? (`git log --oneline -5 origin/staging` — should include `2938ec9` or later.)
-- `docs/INCIDENTS/2026-04-staging-deploy-drift.md` covers the deploy-drift pattern.
-
-### Check 3 fails (IDOR)
+### Check 2 fails (IDOR)
 Someone removed the status filter from `GET /producers/{id}` or the
 deploy is running pre-MEH-254 code.
 
 Look at `backend/app/routers/producers.py::get_producer` — should have
 the post-lookup admin+owner check.
 
-### Check 4 fails (auth required)
+### Check 3 fails (auth required)
 Someone removed the `get_current_user` dependency from `/auth/me`, or
 Starlette middleware order changed so the dep doesn't run.
 
-### Check 5 fails (security headers)
+### Check 4 fails (security headers)
 The headers middleware in `backend/app/main.py::add_security_headers`
 was removed, mis-ordered, or an upstream middleware is now stripping
 response headers.
 
-### Check 6 fails (CORS strict)
+### Check 5 fails (CORS strict)
 `CORS_ORIGINS` env var on Railway got set to `*` OR includes a domain
 that shouldn't be there. Most dangerous when combined with
 `allow_credentials=True`.
 
-### Check 7 fails (password validation)
+### Check 6 fails (password validation)
 `UserRegister.password` lost its `Field(min_length=8)` constraint, OR
 the deploy is running pre-MEH-248 code.
 
@@ -170,13 +160,23 @@ Not wired into `.github/workflows/deploy.yml` yet. The plan:
    blocks the pipeline from claiming success
 3. Pair with MEH-244 (production-drift probe) for full coverage
 
+## CC sandbox limitation
+
+**Where to run smoke tests:** Smoke tests must execute from the user's local machine (or CI runner with internet egress) — NOT from Claude Code's sandbox. CC's egress proxy blocks `*.up.railway.app` domains. The smoke command is:
+
+```bash
+scripts/smoke_test_prod.sh https://foodmamkor-staging.up.railway.app
+```
+
+Expected: 6/6 (after MEH-357). If CC reports running smoke against Railway URL, do not trust the result without verifying from local.
+
 ## Related
 
 - MEH-259 (this feature)
-- MEH-256 → check 2 regression target (rate-limit bypass)
-- MEH-254 → check 3 regression target (IDOR)
-- MEH-248 → check 7 regression target (password validation)
+- MEH-254 → check 2 regression target (IDOR)
+- MEH-248 → check 6 regression target (password validation)
 - MEH-244 → production deploy drift this script will surface
+- MEH-360 → CC sandbox egress limitation (smoke must run from local machine)
 - `scripts/check_api_contract.py` — sibling verification tool that
   diffs frontend API calls against backend routes (MEH-245). Different
   scope — that one catches endpoint drift, this one catches security
