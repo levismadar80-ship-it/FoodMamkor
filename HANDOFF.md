@@ -1,7 +1,35 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-342 CLAUDE.md modular split — PR open, draft)
+> Last updated: 2026-04-27 (MEH-346 /permissions allowlist — PR open, draft)
+
+## 2026-04-27 — MEH-346 feat(claude-code): /permissions allowlist
+
+**Branch:** `feature/meh-346-permissions-allowlist` off staging `b481f81`. **PR:** to be opened (draft).
+
+**Goal:** Add `permissions` block to `.claude/settings.json` with 38 allowed Bash patterns + 14 deny patterns. Eliminates 5-10 confirmation prompts per session for safe commands (npm run build, pytest, git status) without unsafe `--dangerously-skip-permissions`.
+
+**Decisions made this session:**
+1. **Drop `Bash(npm install:*)` from allow** (Option A). `--ignore-scripts` wrapper unenforceable by permission system; one-time prompt is acceptable friction. Postinstall script supply-chain risk avoided.
+2. **Omit ASK list.** Allow + deny only per spec. If npm install friction proves annoying, separate follow-up ticket.
+3. **Add `Bash(git commit:*)` to allow.** Existing PreToolUse hook fires CLAUDE.md update reminder regardless (hooks before permissions); permission prompt on every commit = redundant friction.
+
+**Result:** settings.json 8996 → 10487 bytes (+1491). `permissions` block added as new top-level sibling AFTER `hooks`. `hooks` field byte-identical (jq diff empty). Allow count: 38 (1 more than spec's 37; +`Bash(git commit:*)`). Deny count: 14 (matches spec).
+
+**Count discrepancy flagged:** Smadar's GO message said "Final allow count: 36 entries (was 35)" — actual spec proposal had 37 entries, +git commit = 38. Off by 2 in both directions; proceeded with 38 (verbatim spec + git commit). Surface in PR for prune-or-accept call.
+
+**Verification (all pass):**
+- `jq .` parses clean ✓
+- `diff jq hooks before/after` → empty ✓
+- `diff jq keys before/after` → only +"permissions" ✓
+- `wc -c` 8996 → 10487 ✓
+- `jq '.permissions.allow | length'` = 38 ✓
+- `jq '.permissions.deny | length'` = 14 ✓
+- Single Edit, atomic, wide anchor (SessionStart key + closing braces) ✓
+
+**Sandbox limitation:** cannot trigger an actual permission prompt to verify scenario 1 (live Claude Code session required). Scenarios 2-4 verifiable via dry-reasoning against settings.json content.
+
+---
 
 ## 2026-04-27 — MEH-353 + MEH-357 (post-MEH-351 batch)
 
