@@ -42,6 +42,16 @@ summary + pointer here.
    scope, fuzzy acceptance criteria, or a Linear/issue title with no
    body — enter interview mode: ask 2–5 targeted questions first, then
    plan. Don't guess at requirements, don't code-first.
+   - **Pre-go scope-match check (MEH-342 lesson).** Before presenting
+     any numbered plan that references a Linear issue: fetch the
+     current Linear description. Compare every requirement in the spec
+     against the proposed plan. For each spec requirement, confirm it
+     appears in the plan — or surface the gap explicitly:
+     *"Spec says X, plan proposes Y — which scope do you want?"*
+     Never silently drop a spec requirement and never assume scope
+     reduction is implicit approval. "go" approves the plan presented,
+     not the Linear spec; if they diverge, the divergence must be
+     named before "go" is given.
 5a. **Adversarial review before every merge to staging.** See
    [.claude/rules/testing.md](./testing.md).
 5. **Tests before implementation.** See
