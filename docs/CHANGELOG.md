@@ -58,6 +58,13 @@ retroactively confirm MEH-371 + MEH-376 once DSN wired.
 
 ## 2026-04-27 — MEH-100: feat(about) — replace Leaf placeholder with founder photo. Path C editorial 3:4 portrait (280×373 / 360×480 md), Cloudinary c_fill,g_auto,ar_3:4, next/image with imgFailed Leaf fallback. Build ✅.
 
+## 2026-04-27 — MEH-370 PHASE B reconnaissance (codemods deferred)
+
+PHASE A + breaking-changes-inventory committed via PR #395 draft.
+ERESOLVE blocker discovered: `@sentry/nextjs@8.55.1` peer dep rejects
+`next@16`. MEH-371 elevated to blocker; MEH-370 paused on
+`feature/meh-370-next-16-upgrade` until Sentry v10 ships.
+
 ## 2026-04-27 — PR #394: fix(docs): revert premature MEH-351 CHANGELOG entry. Entry was written before PR #364 merged; `uv.lock` confirmed `anthropic==0.39.0` on staging HEAD. Placeholder replaces full entry until #364 actually merges.
 
 ## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking remediation

@@ -86,6 +86,14 @@ real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
 
 **Deferred:** imgFailed browser fallback visual test (CC sandbox can't open browser) — verify on Vercel preview by temporarily breaking public_id.
 
+## 2026-04-27 evening — MEH-370 paused, MEH-371 elevated
+
+PHASE B reconnaissance complete on MEH-370 (PR #395 draft).
+ERESOLVE blocker on `@sentry/nextjs@8.55.1` vs `next@16` (peer dep accepts
+`next@^13 || ^14 || ^15-rc` only). MEH-371 bumped Medium → High, runs first.
+PHASE A baselines + 6 MUST-FIX inventory preserved on
+`feature/meh-370-next-16-upgrade`. Resume after MEH-371 merges.
+
 ## 2026-04-27 — MEH-370 Phase A + B reconnaissance complete (codemods deferred)
 
 **PR #395 draft.** Branch: `feature/meh-370-next-16-upgrade`.
