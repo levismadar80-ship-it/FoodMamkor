@@ -86,6 +86,37 @@ real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
 
 **Deferred:** imgFailed browser fallback visual test (CC sandbox can't open browser) — verify on Vercel preview by temporarily breaking public_id.
 
+## 2026-04-27 — MEH-370 Phase A + B reconnaissance complete (codemods deferred)
+
+**PR #395 draft.** Branch: `feature/meh-370-next-16-upgrade`.
+
+Phase A baseline captured: build PASS (Next 14), lint PASS, audit-pre 14 vulns.
+Phase B steps 1–2 done: `npm install next@16.2.4 eslint-config-next@16 eslint@9` passed
+(eslint@9 added to spec command — peer dep enforcement). 6 MUST-FIX items inventoried.
+Vuln delta: 14 → 12 (3 sorted + 1 reclassified high→moderate; not 7 as spec stated).
+
+**Decisions made this session:**
+- Option A for next-pwa: disable `withPWA` wrapper in MEH-370 PR; MEH-372 reactivates
+- Codemods C1–C4 deferred to next session
+
+**Resume next session — codemods in this order (1 commit each):**
+1. C1 — `npx @next/codemod@latest next-async-request-api .` (8 call sites)
+2. C2 — skip (metadata-to-viewport already separated in app/layout.js:97)
+3. C3 — manual: migrate `.eslintrc.json` → `eslint.config.js`; lint script `eslint .`
+4. C4 — manual: disable `withPWA` (Option A) + `experimental: { turbopack: false }` in next.config.js
+5. `npm run build` — must pass
+6. `npm run lint` — must pass
+7. Phase C: Lighthouse + visual regression + manual smoke
+8. CHANGELOG + HANDOFF + mark PR ready-for-review
+
+**Stop conditions for next session:**
+- Any codemod breaks build → STOP, do not continue
+- C4 Turbopack disable doesn't fix Sentry/webpack conflict → investigate, do not paper over
+- Lighthouse delta >5% → STOP, revert
+- Any auth flow broken in manual smoke → STOP
+
+Inventory: `docs/upgrade-baselines/meh-370/breaking-changes-inventory.md`
+
 ---
 
 ## 2026-04-27 — PR #394: CHANGELOG doc integrity fix (MEH-351 revert)

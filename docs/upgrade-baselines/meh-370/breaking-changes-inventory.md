@@ -44,6 +44,16 @@ Newly listed but not new:
 
 **Conclusion:** the spec's "5 high CVEs in next" are in fact resolved (severity dropped from high → moderate). The remaining 7 high vulns all live in chains owned by MEH-371 or MEH-372. **No unexpected new vulns introduced.**
 
+### MEH-370 success criteria (revised)
+
+Original spec stated: "npm audit --audit-level=high: 0 high vulns after upgrade (was 11)".
+This is not achievable in MEH-370 alone — the Sentry and next-pwa chains (7 high) require MEH-371 and MEH-372.
+
+**Revised success criteria for MEH-370 merge gate:**
+- `npm audit` high count ≤ 7 (from 11) — Sentry + next-pwa chains remain but are tracked
+- Specifically: 3 vulns removed (glob, @next/eslint-plugin-next, eslint-config-next) + next reclassified from high → moderate
+- The original "0 high vulns" target becomes the MEH-371+MEH-372 combined exit criterion, not MEH-370's alone
+
 ---
 
 ## Breaking Changes Table
