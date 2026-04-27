@@ -12,6 +12,8 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-27 — MEH-349: feat(security): bump python-multipart 0.0.18 → 0.0.26 (CVE-2026-24486 path-traversal/RCE, CVE-2026-40347 DoS) (#359). FastAPI 0.120.1 bound >=0.0.18 satisfied. Blast radius: upload.py + admin.py UploadFile routes only; magic-byte validation + UploadFile API unchanged. pip-audit AFTER: both CVEs gone; requests CVEs deferred to MEH-350.
+
 ## 2026-04-27 — MEH-341: feat(hooks): deterministic Claude Code hooks — RTL guard + bash safety + session-start context injection (#358). Three bash hook scripts under `.claude/hooks/`: `session-start.sh` (SessionStart — injects branch + HANDOFF tail into context on every session start), `check-rtl.sh` (PreToolUse Edit|Write|MultiEdit — blocks physical `left-*`/`right-*`/`ml-*`/`mr-*` Tailwind classes in non-allowlisted files, exit 2), `check-bash-safety.sh` (PreToolUse Bash — blocks DDL and `rm -rf`, exit 2). All fail-open if jq missing. `.gitattributes` LF enforcement. `CLAUDE.md` `/loop` section. 9 hooks total. MultiEdit bypass caught + fixed via adversarial review. 12/12 tests.
 
 ## 2026-04-27 — MEH-338: bump fastapi 0.115.6 → 0.120.1; starlette 0.41.3 → 0.49.3 transitively (CVE-2025-62727 defense-in-depth, CVE-2025-54121 reachable fix); annotated-doc 0.0.4 new transitive (#357)
