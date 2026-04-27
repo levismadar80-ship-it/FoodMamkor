@@ -1,9 +1,19 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-350 closed, MEH-368 backlog tracked — 6 PRs merged today)
+> Last updated: 2026-04-27 (MEH-368 merged — 7 PRs total today)
 
-## 2026-04-27 — MEH-350 + MEH-368 (post-batch)
+## 2026-04-27 — MEH-368 (Done — PR #392)
+
+**MEH-368 (Done — PR #392, squash a0c9123, merged 2026-04-27):**
+Hardened Apple OAuth public-key fetch in auth.py:955-956: `timeout=8`
+on `requests.get` (prevents indefinite worker block), `raise_for_status()`
+(4xx/5xx → HTTPError, caught by existing fail-open), `.get("keys")` +
+None guard (replaces bare `["keys"]` KeyError risk). `TestAppleTokenVerification`
+grown 4 → 8 tests. CI: all 7 checks green. Google OAuth path untouched.
+Surfaced during MEH-350 adversarial review.
+
+## 2026-04-27 — MEH-350 + MEH-368 (pre-merge context)
 
 **MEH-350 (Done — PR #389):** Bumped requests 2.32.3 → 2.33.1.
 Blast radius dependents (twilio/resend/google-auth/cloudinary)
@@ -11,10 +21,6 @@ verified compatible via uv lock graph + manual endpoint tests.
 pip-audit clean (resolved CVE-2024-47081 + CVE-2026-25645).
 Adversarial review: zero REFEREE-confirmed issues, 2 pre-existing
 fragilities surfaced and tracked as MEH-368.
-
-**MEH-368 (Backlog, Low):** Harden Apple OAuth public-key fetch
-in auth.py:955-956 — add timeout=8 + raise_for_status + KeyError
-guard. Pre-existing, surfaced during MEH-350 adversarial review.
 
 **Manual endpoint verifications (user-executed, browser):**
 - Google OAuth login flow ✓
