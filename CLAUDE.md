@@ -175,6 +175,23 @@ Long-form Mermaid diagrams (auth-flow / db-schema / api-routes) live in [.ai/dia
 ## Vibe Coding Guardrails (MEH-128)
 `.claude/pre-edit-guard.js` (PreToolUse hook) warns non-blocking on edits to central components. 4-step protocol: [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md). Emergency skips: [docs/EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md).
 
+## /loop — usage patterns
+
+`/loop` runs prompts on a cron interval. Each iteration = full Claude Code session = quota usage. Use on-demand, never always-on.
+
+**Approved patterns:**
+- Deploy babysit: `/loop check Railway /health, stop after 3x 200 OK`
+- PR CI watch: `/loop 5m check gh pr checks <PR>` — Esc when green
+- One-shot poll: `/loop 10m check if migration finished`
+
+**Forbidden:**
+- Always-on monitors (production observability → use Sentry/Vercel instead)
+- `/loop` with no exit condition
+- 5+ concurrent loops in same session
+
+Tasks auto-expire after 7 days.
+
 ## How to update this file
 - Cap: **≤ 150 lines**. If you need more space → domain rule goes in `.claude/rules/`; long-form context goes in `docs/`. Never back here.
 - Write `עדכן CLAUDE.md: [decision]` to request an update — only structural decisions land here, not session work (that goes in commit messages or [docs/CHANGELOG.md](./docs/CHANGELOG.md)).
+- Note: file is currently over the 150-line cap (needs splitting into `.claude/rules/` — tracked separately, not in scope here).

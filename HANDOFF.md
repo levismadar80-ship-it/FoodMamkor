@@ -1474,6 +1474,7 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 - #264 — uv migration (claude/migrate-pip-to-uv-8p7aT) ✅
 
 ## Open PRs
+- MEH-341 — Claude Code hooks (feature/meh-341-claude-code-hooks) — **THIS SESSION** (draft, CI pending)
 - #265 — MEH-236: CardHeart can't undo favorite (draft)
 - #266 — MEH-187: Vercel Speed Insights (draft)
 - #267 — MEH-88: products.image_url + CRUD — all CI green ✅ (draft)
@@ -1482,13 +1483,29 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 - #272 — MEH-83: Lightbox on gallery images (draft, CI running)
 - #274 — MEH-84: GPS button on /map (draft, CI queued)
 
+## Current branch
+`feature/meh-341-claude-code-hooks` (renamed from `claude/add-code-hooks-wru95`)
+
+## What's done (MEH-341)
+- `.claude/hooks/session-start.sh` — SessionStart context injection (branch + CHANGELOG + HANDOFF tail)
+- `.claude/hooks/check-rtl.sh` — PreToolUse RTL guard (blocks physical left-*/right-*/ml-*/mr-*, allowlist of 9 files)
+- `.claude/hooks/check-bash-safety.sh` — PreToolUse Bash guard (blocks DROP TABLE / rm -rf / etc.)
+- `.claude/hooks/README.md` — disable + allowlist documentation
+- `.claude/settings.json` — merged 3 new hooks (SessionStart + 2 PreToolUse), 8 existing hooks preserved
+- `.gitattributes` — `*.sh text eol=lf` for Windows Git Bash compatibility
+- `CLAUDE.md` — `/loop usage patterns` section appended
+- `docs/CHANGELOG.md` — Unreleased entry added
+- All 9 manual tests passed (3 per hook), all hooks run <100ms
+
 ## Next task
+- Merge MEH-341 PR after CI green + adversarial-review
 - Run `/adversarial-review` on PR #311 → unmark draft → request review → merge
 - Open MEH-XXX: "Add `alembic check` to CI — catches ORM/migration drift that `alembic upgrade head` misses"
 - MEH-86: Infinite scroll on /producers — BLOCKED until ≥50 producers in DB
 - MEH-205: /search page redesign (discovery-first) — next feature in queue
 - Review and merge #265 → #268 to staging (older open PRs, still valid)
 - Promote staging → main (production is behind)
+- File separate issue: CLAUDE.md is at 197 lines (over 150-line cap) — needs splitting into `.claude/rules/`
 
 ## Key decisions (don't revisit)
 | Decision | Reason | Date |
