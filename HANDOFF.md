@@ -1,7 +1,18 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-362 Phase 1 PR open — 8 PRs today)
+> Last updated: 2026-04-27 (PR #394 merged — doc integrity fix; 9 PRs today)
+
+## 2026-04-27 — PR #394: CHANGELOG doc integrity fix (MEH-351 revert)
+
+**Done — squash `bfb4596`:** Reverted premature CHANGELOG entry for MEH-351.
+Entry was written before PR #364 actually merged. Verified: `uv.lock` on
+staging HEAD still pins `anthropic==0.39.0`. PR #364 is open/draft, needs
+rebase onto current staging before it can merge.
+
+**Next on MEH-351 / PR #364:** rebase `feature/meh-351-bump-anthropic-0.97.0`
+onto staging HEAD (67+ commits behind), re-verify breaking-changes list, push,
+wait for CI, merge. CHANGELOG entry to be written at that point.
 
 ## 2026-04-27 — MEH-362 Phase 1: npm audit non-breaking
 
