@@ -1,7 +1,72 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-379 + MEH-380 + MEH-381 bundle in PR #399, awaiting Smadar verify)
+> Last updated: 2026-04-28 (MEH-370 PHASE 0 + 0.5 complete — PHASE 1 unblocked)
+
+## 2026-04-28 — MEH-370 PHASE 0 + 0.5 complete, PHASE 1 unblocked
+
+**Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (draft, stays draft)
+**Tip SHA:** `3477f18`
+**Divergence:** 8 commits ahead of staging / 8 commits behind staging
+
+### Commits ahead of staging (oldest → newest)
+- `d13dc78` chore(meh-370): Phase A — capture Next 14.2.35 upgrade baseline
+- `336860e` ci: trigger re-run after transient runner failure
+- `146cd3a` ci: trigger pr-checks re-run
+- `26aa663` chore(meh-370): Phase B step 1-2 — install next@16.2.4 + breaking changes inventory
+- `c671da9` docs(meh-370): add MUST-FIX #6 — Turbopack/webpack conflict to inventory
+- `a129b8f` docs(meh-370): close 4 pre-codemod unknowns
+- `a2d34d2` docs(meh-370): session close — vuln success criteria + HANDOFF
+- `3477f18` docs: pause MEH-370 — MEH-371 blocker
+
+### Commits behind staging (absorbed since branch cut)
+MEH-100, MEH-371 (Sentry v10), MEH-379+380+381 (CSP), MEH-382 (Railway retry).
+`next.config.js` was modified on all of MEH-371/379/380/381 — feature branch
+never touched it, so rebase will take staging's version clean (no conflict).
+
+### Current `frontend/package.json` on branch
+```
+"next":                "^16.2.4"     ← upgraded (commit 26aa663)
+"eslint-config-next":  "^16.2.4"     ← upgraded (commit 26aa663)
+"next-pwa":            "^5.6.0"      ← unchanged (disabled in C4)
+"@sentry/nextjs":      "^8.0.0"      ← OLD — staging has ^10.50.0 (MEH-371)
+```
+
+### Lockfile state: CLEAN
+lockfileVersion 3; single `"node_modules/next"` entry; no nested duplicate
+resolutions. PHASE 1 plan is rebase + npm install (no rm needed).
+
+### Codemod execution plan (locked)
+| ID | Codemod | Notes |
+|---|---|---|
+| C1 | `npx @next/codemod@latest next-async-request-api .` | 8 call sites: 6 `params` + 2 `searchParams` — enumerated in `breaking-changes-inventory.md` |
+| C2 | metadata-to-viewport | **SKIP** — `app/layout.js:97` already exports `viewport` separately; no-op transform |
+| C3 | ESLint 9 flat config | Manual: delete `.eslintrc.json`, create `eslint.config.js`, change lint script to `eslint .` |
+| C4 | next-pwa disable + Turbopack passthrough | Option A confirmed: disable `withPWA` wrapper; `experimental: { turbopack: false }`; full re-enable deferred to MEH-372 |
+
+### PHASE 1 next-session plan
+```
+a. git fetch --prune origin
+b. git checkout feature/meh-370-next-16-upgrade
+c. git rebase origin/staging
+d. Conflicts expected:
+     package.json       — additive: keep staging @sentry/nextjs@^10.50.0
+                          AND branch next@^16.2.4 + eslint-config-next@^16.2.4
+     package-lock.json  — accept either side to resolve git conflict,
+                          then regenerate via npm install (no rm needed)
+     next.config.js     — NO CONFLICT (branch never touched it; take-staging clean)
+e. npm install — watch for peer-dep surprises (next@16 + sentry@10 + eslint@9)
+f. git push --force-with-lease to PR #395
+g. WAIT for explicit "go" before running any codemod
+```
+
+### Open question for Smadar before PHASE 1
+Update MEH-370 Linear description to include C3 (ESLint flat config) + C4
+(next-pwa disable Option A)? Current PHASE B description only mentions
+`npx @next/codemod` — doesn't reflect the two manual migrations discovered
+during PHASE A reconnaissance. Confirm scope before executing.
+
+---
 
 ## 2026-04-27 — MEH-382: Railway redeploy retry (CI race fix)
 
