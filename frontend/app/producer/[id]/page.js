@@ -13,7 +13,8 @@ async function getProducer(id) {
   }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const producer = await getProducer(params.id);
   return buildProducerMetadata(producer);
 }
@@ -30,7 +31,8 @@ function ProducerJsonLd({ producer }) {
   );
 }
 
-export default async function ProducerPage({ params }) {
+export default async function ProducerPage(props) {
+  const params = await props.params;
   const producer = await getProducer(params.id);
 
   return (
