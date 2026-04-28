@@ -6,8 +6,8 @@
 ## 2026-04-28 — MEH-370 PHASE 0 + 0.5 complete, PHASE 1 unblocked
 
 **Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (draft, stays draft)
-**Tip SHA:** `3477f18`
-**Divergence:** 8 commits ahead of staging / 8 commits behind staging
+**Tip SHA:** `b2b7d97` (post-handoff-commit; pre-rebase baseline)
+**Divergence:** 9 ahead / 8 behind (the +1 is this HANDOFF commit itself)
 
 ### Commits ahead of staging (oldest → newest)
 - `d13dc78` chore(meh-370): Phase A — capture Next 14.2.35 upgrade baseline
