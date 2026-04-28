@@ -1,7 +1,44 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-28 (MEH-370 PHASE 2 complete — build GREEN, PR #395 ready for review)
+> Last updated: 2026-04-28 (MEH-372 — next-pwa removed, vulns 9 → 4)
+
+## 2026-04-28 — MEH-372: next-pwa removed (Path E)
+
+**Branch:** `feature/meh-372-next-pwa-re-enable` — **PR #403** (open, non-draft)
+**Tip SHA:** `6d19506`
+**Vuln delta:** 9 → 4 (5 high cleared; 4 moderate postcss chain remains)
+**Build:** ✅ GREEN (45 static pages, 22.2s compile)
+
+### Decision: Path E (remove, don't replace)
+
+PHASE 0 package research found NO PWA package supports Turbopack as of March 2026:
+- `next-pwa@5.6.0` (upstream) — abandoned 2022-08, webpack-only
+- `@ducanh2912/next-pwa@10.2.9` — actively maintained, but explicit `webpack: '>=5.9.0'` peerDep
+- `@serwist/next@9.5.7` — actively maintained, depends on `@serwist/webpack-plugin`
+
+Re-enabling any would require `next build --webpack` opt-out, undoing MEH-370's Turbopack adoption.
+
+**Decisive context:** PWA infra (MEH-54) was built but never activated in prod. VAPID keys never set in Railway → `push.py` fail-open guard means **0 push notifications ever sent since launch**. The 5 high vulns were paying interest on dead code.
+
+### Changes
+
+- `frontend/package.json` — removed `"next-pwa": "^5.6.0"`
+- `frontend/package-lock.json` — workbox/rollup/serialize-javascript chain dropped (-2820 lines)
+- `frontend/next.config.js` — removed 14 lines (MEH-370 C4 commented `withPWA` block + the marker comment near `let finalConfig`); Sentry wrap untouched (line 138 / `module.exports = finalConfig` line 151); CSP block untouched
+- `frontend/worker/index.js` — header rewritten to flag dead-code status + re-enable instructions; push/notificationclick handler bodies preserved verbatim
+
+### Preserved (scaffolding for future re-enable)
+
+- `worker/index.js` push handlers
+- `backend/app/routers/push.py` + `services/push_notification.py`
+- VAPID env-var plumbing in backend config
+
+### Future re-enable conditions
+
+Open new ticket when any of the following lands: `@serwist/next` native Turbopack support (preview 10.x track), Turbopack-first PWA package, or first-party Next.js PWA primitive.
+
+---
 
 ## 2026-04-28 — MEH-370 PHASE 2 complete — build GREEN, ready for review
 
