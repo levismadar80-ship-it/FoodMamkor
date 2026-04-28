@@ -1,7 +1,44 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-28 (MEH-370 PHASE 1 complete — codemods queued for next session)
+> Last updated: 2026-04-28 (MEH-370 PHASE 2 complete — build GREEN, PR #395 ready for review)
+
+## 2026-04-28 — MEH-370 PHASE 2 complete — build GREEN, ready for review
+
+**Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (Ready for Review)
+**Final tip:** `ca01099`
+**Divergence:** 13 ahead of staging / 0 behind
+**Build:** ✅ GREEN — Next 16.2.4 Turbopack, 45 static pages, compiled in 11.1s
+**Sentry wrap intact:** `next.config.js:165` `module.exports = finalConfig` — `withSentryConfig` chain preserved (MEH-371 + MEH-379+380+381 observability live)
+
+### Codemod outcomes
+
+| ID | Status | Detail |
+|---|---|---|
+| **C1** next-async-request-api | ✅ Commit `63681aa` | 5 files transformed (vs. 8 PHASE 0 prediction; 3 were false-positive scan targets). Pattern: `function ({ params })` → `async function (props) { const params = await props.params; }`. Files: `app/[slug]/page.js`, `app/group-buys/[id]/page.js`, `app/p/[slug]/page.js`, `app/producer/[id]/page.js`, `app/producers/page.jsx`. Codemod also reported 1 parse error on `e2e/rtl.spec.ts` (malformed JSDoc trips babel TS parser; out of C1 scope, file works in Playwright). |
+| **C2** metadata-to-viewport | ⏭️ SKIP | `app/layout.js:97` already exports `viewport` separately — no-op. |
+| **C3** ESLint 9 flat config | ⏸️ DEFERRED | FlatCompat (`@eslint/eslintrc@3.3.5`) + `eslint-config-next@16.2.4` produces circular-JSON crash inside `config-validator.js:308` (`configs.flat → plugins → react` cycle). Both `compat.extends()` and `compat.config()` API surfaces hit the same validator path. Reverted fully — `.eslintrc.json` restored, `package.json` lint script remains `"next lint"` (broken on Next 16). **Needs follow-up ticket.** |
+| **C4** next-pwa disable + Turbopack passthrough | ✅ Commit `ca01099` | Option A applied: `next.config.js` lines 1–7 commented (require block preserved verbatim for restoration), line 144 `withPWA(nextConfig)` → `nextConfig`, line 165 `module.exports = finalConfig` UNTOUCHED. PWA scope (manifest, install prompt, push notifications via `worker/index.js` MEH-54) disabled until **MEH-372** ships Turbopack-compatible alternative. Existing `public/sw.js` not regenerated; clients re-cache naturally. |
+
+### Vuln state
+
+**9 total** (5 high + 4 moderate, 0 critical, 0 low):
+
+- **5 high — `next-pwa` workbox/rollup chain** (next-pwa, workbox-webpack-plugin, workbox-build, rollup-plugin-terser, serialize-javascript). Still listed because `next-pwa@5.6.0` remains in `package.json` `dependencies` (forbidden by PHASE 2 scope to remove). **MEH-372 will `npm uninstall next-pwa` and resolve all 5.**
+- **4 moderate — `postcss` propagation chain** (postcss self, next direct, @sentry/nextjs propagation, @vercel/speed-insights propagation). `next@16.2.4` bundles old postcss internally. **Needs follow-up ticket.**
+
+### Known follow-ups (Smadar to open in Linear)
+
+1. **ESLint 9 flat config migration** — research `@eslint/eslintrc` validator bypass paths, or wait for `eslint-config-next` native flat-config entrypoint. Lint script must change from `"next lint"` to `"eslint ."` once unblocked.
+2. **postcss vuln chain remediation** — depends on next minor bumping postcss internally, or pinning a postcss override in package.json.
+
+### What CI will exercise on PR #395
+
+- `npm ci` (lockfile from `ef018e6` regen) — no ERESOLVE expected
+- `npm run build` — should pass (verified locally GREEN)
+- `npm run lint` — will FAIL with "no such directory: lint" because lint script is broken on Next 16. Pre-existing acceptable failure mode tracked in C3 deferral.
+
+---
 
 ## 2026-04-28 — MEH-370 PHASE 1 complete — rebase done, build/lint red as expected
 
