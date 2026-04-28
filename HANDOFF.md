@@ -1,7 +1,48 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-28 (MEH-370 PHASE 0 + 0.5 complete — PHASE 1 unblocked)
+> Last updated: 2026-04-28 (MEH-370 PHASE 1 complete — codemods queued for next session)
+
+## 2026-04-28 — MEH-370 PHASE 1 complete — rebase done, build/lint red as expected
+
+**Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (draft, stays draft through PHASE 2)
+**Tip SHA:** `ef018e6` (post-rebase + lockfile regen)
+**Divergence:** 11 ahead of staging / 0 behind
+
+### What landed
+- Rebased onto `origin/staging` (`7c3051e`) — 10 branch commits replayed clean
+- Conflicts resolved: `package.json` (auto-additive), `package-lock.json` (--theirs then regen), `HANDOFF.md` (×3 commits, top-of-file prepend pattern), `docs/CHANGELOG.md` (×1 commit)
+- `next.config.js` — **no conflict** (matches PHASE 0 prediction; staging's version taken clean)
+- `npm install` — clean, **0 ERESOLVE**, 891 packages, peer-dep matrix `next@16 + @sentry/nextjs@10 + eslint@9` resolves cleanly
+- 1 follow-on commit `chore(meh-370): regen lockfile post-rebase` for the regenerated `package-lock.json` (+1017/-709)
+
+### Build / lint state (both RED, both predicted)
+- **Build RED** — Turbopack/webpack conflict from `next-pwa` webpack config. Predicted as MUST-FIX #6 in PHASE 0 inventory. **Queued for C4** (disable `withPWA` wrapper, Option A).
+- **Lint RED** — `next lint` subcommand removed in Next 16; treats `lint` as directory arg. **Queued for C3** (`.eslintrc.json` → `eslint.config.js`, script → `eslint .`).
+
+### Vuln state
+- **Total: 9** (5 high, 4 moderate, 0 critical, 0 low)
+- **5 high** — `next-pwa` workbox/rollup chain: `next-pwa → workbox-webpack-plugin → workbox-build → rollup-plugin-terser → serialize-javascript`. **C4 disable resolves all 5.**
+- **4 moderate** — postcss propagation chain: `postcss` (root) → `next` (direct via postcss) → `@sentry/nextjs` + `@vercel/speed-insights` (direct via next). **NOT resolvable in MEH-370 scope** (next@16.2.4 bundles old postcss internally) → needs follow-up ticket.
+- No new vulns from next@16 or react transitive surface.
+
+### PHASE 2 plan (next session)
+Recommend split across 3 sub-sessions, not bundled — each codemod is a clean commit boundary:
+- **C1** — `npx @next/codemod@latest next-async-request-api .` (8 sites: 6 `params` + 2 `searchParams`, enumerated in `breaking-changes-inventory.md`)
+- **C3** — manual ESLint 9 flat config: delete `.eslintrc.json`, create `eslint.config.js`, change lint script to `eslint .`
+- **C4** — manual: disable `withPWA` wrapper in `next.config.js`; add `experimental: { turbopack: false }` passthrough; full re-enable deferred to MEH-372
+
+### DoD parking lot
+"7 fewer vulns" framing in MEH-370 spec is ambiguous against current data:
+- vs. PHASE A baseline (14): post-C4 delta = **10** ✅
+- vs. post-MEH-371 staging (10): post-C4 delta = **6** ❌ short by 1
+- vs. MEH-345 original (19): post-C4 delta = **15** ✅
+
+**Recommendation (Smadar's call before MEH-370 final close):** split DoD into:
+1. "All `next` + `next-pwa` CVEs resolved" — ✅ achievable in MEH-370 via C4
+2. "postcss chain" — → new ticket (MEH-XXX), not blocking MEH-370 close
+
+---
 
 ## 2026-04-28 — MEH-370 PHASE 0 + 0.5 complete, PHASE 1 unblocked
 
