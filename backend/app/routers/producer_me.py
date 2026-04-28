@@ -653,6 +653,7 @@ def list_my_products(
 def create_my_product(
     request: Request,
     data: ProductCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -660,6 +661,20 @@ def create_my_product(
     db.add(product)
     db.commit()
     db.refresh(product)
+
+    # MEH-XXX: notify favoriting users who opted in for new-product alerts.
+    # Wires the previously-orphaned "new_product" alert_type
+    # (see _ALERT_COL in routers/alerts.py).
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    producer_name = producer.name if producer else "בית העסק"
+    from app.routers.alerts import fire_alerts
+    background_tasks.add_task(
+        fire_alerts, db, user.producer_id, "new_product",
+        f"🆕 מוצר חדש מ{producer_name}",
+        product.name,
+        f"/producer/{user.producer_id}",
+    )
+
     return product
 
 
