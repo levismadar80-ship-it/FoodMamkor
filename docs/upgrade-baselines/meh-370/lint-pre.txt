@@ -1,0 +1,47 @@
+
+> mehamakor-frontend@1.0.0 lint
+> next lint
+
+
+./app/group-buys/[id]/GroupBuyDetailClient.jsx
+112:6  Warning: React Hook useEffect has a missing dependency: 'phone'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/layout.js
+115:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+121:43  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./app/map/MapClient.jsx
+634:38  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./app/page.js
+177:6  Warning: React Hook useEffect has missing dependencies: 'chips', 'filters.category', and 'filters.delivery_city'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+349:21  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+603:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/producer/[id]/ProducerDetail.jsx
+537:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/producer/dashboard/page.js
+84:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/reset-password/page.js
+105:25  Warning: Avoid physical padding classes (pl-*, pr-*). Use logical equivalents: ps-*, pe-*. If intentional (e.g. pr-11 pl-4 password input pair), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+110:25  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+125:25  Warning: Avoid physical padding classes (pl-*, pr-*). Use logical equivalents: ps-*, pe-*. If intentional (e.g. pr-11 pl-4 password input pair), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+130:25  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./components/AppleAuthButton.jsx
+52:6  Warning: React Hook useEffect has missing dependencies: 'loginWithApple', 'onError', 'onSuccess', and 'redirectUri'. Either include them or remove the dependency array. If 'onSuccess' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/CategorySelector.jsx
+24:25  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+32:21  Warning: Avoid physical padding classes (pl-*, pr-*). Use logical equivalents: ps-*, pe-*. If intentional (e.g. pr-11 pl-4 password input pair), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./components/ChipScrollRow.jsx
+59:6  Warning: React Hook useEffect has missing dependencies: 'activeKey', 'activeKeys', and 'variant'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/MapComponent.jsx
+370:6  Warning: React Hook useEffect has a missing dependency: 'parentMapRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+lint_exit=0

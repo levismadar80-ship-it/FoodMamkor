@@ -1,10 +1,15 @@
-const withPWA = require("next-pwa")({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  // MEH-54: custom service worker code (push event handlers).
-  // next-pwa bundles worker/index.js and importScripts it in the generated sw.js.
-  customWorkerDir: "worker",
-});
+// MEH-370 C4 (Option A): next-pwa disabled to unblock Next 16 Turbopack-by-default.
+// next-pwa@5.6.0 injects a webpack-only config that conflicts with Turbopack.
+// Re-enable via MEH-372 once next-pwa ships Turbopack support (or migrate to a
+// Turbopack-native PWA solution). Original block preserved below for restoration.
+//
+// const withPWA = require("next-pwa")({
+//   dest: "public",
+//   disable: process.env.NODE_ENV === "development",
+//   // MEH-54: custom service worker code (push event handlers).
+//   // next-pwa bundles worker/index.js and importScripts it in the generated sw.js.
+//   customWorkerDir: "worker",
+// });
 
 // When deployed to a Vercel preview URL (not production, not local dev),
 // Vercel injects its "live feedback" widget at
@@ -136,7 +141,8 @@ const nextConfig = {
   },
 };
 
-let finalConfig = withPWA(nextConfig);
+// MEH-370 C4: bypass next-pwa wrap (see comment block at top, re-enable via MEH-372).
+let finalConfig = nextConfig;
 
 // Wrap with Sentry only when @sentry/nextjs is installed AND a DSN is
 // configured. This keeps dev/CI builds working without the package.

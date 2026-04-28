@@ -34,7 +34,8 @@ async function fetchPage(page) {
   }
 }
 
-export async function generateMetadata({ searchParams }) {
+export async function generateMetadata(props) {
+  const searchParams = await props.searchParams;
   const page = clampPage(Number(searchParams?.page) || 1, 999);
   const title =
     page === 1
@@ -52,7 +53,8 @@ export async function generateMetadata({ searchParams }) {
   };
 }
 
-export default async function ProducersIndexPage({ searchParams }) {
+export default async function ProducersIndexPage(props) {
+  const searchParams = await props.searchParams;
   const requestedPage = Math.max(1, Math.floor(Number(searchParams?.page) || 1));
   const { items, total } = await fetchPage(requestedPage);
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));

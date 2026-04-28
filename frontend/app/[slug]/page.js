@@ -28,7 +28,8 @@ async function getProducerBySlug(slug) {
   }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const producer = await getProducerBySlug(params.slug);
   return buildProducerMetadata(producer);
 }
@@ -45,7 +46,8 @@ function ProducerJsonLd({ producer }) {
   );
 }
 
-export default async function ProducerSlugPage({ params }) {
+export default async function ProducerSlugPage(props) {
+  const params = await props.params;
   const producer = await getProducerBySlug(params.slug);
   if (!producer) notFound();
 
