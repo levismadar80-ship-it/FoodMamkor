@@ -1,7 +1,53 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-28 (MEH-372 — next-pwa removed, vulns 9 → 4)
+> Last updated: 2026-04-28 (Session close — 6 PRs merged, alert wiring fixed)
+
+## 2026-04-28 — Session close — 5 PRs merged, alert wiring fixed
+
+### End-of-day state
+
+PRs merged today:
+- PR #399 — MEH-379+380+381 CSP hardening (squash f62ee54)
+- PR #401 — MEH-382 Railway retry-on-busy (squash 7c3051e)
+- PR #402 — staging → main release
+- PR #395 — MEH-370 Next.js 14 → 16 upgrade (squash 28bbc3f)
+- PR #403 — MEH-372 next-pwa removal Path E (squash 76d04ee)
+- PR #404 — Wire fire_alerts to product creation (audit Gap A) (squash 3b7e3ea)
+
+Tickets closed:
+- MEH-370, MEH-371, MEH-372, MEH-379, MEH-380, MEH-381, MEH-382
+
+Vuln state on main: **4 moderate** (postcss chain only)
+- 5 high cleared by next-pwa removal (MEH-372)
+- Several next direct CVEs cleared by Next 16 upgrade (MEH-370)
+
+### Pending for next session
+
+- **Smoke test PR #404 wiring** — verify in production:
+  1. Login as regular user (NOT business owner)
+  2. Favorite a producer + opt in WhatsApp
+  3. Switch to business account, add a new product
+  4. Confirm WhatsApp arrives within 30s
+  If no WhatsApp → check Railway logs for fire_alerts call + Twilio API errors.
+
+- **OAuth business registration 409 bug** (NEW, not yet ticketed):
+  Email already registered → backend returns 409 → frontend swallows error silently. User sees broken Google button.
+  Repro: `/register/business` with Google OAuth using existing email returns 409 with no user-facing toast.
+  Expected: friendly toast "החשבון כבר רשום — היכנסי במקום" + link to `/login`.
+  Priority: 2 (High) — trust killer in onboarding flow.
+
+- **postcss vuln chain (4 moderate)** — separate ticket needed.
+  `next@16.2.4` bundles old postcss internally; affects next, @sentry/nextjs, @vercel/speed-insights transitively.
+  Priority: 4 (Low).
+
+### Active urgent tickets in Linear (next priority)
+
+- MEH-99 — Smart Search ("גבינה" returns 0)
+- MEH-78 — Map opens on Golan instead of Tel Aviv
+- Various live site bugs (broken stats API, duplicate filter bars on /map, contradictory "thousands" banner)
+
+---
 
 ## 2026-04-28 — MEH-372: next-pwa removed (Path E)
 
