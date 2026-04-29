@@ -180,6 +180,11 @@ def create_home_product(
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ):
+    # NOTE: fire_alerts is deliberately NOT called here. HomeProduct.user_id
+    # is the seller, but FavoriteAlert is keyed by producer_id. There's no
+    # producer-favorited relationship for individual home cooks. If we ever
+    # add "follow this seller" for home products, wire fire_alerts here
+    # against a different alert dispatcher.
     # Run AI moderation — blocks REJECTED, records status for APPROVED/FLAGGED.
     # The frontend also calls /validate before submit for fast feedback, but
     # we re-check server-side so a crafted client can't bypass.
