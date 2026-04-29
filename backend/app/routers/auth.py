@@ -189,7 +189,9 @@ def refresh_token(
     # skip in get_current_user (backend/app/auth.py).
     iat_claim = claims.get("iat")
     if iat_claim is not None and user.password_changed_at is not None:
-        if iat_claim < user.password_changed_at.timestamp():
+        # int() coercion mirrors the access-side fix in auth.py — see
+        # docstring there for the float-microseconds race-rejection bug.
+        if iat_claim < int(user.password_changed_at.timestamp()):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="session_invalidated_by_password_change",

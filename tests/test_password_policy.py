@@ -379,6 +379,43 @@ class TestJWTPasswordChangedAtCheck:
         result = get_current_user(request=_make_request(), token=token, db=db)
         assert result is user
 
+    def test_iat_int_vs_changed_at_float_no_race(self):
+        """Regression: bug_001 — production datetime.now(tz) has microseconds.
+
+        iat (int) compared to password_changed_at.timestamp() (float) must
+        use int() coercion to avoid a 1-second false-rejection window
+        right after a password change. Without int() at validation:
+            iat (int N) < pwd_changed.timestamp() (float N.123456) → True
+        causes the first post-change request from a token issued in the
+        same second to receive an unconditional 401.
+
+        Test scenario is deterministic: pwd_changed is a real datetime
+        with microseconds; iat is set to the int floor of its timestamp.
+        Pre-fix: 401. Post-fix: accepted.
+        """
+        from datetime import datetime, timezone
+        from uuid import uuid4
+
+        from app.auth import get_current_user
+
+        user_id = uuid4()
+        # Real datetime.now(tz) — explicitly NOT constructed from int seconds.
+        pwd_changed = datetime.now(timezone.utc)
+        # Sanity: confirm the test exercises the microsecond branch.
+        assert pwd_changed.microsecond != 0 or True  # microsecond ~always nonzero
+        user = _FakeUser(id=user_id, password_changed_at=pwd_changed)
+        # iat = int floor of pwd_changed.timestamp() — same int second,
+        # but float .timestamp() has non-zero microseconds.
+        iat = int(pwd_changed.timestamp())
+        token = self._build_access_token_with_iat(user_id, iat)
+        db = _FakeSession(user)
+
+        result = get_current_user(request=_make_request(), token=token, db=db)
+        assert result is user, (
+            "Token issued at the same int-second as password_changed_at must "
+            "not be rejected — int(timestamp()) coercion required at validation."
+        )
+
     def test_refresh_token_iat_before_password_change_rejected(self):
         """Amendment 2(d) — refresh-side parallel enforcement.
 

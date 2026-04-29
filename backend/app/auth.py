@@ -168,7 +168,12 @@ def get_current_user(
     # fail-open pattern below.
     iat_claim = token_obj.claims.get("iat")
     if iat_claim is not None and user.password_changed_at is not None:
-        if iat_claim < user.password_changed_at.timestamp():
+        # int() coercion: iat is issued as int seconds; password_changed_at
+        # is a real datetime with microseconds. Without int(), `iat (int)
+        # < pwd.timestamp() (float-with-microseconds)` is True for ~1
+        # second after a password change → false 401 on the first
+        # post-change request from a token issued in the same second.
+        if iat_claim < int(user.password_changed_at.timestamp()):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="session_invalidated_by_password_change",
