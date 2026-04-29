@@ -344,6 +344,28 @@ Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`,
 
 ---
 
+## /ultrareview gate
+
+לפני merge ל-staging, אם ה-PR עומד ב-2+ מהתנאים האלה — הריצי `/ultrareview` ב-Claude Code:
+
+- 500+ שורות שינוי
+- נוגע ב-auth / payments / DB schema migration
+- refactor של מודל מרכזי (`main.py`, `MapClient.jsx`, `ProducerDetail.jsx`, `models.py`)
+
+הפעלה ידנית בלבד דרך Claude Code CLI:
+
+1. `git stash` או commit לפני (Branch mode bundles working tree at confirm time)
+2. `/ultrareview` (לבדיקת branch מול default) או `/ultrareview <PR-number>` (PR mode)
+3. ממתינות 5–20 דקות
+4. בודקות ממצאים, מתקנות, batching לפני re-run
+5. `/tasks` למעקב
+
+**אסור:** להשתמש על PRs טריוויאליים (copy fix, single-line bug, CSS only) — בזבוז ריצה.
+
+_Source: Claude Code v2.1.86+ (Opus 4.7 launch, 2026-04-16). 3 free runs expire 2026-05-05._
+
+---
+
 ## PR Review Workflow
 
 When asked to generate a PR review bundle for Claude.ai, run:

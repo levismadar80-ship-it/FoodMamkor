@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Last updated: 2026-04-28 (MEH-372 — next-pwa removed, vulns 9 → 4)
 
+## 2026-04-29 — MEH-322 (PR #407): /ultrareview gate added to workflow.md
+
+`.claude/rules/workflow.md:347` — new section `## /ultrareview gate` added after "PR approval guide" (workflow.md:329).
+Rule: run `/ultrareview` in Claude Code if PR meets 2+ of {500+ LOC, auth/payments/DB migration, central refactor of `main.py` / `MapClient.jsx` / `ProducerDetail.jsx` / `models.py`}.
+
+`CLAUDE.md` not touched — at 79/80, cap-locked, no pointer added. Lazy-load via Claude Code on code edits is sufficient.
+Templates 02 + 04 DoD bullet handled by Smadar manually in Google Drive (Templates Library not in repo).
+
+`docs/CHANGELOG.md` — one-liner.
+
+3 free /ultrareview runs available before 2026-05-05. Earmarked candidates:
+1. MEH-305+306 (Password Policy) — auth-critical, ~800-1500 LOC
+2. MEH-291 (Availability enum refactor) — schema + backfill, ~500-1000 LOC
+3. MEH-296 (Multi-channel contact routing) — schema + ProducerDetail + onboarding
+
+Next session pick-up options:
+- Continue MEH-371 merge → MEH-376 → MEH-370 chain (per 2026-04-27 entry)
+- OR start MEH-305+306 Password Policy as first /ultrareview consumer
+
 ## 2026-04-28 — MEH-372: next-pwa removed (Path E)
 
 **Branch:** `feature/meh-372-next-pwa-re-enable` — **PR #403** (open, non-draft)
