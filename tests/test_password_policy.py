@@ -9,6 +9,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
+import pytest
 
 from app.services import password_policy
 from app.services.password_policy import PolicyResult, validate_password
@@ -142,3 +143,277 @@ class TestPasswordPolicyService:
         assert "too_common" in result.failures
         assert "same_as_current" in result.failures
         assert result.ok is False
+
+
+# ============================================================================
+# MEH-305 — JWT iat issuance + password_changed_at validation tests.
+#
+# These exercise auth.py (access-token decode) and routers/auth.py (refresh
+# rotation) at the unit level — no DB, no TestClient. Mock User + Session.
+# ============================================================================
+
+
+class _FakeUser:
+    """Minimal stand-in for app.models.User for get_current_user / refresh."""
+
+    def __init__(self, *, id, password_changed_at=None, token_version=1):
+        from uuid import UUID
+
+        self.id = id if isinstance(id, UUID) else UUID(str(id))
+        self.password_changed_at = password_changed_at
+        self.token_version = token_version
+        self.is_blocked = False
+        self.last_active_at = None
+
+
+class _FakeQuery:
+    def __init__(self, user):
+        self._user = user
+
+    def filter(self, *_args, **_kwargs):
+        return self
+
+    def first(self):
+        return self._user
+
+
+class _FakeSession:
+    def __init__(self, user):
+        self._user = user
+
+    def query(self, _model):
+        return _FakeQuery(self._user)
+
+    # _maybe_bump_last_active calls db.add / commit; no-op for the test.
+    def add(self, _obj):
+        pass
+
+    def commit(self):
+        pass
+
+
+def _decode(token):
+    """Minimal joserfc decode mirroring auth._jwt_key()."""
+    from joserfc import jwt as _jwt
+    from joserfc.jwk import OctKey
+
+    from app.config import settings
+
+    return _jwt.decode(token, OctKey.import_key(settings.secret_key.encode()),
+                       algorithms=[settings.algorithm]).claims
+
+
+def _make_request(fingerprint_cookie=None):
+    """Stand-in for fastapi.Request — only `.cookies.get()` is touched
+    by get_current_user when the userFingerprint claim is absent.
+    """
+    cookies = {} if fingerprint_cookie is None else {"__Secure-Fgp": fingerprint_cookie}
+    request = MagicMock()
+    request.cookies = cookies
+    return request
+
+
+class TestJWTIatClaim:
+    def test_access_token_includes_iat(self):
+        from uuid import uuid4
+
+        from app.auth import create_access_token
+
+        before = int(__import__("time").time())
+        token = create_access_token(uuid4(), token_version=1)
+        claims = _decode(token)
+        after = int(__import__("time").time())
+
+        assert "iat" in claims
+        assert isinstance(claims["iat"], int)
+        # iat must be within [before, after] — proves issuance time is real.
+        assert before <= claims["iat"] <= after
+
+    def test_refresh_token_includes_iat(self):
+        from uuid import uuid4
+
+        from app.auth import create_refresh_token
+
+        before = int(__import__("time").time())
+        token = create_refresh_token(uuid4(), token_version=1)
+        claims = _decode(token)
+        after = int(__import__("time").time())
+
+        assert "iat" in claims
+        assert isinstance(claims["iat"], int)
+        assert before <= claims["iat"] <= after
+
+
+class TestJWTPasswordChangedAtCheck:
+    def _build_access_token_with_iat(self, user_id, iat_override):
+        """Manually encode an access token with a chosen iat. Bypasses
+        create_access_token to exercise the validation side independently
+        of issuance.
+        """
+        from datetime import datetime, timedelta
+        from joserfc import jwt as _jwt
+        from joserfc.jwk import OctKey
+
+        from app.config import settings
+
+        payload = {
+            "sub": str(user_id),
+            "exp": datetime.utcnow() + timedelta(minutes=30),
+            "iat": iat_override,
+            "tv": 1,
+            "scope": "access",
+        }
+        return _jwt.encode(
+            {"alg": settings.algorithm},
+            payload,
+            OctKey.import_key(settings.secret_key.encode()),
+        )
+
+    def _build_refresh_token_with_iat(self, user_id, iat_override):
+        from datetime import datetime, timedelta
+        from joserfc import jwt as _jwt
+        from joserfc.jwk import OctKey
+
+        from app.config import settings
+
+        payload = {
+            "sub": str(user_id),
+            "exp": datetime.utcnow() + timedelta(days=14),
+            "iat": iat_override,
+            "tv": 1,
+            "scope": "refresh",
+        }
+        return _jwt.encode(
+            {"alg": settings.algorithm},
+            payload,
+            OctKey.import_key(settings.secret_key.encode()),
+        )
+
+    def test_token_iat_before_password_change_rejected(self):
+        from datetime import datetime, timezone
+        from uuid import uuid4
+
+        from fastapi import HTTPException
+
+        from app.auth import get_current_user
+
+        user_id = uuid4()
+        # Password changed at "now"; token iat is 1 hour earlier.
+        pwd_changed = datetime.now(timezone.utc)
+        iat = int(pwd_changed.timestamp()) - 3600
+        user = _FakeUser(id=user_id, password_changed_at=pwd_changed)
+        token = self._build_access_token_with_iat(user_id, iat)
+        db = _FakeSession(user)
+
+        with pytest.raises(HTTPException) as excinfo:
+            get_current_user(request=_make_request(), token=token, db=db)
+        assert excinfo.value.status_code == 401
+        assert excinfo.value.detail == "session_invalidated_by_password_change"
+
+    def test_token_iat_after_password_change_accepted(self):
+        from datetime import datetime, timezone
+        from uuid import uuid4
+
+        from app.auth import get_current_user
+
+        user_id = uuid4()
+        # Realistic scenario: user changed password 2h ago, the current
+        # token was issued 1h ago (i.e. AFTER the change). joserfc rejects
+        # tokens whose iat is in the future, so iat must be <= now.
+        import time
+
+        now_ts = int(time.time())
+        pwd_changed = datetime.fromtimestamp(now_ts - 7200, tz=timezone.utc)
+        iat = now_ts - 3600  # 1h ago, 1h AFTER pwd_changed
+        user = _FakeUser(id=user_id, password_changed_at=pwd_changed)
+        token = self._build_access_token_with_iat(user_id, iat)
+        db = _FakeSession(user)
+
+        result = get_current_user(request=_make_request(), token=token, db=db)
+        assert result is user
+
+    def test_password_changed_at_null_skips_check(self):
+        from uuid import uuid4
+
+        from app.auth import get_current_user
+
+        user_id = uuid4()
+        # Pre-MEH-305 user — never rotated password.
+        user = _FakeUser(id=user_id, password_changed_at=None)
+        # iat from the past — would reject if check ran, but should be skipped.
+        iat = int(__import__("time").time()) - 86400
+        token = self._build_access_token_with_iat(user_id, iat)
+        db = _FakeSession(user)
+
+        result = get_current_user(request=_make_request(), token=token, db=db)
+        assert result is user
+
+    def test_token_without_iat_skips_check(self):
+        """Legacy compat: tokens issued before MEH-305 deploy have no iat."""
+        from datetime import datetime, timedelta, timezone
+        from uuid import uuid4
+
+        from joserfc import jwt as _jwt
+        from joserfc.jwk import OctKey
+
+        from app.auth import get_current_user
+        from app.config import settings
+
+        user_id = uuid4()
+        pwd_changed = datetime.now(timezone.utc)  # would normally trigger reject
+        user = _FakeUser(id=user_id, password_changed_at=pwd_changed)
+        # Token deliberately missing iat claim.
+        payload = {
+            "sub": str(user_id),
+            "exp": datetime.utcnow() + timedelta(minutes=30),
+            "tv": 1,
+            "scope": "access",
+        }
+        token = _jwt.encode(
+            {"alg": settings.algorithm},
+            payload,
+            OctKey.import_key(settings.secret_key.encode()),
+        )
+        db = _FakeSession(user)
+
+        result = get_current_user(request=_make_request(), token=token, db=db)
+        assert result is user
+
+    def test_refresh_token_iat_before_password_change_rejected(self):
+        """Amendment 2(d) — refresh-side parallel enforcement.
+
+        The refresh_token endpoint is wrapped by @limiter.limit (slowapi),
+        which requires a real starlette.requests.Request. Bypass via
+        __wrapped__ to test the inner handler logic in isolation.
+        """
+        from datetime import datetime, timezone
+        from uuid import uuid4
+
+        from fastapi import HTTPException
+
+        from app.routers.auth import refresh_token as refresh_endpoint
+
+        # slowapi's decorator preserves the original function via __wrapped__
+        # (functools.wraps) — invoke that to skip rate-limit IP extraction.
+        inner_handler = getattr(refresh_endpoint, "__wrapped__", None)
+        assert inner_handler is not None, (
+            "slowapi decorator did not expose __wrapped__; "
+            "this test bypasses rate limiting via __wrapped__. "
+            "If slowapi changes, refactor to a TestClient-based test."
+        )
+
+        user_id = uuid4()
+        pwd_changed = datetime.now(timezone.utc)
+        iat = int(pwd_changed.timestamp()) - 3600
+        user = _FakeUser(id=user_id, password_changed_at=pwd_changed)
+        token = self._build_refresh_token_with_iat(user_id, iat)
+        db = _FakeSession(user)
+
+        request = MagicMock()
+        request.cookies = {"refresh_token": token}
+        response = MagicMock()
+
+        with pytest.raises(HTTPException) as excinfo:
+            inner_handler(request=request, response=response, db=db)
+        assert excinfo.value.status_code == 401
+        assert excinfo.value.detail == "session_invalidated_by_password_change"
