@@ -182,6 +182,20 @@ def refresh_token(
     tv = claims.get("tv")
     if tv is None or tv != user.token_version:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    # MEH-305 launch-safe migration: iat is missing from refresh tokens
+    # issued before this deploy. Fail-open for up to 14d
+    # (refresh_token_expire_days) until pre-deploy tokens naturally
+    # expire. Mirror of the access-token password_changed_at IS NULL
+    # skip in get_current_user (backend/app/auth.py).
+    iat_claim = claims.get("iat")
+    if iat_claim is not None and user.password_changed_at is not None:
+        # int() coercion mirrors the access-side fix in auth.py — see
+        # docstring there for the float-microseconds race-rejection bug.
+        if iat_claim < int(user.password_changed_at.timestamp()):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="session_invalidated_by_password_change",
+            )
 
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)

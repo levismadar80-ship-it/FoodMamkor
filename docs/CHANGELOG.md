@@ -12,6 +12,10 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-29 — MEH-305: Password policy backend infrastructure
+
+feat: NIST SP 800-63B Rev 4-aligned password policy backend. Adds `password_policy` service (12-char min, top-10k deny-list, HIBP k-anonymity with fail-open, bcrypt reuse check via passlib). Adds `password_changed_at` column on users + Alembic migration. JWT validation rejects access + refresh tokens issued before last password change (iat-vs-changed_at, with int() coercion to prevent microseconds race). Capability only — wire-up to signup/reset/change endpoints is MEH-306 (separate PR). Deny-list shipped at `services/deny_list_10k.txt` (~80KB, top-10k from SecLists). 17 unit tests passing locally. CI scope narrowed to `test_api.py` + `test_password_policy.py` — full suite widening tracked in MEH-394.
+
 ## 2026-04-29 — MEH-322: /ultrareview gate added to workflow.md
 
 Adds `/ultrareview gate` section to `.claude/rules/workflow.md` after "PR approval guide". Defines when to run `/ultrareview` (2+ of: 500+ LOC, auth/payments/DB migration, central refactor). 3 free runs expire 2026-05-05. Templates 02 + 04 DoD bullet handled manually in Google Drive (out of repo). `CLAUDE.md` not touched (cap=80, at 79).

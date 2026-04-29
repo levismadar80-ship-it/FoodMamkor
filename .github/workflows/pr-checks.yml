@@ -105,7 +105,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          EXPECTED_REV="c9e3a1b5d72f"
+          EXPECTED_REV="e4da13353c58"
           EXPECTED_TABLES=34
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
@@ -129,7 +129,7 @@ jobs:
           echo "Tables (excl. alembic_version) = $TABLE_COUNT ✓"
 
       - name: Run tests
-        run: backend/.venv/bin/python -m pytest tests/test_api.py -v --tb=long -x --timeout=60
+        run: backend/.venv/bin/python -m pytest tests/test_api.py tests/test_password_policy.py -v --tb=long -x --timeout=60
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           # Stub secrets so imports don't fail — tests never hit real services.

@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import structlog
@@ -42,7 +42,13 @@ def create_access_token(
     # MEH-326: scope="access" disambiguates from refresh tokens. Old tokens
     # issued before this change have no scope claim — get_current_user treats
     # absence as access (backward compat) so existing sessions don't break.
-    payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "access"}
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+        "tv": token_version,
+        "scope": "access",
+    }
     # MEH-327: bind token to fingerprint cookie via SHA-256 hash claim.
     # Callers that don't pass fingerprint_hash → claim absent → fail-open
     # in get_current_user (15-min TTL window for pre-MEH-327 tokens).
@@ -57,7 +63,13 @@ def create_refresh_token(user_id: UUID, token_version: int) -> str:
     set by every login/register endpoint and by /auth/refresh on rotation.
     """
     expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
-    payload = {"sub": str(user_id), "exp": expire, "tv": token_version, "scope": "refresh"}
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+        "tv": token_version,
+        "scope": "refresh",
+    }
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
@@ -149,6 +161,23 @@ def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
     if user.is_blocked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
+    # MEH-305: invalidate sessions issued before the most-recent password
+    # change. Fail-open when iat is absent (legacy tokens issued before
+    # MEH-305 deployed) or when password_changed_at is NULL (user has
+    # never rotated their password). Mirrors the MEH-206 / MEH-327
+    # fail-open pattern below.
+    iat_claim = token_obj.claims.get("iat")
+    if iat_claim is not None and user.password_changed_at is not None:
+        # int() coercion: iat is issued as int seconds; password_changed_at
+        # is a real datetime with microseconds. Without int(), `iat (int)
+        # < pwd.timestamp() (float-with-microseconds)` is True for ~1
+        # second after a password change → false 401 on the first
+        # post-change request from a token issued in the same second.
+        if iat_claim < int(user.password_changed_at.timestamp()):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="session_invalidated_by_password_change",
+            )
     # MEH-206: token_version check — fail-open so tokens issued before
     # this column was added (no `tv` claim) are still accepted.
     tv = token_obj.claims.get("tv")
