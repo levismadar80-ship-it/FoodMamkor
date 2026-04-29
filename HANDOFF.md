@@ -3,6 +3,37 @@
 > Read this before starting any work.
 > Last updated: 2026-04-28 (MEH-372 — next-pwa removed, vulns 9 → 4)
 
+## 2026-04-29 — MEH-305 (PR #408): password policy backend
+
+Branch: `feature/meh-305-password-policy-backend` (HEAD `fdbb13c`).
+Status: draft, awaiting merge approval after adversarial review.
+
+6 commits squash-mergeable:
+- `c2d5c69` password_policy service + deny_list + Pydantic field
+- `57aa529` password_changed_at column + Alembic migration
+- `8762330` JWT iat-vs-password_changed_at validation
+- `2df6a1a` int coercion + CI test discovery (ultrareview bug_001 + bug_003)
+- `b115c28` skip pre-existing test_analytics bug (later reverted)
+- `fdbb13c` narrow CI scope to test_api + test_password_policy
+
+Key decisions (also in PR description):
+- passlib over raw bcrypt (codebase uses CryptContext).
+- iat added to JWT issuance (was missing — required for the policy). 14-day fail-open window for pre-deploy refresh tokens.
+- `int()` coercion on `password_changed_at.timestamp()` to prevent the microseconds race (would have rejected freshly-issued tokens after password change).
+- CI scope narrowed (NOT `pytest tests/`) — MEH-394 tracks the cleanup.
+- Hand-written migration (autogen failed in sandbox); MEH-267 baseline is 5 days old, drift unlikely.
+
+`/ultrareview` run #1 caught: int/float race (bug_001), CI scope (bug_003), doc drift (bug_007 → MEH-306).
+`/adversarial-review` (subagent) caught: missing CHANGELOG/HANDOFF (this fix), `or True` dead assert (this fix), whitespace deny-list bypass (→ MEH-XXX, opening separately).
+
+Followup tickets opened by Smadar:
+- MEH-394 — Test suite hygiene (full `pytest tests/` widening)
+- MEH-XXX (Claude.ai) — Whitespace strip before deny-list lookup
+
+Next task: MEH-306 (Password Policy Wire-up — endpoints + UI + force logout). Blocked-by MEH-305 verified-on-staging. After MEH-305 merge: smoke test login of existing user (sint12345@gmail.com) on staging — must succeed with NULL `password_changed_at`.
+
+Reminder for MEH-306: use `datetime.now(timezone.utc)` for `password_changed_at` writes (per Amendment 1 — column is `DateTime(timezone=True)`, naive would coerce silently or raise).
+
 ## 2026-04-29 — MEH-322 (PR #407): /ultrareview gate added to workflow.md
 
 `.claude/rules/workflow.md:347` — new section `## /ultrareview gate` added after "PR approval guide" (workflow.md:329).
