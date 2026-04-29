@@ -401,8 +401,10 @@ class TestJWTPasswordChangedAtCheck:
         user_id = uuid4()
         # Real datetime.now(tz) — explicitly NOT constructed from int seconds.
         pwd_changed = datetime.now(timezone.utc)
-        # Sanity: confirm the test exercises the microsecond branch.
-        assert pwd_changed.microsecond != 0 or True  # microsecond ~always nonzero
+        # Note: pwd_changed.microsecond is non-zero in production
+        # (datetime.now() returns microsecond-precise values). The
+        # int() coercion in auth.py:171 normalizes both sides to whole
+        # seconds, so iat == int(pwd_ts) — token must be accepted.
         user = _FakeUser(id=user_id, password_changed_at=pwd_changed)
         # iat = int floor of pwd_changed.timestamp() — same int second,
         # but float .timestamp() has non-zero microseconds.
