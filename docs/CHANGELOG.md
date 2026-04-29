@@ -12,6 +12,10 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-29 — MEH-322: /ultrareview gate added to workflow.md
+
+Adds `/ultrareview gate` section to `.claude/rules/workflow.md` after "PR approval guide". Defines when to run `/ultrareview` (2+ of: 500+ LOC, auth/payments/DB migration, central refactor). 3 free runs expire 2026-05-05. Templates 02 + 04 DoD bullet handled manually in Google Drive (out of repo). `CLAUDE.md` not touched (cap=80, at 79).
+
 ## 2026-04-28 — MEH-370: Next.js 14.2.35 → 16.2.4 upgrade
 
 Build green via C1 (async request API codemod, 5 sites) + C4 (next-pwa disable Option A). Sentry wrap preserved. C3 (ESLint flat config) and postcss vuln chain deferred to follow-up tickets. Vuln delta: 10 → 9 (next direct CVEs resolved; next-pwa transitive chain pending MEH-372). Commits: 63681aa (C1), ca01099 (C4).
