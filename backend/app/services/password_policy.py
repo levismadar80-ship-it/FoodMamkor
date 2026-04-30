@@ -103,7 +103,11 @@ async def validate_password(
     if len(candidate) < MIN_LENGTH:
         failures.append("too_short")
 
-    deny_listed = candidate.lower() in _DENY_LIST
+    # MEH-395: strip whitespace before deny-list lookup. Without strip, a user
+    # could pad a common credential ("password" → "password    ") to clear the
+    # 12-char floor while still hitting a value that should be deny-listed.
+    # Length check above intentionally uses the raw candidate.
+    deny_listed = candidate.strip().lower() in _DENY_LIST
     if deny_listed:
         failures.append("too_common")
 

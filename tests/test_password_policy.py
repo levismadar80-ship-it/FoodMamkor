@@ -144,6 +144,20 @@ class TestPasswordPolicyService:
         assert "same_as_current" in result.failures
         assert result.ok is False
 
+    def test_deny_list_strips_whitespace(self):
+        """MEH-395: pre-strip prevents whitespace-padding bypass.
+
+        "password    " is 12 raw chars (clears the length floor) but
+        post-strip == "password", which is in the deny list. Pre-fix:
+        too_common NOT raised; post-fix: too_common raised.
+        """
+        padded = "password    "  # 12 chars, deny-listed when stripped
+        assert len(padded) >= 12
+        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+            result = _run(validate_password(padded))
+        assert "too_common" in result.failures
+        assert result.ok is False
+
 
 # ============================================================================
 # MEH-305 — JWT iat issuance + password_changed_at validation tests.
