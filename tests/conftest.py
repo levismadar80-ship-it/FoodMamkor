@@ -58,6 +58,22 @@ def _reset_rate_limiter():
 
 
 @pytest.fixture(autouse=True)
+def _mock_hibp_clean(monkeypatch):
+    """MEH-306: stub HIBP to "no match" for every test by default.
+
+    Real HIBP calls during register/reset/change tests would (a) require
+    network and (b) be non-deterministic — the breach corpus updates
+    daily. Tests that specifically exercise the breach path patch
+    _check_hibp directly to override this autouse stub.
+    """
+    from unittest.mock import AsyncMock
+
+    from app.services import password_policy
+    monkeypatch.setattr(password_policy, "_check_hibp", AsyncMock(return_value=False))
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _clean_tables():
     """Truncate all tables between tests for isolation."""
     with engine.connect() as conn:
@@ -93,7 +109,11 @@ def make_user(
     email: str | None = None,
     name: str = "Test User",
     role: str = "consumer",
-    password: str = "Pass1234!",
+    # MEH-306: 12-char default so this string also flows through PasswordField
+    # cleanly when a test re-uses it as a JSON payload. make_user itself only
+    # hashes, so even short legacy passwords still work — but the schema-bound
+    # tests need this longer default by default.
+    password: str = "Zx7Yp9Mq2Lr4",
     is_blocked: bool = False,
     email_verified: bool = True,
 ) -> User:
@@ -170,20 +190,31 @@ def valid_review_payload() -> dict:
 
 
 def valid_user_register_payload() -> dict:
-    """Passes UserRegister: email, name, password (all required)."""
+    """Passes UserRegister: email, name, password (all required).
+
+    MEH-306: 12-char password to satisfy PasswordField. Same value as
+    test_password_policy.SAFE_PASSWORD — vetted not in deny_list_10k
+    and not in HIBP corpus at PR time.
+    """
     return {
         "email": "valid@example.com",
         "name": "משתמשת בדיקה",
-        "password": "Pass1234!",
+        "password": "Zx7Yp9Mq2Lr4",
     }
 
 
 def valid_producer_register_payload() -> dict:
-    """Passes ProducerRegister for a new (unauthenticated) registration."""
+    """Passes ProducerRegister for a new (unauthenticated) registration.
+
+    Producer.password is still a plain `str | None` field with the
+    pre-MEH-306 8-char floor (PasswordField swap-in tracked separately —
+    see PR description). The 12-char default is conservative against a
+    future tightening.
+    """
     return {
         "email": "producer@example.com",
         "name": "יצרנית בדיקה",
-        "password": "Pass1234!",
+        "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "חוות הבדיקה",
         "category_ids": [],
         "primary_contact_method": "whatsapp",
