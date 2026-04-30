@@ -36,8 +36,8 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     const u = uniqueSignup("short");
     await page.goto("/register");
 
-    await page.getByLabel(/שם/).fill(u.name);
-    await page.getByLabel(/אימייל/).fill(u.email);
+    await page.getByLabel(/^שם מלא \*$/).fill(u.name);
+    await page.getByLabel(/^אימייל \*$/).fill(u.email);
     await page.getByLabel(/^סיסמה$/).fill(SHORT_PASSWORD);
 
     // Inline checklist tile reflects the failure pre-submit.
@@ -64,8 +64,8 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     const u = uniqueSignup("denylist");
     await page.goto("/register");
 
-    await page.getByLabel(/שם/).fill(u.name);
-    await page.getByLabel(/אימייל/).fill(u.email);
+    await page.getByLabel(/^שם מלא \*$/).fill(u.name);
+    await page.getByLabel(/^אימייל \*$/).fill(u.email);
     await page.getByLabel(/^סיסמה$/).fill(DENY_LISTED_12);
 
     // Wait past the 500ms PasswordInput debounce + the /auth/check-password
@@ -92,8 +92,8 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     const u = uniqueSignup("ok");
     await page.goto("/register");
 
-    await page.getByLabel(/שם/).fill(u.name);
-    await page.getByLabel(/אימייל/).fill(u.email);
+    await page.getByLabel(/^שם מלא \*$/).fill(u.name);
+    await page.getByLabel(/^אימייל \*$/).fill(u.email);
     await page.getByLabel(/^סיסמה$/).fill(SAFE_PASSWORD_A);
 
     // Wait for breach-check to settle on "✓ לא דלפה ברשת".
