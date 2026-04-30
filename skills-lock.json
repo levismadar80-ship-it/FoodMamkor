@@ -221,11 +221,6 @@
       "sourceType": "github",
       "computedHash": "ae092a52d33180f53e9eb71dfce6d227604497280f61781be33cd5a31a04906a"
     },
-    "israeli-cybersecurity-ops": {
-      "source": "skills-il/security-compliance",
-      "sourceType": "github",
-      "computedHash": "e3bf7c56ec4fc6c7cff53c8adab0538bf6b238a919982cf95a3ce244b2426dff"
-    },
     "israeli-ecommerce-compliance": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
@@ -240,11 +235,6 @@
       "source": "skills-il/security-compliance",
       "sourceType": "github",
       "computedHash": "ffe1f2b16f88631c34ede5e9314fca6b5e88b4b1dc8369117e7715a9fa9362c0"
-    },
-    "israeli-shelter-guide": {
-      "source": "skills-il/security-compliance",
-      "sourceType": "github",
-      "computedHash": "90d72b70fac3f212936382d52c89bb257e117524cf98dc6712408a61cdb98234"
     },
     "israeli-travel-planner": {
       "source": "skills-il/localization",
@@ -320,11 +310,6 @@
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "computedHash": "f3955bea72dc22cf5b8e2387ee310a519302ab02518498e045055b1b9bd62a0f"
-    },
-    "pikud-haoref-safety-protocols": {
-      "source": "skills-il/security-compliance",
-      "sourceType": "github",
-      "computedHash": "b4e3cfa223b73b062d8eda1f5b0b6b0e97a061191c7c50abe3f899f7e9d5b88d"
     },
     "polish": {
       "source": "pbakaus/impeccable",

@@ -311,13 +311,6 @@
       "audit_verdict": "review_needed",
       "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
-    "israeli-cybersecurity-ops": {
-      "source": "skills-il/security-compliance",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
-    },
     "israeli-ecommerce-compliance": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
@@ -333,13 +326,6 @@
       "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "israeli-privacy-shield": {
-      "source": "skills-il/security-compliance",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
-    },
-    "israeli-shelter-guide": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
       "last_audit_date": null,
@@ -450,13 +436,6 @@
       "last_audit_date": null,
       "audit_verdict": "review_needed",
       "notes": ""
-    },
-    "pikud-haoref-safety-protocols": {
-      "source": "skills-il/security-compliance",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "polish": {
       "source": "pbakaus/impeccable",
