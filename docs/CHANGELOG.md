@@ -12,6 +12,71 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-30 — MEH-400: skills-il/security-compliance scope cleanup + audit (3 deleted, 6 approved)
+
+First post-MEH-397 per-source audit. **3 skills deleted** as out-of-scope
+for Mehamakor's food-marketplace mission. **6 skills audited and
+approved** (review_needed → approved with per-skill notes).
+
+**Deleted (out of scope):**
+- `israeli-shelter-guide` — bomb shelters, unrelated to local food
+- `pikud-haoref-safety-protocols` — civil defense, unrelated
+- `israeli-cybersecurity-ops` — enterprise SOC tooling, overkill for
+  our scale
+
+Per skill, all 4 surfaces removed: `.agents/skills/<name>/`,
+`.claude/skills/<name>` symlink, `skills-lock.json` entry,
+`skills-allowlist.json` entry. Total 19 files / 2173 LOC removed.
+First PR to modify `skills-lock.json` since MEH-397 (the MEH-397
+forbid was scoped to that lockdown PR; deletions require lock edits).
+
+**Approved (relevant to current or future Mehamakor scope):**
+- `israeli-ecommerce-compliance` — future payments / compliance
+- `hebrew-legal-research` — future Privacy Policy / ToS in Hebrew
+- `israeli-cyber-regulations` — general security posture
+- `israeli-privacy-shield` — we collect user data (Privacy Law / Amend. 13)
+- `israeli-ai-compliance-kit` — future AI features
+- `israeli-appsec-scanner` — may complement Dependabot
+
+Per-skill audit covered SKILL.md (English + Hebrew) + auxiliary scripts
++ references — 9,124 LOC total (before deletions; 6,991 after). Pattern
+sweep across all files: 0 secret-name hits, 0 prompt-injection canaries,
+0 authority claims, 0 hidden HTML comments, 0 reference-link traps,
+0 zero-width / RTL-override marks. 4 of 6 have Python scripts; all use
+**only standard library** (no `subprocess`, no `requests`/`urllib`, no
+`eval`/`exec`, no `os.environ`).
+
+**Notable per-skill findings:**
+
+- `israeli-privacy-shield` / `compliance_checker.py:293-294` — `--output`
+  uses user-supplied path directly (no slug derivation; different
+  code-shape from MEH-398's `--project-name` pattern). Not the same
+  finding-class — clean.
+- `israeli-appsec-scanner` — borderline by capability (creates a NEW
+  local-audit capability) but cleared on calibration: output stays local
+  stdout, no exfiltration. The 16 "exec" pattern hits in the global sweep
+  were **regex detectors** for `eval(`/`exec(` in user code (scanner
+  finding eval, not USING eval). User-invoked only. Re-audit required if
+  upstream author adds network reporting in future versions.
+- `israeli-ai-compliance-kit` — 1 persistence-pattern hit was a false
+  positive ("going forward" advice prose, not a persist instruction).
+
+**Anonymous author still anonymous.** What changed: per-skill content is
+now manually verified. The "Anonymous author — manual review required"
+boilerplate was replaced with per-skill notes. `author_verified` stays
+`false` across all 6 (we have not identified the author).
+
+**Counts after this PR:**
+- `skills-lock.json`: 82 → **79**
+- `.claude/skills-allowlist.json`: 83 → **80** (73 review_needed +
+  6 approved + 1 approved_local_unlocked)
+- `.agents/skills/` dirs: 82 → **79**
+- `.claude/skills/` dirs: 83 → **80** (incl. ui-ux-pro-max real dir)
+
+`bash .claude/scripts/audit-skills.sh` exit 0 ✓ (no drift).
+`bash .claude/scripts/audit-skills.sh --self-test` exit 1 ✓ (manifest
+tests still pass).
+
 ## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max (path traversal hardening)
 
 Closes the LOW-severity informational finding from MEH-397's in-PR

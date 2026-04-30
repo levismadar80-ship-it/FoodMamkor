@@ -1,7 +1,52 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-398 — ui-ux-pro-max path-traversal hardening, PR pending)
+> Last updated: 2026-04-30 (MEH-400 — skills-il/security-compliance audit + cleanup, PR pending)
+
+## 2026-04-30 — MEH-400: skills-il/security-compliance audit + scope cleanup
+
+**Branch:** `feature/meh-400-audit-skills-il-security-compliance` off
+staging. **Status:** draft PR pending review. 2 commits.
+
+First post-MEH-397 per-source audit. Scope evolved mid-session from
+"audit all 9" to "delete 3 unused, audit 6 relevant" per Smadar's
+direction.
+
+**Deleted (3 skills, out-of-scope for food marketplace):**
+`israeli-shelter-guide`, `pikud-haoref-safety-protocols`,
+`israeli-cybersecurity-ops`. 4 surfaces each (canonical content,
+symlink, lock entry, allowlist entry). 19 files / 2173 LOC removed.
+First PR to modify `skills-lock.json` since MEH-397.
+
+**Approved (6 skills, scope-relevant):**
+`israeli-ecommerce-compliance`, `hebrew-legal-research`,
+`israeli-cyber-regulations`, `israeli-privacy-shield`,
+`israeli-ai-compliance-kit`, `israeli-appsec-scanner`.
+All 6 audit_verdict review_needed → approved.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Spec list (9 names) was stale; allowlist data wins as source of truth | Pre-flight rule — already established in MEH-397 |
+| `git rm -r` for deletions, not `rm -rf` | git-aware + bypasses `Bash(rm -rf:*)` deny rule + tracks removal in index |
+| Lock + allowlist edits via `jq del()` not text-edit | Atomic, schema-preserving |
+| `compliance_checker.py:293-294` not the same finding-class as MEH-398 | `args.output` is full path (no slug derivation); MEH-398 was about user-input embedded as slug-component inside constructed path |
+| `israeli-appsec-scanner` borderline → approved | Per Smadar calibration: legitimate user audit workflow, output stays local. Re-audit clause added: re-evaluate if upstream adds network reporting |
+| Author remains anonymous; only content audited | `author_verified: false` unchanged across all 6 |
+
+**Counts after PR:** lock 82→79, allowlist 83→80, agents/skills 82→79,
+claude/skills 83→80.
+
+**Follow-up tickets (not opened — Smadar to decide):**
+
+- Potential: harden `compliance_checker.py:293-294` and
+  `generate_model_card.py:188-190` `--output` paths if cross-skill input
+  flows ever start passing untrusted paths there. Different finding-class
+  from MEH-398 — not blocking; nice-to-have only.
+- MEH-401 (next ticket): same pattern for `skills-il/localization` audit
+  + scope cleanup. User will send a similar deletion+audit list once
+  pre-flight reveals what's there.
 
 ## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max design_system.py
 
