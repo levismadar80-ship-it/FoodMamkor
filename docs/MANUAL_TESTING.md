@@ -16,7 +16,8 @@
 - [ ] Change password — `PATCH /users/me/password` עם current לא נכון → **403**; עם current ו-new זהים → **422** `same_as_current`; עם new < 12 → **422**; עם new תקין → **204** + `password_changed_at` מעודכן ב-DB.
 - [ ] Forgot-password rate limit (per-email) — שלחי 6 בקשות `/auth/forgot-password` עם אותו email תוך פחות מ-15 דקות → 5 ראשונות **200**, ה-6th **429**.
 - [ ] Forgot-password rate limit (per-IP) — שלחי 11 בקשות עם 11 emails שונים מאותה כתובת IP → 10 ראשונות **200**, ה-11th **429**.
-- [ ] MEH-395 strip bypass — `POST /auth/check-password {"candidate":"password    "}` (12 תווים, 4 רווחים) → `failures` כולל `too_common`.
+- [ ] MEH-395 length-check bypass (security-critical) — `POST /auth/register {"password":"          aa"}` (12 raw chars, 2 post-strip) → **422** `string_too_short` (Pydantic BeforeValidator strips before min_length runs). אסור שהמערכת תיקבל ותhash את "aa".
+- [ ] MEH-395 deny-list strip — `POST /auth/check-password {"candidate":"unbelievable    "}` (16 תווים: 12 + 4 רווחים) → **200** עם `{"ok":false,"failures":["too_common"]}` (Pydantic מחזיר "unbelievable", service מחזיק too_common).
 
 ---
 

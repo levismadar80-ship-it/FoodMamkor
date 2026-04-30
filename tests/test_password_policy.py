@@ -144,8 +144,8 @@ class TestPasswordPolicyService:
         assert "same_as_current" in result.failures
         assert result.ok is False
 
-    def test_deny_list_strips_whitespace(self):
-        """MEH-395: pre-strip prevents whitespace-padding bypass.
+    def test_whitespace_padded_common_password_blocked(self):
+        """MEH-395: pre-strip prevents whitespace-padding bypass on the deny list.
 
         "password    " is 12 raw chars (clears the length floor) but
         post-strip == "password", which is in the deny list. Pre-fix:
@@ -156,6 +156,37 @@ class TestPasswordPolicyService:
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
             result = _run(validate_password(padded))
         assert "too_common" in result.failures
+        assert result.ok is False
+
+    def test_whitespace_only_short_password_rejected(self):
+        """MEH-395 — the security-critical case.
+
+        Pre-fix: "          aa" (12 raw chars) passed the MIN_LENGTH floor;
+        bcrypt then hashed the raw value, but a future login that strips
+        OR a value that drifts via copy/paste reduces to "aa" — a 2-char
+        effective password. Strip-before-length-check closes the hash-
+        storage bug.
+
+        Sentinel here is 12 spaces — strips to empty → too_short.
+        """
+        whitespace_only = "            "  # 12 spaces
+        assert len(whitespace_only) == 12
+        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+            result = _run(validate_password(whitespace_only))
+        assert "too_short" in result.failures
+        assert result.ok is False
+
+    def test_whitespace_padded_short_after_strip_rejected(self):
+        """MEH-395 — partial-content variant of the length-check bypass.
+
+        "          aa" (12 raw chars, 10 spaces + "aa") strips to "aa"
+        (2 chars) → too_short. Proves the fix isn't just for pure-whitespace.
+        """
+        padded_short = "          aa"  # 12 raw, 2 after strip
+        assert len(padded_short) == 12
+        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
+            result = _run(validate_password(padded_short))
+        assert "too_short" in result.failures
         assert result.ok is False
 
 
