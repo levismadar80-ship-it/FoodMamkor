@@ -149,6 +149,42 @@ echo "Critical findings: $CRITICAL"
 echo "Single-class warnings: $WARN"
 echo "------------------------------------------------"
 
+# ---- Pass 3: hook regression tests (self-test only) ----
+# Replays adversarial-review bypass probes against the hooks. Manifest at
+# .claude/scripts/test/fixtures/bypass-attempts/manifest.json. Each test has
+# expected_exit + required=true|false. Required failures bump CRITICAL.
+if [ "$SELF_TEST" -eq 1 ]; then
+  BYPASS_DIR="$ROOT/.claude/scripts/test/fixtures/bypass-attempts"
+  MANIFEST="$BYPASS_DIR/manifest.json"
+  if [ -f "$MANIFEST" ]; then
+    echo ""
+    echo "------------------------------------------------"
+    echo "Hook regression tests (manifest)"
+    echo "------------------------------------------------"
+    n=$(jq '.tests | length' "$MANIFEST")
+    i=0
+    while [ "$i" -lt "$n" ]; do
+      name=$(jq -r ".tests[$i].name" "$MANIFEST")
+      input_file=$(jq -r ".tests[$i].input_file" "$MANIFEST")
+      hook=$(jq -r ".tests[$i].hook" "$MANIFEST")
+      expected=$(jq -r ".tests[$i].expected_exit" "$MANIFEST")
+      required=$(jq -r ".tests[$i].required" "$MANIFEST")
+      cat "$BYPASS_DIR/$input_file" | bash "$ROOT/.claude/hooks/$hook" >/dev/null 2>&1
+      actual=$?
+      if [ "$actual" -eq "$expected" ]; then
+        printf '  PASS  [%s] %s → exit %s\n' "$hook" "$name" "$actual"
+      elif [ "$required" = "true" ]; then
+        CRITICAL=$((CRITICAL+1))
+        printf '  FAIL  [%s] %s → exit %s, expected %s (REQUIRED — bumps CRITICAL)\n' "$hook" "$name" "$actual" "$expected"
+      else
+        printf '  INFO  [%s] %s → exit %s, expected %s (informational, not enforced)\n' "$hook" "$name" "$actual" "$expected"
+      fi
+      i=$((i+1))
+    done
+    echo ""
+  fi
+fi
+
 if [ "$CRITICAL" -gt 0 ]; then
   echo "FAIL: critical findings present — fix before merging."
   exit 1

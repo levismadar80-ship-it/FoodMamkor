@@ -16,17 +16,23 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 input=$(cat)
-url=$(echo "$input" | jq -r '.tool_input.url // ""')
+if ! url=$(printf '%s' "$input" | jq -r '.tool_input.url // ""' 2>/dev/null); then
+  echo "WebFetch denied: malformed JSON input (MEH-397 fail-closed)." >&2
+  exit 2
+fi
 
 if [ -z "$url" ]; then
   exit 0
 fi
 
-# Extract host: strip scheme, strip path, strip port, lowercase.
+# Extract host: strip scheme, strip path, strip userinfo (start..first @),
+# strip port, lowercase.  Userinfo strip MUST be `^[^@]*@` (anchored to
+# start) — `@.*$` strips wrong end and lets `https://allowed.com@evil.io/`
+# bypass the allowlist (MEH-397 adversarial review fix).
 host=$(printf '%s' "$url" \
   | sed -E 's|^[a-zA-Z][a-zA-Z0-9+.-]*://||' \
+  | sed -E 's|^[^@/]*@||' \
   | sed -E 's|/.*$||' \
-  | sed -E 's|@.*$||' \
   | sed -E 's|:[0-9]+$||' \
   | tr '[:upper:]' '[:lower:]')
 

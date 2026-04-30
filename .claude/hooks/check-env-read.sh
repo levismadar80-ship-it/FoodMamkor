@@ -10,7 +10,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 input=$(cat)
-fp=$(echo "$input" | jq -r '.tool_input.file_path // ""')
+if ! fp=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""' 2>/dev/null); then
+  echo "Read denied: malformed JSON input (MEH-397 fail-closed)." >&2
+  exit 2
+fi
 
 if [ -z "$fp" ]; then
   exit 0
