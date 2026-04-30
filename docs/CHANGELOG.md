@@ -12,6 +12,41 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
+
+5-layer defense around the 83 skills under `.agents/skills/` +
+`.claude/skills/` (`pbakaus/impeccable` 21, `coreyhaines31/marketingskills`
+38, `skills-il/*` 23 anonymous, plus `ui-ux-pro-max` 1 local).
+
+- **Layer 1** — `Read` deny on `.env*`; WebFetch restricted to 7 parent
+  domains (github, anthropic, npmjs, pypi, mehamakor, vercel, railway).
+  Two PreToolUse hooks at `.claude/hooks/check-env-read.sh` +
+  `.claude/hooks/check-webfetch-allowlist.sh`, both fail-closed if jq
+  missing.
+- **Layer 2** — `.claude/skills-allowlist.json` (83 entries; 82
+  `review_needed`, 1 `approved_local_unlocked`). New verdict slot
+  `approved_local_unlocked` is a 30-day transitional category for
+  skills that bypassed `skills-lock.json` — currently `ui-ux-pro-max`,
+  manually audited (no network / exec / credential reads; one
+  Priority-2 follow-up at `design_system.py:508` for unsanitized
+  `--project-name` slug → local path traversal).
+- **Layer 3** — `.claude/scripts/audit-skills.sh` scans every
+  `SKILL.md` for 4 pattern classes (network / exec / secret-name /
+  prompt-injection canaries). ≥2 classes in one file = critical,
+  exit 1. Self-test fixture at
+  `.claude/scripts/test/fixtures/bad-skill/SKILL.md`.
+- **Layer 4** — `.github/workflows/skills-audit.yml` two-stage gate:
+  self-test must exit 1 (detector works); real audit must exit 0
+  (live tree clean). Triggers on changes to skills, lock, allowlist,
+  or audit script.
+- **Layer 5** — Full policy in `.claude/rules/skills.md`; one-line
+  link from `CLAUDE.md` (still ≤80 lines). Section 17 added to
+  `docs/SECURITY.md` covering threat model + 5-layer rationale.
+
+Skill content NOT removed. `skills-lock.json` NOT modified. No Python
+deps added. Spec count drift noted: Linear MEH-397 said 78 skills,
+actual is 82 locked + 1 unlocked = 83.
+
 ## 2026-04-29 — MEH-305: Password policy backend infrastructure
 
 feat: NIST SP 800-63B Rev 4-aligned password policy backend. Adds `password_policy` service (12-char min, top-10k deny-list, HIBP k-anonymity with fail-open, bcrypt reuse check via passlib). Adds `password_changed_at` column on users + Alembic migration. JWT validation rejects access + refresh tokens issued before last password change (iat-vs-changed_at, with int() coercion to prevent microseconds race). Capability only — wire-up to signup/reset/change endpoints is MEH-306 (separate PR). Deny-list shipped at `services/deny_list_10k.txt` (~80KB, top-10k from SecLists). 17 unit tests passing locally. CI scope narrowed to `test_api.py` + `test_password_policy.py` — full suite widening tracked in MEH-394.
