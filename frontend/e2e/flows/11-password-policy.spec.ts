@@ -109,7 +109,12 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
 
     // Submit (if enabled) must surface the same failure on the form-level
     // error div via the 422-failures path.
-    await page.getByRole("checkbox").check();
+    // MEH-306: BottomNav is position:fixed at the mobile viewport bottom
+    // and overlaps the terms checkbox on /register. scrollIntoViewIfNeeded
+    // shifts the checkbox into a clickable region before .check().
+    const tos = page.getByRole("checkbox");
+    await tos.scrollIntoViewIfNeeded();
+    await tos.check();
     const submit = page.getByRole("button", { name: /הצטרפי/ });
     if (await submit.isEnabled()) {
       await submit.click();
@@ -134,7 +139,10 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
       page.getByText(/✓\s*לא דלפה ברשת|לא דלפה ברשת/),
     ).toBeVisible({ timeout: 5000 });
 
-    await page.getByRole("checkbox").check();
+    // MEH-306: same BottomNav overlap mitigation as scenario 2.
+    const tos = page.getByRole("checkbox");
+    await tos.scrollIntoViewIfNeeded();
+    await tos.check();
     const submit = page.getByRole("button", { name: /הצטרפי/ });
     await expect(submit).toBeEnabled();
 
