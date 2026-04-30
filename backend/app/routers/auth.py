@@ -26,7 +26,7 @@ from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
-from app.rate_limit import limiter
+from app.rate_limit import email_from_body, limiter
 
 
 def _gen_referral_code() -> str:
@@ -718,7 +718,13 @@ async def check_password(request: Request, data: CheckPasswordRequest):
 
 
 @router.post("/forgot-password")
-@limiter.limit("3/hour")
+# MEH-306: dual-key throttling. Per-IP cap protects against single-attacker
+# enumeration sweeps; per-email cap caps abuse against a single victim even
+# if the attacker rotates IPs. Both must allow — slowapi ANDs decorators.
+# `key_func` defaults to get_real_client_ip on the limiter instance, so the
+# IP-keyed @limiter.limit needs no explicit key_func.
+@limiter.limit("10/15 minutes")
+@limiter.limit("5/15 minutes", key_func=email_from_body)
 def forgot_password(request: Request, data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Send a password-reset email. Always returns 200 to prevent email enumeration."""
     user = db.query(User).filter(User.email == data.email).first()
@@ -734,7 +740,12 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 
 
 @router.post("/reset-password")
-@limiter.limit("5/hour")
+# MEH-306: per-IP cap (default key_func=get_real_client_ip on the limiter
+# instance). Per-email key would require the email column, but the request
+# body has only `token` + `new_password` — not the email. The token already
+# provides per-user pinning (single-use, 1-hour TTL); the IP cap blocks
+# brute-force token guessing.
+@limiter.limit("10/15 minutes")
 async def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
