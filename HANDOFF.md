@@ -1,7 +1,60 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-28 (MEH-372 — next-pwa removed, vulns 9 → 4)
+> Last updated: 2026-04-30 (MEH-306 sub-A + MEH-395 — password policy wire-up backend, draft PR pending)
+
+## 2026-04-30 — MEH-306 sub-A (Backend wire-up) + MEH-395
+
+Branch: `feature/meh-306a-backend-wireup` off staging `26b7939`.
+Status: **DRAFT** PR (per agreement). Sub-B (frontend) MUST branch from
+this branch (NOT staging) and both PRs become Ready-for-Review together.
+
+**Why drafted, not Ready:** sub-A enforces 12-char + deny-list + HIBP +
+reuse server-side; the frontend at `staging` HEAD still allows 8-char
+inputs in /register, /reset-password, and /settings. Merging sub-A to
+staging ahead of sub-B leaves a window where the API rejects passwords
+the UI happily accepts. Avoid that window by reviewing/merging together.
+
+7 commits, sequential / squash-mergeable:
+- `6ccf85c` MEH-395 strip fix in `password_policy.py:106` + 1 unit test
+- `b840003` schemas → PasswordField on UserRegister + ResetPasswordRequest
+  + PasswordChange + new CheckPasswordRequest
+- `a622c56` `register` / `reset_password` / `change_password` async + call
+  `validate_password` + stamp `password_changed_at`
+- `57b0f56` POST `/auth/check-password` (stateless live-preview, 30/min/IP)
+- `ce089c4` rate limits — `/auth/forgot-password` 10/15min IP + 5/15min
+  email (new `email_from_body` key_func in `rate_limit.py`);
+  `/auth/reset-password` 10/15min IP
+- `be18df5` `tests/test_auth.py` (16 tests) + autouse `_mock_hibp_clean`
+  fixture + 12-char fixture defaults + test_api.py literal updates
+
+Done before push:
+- `npm run build` — frontend untouched in this PR; not run.
+- `pytest tests/test_api.py tests/test_password_policy.py tests/test_auth.py`
+  — green locally pending verification.
+- `/adversarial-review` — pending.
+- HIBP autouse mock prevents network calls in CI.
+
+**Decisions made this session (add to decisions table):**
+| Decision | Why | Date |
+|---|---|---|
+| `PATCH /users/me/password` keeps 204; frontend recovers via /auth/refresh | Sub-A independently mergeable; keeps surface narrow. Test #15 verifies the contract. | April 2026 |
+| `ProducerRegister.password` NOT swapped to PasswordField | OAuth completion path needs `str \| None`; separate decision out of MEH-306 sub-A scope. | April 2026 |
+| `email_from_body` key_func reads `request._body` cache | FastAPI buffers body for Pydantic before slowapi runs key_func; safe. Fail-soft to "" on decode error (per-IP cap still bounds abuse). | April 2026 |
+| Test passwords bumped Pass1234! → Zx7Yp9Mq2Lr4 globally in test_api.py | login is length-agnostic so universal replace is safe; only register/reset paths needed the bump. | April 2026 |
+
+**Discovered but not fixed (open follow-up):**
+- `ProducerRegister.password` still 8-char floor — file separate ticket
+  before MEH-306 closes.
+- `MEH-394` (test-suite widening to `pytest tests/`) still out of scope —
+  any pre-existing failures CI surfaces on the wider scope go in MEH-394.
+
+**Smoke test required after sub-A merges to staging:**
+1. EXISTING user with `password_changed_at IS NULL` logs in successfully
+   (MEH-305 fail-open path).
+2. Fresh signup with 12-char password → 200; with 8-char → 422.
+3. POST `/auth/check-password` `{"candidate":"unbelievable"}` → 200 with
+   `{"ok": false, "failures":["too_common"]}`.
 
 ## 2026-04-29 — MEH-305 (PR #408): password policy backend
 
