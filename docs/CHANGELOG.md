@@ -12,6 +12,26 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup (5 deleted, 9 approved)
+
+**5 skills deleted** as out-of-scope for Mehamakor's food-marketplace mission:
+`hebrew-ocr-forms`, `israeli-apartment-hunting`, `israeli-flight-finder`,
+`israeli-travel-planner`, `israeli-wedding-planner`.
+
+**9 skills audited and approved** (review_needed → approved with per-skill notes):
+`hebrew-rtl-best-practices`, `hebrew-tailwind-preset`,
+`israeli-accessibility-compliance`, `hebrew-i18n`, `shabbat-aware-scheduler`,
+`israeli-ui-design-system`, `hebrew-content-writer`, `hebrew-document-generator`,
+`hebrew-nlp-toolkit`.
+
+Key security notes: `shabbat-aware-scheduler` blocked by MEH-397 WebFetch
+allowlist (hebcal.com not listed). `hebrew-nlp-toolkit` approved for
+text-processing use only — transformers.from_pretrained() bypasses hooks.
+**Hardening follow-up: MEH-405** (HuggingFace model allowlist + sandboxing).
+
+Allowlist: 80→75 (deletions) then 75 unchanged (audits only update verdicts).
+Approved count: 6→15. review_needed: 68→59.
+
 ## 2026-04-30 — MEH-400: skills-il/security-compliance scope cleanup + audit (3 deleted, 6 approved)
 
 First post-MEH-397 per-source audit. **3 skills deleted** as out-of-scope
