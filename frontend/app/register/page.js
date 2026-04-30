@@ -178,8 +178,9 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">שם מלא *</label>
+            <label htmlFor="register-name" className="block text-sm font-medium mb-1">שם מלא *</label>
             <input
+              id="register-name"
               value={form.name}
               onChange={set("name")}
               onBlur={() => setNameTouched(true)}
@@ -202,8 +203,9 @@ export default function RegisterPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">אימייל *</label>
+            <label htmlFor="register-email" className="block text-sm font-medium mb-1">אימייל *</label>
             <input
+              id="register-email"
               type="email"
               value={form.email}
               onChange={set("email")}
