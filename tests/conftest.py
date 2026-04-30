@@ -58,14 +58,19 @@ def _reset_rate_limiter():
 
 
 @pytest.fixture(autouse=True)
-def _mock_hibp_clean(monkeypatch):
-    """MEH-306: stub HIBP to "no match" for every test by default.
+def _mock_hibp_clean(monkeypatch, request):
+    """MEH-306: stub HIBP to "no match" by default for tests that exercise
+    validate_password through the API surface (test_api.py + test_auth.py).
 
-    Real HIBP calls during register/reset/change tests would (a) require
-    network and (b) be non-deterministic — the breach corpus updates
-    daily. Tests that specifically exercise the breach path patch
-    _check_hibp directly to override this autouse stub.
+    Skipped for tests/test_password_policy.py — that file unit-tests the
+    service directly and manages its own HIBP patching per test (some
+    intentionally exercise the real _check_hibp via httpx.AsyncClient
+    mocks). A blanket _check_hibp stub here would shadow those surgical
+    patches and break test_hibp_blocks_known_breach.
     """
+    if request.node.fspath.basename == "test_password_policy.py":
+        yield
+        return
     from unittest.mock import AsyncMock
 
     from app.services import password_policy
