@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 import uuid
@@ -248,10 +249,14 @@ async def register(request: Request, response: Response, data: UserRegister, bac
 
     verify_token = secrets.token_urlsafe(32)
     verify_expires = datetime.utcnow() + timedelta(hours=24)
+    # MEH-306: hash_password (passlib bcrypt) blocks ~50-200ms per call.
+    # The handler is async (validate_password awaits HIBP), so the bcrypt
+    # call must run off the event loop or it serializes concurrent signups.
+    pwd_hash = await asyncio.to_thread(hash_password, data.password)
     user = User(
         email=data.email,
         name=data.name,
-        password_hash=hash_password(data.password),
+        password_hash=pwd_hash,
         # MEH-306: stamp the column on first password set so future JWT iat
         # checks have a baseline to compare against (MEH-305 enforces:
         # tokens with iat < password_changed_at → 401).
@@ -761,7 +766,8 @@ async def reset_password(request: Request, data: ResetPasswordRequest, db: Sessi
     result = await validate_password(data.new_password, current_hash=user.password_hash)
     if not result.ok:
         raise HTTPException(status_code=422, detail={"failures": result.failures})
-    user.password_hash = hash_password(data.new_password)
+    # MEH-306: bcrypt blocks; offload (see register handler comment).
+    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     # MEH-306: stamp the column. MEH-305 invalidates every access + refresh
     # token whose iat predates this timestamp — so all OTHER devices the user
     # was logged into get 401 on their next request. The user re-authenticates

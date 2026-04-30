@@ -4,6 +4,7 @@ Sits at prefix /users/me and handles profile update + password change.
 Account deletion is already served by DELETE /auth/me — not duplicated
 here to avoid two code paths on the same destructive action.
 """
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -105,7 +106,9 @@ async def change_password(
             status_code=400,
             detail="SET_PASSWORD_UNSUPPORTED",
         )
-    if not verify_password(data.current_password, user.password_hash):
+    # MEH-306: passlib bcrypt verify blocks ~50-200ms; offload to a thread
+    # so the async handler doesn't block the event loop.
+    if not await asyncio.to_thread(verify_password, data.current_password, user.password_hash):
         raise HTTPException(
             status_code=403,
             detail="הסיסמה הנוכחית שגויה",
@@ -118,7 +121,8 @@ async def change_password(
     result = await validate_password(data.new_password, current_hash=user.password_hash)
     if not result.ok:
         raise HTTPException(status_code=422, detail={"failures": result.failures})
-    user.password_hash = hash_password(data.new_password)
+    # MEH-306: bcrypt hash also blocks; offload.
+    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     # MEH-306: stamp the column → MEH-305 invalidates all sessions whose
     # iat predates this timestamp, including this device's current access
     # token. Frontend follows up with /auth/refresh.
