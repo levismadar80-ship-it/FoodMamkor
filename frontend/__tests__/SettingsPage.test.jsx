@@ -57,14 +57,58 @@ vi.mock("@phosphor-icons/react", () => ({
   Storefront: (props) => <span data-testid="icon-store" {...props} />,
 }));
 
-// Mock PasswordStrength so we don't pull its CSS bits
+// Mock PasswordStrength so we don't pull its CSS bits.
+// Settings no longer imports it post-MEH-306, but keeping the mock in
+// case other parts of the page tree pick it up later.
 vi.mock("@/components/PasswordStrength", () => ({
   default: () => <div data-testid="password-strength" />,
 }));
 
-// Mock validators — simple email check
+// MEH-306: PasswordInput now owns /settings's new-password input. The
+// real component fires a debounced /auth/check-password call on every
+// keystroke; mocking it here keeps the unit test deterministic and
+// removes the api.post requirement. The mock fires onValidityChange
+// from a useEffect on `value` so the parent's submit-gate behaves
+// like the real component (valid when value is non-empty).
+vi.mock("@/components/PasswordInput", async () => {
+  const React = await import("react");
+  return {
+    default: ({ value, onChange, onValidityChange, ariaLabel }) => {
+      React.useEffect(() => {
+        if (typeof onValidityChange === "function") {
+          onValidityChange((value || "").length >= 12);
+        }
+      }, [value, onValidityChange]);
+      return (
+        <input
+          aria-label={ariaLabel}
+          value={value}
+          onChange={onChange}
+          data-testid="password-input-mock"
+        />
+      );
+    },
+  };
+});
+
+// Mock validators — simple email check + the constant settings imports
+// transitively through PasswordInput in non-mocked paths.
 vi.mock("@/lib/validators", () => ({
   validateEmail: (e) => typeof e === "string" && /.+@.+\..+/.test(e),
+  PASSWORD_MIN_LENGTH: 12,
+  passwordRules: [
+    { id: "len", label: "לפחות 12 תווים", check: (p) => (p || "").length >= 12 },
+  ],
+  passwordValid: (p) => (p || "").length >= 12,
+}));
+
+// Mock passwordMessages — settings imports firstFailureMessage in its
+// catch block. The unit tests don't drive 422 paths so a no-op mock
+// is sufficient.
+vi.mock("@/lib/passwordMessages", () => ({
+  firstFailureMessage: () => "test-failure",
+  failureMessage: () => "test-failure",
+  PASSWORD_FAILURE_MESSAGES: {},
 }));
 
 const consumer = {
