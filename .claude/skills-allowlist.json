@@ -244,9 +244,9 @@
     "hebrew-legal-research": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure legal-research docs + interactive Hebrew terminology dict (40+ terms across courts, legislation, procedure, professionals, contract, employment, property law). Standard-library only (argparse, sys). No network/exec/credentials."
     },
     "hebrew-nlp-toolkit": {
       "source": "skills-il/localization",
@@ -286,9 +286,9 @@
     "israeli-ai-compliance-kit": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure AI-compliance docs + 2 generator scripts (EU AI Act risk classifier + model-card generator). Standard-library only. No network/exec/credentials. Recommends israel-law MCP — documentation reference only, not auto-wired. Persistence-pattern hit at line 208 of SKILL.md was a false-positive (advice prose 'going forward', not persist instruction)."
     },
     "israeli-apartment-hunting": {
       "source": "skills-il/localization",
@@ -300,23 +300,23 @@
     "israeli-appsec-scanner": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Borderline-but-cleared: skill creates a NEW capability (local security audit) but does not exfiltrate. secrets-scanner.sh uses grep -rnP on user's project; output stays local stdout. security-audit-checklist.py reads files via pathlib.Path.read_text() and reports findings; standard-library only. The 16 'exec' pattern hits were regex DETECTORS for eval(/exec( in user code (scanner finding eval, not USING eval). Suggests external tools (TruffleHog/Gitleaks/Snyk/Trivy) as user-runs, not auto-invoked. User-invoked only — output stays local by design. Re-audit required if upstream author adds network reporting in future versions."
     },
     "israeli-cyber-regulations": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure regulatory framework documentation (INCD, BoI 361/357/364, ISA, MOH, MALMAB). No scripts."
     },
     "israeli-ecommerce-compliance": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure compliance documentation (Consumer Protection Law, IS 5568, cookie consent, PCI DSS). No scripts. Frontmatter allowed-tools declaration is capability-only; body has nothing executable; WebFetch hook-blocked regardless."
     },
     "israeli-flight-finder": {
       "source": "skills-il/localization",
@@ -328,9 +328,9 @@
     "israeli-privacy-shield": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure privacy-law docs + interactive compliance assessment script (security-level determination, registration check, checklist generator). Standard-library only (argparse, json, sys, datetime). compliance_checker.py --output uses user-supplied path directly (no slug derivation; different code-shape from MEH-398's --project-name pattern). Not the same finding-class — clean."
     },
     "israeli-travel-planner": {
       "source": "skills-il/localization",
