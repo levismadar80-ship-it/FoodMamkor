@@ -178,6 +178,52 @@ Next session pick-up options:
 - Continue MEH-371 merge → MEH-376 → MEH-370 chain (per 2026-04-27 entry)
 - OR start MEH-305+306 Password Policy as first /ultrareview consumer
 
+## 2026-04-28 — Session close — 5 PRs merged, alert wiring fixed
+
+### End-of-day state
+
+PRs merged today:
+- PR #399 — MEH-379+380+381 CSP hardening (squash f62ee54)
+- PR #401 — MEH-382 Railway retry-on-busy (squash 7c3051e)
+- PR #402 — staging → main release
+- PR #395 — MEH-370 Next.js 14 → 16 upgrade (squash 28bbc3f)
+- PR #403 — MEH-372 next-pwa removal Path E (squash 76d04ee)
+- PR #404 — Wire fire_alerts to product creation (audit Gap A) (squash 3b7e3ea)
+
+Tickets closed:
+- MEH-370, MEH-371, MEH-372, MEH-379, MEH-380, MEH-381, MEH-382
+
+Vuln state on main: **4 moderate** (postcss chain only)
+- 5 high cleared by next-pwa removal (MEH-372)
+- Several next direct CVEs cleared by Next 16 upgrade (MEH-370)
+
+### Pending for next session
+
+- **Smoke test PR #404 wiring** — verify in production:
+  1. Login as regular user (NOT business owner)
+  2. Favorite a producer + opt in WhatsApp
+  3. Switch to business account, add a new product
+  4. Confirm WhatsApp arrives within 30s
+  If no WhatsApp → check Railway logs for fire_alerts call + Twilio API errors.
+
+- **OAuth business registration 409 bug** (NEW, not yet ticketed):
+  Email already registered → backend returns 409 → frontend swallows error silently. User sees broken Google button.
+  Repro: `/register/business` with Google OAuth using existing email returns 409 with no user-facing toast.
+  Expected: friendly toast "החשבון כבר רשום — היכנסי במקום" + link to `/login`.
+  Priority: 2 (High) — trust killer in onboarding flow.
+
+- **postcss vuln chain (4 moderate)** — separate ticket needed.
+  `next@16.2.4` bundles old postcss internally; affects next, @sentry/nextjs, @vercel/speed-insights transitively.
+  Priority: 4 (Low).
+
+### Active urgent tickets in Linear (next priority)
+
+- MEH-99 — Smart Search ("גבינה" returns 0)
+- MEH-78 — Map opens on Golan instead of Tel Aviv
+- Various live site bugs (broken stats API, duplicate filter bars on /map, contradictory "thousands" banner)
+
+---
+
 ## 2026-04-28 — MEH-372: next-pwa removed (Path E)
 
 **Branch:** `feature/meh-372-next-pwa-re-enable` — **PR #403** (open, non-draft)
@@ -1448,6 +1494,54 @@ After deploy, click a real verification link in staging and check Railway logs f
 ### Next session
 - Wait on Vercel preview for PR; smoke-test the 7 fixes per the format in the PR body
 - After MEH-318 lands: pick up MEH-305 / MEH-306 password-policy work (the dropped Fix #1 ground)
+
+---
+
+## 2026-04-25 Session 2 update (MEH-311 + MEH-317 + MEH-313)
+
+### What shipped
+
+| PR | MEH | Title | Status |
+|----|-----|-------|--------|
+| #341 | MEH-311 | RecipeIngredient.producer_id ON DELETE SET NULL | Merged to staging |
+| #342 | MEH-317 | Fix test_happy_path data= → json= | Merged to staging |
+| #344 | MEH-313 | recipes.submitted_by ON DELETE CASCADE | Merged to staging |
+
+### MEH-311 details
+
+- `backend/app/models/models.py:370` — `ForeignKey("producers.id", ondelete="SET NULL")`
+- Alembic migration `a4c7d2f9e1b8` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_ingredient_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `a4c7d2f9e1b8`
+- Linear MEH-311 → Done
+
+### MEH-317 details
+
+Root cause: `test_happy_path` sent `data={"username": ...}` (form-encoded) to `/auth/login`
+but `LoginRequest` expects JSON body with `email` field. Fixed 2 lines at `tests/test_api.py:1579,1583`.
+
+### MEH-313 details
+
+- `backend/app/models/models.py:355` — `ForeignKey("users.id", ondelete="CASCADE")`
+- Alembic migration `c9e3a1b5d72f` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `c9e3a1b5d72f`
+- Product decision: CASCADE (recipes are user-owned content, full GDPR wipe)
+- Linear MEH-313 → Done
+
+### Sibling FK remaining open
+
+- **MEH-312** — `recipes.category_id` missing `ondelete` (Backlog, Low — category deletion unlikely, non-blocking)
+
+### Rule added
+
+**Rule 21** added to `.claude/rules/workflow.md`: "Never merge without verified green CI signal — even if budget appears exhausted."
+
+### Next session candidates
+
+- MEH-304 root cause — paste Railway logs from forgot-password on staging to diagnose actual 400 cause
+- MEH-312 — `recipes.category_id` quick SET NULL fix (low priority)
+- MEH-198 (email verify resend), MEH-258 (SECURITY-CHECKLIST), MEH-272 (Producer CHECK constraints)
 
 ---
 
