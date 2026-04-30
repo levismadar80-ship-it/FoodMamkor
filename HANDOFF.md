@@ -1,7 +1,36 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-397 — skills supply chain lockdown, PR pending)
+> Last updated: 2026-04-30 (MEH-398 — ui-ux-pro-max path-traversal hardening, PR pending)
+
+## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max design_system.py
+
+**Branch:** `feature/meh-398-ui-ux-pro-max-path-sanitize` off staging.
+**Status:** draft PR pending review. Follow-up to MEH-397's in-PR audit
+finding.
+
+Mechanical fix:
+- New helper module `_sanitize.py` (pure, only `re`); regex
+  `[^a-z0-9-]` strip + `"default"` fallback.
+- `design_system.py:508,530` swapped from inline slug logic to
+  `_sanitize_slug(...)`.
+- 10 unit tests in `tests/test_sanitize.py` (5 required + 5
+  adversarial bonus). All green.
+- Allowlist notes updated. Verdict unchanged
+  (`approved_local_unlocked`); MEH-YYY (lock ui-ux-pro-max into
+  `skills-lock.json`) still on the 30-day SLA from 2026-04-30.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Helper in separate `_sanitize.py` module (not inline regex per spec) | Pure module → tests import only `re`; doesn't drag `core` import side-effects through |
+| Sandbox `if __name__ == "__main__":` assertion block in `_sanitize.py` | Belt-and-suspenders: runnable without pytest in restricted environments |
+| Trailing whitespace on adjacent blank lines preserved | File-preservation rule 3 — diff stays scoped to 3 functional lines |
+| `last_audit_date` left at `2026-04-30` | This PR patches one finding; full re-audit not warranted |
+| `audit_verdict` left at `approved_local_unlocked` | MEH-YYY (locking) is the verdict-change ticket, not this one |
+
+**No skills removed. No verdict change. No new deps.** Single PR.
 
 ## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
 
