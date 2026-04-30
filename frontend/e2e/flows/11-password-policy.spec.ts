@@ -47,7 +47,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
 
     // Submit gate is disabled until length OK; force-submit should
     // surface the form-level error or simply not progress.
-    const submit = page.getByRole("button", { name: /הרשמ|הרשמה|הירשמי/i });
+    const submit = page.getByRole("button", { name: /הצטרפי/ });
     if (await submit.isEnabled()) {
       await submit.click();
       await expect(
@@ -77,7 +77,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // Submit (if enabled) must surface the same failure on the form-level
     // error div via the 422-failures path.
     await page.getByRole("checkbox").check();
-    const submit = page.getByRole("button", { name: /הרשמ|הרשמה|הירשמי/i });
+    const submit = page.getByRole("button", { name: /הצטרפי/ });
     if (await submit.isEnabled()) {
       await submit.click();
       await expect(
@@ -102,7 +102,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     ).toBeVisible({ timeout: 5000 });
 
     await page.getByRole("checkbox").check();
-    const submit = page.getByRole("button", { name: /הרשמ|הרשמה|הירשמי/i });
+    const submit = page.getByRole("button", { name: /הצטרפי/ });
     await expect(submit).toBeEnabled();
 
     await submit.click();
@@ -139,7 +139,9 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     ).toBeVisible();
 
     await page.getByLabel(/^סיסמה חדשה$/).fill(SHORT_PASSWORD);
-    await page.getByLabel(/אימות/).fill(SHORT_PASSWORD);
+    // Confirm input on /reset-password has placeholder "אישור סיסמה"
+    // (no <label>); use getByPlaceholder, not getByLabel.
+    await page.getByPlaceholder("אישור סיסמה").fill(SHORT_PASSWORD);
     await page.getByRole("button", { name: /עדכני סיסמה/ }).click();
     await expect(
       page.getByText(/הסיסמה חייבת להכיל לפחות 12 תווים|לפחות 12 תווים/),
