@@ -6,4 +6,5 @@ frontend/app/login/page.js
 frontend/app/register/page.js
 frontend/app/settings/page.jsx
 frontend/app/reset-password/page.js
+frontend/components/PasswordInput.jsx
 frontend/components/CategorySelector.jsx
