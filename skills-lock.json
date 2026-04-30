@@ -181,11 +181,6 @@
       "sourceType": "github",
       "computedHash": "66a18993fd2937c04b9e1eacb064738c46a60aa013c5aa59e75904452495b5fa"
     },
-    "hebrew-ocr-forms": {
-      "source": "skills-il/localization",
-      "sourceType": "github",
-      "computedHash": "ba4b9d8225d1a34aba7ef54e44a863675daff016fefb60f06bb2111d26dc3c26"
-    },
     "hebrew-rtl-best-practices": {
       "source": "skills-il/localization",
       "sourceType": "github",
@@ -206,11 +201,6 @@
       "sourceType": "github",
       "computedHash": "7b061fed7a7096508402291a90c80869be9e239c04f4c202ffc386a013dcd81d"
     },
-    "israeli-apartment-hunting": {
-      "source": "skills-il/localization",
-      "sourceType": "github",
-      "computedHash": "efb6bd4e724e21ed6509f516fc487c32bb65c5891a41874ca60839578701ff7b"
-    },
     "israeli-appsec-scanner": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
@@ -226,30 +216,15 @@
       "sourceType": "github",
       "computedHash": "7dd8652ed8db28226aef01be5c2c4c95f1b6136cdba1febcc4b93c7892b2f55c"
     },
-    "israeli-flight-finder": {
-      "source": "skills-il/localization",
-      "sourceType": "github",
-      "computedHash": "70283ff19c334200fd64c7dd4a3ec182f76e8d45d82aeecad2cb4ee70f761869"
-    },
     "israeli-privacy-shield": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
       "computedHash": "ffe1f2b16f88631c34ede5e9314fca6b5e88b4b1dc8369117e7715a9fa9362c0"
     },
-    "israeli-travel-planner": {
-      "source": "skills-il/localization",
-      "sourceType": "github",
-      "computedHash": "72f78a6cd5bf5487c51e41b88f0d8eb6fafb360767642443b8425c5e4aeaee2b"
-    },
     "israeli-ui-design-system": {
       "source": "skills-il/localization",
       "sourceType": "github",
       "computedHash": "aade6874c239452d73a572b54e0b5a1d4c203e9323fcb26d69ad64ec1f2d1ffe"
-    },
-    "israeli-wedding-planner": {
-      "source": "skills-il/localization",
-      "sourceType": "github",
-      "computedHash": "8a8af84f62ac12efb3c4819d101cf692d85a04ef48c2a83f06c8dece832124b7"
     },
     "launch-strategy": {
       "source": "coreyhaines31/marketingskills",
