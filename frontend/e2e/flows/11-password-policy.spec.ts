@@ -30,6 +30,39 @@ function uniqueSignup(prefix: string) {
 }
 
 test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
+  // MEH-306 sub-B Playwright mock — sub-A's /auth/check-password
+  // endpoint is on the unmerged feature branch (PR #410) so the
+  // staging Railway backend that Vercel preview proxies to returns
+  // 404. Mock the response shape here so frontend wiring (debounce,
+  // AbortController, tile render, 422-failures path) is what's
+  // actually under test.
+  //
+  // Note: pre-mock, scenario 3 (valid 12-char unique) was passing
+  // for the WRONG reason — fail-soft on 404 produced failures=[],
+  // which happens to be the success state. Post-mock it passes for
+  // the right reason: the mock genuinely returns failures=[] only
+  // for non-deny-listed candidates. Coverage upgrade.
+  //
+  // TODO: Remove this mock after both sub-A and sub-B merge to staging.
+  // Tracked in MEH-XXX (Smadar to file post-PR).
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/auth/check-password", async (route) => {
+      const body = JSON.parse(route.request().postData() || "{}");
+      const candidate = (body.candidate || "").toString();
+      // Tiny in-test deny-list — only the values our scenarios use.
+      // Real backend uses the 10k SecLists corpus; we don't need parity.
+      const denyList = new Set(["unbelievable", "password1234", "password    "]);
+      const failures = denyList.has(candidate.trim().toLowerCase())
+        ? ["too_common"]
+        : [];
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: failures.length === 0, failures }),
+      });
+    });
+  });
+
   test("Signup: short password is blocked with the Hebrew length message", async ({
     page,
   }) => {
