@@ -627,6 +627,72 @@ CREATE TABLE audit_log (
 
 ---
 
+## 17. Skills supply chain (MEH-397)
+
+Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
+mechanism. Each load is an opportunity for a malicious skill to read
+source files, env vars, OAuth flows, or persist prompt-injection
+instructions across sessions. Empirical baseline:
+
+- Snyk ToxicSkills (Feb 2026) — 13.4% of 3,984 ClawHub skills with
+  critical security issues; 76 confirmed malicious payloads
+- Aguara — 31K+ skills, 485 critical findings
+- Liu et al. — 26.1% with vulnerable patterns
+
+Authorship of the 83 skills (after MEH-397):
+
+| Source | Count | Verification |
+|---|---|---|
+| `pbakaus/impeccable` | 21 | named author |
+| `coreyhaines31/marketingskills` | 38 | named author |
+| `skills-il/localization` | 14 | **anonymous** — manual review required |
+| `skills-il/security-compliance` | 9 | **anonymous** — manual review required |
+| `local` (`ui-ux-pro-max`) | 1 | bypassed lock; Python scripts manually audited in MEH-397 |
+
+### 5-layer defense
+
+1. **Tool deny + WebFetch allowlist** (`.claude/settings.json` +
+   PreToolUse hooks at `.claude/hooks/check-env-read.sh` and
+   `.claude/hooks/check-webfetch-allowlist.sh`). Read on `.env` files
+   blocked; WebFetch limited to 7 parent domains (github, anthropic,
+   npmjs, pypi, mehamakor, vercel, railway). Hooks fail-closed if
+   `jq` missing.
+2. **Allowlist registry** (`.claude/skills-allowlist.json`) — 83
+   entries; every skill on disk must be listed with a non-blocked
+   verdict. Verdict `approved_local_unlocked` is a 30-day transitional
+   slot for skills that bypassed the lock (currently
+   `ui-ux-pro-max`).
+3. **Audit script** (`.claude/scripts/audit-skills.sh`) — scans every
+   `SKILL.md` for 4 pattern classes (network / exec / secret-name /
+   prompt-injection). Combination of ≥2 classes in a single file =
+   critical, exit 1. Self-test fixture at
+   `.claude/scripts/test/fixtures/bad-skill/SKILL.md` proves the
+   detector works.
+4. **CI gate** (`.github/workflows/skills-audit.yml`) — runs on every
+   PR touching skills, the lock, or the audit script. Two-stage:
+   self-test must exit 1 (proves detection); real audit must exit 0
+   (proves clean). Either failure blocks merge.
+5. **Documentation** — full policy in
+   [.claude/rules/skills.md](../.claude/rules/skills.md), 4-step
+   add-skill protocol, 30-day SLA on transitional verdicts.
+
+### Adding a new skill
+
+See `.claude/rules/skills.md` Layer 5 (4-step protocol). Default
+verdict `review_needed`. `skills-il/*` sources require an "Anonymous
+author" note in the allowlist.
+
+### Symlink mechanism
+
+Skill content lives **once** at `.agents/skills/<name>/SKILL.md`. The
+harness reads from `.claude/skills/<name>` (a symlink mode `120000`
+to `../../.agents/skills/<name>`). Editing either path mutates the
+same on-disk content. `ui-ux-pro-max` is the one exception — a real
+directory under `.claude/skills/`, allowlisted as
+`approved_local_unlocked` until lock-up.
+
+---
+
 ## בדיקת אבטחה — הרץ ל-Claude Code
 
 ```

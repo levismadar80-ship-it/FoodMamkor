@@ -1,7 +1,58 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-28 (MEH-372 — next-pwa removed, vulns 9 → 4)
+> Last updated: 2026-04-30 (MEH-397 — skills supply chain lockdown, PR pending)
+
+## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
+
+**Branch:** `feature/meh-397-skills-supply-chain-lockdown` off staging.
+**Status:** draft PR pending Smadar review. Do NOT merge yet.
+
+**5-layer defense** around 83 skills (.agents/skills/ canonical
+content + .claude/skills/ symlink mounts + ui-ux-pro-max local
+real-dir):
+
+1. **Tool deny** — `Read(./.env*)` denies + 7-domain WebFetch allowlist
+   (github, anthropic, npmjs, pypi, mehamakor, vercel, railway). Two
+   PreToolUse hooks fail-closed.
+2. **Allowlist registry** — `.claude/skills-allowlist.json` 83 entries.
+   `ui-ux-pro-max` = `approved_local_unlocked` (30-day SLA to lock).
+3. **Audit script** — `.claude/scripts/audit-skills.sh`. Self-test
+   fixture exits 1; real tree exits 0.
+4. **CI gate** — `.github/workflows/skills-audit.yml` two-stage.
+5. **Documentation** — `.claude/rules/skills.md` + SECURITY.md §17.
+
+**ui-ux-pro-max audit** (in-PR security review): 3 Python scripts
+audited — `core.py`, `search.py`, `design_system.py` (1434 LOC total).
+All clean. One Priority-2 follow-up: unsanitized `--project-name`
+slug at `design_system.py:508,529` enables local path traversal.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| `.agents/skills/` is the audit target (not `.claude/skills/`) | `.claude/skills/*` are mode-120000 symlinks → `.agents/skills/*`; canonical content lives in `.agents/skills/`. Only `ui-ux-pro-max` is a real dir under `.claude/skills/`. |
+| `approved_local_unlocked` verdict (new) | Transitional 30-day slot for `ui-ux-pro-max` while we wait to declare its source repo + SHA256. Resolves to `approved` (locked) or `blocked` (CI failure) at day 30. |
+| Pattern set deviation from spec | Chose LLM-canary patterns (`ignore previous`, `system prompt`, `disregard`, `override.*instruction`, `forget.*above`) over spec's agent-rule patterns. Documented in `.claude/rules/skills.md`. |
+| Skill count = 83 not 78 | Linear MEH-397 spec is stale. Actual: 82 locked + 1 unlocked. |
+| Hooks fail-closed if jq missing | Default deny — skill supply chain context demands fail-closed. |
+
+**Follow-up tickets (not yet created in Linear, do after merge):**
+
+- MEH-XXX (Priority 2) — Sanitize `--project-name` and `--page` in
+  `design_system.py:508,529` (basic path-traversal hardening).
+- MEH-YYY (Priority 3) — Lock `ui-ux-pro-max` into
+  `skills-lock.json` with declared source repo + SHA256 (within 30
+  days of MEH-397 merge).
+- Audit pbakaus/impeccable (21 skills)
+- Audit coreyhaines31/marketingskills (38 skills)
+- Audit skills-il/security-compliance (9 skills, high priority)
+- Audit skills-il/localization (14 skills, high priority)
+
+**No skills removed. `skills-lock.json` not modified.** Single PR. Did
+not merge — awaiting user review.
+
+---
 
 ## 2026-04-29 — MEH-305 (PR #408): password policy backend
 
