@@ -35,7 +35,21 @@
 **Counts after PR:** allowlist 80→75, approved 6→15, review_needed 73→59.
 
 **Follow-up tickets:**
-- **MEH-405** (not yet in Linear — Smadar to create after merge): HuggingFace model allowlist + sandboxing for hebrew-nlp-toolkit.
+- **MEH-405** (not yet in Linear — Smadar to create after merge): EXPANDED SCOPE — original spec was hebrew-nlp-toolkit-specific, but adversarial review surfaced a broader architecture gap. Full scope: "All Python scripts in skills that bypass MEH-397 hooks via requests/urllib." Hardening plan: network allowlist + sandboxing for unhooked script-level HTTP.
+
+**MEH-405 candidates list** (from `grep -rE "^\s*(import requests|from urllib|from requests|import urllib)" .agents/skills/*/scripts/`):
+
+```
+# MEH-401 candidates (confirmed live network):
+.agents/skills/israeli-accessibility-compliance/scripts/audit_a11y.py  → requests.get(url) + urllib.parse.urljoin
+.agents/skills/shabbat-aware-scheduler/scripts/check_shabbat.py        → requests.get("https://www.hebcal.com/...")
+
+# hebrew-nlp-toolkit/preprocess_hebrew.py → CLEAN (stdlib only; HuggingFace URLs are in SKILL.md docs only)
+# MEH-400 skills: no scripts with network imports (confirmed in MEH-400 audit)
+```
+
+NOTE: The original grep pattern (`^import requests` anchored at col 0) missed the shabbat entry because it was inside a `try:` block. MEH-405 should use the `^\s*` variant to catch indented imports.
+
 - Next localization audit source TBD.
 
 ## 2026-04-30 — MEH-400: skills-il/security-compliance audit + scope cleanup
