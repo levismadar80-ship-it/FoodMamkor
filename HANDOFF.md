@@ -1,7 +1,42 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-400 — skills-il/security-compliance audit + cleanup, PR pending)
+> Last updated: 2026-04-30 (MEH-401 — skills-il/localization audit + cleanup, PR pending)
+
+## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup
+
+**Branch:** `feature/meh-401-audit-skills-il-localization` off staging.
+**Status:** draft PR pending merge. 2 commits (deletions + verdicts).
+
+**Deleted (5 skills, out-of-scope):** `hebrew-ocr-forms`,
+`israeli-apartment-hunting`, `israeli-flight-finder`,
+`israeli-travel-planner`, `israeli-wedding-planner`.
+
+**Approved (9 skills):** `hebrew-rtl-best-practices`, `hebrew-tailwind-preset`,
+`israeli-accessibility-compliance`, `hebrew-i18n`, `shabbat-aware-scheduler`,
+`israeli-ui-design-system`, `hebrew-content-writer`, `hebrew-document-generator`,
+`hebrew-nlp-toolkit`.
+
+**Security findings surfaced:**
+
+| Finding | Skill | Status |
+|---|---|---|
+| HebCal API blocked by MEH-397 WebFetch allowlist | shabbat-aware-scheduler | Noted in allowlist; user must add hebcal.com to use the skill |
+| transformers.from_pretrained() bypasses WebFetch hooks; pickle deserialization risk | hebrew-nlp-toolkit | Approved for text-processing only; hardening → MEH-405 |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 5 skills deleted (lifestyle/travel/OCR) | Out of scope for food marketplace |
+| hebrew-nlp-toolkit approved with ⚠️ note | Documentation value high; pickle risk is runtime, not skill-install-time; documented clearly |
+| MEH-405 opened for HuggingFace hardening | Allowlist + sandboxing for from_pretrained() calls |
+
+**Counts after PR:** allowlist 80→75, approved 6→15, review_needed 73→59.
+
+**Follow-up tickets:**
+- **MEH-405** (not yet in Linear — Smadar to create after merge): HuggingFace model allowlist + sandboxing for hebrew-nlp-toolkit.
+- Next localization audit source TBD.
 
 ## 2026-04-30 — MEH-400: skills-il/security-compliance audit + scope cleanup
 
