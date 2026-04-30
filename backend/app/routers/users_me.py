@@ -7,14 +7,22 @@ here to avoid two code paths on the same destructive action.
 import asyncio
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user, hash_password, verify_password
+from app.auth import generate_fingerprint, get_current_user, hash_password, verify_password
 from app.database import get_db
 from app.models import User
 from app.rate_limit import limiter
+# MEH-306: cookie-issuance helpers live in routers/auth.py because login /
+# register / OAuth all share them. change_password needs the same helpers
+# to refresh cookies on the 204 (so /auth/refresh works after the password
+# change). Importing the underscore-prefixed helpers crosses a module
+# boundary, but the alternative is duplicating refresh + fingerprint
+# cookie attributes — the single-source-of-truth wins. Future refactor:
+# move both helpers to app/auth_cookies.py.
+from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.password import PasswordField
 from app.schemas.schemas import UserOut
 from app.services.password_policy import validate_password
@@ -86,6 +94,7 @@ def update_profile(
 async def change_password(
     request: Request,
     data: PasswordChange,
+    response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -95,11 +104,14 @@ async def change_password(
     400 so the frontend can render a "you signed in with Google/Apple"
     explainer instead of a generic error.
 
-    MEH-306: keeps the 204 contract. The MEH-305 iat-vs-changed_at gate
-    invalidates the caller's CURRENT access token along with all other
-    devices; the frontend recovers by calling POST /auth/refresh
-    (HttpOnly refresh cookie was rotated on a previous request and is
-    untouched by password change). Sub-session B owns that wiring.
+    MEH-306: 204 body contract preserved. Set-Cookie headers re-issue
+    the refresh + fingerprint cookies so the same device can recover
+    via POST /auth/refresh — without these, the rotated
+    password_changed_at would invalidate the caller's existing refresh
+    cookie (cookie.iat < password_changed_at → /auth/refresh 401),
+    and the user would be forced to re-login. Other devices are still
+    kicked because their refresh cookies are unchanged and pre-date
+    password_changed_at (MEH-305 iat gate).
     """
     if not user.password_hash:
         raise HTTPException(
@@ -125,7 +137,15 @@ async def change_password(
     user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     # MEH-306: stamp the column → MEH-305 invalidates all sessions whose
     # iat predates this timestamp, including this device's current access
-    # token. Frontend follows up with /auth/refresh.
+    # token. Set-Cookie below re-arms only the caller's device.
     user.password_changed_at = datetime.now(timezone.utc)
     db.commit()
+    db.refresh(user)
+    # MEH-306: Set-Cookie on the 204 response. Body stays empty (frontend
+    # auth-context.js:145 contract preserved); fresh cookies arrive in the
+    # response headers so /auth/refresh succeeds on this device. Other
+    # devices keep their stale refresh cookies and get 401 on next refresh.
+    fp = generate_fingerprint()
+    _set_refresh_cookie(response, user)
+    _set_fingerprint_cookie(response, fp)
     return None

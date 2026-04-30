@@ -42,6 +42,20 @@ def _decode_token(token: str) -> dict:
     return obj.claims
 
 
+def _extract_set_cookie(response, name: str) -> str | None:
+    """Pull a Set-Cookie value by name from a response.
+
+    MEH-327 lesson: use response.headers.get_list("set-cookie") — NOT
+    response.headers.items() — because httpx joins multiple Set-Cookie
+    headers into a single comma-separated string, breaking parses on
+    any cookie after the first.
+    """
+    for hdr in response.headers.get_list("set-cookie"):
+        if hdr.startswith(f"{name}="):
+            return hdr.split("=", 1)[1].split(";")[0].strip()
+    return None
+
+
 # ---------- Signup ----------
 
 class TestSignupPolicy:
@@ -178,18 +192,13 @@ class TestChangePasswordPolicy:
         assert resp.status_code == 422
 
     def test_change_password_then_refresh_returns_valid_token(self, client, db):
-        """Sub-B contract: after 204 from PATCH /users/me/password, the
-        frontend calls /auth/refresh to obtain a token whose iat covers
-        the new password_changed_at. Pins the recovery flow.
+        """Sub-B contract: PATCH /users/me/password returns 204 with empty
+        body but Set-Cookie headers re-issue refresh + fingerprint cookies.
+        Frontend then calls POST /auth/refresh with the NEW cookies and
+        gets a fresh access token whose iat >= password_changed_at.
 
-        SKEPTIC NOTE: this passes only when login + change happen within
-        the same int-second (MEH-305 refresh gate uses
-        `iat_claim < int(pwd.timestamp())` — equality is allowed via the
-        int() coercion). HIBP is mocked clean, so the path runs in <10ms
-        and the same-second invariant holds in CI. If this becomes
-        flaky on slow runners, the change_password handler will need
-        to re-issue the refresh cookie (currently removed per the
-        sub-A scope agreement).
+        Without the cookie reissuance, the refresh cookie's iat would
+        predate password_changed_at and /auth/refresh would 401.
         """
         user = make_user(db, password=SAFE_PASSWORD)
 
@@ -198,32 +207,43 @@ class TestChangePasswordPolicy:
             json={"email": user.email, "password": SAFE_PASSWORD},
         )
         assert login_resp.status_code == 200
-        # TestClient does NOT auto-forward Secure cookies over http://testserver
-        # (mirror of TestRefreshTokenFlow.test_refresh_returns_new_access_token).
-        refresh_cookie = login_resp.cookies.get("refresh_token")
-        assert refresh_cookie
+        # TestClient does NOT auto-forward Secure cookies over http://testserver.
+        login_refresh_cookie = login_resp.cookies.get("refresh_token")
+        assert login_refresh_cookie
+        login_fp = _extract_set_cookie(login_resp, "__Secure-Fgp")
+        assert login_fp
 
         access_token = login_resp.json()["access_token"]
-        # The login token carries a userFingerprint claim — get_current_user
-        # requires the matching __Secure-Fgp cookie. Read it from Set-Cookie.
-        fp_value = None
-        for hdr in login_resp.headers.get_list("set-cookie"):
-            if hdr.startswith("__Secure-Fgp="):
-                fp_value = hdr.split("=", 1)[1].split(";")[0].strip()
-                break
-        assert fp_value
 
         change_resp = client.patch(
             "/users/me/password",
             headers={"Authorization": f"Bearer {access_token}"},
-            cookies={"__Secure-Fgp": fp_value},
+            cookies={"__Secure-Fgp": login_fp},
             json={"current_password": SAFE_PASSWORD, "new_password": ANOTHER_SAFE_PASSWORD},
         )
         assert change_resp.status_code == 204
+        # Body must be empty (auth-context.js:145 contract).
+        assert change_resp.content in (b"", b"null")
 
+        # MEH-327 lesson: use get_list("set-cookie"), NOT headers.items() —
+        # httpx joins multiple Set-Cookie headers into a single comma-separated
+        # value and the second cookie's parse fails.
+        set_cookies = change_resp.headers.get_list("set-cookie")
+        assert any(c.startswith("refresh_token=") for c in set_cookies), (
+            f"Expected refresh_token Set-Cookie on the 204; got: {set_cookies}"
+        )
+        assert any(c.startswith("__Secure-Fgp=") for c in set_cookies), (
+            f"Expected __Secure-Fgp Set-Cookie on the 204; got: {set_cookies}"
+        )
+
+        new_refresh_cookie = _extract_set_cookie(change_resp, "refresh_token")
+        new_fp = _extract_set_cookie(change_resp, "__Secure-Fgp")
+        assert new_refresh_cookie and new_fp
+
+        # New cookies must work on /auth/refresh — login-time cookie would 401.
         refresh_resp = client.post(
             "/auth/refresh",
-            cookies={"refresh_token": refresh_cookie},
+            cookies={"refresh_token": new_refresh_cookie, "__Secure-Fgp": new_fp},
         )
         assert refresh_resp.status_code == 200, refresh_resp.text
         new_token = refresh_resp.json()["access_token"]

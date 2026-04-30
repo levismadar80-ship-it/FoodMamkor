@@ -49,6 +49,23 @@ Done before push:
 - `MEH-394` (test-suite widening to `pytest tests/`) still out of scope —
   any pre-existing failures CI surfaces on the wider scope go in MEH-394.
 
+**CC sandbox environment quirk (not a CI concern):**
+When running `pytest` locally inside CC's sandbox, `pip install bcrypt`
+without a version pin pulls bcrypt 5.0.0, which removes
+`bcrypt.__about__.__version__` and breaks passlib's version detection
+(`AttributeError`) → `ValueError: password cannot be longer than 72
+bytes`. Repo pins `bcrypt==4.0.1` in `backend/uv.lock`, so CI is fine.
+Local sandbox repro: `pip install 'bcrypt==4.0.1'` to match the lock.
+Track-only — no action needed for this PR.
+
+**Cross-module private-import note (commit `8`):**
+`backend/app/routers/users_me.py` now imports `_set_refresh_cookie` and
+`_set_fingerprint_cookie` from `app.routers.auth`. Underscore-prefixed
+helpers crossing a module boundary is a smell; future refactor should
+move both to `app/auth_cookies.py` so login / register / OAuth /
+change-password all consume them as public API. Tracked separately;
+not in MEH-306 scope.
+
 **Smoke test required after sub-A merges to staging:**
 1. EXISTING user with `password_changed_at IS NULL` logs in successfully
    (MEH-305 fail-open path).
