@@ -166,6 +166,23 @@ critical and must block the merge.
 
 ---
 
+## Known limitations
+
+**Empty-input bypass on Layer 1 hooks.** Both `check-env-read.sh` and
+`check-webfetch-allowlist.sh` exit 0 (allow) when given empty stdin —
+`jq` returns 0 with no output, so the empty-string guard short-circuits
+before any allowlist check runs. **Non-exploitable today** because hook
+input mirrors tool input: empty input means the tool itself is invoked
+without a URL or file path, so there is nothing to exfiltrate to or
+read from. Surfaced by MEH-397 adversarial review probes #42/#43.
+**If a future Claude Code change decouples hook input from tool input
+(e.g., separate "intent" vs "args" payloads)**, this becomes
+exploitable and the hooks must fail-closed on empty input. Tracked as
+a nice-to-have hardening item — no follow-up ticket; revisit only if
+the upstream contract changes.
+
+---
+
 ## Cross-references
 
 - `docs/SECURITY.md` → "Skills supply chain (MEH-397)" — full threat
