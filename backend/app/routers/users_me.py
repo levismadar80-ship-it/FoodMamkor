@@ -12,6 +12,7 @@ from app.auth import get_current_user, hash_password, verify_password
 from app.database import get_db
 from app.models import User
 from app.rate_limit import limiter
+from app.schemas.password import PasswordField
 from app.schemas.schemas import UserOut
 
 router = APIRouter(prefix="/users/me", tags=["users"])
@@ -26,8 +27,13 @@ class ProfileUpdate(BaseModel):
 
 
 class PasswordChange(BaseModel):
+    # current_password stays a plain str (not PasswordField) — old passwords
+    # may predate the policy and shorter values must still be acceptable as
+    # current. The verify_password call is the only authority on its validity.
     current_password: str = Field(..., min_length=1)
-    new_password: str = Field(..., min_length=8, max_length=200)
+    # MEH-306: 12-char floor at schema layer; deny-list / HIBP / reuse run in
+    # the change_password handler via validate_password.
+    new_password: PasswordField
 
 
 @router.patch("", response_model=UserOut)
