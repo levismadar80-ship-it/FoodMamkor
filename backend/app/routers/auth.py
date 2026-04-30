@@ -84,6 +84,7 @@ def _upload_google_avatar_or_none(picture_url: str | None) -> str | None:
 
 from app.schemas.schemas import (
     AppleAuthRequest,
+    CheckPasswordRequest,
     ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
@@ -695,6 +696,25 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+
+
+@router.post("/check-password")
+@limiter.limit("30/minute")
+async def check_password(request: Request, data: CheckPasswordRequest):
+    """MEH-306: stateless policy preview for live PasswordInput validation.
+
+    Drives the frontend checklist (length / breach / common) as the user
+    types — no auth, no DB write, no persistence. The 30/min/IP cap is
+    deliberately loose because a 12-char-floor + debounced UI typically
+    fires 3–6 calls per signup; tightening below that breaks the UX.
+
+    Reuse check is intentionally skipped: this endpoint cannot know the
+    caller's identity (no auth dep) and would require an authenticated
+    variant. Reuse is enforced server-side at PATCH /users/me/password
+    and POST /auth/reset-password regardless of frontend state.
+    """
+    result = await validate_password(data.candidate)
+    return {"ok": result.ok, "failures": result.failures}
 
 
 @router.post("/forgot-password")
