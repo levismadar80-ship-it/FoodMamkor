@@ -69,13 +69,14 @@ def test_strips_backslashes_too():
 
 
 def test_strips_special_chars():
-    """Symbols, semicolons, null-byte-like sequences all stripped."""
-    assert _sanitize_slug("foo;rm$(bar)`baz`") == "foorm-bar-baz" or \
-           _sanitize_slug("foo;rm$(bar)`baz`") == "foormbarbaz"
-    # Either is acceptable — the goal is "no shell metacharacters survive"
+    """Shell metacharacters, semicolons, parentheses all stripped."""
     result = _sanitize_slug("foo;rm$(bar)`baz`")
-    assert ";" not in result and "$" not in result and "`" not in result
-    assert "(" not in result and ")" not in result
+    assert result == "foormbarbaz"
+    # Property assertion is redundant with the equality above today, but
+    # guards against a future change where the exact slug shape shifts
+    # while a metacharacter inadvertently survives the regex.
+    for char in ";$`()":
+        assert char not in result
 
 
 def test_unicode_stripped():
