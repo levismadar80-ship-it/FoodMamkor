@@ -1,7 +1,56 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-400 — skills-il/security-compliance audit + cleanup, PR pending)
+> Last updated: 2026-04-30 (MEH-401 — skills-il/localization audit + cleanup, PR pending)
+
+## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup
+
+**Branch:** `feature/meh-401-audit-skills-il-localization` off staging.
+**Status:** draft PR pending merge. 2 commits (deletions + verdicts).
+
+**Deleted (5 skills, out-of-scope):** `hebrew-ocr-forms`,
+`israeli-apartment-hunting`, `israeli-flight-finder`,
+`israeli-travel-planner`, `israeli-wedding-planner`.
+
+**Approved (9 skills):** `hebrew-rtl-best-practices`, `hebrew-tailwind-preset`,
+`israeli-accessibility-compliance`, `hebrew-i18n`, `shabbat-aware-scheduler`,
+`israeli-ui-design-system`, `hebrew-content-writer`, `hebrew-document-generator`,
+`hebrew-nlp-toolkit`.
+
+**Security findings surfaced:**
+
+| Finding | Skill | Status |
+|---|---|---|
+| HebCal API blocked by MEH-397 WebFetch allowlist | shabbat-aware-scheduler | Noted in allowlist; user must add hebcal.com to use the skill |
+| transformers.from_pretrained() bypasses WebFetch hooks; pickle deserialization risk | hebrew-nlp-toolkit | Approved for text-processing only; hardening → MEH-405 |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 5 skills deleted (lifestyle/travel/OCR) | Out of scope for food marketplace |
+| hebrew-nlp-toolkit approved with ⚠️ note | Documentation value high; pickle risk is runtime, not skill-install-time; documented clearly |
+| MEH-405 opened for HuggingFace hardening | Allowlist + sandboxing for from_pretrained() calls |
+
+**Counts after PR:** allowlist 80→75, approved 6→15, review_needed 73→59.
+
+**Follow-up tickets:**
+- **MEH-405** (not yet in Linear — Smadar to create after merge): EXPANDED SCOPE — original spec was hebrew-nlp-toolkit-specific, but adversarial review surfaced a broader architecture gap. Full scope: "All Python scripts in skills that bypass MEH-397 hooks via requests/urllib." Hardening plan: network allowlist + sandboxing for unhooked script-level HTTP.
+
+**MEH-405 candidates list** (from `grep -rE "^\s*(import requests|from urllib|from requests|import urllib)" .agents/skills/*/scripts/`):
+
+```
+# MEH-401 candidates (confirmed live network):
+.agents/skills/israeli-accessibility-compliance/scripts/audit_a11y.py  → requests.get(url) + urllib.parse.urljoin
+.agents/skills/shabbat-aware-scheduler/scripts/check_shabbat.py        → requests.get("https://www.hebcal.com/...")
+
+# hebrew-nlp-toolkit/preprocess_hebrew.py → CLEAN (stdlib only; HuggingFace URLs are in SKILL.md docs only)
+# MEH-400 skills: no scripts with network imports (confirmed in MEH-400 audit)
+```
+
+NOTE: The original grep pattern (`^import requests` anchored at col 0) missed the shabbat entry because it was inside a `try:` block. MEH-405 should use the `^\s*` variant to catch indented imports.
+
+- Next localization audit source TBD.
 
 ## 2026-04-30 — MEH-400: skills-il/security-compliance audit + scope cleanup
 

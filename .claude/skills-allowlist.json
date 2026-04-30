@@ -223,23 +223,23 @@
     "hebrew-content-writer": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes. Pure Hebrew grammar/copywriting guidance, no scripts. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "hebrew-document-generator": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes. Script generate_doc.py uses reportlab + python-bidi, local only, no network calls. --output arg writes to user-supplied path (user-invoked CLI; same class as MEH-400 compliance_checker.py, not a traversal risk). Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "hebrew-i18n": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401. SKILL.md + generate_i18n.py both clean — pure i18n pattern docs and key extraction script (stdlib only). Zero pattern classes. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "hebrew-legal-research": {
       "source": "skills-il/security-compliance",
@@ -251,37 +251,30 @@
     "hebrew-nlp-toolkit": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
-    },
-    "hebrew-ocr-forms": {
-      "source": "skills-il/localization",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit. Single-class NETWORK: https://huggingface.co docs URLs. Script preprocess_hebrew.py is stdlib-only and clean. WARNING: Runtime invokes transformers.from_pretrained() to download models from HuggingFace CDN via Python requests library — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests). User-supplied model name has no allowlist; could load arbitrary HuggingFace model. Untrusted model = arbitrary code execution risk (transformers loads pickle-serialized weights). Skill is APPROVED for documentation/text-processing use only; DO NOT invoke from_pretrained with untrusted model names. Hardening tracked in MEH-405 (HuggingFace model allowlist + sandboxing)."
     },
     "hebrew-rtl-best-practices": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Single-class NETWORK warning: Reference Links table contains https:// documentation URLs. No scripts. No exec, secret, or injection patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "hebrew-tailwind-preset": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes. Pure Tailwind CSS RTL documentation, no scripts. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "israeli-accessibility-compliance": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes in SKILL.md. Script audit_a11y.py uses selenium + axe-core; allowed-tools declares Bash(pip:*) Bash(python:*); no network patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline). NOTE: audit_a11y.py contains requests.get(url) for selenium-based a11y scanning — Python network call bypasses MEH-397 WebFetch hooks (same class as shabbat-aware-scheduler and hebrew-nlp-toolkit). URL is user-supplied as scan target; not exfiltration risk by design (it is the audit subject), but documenting for completeness. Hardening tracked in MEH-405."
     },
     "israeli-ai-compliance-kit": {
       "source": "skills-il/security-compliance",
@@ -289,13 +282,6 @@
       "last_audit_date": "2026-04-30",
       "audit_verdict": "approved",
       "notes": "Audited MEH-400. Pure AI-compliance docs + 2 generator scripts (EU AI Act risk classifier + model-card generator). Standard-library only. No network/exec/credentials. Recommends israel-law MCP — documentation reference only, not auto-wired. Persistence-pattern hit at line 208 of SKILL.md was a false-positive (advice prose 'going forward', not persist instruction)."
-    },
-    "israeli-apartment-hunting": {
-      "source": "skills-il/localization",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "israeli-appsec-scanner": {
       "source": "skills-il/security-compliance",
@@ -318,13 +304,6 @@
       "audit_verdict": "approved",
       "notes": "Audited MEH-400. Pure compliance documentation (Consumer Protection Law, IS 5568, cookie consent, PCI DSS). No scripts. Frontmatter allowed-tools declaration is capability-only; body has nothing executable; WebFetch hook-blocked regardless."
     },
-    "israeli-flight-finder": {
-      "source": "skills-il/localization",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
-    },
     "israeli-privacy-shield": {
       "source": "skills-il/security-compliance",
       "author_verified": false,
@@ -332,26 +311,12 @@
       "audit_verdict": "approved",
       "notes": "Audited MEH-400. Pure privacy-law docs + interactive compliance assessment script (security-level determination, registration check, checklist generator). Standard-library only (argparse, json, sys, datetime). compliance_checker.py --output uses user-supplied path directly (no slug derivation; different code-shape from MEH-398's --project-name pattern). Not the same finding-class — clean."
     },
-    "israeli-travel-planner": {
-      "source": "skills-il/localization",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
-    },
     "israeli-ui-design-system": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
-    },
-    "israeli-wedding-planner": {
-      "source": "skills-il/localization",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Single-class NETWORK: https://fonts.googleapis.com in CSS @import code block example. No scripts. No exec, secret, or injection patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "launch-strategy": {
       "source": "coreyhaines31/marketingskills",
@@ -517,9 +482,9 @@
     "shabbat-aware-scheduler": {
       "source": "skills-il/localization",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit. Single-class NETWORK: requests.get() + https://www.hebcal.com in SKILL.md code blocks; declared purpose. ⚠️ Runtime invokes requests.get() to hebcal.com from check_shabbat.py — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests/urllib). Same architecture-class as hebrew-nlp-toolkit. Skill is APPROVED for documentation/scheduling guidance use; if invoked at script level, network calls are unhooked. Hardening tracked in MEH-405. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
     },
     "signup-flow-cro": {
       "source": "coreyhaines31/marketingskills",
