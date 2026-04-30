@@ -582,7 +582,7 @@
       "author_verified": false,
       "last_audit_date": "2026-04-30",
       "audit_verdict": "approved_local_unlocked",
-      "notes": "Active design tool. Python scripts (core.py 253 LOC, search.py 114 LOC, design_system.py 1067 LOC) manually audited in MEH-397 — no network, no subprocess, no os.environ, no eval/exec, no credential handling. Writes to user CWD via persist_design_system() are intentional (design system output). Minor finding: design_system.py:508 unsanitized --project-name slug allows local path traversal (low-severity, local CLI, non-blocking). Follow-up: (1) MEH-XXX (Priority 2) — Sanitize --project-name and --page in design_system.py:508,529 (basic path traversal hardening). (2) MEH-YYY (Priority 3) — Lock ui-ux-pro-max into skills-lock.json (declared source + SHA256) within 30 days."
+      "notes": "Active design tool. Python scripts (core.py 253 LOC, search.py 114 LOC, design_system.py 1067 LOC) manually audited in MEH-397 — no network, no subprocess, no os.environ, no eval/exec, no credential handling. Writes to user CWD via persist_design_system() are intentional (design system output). Path traversal hardening completed in MEH-398 (sanitized regex via _sanitize.py + 10 unit tests in tests/test_sanitize.py). Follow-up: MEH-YYY (Priority 3) — Lock ui-ux-pro-max into skills-lock.json (declared source + SHA256) within 30 days."
     }
   }
 }

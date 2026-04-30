@@ -12,6 +12,32 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max (path traversal hardening)
+
+Closes the LOW-severity informational finding from MEH-397's in-PR
+audit of `ui-ux-pro-max` Python scripts: `--project-name` and `--page`
+in `design_system.py` were only running
+`.lower().replace(' ', '-')` and could escape the design-system output
+directory via `mkdir(parents=True)` on input like `--project-name "../etc"`.
+
+- New module `.claude/skills/ui-ux-pro-max/scripts/_sanitize.py` —
+  pure helper (`re` only); strips `[^a-z0-9-]` and falls back to
+  `"default"` on empty result. Includes `if __name__ == "__main__"`
+  assertion block as a sandbox sanity check (runs without pytest).
+- `design_system.py:21,508,530` — replaced inline slug logic with
+  `_sanitize_slug(...)` at both call sites.
+- New `tests/test_sanitize.py` — 10 unit tests (5 required from
+  acceptance criteria + 5 adversarial bonus: None, uppercase,
+  backslash-traversal, shell-meta strip, Unicode/emoji strip). All
+  green with pytest 9.0.2.
+- `skills-allowlist.json` — `ui-ux-pro-max` notes updated to record
+  the fix; verdict stays `approved_local_unlocked` (lock-up still
+  pending MEH-YYY); `last_audit_date` unchanged.
+
+No verdict / lock changes. No skill content removed. No new deps. The
+broader 30-day SLA on `ui-ux-pro-max` (lock into `skills-lock.json`
+with declared source + SHA256) is tracked separately as MEH-YYY.
+
 ## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
 
 5-layer defense around the 83 skills under `.agents/skills/` +
