@@ -4,6 +4,8 @@ Sits at prefix /users/me and handles profile update + password change.
 Account deletion is already served by DELETE /auth/me — not duplicated
 here to avoid two code paths on the same destructive action.
 """
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
@@ -14,6 +16,7 @@ from app.models import User
 from app.rate_limit import limiter
 from app.schemas.password import PasswordField
 from app.schemas.schemas import UserOut
+from app.services.password_policy import validate_password
 
 router = APIRouter(prefix="/users/me", tags=["users"])
 
@@ -79,7 +82,7 @@ def update_profile(
 
 @router.patch("/password", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("5/hour")
-def change_password(
+async def change_password(
     request: Request,
     data: PasswordChange,
     user: User = Depends(get_current_user),
@@ -90,6 +93,12 @@ def change_password(
     Rejects OAuth-only accounts (no existing password_hash) with a
     400 so the frontend can render a "you signed in with Google/Apple"
     explainer instead of a generic error.
+
+    MEH-306: keeps the 204 contract. The MEH-305 iat-vs-changed_at gate
+    invalidates the caller's CURRENT access token along with all other
+    devices; the frontend recovers by calling POST /auth/refresh
+    (HttpOnly refresh cookie was rotated on a previous request and is
+    untouched by password change). Sub-session B owns that wiring.
     """
     if not user.password_hash:
         raise HTTPException(
@@ -101,6 +110,18 @@ def change_password(
             status_code=403,
             detail="הסיסמה הנוכחית שגויה",
         )
+    # MEH-306: full policy + reuse check. current_hash blocks "rotate to
+    # the same password" — common pattern when users are forced to "change"
+    # but don't want to remember a new one. HIBP fail-open is internal.
+    # Order matters: verify_password (above) runs first so a wrong-current
+    # caller gets 403, not 422. Per workflow rule 6 (guard test invariant).
+    result = await validate_password(data.new_password, current_hash=user.password_hash)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail={"failures": result.failures})
     user.password_hash = hash_password(data.new_password)
+    # MEH-306: stamp the column → MEH-305 invalidates all sessions whose
+    # iat predates this timestamp, including this device's current access
+    # token. Frontend follows up with /auth/refresh.
+    user.password_changed_at = datetime.now(timezone.utc)
     db.commit()
     return None

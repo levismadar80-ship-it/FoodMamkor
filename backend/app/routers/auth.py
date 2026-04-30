@@ -1,7 +1,7 @@
 import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from pydantic import EmailStr
@@ -22,6 +22,7 @@ from app.auth import (
 )
 from app.config import settings
 from app.services.email import send_email
+from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
@@ -232,9 +233,17 @@ def logout(request: Request, response: Response):
 
 @router.post("/register", response_model=Token)
 @limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
-def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
+
+    # MEH-306: full policy check on fresh signups. No current_hash — reuse
+    # check is irrelevant when the user has no existing password. HIBP
+    # fail-open is handled inside validate_password (no failure raised on
+    # network errors); only confirmed deny-list / breach matches block.
+    result = await validate_password(data.password)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail={"failures": result.failures})
 
     verify_token = secrets.token_urlsafe(32)
     verify_expires = datetime.utcnow() + timedelta(hours=24)
@@ -242,6 +251,10 @@ def register(request: Request, response: Response, data: UserRegister, backgroun
         email=data.email,
         name=data.name,
         password_hash=hash_password(data.password),
+        # MEH-306: stamp the column on first password set so future JWT iat
+        # checks have a baseline to compare against (MEH-305 enforces:
+        # tokens with iat < password_changed_at → 401).
+        password_changed_at=datetime.now(timezone.utc),
         city=data.city,
         phone=data.phone,
         role="consumer",
@@ -702,7 +715,7 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 
 @router.post("/reset-password")
 @limiter.limit("5/hour")
-def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+async def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
     if not user:
@@ -711,7 +724,19 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
     if not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
         logger.warning("[RESET] token_expired user_id=%s expires=%s now=%s", user.id, user.reset_token_expires_at, datetime.utcnow())
         raise HTTPException(status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש")
+    # MEH-306: full policy + reuse check. current_hash passed so user can't
+    # re-set the same password (frequent attacker target on credential-stuffing
+    # incidents). HIBP fail-open is internal to validate_password.
+    result = await validate_password(data.new_password, current_hash=user.password_hash)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail={"failures": result.failures})
     user.password_hash = hash_password(data.new_password)
+    # MEH-306: stamp the column. MEH-305 invalidates every access + refresh
+    # token whose iat predates this timestamp — so all OTHER devices the user
+    # was logged into get 401 on their next request. The user re-authenticates
+    # via /auth/login (her current device has no token; /reset-password is
+    # an unauthenticated flow).
+    user.password_changed_at = datetime.now(timezone.utc)
     user.reset_token = None
     user.reset_token_expires_at = None
     db.commit()
