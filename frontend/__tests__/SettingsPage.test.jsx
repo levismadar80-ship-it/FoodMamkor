@@ -70,25 +70,28 @@ vi.mock("@/components/PasswordStrength", () => ({
 // removes the api.post requirement. The mock fires onValidityChange
 // from a useEffect on `value` so the parent's submit-gate behaves
 // like the real component (valid when value is non-empty).
+//
+// Named `MockPasswordInput` (capital M) so eslint-react-hooks
+// recognises it as a component when it sees the useEffect call —
+// rules-of-hooks requires a component or hook name.
 vi.mock("@/components/PasswordInput", async () => {
   const React = await import("react");
-  return {
-    default: ({ value, onChange, onValidityChange, ariaLabel }) => {
-      React.useEffect(() => {
-        if (typeof onValidityChange === "function") {
-          onValidityChange((value || "").length >= 12);
-        }
-      }, [value, onValidityChange]);
-      return (
-        <input
-          aria-label={ariaLabel}
-          value={value}
-          onChange={onChange}
-          data-testid="password-input-mock"
-        />
-      );
-    },
-  };
+  function MockPasswordInput({ value, onChange, onValidityChange, ariaLabel }) {
+    React.useEffect(() => {
+      if (typeof onValidityChange === "function") {
+        onValidityChange((value || "").length >= 12);
+      }
+    }, [value, onValidityChange]);
+    return (
+      <input
+        aria-label={ariaLabel}
+        value={value}
+        onChange={onChange}
+        data-testid="password-input-mock"
+      />
+    );
+  }
+  return { default: MockPasswordInput };
 });
 
 // Mock validators — simple email check + the constant settings imports
