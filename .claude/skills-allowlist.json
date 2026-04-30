@@ -1,0 +1,588 @@
+{
+  "version": 1,
+  "generated": "2026-04-30",
+  "source": "MEH-397 supply chain lockdown",
+  "skills": {
+    "ab-test-setup": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "ad-creative": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "adapt": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "ai-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "analytics-tracking": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "animate": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "arrange": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "aso-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "audit": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "bolder": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "churn-prevention": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "clarify": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "cold-email": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "colorize": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "community-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "competitor-alternatives": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "competitor-profiling": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "content-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "copy-editing": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "copywriting": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "critique": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "customer-research": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "delight": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "directory-submissions": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "distill": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "email-sequence": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "extract": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "form-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "free-tool-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "frontend-design": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "harden": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "hebrew-content-writer": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-document-generator": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-i18n": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-legal-research": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-nlp-toolkit": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-ocr-forms": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-rtl-best-practices": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-tailwind-preset": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-accessibility-compliance": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-ai-compliance-kit": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-apartment-hunting": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-appsec-scanner": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-cyber-regulations": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-cybersecurity-ops": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-ecommerce-compliance": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-flight-finder": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-privacy-shield": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-shelter-guide": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-travel-planner": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-ui-design-system": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-wedding-planner": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "launch-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "lead-magnets": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "marketing-ideas": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "marketing-psychology": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "normalize": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "onboard": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "onboarding-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "optimize": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "overdrive": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "page-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "paid-ads": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "paywall-upgrade-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "pikud-haoref-safety-protocols": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "polish": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "popup-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "pricing-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "product-marketing-context": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "programmatic-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "quieter": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "referral-program": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "revops": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "sales-enablement": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "schema-markup": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "shabbat-aware-scheduler": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": "Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "signup-flow-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "site-architecture": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "social-content": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "teach-impeccable": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "typeset": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": null,
+      "audit_verdict": "review_needed",
+      "notes": ""
+    },
+    "ui-ux-pro-max": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved_local_unlocked",
+      "notes": "Active design tool. Python scripts (core.py 253 LOC, search.py 114 LOC, design_system.py 1067 LOC) manually audited in MEH-397 — no network, no subprocess, no os.environ, no eval/exec, no credential handling. Writes to user CWD via persist_design_system() are intentional (design system output). Minor finding: design_system.py:508 unsanitized --project-name slug allows local path traversal (low-severity, local CLI, non-blocking). Follow-up: (1) MEH-XXX (Priority 2) — Sanitize --project-name and --page in design_system.py:508,529 (basic path traversal hardening). (2) MEH-YYY (Priority 3) — Lock ui-ux-pro-max into skills-lock.json (declared source + SHA256) within 30 days."
+    }
+  }
+}
