@@ -12,6 +12,7 @@ files — suggest only. You do NOT comment on style (Prettier handles formatting
 
 1. Get the diff:
    ```
+   git fetch origin staging --quiet 2>&1 || true
    git diff staging...HEAD
    ```
 
