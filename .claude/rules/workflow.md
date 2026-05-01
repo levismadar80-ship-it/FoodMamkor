@@ -7,6 +7,32 @@ summary + pointer here.
 
 ---
 
+## Branch-base verification (CRITICAL)
+
+BEFORE first commit on any new branch, verify:
+```bash
+git rev-list --count HEAD ^origin/staging
+```
+
+Expected: small number (< 5).
+
+Large numbers (>50) indicate the harness created the branch off `main`
+instead of `staging` — known CC bug (GitHub issue #24516).
+
+If detected:
+1. ABORT current work
+2. git stash (if uncommitted changes exist)
+3. git checkout staging && git pull
+4. git checkout -b <correct-branch-name>
+5. git stash pop
+6. Re-verify divergence count is small
+7. Resume work
+
+DO NOT continue with a main-based branch — rebase will fail with
+phantom conflicts on hundreds of files.
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**

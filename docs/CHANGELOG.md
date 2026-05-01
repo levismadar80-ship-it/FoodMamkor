@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-427: branch-base verification rule
+
+Adds `## Branch-base verification (CRITICAL)` to `.claude/rules/workflow.md` documenting the `git rev-list --count HEAD ^origin/staging` pre-commit check and abort/recreate protocol for the GitHub issue #24516 main-vs-staging harness bug; cross-linked from `CLAUDE.md` line 18.
+
 ## 2026-05-01 — MEH-407 Phase 2.1: split main.py into startup / middleware / router_registry
 
 Phase 2 PR #1 of the god-file refactor planned in `docs/REFACTOR_PLAN.md`
