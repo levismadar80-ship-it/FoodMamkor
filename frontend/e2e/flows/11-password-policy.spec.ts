@@ -212,7 +212,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // surfaces the Hebrew message via passwordMessages.
     await page.goto("/reset-password?token=fake-token-for-floor-check");
     await expect(
-      page.getByText(/סיסמה חדשה/),
+      page.getByRole("heading", { name: /^סיסמה חדשה$/ }),
     ).toBeVisible();
 
     await page.getByLabel(/^סיסמה חדשה$/).fill(SHORT_PASSWORD);
