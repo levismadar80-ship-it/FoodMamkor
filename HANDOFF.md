@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-364 ✅ + MEH-363 ✅ shipped. RTL count 11 → 0 on staging; agent-permissions-investigation report archived. MEH-426 follow-up tracked at `docs/archive/meh-365/`.)
+> Last updated: 2026-05-01 (MEH-364 ✅ + MEH-363 ✅ shipped. RTL count 11 → 0 on staging; agent-permissions-investigation report archived at `cd9fdf33`. MEH-426 follow-up tracked at `docs/archive/meh-365/`.)
 
 ## 2026-05-01 — MEH-364: 11 pre-existing RTL violations annotated (shipped)
 
@@ -24,7 +24,7 @@ verify-frontend RTL count on staging tip: **0** (down from 11).
 ## 2026-05-01 — MEH-363: agent-permissions-investigation (read-only)
 
 **Branch:** `feature/meh-363-agent-permissions-investigation` off staging.
-**Status:** ✅ Merged — PR #439.
+**Status:** ✅ Merged — PR #439 / squash `cd9fdf33`.
 **Linear:** MEH-363 → Done.
 
 **Goal:** document whether `tools:` frontmatter in `.claude/agents/*.md`
@@ -67,6 +67,14 @@ commands actually executed (sentinels only), no edits to settings
 files, no audit of MEH-397 allowlist correctness.
 
 **Follow-up:** MEH-425 (subagent tools: advisory hardening — see PR #439 description).
+
+**PROBE-1 stash dropped** (`stash@{0}` — investigation evidence) — safely dropped post-merge.
+
+### Next session priorities
+
+- Pattern: docs PRs in flight during active staging churn need re-cherry-pick
+  when HANDOFF/CHANGELOG land via direct push. MEH-427 should consider
+  covering this variant.
 
 ## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (shipped)
 
