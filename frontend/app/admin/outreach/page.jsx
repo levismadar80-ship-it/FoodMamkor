@@ -442,7 +442,7 @@ function AddLeadModal({ onClose, onCreated }) {
           rows={2}
           className="w-full border border-border rounded-[12px] px-3 py-2"
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
         <div className="flex gap-2">
           <button
             type="button"
