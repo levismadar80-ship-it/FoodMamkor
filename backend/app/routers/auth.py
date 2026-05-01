@@ -1,7 +1,8 @@
+import asyncio
 import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from pydantic import EmailStr
@@ -22,10 +23,11 @@ from app.auth import (
 )
 from app.config import settings
 from app.services.email import send_email
+from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
-from app.rate_limit import limiter
+from app.rate_limit import email_from_body, limiter
 
 
 def _gen_referral_code() -> str:
@@ -83,6 +85,7 @@ def _upload_google_avatar_or_none(picture_url: str | None) -> str | None:
 
 from app.schemas.schemas import (
     AppleAuthRequest,
+    CheckPasswordRequest,
     ForgotPasswordRequest,
     GoogleAuthRequest,
     LoginRequest,
@@ -182,6 +185,20 @@ def refresh_token(
     tv = claims.get("tv")
     if tv is None or tv != user.token_version:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    # MEH-305 launch-safe migration: iat is missing from refresh tokens
+    # issued before this deploy. Fail-open for up to 14d
+    # (refresh_token_expire_days) until pre-deploy tokens naturally
+    # expire. Mirror of the access-token password_changed_at IS NULL
+    # skip in get_current_user (backend/app/auth.py).
+    iat_claim = claims.get("iat")
+    if iat_claim is not None and user.password_changed_at is not None:
+        # int() coercion mirrors the access-side fix in auth.py — see
+        # docstring there for the float-microseconds race-rejection bug.
+        if iat_claim < int(user.password_changed_at.timestamp()):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="session_invalidated_by_password_change",
+            )
 
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
@@ -217,17 +234,38 @@ def logout(request: Request, response: Response):
 
 
 @router.post("/register", response_model=Token)
-@limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
-def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+# SECURITY FIX #2: cap new signups per IP.
+# MEH-417: raised from 3/hour — accommodates shared-IP scenarios
+# (corporate NAT, CGNAT, CI runners) without meaningfully weakening
+# brute-force protection. Backend rate-limit complements frontend
+# PasswordPolicy which already enforces 12-char + HIBP (MEH-306).
+@limiter.limit("10/hour")
+async def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
+    # MEH-306: full policy check on fresh signups. No current_hash — reuse
+    # check is irrelevant when the user has no existing password. HIBP
+    # fail-open is handled inside validate_password (no failure raised on
+    # network errors); only confirmed deny-list / breach matches block.
+    result = await validate_password(data.password)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail={"failures": result.failures})
+
     verify_token = secrets.token_urlsafe(32)
     verify_expires = datetime.utcnow() + timedelta(hours=24)
+    # MEH-306: hash_password (passlib bcrypt) blocks ~50-200ms per call.
+    # The handler is async (validate_password awaits HIBP), so the bcrypt
+    # call must run off the event loop or it serializes concurrent signups.
+    pwd_hash = await asyncio.to_thread(hash_password, data.password)
     user = User(
         email=data.email,
         name=data.name,
-        password_hash=hash_password(data.password),
+        password_hash=pwd_hash,
+        # MEH-306: stamp the column on first password set so future JWT iat
+        # checks have a baseline to compare against (MEH-305 enforces:
+        # tokens with iat < password_changed_at → 401).
+        password_changed_at=datetime.now(timezone.utc),
         city=data.city,
         phone=data.phone,
         role="consumer",
@@ -670,8 +708,33 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
     return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
+@router.post("/check-password")
+@limiter.limit("30/minute")
+async def check_password(request: Request, data: CheckPasswordRequest):
+    """MEH-306: stateless policy preview for live PasswordInput validation.
+
+    Drives the frontend checklist (length / breach / common) as the user
+    types — no auth, no DB write, no persistence. The 30/min/IP cap is
+    deliberately loose because a 12-char-floor + debounced UI typically
+    fires 3–6 calls per signup; tightening below that breaks the UX.
+
+    Reuse check is intentionally skipped: this endpoint cannot know the
+    caller's identity (no auth dep) and would require an authenticated
+    variant. Reuse is enforced server-side at PATCH /users/me/password
+    and POST /auth/reset-password regardless of frontend state.
+    """
+    result = await validate_password(data.candidate)
+    return {"ok": result.ok, "failures": result.failures}
+
+
 @router.post("/forgot-password")
-@limiter.limit("3/hour")
+# MEH-306: dual-key throttling. Per-IP cap protects against single-attacker
+# enumeration sweeps; per-email cap caps abuse against a single victim even
+# if the attacker rotates IPs. Both must allow — slowapi ANDs decorators.
+# `key_func` defaults to get_real_client_ip on the limiter instance, so the
+# IP-keyed @limiter.limit needs no explicit key_func.
+@limiter.limit("10/15 minutes")
+@limiter.limit("5/15 minutes", key_func=email_from_body)
 def forgot_password(request: Request, data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Send a password-reset email. Always returns 200 to prevent email enumeration."""
     user = db.query(User).filter(User.email == data.email).first()
@@ -687,8 +750,13 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 
 
 @router.post("/reset-password")
-@limiter.limit("5/hour")
-def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+# MEH-306: per-IP cap (default key_func=get_real_client_ip on the limiter
+# instance). Per-email key would require the email column, but the request
+# body has only `token` + `new_password` — not the email. The token already
+# provides per-user pinning (single-use, 1-hour TTL); the IP cap blocks
+# brute-force token guessing.
+@limiter.limit("10/15 minutes")
+async def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
     if not user:
@@ -697,7 +765,20 @@ def reset_password(request: Request, data: ResetPasswordRequest, db: Session = D
     if not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
         logger.warning("[RESET] token_expired user_id=%s expires=%s now=%s", user.id, user.reset_token_expires_at, datetime.utcnow())
         raise HTTPException(status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש")
-    user.password_hash = hash_password(data.new_password)
+    # MEH-306: full policy + reuse check. current_hash passed so user can't
+    # re-set the same password (frequent attacker target on credential-stuffing
+    # incidents). HIBP fail-open is internal to validate_password.
+    result = await validate_password(data.new_password, current_hash=user.password_hash)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail={"failures": result.failures})
+    # MEH-306: bcrypt blocks; offload (see register handler comment).
+    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
+    # MEH-306: stamp the column. MEH-305 invalidates every access + refresh
+    # token whose iat predates this timestamp — so all OTHER devices the user
+    # was logged into get 401 on their next request. The user re-authenticates
+    # via /auth/login (her current device has no token; /reset-password is
+    # an unauthenticated flow).
+    user.password_changed_at = datetime.now(timezone.utc)
     user.reset_token = None
     user.reset_token_expires_at = None
     db.commit()

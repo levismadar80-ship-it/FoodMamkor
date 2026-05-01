@@ -95,7 +95,7 @@ export default function RatingPage() {
             <p className="text-xs text-text-secondary text-center mt-1">{comment.length}/100</p>
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {error && <p className="text-red-500 text-sm text-center" role="alert">{error}</p>}
 
           <button
             type="submit"

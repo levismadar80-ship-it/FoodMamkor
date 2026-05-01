@@ -1,11 +1,3 @@
-const withPWA = require("next-pwa")({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  // MEH-54: custom service worker code (push event handlers).
-  // next-pwa bundles worker/index.js and importScripts it in the generated sw.js.
-  customWorkerDir: "worker",
-});
-
 // When deployed to a Vercel preview URL (not production, not local dev),
 // Vercel injects its "live feedback" widget at
 // https://vercel.live/_next-live/feedback/feedback.js which lets reviewers
@@ -136,7 +128,7 @@ const nextConfig = {
   },
 };
 
-let finalConfig = withPWA(nextConfig);
+let finalConfig = nextConfig;
 
 // Wrap with Sentry only when @sentry/nextjs is installed AND a DSN is
 // configured. This keeps dev/CI builds working without the package.

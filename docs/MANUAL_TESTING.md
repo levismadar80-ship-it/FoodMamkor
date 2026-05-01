@@ -3,6 +3,24 @@
 
 ---
 
+## Password policy wire-up (MEH-306 sub-A backend)
+
+> Backend behavior only — UI checklist + Hebrew error rendering ship with sub-B.
+
+- [ ] Existing user login regression — איך לבדוק: התחברי עם user שנוצר לפני ה-PR (DB: `password_changed_at IS NULL`); **תוצאה מצופה:** 200 + JWT (MEH-305 fail-open path).
+- [ ] Fresh signup floor — `POST /auth/register` עם `password` באורך 8 תווים → **422** עם `{"detail":[{"loc":["body","password"],"type":"string_too_short"}]}`. עם 12 תווים unique לא-deny-listed → **200**.
+- [ ] Fresh signup deny-list — `POST /auth/register` עם `password=unbelievable` (12 תווים, ב-deny_list_10k) → **422** עם `detail.failures=["too_common"]`.
+- [ ] /auth/check-password live preview — `POST /auth/check-password {"candidate":"unbelievable"}` → **200** עם `{"ok":false,"failures":["too_common"]}`.
+- [ ] Reset reuse block — בקשי reset על account עם סיסמה `Foo!Bar123Bz`; פתחי את הקישור; שלחי `new_password=Foo!Bar123Bz` → **422** עם `same_as_current`.
+- [ ] Reset session invalidation — login → קבלי JWT — בקשי reset → השלימי reset עם סיסמה חדשה → ה-JWT הקודם על `/auth/me` מחזיר **401** עם `session_invalidated_by_password_change`.
+- [ ] Change password — `PATCH /users/me/password` עם current לא נכון → **403**; עם current ו-new זהים → **422** `same_as_current`; עם new < 12 → **422**; עם new תקין → **204** + `password_changed_at` מעודכן ב-DB.
+- [ ] Forgot-password rate limit (per-email) — שלחי 6 בקשות `/auth/forgot-password` עם אותו email תוך פחות מ-15 דקות → 5 ראשונות **200**, ה-6th **429**.
+- [ ] Forgot-password rate limit (per-IP) — שלחי 11 בקשות עם 11 emails שונים מאותה כתובת IP → 10 ראשונות **200**, ה-11th **429**.
+- [ ] MEH-395 length-check bypass (security-critical) — `POST /auth/register {"password":"          aa"}` (12 raw chars, 2 post-strip) → **422** `string_too_short` (Pydantic BeforeValidator strips before min_length runs). אסור שהמערכת תיקבל ותhash את "aa".
+- [ ] MEH-395 deny-list strip — `POST /auth/check-password {"candidate":"unbelievable    "}` (16 תווים: 12 + 4 רווחים) → **200** עם `{"ok":false,"failures":["too_common"]}` (Pydantic מחזיר "unbelievable", service מחזיק too_common).
+
+---
+
 ## XSS sanitization sweep (MEH-329)
 
 - [ ] HTML stripped server-side — איך לבדוק:

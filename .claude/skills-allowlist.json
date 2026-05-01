@@ -1,0 +1,530 @@
+{
+  "version": 1,
+  "generated": "2026-04-30",
+  "source": "MEH-397 supply chain lockdown",
+  "skills": {
+    "ab-test-setup": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "ad-creative": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body + 2 references reviewed. Chains to product-marketing-context. Two findings: (1) Documentation references API keys via shell env vars (GEMINI_API_KEY, ELEVENLABS_API_KEY) in curl examples (references/generative-tools.md). Documentation only — not auto-invoked. User responsibility to manage credentials securely. (2) ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/google-ads.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "adapt": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "ai-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "analytics-tracking": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "animate": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "arrange": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "audit": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed. Documents issues, doesn't fix. Suggests user-facing /<command> recommendations. Light chain to frontend-design. Author: Paul Bakaus."
+    },
+    "bolder": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "clarify": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "cold-email": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body + 5 references reviewed (largest skill in batch, 7 files). Pure cold-email copy-writing guidance. Chains to product-marketing-context. Round-1 NETWORK regex hit was false-positive — `requests\\.` matched English word in prose at line 51 (\"beat meeting requests.\"). No actual code reference. Author: Corey Haines."
+    },
+    "colorize": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "community-marketing": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "competitor-alternatives": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "competitor-profiling": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "content-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "copy-editing": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "copywriting": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "critique": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed. Suggests user-facing /<command> recommendations as critique output (no auto-execute). Chains to frontend-design → teach-impeccable. Author: Paul Bakaus."
+    },
+    "customer-research": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "delight": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "directory-submissions": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "distill": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "email-sequence": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "extract": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed. Read-only codebase grep for design-system discovery. No chain. Author: Paul Bakaus."
+    },
+    "form-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "free-tool-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "frontend-design": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body + 7 reference/*.md files (808 lines total) scanned — all clean. Chain root: instructs MUST-run of teach-impeccable when no design context exists. Author: Paul Bakaus. Chain root for 17 of 21 pbakaus/impeccable skills. Integrity of this skill protects all chained skills — manually re-audit periodically (lock file drift detection closed by MEH-420)."
+    },
+    "harden": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed — pure design guidance for resilience (text overflow, i18n, error states, a11y). Code blocks are HTML/CSS/JS examples. Author: Paul Bakaus."
+    },
+    "hebrew-content-writer": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes. Pure Hebrew grammar/copywriting guidance, no scripts. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-document-generator": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes. Script generate_doc.py uses reportlab + python-bidi, local only, no network calls. --output arg writes to user-supplied path (user-invoked CLI; same class as MEH-400 compliance_checker.py, not a traversal risk). Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-i18n": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401. SKILL.md + generate_i18n.py both clean — pure i18n pattern docs and key extraction script (stdlib only). Zero pattern classes. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-legal-research": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure legal-research docs + interactive Hebrew terminology dict (40+ terms across courts, legislation, procedure, professionals, contract, employment, property law). Standard-library only (argparse, sys). No network/exec/credentials."
+    },
+    "hebrew-nlp-toolkit": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit. Single-class NETWORK: https://huggingface.co docs URLs. Script preprocess_hebrew.py is stdlib-only and clean. WARNING: Runtime invokes transformers.from_pretrained() to download models from HuggingFace CDN via Python requests library — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests). User-supplied model name has no allowlist; could load arbitrary HuggingFace model. Untrusted model = arbitrary code execution risk (transformers loads pickle-serialized weights). Skill is APPROVED for documentation/text-processing use only; DO NOT invoke from_pretrained with untrusted model names. Hardening tracked in MEH-405 (HuggingFace model allowlist + sandboxing). MEH-422: SKILL.md documents transformers.from_pretrained() pattern (HuggingFace CDN). Network host declared at huggingface.co. No active script in skill (preprocess_hebrew.py is stdlib-only). Defense is audit-time + user-side credential management.",
+      "allowed_network_hosts": [
+        "huggingface.co"
+      ],
+      "allowed_shell_invocations": null
+    },
+    "hebrew-rtl-best-practices": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Single-class NETWORK warning: Reference Links table contains https:// documentation URLs. No scripts. No exec, secret, or injection patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "hebrew-tailwind-preset": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes. Pure Tailwind CSS RTL documentation, no scripts. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "israeli-accessibility-compliance": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Zero pattern classes in SKILL.md. Script audit_a11y.py uses selenium + axe-core; allowed-tools declares Bash(pip:*) Bash(python:*); no network patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline). NOTE: audit_a11y.py contains requests.get(url) for selenium-based a11y scanning — Python network call bypasses MEH-397 WebFetch hooks (same class as shabbat-aware-scheduler and hebrew-nlp-toolkit). URL is user-supplied as scan target; not exfiltration risk by design (it is the audit subject), but documenting for completeness. Hardening tracked in MEH-405. MEH-422: audit_a11y.py:179 invokes requests.get(url) where url is a user-supplied scan target. Wildcard allowed_network_hosts because the URL IS the audit subject. Hook layer cannot intercept requests inside Python; defense is audit-time (Pass 5) + this declaration.",
+      "allowed_network_hosts": [
+        "*"
+      ],
+      "allowed_shell_invocations": null
+    },
+    "israeli-ai-compliance-kit": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure AI-compliance docs + 2 generator scripts (EU AI Act risk classifier + model-card generator). Standard-library only. No network/exec/credentials. Recommends israel-law MCP — documentation reference only, not auto-wired. Persistence-pattern hit at line 208 of SKILL.md was a false-positive (advice prose 'going forward', not persist instruction)."
+    },
+    "israeli-appsec-scanner": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Borderline-but-cleared: skill creates a NEW capability (local security audit) but does not exfiltrate. secrets-scanner.sh uses grep -rnP on user's project; output stays local stdout. security-audit-checklist.py reads files via pathlib.Path.read_text() and reports findings; standard-library only. The 16 'exec' pattern hits were regex DETECTORS for eval(/exec( in user code (scanner finding eval, not USING eval). Suggests external tools (TruffleHog/Gitleaks/Snyk/Trivy) as user-runs, not auto-invoked. User-invoked only — output stays local by design. Re-audit required if upstream author adds network reporting in future versions."
+    },
+    "israeli-cyber-regulations": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure regulatory framework documentation (INCD, BoI 361/357/364, ISA, MOH, MALMAB). No scripts."
+    },
+    "israeli-ecommerce-compliance": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure compliance documentation (Consumer Protection Law, IS 5568, cookie consent, PCI DSS). No scripts. Frontmatter allowed-tools declaration is capability-only; body has nothing executable; WebFetch hook-blocked regardless."
+    },
+    "israeli-privacy-shield": {
+      "source": "skills-il/security-compliance",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-400. Pure privacy-law docs + interactive compliance assessment script (security-level determination, registration check, checklist generator). Standard-library only (argparse, json, sys, datetime). compliance_checker.py --output uses user-supplied path directly (no slug derivation; different code-shape from MEH-398's --project-name pattern). Not the same finding-class — clean."
+    },
+    "israeli-ui-design-system": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit clean. Single-class NETWORK: https://fonts.googleapis.com in CSS @import code block example. No scripts. No exec, secret, or injection patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+    },
+    "launch-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "lead-magnets": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "marketing-ideas": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "marketing-psychology": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "normalize": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "onboard": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "onboarding-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "optimize": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed — pure performance guidance (Core Web Vitals, lazy load, GPU-accel). Author: Paul Bakaus."
+    },
+    "overdrive": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "page-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "paid-ads": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "paywall-upgrade-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "polish": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed. Final design-pass checklist. Chains via MANDATORY PREPARATION to frontend-design → teach-impeccable. Author: Paul Bakaus."
+    },
+    "popup-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "pricing-strategy": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "product-marketing-context": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body reviewed. Meta-skill — chain root for the other 33 coreyhaines/marketingskills entries (all reference product-marketing-context.md before asking questions). Writes `.agents/product-marketing-context.md` to project tree on user invocation. Reads codebase (README, package.json, marketing copy) read-only. Same architectural class as teach-impeccable (MEH-402) — persistent file in project tree, inert in Mehamakor today (not auto-loaded by CLAUDE.md or .claude/rules/). Manually re-audit periodically. Author: Corey Haines."
+    },
+    "programmatic-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "quieter": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "referral-program": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "schema-markup": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body reviewed. Pure schema.org / JSON-LD guidance. Code blocks are JSON-LD examples. No subprocess/eval/network/secrets/injection canaries, no tools/ shell-out. Chains to product-marketing-context. Author: Corey Haines."
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body + 2 references reviewed (497 lines, longest in batch). Pure SEO audit guidance. Mentions `web_fetch` as a Claude tool (instructive context, not invocation). No tools/ shell-out. Chains to product-marketing-context. Author: Corey Haines."
+    },
+    "shabbat-aware-scheduler": {
+      "source": "skills-il/localization",
+      "author_verified": false,
+      "last_audit_date": "2026-04-30",
+      "audit_verdict": "approved",
+      "notes": "MEH-401 audit. Single-class NETWORK: requests.get() + https://www.hebcal.com in SKILL.md code blocks; declared purpose. ⚠️ Runtime invokes requests.get() to hebcal.com from check_shabbat.py — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests/urllib). Same architecture-class as hebrew-nlp-toolkit. Skill is APPROVED for documentation/scheduling guidance use; if invoked at script level, network calls are unhooked. Hardening tracked in MEH-405. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline). MEH-422: check_shabbat.py invokes requests.get to www.hebcal.com only. Network host declared. Hook layer cannot intercept requests inside Python; defense relies on script content audit + this allowlist.",
+      "allowed_network_hosts": [
+        "www.hebcal.com"
+      ],
+      "allowed_shell_invocations": null
+    },
+    "signup-flow-cro": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "site-architecture": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "social-content": {
+      "source": "coreyhaines31/marketingskills",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
+    },
+    "teach-impeccable": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Full body reviewed — 1-time setup that gathers design context and writes .impeccable.md to project root + optionally appends to .github/copilot-instructions.md. User-invoked, intended. Output file inert in Mehamakor (not auto-loaded by CLAUDE.md / .claude/rules/). Author: Paul Bakaus. Architectural watch: writes .impeccable.md to project root. Inert as of MEH-402, but if Claude Code adds project-root auto-load behavior in future, this becomes an injection vector. Manually re-audit periodically (lock file drift detection closed by MEH-420)."
+    },
+    "typeset": {
+      "source": "pbakaus/impeccable",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "author_verified": false,
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Active design tool. Python scripts (core.py 253 LOC, search.py 114 LOC, design_system.py 1067 LOC) manually audited in MEH-397 — no network, no subprocess, no os.environ, no eval/exec, no credential handling. Writes to user CWD via persist_design_system() are intentional (design system output). Path traversal hardening completed in MEH-398 (sanitized regex via _sanitize.py + 10 unit tests). MEH-404 closes F-3/F-4/F-7 (collapse multi-hyphens + cap 64 + trim ends; pipeline strip→collapse→cap→trim). MEH-423 locked into skills-lock.json (source: nextlevelbuilder/ui-ux-pro-max-skill, MIT license, sourceType: github, computedHash anchor). Layout migrated to .agents/skills/ + symlink from .claude/skills/ to match all other skills. F-13 (mkdir collision) + F-14 (symlink follow on persist) documented in .claude/rules/skills.md as inherited threat-model items."
+    }
+  }
+}

@@ -12,7 +12,12 @@ ALLOWLIST=(
   "frontend/app/register/page.js"
   "frontend/app/settings/page.jsx"
   "frontend/app/reset-password/page.js"
-  # TODO: refactor right-3 → end-3, chevron should use logical position (out of scope MEH-341)
+  # MEH-306: canonical eye-toggle exception per RTL rules (see rtl.md
+  # "Intentional physical-property exceptions"). Sub-B consolidates the
+  # inline eye-toggle pattern from /register, /reset-password, and
+  # /settings into this reusable component.
+  "frontend/components/PasswordInput.jsx"
+  # TODO: chevron should use logical position (out of scope MEH-341)
   "frontend/components/CategorySelector.jsx"
 )
 

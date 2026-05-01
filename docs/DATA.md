@@ -310,13 +310,17 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 ### Auth (`app/routers/auth.py`)
 
 ```
-POST   /auth/register            public  — consumer signup, returns JWT
-POST   /auth/register/producer   public  — producer multi-step signup
-POST   /auth/login               public  — email+password → JWT
+POST   /auth/register            public  — consumer signup, returns JWT (MEH-306: 12-char policy)
+POST   /auth/register/producer   public  — producer multi-step signup (8-char floor; MEH-306 sub-A out of scope)
+POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP)
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
 DELETE /auth/me                  auth    — account deletion (App Store)
+POST   /auth/check-password      public  — MEH-306 stateless policy preview (30/min/IP), no DB write
+POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
+POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
+PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
 ```
 
 ### Producers (`app/routers/producers.py`, `producer_me.py`)

@@ -1,7 +1,1017 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-379 + MEH-380 + MEH-381 bundle in PR #399, awaiting Smadar verify)
+> Last updated: 2026-05-01 (MEH-423 — ui-ux-pro-max finalization, PR pending; MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+
+## 2026-05-01 — MEH-423: ui-ux-pro-max finalization (closes MEH-399 + MEH-404)
+
+**Branch:** `feature/meh-423-ui-ux-pro-max-finalization` off staging.
+**Status:** PR pending. **Final ticket** in the MEH-397 skills supply
+chain initiative.
+
+**Workstream A — MEH-399 (lock):**
+- Upstream provenance: `nextlevelbuilder/ui-ux-pro-max-skill` (MIT,
+  72.9k stars, latest release v2.5.0). Fingerprint match on
+  description ("67 styles, 96 palettes, 57 font pairings, 25 charts,
+  13 stacks").
+- Lock entry added: `source: "nextlevelbuilder/ui-ux-pro-max-skill"`,
+  `sourceType: "github"`, `computedHash:
+  e4276f017eadf46146f05e89e92a14af748346af91f73a5d50dfbaf8e873ff76`.
+- No upstream version pin (Option ii per Smadar) — hash is the
+  integrity anchor.
+- Layout-A migration: `git mv .claude/skills/ui-ux-pro-max →
+  .agents/skills/ui-ux-pro-max` + symlink back. Mode `120000` ✓.
+  All 71 skills now use the uniform two-path layout.
+- Allowlist verdict `approved_local_unlocked` → `approved`. `source`
+  field updated from `"local"` to `"nextlevelbuilder/..."` to mirror
+  the lock + match other entries.
+
+**Workstream B — MEH-404 (path-traversal cleanup):**
+- `_sanitize.py` extended with F-3 (collapse), F-7 (cap 64), F-4
+  (trim ends). Pipeline: `strip → collapse → cap → trim → fallback`.
+  Trim AFTER cap so a 64-char clip landing on a hyphen run doesn't
+  leave a trailing `-`. (My adversarial review during planning
+  caught this; Smadar approved the order swap from the spec's
+  `strip → collapse → trim → cap`.)
+- 6 new test cases (10 → 16 total): `foo--bar`, `-foo-`,
+  `'a' * 1000`, `--`, `'foo' * 100` boundary, plus an explicit
+  ordering probe. All 16 green.
+- F-13 + F-14 documented in `.claude/rules/skills.md` (new
+  "ui-ux-pro-max sanitize patterns" section) as inherited threat-model
+  items out of code-mitigation scope.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Lock Option 1 (upstream repo) | Provenance recoverable via web search; matches all other 70 lock entries' pattern; honest source attribution |
+| Layout-A (move + symlink) | Eliminates the "1 extra directory" exception in `.claude/skills/`; uniform layout across all 71 skills; Pass 4 of audit-skills.sh works without special-casing |
+| No upstream version pin | Lock-format simplicity; `computedHash` is the integrity anchor; upstream version tracking is a manual concern |
+| Cap-then-trim ordering | Avoids trailing-hyphen edge when 64-char cap lands mid-hyphen-run; surfaced during planning, not during implementation |
+| Allowlist `source` field updated to mirror lock | Consistency with other entries (e.g., coreyhaines skills mirror their lock source); auditor sees provenance at a glance |
+
+**Counts after PR:** allowlist 71 (unchanged), lock 70 → 71, approved
+70 → 71, approved_local_unlocked **1 → 0**, review_needed 0,
+blocked 0. **All 71 skills now have terminal verdicts.**
+
+**MEH-397 skills supply chain initiative — COMPLETE:**
+
+| Layer | Closed by |
+|---|---|
+| Layer 1 (hooks) | MEH-397 + MEH-422 |
+| Layer 2 (allowlist registry) | MEH-397 + audit cycle (MEH-400/401/402/403) |
+| Layer 3 (audit script) | MEH-397 + Pass 4 (MEH-420) + Pass 5 (MEH-422) |
+| Layer 4 (CI gate + hash enforcement) | MEH-397 + MEH-420 |
+| Layer 5 (lock + add-skill protocol) | MEH-397 + **MEH-423** (final) |
+
+**Closes:** MEH-399 (lock SLA) + MEH-404 (path-traversal cleanup) —
+both Backlog → Done via this PR.
+
+## 2026-05-01 — MEH-422: skills bypass hardening (closes MEH-406 + MEH-421)
+
+**Branch:** `feature/meh-422-hooks-bypass-hardening` off staging.
+**Status:** PR pending. Closes both MEH-406 (Python network) and
+MEH-421 (bash shell-out) — same architectural class, combined per
+spec.
+
+**What changed:**
+- New: `.claude/hooks/check-skill-bypass.sh` — PreToolUse(Bash) hook.
+  Pattern-matches `tools/clis/`, `tools/integrations/`, `tools/REGISTRY`,
+  `(node|python|bash|sh) <path>tools/` invocations. Blocks direct
+  invocation of `audit_a11y.py` / `check_shabbat.py` if the skill's
+  `allowed_network_hosts` is `null`/`[]`. Fail-closed on jq missing,
+  malformed JSON, empty input (matches MEH-397 hook discipline).
+- Modified: `.claude/scripts/audit-skills.sh` — added Pass 5
+  (subprocess-bypass coverage). Inserted between Pass 2 and Pass 4.
+  Skipped under `--self-test`. Uses awk for fenced-code-block
+  state-machine: matches in code blocks are governed by allowlist;
+  matches in prose are documentation (informational only).
+- Modified: `.claude/skills-allowlist.json` — added two optional
+  fields per skill: `allowed_network_hosts` + `allowed_shell_invocations`.
+  Pre-populated 9 known cases (7 bash dead-pointers, 2 Python network,
+  1 documentation case for hebrew-nlp-toolkit).
+- Modified: `.claude/settings.json` — registered new hook as
+  PreToolUse(Bash).
+- Updated: `.claude/rules/skills.md` (new "Subprocess-bypass class"
+  section + allowlist schema documented), `docs/SECURITY.md`
+  (subprocess-bypass class subsection added under Skills Supply Chain).
+
+**Schema semantics (consistent for both fields):**
+
+| Value | Meaning | Pass 5 verdict on match |
+|---|---|---|
+| `null`/missing | unaudited | `[BYPASS-UNDECLARED]` / `[NETWORK-UNDECLARED]` critical |
+| `[]` (shell) | dead-pointer policy | `[BYPASS-DEAD-POINTER]` informational |
+| `[]` (network) | no-network policy | `[NETWORK-FORBIDDEN]` critical |
+| `["*"]` | wildcard / user-controlled | pass-through |
+| non-empty | specific patterns/hosts | pass-through (audit-time + hook layered) |
+
+**Tamper tests passing (the whole point):**
+
+| Test | Result |
+|---|---|
+| `node tools/clis/google-ads.js` | blocked (exit 2) |
+| `python tools/exfil.py` | blocked (exit 2) |
+| `bash tools/run.sh` | blocked (exit 2) |
+| `./tools/clis/foo` | blocked (exit 2) |
+| `node ../../tools/clis/x.js` | blocked (exit 2) |
+| `cat tools/REGISTRY.md` | blocked (exit 2) |
+| `python check_shabbat.py` (allowlisted) | allowed (exit 0) |
+| `python audit_a11y.py http://target` (wildcard) | allowed (exit 0) |
+| `node --version`, `npm test`, `git commit`, `python backend/manage.py runserver` | allowed (exit 0) |
+| Empty input / malformed JSON | fail-closed (exit 2) |
+
+**Pass 5 negative tests:**
+- Strip `allowed_network_hosts` from israeli-accessibility-compliance
+  → `[NETWORK-UNDECLARED]` critical, audit exit 1 ✓
+- Strip `allowed_shell_invocations` from ad-creative
+  → `[BYPASS-UNDECLARED]` critical, audit exit 1 ✓
+
+**Honest limits documented in SECURITY.md:**
+- Hook layer cannot intercept `requests.get(...)` calls inside an
+  already-running Python process. Once `python script.py` is past the
+  hook, the running process is unhookable.
+- `["*"]` semantics for `allowed_network_hosts` accept user-controlled
+  destination — the URL passed to `audit_a11y.py` IS the audit
+  subject, so the script becomes its own attack surface.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Single combined hook (not two split) | Both classes flow through Bash; shared infrastructure; one settings.json entry |
+| Pass 5 fenced-code-block state machine (awk) | Avoids prose false-positives; bash-loop-per-line was 60+s, awk is 3.7s |
+| Enum-style jq classification (NULL/EMPTY/WILDCARD/SPECIFIC) | First attempt with `tojson` wrapped null as `"null"` — bug found via negative test |
+| Pre-populate 9 known cases with `[]` for shell, `["*"]`/specific for network | Documents intent; Pass 5 then runs cleanly without false-criticals |
+
+**Counts:** 9 allowlist entries gain new fields. 0 lock-hash drift
+(allowlist edits don't affect MEH-420 hashes). Allowlist 71 unchanged.
+
+**Closes:** MEH-406 (Python network bypass) + MEH-421 (bash shell-out)
+— both Backlog → Done via this PR.
+
+**Adversarial review round 1** surfaced 5 obfuscation bypass patterns
+(quote concat, empty subshell, variable substitution, subshell
+printf). Reviewed with Smadar — documented as known limitation
+(option a, mirroring MEH-397 empty-input precedent). Threat model
+gated by attacker requiring write access to bash command string
+(rogue SKILL.md edit caught by manual audit + MEH-420 hash
+enforcement, OR direct prompt injection). Round 2 adversarial review
+performed on the documentation changes — verified accuracy + no
+overclaiming.
+
+## 2026-05-01 — MEH-418 + MEH-419: a11y sweep + /login copy cleanup
+
+Branch: `feature/meh-418-meh-419-a11y-copy-cleanup` off staging
+`5f1cefb`. Status: draft PR pending.
+
+**MEH-306 follow-ups landing in this PR:**
+- MEH-418 — `/login` copy cleanup (drop "8 תווים" since login has no
+  minimum since legacy accounts may have any length).
+- MEH-419 — `role="alert"` a11y sweep across 5 form-level error sites
+  + 3 newly-discovered inline-error sites (Option C scope expansion
+  per audit-then-fix during this PR).
+
+**Sites fixed (9 attribute additions across 6 files):**
+- `frontend/app/login/page.js:139` (inline email-invalid) + `:188`
+  (inline password length-check + copy update from MEH-418)
+- `frontend/app/register/page.js:199` (inline name-required), `:225`
+  (inline email-invalid), `:274` (form-level)
+- `frontend/app/forgot-password/page.js:60` (form-level)
+- `frontend/app/rate/[token]/page.js:98` (form-level)
+- `frontend/app/group-buys/[id]/GroupBuyDetailClient.jsx:302` (form-level)
+- `frontend/app/admin/outreach/page.jsx:445` (form-level)
+
+**Verification (local):**
+- `npm run build` — green; all routes compile.
+- `npm run lint` — 0 errors (137 baseline warnings, zero new).
+- `npx vitest run` — 25 failed | 328 passed; verified identical
+  baseline on staging before my changes (jsdom pre-existing failures,
+  net-zero impact).
+- E2E grep — zero hardcoded "8 תווים" or stale assertions in any
+  Playwright spec; CI will validate.
+
+**MEH-417 still pending** — mock removal scheduled 2026-05-04 per the
+2-3-day stability buffer rule.
+
+## 2026-05-01 — MEH-403: coreyhaines31/marketingskills audit + scope cleanup
+
+**Branch:** `feature/meh-403-audit-coreyhaines-marketingskills` off staging.
+**Status:** PR pending. Last source audit — completes the MEH-397 review cycle.
+
+**Deleted (4, out-of-scope for B2C marketplace):** `aso-audit`,
+`churn-prevention`, `revops`, `sales-enablement`.
+
+**Approved (34, review_needed → approved):**
+ab-test-setup, ad-creative, ai-seo, analytics-tracking, cold-email,
+community-marketing, competitor-alternatives, competitor-profiling,
+content-strategy, copy-editing, copywriting, customer-research,
+directory-submissions, email-sequence, form-cro, free-tool-strategy,
+launch-strategy, lead-magnets, marketing-ideas, marketing-psychology,
+onboarding-cro, page-cro, paid-ads, paywall-upgrade-cro, popup-cro,
+pricing-strategy, product-marketing-context, programmatic-seo,
+referral-program, schema-markup, seo-audit, signup-flow-cro,
+site-architecture, social-content.
+
+**Author:** Corey Haines (named, public-figure marketer).
+`author_verified: false` per MEH-401/402 precedent (reputation ≠
+identity verification).
+
+**Audit pattern:**
+- 5 deep-read: product-marketing-context (meta-skill chain root),
+  cold-email (largest, 7 files), ad-creative (API-key + shell-out),
+  schema-markup (production output), seo-audit (longest, 497 lines).
+- 29 quick-scanned full-body for injection canaries — zero hits.
+- 0 scripts directories across all 34 skills (vs. skills-il which
+  had Python scripts).
+
+**Architectural patterns surfaced:**
+
+| Pattern | Skills affected | Status |
+|---|---|---|
+| Skill chain via product-marketing-context | 33 of 34 (all except product-marketing-context itself) | Audited the chain root; same class as MEH-402's frontend-design → teach-impeccable |
+| Persistent file write to project tree (`.agents/product-marketing-context.md`) | product-marketing-context | Inert in Mehamakor today; flagged for re-eval at future Claude Code updates |
+| **bash shell-out indirection (`node tools/clis/<x>.js`)** | 7 skills (see MEH-XXX list below) | Dead pointer today (no `tools/` dir); future risk if any commit adds `tools/clis/` |
+| API-key env var references in references/*.md | ad-creative (GEMINI_API_KEY, ELEVENLABS_API_KEY) | Documentation only, not auto-executed; user-managed credentials |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 4 deletions (B2B/native/subscription out of scope) | Mehamakor is B2C, web-only, free for users |
+| paywall-upgrade-cro KEPT (despite no paywall today) | Producer-side premium tier plausible future scope (priority listings, analytics dashboards) |
+| directory-submissions KEPT (despite Product-Hunt focus) | Methodology generic enough to apply to Israeli food directories (Time Out TLV, food blogs) |
+| `author_verified: false` on all 34 (matches MEH-401/402 precedent) | Reputation ≠ identity verification; Corey Haines GitHub identity not independently verified |
+| Standard note + tools/ note + 5 individual deep-read notes | Three-tier note pattern matches scan rigor |
+| **MEH-XXX (bash shell-out) split from MEH-406 (Python bypass)** | Different mechanism: bash subprocess vs Python `requests`/`urllib`. Both bypass MEH-397 hooks but require different mitigations |
+
+**Counts after PR:** allowlist 75 → 71, lock 74 → 70, approved 36 → 70,
+review_needed 35 → 0, approved_local_unlocked 1 (ui-ux-pro-max,
+unchanged). CI floor lowered 75 → 71.
+
+**Status of MEH-397 review cycle:** All 4 sources audited. Only
+ui-ux-pro-max remains transitional (`approved_local_unlocked`,
+30-day SLA tracked by MEH-399).
+
+### MEH-406 candidate list (Python network bypass — original)
+
+Python scripts in skill repos that import `requests`/`urllib`/`socket`
+at runtime, bypassing MEH-397 WebFetch hooks:
+
+```
+audit_a11y.py    (israeli-accessibility-compliance) — requests.get(url) + urllib.parse.urljoin
+check_shabbat.py (shabbat-aware-scheduler)          — requests.get("https://www.hebcal.com/...")
+```
+
+### MEH-XXX candidate list — bash shell-out from skills (NEW class, MEH-403)
+
+SKILL.md files that instruct Claude to invoke `node tools/clis/<x>.js`
+or reference `../../tools/REGISTRY.md` — bash subprocess indirection
+that bypasses MEH-397 hooks if `tools/` ever gets populated:
+
+```
+ad-creative          — node tools/clis/google-ads.js + ../../tools/REGISTRY.md (lines 333, 337, 346)
+ai-seo               — ../../tools/REGISTRY.md (line 414)
+analytics-tracking   — ../../tools/REGISTRY.md + ../../tools/integrations/ga4.md (lines 292, 296)
+email-sequence       — ../../tools/REGISTRY.md + ../../tools/integrations/customer-io.md (lines 290, 294)
+launch-strategy      — ../../tools/integrations/introw.md (line 96)
+paid-ads             — ../../tools/REGISTRY.md + ../../tools/integrations/google-ads.md (lines 298, 302)
+referral-program     — ../../tools/REGISTRY.md + ../../tools/integrations/rewardful.md (lines 238, 242)
+```
+
+**Mehamakor has no `tools/` directory** → all references are dead
+pointers today (file-not-found if invoked). User creates MEH-XXX in
+Linear post-merge.
+
+## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement (the bug surfaced in MEH-402)
+
+**Branch:** `feature/meh-420-skills-lock-hash-enforcement` off staging.
+**Status:** PR pending. Closes the gap MEH-402 adversarial review found.
+
+**What changed:**
+- New: `.claude/scripts/compute-skill-hash.sh` — deterministic SHA256
+  over all regular files in a skill dir (sorted, NUL-separated, LC_ALL=C).
+  Symlinks inside skill dirs fail-loud (security: symlinks bypass
+  content hashing, so silent acceptance would create a tampering blind
+  spot).
+- New: `.claude/scripts/backfill-skill-hashes.sh` — atomic lock rewrite
+  with `--dry-run` mode for CI. Missing-on-disk skills fatal in either
+  mode (per A8 acceptance, never silently skipped).
+- Modified: `.claude/scripts/audit-skills.sh` — added Pass 4 (hash
+  enforcement). Skipped under `--self-test`. Emits `[HASH-DRIFT]` or
+  `[HASH-COMPUTE]` findings; bumps CRITICAL.
+- Modified: `.github/workflows/skills-audit.yml` — added 3rd stage
+  ("Lock-drift verify") that runs `backfill --dry-run`; updated path
+  globs to include the two new scripts.
+- Backfilled: all 74 entries in `skills-lock.json` with correct hashes
+  (one-shot commit, separate from the infrastructure commit).
+- Updated: `.claude/rules/skills.md` (Layer 4 expanded with hash
+  enforcement subsection) + `docs/SECURITY.md` (5-layer description
+  updated to truthful claim — was decorative, now enforcing).
+
+**Tamper tests passing (the whole point of this PR):**
+
+| Tamper | Caught | How |
+|---|---|---|
+| Modify `SKILL.md` | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Modify `reference/typography.md` | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Modify `scripts/generate_doc.py` | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Add new file to skill dir | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Rename file within skill dir | ✓ | `[HASH-DRIFT]` (path is in digest), exit 1 |
+| Symlink injection (`/etc/passwd`) | ✓ | `[HASH-COMPUTE]` + symlink error, exit 1 |
+
+**Adversarial probes passed:** determinism (same input → same hash),
+path invariance (different CWD → same hash), CLI surface (bad args → exit 2),
+empty input (deterministic), symlink rejection (exit 1).
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| All-files-by-default (not allowlist of extensions) | More secure: attacker adding new file types can't hide them |
+| Symlinks fail-loud (not silent skip) | `find -type f` excludes symlinks, so silent acceptance = tampering blind spot |
+| Per-file digest then digest-of-digests | Easier to debug single-file mismatches; standard cryptographic construction |
+| `LC_ALL=C sort -z` (NUL-delimited) | Cross-platform deterministic; handles pathological filenames |
+| Two separate commits (infra + backfill) | Clean review: infra logic separable from the 74-entry hash rewrite |
+| ui-ux-pro-max stays unlocked | Out of scope (separate ticket); not in skills-lock.json so unaffected |
+
+**Counts unchanged this PR:** allowlist 75, lock 74. Hashes corrected.
+
+## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
+
+**Branch:** `feature/meh-402-audit-pbakaus-impeccable` off staging.
+**Status:** draft PR pending merge.
+
+**Approved (21 skills, all from review_needed → approved):** `adapt`,
+`animate`, `arrange`, `audit`, `bolder`, `clarify`, `colorize`, `critique`,
+`delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`,
+`onboard`, `optimize`, `overdrive`, `polish`, `quieter`, `teach-impeccable`,
+`typeset`. 0 deletions, 0 blocked.
+
+**Author:** Paul Bakaus — Google Developer Advocate, public figure.
+
+**Audit pattern:**
+- 5 priority skills deep-read end-to-end: `teach-impeccable`, `harden`,
+  `optimize`, `polish`, `critique`.
+- `frontend-design` (chain root) deep-read with 7 `reference/*.md` files
+  (808 lines total) — all clean.
+- Remaining 16 full-body scanned for injection canaries + authority/silent
+  patterns + network/exec/secret patterns. Zero hits across all classes.
+
+**Architectural patterns surfaced:**
+
+| Pattern | Skills affected | Status |
+|---|---|---|
+| Skill chaining via "MANDATORY PREPARATION" — auto-invokes `frontend-design` → `teach-impeccable` | 17 of 21 (all except teach-impeccable, frontend-design itself, audit, extract) | Audited the full chain; chain only triggers under explicit user `/<skill>` invocation |
+| Persistent file write to project root: `.impeccable.md` (and optionally `.github/copilot-instructions.md` with user confirmation) | teach-impeccable | Inert in Mehamakor today (file not auto-loaded by CLAUDE.md or `.claude/rules/*`). Flagged for re-eval at every Claude Code major update — if auto-load behavior is added, this becomes an injection vector |
+| Chain root protects all chained skills | frontend-design | Manually re-audit periodically (lock drift detection closed by MEH-420) |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 0 deletions | All 21 are generic UI/UX design tools, in-scope for the food marketplace frontend |
+| `author_verified: false` on all 21 (matches MEH-401 precedent) | Reputation ≠ identity verification. New rule documented in `.claude/rules/skills.md`. "Public figure" alone never justifies `true`; only PGP-signed commits / public statement linking to GitHub account / verifiable org membership count |
+| Sample audit (Option C: 5 deep + 16 quick) approved by user | Balances thoroughness with audit velocity; full-body scan still applied to all 21 |
+| 0 MEH-405 candidates this batch | No scripts directories exist; all skills are pure prompt-only SKILL.md content |
+
+**Counts after PR:** allowlist 75→75 (no deletions), approved 15→36,
+review_needed 59→38.
+
+**Follow-up:** none from this batch. MEH-405 still tracks the broader
+Python-script network-bypass scope from MEH-401 (audit_a11y.py,
+check_shabbat.py).
+
+### Discovered architectural finding (deferred)
+
+`computedHash` field in `skills-lock.json` does NOT match actual SHA256
+of `SKILL.md` files for any of 74 skills. No script in `.claude/scripts/`
+or workflow in `.github/workflows/` reads the field. **Lock file is
+currently decorative, not enforcing.** Implication: MEH-397's stated
+"5-layer defense" is functionally 4 layers. The lock layer (Layer 4 in
+the original spec) provides no detection of upstream content drift.
+
+Tracked as **MEH-420 (Priority 1, closed in this branch)** — created in Linear by user
+after merge. Surfaced during MEH-402 adversarial review while
+verifying the architectural watch flags' detection mechanism.
+
+**MEH-402 mitigation in this PR:** softened "re-audit on every upstream
+version bump" wording in teach-impeccable + frontend-design notes to
+"manually re-audit periodically" since automated drift detection is
+non-functional.
+
+## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup
+
+**Branch:** `feature/meh-401-audit-skills-il-localization` off staging.
+**Status:** draft PR pending merge. 2 commits (deletions + verdicts).
+
+**Deleted (5 skills, out-of-scope):** `hebrew-ocr-forms`,
+`israeli-apartment-hunting`, `israeli-flight-finder`,
+`israeli-travel-planner`, `israeli-wedding-planner`.
+
+**Approved (9 skills):** `hebrew-rtl-best-practices`, `hebrew-tailwind-preset`,
+`israeli-accessibility-compliance`, `hebrew-i18n`, `shabbat-aware-scheduler`,
+`israeli-ui-design-system`, `hebrew-content-writer`, `hebrew-document-generator`,
+`hebrew-nlp-toolkit`.
+
+**Security findings surfaced:**
+
+| Finding | Skill | Status |
+|---|---|---|
+| HebCal API blocked by MEH-397 WebFetch allowlist | shabbat-aware-scheduler | Noted in allowlist; user must add hebcal.com to use the skill |
+| transformers.from_pretrained() bypasses WebFetch hooks; pickle deserialization risk | hebrew-nlp-toolkit | Approved for text-processing only; hardening → MEH-405 |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 5 skills deleted (lifestyle/travel/OCR) | Out of scope for food marketplace |
+| hebrew-nlp-toolkit approved with ⚠️ note | Documentation value high; pickle risk is runtime, not skill-install-time; documented clearly |
+| MEH-405 opened for HuggingFace hardening | Allowlist + sandboxing for from_pretrained() calls |
+
+**Counts after PR:** allowlist 80→75, approved 6→15, review_needed 73→59.
+
+**Follow-up tickets:**
+- **MEH-405** (not yet in Linear — Smadar to create after merge): EXPANDED SCOPE — original spec was hebrew-nlp-toolkit-specific, but adversarial review surfaced a broader architecture gap. Full scope: "All Python scripts in skills that bypass MEH-397 hooks via requests/urllib." Hardening plan: network allowlist + sandboxing for unhooked script-level HTTP.
+
+**MEH-405 candidates list** (from `grep -rE "^\s*(import requests|from urllib|from requests|import urllib)" .agents/skills/*/scripts/`):
+
+```
+# MEH-401 candidates (confirmed live network):
+.agents/skills/israeli-accessibility-compliance/scripts/audit_a11y.py  → requests.get(url) + urllib.parse.urljoin
+.agents/skills/shabbat-aware-scheduler/scripts/check_shabbat.py        → requests.get("https://www.hebcal.com/...")
+
+# hebrew-nlp-toolkit/preprocess_hebrew.py → CLEAN (stdlib only; HuggingFace URLs are in SKILL.md docs only)
+# MEH-400 skills: no scripts with network imports (confirmed in MEH-400 audit)
+```
+
+NOTE: The original grep pattern (`^import requests` anchored at col 0) missed the shabbat entry because it was inside a `try:` block. MEH-405 should use the `^\s*` variant to catch indented imports.
+
+- Next localization audit source TBD.
+
+## 2026-04-30 — MEH-400: skills-il/security-compliance audit + scope cleanup
+
+**Branch:** `feature/meh-400-audit-skills-il-security-compliance` off
+staging. **Status:** draft PR pending review. 2 commits.
+
+First post-MEH-397 per-source audit. Scope evolved mid-session from
+"audit all 9" to "delete 3 unused, audit 6 relevant" per Smadar's
+direction.
+
+**Deleted (3 skills, out-of-scope for food marketplace):**
+`israeli-shelter-guide`, `pikud-haoref-safety-protocols`,
+`israeli-cybersecurity-ops`. 4 surfaces each (canonical content,
+symlink, lock entry, allowlist entry). 19 files / 2173 LOC removed.
+First PR to modify `skills-lock.json` since MEH-397.
+
+**Approved (6 skills, scope-relevant):**
+`israeli-ecommerce-compliance`, `hebrew-legal-research`,
+`israeli-cyber-regulations`, `israeli-privacy-shield`,
+`israeli-ai-compliance-kit`, `israeli-appsec-scanner`.
+All 6 audit_verdict review_needed → approved.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Spec list (9 names) was stale; allowlist data wins as source of truth | Pre-flight rule — already established in MEH-397 |
+| `git rm -r` for deletions, not `rm -rf` | git-aware + bypasses `Bash(rm -rf:*)` deny rule + tracks removal in index |
+| Lock + allowlist edits via `jq del()` not text-edit | Atomic, schema-preserving |
+| `compliance_checker.py:293-294` not the same finding-class as MEH-398 | `args.output` is full path (no slug derivation); MEH-398 was about user-input embedded as slug-component inside constructed path |
+| `israeli-appsec-scanner` borderline → approved | Per Smadar calibration: legitimate user audit workflow, output stays local. Re-audit clause added: re-evaluate if upstream adds network reporting |
+| Author remains anonymous; only content audited | `author_verified: false` unchanged across all 6 |
+
+**Counts after PR:** lock 82→79, allowlist 83→80, agents/skills 82→79,
+claude/skills 83→80.
+
+**Follow-up tickets (not opened — Smadar to decide):**
+
+- Potential: harden `compliance_checker.py:293-294` and
+  `generate_model_card.py:188-190` `--output` paths if cross-skill input
+  flows ever start passing untrusted paths there. Different finding-class
+  from MEH-398 — not blocking; nice-to-have only.
+- MEH-401 (next ticket): same pattern for `skills-il/localization` audit
+  + scope cleanup. User will send a similar deletion+audit list once
+  pre-flight reveals what's there.
+
+## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max design_system.py
+
+**Branch:** `feature/meh-398-ui-ux-pro-max-path-sanitize` off staging.
+**Status:** draft PR pending review. Follow-up to MEH-397's in-PR audit
+finding.
+
+Mechanical fix:
+- New helper module `_sanitize.py` (pure, only `re`); regex
+  `[^a-z0-9-]` strip + `"default"` fallback.
+- `design_system.py:508,530` swapped from inline slug logic to
+  `_sanitize_slug(...)`.
+- 10 unit tests in `tests/test_sanitize.py` (5 required + 5
+  adversarial bonus). All green.
+- Allowlist notes updated. Verdict unchanged
+  (`approved_local_unlocked`); MEH-YYY (lock ui-ux-pro-max into
+  `skills-lock.json`) still on the 30-day SLA from 2026-04-30.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Helper in separate `_sanitize.py` module (not inline regex per spec) | Pure module → tests import only `re`; doesn't drag `core` import side-effects through |
+| Sandbox `if __name__ == "__main__":` assertion block in `_sanitize.py` | Belt-and-suspenders: runnable without pytest in restricted environments |
+| Trailing whitespace on adjacent blank lines preserved | File-preservation rule 3 — diff stays scoped to 3 functional lines |
+| `last_audit_date` left at `2026-04-30` | This PR patches one finding; full re-audit not warranted |
+| `audit_verdict` left at `approved_local_unlocked` | MEH-YYY (locking) is the verdict-change ticket, not this one |
+
+**No skills removed. No verdict change. No new deps.** Single PR.
+
+## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
+
+**Branch:** `feature/meh-397-skills-supply-chain-lockdown` off staging.
+**Status:** draft PR pending Smadar review. Do NOT merge yet.
+
+**5-layer defense** around 83 skills (.agents/skills/ canonical
+content + .claude/skills/ symlink mounts + ui-ux-pro-max local
+real-dir):
+
+1. **Tool deny** — `Read(./.env*)` denies + 7-domain WebFetch allowlist
+   (github, anthropic, npmjs, pypi, mehamakor, vercel, railway). Two
+   PreToolUse hooks fail-closed.
+2. **Allowlist registry** — `.claude/skills-allowlist.json` 83 entries.
+   `ui-ux-pro-max` = `approved_local_unlocked` (30-day SLA to lock).
+3. **Audit script** — `.claude/scripts/audit-skills.sh`. Self-test
+   fixture exits 1; real tree exits 0.
+4. **CI gate** — `.github/workflows/skills-audit.yml` two-stage.
+5. **Documentation** — `.claude/rules/skills.md` + SECURITY.md §17.
+
+**ui-ux-pro-max audit** (in-PR security review): 3 Python scripts
+audited — `core.py`, `search.py`, `design_system.py` (1434 LOC total).
+All clean. One Priority-2 follow-up: unsanitized `--project-name`
+slug at `design_system.py:508,529` enables local path traversal.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| `.agents/skills/` is the audit target (not `.claude/skills/`) | `.claude/skills/*` are mode-120000 symlinks → `.agents/skills/*`; canonical content lives in `.agents/skills/`. Only `ui-ux-pro-max` is a real dir under `.claude/skills/`. |
+| `approved_local_unlocked` verdict (new) | Transitional 30-day slot for `ui-ux-pro-max` while we wait to declare its source repo + SHA256. Resolves to `approved` (locked) or `blocked` (CI failure) at day 30. |
+| Pattern set deviation from spec | Chose LLM-canary patterns (`ignore previous`, `system prompt`, `disregard`, `override.*instruction`, `forget.*above`) over spec's agent-rule patterns. Documented in `.claude/rules/skills.md`. |
+| Skill count = 83 not 78 | Linear MEH-397 spec is stale. Actual: 82 locked + 1 unlocked. |
+| Hooks fail-closed if jq missing | Default deny — skill supply chain context demands fail-closed. |
+
+**Follow-up tickets (not yet created in Linear, do after merge):**
+
+- MEH-XXX (Priority 2) — Sanitize `--project-name` and `--page` in
+  `design_system.py:508,529` (basic path-traversal hardening).
+- MEH-YYY (Priority 3) — Lock `ui-ux-pro-max` into
+  `skills-lock.json` with declared source repo + SHA256 (within 30
+  days of MEH-397 merge).
+- Audit pbakaus/impeccable (21 skills)
+- Audit coreyhaines31/marketingskills (38 skills)
+- Audit skills-il/security-compliance (9 skills, high priority)
+- Audit skills-il/localization (14 skills, high priority)
+
+**No skills removed. `skills-lock.json` not modified.** Single PR. Did
+not merge — awaiting user review.
+
+## 2026-04-30 — MEH-306 sub-B (Frontend wire-up)
+
+Branch: `feature/meh-306b-frontend-wireup` off
+`feature/meh-306a-backend-wireup` (NOT staging — sub-B branches from
+sub-A so the backend policy code is available during integration).
+Status: **DRAFT** PR pending merge — base flipped to `staging` after
+sub-A merged. Same merge cycle as sub-A.
+
+Commits (in order):
+- `4811017` validators.js wholesale (12-char length-only rule + new
+  PASSWORD_MIN_LENGTH export); PasswordStrength tier conditional
+  reorder so `passed === total` wins first
+- `9e8f1f8` new components — PasswordInput.jsx (input + eye toggle +
+  debounced /auth/check-password + inline checklist) and
+  passwordMessages.js (4 Hebrew strings keyed to PolicyFailure
+  literals); RTL allowlist updated
+- `3207457` /register integration — replace inline pattern with
+  <PasswordInput>; 422-failures path
+- `e250cf9` /reset-password integration (Gate 1 scenario a — confirm
+  field already exists at line 23/50/119, kept untouched)
+- `c6aa349` /settings PasswordChangeCard integration + SettingsPage
+  unit test mock for PasswordInput
+- `e0f0c2e` Playwright spec — 11-password-policy.spec.ts under
+  test.describe.serial (30/min/IP rate-limit safety)
+- `554a7c7` docs — CHANGELOG + HANDOFF (sub-B entry)
+- `921ccba` lint fix — rename inline mock factory `default` → `MockPasswordInput`
+- `d36b333` adversarial-review fixes — 2 Playwright selector bugs
+- `7211287` /register label htmlFor + id (a11y) fix
+- `16f9f5e` /אימייל/ anchor fix (avoid Footer newsletter collision)
+- `3886e66` page.route() mock for /auth/check-password
+- `8c9e447` x-vercel-skip-toolbar header + scrollIntoView for checkbox
+- `fe2dc1f` scenario-3 /auth/register + /auth/me mock
+- `3ad3488` /reset-password heading anchor
+- `1549c28` role=alert + getByRole(alert).filter()
+
+**Decisions (this session):**
+| Decision | Why | Date |
+|---|---|---|
+| validators.js wholesale collapse to length-only | NIST SP 800-63B §3.1.1.2 forbids composition rules; partial migration would leave /register/producer rendering 4-rule UI while everywhere else uses the new policy. | April 2026 |
+| PasswordInput is the canonical RTL-allowlist home for the eye-toggle exception | `pr-11` + `right-3` inside `dir="ltr"` is the documented exception; consolidating into one component reduces the surface that needs the allowlist comment. | April 2026 |
+| /reset-password confirm field stays | Gate 1 scenario (a) — confirm field already exists at the file's first commit; out-of-scope to remove or change. | April 2026 |
+| /settings 204 contract preserved by sub-A | Sub-A's commit `52bb5f5` reissues refresh + fingerprint cookies via Set-Cookie on the 204; frontend body handler unchanged. | April 2026 |
+| /register/producer frontend floor tightens 8 → 12 | Backend `ProducerRegister.password` stays at `Field(min_length=8)` (out of MEH-306 scope). Frontend floor strictly tightens — no regression. Documented in CHANGELOG. | April 2026 |
+
+**Discovered but not fixed (open follow-ups):**
+- MEH-XXX (proposed) — migrate `/register/producer` 3-step wizard to
+  `<PasswordInput>` and swap `ProducerRegister.password` to
+  `PasswordField | None` (OAuth completion path needs the `| None`).
+  Tracked outside MEH-306.
+- MEH-XXX (proposed) — `role="alert"` a11y sweep across 5 form-level
+  error sites (`/register`, `/forgot-password`, `/rate/[token]`,
+  `/group-buys/[id]`, `/admin/outreach`). Surfaced during sub-B.
+- MEH-XXX (proposed) — `/login/page.js:188` length-check copy cleanup
+  (drop "8 תווים" since login has no minimum).
+- MEH-XXX (proposed) — remove the Playwright `page.route()` mocks for
+  `/auth/check-password` + `/auth/register` + `/auth/me` once sub-A is
+  reflected in staging long enough that the real backend integration
+  is exercised end-to-end.
+
+## 2026-04-30 — MEH-306 sub-A (Backend wire-up) + MEH-395
+
+Branch: `feature/meh-306a-backend-wireup` off staging `26b7939`.
+Status: **DRAFT** PR (per agreement). Sub-B (frontend) MUST branch from
+this branch (NOT staging) and both PRs become Ready-for-Review together.
+
+**Why drafted, not Ready:** sub-A enforces 12-char + deny-list + HIBP +
+reuse server-side; the frontend at `staging` HEAD still allows 8-char
+inputs in /register, /reset-password, and /settings. Merging sub-A to
+staging ahead of sub-B leaves a window where the API rejects passwords
+the UI happily accepts. Avoid that window by reviewing/merging together.
+
+7 commits, sequential / squash-mergeable:
+- `6ccf85c` MEH-395 strip fix in `password_policy.py:106` + 1 unit test
+- `b840003` schemas → PasswordField on UserRegister + ResetPasswordRequest
+  + PasswordChange + new CheckPasswordRequest
+- `a622c56` `register` / `reset_password` / `change_password` async + call
+  `validate_password` + stamp `password_changed_at`
+- `57b0f56` POST `/auth/check-password` (stateless live-preview, 30/min/IP)
+- `ce089c4` rate limits — `/auth/forgot-password` 10/15min IP + 5/15min
+  email (new `email_from_body` key_func in `rate_limit.py`);
+  `/auth/reset-password` 10/15min IP
+- `be18df5` `tests/test_auth.py` (16 tests) + autouse `_mock_hibp_clean`
+  fixture + 12-char fixture defaults + test_api.py literal updates
+
+Done before push:
+- `npm run build` — frontend untouched in this PR; not run.
+- `pytest tests/test_api.py tests/test_password_policy.py tests/test_auth.py`
+  — green locally pending verification.
+- `/adversarial-review` — pending.
+- HIBP autouse mock prevents network calls in CI.
+
+**Decisions made this session (add to decisions table):**
+| Decision | Why | Date |
+|---|---|---|
+| `PATCH /users/me/password` keeps 204; frontend recovers via /auth/refresh | Sub-A independently mergeable; keeps surface narrow. Test #15 verifies the contract. | April 2026 |
+| `ProducerRegister.password` NOT swapped to PasswordField | OAuth completion path needs `str \| None`; separate decision out of MEH-306 sub-A scope. | April 2026 |
+| `email_from_body` key_func reads `request._body` cache | FastAPI buffers body for Pydantic before slowapi runs key_func; safe. Fail-soft to "" on decode error (per-IP cap still bounds abuse). | April 2026 |
+| Test passwords bumped Pass1234! → Zx7Yp9Mq2Lr4 globally in test_api.py | login is length-agnostic so universal replace is safe; only register/reset paths needed the bump. | April 2026 |
+
+**Discovered but not fixed (open follow-up):**
+- `ProducerRegister.password` still 8-char floor — file separate ticket
+  before MEH-306 closes.
+- `MEH-394` (test-suite widening to `pytest tests/`) still out of scope —
+  any pre-existing failures CI surfaces on the wider scope go in MEH-394.
+
+**CC sandbox environment quirk (not a CI concern):**
+When running `pytest` locally inside CC's sandbox, `pip install bcrypt`
+without a version pin pulls bcrypt 5.0.0, which removes
+`bcrypt.__about__.__version__` and breaks passlib's version detection
+(`AttributeError`) → `ValueError: password cannot be longer than 72
+bytes`. Repo pins `bcrypt==4.0.1` in `backend/uv.lock`, so CI is fine.
+Local sandbox repro: `pip install 'bcrypt==4.0.1'` to match the lock.
+Track-only — no action needed for this PR.
+
+**Cross-module private-import note (commit `8`):**
+`backend/app/routers/users_me.py` now imports `_set_refresh_cookie` and
+`_set_fingerprint_cookie` from `app.routers.auth`. Underscore-prefixed
+helpers crossing a module boundary is a smell; future refactor should
+move both to `app/auth_cookies.py` so login / register / OAuth /
+change-password all consume them as public API. Tracked separately;
+not in MEH-306 scope.
+
+**Smoke test required after sub-A merges to staging:**
+1. EXISTING user with `password_changed_at IS NULL` logs in successfully
+   (MEH-305 fail-open path).
+2. Fresh signup with 12-char password → 200; with 8-char → 422.
+3. POST `/auth/check-password` `{"candidate":"unbelievable"}` → 200 with
+   `{"ok": false, "failures":["too_common"]}`.
+
+---
+
+## 2026-04-29 — MEH-305 (PR #408): password policy backend
+
+Branch: `feature/meh-305-password-policy-backend` (HEAD `fdbb13c`).
+Status: draft, awaiting merge approval after adversarial review.
+
+6 commits squash-mergeable:
+- `c2d5c69` password_policy service + deny_list + Pydantic field
+- `57aa529` password_changed_at column + Alembic migration
+- `8762330` JWT iat-vs-password_changed_at validation
+- `2df6a1a` int coercion + CI test discovery (ultrareview bug_001 + bug_003)
+- `b115c28` skip pre-existing test_analytics bug (later reverted)
+- `fdbb13c` narrow CI scope to test_api + test_password_policy
+
+Key decisions (also in PR description):
+- passlib over raw bcrypt (codebase uses CryptContext).
+- iat added to JWT issuance (was missing — required for the policy). 14-day fail-open window for pre-deploy refresh tokens.
+- `int()` coercion on `password_changed_at.timestamp()` to prevent the microseconds race (would have rejected freshly-issued tokens after password change).
+- CI scope narrowed (NOT `pytest tests/`) — MEH-394 tracks the cleanup.
+- Hand-written migration (autogen failed in sandbox); MEH-267 baseline is 5 days old, drift unlikely.
+
+`/ultrareview` run #1 caught: int/float race (bug_001), CI scope (bug_003), doc drift (bug_007 → MEH-306).
+`/adversarial-review` (subagent) caught: missing CHANGELOG/HANDOFF (this fix), `or True` dead assert (this fix), whitespace deny-list bypass (→ MEH-XXX, opening separately).
+
+Followup tickets opened by Smadar:
+- MEH-394 — Test suite hygiene (full `pytest tests/` widening)
+- MEH-XXX (Claude.ai) — Whitespace strip before deny-list lookup
+
+Next task: MEH-306 (Password Policy Wire-up — endpoints + UI + force logout). Blocked-by MEH-305 verified-on-staging. After MEH-305 merge: smoke test login of existing user (sint12345@gmail.com) on staging — must succeed with NULL `password_changed_at`.
+
+Reminder for MEH-306: use `datetime.now(timezone.utc)` for `password_changed_at` writes (per Amendment 1 — column is `DateTime(timezone=True)`, naive would coerce silently or raise).
+
+## 2026-04-29 — MEH-322 (PR #407): /ultrareview gate added to workflow.md
+
+`.claude/rules/workflow.md:347` — new section `## /ultrareview gate` added after "PR approval guide" (workflow.md:329).
+Rule: run `/ultrareview` in Claude Code if PR meets 2+ of {500+ LOC, auth/payments/DB migration, central refactor of `main.py` / `MapClient.jsx` / `ProducerDetail.jsx` / `models.py`}.
+
+`CLAUDE.md` not touched — at 79/80, cap-locked, no pointer added. Lazy-load via Claude Code on code edits is sufficient.
+Templates 02 + 04 DoD bullet handled by Smadar manually in Google Drive (Templates Library not in repo).
+
+`docs/CHANGELOG.md` — one-liner.
+
+3 free /ultrareview runs available before 2026-05-05. Earmarked candidates:
+1. MEH-305+306 (Password Policy) — auth-critical, ~800-1500 LOC
+2. MEH-291 (Availability enum refactor) — schema + backfill, ~500-1000 LOC
+3. MEH-296 (Multi-channel contact routing) — schema + ProducerDetail + onboarding
+
+Next session pick-up options:
+- Continue MEH-371 merge → MEH-376 → MEH-370 chain (per 2026-04-27 entry)
+- OR start MEH-305+306 Password Policy as first /ultrareview consumer
+
+## 2026-04-28 — Session close — 5 PRs merged, alert wiring fixed
+
+### End-of-day state
+
+PRs merged today:
+- PR #399 — MEH-379+380+381 CSP hardening (squash f62ee54)
+- PR #401 — MEH-382 Railway retry-on-busy (squash 7c3051e)
+- PR #402 — staging → main release
+- PR #395 — MEH-370 Next.js 14 → 16 upgrade (squash 28bbc3f)
+- PR #403 — MEH-372 next-pwa removal Path E (squash 76d04ee)
+- PR #404 — Wire fire_alerts to product creation (audit Gap A) (squash 3b7e3ea)
+
+Tickets closed:
+- MEH-370, MEH-371, MEH-372, MEH-379, MEH-380, MEH-381, MEH-382
+
+Vuln state on main: **4 moderate** (postcss chain only)
+- 5 high cleared by next-pwa removal (MEH-372)
+- Several next direct CVEs cleared by Next 16 upgrade (MEH-370)
+
+### Pending for next session
+
+- **Smoke test PR #404 wiring** — verify in production:
+  1. Login as regular user (NOT business owner)
+  2. Favorite a producer + opt in WhatsApp
+  3. Switch to business account, add a new product
+  4. Confirm WhatsApp arrives within 30s
+  If no WhatsApp → check Railway logs for fire_alerts call + Twilio API errors.
+
+- **OAuth business registration 409 bug** (NEW, not yet ticketed):
+  Email already registered → backend returns 409 → frontend swallows error silently. User sees broken Google button.
+  Repro: `/register/business` with Google OAuth using existing email returns 409 with no user-facing toast.
+  Expected: friendly toast "החשבון כבר רשום — היכנסי במקום" + link to `/login`.
+  Priority: 2 (High) — trust killer in onboarding flow.
+
+- **postcss vuln chain (4 moderate)** — separate ticket needed.
+  `next@16.2.4` bundles old postcss internally; affects next, @sentry/nextjs, @vercel/speed-insights transitively.
+  Priority: 4 (Low).
+
+### Active urgent tickets in Linear (next priority)
+
+- MEH-99 — Smart Search ("גבינה" returns 0)
+- MEH-78 — Map opens on Golan instead of Tel Aviv
+- Various live site bugs (broken stats API, duplicate filter bars on /map, contradictory "thousands" banner)
+
+---
+
+## 2026-04-28 — MEH-372: next-pwa removed (Path E)
+
+**Branch:** `feature/meh-372-next-pwa-re-enable` — **PR #403** (open, non-draft)
+**Tip SHA:** `6d19506`
+**Vuln delta:** 9 → 4 (5 high cleared; 4 moderate postcss chain remains)
+**Build:** ✅ GREEN (45 static pages, 22.2s compile)
+
+### Decision: Path E (remove, don't replace)
+
+PHASE 0 package research found NO PWA package supports Turbopack as of March 2026:
+- `next-pwa@5.6.0` (upstream) — abandoned 2022-08, webpack-only
+- `@ducanh2912/next-pwa@10.2.9` — actively maintained, but explicit `webpack: '>=5.9.0'` peerDep
+- `@serwist/next@9.5.7` — actively maintained, depends on `@serwist/webpack-plugin`
+
+Re-enabling any would require `next build --webpack` opt-out, undoing MEH-370's Turbopack adoption.
+
+**Decisive context:** PWA infra (MEH-54) was built but never activated in prod. VAPID keys never set in Railway → `push.py` fail-open guard means **0 push notifications ever sent since launch**. The 5 high vulns were paying interest on dead code.
+
+### Changes
+
+- `frontend/package.json` — removed `"next-pwa": "^5.6.0"`
+- `frontend/package-lock.json` — workbox/rollup/serialize-javascript chain dropped (-2820 lines)
+- `frontend/next.config.js` — removed 14 lines (MEH-370 C4 commented `withPWA` block + the marker comment near `let finalConfig`); Sentry wrap untouched (line 138 / `module.exports = finalConfig` line 151); CSP block untouched
+- `frontend/worker/index.js` — header rewritten to flag dead-code status + re-enable instructions; push/notificationclick handler bodies preserved verbatim
+
+### Preserved (scaffolding for future re-enable)
+
+- `worker/index.js` push handlers
+- `backend/app/routers/push.py` + `services/push_notification.py`
+- VAPID env-var plumbing in backend config
+
+### Future re-enable conditions
+
+Open new ticket when any of the following lands: `@serwist/next` native Turbopack support (preview 10.x track), Turbopack-first PWA package, or first-party Next.js PWA primitive.
+
+---
+
+## 2026-04-28 — MEH-370 PHASE 2 complete — build GREEN, ready for review
+
+**Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (Ready for Review)
+**Final tip:** `ca01099`
+**Divergence:** 13 ahead of staging / 0 behind
+**Build:** ✅ GREEN — Next 16.2.4 Turbopack, 45 static pages, compiled in 11.1s
+**Sentry wrap intact:** `next.config.js:165` `module.exports = finalConfig` — `withSentryConfig` chain preserved (MEH-371 + MEH-379+380+381 observability live)
+
+### Codemod outcomes
+
+| ID | Status | Detail |
+|---|---|---|
+| **C1** next-async-request-api | ✅ Commit `63681aa` | 5 files transformed (vs. 8 PHASE 0 prediction; 3 were false-positive scan targets). Pattern: `function ({ params })` → `async function (props) { const params = await props.params; }`. Files: `app/[slug]/page.js`, `app/group-buys/[id]/page.js`, `app/p/[slug]/page.js`, `app/producer/[id]/page.js`, `app/producers/page.jsx`. Codemod also reported 1 parse error on `e2e/rtl.spec.ts` (malformed JSDoc trips babel TS parser; out of C1 scope, file works in Playwright). |
+| **C2** metadata-to-viewport | ⏭️ SKIP | `app/layout.js:97` already exports `viewport` separately — no-op. |
+| **C3** ESLint 9 flat config | ⏸️ DEFERRED | FlatCompat (`@eslint/eslintrc@3.3.5`) + `eslint-config-next@16.2.4` produces circular-JSON crash inside `config-validator.js:308` (`configs.flat → plugins → react` cycle). Both `compat.extends()` and `compat.config()` API surfaces hit the same validator path. Reverted fully — `.eslintrc.json` restored, `package.json` lint script remains `"next lint"` (broken on Next 16). **Needs follow-up ticket.** |
+| **C4** next-pwa disable + Turbopack passthrough | ✅ Commit `ca01099` | Option A applied: `next.config.js` lines 1–7 commented (require block preserved verbatim for restoration), line 144 `withPWA(nextConfig)` → `nextConfig`, line 165 `module.exports = finalConfig` UNTOUCHED. PWA scope (manifest, install prompt, push notifications via `worker/index.js` MEH-54) disabled until **MEH-372** ships Turbopack-compatible alternative. Existing `public/sw.js` not regenerated; clients re-cache naturally. |
+
+### Vuln state
+
+**9 total** (5 high + 4 moderate, 0 critical, 0 low):
+
+- **5 high — `next-pwa` workbox/rollup chain** (next-pwa, workbox-webpack-plugin, workbox-build, rollup-plugin-terser, serialize-javascript). Still listed because `next-pwa@5.6.0` remains in `package.json` `dependencies` (forbidden by PHASE 2 scope to remove). **MEH-372 will `npm uninstall next-pwa` and resolve all 5.**
+- **4 moderate — `postcss` propagation chain** (postcss self, next direct, @sentry/nextjs propagation, @vercel/speed-insights propagation). `next@16.2.4` bundles old postcss internally. **Needs follow-up ticket.**
+
+### Known follow-ups (Smadar to open in Linear)
+
+1. **ESLint 9 flat config migration** — research `@eslint/eslintrc` validator bypass paths, or wait for `eslint-config-next` native flat-config entrypoint. Lint script must change from `"next lint"` to `"eslint ."` once unblocked.
+2. **postcss vuln chain remediation** — depends on next minor bumping postcss internally, or pinning a postcss override in package.json.
+
+### What CI will exercise on PR #395
+
+- `npm ci` (lockfile from `ef018e6` regen) — no ERESOLVE expected
+- `npm run build` — should pass (verified locally GREEN)
+- `npm run lint` — will FAIL with "no such directory: lint" because lint script is broken on Next 16. Pre-existing acceptable failure mode tracked in C3 deferral.
+
+---
+
+## 2026-04-28 — MEH-370 PHASE 1 complete — rebase done, build/lint red as expected
+
+**Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (draft, stays draft through PHASE 2)
+**Tip SHA:** `ef018e6` (post-rebase + lockfile regen)
+**Divergence:** 11 ahead of staging / 0 behind
+
+### What landed
+- Rebased onto `origin/staging` (`7c3051e`) — 10 branch commits replayed clean
+- Conflicts resolved: `package.json` (auto-additive), `package-lock.json` (--theirs then regen), `HANDOFF.md` (×3 commits, top-of-file prepend pattern), `docs/CHANGELOG.md` (×1 commit)
+- `next.config.js` — **no conflict** (matches PHASE 0 prediction; staging's version taken clean)
+- `npm install` — clean, **0 ERESOLVE**, 891 packages, peer-dep matrix `next@16 + @sentry/nextjs@10 + eslint@9` resolves cleanly
+- 1 follow-on commit `chore(meh-370): regen lockfile post-rebase` for the regenerated `package-lock.json` (+1017/-709)
+
+### Build / lint state (both RED, both predicted)
+- **Build RED** — Turbopack/webpack conflict from `next-pwa` webpack config. Predicted as MUST-FIX #6 in PHASE 0 inventory. **Queued for C4** (disable `withPWA` wrapper, Option A).
+- **Lint RED** — `next lint` subcommand removed in Next 16; treats `lint` as directory arg. **Queued for C3** (`.eslintrc.json` → `eslint.config.js`, script → `eslint .`).
+
+### Vuln state
+- **Total: 9** (5 high, 4 moderate, 0 critical, 0 low)
+- **5 high** — `next-pwa` workbox/rollup chain: `next-pwa → workbox-webpack-plugin → workbox-build → rollup-plugin-terser → serialize-javascript`. **C4 disable resolves all 5.**
+- **4 moderate** — postcss propagation chain: `postcss` (root) → `next` (direct via postcss) → `@sentry/nextjs` + `@vercel/speed-insights` (direct via next). **NOT resolvable in MEH-370 scope** (next@16.2.4 bundles old postcss internally) → needs follow-up ticket.
+- No new vulns from next@16 or react transitive surface.
+
+### PHASE 2 plan (next session)
+Recommend split across 3 sub-sessions, not bundled — each codemod is a clean commit boundary:
+- **C1** — `npx @next/codemod@latest next-async-request-api .` (8 sites: 6 `params` + 2 `searchParams`, enumerated in `breaking-changes-inventory.md`)
+- **C3** — manual ESLint 9 flat config: delete `.eslintrc.json`, create `eslint.config.js`, change lint script to `eslint .`
+- **C4** — manual: disable `withPWA` wrapper in `next.config.js`; add `experimental: { turbopack: false }` passthrough; full re-enable deferred to MEH-372
+
+### DoD parking lot
+"7 fewer vulns" framing in MEH-370 spec is ambiguous against current data:
+- vs. PHASE A baseline (14): post-C4 delta = **10** ✅
+- vs. post-MEH-371 staging (10): post-C4 delta = **6** ❌ short by 1
+- vs. MEH-345 original (19): post-C4 delta = **15** ✅
+
+**Recommendation (Smadar's call before MEH-370 final close):** split DoD into:
+1. "All `next` + `next-pwa` CVEs resolved" — ✅ achievable in MEH-370 via C4
+2. "postcss chain" — → new ticket (MEH-XXX), not blocking MEH-370 close
+
+---
+
+## 2026-04-28 — MEH-370 PHASE 0 + 0.5 complete, PHASE 1 unblocked
+
+**Branch:** `feature/meh-370-next-16-upgrade` — **PR #395** (draft, stays draft)
+**Tip SHA:** `b2b7d97` (post-handoff-commit; pre-rebase baseline)
+**Divergence:** 9 ahead / 8 behind (the +1 is this HANDOFF commit itself)
+
+### Commits ahead of staging (oldest → newest)
+- `d13dc78` chore(meh-370): Phase A — capture Next 14.2.35 upgrade baseline
+- `336860e` ci: trigger re-run after transient runner failure
+- `146cd3a` ci: trigger pr-checks re-run
+- `26aa663` chore(meh-370): Phase B step 1-2 — install next@16.2.4 + breaking changes inventory
+- `c671da9` docs(meh-370): add MUST-FIX #6 — Turbopack/webpack conflict to inventory
+- `a129b8f` docs(meh-370): close 4 pre-codemod unknowns
+- `a2d34d2` docs(meh-370): session close — vuln success criteria + HANDOFF
+- `3477f18` docs: pause MEH-370 — MEH-371 blocker
+
+### Commits behind staging (absorbed since branch cut)
+MEH-100, MEH-371 (Sentry v10), MEH-379+380+381 (CSP), MEH-382 (Railway retry).
+`next.config.js` was modified on all of MEH-371/379/380/381 — feature branch
+never touched it, so rebase will take staging's version clean (no conflict).
+
+### Current `frontend/package.json` on branch
+```
+"next":                "^16.2.4"     ← upgraded (commit 26aa663)
+"eslint-config-next":  "^16.2.4"     ← upgraded (commit 26aa663)
+"next-pwa":            "^5.6.0"      ← unchanged (disabled in C4)
+"@sentry/nextjs":      "^8.0.0"      ← OLD — staging has ^10.50.0 (MEH-371)
+```
+
+### Lockfile state: CLEAN
+lockfileVersion 3; single `"node_modules/next"` entry; no nested duplicate
+resolutions. PHASE 1 plan is rebase + npm install (no rm needed).
+
+### Codemod execution plan (locked)
+| ID | Codemod | Notes |
+|---|---|---|
+| C1 | `npx @next/codemod@latest next-async-request-api .` | 8 call sites: 6 `params` + 2 `searchParams` — enumerated in `breaking-changes-inventory.md` |
+| C2 | metadata-to-viewport | **SKIP** — `app/layout.js:97` already exports `viewport` separately; no-op transform |
+| C3 | ESLint 9 flat config | Manual: delete `.eslintrc.json`, create `eslint.config.js`, change lint script to `eslint .` |
+| C4 | next-pwa disable + Turbopack passthrough | Option A confirmed: disable `withPWA` wrapper; `experimental: { turbopack: false }`; full re-enable deferred to MEH-372 |
+
+### PHASE 1 next-session plan
+```
+a. git fetch --prune origin
+b. git checkout feature/meh-370-next-16-upgrade
+c. git rebase origin/staging
+d. Conflicts expected:
+     package.json       — additive: keep staging @sentry/nextjs@^10.50.0
+                          AND branch next@^16.2.4 + eslint-config-next@^16.2.4
+     package-lock.json  — accept either side to resolve git conflict,
+                          then regenerate via npm install (no rm needed)
+     next.config.js     — NO CONFLICT (branch never touched it; take-staging clean)
+e. npm install — watch for peer-dep surprises (next@16 + sentry@10 + eslint@9)
+f. git push --force-with-lease to PR #395
+g. WAIT for explicit "go" before running any codemod
+```
+
+### Open question for Smadar before PHASE 1
+Update MEH-370 Linear description to include C3 (ESLint flat config) + C4
+(next-pwa disable Option A)? Current PHASE B description only mentions
+`npx @next/codemod` — doesn't reflect the two manual migrations discovered
+during PHASE A reconnaissance. Confirm scope before executing.
+
+---
+
+## 2026-04-27 — MEH-382: Railway redeploy retry (CI race fix)
+
+**Status:** PR draft open, separate from PR #400 (release).
+
+Race condition surfaced when Smadar's empty cache-bust push (`131c92f`) on staging hit Railway's own watch + workflow CLI redeploy simultaneously. Workflow CLI got "cannot be redeployed" → CI failure → noise blocking otherwise-clean release.
+
+Fix: `.github/workflows/deploy.yml` — wrap both Redeploy steps in 5-attempt retry loop (30s between, ~2 min max wait). Catches transient race-condition errors via regex match on Railway CLI v4.42 wording. Non-transient errors fail fast. Regex fragility tracked inline (CLI version drift could silently lose retry path).
+
+**Branch:** `feature/meh-382-fix-railway-redeploy-race`
+**Files changed:** `.github/workflows/deploy.yml` only.
+**Independent of PR #400:** the two PRs do not block each other and can land in any order.
+**FINDER → ADVERSARY → REFEREE:** 10 findings, 10 disproved.
+
+## 2026-05-01 — MEH-386: BOLA audit (PR #422, merging)
+
+**Status:** Squash-merging to staging now.
+
+**Branch:** `fix/meh-386-bola-clean` (cherry-pick of fixes onto clean staging base)
+
+**What was done:** Full BOLA sweep of all 26 backend routers. 2 confirmed vulnerabilities found and fixed:
+
+1. `GET /home-products/{id}` (`home_products.py:167`) — hidden/deactivated listings were visible to anonymous callers by UUID. Fixed: `get_current_user_optional` + is_active/is_hidden gate.
+2. `POST /category-requests` (`category_requests.py:18`) — anonymous callers could spoof any `producer_id` in the request body. Fixed: body's `producer_id` ignored; JWT-bound value used for authenticated users, None for anonymous.
+
+5 regression tests in `TestBOLA` class (`tests/test_api.py:2174`).
+
+All other 24 routers confirmed clean — no additional BOLA surface found.
+
+**Decisions logged:**
+| Decision | Rationale | Date |
+|---|---|---|
+| `producer_id` stripped for anonymous category requests | Body value untrustworthy without auth; admin queue shows None as "unattributed" | May 2026 |
+| Owner+admin can still view hidden/deactivated home products | Owner needs to see why listing was hidden; admin needs to review | May 2026 |
 
 ## 2026-04-27 — MEH-379+380+381 bundle (PR #399, merged-pending-Smadar-verify)
 
@@ -72,6 +1082,45 @@ real founder photo via `next/image`. Path C editorial portrait (3:4 rectangle):
 - Build ✅ PASS, no new warnings
 
 **Deferred:** imgFailed browser fallback visual test (CC sandbox can't open browser) — verify on Vercel preview by temporarily breaking public_id.
+
+## 2026-04-27 evening — MEH-370 paused, MEH-371 elevated
+
+PHASE B reconnaissance complete on MEH-370 (PR #395 draft).
+ERESOLVE blocker on `@sentry/nextjs@8.55.1` vs `next@16` (peer dep accepts
+`next@^13 || ^14 || ^15-rc` only). MEH-371 bumped Medium → High, runs first.
+PHASE A baselines + 6 MUST-FIX inventory preserved on
+`feature/meh-370-next-16-upgrade`. Resume after MEH-371 merges.
+
+## 2026-04-27 — MEH-370 Phase A + B reconnaissance complete (codemods deferred)
+
+**PR #395 draft.** Branch: `feature/meh-370-next-16-upgrade`.
+
+Phase A baseline captured: build PASS (Next 14), lint PASS, audit-pre 14 vulns.
+Phase B steps 1–2 done: `npm install next@16.2.4 eslint-config-next@16 eslint@9` passed
+(eslint@9 added to spec command — peer dep enforcement). 6 MUST-FIX items inventoried.
+Vuln delta: 14 → 12 (3 sorted + 1 reclassified high→moderate; not 7 as spec stated).
+
+**Decisions made this session:**
+- Option A for next-pwa: disable `withPWA` wrapper in MEH-370 PR; MEH-372 reactivates
+- Codemods C1–C4 deferred to next session
+
+**Resume next session — codemods in this order (1 commit each):**
+1. C1 — `npx @next/codemod@latest next-async-request-api .` (8 call sites)
+2. C2 — skip (metadata-to-viewport already separated in app/layout.js:97)
+3. C3 — manual: migrate `.eslintrc.json` → `eslint.config.js`; lint script `eslint .`
+4. C4 — manual: disable `withPWA` (Option A) + `experimental: { turbopack: false }` in next.config.js
+5. `npm run build` — must pass
+6. `npm run lint` — must pass
+7. Phase C: Lighthouse + visual regression + manual smoke
+8. CHANGELOG + HANDOFF + mark PR ready-for-review
+
+**Stop conditions for next session:**
+- Any codemod breaks build → STOP, do not continue
+- C4 Turbopack disable doesn't fix Sentry/webpack conflict → investigate, do not paper over
+- Lighthouse delta >5% → STOP, revert
+- Any auth flow broken in manual smoke → STOP
+
+Inventory: `docs/upgrade-baselines/meh-370/breaking-changes-inventory.md`
 
 ---
 
@@ -1044,6 +2093,54 @@ After deploy, click a real verification link in staging and check Railway logs f
 
 ---
 
+## 2026-04-25 Session 2 update (MEH-311 + MEH-317 + MEH-313)
+
+### What shipped
+
+| PR | MEH | Title | Status |
+|----|-----|-------|--------|
+| #341 | MEH-311 | RecipeIngredient.producer_id ON DELETE SET NULL | Merged to staging |
+| #342 | MEH-317 | Fix test_happy_path data= → json= | Merged to staging |
+| #344 | MEH-313 | recipes.submitted_by ON DELETE CASCADE | Merged to staging |
+
+### MEH-311 details
+
+- `backend/app/models/models.py:370` — `ForeignKey("producers.id", ondelete="SET NULL")`
+- Alembic migration `a4c7d2f9e1b8` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_ingredient_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `a4c7d2f9e1b8`
+- Linear MEH-311 → Done
+
+### MEH-317 details
+
+Root cause: `test_happy_path` sent `data={"username": ...}` (form-encoded) to `/auth/login`
+but `LoginRequest` expects JSON body with `email` field. Fixed 2 lines at `tests/test_api.py:1579,1583`.
+
+### MEH-313 details
+
+- `backend/app/models/models.py:355` — `ForeignKey("users.id", ondelete="CASCADE")`
+- Alembic migration `c9e3a1b5d72f` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `c9e3a1b5d72f`
+- Product decision: CASCADE (recipes are user-owned content, full GDPR wipe)
+- Linear MEH-313 → Done
+
+### Sibling FK remaining open
+
+- **MEH-312** — `recipes.category_id` missing `ondelete` (Backlog, Low — category deletion unlikely, non-blocking)
+
+### Rule added
+
+**Rule 21** added to `.claude/rules/workflow.md`: "Never merge without verified green CI signal — even if budget appears exhausted."
+
+### Next session candidates
+
+- MEH-304 root cause — paste Railway logs from forgot-password on staging to diagnose actual 400 cause
+- MEH-312 — `recipes.category_id` quick SET NULL fix (low priority)
+- MEH-198 (email verify resend), MEH-258 (SECURITY-CHECKLIST), MEH-272 (Producer CHECK constraints)
+
+---
+
 ## 2026-04-25 Session 1 update (Claude Chat research-6 + MEH-308 follow-up)
 
 ### Issues closed today
@@ -1931,3 +3028,53 @@ No Linear MCP in this session. Mark MEH-341 as "Done" manually in Linear.
 - Current open PRs (git + GitHub)
 - Current branch status
 - Any drift between staging and main
+
+---
+
+## Session 2026-05-01 — MEH-306 closure + MEH-417 mock removal
+
+### PRs merged to staging (chronological)
+- PR #410 (SHA de13120) — MEH-306 sub-A: password policy backend
+- PR #412 (SHA 783cfe5) — MEH-306 sub-B: password policy frontend
+- PR #418 (SHA dd0af4f) — MEH-418 + MEH-419: a11y sweep + /login copy
+- PR #423 (SHA 662ba8e) — MEH-417 fix: /auth/register rate limit 3→10/hour
+- PR #421 (SHA 98017d6) — MEH-417: remove Playwright mocks
+
+### Tickets closed
+- MEH-306 (parent) — Done 10:52
+- MEH-418 — /login copy "8 תווים" → "הזיני סיסמה" — Done 11:25
+- MEH-419 — role="alert" a11y sweep 9 sites / 6 files — Done 11:25
+- MEH-417 — Playwright mock removal — Done 14:42
+
+### Key lessons (codified)
+
+1. RFC 6761 `.test` TLD trap (MEH-353 precedent confirmed):
+   Pydantic email-validator rejects `.test` TLD with 422 before handler runs.
+   ALWAYS use `@example.com` in test fixtures. Never `@e2e.test`, `@invalid.test`.
+   Cross-ref: MEH-353 (2026-04-27) had identical root cause in smoke_test.py.
+
+2. Rate limits in CI are silent blockers:
+   /auth/register had @limiter.limit("3/hour") per-IP.
+   GitHub Actions runner IPs are shared — budget exhausted by recent CI cycles.
+   Fix: raised to 10/hour (PR #423). Shared-IP rationale: corporate NAT, CGNAT, CI.
+
+3. Mocks hide real backend bugs:
+   MEH-306 sub-B mocks masked the @e2e.test 422 for 8 CI cycles.
+   Removing mocks immediately exposed real Pydantic validation behavior.
+   Lesson: mocks should be minimal scope + removal tracked as follow-up ticket.
+
+4. Skeptic Mode prevented 3 speculative fixes:
+   Claude Code stopped 3 times, demanded evidence before pushing.
+   Each STOP saved a bad PR. Evidence chain from MEH-353 provided the real fix.
+
+### Staging state at end of session
+98017d6 fix(MEH-417): @e2e.test → @example.com (Pydantic RFC 6761)
+662ba8e fix(MEH-417): loosen /auth/register rate limit 3→10/hour (#423)
+dd0af4f fix(MEH-418+419): a11y sweep + /login copy cleanup (#418)
+783cfe5 feat(MEH-306 sub-B): password policy wire-up — frontend (#412)
+de13120 feat(MEH-306 sub-A): password policy wire-up — backend (+ MEH-395) (#410)
+
+### Open follow-ups (Backlog, not urgent)
+- DB cleanup strategy for staging test users (CI accumulates records)
+- wait-for-deploy step in CI before Playwright runs (Railway redeploy race)
+- /register/producer rate limit review (still 3/hour, separate decision)

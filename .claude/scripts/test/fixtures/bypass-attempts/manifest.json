@@ -1,0 +1,37 @@
+{
+  "$comment": "MEH-397 hook regression manifest. Each entry: input file, hook script, expected exit, required (gate fails if mismatch) vs informational (logged but doesn't fail self-test).",
+  "tests": [
+    {
+      "name": "userinfo-bypass-webfetch",
+      "input_file": "userinfo-bypass.json",
+      "hook": "check-webfetch-allowlist.sh",
+      "expected_exit": 2,
+      "required": true,
+      "regression_for": "MEH-397 adversarial review issue #1 — sed s|@.*$|| greedy strip lets https://allowed.com@evil.io/ bypass allowlist."
+    },
+    {
+      "name": "malformed-json-read",
+      "input_file": "malformed-json.txt",
+      "hook": "check-env-read.sh",
+      "expected_exit": 2,
+      "required": true,
+      "regression_for": "MEH-397 adversarial review issue #2 — jq parse error must fail-closed, not fail-open."
+    },
+    {
+      "name": "malformed-json-webfetch",
+      "input_file": "malformed-json.txt",
+      "hook": "check-webfetch-allowlist.sh",
+      "expected_exit": 2,
+      "required": true,
+      "regression_for": "MEH-397 adversarial review issue #2 — jq parse error must fail-closed, not fail-open."
+    },
+    {
+      "name": "uppercase-env",
+      "input_file": "uppercase-env.json",
+      "hook": "check-env-read.sh",
+      "expected_exit": 2,
+      "required": false,
+      "regression_for": "MEH-397 adversarial review item B (dismissed) — .ENV uppercase not blocked. Informational; documents current behavior. Promote to required:true if convention requires case-insensitive blocking."
+    }
+  ]
+}

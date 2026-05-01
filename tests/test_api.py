@@ -18,7 +18,7 @@ class TestAuth:
     def test_register_creates_user_and_returns_token(self, client):
         resp = client.post(
             "/auth/register",
-            json={"email": "alice@test.com", "name": "Alice", "password": "Pass1234!"},
+            json={"email": "alice@test.com", "name": "Alice", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 200
         body = resp.json()
@@ -29,21 +29,21 @@ class TestAuth:
         make_user(db, email="dup@test.com")
         resp = client.post(
             "/auth/register",
-            json={"email": "dup@test.com", "name": "x", "password": "Pass1234!"},
+            json={"email": "dup@test.com", "name": "x", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 400
 
     def test_login_returns_jwt(self, client, db):
-        make_user(db, email="bob@test.com", password="Pass1234!")
+        make_user(db, email="bob@test.com", password="Zx7Yp9Mq2Lr4")
         resp = client.post(
             "/auth/login",
-            json={"email": "bob@test.com", "password": "Pass1234!"},
+            json={"email": "bob@test.com", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 200
         assert resp.json()["access_token"]
 
     def test_login_wrong_password(self, client, db):
-        make_user(db, email="bob2@test.com", password="Pass1234!")
+        make_user(db, email="bob2@test.com", password="Zx7Yp9Mq2Lr4")
         resp = client.post(
             "/auth/login",
             json={"email": "bob2@test.com", "password": "wrong"},
@@ -51,10 +51,10 @@ class TestAuth:
         assert resp.status_code == 401
 
     def test_login_blocked_user_returns_403(self, client, db):
-        make_user(db, email="blocked@test.com", password="Pass1234!", is_blocked=True)
+        make_user(db, email="blocked@test.com", password="Zx7Yp9Mq2Lr4", is_blocked=True)
         resp = client.post(
             "/auth/login",
-            json={"email": "blocked@test.com", "password": "Pass1234!"},
+            json={"email": "blocked@test.com", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 403
 
@@ -72,7 +72,7 @@ class TestAuth:
     VALID_PRODUCER_REG = {
         "email": "producer@test.com",
         "name": "שרה ישראלית",
-        "password": "Pass1234!",
+        "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "חוות שרה",
         "phone": "0501234567",
         "category_ids": [],
@@ -464,7 +464,7 @@ class TestMeh56WhatsAppOnboarding:
         resp = client.post("/auth/register/producer", json={
             "email": "farm56@test.com",
             "name": "Farmer",
-            "password": "Pass1234!",
+            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות הבדיקה",
             "phone": "0501234567",
             "category_ids": [],
@@ -1570,7 +1570,7 @@ class TestResetPasswordFlow:
         user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
         db.commit()
 
-        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!"})
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
         assert res.status_code == 200
         db.refresh(user)
         assert user.reset_token is None
@@ -1580,11 +1580,11 @@ class TestResetPasswordFlow:
         assert login_old.status_code == 401
 
         # new password must work
-        login_new = client.post("/auth/login", json={"email": user.email, "password": "NewPass1!"})
+        login_new = client.post("/auth/login", json={"email": user.email, "password": "NewPass1!Long"})
         assert login_new.status_code == 200
 
     def test_unknown_token_returns_404(self, client, db):
-        res = client.post("/auth/reset-password", json={"token": "nonexistent_token_abc", "new_password": "NewPass1!"})
+        res = client.post("/auth/reset-password", json={"token": "nonexistent_token_abc", "new_password": "NewPass1!Long"})
         assert res.status_code == 404
 
     def test_expired_token_returns_410(self, client, db):
@@ -1596,7 +1596,7 @@ class TestResetPasswordFlow:
         user.reset_token_expires_at = datetime.utcnow() - timedelta(seconds=1)
         db.commit()
 
-        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!"})
+        res = client.post("/auth/reset-password", json={"token": token, "new_password": "NewPass1!Long"})
         assert res.status_code == 410
 
     def test_invalid_body_returns_422(self, client, db):
@@ -1624,7 +1624,7 @@ class TestRefreshTokenFlow:
     gets a fresh DB and a clean slowapi counter.
     """
 
-    def _login(self, client, email, password="Pass1234!"):
+    def _login(self, client, email, password="Zx7Yp9Mq2Lr4"):
         return client.post("/auth/login", json={"email": email, "password": password})
 
     def _refresh_cookies(self, response):
@@ -1650,7 +1650,7 @@ class TestRefreshTokenFlow:
         return None
 
     def test_login_sets_refresh_cookie(self, client, db):
-        make_user(db, email="t1@test.com", password="Pass1234!")
+        make_user(db, email="t1@test.com", password="Zx7Yp9Mq2Lr4")
         res = self._login(client, "t1@test.com")
         assert res.status_code == 200
         cookies = self._refresh_cookies(res)
@@ -1671,7 +1671,7 @@ class TestRefreshTokenFlow:
         from joserfc.jwt import JWTClaimsRegistry
         from app.config import settings
 
-        make_user(db, email="t2@test.com", password="Pass1234!")
+        make_user(db, email="t2@test.com", password="Zx7Yp9Mq2Lr4")
         login_res = self._login(client, "t2@test.com")
         refresh_cookie = login_res.cookies.get("refresh_token")
         assert refresh_cookie, "Login did not return a refresh_token cookie"
@@ -1699,7 +1699,7 @@ class TestRefreshTokenFlow:
         assert res.status_code == 401
 
     def test_refresh_rejects_after_token_version_bump(self, client, db):
-        make_user(db, email="t5@test.com", password="Pass1234!")
+        make_user(db, email="t5@test.com", password="Zx7Yp9Mq2Lr4")
         login_res = self._login(client, "t5@test.com")
         refresh_cookie = login_res.cookies.get("refresh_token")
 
@@ -1713,7 +1713,7 @@ class TestRefreshTokenFlow:
         assert res.status_code == 401
 
     def test_refresh_rejects_blocked_user(self, client, db):
-        make_user(db, email="t6@test.com", password="Pass1234!")
+        make_user(db, email="t6@test.com", password="Zx7Yp9Mq2Lr4")
         login_res = self._login(client, "t6@test.com")
         refresh_cookie = login_res.cookies.get("refresh_token")
 
@@ -1757,7 +1757,7 @@ class TestRefreshTokenFlow:
         assert res.json()["email"] == "t8@test.com"
 
     def test_logout_clears_refresh_cookie(self, client, db):
-        make_user(db, email="t9@test.com", password="Pass1234!")
+        make_user(db, email="t9@test.com", password="Zx7Yp9Mq2Lr4")
         self._login(client, "t9@test.com")  # sets cookie in client session
 
         res = client.post("/auth/logout")
@@ -1771,7 +1771,7 @@ class TestRefreshTokenFlow:
         assert "max-age=0" in low or "expires=" in low
 
     def test_logout_all_devices_rotates_refresh_cookie(self, client, db):
-        make_user(db, email="t10@test.com", password="Pass1234!")
+        make_user(db, email="t10@test.com", password="Zx7Yp9Mq2Lr4")
         login_res = self._login(client, "t10@test.com")
         old_refresh = login_res.cookies.get("refresh_token")
         access_token = login_res.json()["access_token"]
@@ -1808,7 +1808,7 @@ class TestFingerprintCookie:
     tokens fail-open, logout clears the cookie.
     """
 
-    def _login(self, client, email, password="Pass1234!"):
+    def _login(self, client, email, password="Zx7Yp9Mq2Lr4"):
         return client.post("/auth/login", json={"email": email, "password": password})
 
     def _all_set_cookies(self, response):
@@ -1828,7 +1828,7 @@ class TestFingerprintCookie:
         return header.split("=", 1)[1].split(";")[0].strip()
 
     def test_login_sets_fingerprint_cookie(self, client, db):
-        make_user(db, email="fp1@test.com", password="Pass1234!")
+        make_user(db, email="fp1@test.com", password="Zx7Yp9Mq2Lr4")
         res = self._login(client, "fp1@test.com")
         assert res.status_code == 200
         fp_hdr = self._fp_cookie_header(res)
@@ -1844,7 +1844,7 @@ class TestFingerprintCookie:
     def test_register_sets_fingerprint_cookie(self, client):
         res = client.post(
             "/auth/register",
-            json={"email": "fp2@test.com", "name": "FP Test", "password": "Pass1234!"},
+            json={"email": "fp2@test.com", "name": "FP Test", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert res.status_code == 200
         fp_hdr = self._fp_cookie_header(res)
@@ -1856,7 +1856,7 @@ class TestFingerprintCookie:
         assert "path=/" in low
 
     def test_authenticated_request_valid_fingerprint_passes(self, client, db):
-        make_user(db, email="fp3@test.com", password="Pass1234!")
+        make_user(db, email="fp3@test.com", password="Zx7Yp9Mq2Lr4")
         login_res = self._login(client, "fp3@test.com")
         access_token = login_res.json()["access_token"]
         fp = self._fp_value(login_res)
@@ -1874,7 +1874,7 @@ class TestFingerprintCookie:
         """Core security invariant: a stolen access token cannot be replayed
         without also stealing the HttpOnly __Secure-Fgp cookie.
         """
-        make_user(db, email="fp4@test.com", password="Pass1234!")
+        make_user(db, email="fp4@test.com", password="Zx7Yp9Mq2Lr4")
         login_res = self._login(client, "fp4@test.com")
         access_token = login_res.json()["access_token"]
 
@@ -1918,7 +1918,7 @@ class TestFingerprintCookie:
         assert res.json()["email"] == "fp5@test.com"
 
     def test_logout_clears_fingerprint_cookie(self, client, db):
-        make_user(db, email="fp6@test.com", password="Pass1234!")
+        make_user(db, email="fp6@test.com", password="Zx7Yp9Mq2Lr4")
         self._login(client, "fp6@test.com")
 
         res = client.post("/auth/logout")
@@ -1948,7 +1948,7 @@ class TestSanitizationIntegration:
         payload = {
             "email": "xss-producer@test.com",
             "name": "ניסוי",
-            "password": "Pass1234!",
+            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות הסקריפט",
             "description": "<script>alert(1)</script>טקסט נקי",
             "phone": "0501234567",
@@ -2169,3 +2169,121 @@ class TestAppleTokenVerification:
         monkeypatch.setattr(req_mod, "get", _capturing_get)
         _verify_apple_token("dummy.token.value")
         assert captured.get("timeout") == 8
+
+
+# ---------------------------------------------------------------------------
+# MEH-386: BOLA regression tests
+# ---------------------------------------------------------------------------
+
+class TestBOLA:
+    """Regression suite for MEH-386 — Broken Object Level Authorization.
+
+    Two confirmed findings:
+      1. GET /home-products/{id} exposed hidden/deactivated listings to public.
+      2. POST /category-requests accepted spoofed producer_id from anonymous callers.
+    """
+
+    def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
+        """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
+        from app.models.models import HomeProduct
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="bola-hidden@test.com")
+        create = client.post(
+            "/home-products",
+            json={"title": "עוגה", "description": "טעימה", "price": "25"},
+            headers=auth_header(user),
+        )
+        assert create.status_code == 201
+        pid = create.json()["id"]
+
+        # Simulate auto-hide (3 negative ratings sets is_hidden=True)
+        hp = db.query(HomeProduct).filter(HomeProduct.id == pid).first()
+        hp.is_hidden = True
+        db.commit()
+
+        # Anonymous fetch → 404 (not 200)
+        resp = client.get(f"/home-products/{pid}")
+        assert resp.status_code == 404
+
+    def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
+        """Owner of a hidden listing can still view it."""
+        from app.models.models import HomeProduct
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="bola-owner@test.com")
+        create = client.post(
+            "/home-products",
+            json={"title": "גבינה", "description": "טרייה", "price": "40"},
+            headers=auth_header(user),
+        )
+        assert create.status_code == 201
+        pid = create.json()["id"]
+
+        hp = db.query(HomeProduct).filter(HomeProduct.id == pid).first()
+        hp.is_hidden = True
+        db.commit()
+
+        # Owner fetch → 200
+        resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
+        """A deactivated listing (is_active=False) must 404 for anonymous callers."""
+        from app.models.models import HomeProduct
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="bola-inactive@test.com")
+        create = client.post(
+            "/home-products",
+            json={"title": "לחם", "description": "מחמצת", "price": "35"},
+            headers=auth_header(user),
+        )
+        assert create.status_code == 201
+        pid = create.json()["id"]
+
+        # Soft-delete via DELETE endpoint
+        client.delete(f"/home-products/{pid}", headers=auth_header(user))
+
+        # Anonymous fetch → 404
+        resp = client.get(f"/home-products/{pid}")
+        assert resp.status_code == 404
+
+    def test_category_request_producer_id_not_spoofable_anonymous(self, client, db):
+        """An anonymous caller cannot spoof a producer_id on a category request."""
+        import uuid as uuid_mod
+        fake_id = str(uuid_mod.uuid4())
+        resp = client.post(
+            "/category-requests",
+            json={"requested_name": "קפה מיוחד", "producer_id": fake_id},
+        )
+        assert resp.status_code == 201
+        # producer_id must be None — the spoofed value is discarded
+        assert resp.json()["producer_id"] is None
+
+    def test_category_request_uses_authenticated_producer_id(self, client, db):
+        """An authenticated producer's own producer_id is used, not one from the body."""
+        import uuid as uuid_mod
+        from app.models.models import Producer as ProducerModel
+        producer = make_producer(db, name="בית קפה בודהה")
+        user = make_user(db, email="bola-producer@test.com")
+        user.producer_id = producer.id
+        db.commit()
+
+        fake_id = str(uuid_mod.uuid4())
+        resp = client.post(
+            "/category-requests",
+            json={"requested_name": "קפה מיוחד", "producer_id": fake_id},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        # Must use authenticated user's producer_id, not the spoofed one
+        assert body["producer_id"] == str(producer.id)
+        assert body["producer_id"] != fake_id

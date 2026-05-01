@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
 
 /**
@@ -41,11 +42,12 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
       const detail = err.response?.data?.detail;
       if (status === 409) {
         // Already-producer OR email-password-collision both land on 409.
-        onError?.(
-          detail ||
-            "יש לך כבר חשבון במהמקור. התחברי כדי להמשיך.",
-          { redirectToLogin: true },
-        );
+        // Toast survives the router.push to /login (parent's onError
+        // redirects but drops the message); without it the user lands
+        // on /login with no context and the OAuth button looks broken.
+        const msg = detail || "יש לך כבר חשבון במהמקור — היכנסי כדי לנהל אותו";
+        showToast(msg, "error", 5000);
+        onError?.(msg, { redirectToLogin: true });
       } else if (status === 429) {
         onError?.("יותר מדי נסיונות, נסי בעוד דקה");
       } else if (status === 401) {
