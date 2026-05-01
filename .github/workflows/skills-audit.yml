@@ -56,8 +56,8 @@ jobs:
         run: |
           count=$(jq '.skills | length' .claude/skills-allowlist.json)
           echo "Allowlist entries: $count"
-          if [ "$count" -lt 75 ]; then
-            echo "::error::skills-allowlist.json has fewer than 75 entries — drift detected"
+          if [ "$count" -lt 71 ]; then
+            echo "::error::skills-allowlist.json has fewer than 71 entries — drift detected"
             exit 1
           fi
 

@@ -29,6 +29,46 @@ Skeptic audit during this PR also found 3 inline-error sites missing `role="aler
 
 Closes MEH-418, MEH-419.
 
+## 2026-05-01 — MEH-403: coreyhaines31/marketingskills audit + scope cleanup (4 deleted, 34 approved)
+
+**4 skills deleted** as out-of-scope for Mehamakor's B2C local-food
+marketplace: `aso-audit` (no native app), `churn-prevention` (no
+subscription), `revops` (no B2B sales pipeline), `sales-enablement`
+(no B2B sales team).
+
+**34 skills audited and approved** (review_needed → approved). 5 deep-read
+end-to-end (`product-marketing-context`, `cold-email`, `ad-creative`,
+`schema-markup`, `seo-audit`). 29 quick-scanned full-body for injection
+canaries — zero hits across all 34.
+
+**`product-marketing-context`** is the chain root for the other 33 — same
+architectural class as `teach-impeccable` (MEH-402). Writes
+`.agents/product-marketing-context.md` on user invocation; inert in
+Mehamakor today (not auto-loaded).
+
+**`ad-creative`** carries 2 architectural notes: (1) curl examples in
+`references/generative-tools.md` reference `$GEMINI_API_KEY` /
+`$ELEVENLABS_API_KEY` shell env vars (documentation only, not executed);
+(2) bash shell-out indirection (see below).
+
+**New architectural finding-class — bash shell-out from skills:** 7
+skills (`ad-creative`, `ai-seo`, `analytics-tracking`, `email-sequence`,
+`launch-strategy`, `paid-ads`, `referral-program`) instruct Claude to
+invoke `node tools/clis/<x>.js` and reference `../../tools/REGISTRY.md`.
+Mehamakor has no `tools/` directory, so all references are dead
+pointers today. Future risk: if any commit adds `tools/clis/`, these
+skills auto-suggest shell execution that bypasses MEH-397 hooks. This
+is the same trust-model class as MEH-406 (Python network bypass) but
+at the bash subprocess level. Tracked as separate ticket (user creates
+in Linear post-merge).
+
+**Counts after PR:** allowlist 75 → 71, lock 74 → 70, approved 36 → 70,
+review_needed 35 → 0, approved_local_unlocked 1 (ui-ux-pro-max,
+unchanged). **All sources now audited.** Only remaining cleanup:
+ui-ux-pro-max → approved (MEH-399, 30-day SLA).
+
+CI floor lowered 75 → 71 to match new allowlist size.
+
 ## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement
 
 Closes the architectural gap MEH-402 adversarial review surfaced —
