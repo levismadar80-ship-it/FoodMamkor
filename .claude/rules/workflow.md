@@ -167,6 +167,14 @@ summary + pointer here.
     [.claude/rules/frontend.md](./frontend.md).
 20. **Review order — CI before adversarial (mandatory).** See
     [.claude/rules/testing.md](./testing.md).
+21. **Never merge without a verified green CI signal.** If all CI jobs
+    complete in <2 seconds with `conclusion: failure` and no log output,
+    that is **budget exhaustion** — not a real failure and not a real
+    pass. Check `Settings → Billing & plans → Spending limits` first.
+    Do not merge on a "green" signal you cannot explain. Do not merge
+    on a "failing" signal you cannot read logs for. Wait for budget
+    resolution before proceeding. (Root cause: MEH-314/317, 2026-04-25 —
+    test bug was masked by budget exhaustion and shipped in PR #337.)
 
 ---
 
@@ -341,6 +349,28 @@ REFEREE verdicts fixed.
 
 Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`,
 `MANUAL_TESTING.md`): commit directly to `staging` — no PR needed.
+
+---
+
+## /ultrareview gate
+
+לפני merge ל-staging, אם ה-PR עומד ב-2+ מהתנאים האלה — הריצי `/ultrareview` ב-Claude Code:
+
+- 500+ שורות שינוי
+- נוגע ב-auth / payments / DB schema migration
+- refactor של מודל מרכזי (`main.py`, `MapClient.jsx`, `ProducerDetail.jsx`, `models.py`)
+
+הפעלה ידנית בלבד דרך Claude Code CLI:
+
+1. `git stash` או commit לפני (Branch mode bundles working tree at confirm time)
+2. `/ultrareview` (לבדיקת branch מול default) או `/ultrareview <PR-number>` (PR mode)
+3. ממתינות 5–20 דקות
+4. בודקות ממצאים, מתקנות, batching לפני re-run
+5. `/tasks` למעקב
+
+**אסור:** להשתמש על PRs טריוויאליים (copy fix, single-line bug, CSS only) — בזבוז ריצה.
+
+_Source: Claude Code v2.1.86+ (Opus 4.7 launch, 2026-04-16). 3 free runs expire 2026-05-05._
 
 ---
 

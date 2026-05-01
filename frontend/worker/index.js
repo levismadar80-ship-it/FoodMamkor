@@ -1,6 +1,16 @@
-// MEH-54: Push notification handlers for מהמקור PWA.
-// This file is bundled by next-pwa (customWorkerDir: 'worker') and
-// importScripts'd into the generated sw.js on every build.
+/**
+ * MEH-54 push notification handlers — currently DEAD CODE.
+ * next-pwa was removed in MEH-372 because it doesn't support
+ * Next 16 Turbopack. PWA features stayed disabled since launch
+ * (VAPID keys never set in production). This file is preserved
+ * for future re-enable when @serwist/next or successor adds
+ * Turbopack support.
+ *
+ * To re-enable: open new ticket, choose PWA package with
+ * Turbopack support, restore withPWA wrapping in next.config.js
+ * with customWorkerDir pointing here, set VAPID_PRIVATE_KEY +
+ * VAPID_PUBLIC_KEY in Railway production env vars.
+ */
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;

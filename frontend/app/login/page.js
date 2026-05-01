@@ -84,9 +84,13 @@ function LoginPageBody() {
   // about.
   const emailInvalid = emailTouched && email.length > 0 && !validateEmail(email);
   const emailValid = emailTouched && validateEmail(email);
-  const passwordInvalid = passwordTouched && password.length > 0 && password.length < 8;
-  const passwordValidLength = passwordTouched && password.length >= 8;
-  const formIsValid = validateEmail(email) && password.length >= 8;
+  // MEH-418: drop the 8-char floor (post-MEH-306 there is no specific
+  // minimum on /login — login validates against the stored hash, which
+  // may be any length for legacy accounts). Keep a >= 1 defensive gate
+  // so the submit button stays disabled on empty fields.
+  const passwordInvalid = passwordTouched && password.length > 0 && password.length < 1;
+  const passwordValidLength = passwordTouched && password.length >= 1;
+  const formIsValid = validateEmail(email) && password.length >= 1;
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
@@ -136,7 +140,7 @@ function LoginPageBody() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">האימייל לא תקין</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">האימייל לא תקין</p>
             )}
             {emailValid && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
@@ -185,7 +189,7 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">סיסמא חייבת להכיל לפחות 8 תווים</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">הזיני סיסמה</p>
             )}
             {passwordValidLength && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>

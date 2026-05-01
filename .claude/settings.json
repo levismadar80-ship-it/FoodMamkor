@@ -46,6 +46,17 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-422 skill-bypass guard — blocks subprocess invocations that bypass MEH-397 hooks (node tools/, python tools/, bash tools/, tools/clis/, tools/integrations/, tools/REGISTRY). Also blocks direct invocation of known-network skill scripts (audit_a11y.py, check_shabbat.py) when their skill's allowed_network_hosts is null/empty. Exit 2 = block. Fail-closed if jq missing or input malformed.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-skill-bypass.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
@@ -53,6 +64,28 @@
             "timeout": 10000,
             "_comment": "RTL physical-property guard — blocks physical left-*/right-*/ml-*/mr-* in non-allowlisted files. Exit 2 = block. Fail-open if jq missing.",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-rtl.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5000,
+            "_comment": "MEH-397 Layer 1: blocks Read on .env files. Exit 2 = block. Fail-closed if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-env-read.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5000,
+            "_comment": "MEH-397 Layer 1: blocks WebFetch outside the supply-chain allowlist (github, anthropic, npmjs, pypi, mehamakor, vercel, railway). Exit 2 = block. Fail-closed if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-webfetch-allowlist.sh\""
           }
         ]
       }
@@ -147,7 +180,15 @@
       "Bash(jq:*)",
       "Bash(railway logs:*)",
       "Bash(railway status:*)",
-      "Bash(railway variables:*)"
+      "Bash(railway variables:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:anthropic.com)",
+      "WebFetch(domain:npmjs.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:mehamakor.online)",
+      "WebFetch(domain:staging.mehamakor.online)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:railway.app)"
     ],
     "deny": [
       "Bash(git push --force:*)",
@@ -163,7 +204,13 @@
       "Bash(vercel --prod:*)",
       "Bash(cat .env*)",
       "Bash(echo .* > .env:*)",
-      "Bash(npm publish:*)"
+      "Bash(npm publish:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./frontend/.env)",
+      "Read(./frontend/.env.*)",
+      "Read(./backend/.env)",
+      "Read(./backend/.env.*)"
     ]
   }
 }

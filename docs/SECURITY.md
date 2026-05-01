@@ -627,6 +627,162 @@ CREATE TABLE audit_log (
 
 ---
 
+## 17. Skills supply chain (MEH-397)
+
+Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
+mechanism. Each load is an opportunity for a malicious skill to read
+source files, env vars, OAuth flows, or persist prompt-injection
+instructions across sessions. Empirical baseline:
+
+- Snyk ToxicSkills (Feb 2026) — 13.4% of 3,984 ClawHub skills with
+  critical security issues; 76 confirmed malicious payloads
+- Aguara — 31K+ skills, 485 critical findings
+- Liu et al. — 26.1% with vulnerable patterns
+
+Authorship of the 83 skills (after MEH-397):
+
+| Source | Count | Verification |
+|---|---|---|
+| `pbakaus/impeccable` | 21 | named author |
+| `coreyhaines31/marketingskills` | 38 | named author |
+| `skills-il/localization` | 14 | **anonymous** — manual review required |
+| `skills-il/security-compliance` | 9 | **anonymous** — manual review required |
+| `local` (`ui-ux-pro-max`) | 1 | bypassed lock; Python scripts manually audited in MEH-397 |
+
+### 5-layer defense
+
+1. **Tool deny + WebFetch allowlist + subprocess bypass guard**
+   (`.claude/settings.json` + PreToolUse hooks at
+   `.claude/hooks/check-env-read.sh`,
+   `.claude/hooks/check-webfetch-allowlist.sh`, and (MEH-422)
+   `.claude/hooks/check-skill-bypass.sh`). Read on `.env` files
+   blocked; WebFetch limited to 7 parent domains (github, anthropic,
+   npmjs, pypi, mehamakor, vercel, railway); Bash commands matching
+   subprocess-bypass patterns (`tools/clis/`, `(node|python|bash|sh)
+   ...tools/`) blocked. All hooks fail-closed if `jq` missing.
+2. **Allowlist registry** (`.claude/skills-allowlist.json`) — 71
+   entries (post MEH-423); every skill on disk must be listed with a
+   non-blocked verdict. Verdict `approved_local_unlocked` is a 30-day
+   transitional slot for skills that bypassed the lock; **after
+   MEH-423, no skill currently holds it** (ui-ux-pro-max was the
+   prior holder and is now locked).
+3. **Audit script** (`.claude/scripts/audit-skills.sh`) — scans every
+   `SKILL.md` for 4 pattern classes (network / exec / secret-name /
+   prompt-injection). Combination of ≥2 classes in a single file =
+   critical, exit 1. Self-test fixture at
+   `.claude/scripts/test/fixtures/bad-skill/SKILL.md` proves the
+   detector works. **Pass 4 (MEH-420)** also recomputes every locked
+   skill's content hash via `compute-skill-hash.sh` and fails on
+   `[HASH-DRIFT]` (content vs lock mismatch) or `[HASH-COMPUTE]`
+   (symlink injection inside skill dir).
+4. **CI gate + lock enforcement** (`.github/workflows/skills-audit.yml`)
+   — runs on every PR touching skills, the lock, the audit / hash /
+   backfill scripts, or the workflow. Three-stage: self-test must
+   exit 1 (proves detection); real audit must exit 0 (proves clean
+   content + matching hashes); `backfill-skill-hashes.sh --dry-run`
+   must exit 0 (catches PRs that change skill content without
+   rerunning the backfill). Any failure blocks merge.
+5. **Documentation** — full policy in
+   [.claude/rules/skills.md](../.claude/rules/skills.md), 4-step
+   add-skill protocol, 30-day SLA on transitional verdicts.
+
+#### Hash enforcement (MEH-420)
+
+Before MEH-420, layer 4's lock was decorative — `computedHash` values
+in `skills-lock.json` did not match actual `SKILL.md` SHA256s for any
+of the 74 locked skills, and no script or workflow read the field. The
+"5-layer defense" was functionally 4. MEH-402 adversarial review
+surfaced the gap; MEH-420 closed it.
+
+**Hash algorithm** — `.claude/scripts/compute-skill-hash.sh`:
+
+- All regular files in the skill dir contribute (SKILL.md, SKILL_HE.md,
+  reference/, references/, scripts/, data/, top-level JSON, anything else)
+- Excludes only known noise: `.git/`, `__pycache__/`, `.DS_Store`, `*.pyc`
+- Sorted byte-order via `LC_ALL=C sort -z` for cross-platform determinism
+- Per-file digest = `sha256(<relpath>\0 + content + \0)`; final = `sha256` of concatenated digests
+- Symlinks inside a skill dir fail-loud — they bypass `find -type f` so
+  silent acceptance would create a tampering blind spot
+
+**Backfill** — `.claude/scripts/backfill-skill-hashes.sh`:
+
+- Default mode rewrites `skills-lock.json` atomically (tmp + jq validate + mv)
+- `--dry-run` (= `--verify`) prints `OLD -> NEW` per drifted skill;
+  exit 1 if any drift, exit 0 if clean
+- A skill listed in the lock but missing from disk is fatal in either
+  mode (named in the error message; never silently skipped)
+
+**Threat model coverage:** the hash detects content edits, file additions,
+file renames within a skill, and symlink injection. It does not cover
+file modes (rwx) or directory mtimes — those aren't part of the prompt
+injection / supply-chain threat model.
+
+### Adding a new skill
+
+See `.claude/rules/skills.md` Layer 5 (4-step protocol). Default
+verdict `review_needed`. `skills-il/*` sources require an "Anonymous
+author" note in the allowlist.
+
+### Symlink mechanism
+
+Skill content lives **once** at `.agents/skills/<name>/SKILL.md`. The
+harness reads from `.claude/skills/<name>` (a symlink mode `120000`
+to `../../.agents/skills/<name>`). Editing either path mutates the
+same on-disk content. After MEH-423, all 71 skills follow this
+uniform pattern (the prior `ui-ux-pro-max` real-directory exception
+has been migrated and locked).
+
+#### Subprocess-bypass class (MEH-422)
+
+Combines what was originally tracked as MEH-406 (Python network
+bypass) + MEH-421 (bash shell-out). Two mechanisms route command
+execution outside MEH-397's hooks:
+
+- **Class A — Bash shell-out:** 7 SKILL.md files in
+  `coreyhaines31/marketingskills` reference `node tools/clis/<x>.js`
+  patterns. Mehamakor has no `tools/` directory today — dead pointer.
+- **Class B — Python network at script level:**
+  `audit_a11y.py` (selenium scan), `check_shabbat.py` (HebCal),
+  `hebrew-nlp-toolkit` (HuggingFace doc) — `requests.get(...)` runs
+  inside a Python process the Bash hook can't observe.
+
+**Defense (MEH-422):**
+
+1. **`.claude/hooks/check-skill-bypass.sh`** — PreToolUse(Bash) hook.
+   Pattern-matches `tools/clis/`, `tools/integrations/`,
+   `tools/REGISTRY`, and `(node|python|bash|sh) ...tools/` invocations.
+   Direct invocation of known-network Python scripts is allowed only
+   if the skill's `allowed_network_hosts` is set to `["*"]` or specific
+   hosts. Fail-closed on jq missing, malformed JSON, or empty input.
+2. **Allowlist schema** — `allowed_network_hosts` and
+   `allowed_shell_invocations` fields per skill. `null`/missing =
+   unaudited (Pass 5 critical on match); `[]` = explicit policy
+   (dead-pointer for shell, no-network for python); `["*"]` = wildcard;
+   non-empty = listed.
+3. **Audit Pass 5** (`audit-skills.sh`) — static lint-time
+   verification. Markdown scanning is **fenced-code-block-aware** via
+   state machine over ` ``` ` lines: matches in code blocks are
+   governed by allowlist; matches in prose are documentation,
+   informational only.
+
+**Honest limit:** the hook layer cannot intercept `requests.get(url)`
+calls inside an already-running Python process. Defense relies on
+audit-time script scanning + allowlist documentation. `["*"]`
+semantics accept that the URL is user-controlled — the user must
+trust what they pass.
+
+**Hook layer detects literal bypass patterns. Obfuscation via bash
+evaluation (variable substitution, quote concatenation, subshell
+expansion) is not detected by static pattern matching.** Examples
+that evade the hook: `t""ools/clis/`, `T=tools; cd $T/clis`,
+`$(printf '%s%s' too ls)/clis/`. This is defense-in-depth, not a
+complete sandbox. Primary defense against obfuscated supply-chain
+attacks is the audit + hash enforcement + author verification stack
+(see `.claude/rules/skills.md` "Known limitations (MEH-422
+obfuscation bypass)" for the full list).
+
+---
+
 ## בדיקת אבטחה — הרץ ל-Claude Code
 
 ```

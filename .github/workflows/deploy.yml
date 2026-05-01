@@ -77,10 +77,10 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: "npm"
@@ -104,7 +104,7 @@ jobs:
     timeout-minutes: 5
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -165,11 +165,38 @@ jobs:
           # set on the job (the CLI auto-reads it). --yes skips the
           # interactive confirmation prompt that `railway redeploy`
           # would otherwise wait on forever in CI.
-          railway redeploy \
-            --service "$SERVICE_NAME" \
-            --yes
-
-          echo "::notice title=Railway production redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME, env: $RAILWAY_ENVIRONMENT)"
+          #
+          # MEH-382: retry on transient race-condition errors. Railway's own
+          # watch + this workflow can both trigger redeploys on the same push,
+          # and the CLI errors when its target deployment is mid-build/deploy.
+          # Up to 5 attempts with 30s sleep between (~2 min max wait).
+          attempts=5
+          delay=30
+          attempt=1
+          # Retry-on-busy: matches Railway CLI v4.42 error wording for
+          # transient states. If CLI changes wording, retry path silently
+          # lost — falls through to fail-fast. Tracks upstream:
+          # https://github.com/railwayapp/cli/issues/616
+          while [ $attempt -le $attempts ]; do
+            if output=$(railway redeploy --service "$SERVICE_NAME" --yes 2>&1); then
+              echo "$output"
+              echo "::notice title=Railway production redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME, env: $RAILWAY_ENVIRONMENT) on attempt $attempt/$attempts"
+              exit 0
+            fi
+            echo "$output"
+            if echo "$output" | grep -qiE "currently building|deploying|was removed|cannot be redeployed"; then
+              if [ $attempt -lt $attempts ]; then
+                echo "::warning::Attempt $attempt/$attempts — Railway deployment in transient state, retrying in ${delay}s"
+                sleep "$delay"
+                attempt=$((attempt + 1))
+                continue
+              fi
+              echo "::error::Railway redeploy failed after $attempts attempts (max wait: 2 min)"
+              exit 1
+            fi
+            echo "::error::Railway redeploy failed with non-transient error"
+            exit 1
+          done
 
   # ──────────────────────────────────────────────────────────────────
   # STAGING — runs on push to staging
@@ -212,11 +239,35 @@ jobs:
           short_sha="${GITHUB_SHA:0:7}"
           echo "Triggering Railway redeploy for service '$SERVICE_NAME' in environment '$RAILWAY_ENVIRONMENT' (commit $short_sha)..."
 
-          railway redeploy \
-            --service "$SERVICE_NAME" \
-            --yes
-
-          echo "::notice title=Railway staging redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME, env: $RAILWAY_ENVIRONMENT)"
+          # MEH-382: retry on transient race-condition errors. See production
+          # job for full context — same logic, different env scope.
+          attempts=5
+          delay=30
+          attempt=1
+          # Retry-on-busy: matches Railway CLI v4.42 error wording for
+          # transient states. If CLI changes wording, retry path silently
+          # lost — falls through to fail-fast. Tracks upstream:
+          # https://github.com/railwayapp/cli/issues/616
+          while [ $attempt -le $attempts ]; do
+            if output=$(railway redeploy --service "$SERVICE_NAME" --yes 2>&1); then
+              echo "$output"
+              echo "::notice title=Railway staging redeploy::✅ Triggered for commit $short_sha (service: $SERVICE_NAME, env: $RAILWAY_ENVIRONMENT) on attempt $attempt/$attempts"
+              exit 0
+            fi
+            echo "$output"
+            if echo "$output" | grep -qiE "currently building|deploying|was removed|cannot be redeployed"; then
+              if [ $attempt -lt $attempts ]; then
+                echo "::warning::Attempt $attempt/$attempts — Railway deployment in transient state, retrying in ${delay}s"
+                sleep "$delay"
+                attempt=$((attempt + 1))
+                continue
+              fi
+              echo "::error::Railway redeploy failed after $attempts attempts (max wait: 2 min)"
+              exit 1
+            fi
+            echo "::error::Railway redeploy failed with non-transient error"
+            exit 1
+          done
 
   # ──────────────────────────────────────────────────────────────────
   # API CONTRACT (PROBE) — runs after the staging redeploy finishes.
@@ -233,7 +284,7 @@ jobs:
     timeout-minutes: 10
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v5

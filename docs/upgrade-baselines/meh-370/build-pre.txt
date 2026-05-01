@@ -1,0 +1,133 @@
+
+> mehamakor-frontend@1.0.0 build
+> next build
+
+[next.config] /api/* → http://localhost:8000
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: /home/user/FoodMamkor/frontend/worker/index.js
+> [PWA] Build custom worker: /home/user/FoodMamkor/frontend/public/worker-PfgFnlPgHBzu6nUSCFyY9.js
+> [PWA] Auto register service worker with: /home/user/FoodMamkor/frontend/node_modules/next-pwa/register.js
+> [PWA] Service worker: /home/user/FoodMamkor/frontend/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+   Linting and checking validity of types ...
+
+./app/group-buys/[id]/GroupBuyDetailClient.jsx
+112:6  Warning: React Hook useEffect has a missing dependency: 'phone'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/layout.js
+115:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+121:43  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./app/map/MapClient.jsx
+634:38  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./app/page.js
+177:6  Warning: React Hook useEffect has missing dependencies: 'chips', 'filters.category', and 'filters.delivery_city'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+349:21  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+603:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/producer/[id]/ProducerDetail.jsx
+537:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/producer/dashboard/page.js
+84:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/reset-password/page.js
+105:25  Warning: Avoid physical padding classes (pl-*, pr-*). Use logical equivalents: ps-*, pe-*. If intentional (e.g. pr-11 pl-4 password input pair), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+110:25  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+125:25  Warning: Avoid physical padding classes (pl-*, pr-*). Use logical equivalents: ps-*, pe-*. If intentional (e.g. pr-11 pl-4 password input pair), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+130:25  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./components/AppleAuthButton.jsx
+52:6  Warning: React Hook useEffect has missing dependencies: 'loginWithApple', 'onError', 'onSuccess', and 'redirectUri'. Either include them or remove the dependency array. If 'onSuccess' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./components/CategorySelector.jsx
+24:25  Warning: Avoid physical directional classes (left-*, right-*). Use logical equivalents: start-*, end-*. If intentional (eye-toggle, carousel, centering idiom), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+32:21  Warning: Avoid physical padding classes (pl-*, pr-*). Use logical equivalents: ps-*, pe-*. If intentional (e.g. pr-11 pl-4 password input pair), add // rtl-ok comment and use eslint-disable-next-line.  no-restricted-syntax
+
+./components/ChipScrollRow.jsx
+59:6  Warning: React Hook useEffect has missing dependencies: 'activeKey', 'activeKeys', and 'variant'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/MapComponent.jsx
+370:6  Warning: React Hook useEffect has a missing dependency: 'parentMapRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/46) ...
+   Generating static pages (11/46) 
+   Generating static pages (22/46) 
+   Generating static pages (34/46) 
+ ✓ Generating static pages (46/46)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    21.2 kB         211 kB
+├ ○ /_not-found                          162 B          88.2 kB
+├ ƒ /[slug]                              163 B           170 kB
+├ ○ /about                               7.74 kB         130 kB
+├ ○ /accessibility                       162 B          88.2 kB
+├ ○ /admin                               10.6 kB         132 kB
+├ ○ /admin/analytics                     3.62 kB         117 kB
+├ ○ /admin/category-requests             2.45 kB         116 kB
+├ ○ /admin/content                       2.36 kB         115 kB
+├ ○ /admin/experiences                   4.92 kB         127 kB
+├ ○ /admin/group-buys                    2.28 kB         124 kB
+├ ○ /admin/help                          6.03 kB         110 kB
+├ ○ /admin/kashrut                       2.81 kB         116 kB
+├ ○ /admin/outreach                      7.39 kB         121 kB
+├ ○ /admin/producers                     16.7 kB         139 kB
+├ ƒ /admin/producers/[id]/edit           788 B           137 kB
+├ ○ /admin/producers/new                 681 B           137 kB
+├ ○ /admin/reports                       4.48 kB         118 kB
+├ ○ /admin/reviews                       5.07 kB         118 kB
+├ ○ /admin/settings                      3.1 kB          125 kB
+├ ○ /admin/users                         5.71 kB         119 kB
+├ ○ /contact                             4.5 kB          118 kB
+├ ○ /events                              3.93 kB         130 kB
+├ ƒ /events/[id]                         4.89 kB         127 kB
+├ ○ /experiences                         3.38 kB         129 kB
+├ ƒ /experiences/[id]                    5.48 kB         127 kB
+├ ○ /experiences/new                     7.31 kB         129 kB
+├ ○ /favorites                           8.56 kB         150 kB
+├ ○ /forgot-password                     3.5 kB          125 kB
+├ ○ /group-buys                          4.52 kB         126 kB
+├ ƒ /group-buys/[id]                     6.05 kB         128 kB
+├ ○ /login                               6.43 kB         133 kB
+├ ○ /map                                 50.9 kB         177 kB
+├ ○ /messages                            179 B            97 kB
+├ ○ /neighbor                            20.7 kB         151 kB
+├ ƒ /p/[slug]                            162 B          88.2 kB
+├ ○ /privacy                             162 B          88.2 kB
+├ ƒ /producer/[id]                       162 B           170 kB
+├ ○ /producer/dashboard                  9.58 kB         131 kB
+├ ○ /producer/dashboard/events/new       8.69 kB         131 kB
+├ ○ /producer/dashboard/group-buys       4.71 kB         127 kB
+├ ƒ /producers                           9.17 kB         155 kB
+├ ƒ /rate/[token]                        4.02 kB         117 kB
+├ ƒ /ref/[code]                          426 B          88.5 kB
+├ ○ /register                            7.61 kB         135 kB
+├ ○ /register/producer                   9.61 kB         137 kB
+├ ○ /reset-password                      6.67 kB         129 kB
+├ ○ /search                              6.22 kB         148 kB
+├ ○ /settings                            15 kB           142 kB
+├ ○ /sitemap.xml                         0 B                0 B
+├ ○ /terms                               162 B          88.2 kB
+├ ○ /upgrade                             3.41 kB         117 kB
+└ ○ /verify-email                        1.75 kB         124 kB
++ First Load JS shared by all            88.1 kB
+  ├ chunks/2117-71ff7cd02da79db3.js      31.9 kB
+  ├ chunks/fd9d1056-270721ac51469ce4.js  53.6 kB
+  └ other shared chunks (total)          2.53 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+build_exit=0
