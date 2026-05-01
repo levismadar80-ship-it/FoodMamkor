@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-403 — coreyhaines31/marketingskills audit, PR pending; MEH-418 + MEH-419 + MEH-420 + MEH-306 sub-A + sub-B merged)
+> Last updated: 2026-05-01 (MEH-386 BOLA audit + fixes in PR #422; MEH-403 — coreyhaines31/marketingskills audit, PR pending; MEH-418 + MEH-419 + MEH-420 + MEH-306 sub-A + sub-B merged)
 
 ## 2026-05-01 — MEH-418 + MEH-419: a11y sweep + /login copy cleanup
 
@@ -834,6 +834,27 @@ Fix: `.github/workflows/deploy.yml` — wrap both Redeploy steps in 5-attempt re
 **Files changed:** `.github/workflows/deploy.yml` only.
 **Independent of PR #400:** the two PRs do not block each other and can land in any order.
 **FINDER → ADVERSARY → REFEREE:** 10 findings, 10 disproved.
+
+## 2026-05-01 — MEH-386: BOLA audit (PR #422, merging)
+
+**Status:** Squash-merging to staging now.
+
+**Branch:** `fix/meh-386-bola-clean` (cherry-pick of fixes onto clean staging base)
+
+**What was done:** Full BOLA sweep of all 26 backend routers. 2 confirmed vulnerabilities found and fixed:
+
+1. `GET /home-products/{id}` (`home_products.py:167`) — hidden/deactivated listings were visible to anonymous callers by UUID. Fixed: `get_current_user_optional` + is_active/is_hidden gate.
+2. `POST /category-requests` (`category_requests.py:18`) — anonymous callers could spoof any `producer_id` in the request body. Fixed: body's `producer_id` ignored; JWT-bound value used for authenticated users, None for anonymous.
+
+5 regression tests in `TestBOLA` class (`tests/test_api.py:2174`).
+
+All other 24 routers confirmed clean — no additional BOLA surface found.
+
+**Decisions logged:**
+| Decision | Rationale | Date |
+|---|---|---|
+| `producer_id` stripped for anonymous category requests | Body value untrustworthy without auth; admin queue shows None as "unattributed" | May 2026 |
+| Owner+admin can still view hidden/deactivated home products | Owner needs to see why listing was hidden; admin needs to review | May 2026 |
 
 ## 2026-04-27 — MEH-379+380+381 bundle (PR #399, merged-pending-Smadar-verify)
 
