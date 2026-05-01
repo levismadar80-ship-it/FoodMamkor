@@ -22,12 +22,13 @@ it to the harness via symlinks under `.claude/skills/`.
 
 | Path | Role | Git mode | Count |
 |---|---|---|---|
-| `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | 82 |
-| `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | 82 + 1 |
+| `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | 71 |
+| `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | 71 |
 
-The 1 extra directory in `.claude/skills/` is `ui-ux-pro-max` — a real
-directory tracked separately because it bypassed the lock pattern. It is
-allowlisted as `approved_local_unlocked` pending follow-up locking.
+After MEH-423, all skills follow the symlink pattern uniformly. The
+prior `ui-ux-pro-max` exception (real directory under `.claude/skills/`,
+verdict `approved_local_unlocked`) has been migrated to the standard
+two-path layout and locked into `skills-lock.json`.
 
 **Editing implication:** symlinks in `.claude/skills/` resolve to the same
 inode as the corresponding file in `.agents/skills/`, so editing either
@@ -107,11 +108,14 @@ MEH-401 precedent._
 | `blocked` | Audit failed; do not load | **fail** |
 | missing entry | Drift — unlisted skill on disk | **fail** |
 
-`approved_local_unlocked` is a deliberate escape hatch for a single skill
-(currently `ui-ux-pro-max`) whose Python scripts were manually audited
-in MEH-397 but whose source repo / SHA256 weren't declared in
-`skills-lock.json`. The 30-day clock starts on `last_audit_date`. After
-30 days expire, the entry must be promoted to `approved` (full lock) or
+`approved_local_unlocked` is a deliberate escape hatch for skills that
+have been manually audited but whose source repo / SHA256 aren't yet
+declared in `skills-lock.json`. After MEH-423, **no skill currently
+holds this verdict** — `ui-ux-pro-max` (the prior holder) was locked
+and promoted to `approved`. The slot is reserved for any future skill
+that needs the same transitional treatment. The 30-day clock starts on
+`last_audit_date`. After 30 days expire, the entry must be promoted to
+`approved` (full lock) or
 demoted to `blocked` (CI failure) — there is no third path.
 
 ---
@@ -347,6 +351,39 @@ passed. The defense for the Python case is layered:
 destination is user-controlled (e.g., the audit target URL of
 `audit_a11y.py`). The skill becomes its own attack surface — user
 must trust the URL they pass.
+
+---
+
+## ui-ux-pro-max sanitize patterns (MEH-398 + MEH-404)
+
+`scripts/_sanitize.py`'s `_sanitize_slug()` is the canonical filesystem-safe
+slug helper for ui-ux-pro-max. It runs on every CLI argument that becomes a
+directory name (e.g. `--project-name`, `--page` in `design_system.py`).
+
+**Pipeline order** (after MEH-404):
+1. Lowercase + replace spaces with hyphens
+2. Strip every char not in `[a-z0-9-]` (regex)
+3. **F-3:** Collapse runs of hyphens (`foo--bar` → `foo-bar`)
+4. **F-7:** Cap at 64 chars (prevents `OSError` on `mkdir(parents=True)`)
+5. **F-4:** Strip leading/trailing hyphens (after cap, so a cap landing
+   mid-hyphen-run can't leave a trailing dash)
+6. Fallback to `'default'` if the result is empty
+
+**Pre-existing patterns NOT closed by code (documented from MEH-398):**
+
+- **F-13: collision via `mkdir(exist_ok=True)`.** Two project names that
+  sanitize to the same slug share a directory (e.g. `foo!` and `foo?` both
+  → `foo`). By design — `persist_design_system()` writes are idempotent
+  and the user controls invocation. No code mitigation; relies on
+  user-controlled CWD + intent.
+- **F-14: symlink-follow on persist.** Same threat model as MEH-397
+  local-only sandboxing — if the user has a malicious symlink in CWD, the
+  skill follows it. No code mitigation; relies on user-controlled CWD.
+
+Both are inherited from MEH-398's adversarial review and explicitly out of
+scope for code-level fixes. They become active risks only if a third party
+controls the CWD where ui-ux-pro-max runs — outside the threat model the
+MEH-397 skills supply chain protects against.
 
 ---
 

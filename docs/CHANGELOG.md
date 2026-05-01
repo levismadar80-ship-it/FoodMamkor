@@ -25,6 +25,61 @@ MEH-378 closed as duplicate.
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-423: ui-ux-pro-max finalization (closes MEH-399 + MEH-404)
+
+**Closes both MEH-399 (lock) and MEH-404 (path-traversal cleanup)** —
+the final two tickets in the MEH-397 skills supply chain initiative.
+
+**Workstream A — MEH-399 (lock + layout migration):**
+
+Provenance investigated: SKILL.md description fingerprint matches
+`nextlevelbuilder/ui-ux-pro-max-skill` (MIT licensed, 72.9k stars).
+Locked with `source: "nextlevelbuilder/ui-ux-pro-max-skill"`,
+`sourceType: "github"`, `computedHash:
+e4276f017eadf46146f05e89e92a14af748346af91f73a5d50dfbaf8e873ff76`.
+No upstream version pin — hash is the integrity anchor; upstream
+version tracking is a manual concern.
+
+**Layout-A migration:** moved `.claude/skills/ui-ux-pro-max/` →
+`.agents/skills/ui-ux-pro-max/` (real dir) + symlink back from
+`.claude/skills/ui-ux-pro-max` (mode `120000`). All 71 skills now
+follow the uniform two-path pattern; the prior real-directory
+exception is gone. `compute-skill-hash.sh` Pass 4 now sees the skill
+at the canonical path.
+
+**Allowlist:** verdict `approved_local_unlocked` → `approved`. Source
+`"local"` → `"nextlevelbuilder/ui-ux-pro-max-skill"`. 30-day SLA closed.
+Notes record full provenance + lock metadata.
+
+**Workstream B — MEH-404 (path-traversal cleanup):**
+
+`_sanitize.py::_sanitize_slug()` extended with F-3, F-4, F-7. Pipeline
+order: `strip → collapse → cap → trim → fallback`. Trim happens AFTER
+cap so a 64-char clip landing mid-hyphen-run can't leave a trailing
+dash. (Spec said `strip → collapse → trim → cap`; my adversarial
+review caught the trailing-hyphen edge — Smadar approved the order
+swap.)
+
+- F-3: collapse runs of `-` (`foo--bar` → `foo-bar`)
+- F-4: strip leading/trailing `-` after cap (`-foo-` → `foo`)
+- F-7: 64-char cap (prevents `OSError` on `mkdir(parents=True)` for
+  pathological long inputs)
+
+6 new test cases added to `tests/test_sanitize.py` (10 → 16 total),
+all passing. Includes adversarial probe `test_cap_then_trim_no_trailing_hyphen`
+verifying the cap-then-trim ordering doesn't regress.
+
+**F-13 + F-14 documented** in `.claude/rules/skills.md` (new section
+"ui-ux-pro-max sanitize patterns") as inherited threat-model items
+out of code-mitigation scope:
+- F-13: collision via `mkdir(exist_ok=True)` — by design
+- F-14: symlink follow on persist — local-only threat model
+
+**Counts after PR:** allowlist 71 (unchanged), lock 70 → 71, approved
+70 → 71, approved_local_unlocked 1 → **0**, review_needed 0
+(unchanged). **All 71 skills now have terminal verdicts.** The
+MEH-397 skills supply chain initiative is complete.
+
 ## 2026-05-01 — MEH-422: skills bypass hardening (closes MEH-406 + MEH-421)
 
 **Closes both MEH-406 (Python network bypass) and MEH-421 (bash

@@ -88,3 +88,46 @@ def test_unicode_stripped():
     assert "🚀" not in result
     result.encode("ascii")  # raises UnicodeEncodeError if non-ASCII present
     assert result.startswith("hello")
+
+
+# ---------- MEH-404 hardening (F-3, F-4, F-7) ----------
+
+def test_collapses_multi_hyphens():
+    """F-3: `foo--bar` → `foo-bar`. Runs of hyphens collapse to one."""
+    assert _sanitize_slug("foo--bar") == "foo-bar"
+
+
+def test_strips_leading_trailing_hyphens():
+    """F-4: `-foo-` → `foo`. Trim happens AFTER cap so a cap landing
+    mid-hyphen-run can't leave a trailing dash."""
+    assert _sanitize_slug("-foo-") == "foo"
+
+
+def test_caps_at_64_chars():
+    """F-7: very long input is clipped at 64 chars. Bypass-by-mkdir
+    OsError protection."""
+    assert len(_sanitize_slug("a" * 1000)) == 64
+
+
+def test_double_hyphen_only_falls_back_to_default():
+    """F-3 + F-4 + fallback: `--` collapses to `-`, trims to empty,
+    falls back to `default`."""
+    assert _sanitize_slug("--") == "default"
+
+
+def test_long_input_clipped_at_boundary():
+    """F-7 boundary: `'foo' * 100` (300 chars) clipped to 64."""
+    assert len(_sanitize_slug("foo" * 100)) == 64
+
+
+def test_cap_then_trim_no_trailing_hyphen():
+    """F-4 + F-7 ordering: cap-then-trim must not leave a trailing
+    hyphen. Constructing input where the 64-char cap lands on a
+    hyphen, the trim step must remove it. Without cap-then-trim
+    ordering, the slug would end in `-`."""
+    # 31 chars of "a-" is 62 chars, then ending "abc-" pushes past 64
+    # so the cap lands on a hyphen. Trim then removes it.
+    s = ("a-" * 32) + "tail"  # length 68
+    result = _sanitize_slug(s)
+    assert len(result) <= 64
+    assert not result.endswith("-")
