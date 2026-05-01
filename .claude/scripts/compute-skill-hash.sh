@@ -55,6 +55,7 @@ cd "$SKILL_DIR"
 find . -type f \
   -not -path './.git/*' \
   -not -path '*/__pycache__/*' \
+  -not -path '*/.pytest_cache/*' \
   -not -name '.DS_Store' \
   -not -name '*.pyc' \
   -print0 \
