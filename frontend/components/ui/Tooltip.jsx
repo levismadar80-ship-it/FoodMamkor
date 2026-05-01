@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 const POSITION_CLASSES = {
-  top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
-  bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
+  top: "bottom-full left-1/2 -translate-x-1/2 mb-2", // rtl-ok: centering, not directional
+  bottom: "top-full left-1/2 -translate-x-1/2 mt-2", // rtl-ok: centering, not directional
   right: "end-full top-1/2 -translate-y-1/2 me-2",
   left: "start-full top-1/2 -translate-y-1/2 ms-2",
 };

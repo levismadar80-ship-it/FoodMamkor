@@ -2,6 +2,25 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-364: 11 pre-existing RTL violations annotated (source-only)
+
+Adds `rtl-ok` markers in source for the 11 staging violations the MEH-365
+mechanism is designed to suppress. After this PR, `verify-frontend` RTL
+count drops 11 → 0 on staging tip.
+
+- 7 active edits across 5 files; 4 violations needed no edit (existing
+  `// eslint-disable-next-line ... rtl-ok: ...` comments are already
+  within the ±1 adjacency window).
+- `ChatWidget.jsx:12, 14` — JSDoc lines append ` (rtl-ok: comment-only)`
+- `OnboardingTip.jsx:13` — JSDoc line append ` (rtl-ok: comment-only)`
+- `layout.js:121` — JSX comment `{/* rtl-ok: focus position for accessibility */}` inserted above skip-link `<a>`
+- `Tooltip.jsx:6, 7` — trailing `// rtl-ok: centering, not directional` on POSITION_CLASSES entries
+- `page.js:349` — own-line `// rtl-ok: centering, not directional` inserted above hero text className (mirrors existing eslint-disable pattern in Toaster.jsx, NeighborClient.jsx, page.js:421, upgrade/page.js:51)
+
+No infrastructure changes — that scope shipped under MEH-365 (PR #441).
+Build + lint green; visual diff is comment-only (zero className mutations,
+zero JSX restructuring).
+
 ## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (mechanism)
 
 verify-frontend agent (step 3) and `.claude/hooks/check-rtl.sh` now honor
