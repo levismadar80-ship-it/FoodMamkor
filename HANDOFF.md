@@ -2964,3 +2964,53 @@ No Linear MCP in this session. Mark MEH-341 as "Done" manually in Linear.
 - Current open PRs (git + GitHub)
 - Current branch status
 - Any drift between staging and main
+
+---
+
+## Session 2026-05-01 — MEH-306 closure + MEH-417 mock removal
+
+### PRs merged to staging (chronological)
+- PR #410 (SHA de13120) — MEH-306 sub-A: password policy backend
+- PR #412 (SHA 783cfe5) — MEH-306 sub-B: password policy frontend
+- PR #418 (SHA dd0af4f) — MEH-418 + MEH-419: a11y sweep + /login copy
+- PR #423 (SHA 662ba8e) — MEH-417 fix: /auth/register rate limit 3→10/hour
+- PR #421 (SHA 98017d6) — MEH-417: remove Playwright mocks
+
+### Tickets closed
+- MEH-306 (parent) — Done 10:52
+- MEH-418 — /login copy "8 תווים" → "הזיני סיסמה" — Done 11:25
+- MEH-419 — role="alert" a11y sweep 9 sites / 6 files — Done 11:25
+- MEH-417 — Playwright mock removal — Done 14:42
+
+### Key lessons (codified)
+
+1. RFC 6761 `.test` TLD trap (MEH-353 precedent confirmed):
+   Pydantic email-validator rejects `.test` TLD with 422 before handler runs.
+   ALWAYS use `@example.com` in test fixtures. Never `@e2e.test`, `@invalid.test`.
+   Cross-ref: MEH-353 (2026-04-27) had identical root cause in smoke_test.py.
+
+2. Rate limits in CI are silent blockers:
+   /auth/register had @limiter.limit("3/hour") per-IP.
+   GitHub Actions runner IPs are shared — budget exhausted by recent CI cycles.
+   Fix: raised to 10/hour (PR #423). Shared-IP rationale: corporate NAT, CGNAT, CI.
+
+3. Mocks hide real backend bugs:
+   MEH-306 sub-B mocks masked the @e2e.test 422 for 8 CI cycles.
+   Removing mocks immediately exposed real Pydantic validation behavior.
+   Lesson: mocks should be minimal scope + removal tracked as follow-up ticket.
+
+4. Skeptic Mode prevented 3 speculative fixes:
+   Claude Code stopped 3 times, demanded evidence before pushing.
+   Each STOP saved a bad PR. Evidence chain from MEH-353 provided the real fix.
+
+### Staging state at end of session
+98017d6 fix(MEH-417): @e2e.test → @example.com (Pydantic RFC 6761)
+662ba8e fix(MEH-417): loosen /auth/register rate limit 3→10/hour (#423)
+dd0af4f fix(MEH-418+419): a11y sweep + /login copy cleanup (#418)
+783cfe5 feat(MEH-306 sub-B): password policy wire-up — frontend (#412)
+de13120 feat(MEH-306 sub-A): password policy wire-up — backend (+ MEH-395) (#410)
+
+### Open follow-ups (Backlog, not urgent)
+- DB cleanup strategy for staging test users (CI accumulates records)
+- wait-for-deploy step in CI before Playwright runs (Railway redeploy race)
+- /register/producer rate limit review (still 3/hour, separate decision)
