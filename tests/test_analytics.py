@@ -377,10 +377,10 @@ class TestAdminDashboardAnalytics:
             is_active=True, moderation_status="FLAGGED",
         ))
         db.add(Experience(
-            user_id=owner.id, title="workshop", description="x",
+            host_user_id=owner.id, title="workshop", description="x",
             city="TLV", status="pending",
-            starts_at=datetime.utcnow() + timedelta(days=5),
-            duration_minutes=60, price=50, capacity=10,
+            event_date=(datetime.utcnow() + timedelta(days=5)).date(),
+            duration_minutes=60, price_per_person=50, max_participants=10,
         ))
         db.commit()
 
