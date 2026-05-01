@@ -128,6 +128,42 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     page,
   }) => {
     const u = uniqueSignup("ok");
+
+    // MEH-306: scenario-3-only mock for /auth/register + /auth/me. Sub-A's
+    // looser rate limits + PasswordField are on the unmerged feature branch,
+    // so staging Railway runs the pre-MEH-306 schema with a 3/hour per-IP
+    // cap on /auth/register. CI re-runs and the desktop+mobile parallel
+    // workers chew through that budget and produce 409 (email collision
+    // on identical Date.now() ms) or 429 (rate-limit). Mocking here lets
+    // the test prove the FRONTEND success path (button enables → submit
+    // fires → emailSent=true → "בדקי את האימייל שלך" renders) without
+    // depending on backend deployment timing. Scenarios 1-2 deliberately
+    // do NOT mock /auth/register so they exercise the real backend once
+    // sub-A merges. Removal tracked alongside the /check-password mock
+    // (MEH-XXX, post-merge cleanup ticket).
+    await page.route("**/api/auth/register", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ access_token: "test-token", token_type: "bearer" }),
+      });
+    });
+    await page.route("**/api/auth/me", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "00000000-0000-0000-0000-000000000000",
+          email: u.email,
+          name: u.name,
+          role: "consumer",
+          is_oauth: false,
+          is_producer: false,
+          email_verified: false,
+        }),
+      });
+    });
+
     await page.goto("/register");
 
     await page.getByLabel(/^שם מלא \*$/).fill(u.name);
