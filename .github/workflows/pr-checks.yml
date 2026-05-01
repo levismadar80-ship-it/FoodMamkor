@@ -197,7 +197,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
 
       - name: Upload test inventory
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: pytest-inventory
