@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
-import PasswordStrength from "@/components/PasswordStrength";
-import { validateEmail } from "@/lib/validators";
+import PasswordInput from "@/components/PasswordInput";
+import { firstFailureMessage } from "@/lib/passwordMessages";
+import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
 
 export default function RegisterPage() {
@@ -32,11 +33,11 @@ export default function RegisterPage() {
     }
   }, []);
   // tasks_for_claude_code.md tasks 7+8 — per-field touched state for
-  // onBlur inline validation + eye toggle for password visibility.
+  // onBlur inline validation. Password eye toggle + live policy
+  // feedback now lives in <PasswordInput> (MEH-306 sub-B).
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [passwordOk, setPasswordOk] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -55,8 +56,10 @@ export default function RegisterPage() {
       setError("האימייל לא תקין");
       return;
     }
-    if (form.password.length < 8) {
-      setError("סיסמא חייבת להכיל לפחות 8 תווים");
+    if (form.password.length < PASSWORD_MIN_LENGTH) {
+      // PasswordInput already shows the inline checklist; this is the
+      // belt-and-suspenders submit guard with the same Hebrew copy.
+      setError(`סיסמתך חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`);
       return;
     }
     setLoading(true);
@@ -77,8 +80,17 @@ export default function RegisterPage() {
       const detail = err.response?.data?.detail;
       if (status === 400 && typeof detail === "string" && detail.startsWith("האימייל כבר קיים")) {
         setEmailExistsError(true);
+      } else if (
+        status === 422 &&
+        detail &&
+        typeof detail === "object" &&
+        Array.isArray(detail.failures)
+      ) {
+        // MEH-306: backend returns {failures: ["too_short"|"too_common"|...]}
+        // on policy rejection. Map the first to the matching Hebrew string.
+        setError(firstFailureMessage(detail.failures));
       } else {
-        setError(detail || "משהו השתבש, נסי שוב");
+        setError(typeof detail === "string" ? detail : "משהו השתבש, נסי שוב");
       }
     } finally {
       setLoading(false);
@@ -103,12 +115,14 @@ export default function RegisterPage() {
   const nameValid = nameTouched && !!nameTrimmed;
   const emailInvalid = emailTouched && form.email.length > 0 && !validateEmail(form.email);
   const emailValid = emailTouched && validateEmail(form.email);
-  const passwordInvalid = passwordTouched && form.password.length > 0 && form.password.length < 8;
-  const passwordValidLength = passwordTouched && form.password.length >= 8;
+  // MEH-306: passwordOk comes from <PasswordInput>'s onValidityChange and
+  // already covers length + (debounced) breach. Backend re-validates on
+  // submit including deny-list, so the submit guard above is redundant
+  // belt-and-suspenders not the only check.
   const formIsValid =
     !!nameTrimmed &&
     validateEmail(form.email) &&
-    form.password.length >= 8 &&
+    passwordOk &&
     agreedToTerms;
 
   const googleConfigured =
@@ -164,8 +178,9 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">שם מלא *</label>
+            <label htmlFor="register-name" className="block text-sm font-medium mb-1">שם מלא *</label>
             <input
+              id="register-name"
               value={form.name}
               onChange={set("name")}
               onBlur={() => setNameTouched(true)}
@@ -188,8 +203,9 @@ export default function RegisterPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">אימייל *</label>
+            <label htmlFor="register-email" className="block text-sm font-medium mb-1">אימייל *</label>
             <input
+              id="register-email"
               type="email"
               value={form.email}
               onChange={set("email")}
@@ -213,46 +229,17 @@ export default function RegisterPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">סיסמה *</label>
-            {/* Eye toggle — positioned at the END of the LTR password field (physical right). */}
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={set("password")}
-                onBlur={() => setPasswordTouched(true)}
-                required
-                minLength={8}
-                aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[12px] pr-11 pl-3 py-2 text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
-                  passwordInvalid
-                    ? "border-red-400"
-                    : passwordValidLength
-                      ? "border-primary"
-                      : ""
-                }`}
-                dir="ltr"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
-                aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
-                aria-pressed={showPassword}
-                tabIndex={0}
-              >
-                {showPassword ? (
-                  <EyeSlash size={20} weight="regular" aria-hidden="true" />
-                ) : (
-                  <Eye size={20} weight="regular" aria-hidden="true" />
-                )}
-              </button>
-            </div>
-            {passwordInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">סיסמא חייבת להכיל לפחות 8 תווים</p>
-            )}
-            <PasswordStrength password={form.password} />
+            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">סיסמה *</label>
+            {/* MEH-306: PasswordInput owns input + eye toggle + live policy
+                checklist (length + breach). Form-level error div above
+                renders 422-failure messages from the submit handler. */}
+            <PasswordInput
+              name="password"
+              value={form.password}
+              onChange={set("password")}
+              ariaLabel="סיסמה"
+              onValidityChange={setPasswordOk}
+            />
           </div>
           <label className="flex items-start gap-2 text-sm cursor-pointer">
             <input

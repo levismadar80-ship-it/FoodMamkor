@@ -19,7 +19,8 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
-import { passwordRules } from "@/lib/validators";
+import PasswordInput from "@/components/PasswordInput";
+import { firstFailureMessage } from "@/lib/passwordMessages";
 
 export default function SettingsPage() {
   return (
@@ -382,15 +383,17 @@ function PasswordChangeCard({ isOAuth }) {
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [nextOk, setNextOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
-  const rulesPass = passwordRules.every((r) => r.check(next));
   const mismatch = confirm.length > 0 && confirm !== next;
-  const canSave = !isOAuth && current.length >= 1 && rulesPass && next === confirm && !mismatch;
+  // MEH-306: nextOk comes from <PasswordInput onValidityChange> (length OK
+  // + breach not detected). Reuse (same_as_current) is enforced server-side
+  // — no client check possible without exposing current_hash.
+  const canSave = !isOAuth && current.length >= 1 && nextOk && next === confirm && !mismatch;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -400,11 +403,31 @@ function PasswordChangeCard({ isOAuth }) {
     setMessage(null);
     try {
       await api.patch("/users/me/password", { current_password: current, new_password: next });
+      // 204 — backend reissued refresh + fingerprint cookies via Set-Cookie
+      // (sub-A commit 52bb5f5). Browser auto-stores; /auth/refresh on this
+      // device keeps working with the new cookies.
       setMessage("הסיסמה עודכנה בהצלחה");
       setCurrent(""); setNext(""); setConfirm("");
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה בעדכון הסיסמה");
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      if (
+        status === 422 &&
+        detail &&
+        typeof detail === "object" &&
+        Array.isArray(detail.failures)
+      ) {
+        // MEH-306: backend ships {failures: ["too_short"|"too_common"|"same_as_current"]}.
+        // Reuse (same_as_current) only fires from this endpoint (server has
+        // current_hash); PasswordInput shows a "נבדק בשרת" pending tile
+        // pre-submit so the user knows the check happens here.
+        setError(firstFailureMessage(detail.failures));
+      } else if (typeof detail === "string") {
+        setError(detail);
+      } else {
+        setError("שגיאה בעדכון הסיסמה");
+      }
     } finally {
       setSaving(false);
     }
@@ -456,46 +479,22 @@ function PasswordChangeCard({ isOAuth }) {
           </div>
         </div>
 
-        {/* New password */}
+        {/* New password — MEH-306: PasswordInput owns input + eye toggle
+            + live policy preview. showCurrentPasswordReuse renders a
+            "נבדק בשרת" pending tile because reuse-vs-current_hash is
+            enforced inside the change_password handler (server-only). */}
         <div>
-          <label htmlFor="sec-new" className="block text-sm font-medium mb-1">סיסמה חדשה *</label>
-          <div className="relative">
-            <input
-              id="sec-new"
-              type={showNew ? "text" : "password"}
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-              required
-              minLength={8}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="w-full border border-border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
-              dir="ltr"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNew((v) => !v)}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label={showNew ? "הסתירי סיסמה חדשה" : "הציגי סיסמה חדשה"}
-              aria-pressed={showNew}
-            >
-              {showNew ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-            </button>
-          </div>
-          {/* Live 4-rule checklist — shown once user starts typing */}
-          {next.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {passwordRules.map((rule) => {
-                const ok = rule.check(next);
-                return (
-                  <li key={rule.id} className={`flex items-center gap-1.5 text-xs ${ok ? "text-primary" : "text-site-muted"}`}>
-                    <span aria-hidden="true">{ok ? "✓" : "○"}</span>
-                    {rule.label}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">סיסמה חדשה *</label>
+          <PasswordInput
+            id="pw-new"
+            name="new"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            placeholder=""
+            ariaLabel="סיסמה חדשה"
+            showCurrentPasswordReuse={true}
+            onValidityChange={setNextOk}
+          />
         </div>
 
         {/* Confirm password */}

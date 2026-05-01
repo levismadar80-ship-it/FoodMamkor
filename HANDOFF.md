@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-402 — pbakaus/impeccable audit, PR pending)
+> Last updated: 2026-05-01 (MEH-402 — pbakaus/impeccable audit, PR pending; MEH-306 sub-A merged, sub-B PR #412 pending merge)
 
 ## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
 
@@ -237,6 +237,65 @@ slug at `design_system.py:508,529` enables local path traversal.
 
 **No skills removed. `skills-lock.json` not modified.** Single PR. Did
 not merge — awaiting user review.
+
+## 2026-04-30 — MEH-306 sub-B (Frontend wire-up)
+
+Branch: `feature/meh-306b-frontend-wireup` off
+`feature/meh-306a-backend-wireup` (NOT staging — sub-B branches from
+sub-A so the backend policy code is available during integration).
+Status: **DRAFT** PR pending merge — base flipped to `staging` after
+sub-A merged. Same merge cycle as sub-A.
+
+Commits (in order):
+- `4811017` validators.js wholesale (12-char length-only rule + new
+  PASSWORD_MIN_LENGTH export); PasswordStrength tier conditional
+  reorder so `passed === total` wins first
+- `9e8f1f8` new components — PasswordInput.jsx (input + eye toggle +
+  debounced /auth/check-password + inline checklist) and
+  passwordMessages.js (4 Hebrew strings keyed to PolicyFailure
+  literals); RTL allowlist updated
+- `3207457` /register integration — replace inline pattern with
+  <PasswordInput>; 422-failures path
+- `e250cf9` /reset-password integration (Gate 1 scenario a — confirm
+  field already exists at line 23/50/119, kept untouched)
+- `c6aa349` /settings PasswordChangeCard integration + SettingsPage
+  unit test mock for PasswordInput
+- `e0f0c2e` Playwright spec — 11-password-policy.spec.ts under
+  test.describe.serial (30/min/IP rate-limit safety)
+- `554a7c7` docs — CHANGELOG + HANDOFF (sub-B entry)
+- `921ccba` lint fix — rename inline mock factory `default` → `MockPasswordInput`
+- `d36b333` adversarial-review fixes — 2 Playwright selector bugs
+- `7211287` /register label htmlFor + id (a11y) fix
+- `16f9f5e` /אימייל/ anchor fix (avoid Footer newsletter collision)
+- `3886e66` page.route() mock for /auth/check-password
+- `8c9e447` x-vercel-skip-toolbar header + scrollIntoView for checkbox
+- `fe2dc1f` scenario-3 /auth/register + /auth/me mock
+- `3ad3488` /reset-password heading anchor
+- `1549c28` role=alert + getByRole(alert).filter()
+
+**Decisions (this session):**
+| Decision | Why | Date |
+|---|---|---|
+| validators.js wholesale collapse to length-only | NIST SP 800-63B §3.1.1.2 forbids composition rules; partial migration would leave /register/producer rendering 4-rule UI while everywhere else uses the new policy. | April 2026 |
+| PasswordInput is the canonical RTL-allowlist home for the eye-toggle exception | `pr-11` + `right-3` inside `dir="ltr"` is the documented exception; consolidating into one component reduces the surface that needs the allowlist comment. | April 2026 |
+| /reset-password confirm field stays | Gate 1 scenario (a) — confirm field already exists at the file's first commit; out-of-scope to remove or change. | April 2026 |
+| /settings 204 contract preserved by sub-A | Sub-A's commit `52bb5f5` reissues refresh + fingerprint cookies via Set-Cookie on the 204; frontend body handler unchanged. | April 2026 |
+| /register/producer frontend floor tightens 8 → 12 | Backend `ProducerRegister.password` stays at `Field(min_length=8)` (out of MEH-306 scope). Frontend floor strictly tightens — no regression. Documented in CHANGELOG. | April 2026 |
+
+**Discovered but not fixed (open follow-ups):**
+- MEH-XXX (proposed) — migrate `/register/producer` 3-step wizard to
+  `<PasswordInput>` and swap `ProducerRegister.password` to
+  `PasswordField | None` (OAuth completion path needs the `| None`).
+  Tracked outside MEH-306.
+- MEH-XXX (proposed) — `role="alert"` a11y sweep across 5 form-level
+  error sites (`/register`, `/forgot-password`, `/rate/[token]`,
+  `/group-buys/[id]`, `/admin/outreach`). Surfaced during sub-B.
+- MEH-XXX (proposed) — `/login/page.js:188` length-check copy cleanup
+  (drop "8 תווים" since login has no minimum).
+- MEH-XXX (proposed) — remove the Playwright `page.route()` mocks for
+  `/auth/check-password` + `/auth/register` + `/auth/me` once sub-A is
+  reflected in staging long enough that the real backend integration
+  is exercised end-to-end.
 
 ## 2026-04-30 — MEH-306 sub-A (Backend wire-up) + MEH-395
 
