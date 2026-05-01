@@ -10,7 +10,7 @@
 - `actions/setup-node@v4` → `@v5` (4 occurrences: dependency-audit, deploy, pr-checks, e2e)
 - `actions/cache@v4` → `@v5` (1 occurrence: e2e)
 - `astral-sh/setup-uv@v3` → `@v6` (2 occurrences: dependency-audit, pr-checks)
-- `python-version: "3.11"` → `version: "3.11"` under setup-uv blocks (2 occurrences); `version: "latest"` (uv pin) removed — v6 manages uv version automatically.
+- `python-version: "3.11"` removed from setup-uv blocks — was an unrecognized input (caused the original warning); `version: "latest"` (uv pin) kept unchanged.
 - `actions/setup-python@v5` — no change (already Node 24 compatible).
 
 MEH-378 closed as duplicate.
