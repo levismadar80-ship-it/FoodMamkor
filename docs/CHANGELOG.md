@@ -12,6 +12,197 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
+
+**21 skills audited and approved** (review_needed → approved): `adapt`,
+`animate`, `arrange`, `audit`, `bolder`, `clarify`, `colorize`, `critique`,
+`delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`,
+`onboard`, `optimize`, `overdrive`, `polish`, `quieter`, `teach-impeccable`,
+`typeset`. 0 deletions, 0 blocked.
+
+**Author:** Paul Bakaus — Google Developer Advocate, public figure (lower
+scrutiny baseline than anonymous skills-il sources).
+
+**Audit depth:** chain analysis included `frontend-design` (chain root) +
+its 7 `reference/*.md` files (808 lines total) — all clean. 5 priority
+skills deep-read end-to-end (`teach-impeccable`, `harden`, `optimize`,
+`polish`, `critique`); remaining 16 full-body scanned for injection canaries
++ authority/silent patterns + network/exec/secret patterns. 0 hits across
+all four classes.
+
+**Architectural watch flags noted:**
+
+- `teach-impeccable` writes `.impeccable.md` to project root. Inert as of
+  MEH-402, but if Claude Code adds project-root auto-load behavior in
+  future, this becomes an injection vector. Manually re-audit periodically.
+- `frontend-design` is the chain root for 17 of 21 pbakaus/impeccable
+  skills. Integrity of this skill protects all chained skills — manually
+  re-audit periodically (lock file drift detection currently
+  non-functional, see MEH-407).
+
+**Adversarial review findings applied in same PR:**
+
+- `author_verified` flipped to `false` on all 21 entries (matches MEH-401
+  precedent). New rule documented in `.claude/rules/skills.md`: reputation
+  ≠ identity verification. "Public figure" alone never justifies `true`.
+- `computedHash` field in `skills-lock.json` discovered to be non-functional
+  across all 74 skills repo-wide — no script or workflow reads it. MEH-397's
+  stated 5-layer defense is functionally 4 layers. Deferred to MEH-407
+  (Priority 1) for fix. Watch-flag wording softened to "manually re-audit
+  periodically" since automated drift detection doesn't currently exist.
+
+**MEH-405 candidates from this batch:** 0 (no scripts directories, no
+Python network calls — all skills are pure prompt-only SKILL.md content).
+
+**Counts after PR:** allowlist 75→75 (no deletions), approved 15→36,
+review_needed 59→38.
+
+## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup (5 deleted, 9 approved)
+
+**5 skills deleted** as out-of-scope for Mehamakor's food-marketplace mission:
+`hebrew-ocr-forms`, `israeli-apartment-hunting`, `israeli-flight-finder`,
+`israeli-travel-planner`, `israeli-wedding-planner`.
+
+**9 skills audited and approved** (review_needed → approved with per-skill notes):
+`hebrew-rtl-best-practices`, `hebrew-tailwind-preset`,
+`israeli-accessibility-compliance`, `hebrew-i18n`, `shabbat-aware-scheduler`,
+`israeli-ui-design-system`, `hebrew-content-writer`, `hebrew-document-generator`,
+`hebrew-nlp-toolkit`.
+
+Key security notes: `shabbat-aware-scheduler` blocked by MEH-397 WebFetch
+allowlist (hebcal.com not listed). `hebrew-nlp-toolkit` approved for
+text-processing use only — transformers.from_pretrained() bypasses hooks.
+**Hardening follow-up: MEH-405** (HuggingFace model allowlist + sandboxing).
+
+Allowlist: 80→75 (deletions) then 75 unchanged (audits only update verdicts).
+Approved count: 6→15. review_needed: 68→59.
+
+## 2026-04-30 — MEH-400: skills-il/security-compliance scope cleanup + audit (3 deleted, 6 approved)
+
+First post-MEH-397 per-source audit. **3 skills deleted** as out-of-scope
+for Mehamakor's food-marketplace mission. **6 skills audited and
+approved** (review_needed → approved with per-skill notes).
+
+**Deleted (out of scope):**
+- `israeli-shelter-guide` — bomb shelters, unrelated to local food
+- `pikud-haoref-safety-protocols` — civil defense, unrelated
+- `israeli-cybersecurity-ops` — enterprise SOC tooling, overkill for
+  our scale
+
+Per skill, all 4 surfaces removed: `.agents/skills/<name>/`,
+`.claude/skills/<name>` symlink, `skills-lock.json` entry,
+`skills-allowlist.json` entry. Total 19 files / 2173 LOC removed.
+First PR to modify `skills-lock.json` since MEH-397 (the MEH-397
+forbid was scoped to that lockdown PR; deletions require lock edits).
+
+**Approved (relevant to current or future Mehamakor scope):**
+- `israeli-ecommerce-compliance` — future payments / compliance
+- `hebrew-legal-research` — future Privacy Policy / ToS in Hebrew
+- `israeli-cyber-regulations` — general security posture
+- `israeli-privacy-shield` — we collect user data (Privacy Law / Amend. 13)
+- `israeli-ai-compliance-kit` — future AI features
+- `israeli-appsec-scanner` — may complement Dependabot
+
+Per-skill audit covered SKILL.md (English + Hebrew) + auxiliary scripts
++ references — 9,124 LOC total (before deletions; 6,991 after). Pattern
+sweep across all files: 0 secret-name hits, 0 prompt-injection canaries,
+0 authority claims, 0 hidden HTML comments, 0 reference-link traps,
+0 zero-width / RTL-override marks. 4 of 6 have Python scripts; all use
+**only standard library** (no `subprocess`, no `requests`/`urllib`, no
+`eval`/`exec`, no `os.environ`).
+
+**Notable per-skill findings:**
+
+- `israeli-privacy-shield` / `compliance_checker.py:293-294` — `--output`
+  uses user-supplied path directly (no slug derivation; different
+  code-shape from MEH-398's `--project-name` pattern). Not the same
+  finding-class — clean.
+- `israeli-appsec-scanner` — borderline by capability (creates a NEW
+  local-audit capability) but cleared on calibration: output stays local
+  stdout, no exfiltration. The 16 "exec" pattern hits in the global sweep
+  were **regex detectors** for `eval(`/`exec(` in user code (scanner
+  finding eval, not USING eval). User-invoked only. Re-audit required if
+  upstream author adds network reporting in future versions.
+- `israeli-ai-compliance-kit` — 1 persistence-pattern hit was a false
+  positive ("going forward" advice prose, not a persist instruction).
+
+**Anonymous author still anonymous.** What changed: per-skill content is
+now manually verified. The "Anonymous author — manual review required"
+boilerplate was replaced with per-skill notes. `author_verified` stays
+`false` across all 6 (we have not identified the author).
+
+**Counts after this PR:**
+- `skills-lock.json`: 82 → **79**
+- `.claude/skills-allowlist.json`: 83 → **80** (73 review_needed +
+  6 approved + 1 approved_local_unlocked)
+- `.agents/skills/` dirs: 82 → **79**
+- `.claude/skills/` dirs: 83 → **80** (incl. ui-ux-pro-max real dir)
+
+`bash .claude/scripts/audit-skills.sh` exit 0 ✓ (no drift).
+`bash .claude/scripts/audit-skills.sh --self-test` exit 1 ✓ (manifest
+tests still pass).
+
+## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max (path traversal hardening)
+
+Closes the LOW-severity informational finding from MEH-397's in-PR
+audit of `ui-ux-pro-max` Python scripts: `--project-name` and `--page`
+in `design_system.py` were only running
+`.lower().replace(' ', '-')` and could escape the design-system output
+directory via `mkdir(parents=True)` on input like `--project-name "../etc"`.
+
+- New module `.claude/skills/ui-ux-pro-max/scripts/_sanitize.py` —
+  pure helper (`re` only); strips `[^a-z0-9-]` and falls back to
+  `"default"` on empty result. Includes `if __name__ == "__main__"`
+  assertion block as a sandbox sanity check (runs without pytest).
+- `design_system.py:21,508,530` — replaced inline slug logic with
+  `_sanitize_slug(...)` at both call sites.
+- New `tests/test_sanitize.py` — 10 unit tests (5 required from
+  acceptance criteria + 5 adversarial bonus: None, uppercase,
+  backslash-traversal, shell-meta strip, Unicode/emoji strip). All
+  green with pytest 9.0.2.
+- `skills-allowlist.json` — `ui-ux-pro-max` notes updated to record
+  the fix; verdict stays `approved_local_unlocked` (lock-up still
+  pending MEH-YYY); `last_audit_date` unchanged.
+
+No verdict / lock changes. No skill content removed. No new deps. The
+broader 30-day SLA on `ui-ux-pro-max` (lock into `skills-lock.json`
+with declared source + SHA256) is tracked separately as MEH-YYY.
+
+## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
+
+5-layer defense around the 83 skills under `.agents/skills/` +
+`.claude/skills/` (`pbakaus/impeccable` 21, `coreyhaines31/marketingskills`
+38, `skills-il/*` 23 anonymous, plus `ui-ux-pro-max` 1 local).
+
+- **Layer 1** — `Read` deny on `.env*`; WebFetch restricted to 7 parent
+  domains (github, anthropic, npmjs, pypi, mehamakor, vercel, railway).
+  Two PreToolUse hooks at `.claude/hooks/check-env-read.sh` +
+  `.claude/hooks/check-webfetch-allowlist.sh`, both fail-closed if jq
+  missing.
+- **Layer 2** — `.claude/skills-allowlist.json` (83 entries; 82
+  `review_needed`, 1 `approved_local_unlocked`). New verdict slot
+  `approved_local_unlocked` is a 30-day transitional category for
+  skills that bypassed `skills-lock.json` — currently `ui-ux-pro-max`,
+  manually audited (no network / exec / credential reads; one
+  Priority-2 follow-up at `design_system.py:508` for unsanitized
+  `--project-name` slug → local path traversal).
+- **Layer 3** — `.claude/scripts/audit-skills.sh` scans every
+  `SKILL.md` for 4 pattern classes (network / exec / secret-name /
+  prompt-injection canaries). ≥2 classes in one file = critical,
+  exit 1. Self-test fixture at
+  `.claude/scripts/test/fixtures/bad-skill/SKILL.md`.
+- **Layer 4** — `.github/workflows/skills-audit.yml` two-stage gate:
+  self-test must exit 1 (detector works); real audit must exit 0
+  (live tree clean). Triggers on changes to skills, lock, allowlist,
+  or audit script.
+- **Layer 5** — Full policy in `.claude/rules/skills.md`; one-line
+  link from `CLAUDE.md` (still ≤80 lines). Section 17 added to
+  `docs/SECURITY.md` covering threat model + 5-layer rationale.
+
+Skill content NOT removed. `skills-lock.json` NOT modified. No Python
+deps added. Spec count drift noted: Linear MEH-397 said 78 skills,
+actual is 82 locked + 1 unlocked = 83.
+
 ## 2026-04-30 — MEH-306 sub-A + MEH-395: Password policy wire-up (backend)
 
 feat: wires the MEH-305 password policy infrastructure into the auth surface. PasswordField (12-char floor) on `UserRegister`, `ResetPasswordRequest`, and `PasswordChange` (`backend/app/schemas/schemas.py`, `backend/app/routers/users_me.py`). `register` / `reset_password` / `change_password` become async and call `validate_password` before persisting; reset and change pass `current_hash` to enforce the reuse block. All three set `users.password_changed_at` on success → MEH-305's iat gate invalidates pre-change sessions on next request. Adds `POST /auth/check-password` (stateless preview, 30/min/IP) for the live PasswordInput UI in sub-B. Tightens rate limits on `/auth/forgot-password` (10/15min per IP + 5/15min per email via new `email_from_body` key_func in `rate_limit.py`) and `/auth/reset-password` (10/15min per IP). Bundles **MEH-395** — closes a hash-storage vulnerability. Pre-fix, `validate_password` checked length on the raw candidate; an input like `"          aa"` (12 raw chars, 2 post-strip) cleared the 12-char floor and bcrypt stored the hash of the trimmed 2-char value, creating a 2-char effective password. Fix reorders `validate_password` to strip FIRST, then run length / deny-list / HIBP / reuse against the normalized value. Mirror `BeforeValidator` on `PasswordField` (`schemas/password.py`) strips at the schema layer too — defense-in-depth + clearer 422 error for whitespace-padded inputs. Also closes the deny-list padding bypass (`"password    "` → `"password"` → `too_common`) as a side effect. `PATCH /users/me/password` keeps the 204 contract; sub-B follows the 204 with `POST /auth/refresh` to recover the device. New `tests/test_auth.py` (16 tests) + autouse `_mock_hibp_clean` fixture in conftest. `pytest tests/test_api.py + test_password_policy.py + test_auth.py` green locally. **OUT OF SCOPE:** `ProducerRegister.password` (needs `PasswordField | None` for the OAuth completion path — separate decision); frontend wiring (sub-session B PR).

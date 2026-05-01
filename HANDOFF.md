@@ -1,7 +1,242 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-306 sub-A + MEH-395 — password policy wire-up backend, draft PR pending)
+> Last updated: 2026-05-01 (MEH-402 — pbakaus/impeccable audit, PR pending)
+
+## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
+
+**Branch:** `feature/meh-402-audit-pbakaus-impeccable` off staging.
+**Status:** draft PR pending merge.
+
+**Approved (21 skills, all from review_needed → approved):** `adapt`,
+`animate`, `arrange`, `audit`, `bolder`, `clarify`, `colorize`, `critique`,
+`delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`,
+`onboard`, `optimize`, `overdrive`, `polish`, `quieter`, `teach-impeccable`,
+`typeset`. 0 deletions, 0 blocked.
+
+**Author:** Paul Bakaus — Google Developer Advocate, public figure.
+
+**Audit pattern:**
+- 5 priority skills deep-read end-to-end: `teach-impeccable`, `harden`,
+  `optimize`, `polish`, `critique`.
+- `frontend-design` (chain root) deep-read with 7 `reference/*.md` files
+  (808 lines total) — all clean.
+- Remaining 16 full-body scanned for injection canaries + authority/silent
+  patterns + network/exec/secret patterns. Zero hits across all classes.
+
+**Architectural patterns surfaced:**
+
+| Pattern | Skills affected | Status |
+|---|---|---|
+| Skill chaining via "MANDATORY PREPARATION" — auto-invokes `frontend-design` → `teach-impeccable` | 17 of 21 (all except teach-impeccable, frontend-design itself, audit, extract) | Audited the full chain; chain only triggers under explicit user `/<skill>` invocation |
+| Persistent file write to project root: `.impeccable.md` (and optionally `.github/copilot-instructions.md` with user confirmation) | teach-impeccable | Inert in Mehamakor today (file not auto-loaded by CLAUDE.md or `.claude/rules/*`). Flagged for re-eval at every Claude Code major update — if auto-load behavior is added, this becomes an injection vector |
+| Chain root protects all chained skills | frontend-design | Manually re-audit periodically (lock drift detection deferred to MEH-407) |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 0 deletions | All 21 are generic UI/UX design tools, in-scope for the food marketplace frontend |
+| `author_verified: false` on all 21 (matches MEH-401 precedent) | Reputation ≠ identity verification. New rule documented in `.claude/rules/skills.md`. "Public figure" alone never justifies `true`; only PGP-signed commits / public statement linking to GitHub account / verifiable org membership count |
+| Sample audit (Option C: 5 deep + 16 quick) approved by user | Balances thoroughness with audit velocity; full-body scan still applied to all 21 |
+| 0 MEH-405 candidates this batch | No scripts directories exist; all skills are pure prompt-only SKILL.md content |
+
+**Counts after PR:** allowlist 75→75 (no deletions), approved 15→36,
+review_needed 59→38.
+
+**Follow-up:** none from this batch. MEH-405 still tracks the broader
+Python-script network-bypass scope from MEH-401 (audit_a11y.py,
+check_shabbat.py).
+
+### Discovered architectural finding (deferred)
+
+`computedHash` field in `skills-lock.json` does NOT match actual SHA256
+of `SKILL.md` files for any of 74 skills. No script in `.claude/scripts/`
+or workflow in `.github/workflows/` reads the field. **Lock file is
+currently decorative, not enforcing.** Implication: MEH-397's stated
+"5-layer defense" is functionally 4 layers. The lock layer (Layer 4 in
+the original spec) provides no detection of upstream content drift.
+
+Tracked as **MEH-407 (Priority 1)** — to be created in Linear by user
+after merge. Surfaced during MEH-402 adversarial review while
+verifying the architectural watch flags' detection mechanism.
+
+**MEH-402 mitigation in this PR:** softened "re-audit on every upstream
+version bump" wording in teach-impeccable + frontend-design notes to
+"manually re-audit periodically" since automated drift detection is
+non-functional.
+
+## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup
+
+**Branch:** `feature/meh-401-audit-skills-il-localization` off staging.
+**Status:** draft PR pending merge. 2 commits (deletions + verdicts).
+
+**Deleted (5 skills, out-of-scope):** `hebrew-ocr-forms`,
+`israeli-apartment-hunting`, `israeli-flight-finder`,
+`israeli-travel-planner`, `israeli-wedding-planner`.
+
+**Approved (9 skills):** `hebrew-rtl-best-practices`, `hebrew-tailwind-preset`,
+`israeli-accessibility-compliance`, `hebrew-i18n`, `shabbat-aware-scheduler`,
+`israeli-ui-design-system`, `hebrew-content-writer`, `hebrew-document-generator`,
+`hebrew-nlp-toolkit`.
+
+**Security findings surfaced:**
+
+| Finding | Skill | Status |
+|---|---|---|
+| HebCal API blocked by MEH-397 WebFetch allowlist | shabbat-aware-scheduler | Noted in allowlist; user must add hebcal.com to use the skill |
+| transformers.from_pretrained() bypasses WebFetch hooks; pickle deserialization risk | hebrew-nlp-toolkit | Approved for text-processing only; hardening → MEH-405 |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 5 skills deleted (lifestyle/travel/OCR) | Out of scope for food marketplace |
+| hebrew-nlp-toolkit approved with ⚠️ note | Documentation value high; pickle risk is runtime, not skill-install-time; documented clearly |
+| MEH-405 opened for HuggingFace hardening | Allowlist + sandboxing for from_pretrained() calls |
+
+**Counts after PR:** allowlist 80→75, approved 6→15, review_needed 73→59.
+
+**Follow-up tickets:**
+- **MEH-405** (not yet in Linear — Smadar to create after merge): EXPANDED SCOPE — original spec was hebrew-nlp-toolkit-specific, but adversarial review surfaced a broader architecture gap. Full scope: "All Python scripts in skills that bypass MEH-397 hooks via requests/urllib." Hardening plan: network allowlist + sandboxing for unhooked script-level HTTP.
+
+**MEH-405 candidates list** (from `grep -rE "^\s*(import requests|from urllib|from requests|import urllib)" .agents/skills/*/scripts/`):
+
+```
+# MEH-401 candidates (confirmed live network):
+.agents/skills/israeli-accessibility-compliance/scripts/audit_a11y.py  → requests.get(url) + urllib.parse.urljoin
+.agents/skills/shabbat-aware-scheduler/scripts/check_shabbat.py        → requests.get("https://www.hebcal.com/...")
+
+# hebrew-nlp-toolkit/preprocess_hebrew.py → CLEAN (stdlib only; HuggingFace URLs are in SKILL.md docs only)
+# MEH-400 skills: no scripts with network imports (confirmed in MEH-400 audit)
+```
+
+NOTE: The original grep pattern (`^import requests` anchored at col 0) missed the shabbat entry because it was inside a `try:` block. MEH-405 should use the `^\s*` variant to catch indented imports.
+
+- Next localization audit source TBD.
+
+## 2026-04-30 — MEH-400: skills-il/security-compliance audit + scope cleanup
+
+**Branch:** `feature/meh-400-audit-skills-il-security-compliance` off
+staging. **Status:** draft PR pending review. 2 commits.
+
+First post-MEH-397 per-source audit. Scope evolved mid-session from
+"audit all 9" to "delete 3 unused, audit 6 relevant" per Smadar's
+direction.
+
+**Deleted (3 skills, out-of-scope for food marketplace):**
+`israeli-shelter-guide`, `pikud-haoref-safety-protocols`,
+`israeli-cybersecurity-ops`. 4 surfaces each (canonical content,
+symlink, lock entry, allowlist entry). 19 files / 2173 LOC removed.
+First PR to modify `skills-lock.json` since MEH-397.
+
+**Approved (6 skills, scope-relevant):**
+`israeli-ecommerce-compliance`, `hebrew-legal-research`,
+`israeli-cyber-regulations`, `israeli-privacy-shield`,
+`israeli-ai-compliance-kit`, `israeli-appsec-scanner`.
+All 6 audit_verdict review_needed → approved.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Spec list (9 names) was stale; allowlist data wins as source of truth | Pre-flight rule — already established in MEH-397 |
+| `git rm -r` for deletions, not `rm -rf` | git-aware + bypasses `Bash(rm -rf:*)` deny rule + tracks removal in index |
+| Lock + allowlist edits via `jq del()` not text-edit | Atomic, schema-preserving |
+| `compliance_checker.py:293-294` not the same finding-class as MEH-398 | `args.output` is full path (no slug derivation); MEH-398 was about user-input embedded as slug-component inside constructed path |
+| `israeli-appsec-scanner` borderline → approved | Per Smadar calibration: legitimate user audit workflow, output stays local. Re-audit clause added: re-evaluate if upstream adds network reporting |
+| Author remains anonymous; only content audited | `author_verified: false` unchanged across all 6 |
+
+**Counts after PR:** lock 82→79, allowlist 83→80, agents/skills 82→79,
+claude/skills 83→80.
+
+**Follow-up tickets (not opened — Smadar to decide):**
+
+- Potential: harden `compliance_checker.py:293-294` and
+  `generate_model_card.py:188-190` `--output` paths if cross-skill input
+  flows ever start passing untrusted paths there. Different finding-class
+  from MEH-398 — not blocking; nice-to-have only.
+- MEH-401 (next ticket): same pattern for `skills-il/localization` audit
+  + scope cleanup. User will send a similar deletion+audit list once
+  pre-flight reveals what's there.
+
+## 2026-04-30 — MEH-398: Sanitize CLI args in ui-ux-pro-max design_system.py
+
+**Branch:** `feature/meh-398-ui-ux-pro-max-path-sanitize` off staging.
+**Status:** draft PR pending review. Follow-up to MEH-397's in-PR audit
+finding.
+
+Mechanical fix:
+- New helper module `_sanitize.py` (pure, only `re`); regex
+  `[^a-z0-9-]` strip + `"default"` fallback.
+- `design_system.py:508,530` swapped from inline slug logic to
+  `_sanitize_slug(...)`.
+- 10 unit tests in `tests/test_sanitize.py` (5 required + 5
+  adversarial bonus). All green.
+- Allowlist notes updated. Verdict unchanged
+  (`approved_local_unlocked`); MEH-YYY (lock ui-ux-pro-max into
+  `skills-lock.json`) still on the 30-day SLA from 2026-04-30.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Helper in separate `_sanitize.py` module (not inline regex per spec) | Pure module → tests import only `re`; doesn't drag `core` import side-effects through |
+| Sandbox `if __name__ == "__main__":` assertion block in `_sanitize.py` | Belt-and-suspenders: runnable without pytest in restricted environments |
+| Trailing whitespace on adjacent blank lines preserved | File-preservation rule 3 — diff stays scoped to 3 functional lines |
+| `last_audit_date` left at `2026-04-30` | This PR patches one finding; full re-audit not warranted |
+| `audit_verdict` left at `approved_local_unlocked` | MEH-YYY (locking) is the verdict-change ticket, not this one |
+
+**No skills removed. No verdict change. No new deps.** Single PR.
+
+## 2026-04-30 — MEH-397: Skills supply chain audit + lockdown
+
+**Branch:** `feature/meh-397-skills-supply-chain-lockdown` off staging.
+**Status:** draft PR pending Smadar review. Do NOT merge yet.
+
+**5-layer defense** around 83 skills (.agents/skills/ canonical
+content + .claude/skills/ symlink mounts + ui-ux-pro-max local
+real-dir):
+
+1. **Tool deny** — `Read(./.env*)` denies + 7-domain WebFetch allowlist
+   (github, anthropic, npmjs, pypi, mehamakor, vercel, railway). Two
+   PreToolUse hooks fail-closed.
+2. **Allowlist registry** — `.claude/skills-allowlist.json` 83 entries.
+   `ui-ux-pro-max` = `approved_local_unlocked` (30-day SLA to lock).
+3. **Audit script** — `.claude/scripts/audit-skills.sh`. Self-test
+   fixture exits 1; real tree exits 0.
+4. **CI gate** — `.github/workflows/skills-audit.yml` two-stage.
+5. **Documentation** — `.claude/rules/skills.md` + SECURITY.md §17.
+
+**ui-ux-pro-max audit** (in-PR security review): 3 Python scripts
+audited — `core.py`, `search.py`, `design_system.py` (1434 LOC total).
+All clean. One Priority-2 follow-up: unsanitized `--project-name`
+slug at `design_system.py:508,529` enables local path traversal.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| `.agents/skills/` is the audit target (not `.claude/skills/`) | `.claude/skills/*` are mode-120000 symlinks → `.agents/skills/*`; canonical content lives in `.agents/skills/`. Only `ui-ux-pro-max` is a real dir under `.claude/skills/`. |
+| `approved_local_unlocked` verdict (new) | Transitional 30-day slot for `ui-ux-pro-max` while we wait to declare its source repo + SHA256. Resolves to `approved` (locked) or `blocked` (CI failure) at day 30. |
+| Pattern set deviation from spec | Chose LLM-canary patterns (`ignore previous`, `system prompt`, `disregard`, `override.*instruction`, `forget.*above`) over spec's agent-rule patterns. Documented in `.claude/rules/skills.md`. |
+| Skill count = 83 not 78 | Linear MEH-397 spec is stale. Actual: 82 locked + 1 unlocked. |
+| Hooks fail-closed if jq missing | Default deny — skill supply chain context demands fail-closed. |
+
+**Follow-up tickets (not yet created in Linear, do after merge):**
+
+- MEH-XXX (Priority 2) — Sanitize `--project-name` and `--page` in
+  `design_system.py:508,529` (basic path-traversal hardening).
+- MEH-YYY (Priority 3) — Lock `ui-ux-pro-max` into
+  `skills-lock.json` with declared source repo + SHA256 (within 30
+  days of MEH-397 merge).
+- Audit pbakaus/impeccable (21 skills)
+- Audit coreyhaines31/marketingskills (38 skills)
+- Audit skills-il/security-compliance (9 skills, high priority)
+- Audit skills-il/localization (14 skills, high priority)
+
+**No skills removed. `skills-lock.json` not modified.** Single PR. Did
+not merge — awaiting user review.
 
 ## 2026-04-30 — MEH-306 sub-A (Backend wire-up) + MEH-395
 
@@ -73,6 +308,8 @@ not in MEH-306 scope.
 3. POST `/auth/check-password` `{"candidate":"unbelievable"}` → 200 with
    `{"ok": false, "failures":["too_common"]}`.
 
+---
+
 ## 2026-04-29 — MEH-305 (PR #408): password policy backend
 
 Branch: `feature/meh-305-password-policy-backend` (HEAD `fdbb13c`).
@@ -122,6 +359,52 @@ Templates 02 + 04 DoD bullet handled by Smadar manually in Google Drive (Templat
 Next session pick-up options:
 - Continue MEH-371 merge → MEH-376 → MEH-370 chain (per 2026-04-27 entry)
 - OR start MEH-305+306 Password Policy as first /ultrareview consumer
+
+## 2026-04-28 — Session close — 5 PRs merged, alert wiring fixed
+
+### End-of-day state
+
+PRs merged today:
+- PR #399 — MEH-379+380+381 CSP hardening (squash f62ee54)
+- PR #401 — MEH-382 Railway retry-on-busy (squash 7c3051e)
+- PR #402 — staging → main release
+- PR #395 — MEH-370 Next.js 14 → 16 upgrade (squash 28bbc3f)
+- PR #403 — MEH-372 next-pwa removal Path E (squash 76d04ee)
+- PR #404 — Wire fire_alerts to product creation (audit Gap A) (squash 3b7e3ea)
+
+Tickets closed:
+- MEH-370, MEH-371, MEH-372, MEH-379, MEH-380, MEH-381, MEH-382
+
+Vuln state on main: **4 moderate** (postcss chain only)
+- 5 high cleared by next-pwa removal (MEH-372)
+- Several next direct CVEs cleared by Next 16 upgrade (MEH-370)
+
+### Pending for next session
+
+- **Smoke test PR #404 wiring** — verify in production:
+  1. Login as regular user (NOT business owner)
+  2. Favorite a producer + opt in WhatsApp
+  3. Switch to business account, add a new product
+  4. Confirm WhatsApp arrives within 30s
+  If no WhatsApp → check Railway logs for fire_alerts call + Twilio API errors.
+
+- **OAuth business registration 409 bug** (NEW, not yet ticketed):
+  Email already registered → backend returns 409 → frontend swallows error silently. User sees broken Google button.
+  Repro: `/register/business` with Google OAuth using existing email returns 409 with no user-facing toast.
+  Expected: friendly toast "החשבון כבר רשום — היכנסי במקום" + link to `/login`.
+  Priority: 2 (High) — trust killer in onboarding flow.
+
+- **postcss vuln chain (4 moderate)** — separate ticket needed.
+  `next@16.2.4` bundles old postcss internally; affects next, @sentry/nextjs, @vercel/speed-insights transitively.
+  Priority: 4 (Low).
+
+### Active urgent tickets in Linear (next priority)
+
+- MEH-99 — Smart Search ("גבינה" returns 0)
+- MEH-78 — Map opens on Golan instead of Tel Aviv
+- Various live site bugs (broken stats API, duplicate filter bars on /map, contradictory "thousands" banner)
+
+---
 
 ## 2026-04-28 — MEH-372: next-pwa removed (Path E)
 
@@ -1393,6 +1676,54 @@ After deploy, click a real verification link in staging and check Railway logs f
 ### Next session
 - Wait on Vercel preview for PR; smoke-test the 7 fixes per the format in the PR body
 - After MEH-318 lands: pick up MEH-305 / MEH-306 password-policy work (the dropped Fix #1 ground)
+
+---
+
+## 2026-04-25 Session 2 update (MEH-311 + MEH-317 + MEH-313)
+
+### What shipped
+
+| PR | MEH | Title | Status |
+|----|-----|-------|--------|
+| #341 | MEH-311 | RecipeIngredient.producer_id ON DELETE SET NULL | Merged to staging |
+| #342 | MEH-317 | Fix test_happy_path data= → json= | Merged to staging |
+| #344 | MEH-313 | recipes.submitted_by ON DELETE CASCADE | Merged to staging |
+
+### MEH-311 details
+
+- `backend/app/models/models.py:370` — `ForeignKey("producers.id", ondelete="SET NULL")`
+- Alembic migration `a4c7d2f9e1b8` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_ingredient_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `a4c7d2f9e1b8`
+- Linear MEH-311 → Done
+
+### MEH-317 details
+
+Root cause: `test_happy_path` sent `data={"username": ...}` (form-encoded) to `/auth/login`
+but `LoginRequest` expects JSON body with `email` field. Fixed 2 lines at `tests/test_api.py:1579,1583`.
+
+### MEH-313 details
+
+- `backend/app/models/models.py:355` — `ForeignKey("users.id", ondelete="CASCADE")`
+- Alembic migration `c9e3a1b5d72f` — drop + recreate FK constraint (no data movement)
+- `tests/test_recipe_cascade.py` — 2 regression tests
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `c9e3a1b5d72f`
+- Product decision: CASCADE (recipes are user-owned content, full GDPR wipe)
+- Linear MEH-313 → Done
+
+### Sibling FK remaining open
+
+- **MEH-312** — `recipes.category_id` missing `ondelete` (Backlog, Low — category deletion unlikely, non-blocking)
+
+### Rule added
+
+**Rule 21** added to `.claude/rules/workflow.md`: "Never merge without verified green CI signal — even if budget appears exhausted."
+
+### Next session candidates
+
+- MEH-304 root cause — paste Railway logs from forgot-password on staging to diagnose actual 400 cause
+- MEH-312 — `recipes.category_id` quick SET NULL fix (low priority)
+- MEH-198 (email verify resend), MEH-258 (SECURITY-CHECKLIST), MEH-272 (Producer CHECK constraints)
 
 ---
 
