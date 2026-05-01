@@ -12,6 +12,23 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-418 + MEH-419: A11y sweep + /login copy cleanup
+
+- `/login`: replace specific char-count length-check copy ("סיסמא חייבת להכיל לפחות 8 תווים") with generic "הזיני סיסמה" — outdated post-MEH-306 (login validates the stored hash, no specific minimum).
+- `/login`: drop the 8-char numeric gate (`>= 8` → `>= 1`); submit button stays disabled on empty fields, accepts any non-empty input.
+- `/login`: add `role="alert"` to inline email + password errors (lines 139, 188).
+- `/register`: add `role="alert"` to 3 errors — name-required (line 199), email-invalid (line 225), form-level (line 274).
+- `/forgot-password`: add `role="alert"` to form-level error (line 60).
+- `/rate/[token]`: add `role="alert"` to form-level error (line 98).
+- `/group-buys/[id]`: add `role="alert"` to form-level error (line 302).
+- `/admin/outreach`: add `role="alert"` to form-level error (line 445).
+
+**Convention now uniform with `/settings/page.jsx` (existing precedent) and `/reset-password/page.js` (post-MEH-306).** Screen readers (VoiceOver, NVDA) announce all form-level + inline errors immediately on appearance.
+
+Skeptic audit during this PR also found 3 inline-error sites missing `role="alert"` that the original MEH-419 form-level grep had missed (`/login:139`, `/register:199`, `/register:225`); included via Option C scope expansion since the surrounding files were already being touched. The other 4 MEH-419 files re-audited — no additional inline expansions needed.
+
+Closes MEH-418, MEH-419.
+
 ## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement
 
 Closes the architectural gap MEH-402 adversarial review surfaced —

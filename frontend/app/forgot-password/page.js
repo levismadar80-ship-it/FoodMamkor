@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
               className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary"
             />
             {error && (
-              <p className="text-red-600 text-sm text-center">{error}</p>
+              <p className="text-red-600 text-sm text-center" role="alert">{error}</p>
             )}
             <button
               type="submit"

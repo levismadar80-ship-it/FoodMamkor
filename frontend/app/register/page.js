@@ -196,7 +196,7 @@ export default function RegisterPage() {
               dir="rtl"
             />
             {nameInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">שם מלא הוא שדה חובה</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">שם מלא הוא שדה חובה</p>
             )}
             {nameValid && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
@@ -222,7 +222,7 @@ export default function RegisterPage() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right">האימייל לא תקין</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">האימייל לא תקין</p>
             )}
             {emailValid && (
               <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
@@ -271,7 +271,7 @@ export default function RegisterPage() {
               </Link>
             </p>
           )}
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
           <button
             type="submit"
             disabled={loading || !formIsValid}
