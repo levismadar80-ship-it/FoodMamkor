@@ -299,7 +299,7 @@ export default function GroupBuyDetailClient({ id }) {
                   dir="ltr"
                 />
               </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
               <button
                 type="submit"
                 disabled={submitting}
