@@ -1,7 +1,30 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-27 (MEH-379 + MEH-380 + MEH-381 bundle in PR #399, awaiting Smadar verify)
+> Last updated: 2026-05-01 (MEH-386 BOLA audit + fixes in PR #422, awaiting merge approval)
+
+## 2026-05-01 — MEH-386: BOLA audit (PR #422, awaiting "go merge")
+
+**Status:** PR #422 open, ready for review, CI pending. Waiting for Smadar's "go merge".
+
+**Branch:** `claude/review-claude-docs-bola-WzCVZ`
+
+**What was done:** Full BOLA sweep of all 26 backend routers. 2 confirmed vulnerabilities found and fixed:
+
+1. `GET /home-products/{id}` (`home_products.py:167`) — hidden/deactivated listings were visible to anonymous callers by UUID. Fixed: `get_current_user_optional` + is_active/is_hidden gate.
+2. `POST /category-requests` (`category_requests.py:18`) — anonymous callers could spoof any `producer_id` in the request body. Fixed: body's `producer_id` ignored; JWT-bound value used for authenticated users, None for anonymous.
+
+5 regression tests in `TestBOLA` class (`tests/test_api.py:2174`).
+
+All other 24 routers confirmed clean — no additional BOLA surface found.
+
+**Next task after merge:** HANDOFF.md indicates MEH-125 (pre-launch checklist) was blocked on MEH-386. Check Linear for next open task.
+
+**Decisions logged:**
+| Decision | Rationale | Date |
+|---|---|---|
+| `producer_id` stripped for anonymous category requests | Body value untrustworthy without auth; admin queue shows None as "unattributed" | May 2026 |
+| Owner+admin can still view hidden/deactivated home products | Owner needs to see why listing was hidden; admin needs to review | May 2026 |
 
 ## 2026-04-27 — MEH-379+380+381 bundle (PR #399, merged-pending-Smadar-verify)
 
