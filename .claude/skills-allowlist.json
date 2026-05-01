@@ -19,7 +19,7 @@
     },
     "adapt": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -40,14 +40,14 @@
     },
     "animate": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
     },
     "arrange": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -61,14 +61,14 @@
     },
     "audit": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed. Documents issues, doesn't fix. Suggests user-facing /<command> recommendations. Light chain to frontend-design. Author: Paul Bakaus."
     },
     "bolder": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -82,7 +82,7 @@
     },
     "clarify": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -96,7 +96,7 @@
     },
     "colorize": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -145,7 +145,7 @@
     },
     "critique": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed. Suggests user-facing /<command> recommendations as critique output (no auto-execute). Chains to frontend-design → teach-impeccable. Author: Paul Bakaus."
@@ -159,7 +159,7 @@
     },
     "delight": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -173,7 +173,7 @@
     },
     "distill": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -187,7 +187,7 @@
     },
     "extract": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed. Read-only codebase grep for design-system discovery. No chain. Author: Paul Bakaus."
@@ -208,14 +208,14 @@
     },
     "frontend-design": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-402. Full body + 7 reference/*.md files (808 lines total) scanned — all clean. Chain root: instructs MUST-run of teach-impeccable when no design context exists. Author: Paul Bakaus. Chain root for 17 of 21 pbakaus/impeccable skills. Integrity of this skill protects all chained skills — re-audit on every upstream pbakaus/impeccable version bump."
+      "notes": "Audited MEH-402. Full body + 7 reference/*.md files (808 lines total) scanned — all clean. Chain root: instructs MUST-run of teach-impeccable when no design context exists. Author: Paul Bakaus. Chain root for 17 of 21 pbakaus/impeccable skills. Integrity of this skill protects all chained skills — manually re-audit periodically (lock file drift detection currently non-functional — see MEH-407)."
     },
     "harden": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed — pure design guidance for resilience (text overflow, i18n, error states, a11y). Code blocks are HTML/CSS/JS examples. Author: Paul Bakaus."
@@ -348,14 +348,14 @@
     },
     "normalize": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
     },
     "onboard": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -369,14 +369,14 @@
     },
     "optimize": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed — pure performance guidance (Core Web Vitals, lazy load, GPU-accel). Author: Paul Bakaus."
     },
     "overdrive": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -404,7 +404,7 @@
     },
     "polish": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body reviewed. Final design-pass checklist. Chains via MANDATORY PREPARATION to frontend-design → teach-impeccable. Author: Paul Bakaus."
@@ -439,7 +439,7 @@
     },
     "quieter": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
@@ -509,14 +509,14 @@
     },
     "teach-impeccable": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-402. Full body reviewed — 1-time setup that gathers design context and writes .impeccable.md to project root + optionally appends to .github/copilot-instructions.md. User-invoked, intended. Output file inert in Mehamakor (not auto-loaded by CLAUDE.md / .claude/rules/). Author: Paul Bakaus. Architectural watch: writes .impeccable.md to project root. Inert as of MEH-402, but if Claude Code adds project-root auto-load behavior in future, this becomes an injection vector. Re-evaluate at every Claude Code major update."
+      "notes": "Audited MEH-402. Full body reviewed — 1-time setup that gathers design context and writes .impeccable.md to project root + optionally appends to .github/copilot-instructions.md. User-invoked, intended. Output file inert in Mehamakor (not auto-loaded by CLAUDE.md / .claude/rules/). Author: Paul Bakaus. Architectural watch: writes .impeccable.md to project root. Inert as of MEH-402, but if Claude Code adds project-root auto-load behavior in future, this becomes an injection vector. Manually re-audit periodically (lock file drift detection currently non-functional — see MEH-407)."
     },
     "typeset": {
       "source": "pbakaus/impeccable",
-      "author_verified": true,
+      "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."

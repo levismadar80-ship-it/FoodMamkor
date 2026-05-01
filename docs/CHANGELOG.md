@@ -34,11 +34,22 @@ all four classes.
 
 - `teach-impeccable` writes `.impeccable.md` to project root. Inert as of
   MEH-402, but if Claude Code adds project-root auto-load behavior in
-  future, this becomes an injection vector. Re-evaluate at every Claude
-  Code major update.
+  future, this becomes an injection vector. Manually re-audit periodically.
 - `frontend-design` is the chain root for 17 of 21 pbakaus/impeccable
-  skills. Integrity of this skill protects all chained skills — re-audit
-  on every upstream pbakaus/impeccable version bump.
+  skills. Integrity of this skill protects all chained skills — manually
+  re-audit periodically (lock file drift detection currently
+  non-functional, see MEH-407).
+
+**Adversarial review findings applied in same PR:**
+
+- `author_verified` flipped to `false` on all 21 entries (matches MEH-401
+  precedent). New rule documented in `.claude/rules/skills.md`: reputation
+  ≠ identity verification. "Public figure" alone never justifies `true`.
+- `computedHash` field in `skills-lock.json` discovered to be non-functional
+  across all 74 skills repo-wide — no script or workflow reads it. MEH-397's
+  stated 5-layer defense is functionally 4 layers. Deferred to MEH-407
+  (Priority 1) for fix. Watch-flag wording softened to "manually re-audit
+  periodically" since automated drift detection doesn't currently exist.
 
 **MEH-405 candidates from this batch:** 0 (no scripts directories, no
 Python network calls — all skills are pure prompt-only SKILL.md content).
