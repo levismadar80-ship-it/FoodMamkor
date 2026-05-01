@@ -1,5 +1,5 @@
 "use client";
-
+// MEH-184: benchmark comment — safe to remove after cache verification
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
