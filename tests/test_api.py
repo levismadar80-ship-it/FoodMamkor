@@ -2169,3 +2169,121 @@ class TestAppleTokenVerification:
         monkeypatch.setattr(req_mod, "get", _capturing_get)
         _verify_apple_token("dummy.token.value")
         assert captured.get("timeout") == 8
+
+
+# ---------------------------------------------------------------------------
+# MEH-386: BOLA regression tests
+# ---------------------------------------------------------------------------
+
+class TestBOLA:
+    """Regression suite for MEH-386 — Broken Object Level Authorization.
+
+    Two confirmed findings:
+      1. GET /home-products/{id} exposed hidden/deactivated listings to public.
+      2. POST /category-requests accepted spoofed producer_id from anonymous callers.
+    """
+
+    def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
+        """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
+        from app.models.models import HomeProduct
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="bola-hidden@test.com")
+        create = client.post(
+            "/home-products",
+            json={"title": "עוגה", "description": "טעימה", "price": "25"},
+            headers=auth_header(user),
+        )
+        assert create.status_code == 201
+        pid = create.json()["id"]
+
+        # Simulate auto-hide (3 negative ratings sets is_hidden=True)
+        hp = db.query(HomeProduct).filter(HomeProduct.id == pid).first()
+        hp.is_hidden = True
+        db.commit()
+
+        # Anonymous fetch → 404 (not 200)
+        resp = client.get(f"/home-products/{pid}")
+        assert resp.status_code == 404
+
+    def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
+        """Owner of a hidden listing can still view it."""
+        from app.models.models import HomeProduct
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="bola-owner@test.com")
+        create = client.post(
+            "/home-products",
+            json={"title": "גבינה", "description": "טרייה", "price": "40"},
+            headers=auth_header(user),
+        )
+        assert create.status_code == 201
+        pid = create.json()["id"]
+
+        hp = db.query(HomeProduct).filter(HomeProduct.id == pid).first()
+        hp.is_hidden = True
+        db.commit()
+
+        # Owner fetch → 200
+        resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
+        """A deactivated listing (is_active=False) must 404 for anonymous callers."""
+        from app.models.models import HomeProduct
+        monkeypatch.setattr(
+            "app.routers.home_products.validate_home_product",
+            lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
+        )
+        user = make_user(db, email="bola-inactive@test.com")
+        create = client.post(
+            "/home-products",
+            json={"title": "לחם", "description": "מחמצת", "price": "35"},
+            headers=auth_header(user),
+        )
+        assert create.status_code == 201
+        pid = create.json()["id"]
+
+        # Soft-delete via DELETE endpoint
+        client.delete(f"/home-products/{pid}", headers=auth_header(user))
+
+        # Anonymous fetch → 404
+        resp = client.get(f"/home-products/{pid}")
+        assert resp.status_code == 404
+
+    def test_category_request_producer_id_not_spoofable_anonymous(self, client, db):
+        """An anonymous caller cannot spoof a producer_id on a category request."""
+        import uuid as uuid_mod
+        fake_id = str(uuid_mod.uuid4())
+        resp = client.post(
+            "/category-requests",
+            json={"requested_name": "קפה מיוחד", "producer_id": fake_id},
+        )
+        assert resp.status_code == 201
+        # producer_id must be None — the spoofed value is discarded
+        assert resp.json()["producer_id"] is None
+
+    def test_category_request_uses_authenticated_producer_id(self, client, db):
+        """An authenticated producer's own producer_id is used, not one from the body."""
+        import uuid as uuid_mod
+        from app.models.models import Producer as ProducerModel
+        producer = make_producer(db, name="בית קפה בודהה")
+        user = make_user(db, email="bola-producer@test.com")
+        user.producer_id = producer.id
+        db.commit()
+
+        fake_id = str(uuid_mod.uuid4())
+        resp = client.post(
+            "/category-requests",
+            json={"requested_name": "קפה מיוחד", "producer_id": fake_id},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        # Must use authenticated user's producer_id, not the spoofed one
+        assert body["producer_id"] == str(producer.id)
+        assert body["producer_id"] != fake_id
