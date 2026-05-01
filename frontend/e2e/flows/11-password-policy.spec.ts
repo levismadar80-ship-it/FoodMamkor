@@ -24,10 +24,14 @@ const SHORT_PASSWORD = "short_pass!"; // 11 chars, fails the 12 floor
 // suffix (MEH-417) to defeat parallel-worker collision when desktop +
 // mobile workers compute the same Date.now() ms — now that scenario 3
 // hits real /auth/register, identical-stamp emails would 409.
+//
+// Uses @example.com (IANA-reserved test domain per RFC 2606) — @e2e.test
+// was rejected by Pydantic's email-validator per RFC 6761 (special-use).
+// MEH-353 precedent: same fix applied to scripts/smoke_test.py (PR #365).
 function uniqueSignup(prefix: string) {
   const stamp = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   return {
-    email: `${prefix}+${stamp}@e2e.test`,
+    email: `${prefix}+${stamp}@example.com`,
     name: `e2e ${prefix}`,
   };
 }
