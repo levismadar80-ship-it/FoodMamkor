@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-336: dependency-audit gate flipped to required
+
+- `.github/workflows/dependency-audit.yml` — `continue-on-error: true → false` on both `pip-audit` and `npm-audit` jobs. Header rewritten to reflect blocking status. Baseline cleared (backend 0 vulns; frontend 0 high / 0 critical at the configured `--audit-level=high` threshold). 4 moderate findings (postcss `< 8.5.10` via `next`) remain below the gate. Docs synced (`SECURITY.md §8c`, `SECURITY-CHECKLIST.md` TRAP 8, `DEPLOYMENT.md` branch-protection tables). Manual follow-up: add both job names as required checks under `staging` + `main` branch protection.
+
 ## 2026-05-01 — MEH-424: skip Playwright E2E on docs-only PRs
 
 - PR #435 — `dorny/paths-filter@v3` filter job added to `e2e.yml`; E2E skips unless `frontend/**`, `public/**`, `package.json`, or `package-lock.json` are touched. Docs-only PRs (HANDOFF, CHANGELOG, workflow YAML) no longer trigger the full Playwright suite.

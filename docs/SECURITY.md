@@ -413,7 +413,7 @@ response as the new access token.
   sites, logout deletion
 - `tests/test_api.py` — `TestFingerprintCookie` (6 regression tests)
 
-### ✅ 8c. Dependency audits + Dependabot (MEH-330, April 2026)
+### ✅ 8c. Dependency audits + Dependabot (MEH-330 → MEH-336, April–May 2026)
 
 Supply-chain CVE gate — pip-audit (backend) + npm audit (frontend) run
 per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
@@ -429,9 +429,11 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 - Frontend job: `npm audit --audit-level=high` — **NO `--omit=dev`**
   (dev-tool CVEs execute on machines that build the production
   artifact; supply-chain risk).
-- **Sprint 1 mode: warn-only** (`continue-on-error: true`). Umbrella
-  ticket MEH-336 tracks the baseline cleanup; flips to required after
-  baseline cleared.
+- **REQUIRED, blocking** (`continue-on-error: false`) — flipped under
+  MEH-336 on 2026-05-01 after the MEH-330 baseline was cleared. New
+  high/critical CVEs in either ecosystem fail the PR until the dep is
+  bumped or the threshold revisited. Branch protection on `staging` and
+  `main` lists both job names as required status checks.
 
 **Dependabot:** `.github/dependabot.yml`
 - 3 ecosystems × weekly Mon 06:00 Asia/Jerusalem.
@@ -439,17 +441,15 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
 - `open-pull-requests-limit: 5` per ecosystem.
 - Labels: `dependencies` + `meh-330` (+ `ci` for actions).
 
-**Baseline at MEH-330 ship (2026-04-26):**
-- Frontend: 13 high / 6 moderate (`next`, `lodash`, `picomatch`,
-  `rollup`, `serialize-javascript`, `glob`, etc.).
+**Baseline at MEH-330 ship (2026-04-26) → MEH-336 flip (2026-05-01):**
+- Frontend: 13 high / 6 moderate → **0 high / 0 critical** at the
+  configured `--audit-level=high` threshold. 4 moderate findings (postcss
+  `< 8.5.10` pulled in transitively by `next`, effects on `@sentry/nextjs`
+  and `@vercel/speed-insights`) remain below the gate; resolution
+  requires a `next` minor/major bump and is tracked separately.
 - Backend: 8 vulns across 5 packages (`pip`, `pyjwt`, `python-multipart`,
-  `requests`, `starlette`).
-
-**High-priority sub-tickets (auth-critical, opened pre-merge):**
-- **MEH-337** — `pyjwt 2.9.0 → 2.12.0` (CVE-2026-32597, touches
-  `backend/app/auth.py`).
-- **MEH-338** — `starlette 0.41.3 → 0.49.1` (CVE-2025-62727, framework;
-  coordinate FastAPI 0.115.6 compatibility).
+  `requests`, `starlette`) → **0 vulns** (cleared via MEH-337 + transitive
+  bumps; pip-audit reports `No known vulnerabilities found`).
 
 ## 🟡 בינוני — תקן החודש
 

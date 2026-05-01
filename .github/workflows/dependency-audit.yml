@@ -1,13 +1,16 @@
 name: Dependency Audit
 
-# MEH-330 — supply-chain CVE gate (warn-only baseline).
+# MEH-336 — supply-chain CVE gate (REQUIRED, blocking).
 # Two jobs:
 #   pip-audit  — backend, uv-managed venv, runs `uv run --with pip-audit pip-audit`
 #   npm-audit  — frontend, runs `npm audit --audit-level=high` (NO --omit=dev; spec)
-# Both jobs are `continue-on-error: true` for sprint 1 — see umbrella ticket
-# MEH-336 to flip to required after the baseline (frontend 13 high / 6 moderate,
-# backend 8 vulns) is cleared. High-priority sub-tickets pre-merge:
-# MEH-337 (pyjwt CVE-2026-32597) + MEH-338 (starlette CVE-2025-62727).
+# Both jobs are now blocking (`continue-on-error: false`). Baseline cleared
+# 2026-05-01: backend pip-audit = 0 vulns; frontend npm audit = 0 high / 0
+# critical at the configured threshold (4 moderate from postcss-via-next remain
+# below the gate). New high/critical CVEs in either ecosystem will fail the PR
+# until the dep is bumped or the threshold revisited.
+# Threshold change (high → moderate) is out of scope here — would require
+# resolving the postcss/next chain first. Track separately if pursued.
 
 on:
   pull_request:
@@ -59,11 +62,10 @@ jobs:
       # Backend has no requirements.txt; uv is the only dep manager.
       - name: Run pip-audit
         working-directory: backend
-        # TODO(MEH-336): flip continue-on-error → false once baseline cleared
-        continue-on-error: true
+        continue-on-error: false
         run: |
           # Capture exit code so the Step Summary write below ALWAYS runs
-          # even when pip-audit finds vulns (it will, while baseline holds).
+          # even when pip-audit finds vulns and the job is set to fail.
           # Without this, default `bash -eo pipefail` aborts before summary.
           AUDIT_EXIT=0
           uv run --with pip-audit pip-audit --strict 2>&1 | tee pip-audit-report.txt || AUDIT_EXIT=$?
@@ -105,11 +107,10 @@ jobs:
       # production artifact — supply-chain risk, not just runtime risk.
       - name: Run npm audit
         working-directory: frontend
-        # TODO(MEH-336): flip continue-on-error → false once baseline cleared
-        continue-on-error: true
+        continue-on-error: false
         run: |
           # Capture exit code so the Step Summary write below ALWAYS runs
-          # even when npm audit finds vulns (it will, while baseline holds).
+          # even when npm audit finds vulns and the job is set to fail.
           # Without this, default `bash -eo pipefail` aborts before summary.
           AUDIT_EXIT=0
           npm audit --audit-level=high 2>&1 | tee npm-audit-report.txt || AUDIT_EXIT=$?

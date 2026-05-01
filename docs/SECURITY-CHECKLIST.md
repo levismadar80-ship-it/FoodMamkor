@@ -293,7 +293,7 @@ curl -sI https://mehamakor.online/api/health | grep -E "200|date"
 
 ---
 
-## TRAP 8 — Dependency CVE backlog (MEH-330 baseline, April 2026)
+## TRAP 8 — Dependency CVE backlog (MEH-330 baseline → MEH-336 gate, April–May 2026)
 
 **The broken pattern:**
 A dep audit job is added to CI; on first run it surfaces a backlog of
@@ -309,7 +309,7 @@ All three weaken the bar without paying down the debt.
 The first audit gives you the only honest baseline you'll ever have. If
 you mask it, you never know when you regressed *from* it (e.g. a new dep
 brings in another vulnerable transitive). The MEH-330 baseline at ship
-date (2026-04-26):
+date (2026-04-26) was:
 
 - **Frontend (`npm audit --audit-level=high`):** 13 high / 6 moderate.
   Top offenders: `next` (5 advisories), `lodash`, `serialize-javascript`
@@ -318,7 +318,14 @@ date (2026-04-26):
   `pip` / `pyjwt` / `python-multipart` (×2) / `requests` (×2) /
   `starlette` (×2).
 
-**Fix pattern:**
+**Status (MEH-336 close, 2026-05-01):** baseline cleared. Backend = 0
+vulns; frontend = 0 high / 0 critical at the configured threshold (4
+moderate from `postcss < 8.5.10` via `next` remain below the gate).
+`.github/workflows/dependency-audit.yml` is now blocking
+(`continue-on-error: false`) — new high/critical CVEs in either ecosystem
+will fail the PR.
+
+**Fix pattern (for future audit gates):**
 1. Land the audit gate as `continue-on-error: true` with a TODO comment
    referencing an umbrella tracking ticket (here: **MEH-336**).
 2. Open per-package follow-up tickets — auth/framework first
@@ -326,19 +333,21 @@ date (2026-04-26):
    CVE-2025-62727).
 3. Document the baseline counts in `docs/SECURITY.md §8c` so future
    sessions know which findings are pre-existing vs newly introduced.
-4. Flip `continue-on-error: false` only after MEH-336 closes.
+4. Flip `continue-on-error: false` only after the umbrella ticket closes
+   (MEH-336 closed 2026-05-01).
 
 **File:line of the canonical fix:**
-- `.github/workflows/dependency-audit.yml` — the warn-only gate +
+- `.github/workflows/dependency-audit.yml` — required gate +
   `permissions: contents: read` per job.
 - `.github/dependabot.yml` — weekly automated bump PRs.
-- `docs/SECURITY.md §8c` — baseline + sub-ticket index.
+- `docs/SECURITY.md §8c` — baseline + status + sub-ticket index.
 
 **Question to ask yourself:**
 Did my PR change `pyproject.toml`, `uv.lock`, `package.json`, or
 `package-lock.json`? If yes, did the dependency-audit workflow run, and
-did the count change vs the baseline? A *delta* is a real signal; the
-absolute number isn't.
+did it pass? With the gate now blocking, a single new high or critical
+CVE will fail the PR — bump the dep, or open a follow-up ticket and
+discuss the threshold before pushing through.
 
 **How to verify:**
 ```bash
@@ -348,9 +357,9 @@ cd backend && uv run --with pip-audit pip-audit
 cd frontend && npm audit --audit-level=high
 ```
 
-Compare against the baseline in `docs/SECURITY.md §8c`. Any new line in
-the output that wasn't in the baseline → file a sub-ticket against
-MEH-336 before merging.
+Both must exit 0. A new high/critical finding either gets fixed in the
+same PR (preferred) or a follow-up ticket is opened and the threshold
+discussed before merge.
 
 ---
 
@@ -379,7 +388,7 @@ Vars that are frequently missing and cause silent bugs:
 - [ ] TRAP 5 (tests): guard tests send schema-valid payloads
 - [ ] TRAP 6 (cascade): parent-row deletes clean up FKs
 - [ ] TRAP 7 (deploy): verified prod post-merge via cross-env probe
-- [ ] TRAP 8 (deps): if manifest changed, audit delta vs baseline checked; new findings filed under MEH-336
+- [ ] TRAP 8 (deps): if manifest changed, dependency-audit CI passed (gate is blocking; new high/critical CVEs require a fix in this PR or a follow-up ticket before merge)
 ```
 
 ---
