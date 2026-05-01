@@ -100,6 +100,15 @@ async def validate_password(
     """
     failures: list[PolicyFailure] = []
 
+    # MEH-395: normalize FIRST so every downstream check operates on the same
+    # value. Critical case: "          aa" (12 chars raw, 2 after strip) — pre-fix,
+    # the raw length passed the MIN_LENGTH floor and bcrypt stored the hash of "aa",
+    # creating a 2-char effective password. Strip before length-check closes that
+    # hash-storage bug. Strip also catches the deny-list padding bypass
+    # ("password    " → "password" → too_common) and keeps HIBP SHA-1 / bcrypt
+    # reuse-verify aligned with the value we'd actually store.
+    candidate = candidate.strip()
+
     if len(candidate) < MIN_LENGTH:
         failures.append("too_short")
 

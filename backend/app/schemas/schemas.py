@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
+from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 
 
@@ -11,10 +12,11 @@ from app.services.sanitization import sanitize_text
 class UserRegister(BaseModel):
     email: EmailStr
     name: str
-    # MEH-248 — backend password min_length matches the frontend `minLength={8}`
-    # on /register; without this the API accepted single-char passwords from
-    # any non-browser caller.
-    password: str = Field(min_length=8, max_length=200)
+    # MEH-306: PasswordField enforces the 12-char floor at the schema layer.
+    # Deny-list / HIBP / reuse run inside the register handler via
+    # app.services.password_policy.validate_password — Pydantic validators
+    # are sync and cannot await HIBP. Replaces MEH-248's 8-char floor.
+    password: PasswordField
     city: str | None = None
     phone: str | None = None
 
@@ -25,7 +27,15 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    new_password: str = Field(min_length=8)
+    # MEH-306: PasswordField — 12-char floor; full policy + reuse check run
+    # inside the reset_password handler.
+    new_password: PasswordField
+
+
+# MEH-306: live policy preview for /auth/check-password.
+# Stateless — no auth, no DB write, no current_hash (reuse check skipped).
+class CheckPasswordRequest(BaseModel):
+    candidate: PasswordField
 
 
 class ProducerRegister(BaseModel):

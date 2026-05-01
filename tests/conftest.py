@@ -58,6 +58,27 @@ def _reset_rate_limiter():
 
 
 @pytest.fixture(autouse=True)
+def _mock_hibp_clean(monkeypatch, request):
+    """MEH-306: stub HIBP to "no match" by default for tests that exercise
+    validate_password through the API surface (test_api.py + test_auth.py).
+
+    Skipped for tests/test_password_policy.py — that file unit-tests the
+    service directly and manages its own HIBP patching per test (some
+    intentionally exercise the real _check_hibp via httpx.AsyncClient
+    mocks). A blanket _check_hibp stub here would shadow those surgical
+    patches and break test_hibp_blocks_known_breach.
+    """
+    if request.node.fspath.basename == "test_password_policy.py":
+        yield
+        return
+    from unittest.mock import AsyncMock
+
+    from app.services import password_policy
+    monkeypatch.setattr(password_policy, "_check_hibp", AsyncMock(return_value=False))
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _clean_tables():
     """Truncate all tables between tests for isolation."""
     with engine.connect() as conn:
@@ -93,7 +114,11 @@ def make_user(
     email: str | None = None,
     name: str = "Test User",
     role: str = "consumer",
-    password: str = "Pass1234!",
+    # MEH-306: 12-char default so this string also flows through PasswordField
+    # cleanly when a test re-uses it as a JSON payload. make_user itself only
+    # hashes, so even short legacy passwords still work — but the schema-bound
+    # tests need this longer default by default.
+    password: str = "Zx7Yp9Mq2Lr4",
     is_blocked: bool = False,
     email_verified: bool = True,
 ) -> User:
@@ -170,20 +195,31 @@ def valid_review_payload() -> dict:
 
 
 def valid_user_register_payload() -> dict:
-    """Passes UserRegister: email, name, password (all required)."""
+    """Passes UserRegister: email, name, password (all required).
+
+    MEH-306: 12-char password to satisfy PasswordField. Same value as
+    test_password_policy.SAFE_PASSWORD — vetted not in deny_list_10k
+    and not in HIBP corpus at PR time.
+    """
     return {
         "email": "valid@example.com",
         "name": "משתמשת בדיקה",
-        "password": "Pass1234!",
+        "password": "Zx7Yp9Mq2Lr4",
     }
 
 
 def valid_producer_register_payload() -> dict:
-    """Passes ProducerRegister for a new (unauthenticated) registration."""
+    """Passes ProducerRegister for a new (unauthenticated) registration.
+
+    Producer.password is still a plain `str | None` field with the
+    pre-MEH-306 8-char floor (PasswordField swap-in tracked separately —
+    see PR description). The 12-char default is conservative against a
+    future tightening.
+    """
     return {
         "email": "producer@example.com",
         "name": "יצרנית בדיקה",
-        "password": "Pass1234!",
+        "password": "Zx7Yp9Mq2Lr4",
         "producer_name": "חוות הבדיקה",
         "category_ids": [],
         "primary_contact_method": "whatsapp",
