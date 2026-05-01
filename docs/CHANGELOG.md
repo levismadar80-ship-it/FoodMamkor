@@ -6,6 +6,10 @@
 
 - PR #435 — `dorny/paths-filter@v3` filter job added to `e2e.yml`; E2E skips unless `frontend/**`, `public/**`, `package.json`, or `package-lock.json` are touched. Docs-only PRs (HANDOFF, CHANGELOG, workflow YAML) no longer trigger the full Playwright suite.
 
+## 2026-05-01 — MEH-374: code-simplifier git fetch pre-step
+
+- `.claude/agents/code-simplifier.md`: add `git fetch origin staging --quiet 2>&1 || true` before `git diff staging...HEAD` so the agent always diffs against a fresh staging ref.
+
 ## 2026-05-01 — MEH-396: CI actions bump (Node 24 compatibility)
 
 19 changes across 5 workflow files — eliminates all Node 20 deprecation warnings.
