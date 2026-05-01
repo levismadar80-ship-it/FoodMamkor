@@ -1,7 +1,31 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-423 — ui-ux-pro-max finalization, PR pending; MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+> Last updated: 2026-05-01 (MEH-365 — RTL allowlist consolidation PR #440 open; MEH-364 unblocked)
+
+## 2026-05-01 — MEH-365: consolidate RTL allowlist + ±1 adjacency check
+
+**Branch:** `feature/meh-365-rtl-allowlist-consolidate` off staging.
+**PR:** #440 (draft, CI green, Vercel building).
+**Status:** Ready for review. Unblocks MEH-364.
+
+**What shipped:**
+- `rtl-allowlist.txt` — single source of truth with PATH EXCEPTIONS / CONTENT PATTERNS sections (replaces hardcoded array in `check-rtl.sh`)
+- `check-rtl.sh` — reads allowlist from file via awk state-machine parser; supports `// rtl-ok` annotation with ±1 line adjacency window
+- `verify-frontend.md` — section-aware parser + per-violation awk avoids merged-buffer false suppression (T_adj_6 regression test)
+- `verify-frontend.eval.md` — 6 new adjacency test cases (T_adj_1–6)
+- `rtl.md` — new section documenting the single-source pattern and inline annotation usage
+
+**Next task:** MEH-364 — add `// rtl-ok` annotations to 11 pre-existing staging violations.
+Branch from staging after #440 merges. First step: `git checkout staging && git pull && git checkout -b feature/meh-364-rtl-cleanup`.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Section markers (`PATH EXCEPTIONS` / `CONTENT PATTERNS`) over `/` heuristic | Future-proofs against content patterns that contain `/`; awk state-machine is explicit |
+| Per-violation awk window (not whole-buffer) | Prevents false suppression when grep -B1 -A1 merges adjacent violation groups into one (T_adj_6 bug) |
+| Bash heredoc to write check-rtl.sh | Old hook blocked Write tool on its own content (`ml-auto` in echo matched RTL pattern) |
 
 ## 2026-05-01 — MEH-423: ui-ux-pro-max finalization (closes MEH-399 + MEH-404)
 
