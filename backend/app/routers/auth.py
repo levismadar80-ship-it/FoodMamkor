@@ -234,7 +234,12 @@ def logout(request: Request, response: Response):
 
 
 @router.post("/register", response_model=Token)
-@limiter.limit("3/hour")  # SECURITY FIX #2: cap new signups per IP
+# SECURITY FIX #2: cap new signups per IP.
+# MEH-417: raised from 3/hour — accommodates shared-IP scenarios
+# (corporate NAT, CGNAT, CI runners) without meaningfully weakening
+# brute-force protection. Backend rate-limit complements frontend
+# PasswordPolicy which already enforces 12-char + HIBP (MEH-306).
+@limiter.limit("10/hour")
 async def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")

@@ -14,7 +14,7 @@
 
 ## [שבוע של 1 במאי 2026] — אבטחה, שדרוגים ומדיניות סיסמאות
 
-22 PRs הוזגגו לstaging השבוע — השבוע הכי עמוס מאז תחילת הפרויקט. מוקד: מדיניות סיסמאות מקצה לקצה, סיור ביקורת על שרשרת אספקת skills, observability מלא עם Sentry, ושדרוג Next.js 14 → 16.
+22 PRs מוזגו לstaging השבוע — השבוע הכי עמוס מאז תחילת הפרויקט. מוקד: מדיניות סיסמאות מקצה לקצה, סיור ביקורת על שרשרת אספקת skills, observability מלא עם Sentry, ושדרוג Next.js 14 → 16.
 
 ### ✨ נוסף
 - MEH-306: מדיניות סיסמאות מקצה לקצה — validators + HIBP + Alembic בbackend, PasswordInput UI + שגיאות בעברית + force-logout בfrontend (PRs #408, #410, #412)
@@ -43,6 +43,18 @@
 
 ---
 
+## 2026-05-01 — MEH-417 (cont.): /auth/register rate limit 3→10/hour
+
+Discovered during MEH-417 PR cycle 1 — staging Railway 3/hour limit was exhausted by recent CI activity (PR #410, #412 8 cycles, #418, #417). 10/hour is still tight enough to block brute-force signup while accommodating shared-IP traffic (corporate NAT, CGNAT, CI runners).
+
+Frontend PasswordPolicy (12-char + HIBP via MEH-306) provides the primary anti-abuse guard. Rate limit is defense-in-depth.
+
+Single-line change to `backend/app/routers/auth.py:237` (`/auth/register`, consumer signup). `/register/producer` (line 284) intentionally left at 3/hour — different threat model with heavier side effects (producer record + admin notification + WhatsApp). Reviewed in a separate follow-up if needed.
+
+`pytest tests/test_api.py + test_password_policy.py + test_auth.py` — 188 passed locally.
+
+Closes blocker for MEH-417 (mock removal). After merge, MEH-417 PR CI re-runs and exercises real `/auth/register` end-to-end.
+
 ## 2026-05-01 — MEH-418 + MEH-419: A11y sweep + /login copy cleanup
 
 - `/login`: replace specific char-count length-check copy ("סיסמא חייבת להכיל לפחות 8 תווים") with generic "הזיני סיסמה" — outdated post-MEH-306 (login validates the stored hash, no specific minimum).
@@ -59,6 +71,46 @@
 Skeptic audit during this PR also found 3 inline-error sites missing `role="alert"` that the original MEH-419 form-level grep had missed (`/login:139`, `/register:199`, `/register:225`); included via Option C scope expansion since the surrounding files were already being touched. The other 4 MEH-419 files re-audited — no additional inline expansions needed.
 
 Closes MEH-418, MEH-419.
+
+## 2026-05-01 — MEH-403: coreyhaines31/marketingskills audit + scope cleanup (4 deleted, 34 approved)
+
+**4 skills deleted** as out-of-scope for Mehamakor's B2C local-food
+marketplace: `aso-audit` (no native app), `churn-prevention` (no
+subscription), `revops` (no B2B sales pipeline), `sales-enablement`
+(no B2B sales team).
+
+**34 skills audited and approved** (review_needed → approved). 5 deep-read
+end-to-end (`product-marketing-context`, `cold-email`, `ad-creative`,
+`schema-markup`, `seo-audit`). 29 quick-scanned full-body for injection
+canaries — zero hits across all 34.
+
+**`product-marketing-context`** is the chain root for the other 33 — same
+architectural class as `teach-impeccable` (MEH-402). Writes
+`.agents/product-marketing-context.md` on user invocation; inert in
+Mehamakor today (not auto-loaded).
+
+**`ad-creative`** carries 2 architectural notes: (1) curl examples in
+`references/generative-tools.md` reference `$GEMINI_API_KEY` /
+`$ELEVENLABS_API_KEY` shell env vars (documentation only, not executed);
+(2) bash shell-out indirection (see below).
+
+**New architectural finding-class — bash shell-out from skills:** 7
+skills (`ad-creative`, `ai-seo`, `analytics-tracking`, `email-sequence`,
+`launch-strategy`, `paid-ads`, `referral-program`) instruct Claude to
+invoke `node tools/clis/<x>.js` and reference `../../tools/REGISTRY.md`.
+Mehamakor has no `tools/` directory, so all references are dead
+pointers today. Future risk: if any commit adds `tools/clis/`, these
+skills auto-suggest shell execution that bypasses MEH-397 hooks. This
+is the same trust-model class as MEH-406 (Python network bypass) but
+at the bash subprocess level. Tracked as separate ticket (user creates
+in Linear post-merge).
+
+**Counts after PR:** allowlist 75 → 71, lock 74 → 70, approved 36 → 70,
+review_needed 35 → 0, approved_local_unlocked 1 (ui-ux-pro-max,
+unchanged). **All sources now audited.** Only remaining cleanup:
+ui-ux-pro-max → approved (MEH-399, 30-day SLA).
+
+CI floor lowered 75 → 71 to match new allowlist size.
 
 ## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement
 
@@ -304,6 +356,16 @@ Adds `/ultrareview gate` section to `.claude/rules/workflow.md` after "PR approv
 ## 2026-04-28 — MEH-370: Next.js 14.2.35 → 16.2.4 upgrade
 
 Build green via C1 (async request API codemod, 5 sites) + C4 (next-pwa disable Option A). Sentry wrap preserved. C3 (ESLint flat config) and postcss vuln chain deferred to follow-up tickets. Vuln delta: 10 → 9 (next direct CVEs resolved; next-pwa transitive chain pending MEH-372). Commits: 63681aa (C1), ca01099 (C4).
+
+## 2026-05-01 — MEH-386: BOLA security fixes
+
+Two Broken Object Level Authorization vulnerabilities fixed.
+
+- **Finding 1 (MEDIUM)** — `GET /home-products/{id}` (`home_products.py:167`) returned hidden/deactivated listings to anonymous callers. Auto-hidden listings (3 negative ratings → `is_hidden=True`) and manually deactivated listings (`is_active=False`) were still fetchable by UUID even though the list endpoint filtered them. Fix: added `get_current_user_optional` dep; non-owner/non-admin callers now receive 404 for invisible listings.
+- **Finding 2 (MEDIUM)** — `POST /category-requests` (`category_requests.py:18`) accepted `producer_id` from the request body with no auth or ownership check. Any anonymous caller could submit category requests claiming to represent any producer UUID, polluting the admin queue with misleading attribution. Fix: added `get_current_user_optional`; authenticated callers use their own `user.producer_id` (JWT-bound), anonymous callers have `producer_id` stripped to `None`.
+- **5 regression tests** added in `TestBOLA` class (`tests/test_api.py`).
+
+Files changed: `backend/app/routers/home_products.py`, `backend/app/routers/category_requests.py`, `tests/test_api.py`.
 
 ## 2026-04-27 — MEH-382: Railway redeploy CI race-condition retry
 

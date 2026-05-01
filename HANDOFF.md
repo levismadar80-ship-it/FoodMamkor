@@ -23,6 +23,8 @@
 
 ---
 
+> Last updated: 2026-05-01 (MEH-386 BOLA audit + fixes in PR #422; MEH-403 — coreyhaines31/marketingskills audit, PR pending; MEH-418 + MEH-419 + MEH-420 + MEH-306 sub-A + sub-B merged)
+
 ## 2026-05-01 — MEH-418 + MEH-419: a11y sweep + /login copy cleanup
 
 Branch: `feature/meh-418-meh-419-a11y-copy-cleanup` off staging
@@ -56,6 +58,95 @@ Branch: `feature/meh-418-meh-419-a11y-copy-cleanup` off staging
 
 **MEH-417 still pending** — mock removal scheduled 2026-05-04 per the
 2-3-day stability buffer rule.
+
+## 2026-05-01 — MEH-403: coreyhaines31/marketingskills audit + scope cleanup
+
+**Branch:** `feature/meh-403-audit-coreyhaines-marketingskills` off staging.
+**Status:** PR pending. Last source audit — completes the MEH-397 review cycle.
+
+**Deleted (4, out-of-scope for B2C marketplace):** `aso-audit`,
+`churn-prevention`, `revops`, `sales-enablement`.
+
+**Approved (34, review_needed → approved):**
+ab-test-setup, ad-creative, ai-seo, analytics-tracking, cold-email,
+community-marketing, competitor-alternatives, competitor-profiling,
+content-strategy, copy-editing, copywriting, customer-research,
+directory-submissions, email-sequence, form-cro, free-tool-strategy,
+launch-strategy, lead-magnets, marketing-ideas, marketing-psychology,
+onboarding-cro, page-cro, paid-ads, paywall-upgrade-cro, popup-cro,
+pricing-strategy, product-marketing-context, programmatic-seo,
+referral-program, schema-markup, seo-audit, signup-flow-cro,
+site-architecture, social-content.
+
+**Author:** Corey Haines (named, public-figure marketer).
+`author_verified: false` per MEH-401/402 precedent (reputation ≠
+identity verification).
+
+**Audit pattern:**
+- 5 deep-read: product-marketing-context (meta-skill chain root),
+  cold-email (largest, 7 files), ad-creative (API-key + shell-out),
+  schema-markup (production output), seo-audit (longest, 497 lines).
+- 29 quick-scanned full-body for injection canaries — zero hits.
+- 0 scripts directories across all 34 skills (vs. skills-il which
+  had Python scripts).
+
+**Architectural patterns surfaced:**
+
+| Pattern | Skills affected | Status |
+|---|---|---|
+| Skill chain via product-marketing-context | 33 of 34 (all except product-marketing-context itself) | Audited the chain root; same class as MEH-402's frontend-design → teach-impeccable |
+| Persistent file write to project tree (`.agents/product-marketing-context.md`) | product-marketing-context | Inert in Mehamakor today; flagged for re-eval at future Claude Code updates |
+| **bash shell-out indirection (`node tools/clis/<x>.js`)** | 7 skills (see MEH-XXX list below) | Dead pointer today (no `tools/` dir); future risk if any commit adds `tools/clis/` |
+| API-key env var references in references/*.md | ad-creative (GEMINI_API_KEY, ELEVENLABS_API_KEY) | Documentation only, not auto-executed; user-managed credentials |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 4 deletions (B2B/native/subscription out of scope) | Mehamakor is B2C, web-only, free for users |
+| paywall-upgrade-cro KEPT (despite no paywall today) | Producer-side premium tier plausible future scope (priority listings, analytics dashboards) |
+| directory-submissions KEPT (despite Product-Hunt focus) | Methodology generic enough to apply to Israeli food directories (Time Out TLV, food blogs) |
+| `author_verified: false` on all 34 (matches MEH-401/402 precedent) | Reputation ≠ identity verification; Corey Haines GitHub identity not independently verified |
+| Standard note + tools/ note + 5 individual deep-read notes | Three-tier note pattern matches scan rigor |
+| **MEH-XXX (bash shell-out) split from MEH-406 (Python bypass)** | Different mechanism: bash subprocess vs Python `requests`/`urllib`. Both bypass MEH-397 hooks but require different mitigations |
+
+**Counts after PR:** allowlist 75 → 71, lock 74 → 70, approved 36 → 70,
+review_needed 35 → 0, approved_local_unlocked 1 (ui-ux-pro-max,
+unchanged). CI floor lowered 75 → 71.
+
+**Status of MEH-397 review cycle:** All 4 sources audited. Only
+ui-ux-pro-max remains transitional (`approved_local_unlocked`,
+30-day SLA tracked by MEH-399).
+
+### MEH-406 candidate list (Python network bypass — original)
+
+Python scripts in skill repos that import `requests`/`urllib`/`socket`
+at runtime, bypassing MEH-397 WebFetch hooks:
+
+```
+audit_a11y.py    (israeli-accessibility-compliance) — requests.get(url) + urllib.parse.urljoin
+check_shabbat.py (shabbat-aware-scheduler)          — requests.get("https://www.hebcal.com/...")
+```
+
+### MEH-XXX candidate list — bash shell-out from skills (NEW class, MEH-403)
+
+SKILL.md files that instruct Claude to invoke `node tools/clis/<x>.js`
+or reference `../../tools/REGISTRY.md` — bash subprocess indirection
+that bypasses MEH-397 hooks if `tools/` ever gets populated:
+
+```
+ad-creative          — node tools/clis/google-ads.js + ../../tools/REGISTRY.md (lines 333, 337, 346)
+ai-seo               — ../../tools/REGISTRY.md (line 414)
+analytics-tracking   — ../../tools/REGISTRY.md + ../../tools/integrations/ga4.md (lines 292, 296)
+email-sequence       — ../../tools/REGISTRY.md + ../../tools/integrations/customer-io.md (lines 290, 294)
+launch-strategy      — ../../tools/integrations/introw.md (line 96)
+paid-ads             — ../../tools/REGISTRY.md + ../../tools/integrations/google-ads.md (lines 298, 302)
+referral-program     — ../../tools/REGISTRY.md + ../../tools/integrations/rewardful.md (lines 238, 242)
+```
+
+**Mehamakor has no `tools/` directory** → all references are dead
+pointers today (file-not-found if invoked). User creates MEH-XXX in
+Linear post-merge.
 
 ## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement (the bug surfaced in MEH-402)
 
@@ -765,6 +856,27 @@ Fix: `.github/workflows/deploy.yml` — wrap both Redeploy steps in 5-attempt re
 **Files changed:** `.github/workflows/deploy.yml` only.
 **Independent of PR #400:** the two PRs do not block each other and can land in any order.
 **FINDER → ADVERSARY → REFEREE:** 10 findings, 10 disproved.
+
+## 2026-05-01 — MEH-386: BOLA audit (PR #422, merging)
+
+**Status:** Squash-merging to staging now.
+
+**Branch:** `fix/meh-386-bola-clean` (cherry-pick of fixes onto clean staging base)
+
+**What was done:** Full BOLA sweep of all 26 backend routers. 2 confirmed vulnerabilities found and fixed:
+
+1. `GET /home-products/{id}` (`home_products.py:167`) — hidden/deactivated listings were visible to anonymous callers by UUID. Fixed: `get_current_user_optional` + is_active/is_hidden gate.
+2. `POST /category-requests` (`category_requests.py:18`) — anonymous callers could spoof any `producer_id` in the request body. Fixed: body's `producer_id` ignored; JWT-bound value used for authenticated users, None for anonymous.
+
+5 regression tests in `TestBOLA` class (`tests/test_api.py:2174`).
+
+All other 24 routers confirmed clean — no additional BOLA surface found.
+
+**Decisions logged:**
+| Decision | Rationale | Date |
+|---|---|---|
+| `producer_id` stripped for anonymous category requests | Body value untrustworthy without auth; admin queue shows None as "unattributed" | May 2026 |
+| Owner+admin can still view hidden/deactivated home products | Owner needs to see why listing was hidden; admin needs to review | May 2026 |
 
 ## 2026-04-27 — MEH-379+380+381 bundle (PR #399, merged-pending-Smadar-verify)
 
