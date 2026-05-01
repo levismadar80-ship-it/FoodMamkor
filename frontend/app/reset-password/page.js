@@ -143,7 +143,7 @@ function ResetPasswordForm() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">
+            <div className="text-red-600 text-sm text-center" role="alert">
               <p>{error}</p>
               {error.includes("קישור") && (
                 <Link href="/forgot-password" className="text-primary hover:underline text-xs mt-1 block">
