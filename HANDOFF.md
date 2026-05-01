@@ -1,7 +1,32 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-336 — dependency-audit gate flipped to required, PR pending; MEH-374 ✅ merged; MEH-423 + MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+> Last updated: 2026-05-01 (MEH-365 ✅ shipped via PR #441 — adjacency only; MEH-364 unblocked; follow-up ticket pending for consolidation + buffer-bug fix)
+
+## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (shipped)
+
+**Branch:** `feature/meh-365-rtl-adjacency` off `origin/staging` → squash-merged to `staging` as `c0c0ddf`.
+**PR:** #441 (merged). PR #438 (mixed-scope) closed; PR #440 (parallel session, broader spec) closed as superseded.
+**Linear:** MEH-365 → Done.
+
+### Shipped (mechanism only)
+- `verify-frontend.md` step 3: awk-based ±1 line adjacency check for `rtl-ok` markers + `SCAN_DIR_MISSING` guard.
+- `check-rtl.sh` PreToolUse hook: defers to scan-time strict check when `rtl-ok` present in new content.
+- `verify-frontend.eval.md`: T5a/b/c/d/e + T6 cases.
+- 4 files changed (mechanism + CHANGELOG). `rtl-allowlist.txt` intentionally unchanged.
+
+### MEH-364 unblocked
+Source-side `// rtl-ok` markers for the 11 pre-existing staging violations are next, on a fresh `feature/meh-364-rtl-cleanup-fresh` branch off `c0c0ddf`. **Holding for explicit "go MEH-364" before starting.**
+
+### Follow-up ticket pending (consolidation + buffer-bug fix)
+PR #440's broader work is preserved at:
+- `/tmp/meh-365-consolidation-with-buffer-fix.patch` — full 735-line diff (11 files: rtl-allowlist.txt restructure with `# === PATH EXCEPTIONS` / `# === CONTENT PATTERNS` sections, check-rtl.sh state-machine parser, verify-frontend.md per-violation awk, rtl.md docs, plus CHANGELOG + SECURITY + DEPLOYMENT + dependency-audit.yml entries).
+- `/tmp/meh-365-buffer-bug-fix.awk` — standalone reference for the merged-buffer false-negative fix with T_adj_6 regression test rationale documented in-comment.
+
+The buffer-bug fix is a real bug class: `grep -B1 -A1` merges adjacent violation context windows into a single `--`-separated group, and a buffer-wide `rtl-ok` check would silently suppress unrelated violations. PR #441 does NOT include this fix; the per-violation per-file awk reads from disk and only inspects the same file's ±1 lines, which avoids the merged-buffer pitfall by design — but the underlying regression test is still valuable for the consolidation ticket.
+
+### Open cleanup
+- `feature/meh-365-rtl-allowlist-consolidate` remote branch still exists at `a79e33f` (PR #440's branch). Sandbox auth returned 403 on `git push origin --delete`; needs manual deletion via GitHub UI or local push from authenticated environment. Not a blocker.
 
 ## 2026-05-01 — MEH-336: dependency-audit gate flipped to required
 
