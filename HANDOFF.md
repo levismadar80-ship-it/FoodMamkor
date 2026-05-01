@@ -1,7 +1,51 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-364 ✅ + MEH-363 ✅ shipped. RTL count 11 → 0 on staging; agent-permissions-investigation report archived at `cd9fdf33`. MEH-426 follow-up tracked at `docs/archive/meh-365/`.)
+> Last updated: 2026-05-01 (MEH-407 Phase 2.1 in flight — main.py split open as draft PR awaiting Smadar's post-baseline pytest counts. MEH-364 ✅ + MEH-363 ✅ shipped earlier in the day.)
+
+## 2026-05-01 — MEH-407 Phase 2.1: main.py split (in flight, draft PR)
+
+**Branch:** `feature/meh-407-refactor-main-py` off `staging` (`7252cc6`).
+**PR:** open as **draft** — do NOT mark ready until Smadar pastes post-refactor pytest summary line and confirms `157 passed` parity with the pre-baseline.
+**Linear:** MEH-407 (Phase 2.1 of 3 — Phase 1 plan merged in PR #431).
+
+### New module layout
+After this PR, `backend/app/main.py` is a 12-line shell that wires four pieces:
+
+| File | Owns |
+|---|---|
+| `backend/app/main.py` | FastAPI ctor, `configure_logging()`, calls `install_middlewares(app)` + `register_routers(app)`. Nothing else. |
+| `backend/app/startup.py` | `lifespan`, `_run_db_init_sync` (MEH-352 `create_all` safety net + seed), `_init_db_background`, `_redacted_db_url`. Logger: `mehamakor.startup`. |
+| `backend/app/middleware.py` | `add_security_headers`, `record_request_metrics`, `install_middlewares(app)` factory. Order doc-commented. Logger: `mehamakor.middleware`. |
+| `backend/app/routers/system.py` | `/`, `/health` (now reads `request.app.state.db_init_status`), `/push-vapid-key`. |
+| `backend/app/routers/holiday_mode.py` | `/holiday-mode` with `@limiter.limit("60/minute")` byte-identical. `SessionLocal()` preserved verbatim with TODO pointing at the deferred follow-up ticket for `Depends(get_db)`. |
+| `backend/app/router_registry.py` | `register_routers(app)` — full 27-router include list (the 25 originals + new `system` + new `holiday_mode`). Inline `category_requests` import hoisted to module top. |
+
+### Where things moved (file:line, pre → post)
+- `main.py:24-36` (`_redacted_db_url`) → `startup.py:14`
+- `main.py:42-52` (`_run_db_init_sync`) → `startup.py:32`
+- `main.py:55-62` (`_init_db_background`) → `startup.py:45`
+- `main.py:65-94` (`lifespan`) → `startup.py:55-56` (decorator + def)
+- `main.py:114-123` (`add_security_headers`) → `middleware.py:19`
+- `main.py:131-142` (`record_request_metrics`) → `middleware.py:30`
+- `main.py:99-111` (limiter + middleware adds) → `middleware.py:43` (`install_middlewares`)
+- `main.py:145-173` (router includes) → `router_registry.py:34` (`register_routers`)
+- `main.py:176-180` (`/push-vapid-key`) → `routers/system.py:19-20`
+- `main.py:183-209` (`/holiday-mode`) → `routers/holiday_mode.py:10-12`
+- `main.py:212-214` (`/`) → `routers/system.py:8-9`
+- `main.py:217-220` (`/health`) → `routers/system.py:13-14`
+
+### Verification done in CC sandbox
+- Route parity (in-process): 164 routes; all four ex-inline endpoints (`/`, `/health`, `/holiday-mode`, `/push-vapid-key`) present.
+- Middleware count + order: 5 middlewares, outermost → innermost: `record_request_metrics` (BaseHTTPMiddleware) → `add_security_headers` (BaseHTTPMiddleware) → `CORSMiddleware` → `CorrelationIdMiddleware` → `SlowAPIMiddleware`. Matches pre-refactor.
+- FastAPI ctor: byte-identical (UTF-8 hex `327 236 327 224 327 236 327 247 327 225 327 250` for "מהמקור" preserved).
+
+### Verification deferred to Smadar (CC sandbox limitation)
+- `pytest tests/test_api.py --tb=no -q | tail -1` (CC has no Postgres). Pre-baseline: 157 passed, 527 warnings in 83.25s.
+- Curl smoke against `staging.mehamakor.online` post-merge for `/`, `/health`, `/push-vapid-key`, `/holiday-mode` (CC blocked by envoy proxy, MEH-360).
+
+### Open follow-ups (this PR's appendix-#5 smell, NOT fixed here)
+- `holiday_mode.py` — switch `SessionLocal()` to `Depends(get_db)` (connection-lifecycle change → behavior change → separate Linear ticket).
 
 ## 2026-05-01 — MEH-364: 11 pre-existing RTL violations annotated (shipped)
 

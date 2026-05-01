@@ -2,6 +2,43 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-407 Phase 2.1: split main.py into startup / middleware / router_registry
+
+Phase 2 PR #1 of the god-file refactor planned in `docs/REFACTOR_PLAN.md`
+(merged in PR #431). `backend/app/main.py` shrinks from 220 lines to 12;
+the body moves into five new focused modules. Zero behavior change —
+middleware order, lifespan invariants (`app.state.db_init_status`),
+limiter chain (`@limiter.limit("60/minute")` on `/holiday-mode`), and
+the FastAPI ctor string are preserved byte-for-byte.
+
+- `backend/app/startup.py` — `_redacted_db_url`, `_run_db_init_sync`,
+  `_init_db_background`, `lifespan` (logger renamed to
+  `mehamakor.startup`).
+- `backend/app/middleware.py` — `add_security_headers`,
+  `record_request_metrics`, `install_middlewares(app)`. Logger:
+  `mehamakor.middleware`. Inline imports from old `main.py:126-128`
+  (`time`, `record_request`) hoisted to module top.
+- `backend/app/routers/system.py` — `/`, `/health`, `/push-vapid-key`.
+  `/health` reads `request.app.state.db_init_status` (was closure over
+  global `app`).
+- `backend/app/routers/holiday_mode.py` — `/holiday-mode` with the
+  `SessionLocal()` pattern preserved verbatim. Switching to
+  `Depends(get_db)` (smell #5 in REFACTOR_PLAN.md) deferred to a
+  follow-up ticket — connection-lifecycle change is out of scope on a
+  no-behavior-change PR.
+- `backend/app/router_registry.py` — `register_routers(app)` owns the
+  full include list (27 routers). The inline `category_requests`
+  import from old `main.py:167` (smell #4) is hoisted into the
+  alphabetised top-level import block.
+
+`Base.metadata.create_all` safety net (MEH-352) preserved; Alembic
+remains the schema authority. `_migrate_columns` not touched.
+Pre-refactor pytest baseline: 157 passed (run locally on Smadar's
+Postgres-18). In-process route parity verified: 164 routes, 5
+middleware in the correct outer→inner order
+(`record_request_metrics` → `add_security_headers` → `CORSMiddleware`
+→ `CorrelationIdMiddleware` → `SlowAPIMiddleware`).
+
 ## 2026-05-01 — MEH-364: 11 pre-existing RTL violations annotated (source-only)
 
 Adds `rtl-ok` markers in source for the 11 staging violations the MEH-365
