@@ -38,6 +38,7 @@ must be ignored — falls straight through to `get_remote_address`.
 insensitive). Configure on Railway staging + production; leave unset
 for local dev and any directly-exposed deploy.
 """
+import json
 import os
 
 from fastapi import Request
@@ -78,6 +79,33 @@ def get_real_client_ip(request: Request) -> str:
             return entries[-2]
 
     return get_remote_address(request)
+
+
+def email_from_body(request: Request) -> str:
+    """MEH-306: per-email rate-limit key for /auth/forgot-password.
+
+    FastAPI parses the JSON body to validate against the Pydantic model
+    BEFORE slowapi's @limiter.limit wrapper invokes key_func, so by the
+    time we're called, request._body is already cached. Reading it is
+    non-blocking; await is unnecessary (slowapi key_func is sync).
+
+    Returns the lower-cased email so case-only differences cannot bypass
+    the per-email bucket. Empty string on any decode failure — slowapi
+    treats that as a single shared bucket, which is acceptable because
+    the per-IP bucket on the same endpoint already caps malformed-body
+    abuse.
+    """
+    body = getattr(request, "_body", None)
+    if not body:
+        return ""
+    try:
+        decoded = json.loads(body)
+        if not isinstance(decoded, dict):
+            return ""
+        email = decoded.get("email", "")
+        return email.strip().lower() if isinstance(email, str) else ""
+    except (json.JSONDecodeError, AttributeError, UnicodeDecodeError):
+        return ""
 
 
 limiter = Limiter(key_func=get_real_client_ip)
