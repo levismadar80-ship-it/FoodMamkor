@@ -1,7 +1,22 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-423 — ui-ux-pro-max finalization, PR pending; MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+> Last updated: 2026-05-01 (MEH-374 ✅ merged; MEH-423 — ui-ux-pro-max finalization, PR pending; MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+
+## 2026-05-01 — MEH-374: code-simplifier git fetch pre-step
+
+**Branch:** `claude/code-simplifier-pre-step-HLrAQ`
+**Status:** ✅ Merged — PR #434, SHA `bf192f4`.
+
+MEH-374 ✅ merged bf192f4. `.claude/agents/code-simplifier.md` now does
+`git fetch origin staging --quiet 2>&1 || true` before diff.
+Phase A parity test: empty diff confirmed. Phase B network block test:
+`|| true` confirmed swallows non-zero exit (fetch exit 128 → 0).
+
+**Staging cleanup:** local `staging` was 62 commits ahead of `origin/staging`
+(pre-squash originals from MEH-82 through MEH-300, all confirmed shipped via
+earlier release batches). Preserved at `refs/heads/staging-old` → `89cad07`
+before resetting local `staging` to `origin/staging` tip (`bf192f4`).
 
 ## 2026-05-01 — MEH-423: ui-ux-pro-max finalization (closes MEH-399 + MEH-404)
 
