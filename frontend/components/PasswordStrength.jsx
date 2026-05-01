@@ -40,10 +40,22 @@ export default function PasswordStrength({ password }) {
   // Tier label + colors. Using inline hex for the amber tier (no token
   // for it in the brand palette, and the primary/red tokens cover the
   // other two). `#2e6853` is the project primary per CLAUDE.md.
+  //
+  // MEH-306: check `passed === total` FIRST so the all-rules-pass path
+  // wins even when there's only one rule. Pre-MEH-306, `passwordRules`
+  // had 4 entries and the `passed === 1` arm was unambiguously "weak";
+  // post-MEH-306 the rules collapse to 1 (length only), and a single
+  // passing rule means the floor is met → "חזקה". Without this reorder
+  // a valid 12-char password would render as "חלשה" on /register/producer
+  // (the only remaining consumer of this component after sub-B).
   let tierLabel = "";
   let tierTextClass = "";
   let tierBarColor = "";
-  if (passed === 1) {
+  if (passed >= total) {
+    tierLabel = "חזקה";
+    tierTextClass = "text-primary";
+    tierBarColor = "#2e6853";
+  } else if (passed === 1) {
     tierLabel = "חלשה";
     tierTextClass = "text-red-500";
     tierBarColor = "#ef4444"; // tailwind red-500
@@ -51,10 +63,6 @@ export default function PasswordStrength({ password }) {
     tierLabel = "בינונית";
     tierTextClass = "text-amber-500";
     tierBarColor = "#f59e0b"; // tailwind amber-500
-  } else if (passed >= total) {
-    tierLabel = "חזקה";
-    tierTextClass = "text-primary";
-    tierBarColor = "#2e6853";
   }
 
   return (

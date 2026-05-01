@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import PasswordInput from "@/components/PasswordInput";
+import { firstFailureMessage } from "@/lib/passwordMessages";
+import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 
 export default function ResetPasswordPage() {
   return (
@@ -21,7 +24,8 @@ function ResetPasswordForm() {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  // showConfirm only — the new-password's eye toggle now lives inside
+  // <PasswordInput> (MEH-306 sub-B).
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,8 +47,8 @@ function ResetPasswordForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (password.length < 8) {
-      setError("הסיסמה חייבת להכיל לפחות 8 תווים");
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(`הסיסמה חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`);
       return;
     }
     if (password !== confirm) {
@@ -58,10 +62,21 @@ function ResetPasswordForm() {
       setTimeout(() => router.push("/login?reset=1"), 2000);
     } catch (err) {
       const status = err.response?.status;
+      const detail = err.response?.data?.detail;
       if (status === 404) {
         setError("קישור האיפוס לא תקין. בקשי קישור חדש.");
       } else if (status === 410) {
         setError("קישור האיפוס פג תוקף. בקשי קישור חדש.");
+      } else if (
+        status === 422 &&
+        detail &&
+        typeof detail === "object" &&
+        Array.isArray(detail.failures)
+      ) {
+        // MEH-306: backend ships {failures: ["too_short"|"too_common"|"same_as_current"]}.
+        // same_as_current can only fire here (server-only check via current_hash) —
+        // PasswordInput's checklist shows a "נבדק בשרת" pending tile pre-submit.
+        setError(firstFailureMessage(detail.failures));
       } else {
         setError("שגיאה בעדכון הסיסמה, נסי שוב");
       }
@@ -91,28 +106,21 @@ function ResetPasswordForm() {
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
         <h1 className="font-headline text-2xl font-bold text-site-text mb-1">סיסמה חדשה</h1>
-        <p className="text-site-muted text-sm mb-6">הזיני סיסמה חדשה (לפחות 8 תווים)</p>
+        <p className="text-site-muted text-sm mb-6">הזיני סיסמה חדשה (לפחות {PASSWORD_MIN_LENGTH} תווים)</p>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-right">
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="סיסמה חדשה"
-              required
-              dir="ltr"
-              className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text" // rtl-ok: eye toggle inside dir="ltr" input
-              aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
-            >
-              {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+          {/* MEH-306: PasswordInput owns the new-password input + eye toggle
+              + live policy preview (length, breach). showCurrentPasswordReuse
+              renders a "נבדק בשרת" pending tile because the server is the
+              only authority on reuse (current_hash isn't exposed here). */}
+          <PasswordInput
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="סיסמה חדשה"
+            ariaLabel="סיסמה חדשה"
+            showCurrentPasswordReuse={true}
+          />
 
           <div className="relative">
             <input
@@ -135,7 +143,7 @@ function ResetPasswordForm() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">
+            <div className="text-red-600 text-sm text-center" role="alert">
               <p>{error}</p>
               {error.includes("קישור") && (
                 <Link href="/forgot-password" className="text-primary hover:underline text-xs mt-1 block">

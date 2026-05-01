@@ -28,15 +28,33 @@ export function normalizeIsraeliPhone(phone) {
 }
 
 /**
- * Password strength rules. Each rule is { id, label, check }.
- * Use from a form to render a live checklist: every rule's `check(pw)`
- * returns a boolean that flips as the user types.
+ * Password policy floor (MEH-306).
+ *
+ * Single source of truth for the minimum length. Imported by
+ * PasswordInput, passwordMessages, and any submit guard so that future
+ * bumps stay in lockstep across UI copy + validation.
+ */
+export const PASSWORD_MIN_LENGTH = 12;
+
+/**
+ * Password strength rules. MEH-306 (NIST SP 800-63B Rev 4) collapsed
+ * the previous 4 composition rules (length / upper / digit / special)
+ * into a single length floor. Composition rules are explicitly
+ * forbidden by the spec; deny-list + HIBP enforcement runs server-side
+ * via /auth/check-password and the register/reset/change handlers.
+ *
+ * Kept as an array (rather than a single boolean) so PasswordStrength
+ * — which renders this as a checklist — keeps a stable shape across
+ * the migration. /register/producer (out of scope for the MEH-306
+ * sub-B PR) consumes this same array; the wholesale update tightens
+ * its frontend floor 8 → 12 chars.
  */
 export const passwordRules = [
-  { id: "len", label: "לפחות 8 תווים", check: (p) => (p || "").length >= 8 },
-  { id: "upper", label: "אות גדולה אחת (A-Z)", check: (p) => /[A-Z]/.test(p || "") },
-  { id: "digit", label: "ספרה אחת (0-9)", check: (p) => /\d/.test(p || "") },
-  { id: "special", label: "תו מיוחד (!@#$…)", check: (p) => /[^A-Za-z0-9]/.test(p || "") },
+  {
+    id: "len",
+    label: `לפחות ${PASSWORD_MIN_LENGTH} תווים`,
+    check: (p) => (p || "").length >= PASSWORD_MIN_LENGTH,
+  },
 ];
 
 export function passwordValid(password) {
