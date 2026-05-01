@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user, require_verified_email
+from app.auth import get_current_user, get_current_user_optional, require_verified_email
 from app.database import get_db
 from app.models import HomeProduct, HomeProductRating, HomeProductWhatsAppClick, User
 from app.rate_limit import limiter
@@ -165,9 +165,19 @@ def list_home_products(
 
 
 @router.get("/{product_id}", response_model=HomeProductOut)
-def get_home_product(product_id: UUID, db: Session = Depends(get_db)):
+def get_home_product(
+    product_id: UUID,
+    db: Session = Depends(get_db),
+    viewer: User | None = Depends(get_current_user_optional),
+):
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
+        raise HTTPException(status_code=404, detail="Home product not found")
+    # MEH-386 (BOLA): hidden/deactivated listings must not be visible to public.
+    # Owner and admin may still view them (e.g. owner sees why their listing was hidden).
+    is_owner = viewer is not None and viewer.id == hp.user_id
+    is_admin = viewer is not None and getattr(viewer, "role", None) == "admin"
+    if (not hp.is_active or hp.is_hidden) and not (is_owner or is_admin):
         raise HTTPException(status_code=404, detail="Home product not found")
     return _enrich_home_product(hp, db)
 
