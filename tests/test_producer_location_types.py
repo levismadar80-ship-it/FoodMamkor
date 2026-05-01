@@ -168,8 +168,8 @@ class TestGeoSearchExcludesDeliveryOnly:
         )
         assert resp.status_code == 200
         ids = [p["id"] for p in resp.json()]
-        assert physical.id in ids, "Physical producer should appear in geo results"
-        assert delivery.id not in ids, "Delivery-only producer must be excluded from geo results"
+        assert str(physical.id) in ids, "Physical producer should appear in geo results"
+        assert str(delivery.id) not in ids, "Delivery-only producer must be excluded from geo results"
 
     def test_delivery_only_appears_in_non_geo_list(self, client, db):
         self._make_delivery_only(db)

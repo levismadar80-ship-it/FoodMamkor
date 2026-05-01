@@ -56,14 +56,24 @@ def test_whatsapp_sent_true_when_twilio_env_present(client, monkeypatch):
 
 
 def test_whatsapp_sent_false_when_phone_missing(client, monkeypatch):
-    """Phone omitted → whatsapp_sent=False even when Twilio is configured."""
+    """Phone omitted → whatsapp_sent=False even when Twilio is configured.
+
+    Registration with primary_contact_method='whatsapp' now requires phone
+    (auth.py:326-330), so we switch the contact method to 'email' to reach
+    the whatsapp_sent=False branch with phone genuinely absent.
+    """
     from app.routers import auth as auth_module
     monkeypatch.setattr(auth_module.settings, "twilio_account_sid", "AC_fake")
     monkeypatch.setattr(auth_module.settings, "twilio_auth_token", "token_fake")
     monkeypatch.setattr(
         auth_module.settings, "twilio_whatsapp_from", "whatsapp:+14155238886"
     )
-    payload = {**VALID_PRODUCER_REG, "email": "nophone@test.com"}
+    payload = {
+        **VALID_PRODUCER_REG,
+        "email": "nophone@test.com",
+        "primary_contact_method": "email",
+        "contact_email": "nophone-contact@test.com",
+    }
     payload.pop("phone", None)
     resp = client.post("/auth/register/producer", json=payload)
     assert resp.status_code == 200

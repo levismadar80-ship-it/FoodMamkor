@@ -104,7 +104,7 @@ class TestResetPassword:
         token = self._plant_token(db, user)
         client.post("/auth/reset-password", json={"token": token, "new_password": "SecurePass123!"})
         resp2 = client.post("/auth/reset-password", json={"token": token, "new_password": "AnotherPass1!"})
-        assert resp2.status_code == 400
+        assert resp2.status_code == 404
 
     def test_expired_token_rejected(self, client, db):
         user = make_user(db, email="iris@test.com")
@@ -113,14 +113,14 @@ class TestResetPassword:
             "/auth/reset-password",
             json={"token": token, "new_password": "SecurePass123!"},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 410
 
     def test_invalid_token_rejected(self, client):
         resp = client.post(
             "/auth/reset-password",
             json={"token": "totally-invalid-token", "new_password": "SecurePass123!"},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 404
 
     def test_short_password_rejected(self, client, db):
         user = make_user(db, email="jane@test.com")
