@@ -1,6 +1,19 @@
 # מהמקור — CHANGELOG
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
+
+## 2026-05-01 — MEH-396: CI actions bump (Node 24 compatibility)
+
+19 changes across 5 workflow files — eliminates all Node 20 deprecation warnings.
+
+- `actions/checkout@v4` → `@v6` (10 occurrences: skills-audit, dependency-audit, deploy, pr-checks, e2e)
+- `actions/setup-node@v4` → `@v5` (4 occurrences: dependency-audit, deploy, pr-checks, e2e)
+- `actions/cache@v4` → `@v5` (1 occurrence: e2e)
+- `astral-sh/setup-uv@v3` → `@v6` (2 occurrences: dependency-audit, pr-checks)
+- `python-version: "3.11"` → `version: "3.11"` under setup-uv blocks (2 occurrences); `version: "latest"` (uv pin) removed — v6 manages uv version automatically.
+- `actions/setup-python@v5` — no change (already Node 24 compatible).
+
+MEH-378 closed as duplicate.
 > This is a historical record of *what was done and why*, in roughly the
 > order it happened. For the canonical "where the project stands today"
 > view, see [FEATURES.md](./FEATURES.md). For "what's coming", see
