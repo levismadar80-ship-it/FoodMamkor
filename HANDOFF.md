@@ -1,7 +1,94 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-374 ✅ merged; MEH-423 — ui-ux-pro-max finalization, PR pending; MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+> Last updated: 2026-05-01 (MEH-336 — dependency-audit gate flipped to required, PR pending; MEH-374 ✅ merged; MEH-423 + MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+
+## 2026-05-01 — MEH-336: dependency-audit gate flipped to required
+
+**Branch:** `feature/meh-336-flip-audit-gate` off `origin/staging`.
+**Status:** PR pending (draft). Closes the MEH-330 → MEH-336 audit-gate
+arc started 2026-04-26.
+
+### Phase A — fresh audit (this session, 2026-05-01)
+
+- **Backend** (`uv run --with pip-audit pip-audit --strict`): `No known
+  vulnerabilities found`. Down from MEH-330 baseline of 8 vulns across
+  `pip` / `pyjwt` / `python-multipart` (×2) / `requests` (×2) /
+  `starlette` (×2). MEH-337 (pyjwt 2.9.0 → 2.12.0) shipped earlier;
+  python-multipart / requests / starlette / pip cleared via subsequent
+  Dependabot bumps + transitive resolution.
+- **Frontend** (`npm audit --audit-level=high`): 0 high / 0 critical.
+  Down from MEH-330 baseline of 13 high / 6 moderate. 4 moderate
+  findings remain — all transitive `postcss < 8.5.10`
+  (GHSA-qx2v-qp2m-jg93, CVSS 6.1) pulled in by `next`, with effects on
+  `@sentry/nextjs` and `@vercel/speed-insights`. Below the gate
+  threshold; resolution requires a `next` minor/major bump and is out
+  of scope here.
+
+### Phase B — gate flip (this PR)
+
+- `.github/workflows/dependency-audit.yml` —
+  `continue-on-error: true → false` on both `pip-audit` (line 65) and
+  `npm-audit` (line 110). `TODO(MEH-336)` markers removed. Header
+  comment rewritten from "warn-only baseline" to "REQUIRED, blocking"
+  with the cleared-baseline note. Stale "(it will, while baseline
+  holds)" inline comments updated to reflect the blocking semantics.
+- `docs/SECURITY.md §8c` — title now `MEH-330 → MEH-336`. Baseline
+  block updated with cleared status (backend 0 vulns; frontend 0 high
+  / 0 critical with 4 moderate postcss-via-next below the gate).
+  Sub-ticket index trimmed to MEH-337 (closed); MEH-338 status
+  reflected as cleared (starlette no longer in pip-audit output).
+- `docs/SECURITY-CHECKLIST.md` TRAP 8 — title updated to
+  `MEH-330 baseline → MEH-336 gate`. Status block added showing
+  cleared baseline + blocking gate. Fix-pattern step 4 reworded to
+  "after umbrella ticket closes (MEH-336 closed 2026-05-01)". PR
+  checklist row at line 391 reworded from "filed under MEH-336" to
+  "dependency-audit CI passed (gate is blocking; new high/critical
+  CVEs require a fix in this PR or a follow-up ticket before merge)".
+- `docs/DEPLOYMENT.md` — branch-protection tables for `main` (Rule 1)
+  and `staging` (Rule 2) extended with two new required checks:
+  `Backend dependency audit (pip-audit)` and `Frontend dependency
+  audit (npm audit)`. Callout below the tables flipped from
+  "intentionally NOT required" to "are required (MEH-336)" with the
+  manual GitHub-UI step explained: GitHub only auto-suggests a check
+  after it has run once on the protected branch, so on first merge of
+  this PR, push → CI completes → then add the two checks to the
+  branch-protection rule.
+- `docs/CHANGELOG.md` — one-line MEH-336 entry at top.
+
+### Out of scope (deliberate)
+
+- No dep bumps. No `npm audit fix --force`.
+- Threshold stays at `--audit-level=high`. Tightening to moderate
+  would surface the postcss/next chain — separate ticket if desired.
+- No "Accepted CVEs" row added for the postcss chain — those findings
+  are below the gate threshold; per Smadar's call, no acceptance
+  documentation is needed.
+- Linear ops (move MEH-336 to Done, close MEH-338) — manual follow-up;
+  no Linear MCP available this session.
+
+### Manual follow-up (Smadar)
+
+1. Wait for this PR's CI to go green — both new required jobs must
+   pass with `continue-on-error: false`.
+2. Approve + merge to `staging`.
+3. After merge, GitHub will surface the two job names in the
+   "Required status checks" autocomplete on
+   `https://github.com/levismadar80-ship-it/FoodMamkor/settings/branches`.
+   Add to both Rule 1 (`main`) and Rule 2 (`staging`):
+   - `Backend dependency audit (pip-audit)`
+   - `Frontend dependency audit (npm audit)`
+4. Linear: move MEH-336 → Done; close MEH-338 (starlette cleared).
+
+### Risk note
+
+Backend audit is clean today — zero risk of false-positive failure on
+first blocking run. Frontend audit passes at `--audit-level=high` with
+no high or critical findings; risk is that a future CVE upgrade flips
+the gate red without warning, which is the intended behavior of the
+gate.
+
+---
 
 ## 2026-05-01 — MEH-374: code-simplifier git fetch pre-step
 
@@ -17,6 +104,8 @@ Phase A parity test: empty diff confirmed. Phase B network block test:
 (pre-squash originals from MEH-82 through MEH-300, all confirmed shipped via
 earlier release batches). Preserved at `refs/heads/staging-old` → `89cad07`
 before resetting local `staging` to `origin/staging` tip (`bf192f4`).
+
+---
 
 ## 2026-05-01 — MEH-423: ui-ux-pro-max finalization (closes MEH-399 + MEH-404)
 
