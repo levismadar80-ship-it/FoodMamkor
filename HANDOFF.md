@@ -1,7 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-420 — skills-lock hash enforcement, PR pending; MEH-306 sub-A + sub-B merged)
+> Last updated: 2026-05-01 (MEH-418 + MEH-419 — a11y sweep + /login copy cleanup, PR pending; MEH-306 sub-A + sub-B merged; MEH-420 in flight)
+
+## 2026-05-01 — MEH-418 + MEH-419: a11y sweep + /login copy cleanup
+
+Branch: `feature/meh-418-meh-419-a11y-copy-cleanup` off staging
+`5f1cefb`. Status: draft PR pending.
+
+**MEH-306 follow-ups landing in this PR:**
+- MEH-418 — `/login` copy cleanup (drop "8 תווים" since login has no
+  minimum since legacy accounts may have any length).
+- MEH-419 — `role="alert"` a11y sweep across 5 form-level error sites
+  + 3 newly-discovered inline-error sites (Option C scope expansion
+  per audit-then-fix during this PR).
+
+**Sites fixed (9 attribute additions across 6 files):**
+- `frontend/app/login/page.js:139` (inline email-invalid) + `:188`
+  (inline password length-check + copy update from MEH-418)
+- `frontend/app/register/page.js:199` (inline name-required), `:225`
+  (inline email-invalid), `:274` (form-level)
+- `frontend/app/forgot-password/page.js:60` (form-level)
+- `frontend/app/rate/[token]/page.js:98` (form-level)
+- `frontend/app/group-buys/[id]/GroupBuyDetailClient.jsx:302` (form-level)
+- `frontend/app/admin/outreach/page.jsx:445` (form-level)
+
+**Verification (local):**
+- `npm run build` — green; all routes compile.
+- `npm run lint` — 0 errors (137 baseline warnings, zero new).
+- `npx vitest run` — 25 failed | 328 passed; verified identical
+  baseline on staging before my changes (jsdom pre-existing failures,
+  net-zero impact).
+- E2E grep — zero hardcoded "8 תווים" or stale assertions in any
+  Playwright spec; CI will validate.
+
+**MEH-417 still pending** — mock removal scheduled 2026-05-04 per the
+2-3-day stability buffer rule.
 
 ## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement (the bug surfaced in MEH-402)
 
