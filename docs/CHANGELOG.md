@@ -326,6 +326,16 @@ Adds `/ultrareview gate` section to `.claude/rules/workflow.md` after "PR approv
 
 Build green via C1 (async request API codemod, 5 sites) + C4 (next-pwa disable Option A). Sentry wrap preserved. C3 (ESLint flat config) and postcss vuln chain deferred to follow-up tickets. Vuln delta: 10 → 9 (next direct CVEs resolved; next-pwa transitive chain pending MEH-372). Commits: 63681aa (C1), ca01099 (C4).
 
+## 2026-05-01 — MEH-386: BOLA security fixes
+
+Two Broken Object Level Authorization vulnerabilities fixed.
+
+- **Finding 1 (MEDIUM)** — `GET /home-products/{id}` (`home_products.py:167`) returned hidden/deactivated listings to anonymous callers. Auto-hidden listings (3 negative ratings → `is_hidden=True`) and manually deactivated listings (`is_active=False`) were still fetchable by UUID even though the list endpoint filtered them. Fix: added `get_current_user_optional` dep; non-owner/non-admin callers now receive 404 for invisible listings.
+- **Finding 2 (MEDIUM)** — `POST /category-requests` (`category_requests.py:18`) accepted `producer_id` from the request body with no auth or ownership check. Any anonymous caller could submit category requests claiming to represent any producer UUID, polluting the admin queue with misleading attribution. Fix: added `get_current_user_optional`; authenticated callers use their own `user.producer_id` (JWT-bound), anonymous callers have `producer_id` stripped to `None`.
+- **5 regression tests** added in `TestBOLA` class (`tests/test_api.py`).
+
+Files changed: `backend/app/routers/home_products.py`, `backend/app/routers/category_requests.py`, `tests/test_api.py`.
+
 ## 2026-04-27 — MEH-382: Railway redeploy CI race-condition retry
 
 `.github/workflows/deploy.yml` — both `Redeploy *` steps wrapped in 5-attempt retry loop with 30s sleep between attempts (~2 min max wait). On Smadar's `131c92f` cache-bust push, the staging `Trigger Railway staging redeploy` job failed with `"The latest deployment for service FoodMamkor cannot be redeployed. This may be because it's currently building, deploying, or was removed."` — race between Railway's own watch trigger and the workflow's CLI redeploy. Retry catches the `currently building|deploying|was removed|cannot be redeployed` family of transient errors and re-attempts. Non-transient errors fail fast on first attempt. Regex tied to Railway CLI v4.42 wording (documented inline + upstream link). No code changes elsewhere.

@@ -6,9 +6,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.auth import require_admin
+from app.auth import get_current_user_optional, require_admin
 from app.database import get_db
-from app.models.models import CategoryRequest
+from app.models.models import CategoryRequest, User
 from app.rate_limit import limiter
 from app.schemas.schemas import CategoryRequestCreate, CategoryRequestOut, CategoryRequestUpdate
 
@@ -20,12 +20,23 @@ router = APIRouter(tags=["category-requests"])
 def submit_category_request(
     request: Request,
     body: CategoryRequestCreate,
+    user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
+    # MEH-386 (BOLA): producer_id from the body cannot be trusted when the
+    # caller is anonymous — anyone could claim to represent any producer.
+    # Use the caller's own producer_id from the JWT when authenticated;
+    # strip it entirely for anonymous submissions so the admin queue shows
+    # the true source.
+    if user is not None:
+        verified_producer_id = getattr(user, "producer_id", None)
+    else:
+        verified_producer_id = None
+
     row = CategoryRequest(
         requested_name=body.requested_name.strip(),
         examples=body.examples.strip() if body.examples else None,
-        producer_id=body.producer_id,
+        producer_id=verified_producer_id,
     )
     db.add(row)
     db.commit()
