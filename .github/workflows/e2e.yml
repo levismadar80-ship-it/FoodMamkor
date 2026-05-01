@@ -45,7 +45,7 @@ jobs:
     if: github.event.deployment_status.state == 'success'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # deployment.sha is the commit Vercel deployed. Fall back to
           # github.sha (same value for deployment_status events) in case
@@ -54,7 +54,7 @@ jobs:
           ref: ${{ github.event.deployment.sha || github.sha }}
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: "npm"
@@ -62,7 +62,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-chromium-${{ hashFiles('frontend/package-lock.json') }}
