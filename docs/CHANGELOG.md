@@ -2,6 +2,31 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (mechanism)
+
+verify-frontend agent (step 3) and `.claude/hooks/check-rtl.sh` now honor
+`rtl-ok` markers within ±1 line of a physical-class violation, mirroring
+`eslint-disable-next-line` / `biome-ignore` semantics. Mechanism only —
+no source-file edits in this PR. Source-side annotations that clear the
+11 pre-existing staging violations ship separately under MEH-364.
+
+- `verify-frontend.md` step 3 rewritten: awk-based ±1 adjacency check
+  reads each violation file once and inspects lines {N-1, N, N+1} for
+  the literal text `rtl-ok`. New `SCAN_DIR_MISSING` guard added
+  alongside existing `ALLOWLIST_MISSING` handling; `READY-FOR-PR`
+  verdict requires both.
+- `check-rtl.sh` PreToolUse hook: when `CONTENT` contains `rtl-ok`,
+  defer to scan-time strict check (write-time permissive on marker
+  presence; scan-time strict on placement). Error message updated to
+  point at the inline-marker workflow and `.claude/rules/rtl.md`.
+- `verify-frontend.eval.md`: T5a/b/c/d/e + T6 cases added covering all
+  ±1 window edges (line above / same line / line below / 2 lines above
+  out of window / no marker) and `SCAN_DIR_MISSING`.
+- `rtl-allowlist.txt`: unchanged. Flat-list path-allowlist format
+  preserved; consolidating its dual source of truth with
+  `check-rtl.sh`'s inline `ALLOWLIST=( ... )` array is tracked
+  separately and out of scope here.
+
 ## 2026-05-01 — MEH-336: dependency-audit gate flipped to required
 
 - `.github/workflows/dependency-audit.yml` — `continue-on-error: true → false` on both `pip-audit` and `npm-audit` jobs. Header rewritten to reflect blocking status. Baseline cleared (backend 0 vulns; frontend 0 high / 0 critical at the configured `--audit-level=high` threshold). 4 moderate findings (postcss `< 8.5.10` via `next`) remain below the gate. Docs synced (`SECURITY.md §8c`, `SECURITY-CHECKLIST.md` TRAP 8, `DEPLOYMENT.md` branch-protection tables). Manual follow-up: add both job names as required checks under `staging` + `main` branch protection.

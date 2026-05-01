@@ -53,3 +53,87 @@ expected_assertion: RTL section of the report reads exactly
   is reported). Verdict reads NEEDS-FIX. Output does NOT include
   "RTL violations outside allowlist: 0" or any READY-FOR-PR verdict.
   No files are modified by the agent.
+
+---
+
+## T5a — rtl-ok marker on line above violation → suppressed (MEH-365)
+
+prompt: Run the frontend verification suite on the current branch. The branch
+  contains `frontend/components/Foo.jsx` with a `<div className="left-1/2
+  -translate-x-1/2">` on line 10, and a `// rtl-ok: centering, not directional`
+  comment on line 9 (immediately above). Foo.jsx is NOT in the RTL allowlist.
+
+expected_assertion: Report section "RTL violations outside allowlist" shows
+  count = 0. The line 10 violation does NOT appear in the report. Verdict
+  reads READY-FOR-PR (assuming build and lint pass). No files are modified.
+
+---
+
+## T5b — violation with no rtl-ok marker → counted (MEH-365)
+
+prompt: Run the frontend verification suite on the current branch. The branch
+  contains `frontend/components/Foo.jsx` with a `<div className="left-1/2
+  -translate-x-1/2">` on line 10, and no `rtl-ok` text anywhere in the file.
+  Foo.jsx is NOT in the RTL allowlist.
+
+expected_assertion: Report section "RTL violations outside allowlist" shows
+  count ≥ 1. Output references frontend/components/Foo.jsx:10 with the matched
+  class left-1. Verdict reads NEEDS-FIX. No files are modified.
+
+---
+
+## T5c — rtl-ok marker 2 lines above violation → counted (out of ±1 window) (MEH-365)
+
+prompt: Run the frontend verification suite on the current branch. The branch
+  contains `frontend/components/Foo.jsx` with a `<div className="left-1/2
+  -translate-x-1/2">` on line 10, and a `// rtl-ok: centering` comment on
+  line 8 (two lines above). No `rtl-ok` text appears on lines 9, 10, or 11.
+  Foo.jsx is NOT in the RTL allowlist.
+
+expected_assertion: Report section "RTL violations outside allowlist" shows
+  count ≥ 1. The line 10 violation IS reported (marker is outside the ±1
+  adjacency window). Verdict reads NEEDS-FIX. No files are modified.
+
+---
+
+## T5d — rtl-ok marker on the violation line itself → suppressed (MEH-365)
+
+prompt: Run the frontend verification suite on the current branch. The branch
+  contains `frontend/components/Foo.jsx` with a single line:
+  `<div className="left-1/2 -translate-x-1/2"> {/* rtl-ok: centering */}` on
+  line 10. The marker and the violation are on the same physical line.
+  Foo.jsx is NOT in the RTL allowlist.
+
+expected_assertion: Report section "RTL violations outside allowlist" shows
+  count = 0. The line 10 violation does NOT appear in the report (±0 covered
+  by the same-line marker). Verdict reads READY-FOR-PR (assuming build and
+  lint pass). No files are modified.
+
+---
+
+## T5e — rtl-ok marker on line below violation → suppressed (MEH-365)
+
+prompt: Run the frontend verification suite on the current branch. The branch
+  contains `frontend/components/Foo.jsx` with a `<div className="left-1/2
+  -translate-x-1/2">` on line 10, and a `{/* rtl-ok: centering */}` JSX
+  comment on line 11 (immediately below). Foo.jsx is NOT in the RTL allowlist.
+
+expected_assertion: Report section "RTL violations outside allowlist" shows
+  count = 0. The line 10 violation does NOT appear in the report (±1 below
+  covered). Verdict reads READY-FOR-PR (assuming build and lint pass). No
+  files are modified.
+
+---
+
+## T6 — frontend scan dir missing → loud failure (MEH-365 SCAN_DIR_MISSING)
+
+prompt: Run the frontend verification suite on the current branch.
+  Pre-condition: `frontend/components` does not exist at the expected path
+  (e.g. mid-refactor or wrong working directory). `rtl-allowlist.txt` is
+  present.
+
+expected_assertion: RTL section of the report reads exactly
+  "❌ ERROR: frontend/components or frontend/app missing — RTL scan aborted"
+  (no violation count is reported). Verdict reads NEEDS-FIX. Output does NOT
+  include "RTL violations outside allowlist: 0" or any READY-FOR-PR verdict.
+  No files are modified by the agent.
