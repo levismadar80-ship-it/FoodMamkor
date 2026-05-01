@@ -1,7 +1,71 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-422 — skills bypass hardening, PR pending; MEH-386 BOLA audit + MEH-417 rate-limit + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+> Last updated: 2026-05-01 (MEH-423 — ui-ux-pro-max finalization, PR pending; MEH-422 + MEH-386 + MEH-417 + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+
+## 2026-05-01 — MEH-423: ui-ux-pro-max finalization (closes MEH-399 + MEH-404)
+
+**Branch:** `feature/meh-423-ui-ux-pro-max-finalization` off staging.
+**Status:** PR pending. **Final ticket** in the MEH-397 skills supply
+chain initiative.
+
+**Workstream A — MEH-399 (lock):**
+- Upstream provenance: `nextlevelbuilder/ui-ux-pro-max-skill` (MIT,
+  72.9k stars, latest release v2.5.0). Fingerprint match on
+  description ("67 styles, 96 palettes, 57 font pairings, 25 charts,
+  13 stacks").
+- Lock entry added: `source: "nextlevelbuilder/ui-ux-pro-max-skill"`,
+  `sourceType: "github"`, `computedHash:
+  e4276f017eadf46146f05e89e92a14af748346af91f73a5d50dfbaf8e873ff76`.
+- No upstream version pin (Option ii per Smadar) — hash is the
+  integrity anchor.
+- Layout-A migration: `git mv .claude/skills/ui-ux-pro-max →
+  .agents/skills/ui-ux-pro-max` + symlink back. Mode `120000` ✓.
+  All 71 skills now use the uniform two-path layout.
+- Allowlist verdict `approved_local_unlocked` → `approved`. `source`
+  field updated from `"local"` to `"nextlevelbuilder/..."` to mirror
+  the lock + match other entries.
+
+**Workstream B — MEH-404 (path-traversal cleanup):**
+- `_sanitize.py` extended with F-3 (collapse), F-7 (cap 64), F-4
+  (trim ends). Pipeline: `strip → collapse → cap → trim → fallback`.
+  Trim AFTER cap so a 64-char clip landing on a hyphen run doesn't
+  leave a trailing `-`. (My adversarial review during planning
+  caught this; Smadar approved the order swap from the spec's
+  `strip → collapse → trim → cap`.)
+- 6 new test cases (10 → 16 total): `foo--bar`, `-foo-`,
+  `'a' * 1000`, `--`, `'foo' * 100` boundary, plus an explicit
+  ordering probe. All 16 green.
+- F-13 + F-14 documented in `.claude/rules/skills.md` (new
+  "ui-ux-pro-max sanitize patterns" section) as inherited threat-model
+  items out of code-mitigation scope.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Lock Option 1 (upstream repo) | Provenance recoverable via web search; matches all other 70 lock entries' pattern; honest source attribution |
+| Layout-A (move + symlink) | Eliminates the "1 extra directory" exception in `.claude/skills/`; uniform layout across all 71 skills; Pass 4 of audit-skills.sh works without special-casing |
+| No upstream version pin | Lock-format simplicity; `computedHash` is the integrity anchor; upstream version tracking is a manual concern |
+| Cap-then-trim ordering | Avoids trailing-hyphen edge when 64-char cap lands mid-hyphen-run; surfaced during planning, not during implementation |
+| Allowlist `source` field updated to mirror lock | Consistency with other entries (e.g., coreyhaines skills mirror their lock source); auditor sees provenance at a glance |
+
+**Counts after PR:** allowlist 71 (unchanged), lock 70 → 71, approved
+70 → 71, approved_local_unlocked **1 → 0**, review_needed 0,
+blocked 0. **All 71 skills now have terminal verdicts.**
+
+**MEH-397 skills supply chain initiative — COMPLETE:**
+
+| Layer | Closed by |
+|---|---|
+| Layer 1 (hooks) | MEH-397 + MEH-422 |
+| Layer 2 (allowlist registry) | MEH-397 + audit cycle (MEH-400/401/402/403) |
+| Layer 3 (audit script) | MEH-397 + Pass 4 (MEH-420) + Pass 5 (MEH-422) |
+| Layer 4 (CI gate + hash enforcement) | MEH-397 + MEH-420 |
+| Layer 5 (lock + add-skill protocol) | MEH-397 + **MEH-423** (final) |
+
+**Closes:** MEH-399 (lock SLA) + MEH-404 (path-traversal cleanup) —
+both Backlog → Done via this PR.
 
 ## 2026-05-01 — MEH-422: skills bypass hardening (closes MEH-406 + MEH-421)
 
