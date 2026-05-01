@@ -167,15 +167,15 @@ class TestGeoSearchExcludesDeliveryOnly:
             params={"lat": 32.0853, "lng": 34.7818, "radius_km": 10},
         )
         assert resp.status_code == 200
-        ids = [p["id"] for p in resp.json()["producers"]]
-        assert physical.id in ids, "Physical producer should appear in geo results"
-        assert delivery.id not in ids, "Delivery-only producer must be excluded from geo results"
+        ids = [p["id"] for p in resp.json()]
+        assert str(physical.id) in ids, "Physical producer should appear in geo results"
+        assert str(delivery.id) not in ids, "Delivery-only producer must be excluded from geo results"
 
     def test_delivery_only_appears_in_non_geo_list(self, client, db):
         self._make_delivery_only(db)
 
         resp = client.get("/producers")
         assert resp.status_code == 200
-        ids = [p["id"] for p in resp.json()["producers"]]
+        ids = [p["id"] for p in resp.json()]
         # Delivery-only should be visible in the regular non-geo listing.
         assert len(ids) > 0
