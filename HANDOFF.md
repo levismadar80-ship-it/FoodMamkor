@@ -1,7 +1,100 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-386 BOLA audit + fixes in PR #422; MEH-403 — coreyhaines31/marketingskills audit, PR pending; MEH-418 + MEH-419 + MEH-420 + MEH-306 sub-A + sub-B merged)
+> Last updated: 2026-05-01 (MEH-422 — skills bypass hardening, PR pending; MEH-386 BOLA audit + MEH-417 rate-limit + MEH-403 + MEH-418 + MEH-419 + MEH-420 merged)
+
+## 2026-05-01 — MEH-422: skills bypass hardening (closes MEH-406 + MEH-421)
+
+**Branch:** `feature/meh-422-hooks-bypass-hardening` off staging.
+**Status:** PR pending. Closes both MEH-406 (Python network) and
+MEH-421 (bash shell-out) — same architectural class, combined per
+spec.
+
+**What changed:**
+- New: `.claude/hooks/check-skill-bypass.sh` — PreToolUse(Bash) hook.
+  Pattern-matches `tools/clis/`, `tools/integrations/`, `tools/REGISTRY`,
+  `(node|python|bash|sh) <path>tools/` invocations. Blocks direct
+  invocation of `audit_a11y.py` / `check_shabbat.py` if the skill's
+  `allowed_network_hosts` is `null`/`[]`. Fail-closed on jq missing,
+  malformed JSON, empty input (matches MEH-397 hook discipline).
+- Modified: `.claude/scripts/audit-skills.sh` — added Pass 5
+  (subprocess-bypass coverage). Inserted between Pass 2 and Pass 4.
+  Skipped under `--self-test`. Uses awk for fenced-code-block
+  state-machine: matches in code blocks are governed by allowlist;
+  matches in prose are documentation (informational only).
+- Modified: `.claude/skills-allowlist.json` — added two optional
+  fields per skill: `allowed_network_hosts` + `allowed_shell_invocations`.
+  Pre-populated 9 known cases (7 bash dead-pointers, 2 Python network,
+  1 documentation case for hebrew-nlp-toolkit).
+- Modified: `.claude/settings.json` — registered new hook as
+  PreToolUse(Bash).
+- Updated: `.claude/rules/skills.md` (new "Subprocess-bypass class"
+  section + allowlist schema documented), `docs/SECURITY.md`
+  (subprocess-bypass class subsection added under Skills Supply Chain).
+
+**Schema semantics (consistent for both fields):**
+
+| Value | Meaning | Pass 5 verdict on match |
+|---|---|---|
+| `null`/missing | unaudited | `[BYPASS-UNDECLARED]` / `[NETWORK-UNDECLARED]` critical |
+| `[]` (shell) | dead-pointer policy | `[BYPASS-DEAD-POINTER]` informational |
+| `[]` (network) | no-network policy | `[NETWORK-FORBIDDEN]` critical |
+| `["*"]` | wildcard / user-controlled | pass-through |
+| non-empty | specific patterns/hosts | pass-through (audit-time + hook layered) |
+
+**Tamper tests passing (the whole point):**
+
+| Test | Result |
+|---|---|
+| `node tools/clis/google-ads.js` | blocked (exit 2) |
+| `python tools/exfil.py` | blocked (exit 2) |
+| `bash tools/run.sh` | blocked (exit 2) |
+| `./tools/clis/foo` | blocked (exit 2) |
+| `node ../../tools/clis/x.js` | blocked (exit 2) |
+| `cat tools/REGISTRY.md` | blocked (exit 2) |
+| `python check_shabbat.py` (allowlisted) | allowed (exit 0) |
+| `python audit_a11y.py http://target` (wildcard) | allowed (exit 0) |
+| `node --version`, `npm test`, `git commit`, `python backend/manage.py runserver` | allowed (exit 0) |
+| Empty input / malformed JSON | fail-closed (exit 2) |
+
+**Pass 5 negative tests:**
+- Strip `allowed_network_hosts` from israeli-accessibility-compliance
+  → `[NETWORK-UNDECLARED]` critical, audit exit 1 ✓
+- Strip `allowed_shell_invocations` from ad-creative
+  → `[BYPASS-UNDECLARED]` critical, audit exit 1 ✓
+
+**Honest limits documented in SECURITY.md:**
+- Hook layer cannot intercept `requests.get(...)` calls inside an
+  already-running Python process. Once `python script.py` is past the
+  hook, the running process is unhookable.
+- `["*"]` semantics for `allowed_network_hosts` accept user-controlled
+  destination — the URL passed to `audit_a11y.py` IS the audit
+  subject, so the script becomes its own attack surface.
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| Single combined hook (not two split) | Both classes flow through Bash; shared infrastructure; one settings.json entry |
+| Pass 5 fenced-code-block state machine (awk) | Avoids prose false-positives; bash-loop-per-line was 60+s, awk is 3.7s |
+| Enum-style jq classification (NULL/EMPTY/WILDCARD/SPECIFIC) | First attempt with `tojson` wrapped null as `"null"` — bug found via negative test |
+| Pre-populate 9 known cases with `[]` for shell, `["*"]`/specific for network | Documents intent; Pass 5 then runs cleanly without false-criticals |
+
+**Counts:** 9 allowlist entries gain new fields. 0 lock-hash drift
+(allowlist edits don't affect MEH-420 hashes). Allowlist 71 unchanged.
+
+**Closes:** MEH-406 (Python network bypass) + MEH-421 (bash shell-out)
+— both Backlog → Done via this PR.
+
+**Adversarial review round 1** surfaced 5 obfuscation bypass patterns
+(quote concat, empty subshell, variable substitution, subshell
+printf). Reviewed with Smadar — documented as known limitation
+(option a, mirroring MEH-397 empty-input precedent). Threat model
+gated by attacker requiring write access to bash command string
+(rogue SKILL.md edit caught by manual audit + MEH-420 hash
+enforcement, OR direct prompt injection). Round 2 adversarial review
+performed on the documentation changes — verified accuracy + no
+overclaiming.
 
 ## 2026-05-01 — MEH-418 + MEH-419: a11y sweep + /login copy cleanup
 

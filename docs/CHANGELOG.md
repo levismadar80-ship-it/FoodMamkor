@@ -12,6 +12,51 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-422: skills bypass hardening (closes MEH-406 + MEH-421)
+
+**Closes both MEH-406 (Python network bypass) and MEH-421 (bash
+shell-out).** Same architectural finding-class — different mechanisms
+for routing command execution outside MEH-397 hooks. Combined into
+a single PR per spec.
+
+**Infrastructure:**
+- New: `.claude/hooks/check-skill-bypass.sh` — PreToolUse(Bash) hook.
+  Pattern-matches `tools/clis/`, `tools/integrations/`, `tools/REGISTRY`,
+  `(node|python|bash|sh) <path>tools/`. Direct invocation of known
+  network-using Python scripts (audit_a11y.py, check_shabbat.py)
+  consults the skill's `allowed_network_hosts` field; blocks if
+  `null`/`[]`. Fail-closed on jq missing / malformed JSON / empty
+  input (mirrors MEH-397 hook discipline post-MEH-402).
+- Modified: `.claude/scripts/audit-skills.sh` — added Pass 5
+  (subprocess-bypass coverage). Skipped under `--self-test`. Uses
+  awk for fenced-code-block state-machine — matches in code blocks
+  are governed by allowlist, matches in prose are documentation
+  (informational only). Bash-loop-per-line was 60+s; awk is 3.7s.
+- Modified: `.claude/skills-allowlist.json` — added two optional
+  fields per skill: `allowed_network_hosts`, `allowed_shell_invocations`.
+  Pre-populated 9 known cases (7 bash dead-pointers, 2 Python
+  network, 1 doc-only).
+- Modified: `.claude/settings.json` — registered the new hook.
+- Updated: `.claude/rules/skills.md` (new "Subprocess-bypass class"
+  section + allowlist schema), `docs/SECURITY.md` (Skills Supply Chain
+  section now documents the subprocess-bypass class + honest limits).
+
+**Honest limit documented:** the hook layer cannot intercept
+`requests.get(url)` calls inside an already-running Python process.
+Once `python script.py` is past the hook, the process is unhookable.
+Defense for the Python case is layered: hook catches direct script
+invocations + allowlist consultation; Pass 5 catches static imports
+at lint time; allowlist documents intended hosts.
+
+**Tamper tests:** 8 bash bypass patterns blocked, 8 legitimate
+commands allowed, 4 fail-closed edges, 2 Python script invocations
+(allowlisted) allowed. Pass 5 negative tests: stripping the new
+allowlist fields from a populated skill triggers `[BYPASS-UNDECLARED]`
+or `[NETWORK-UNDECLARED]` critical, audit exits 1.
+
+No lock-hash drift (allowlist edits don't affect `compute-skill-hash.sh`
+which hashes contents under `.agents/skills/<name>/`).
+
 ## 2026-05-01 — MEH-417 (cont.): /auth/register rate limit 3→10/hour
 
 Discovered during MEH-417 PR cycle 1 — staging Railway 3/hour limit was exhausted by recent CI activity (PR #410, #412 8 cycles, #418, #417). 10/hour is still tight enough to block brute-force signup while accommodating shared-IP traffic (corporate NAT, CGNAT, CI runners).

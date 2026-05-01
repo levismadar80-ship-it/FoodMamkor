@@ -15,7 +15,9 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Full body + 2 references reviewed. Chains to product-marketing-context. Two findings: (1) Documentation references API keys via shell env vars (GEMINI_API_KEY, ELEVENLABS_API_KEY) in curl examples (references/generative-tools.md). Documentation only — not auto-invoked. User responsibility to manage credentials securely. (2) ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/google-ads.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Full body + 2 references reviewed. Chains to product-marketing-context. Two findings: (1) Documentation references API keys via shell env vars (GEMINI_API_KEY, ELEVENLABS_API_KEY) in curl examples (references/generative-tools.md). Documentation only — not auto-invoked. User responsibility to manage credentials securely. (2) ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/google-ads.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "adapt": {
       "source": "pbakaus/impeccable",
@@ -29,14 +31,18 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "analytics-tracking": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "animate": {
       "source": "pbakaus/impeccable",
@@ -169,7 +175,9 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "extract": {
       "source": "pbakaus/impeccable",
@@ -239,7 +247,11 @@
       "author_verified": false,
       "last_audit_date": "2026-04-30",
       "audit_verdict": "approved",
-      "notes": "MEH-401 audit. Single-class NETWORK: https://huggingface.co docs URLs. Script preprocess_hebrew.py is stdlib-only and clean. WARNING: Runtime invokes transformers.from_pretrained() to download models from HuggingFace CDN via Python requests library — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests). User-supplied model name has no allowlist; could load arbitrary HuggingFace model. Untrusted model = arbitrary code execution risk (transformers loads pickle-serialized weights). Skill is APPROVED for documentation/text-processing use only; DO NOT invoke from_pretrained with untrusted model names. Hardening tracked in MEH-405 (HuggingFace model allowlist + sandboxing)."
+      "notes": "MEH-401 audit. Single-class NETWORK: https://huggingface.co docs URLs. Script preprocess_hebrew.py is stdlib-only and clean. WARNING: Runtime invokes transformers.from_pretrained() to download models from HuggingFace CDN via Python requests library — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests). User-supplied model name has no allowlist; could load arbitrary HuggingFace model. Untrusted model = arbitrary code execution risk (transformers loads pickle-serialized weights). Skill is APPROVED for documentation/text-processing use only; DO NOT invoke from_pretrained with untrusted model names. Hardening tracked in MEH-405 (HuggingFace model allowlist + sandboxing). MEH-422: SKILL.md documents transformers.from_pretrained() pattern (HuggingFace CDN). Network host declared at huggingface.co. No active script in skill (preprocess_hebrew.py is stdlib-only). Defense is audit-time + user-side credential management.",
+      "allowed_network_hosts": [
+        "huggingface.co"
+      ],
+      "allowed_shell_invocations": null
     },
     "hebrew-rtl-best-practices": {
       "source": "skills-il/localization",
@@ -260,7 +272,11 @@
       "author_verified": false,
       "last_audit_date": "2026-04-30",
       "audit_verdict": "approved",
-      "notes": "MEH-401 audit clean. Zero pattern classes in SKILL.md. Script audit_a11y.py uses selenium + axe-core; allowed-tools declares Bash(pip:*) Bash(python:*); no network patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline). NOTE: audit_a11y.py contains requests.get(url) for selenium-based a11y scanning — Python network call bypasses MEH-397 WebFetch hooks (same class as shabbat-aware-scheduler and hebrew-nlp-toolkit). URL is user-supplied as scan target; not exfiltration risk by design (it is the audit subject), but documenting for completeness. Hardening tracked in MEH-405."
+      "notes": "MEH-401 audit clean. Zero pattern classes in SKILL.md. Script audit_a11y.py uses selenium + axe-core; allowed-tools declares Bash(pip:*) Bash(python:*); no network patterns. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline). NOTE: audit_a11y.py contains requests.get(url) for selenium-based a11y scanning — Python network call bypasses MEH-397 WebFetch hooks (same class as shabbat-aware-scheduler and hebrew-nlp-toolkit). URL is user-supplied as scan target; not exfiltration risk by design (it is the audit subject), but documenting for completeness. Hardening tracked in MEH-405. MEH-422: audit_a11y.py:179 invokes requests.get(url) where url is a user-supplied scan target. Wildcard allowed_network_hosts because the URL IS the audit subject. Hook layer cannot intercept requests inside Python; defense is audit-time (Pass 5) + this declaration.",
+      "allowed_network_hosts": [
+        "*"
+      ],
+      "allowed_shell_invocations": null
     },
     "israeli-ai-compliance-kit": {
       "source": "skills-il/security-compliance",
@@ -309,7 +325,9 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "lead-magnets": {
       "source": "coreyhaines31/marketingskills",
@@ -379,7 +397,9 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "paywall-upgrade-cro": {
       "source": "coreyhaines31/marketingskills",
@@ -435,7 +455,9 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines. MEH-422: SKILL.md references shell invocations to tools/clis/ — tools/ does not exist in Mehamakor. Policy: dead-pointer, preemptive runtime block via .claude/hooks/check-skill-bypass.sh.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
     },
     "schema-markup": {
       "source": "coreyhaines31/marketingskills",
@@ -456,7 +478,11 @@
       "author_verified": false,
       "last_audit_date": "2026-04-30",
       "audit_verdict": "approved",
-      "notes": "MEH-401 audit. Single-class NETWORK: requests.get() + https://www.hebcal.com in SKILL.md code blocks; declared purpose. ⚠️ Runtime invokes requests.get() to hebcal.com from check_shabbat.py — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests/urllib). Same architecture-class as hebrew-nlp-toolkit. Skill is APPROVED for documentation/scheduling guidance use; if invoked at script level, network calls are unhooked. Hardening tracked in MEH-405. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline)."
+      "notes": "MEH-401 audit. Single-class NETWORK: requests.get() + https://www.hebcal.com in SKILL.md code blocks; declared purpose. ⚠️ Runtime invokes requests.get() to hebcal.com from check_shabbat.py — BYPASSES MEH-397 WebFetch hooks (hooks only intercept the WebFetch tool, not Python requests/urllib). Same architecture-class as hebrew-nlp-toolkit. Skill is APPROVED for documentation/scheduling guidance use; if invoked at script level, network calls are unhooked. Hardening tracked in MEH-405. Anonymous author — manual review required (Snyk ToxicSkills 13.4% baseline). MEH-422: check_shabbat.py invokes requests.get to www.hebcal.com only. Network host declared. Hook layer cannot intercept requests inside Python; defense relies on script content audit + this allowlist.",
+      "allowed_network_hosts": [
+        "www.hebcal.com"
+      ],
+      "allowed_shell_invocations": null
     },
     "signup-flow-cro": {
       "source": "coreyhaines31/marketingskills",
