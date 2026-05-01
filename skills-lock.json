@@ -36,11 +36,6 @@
       "sourceType": "github",
       "computedHash": "164ddb08243cb630594328126e2cb8e8ed3622dfdd7a71d9028d97d7d40f8aca"
     },
-    "aso-audit": {
-      "source": "coreyhaines31/marketingskills",
-      "sourceType": "github",
-      "computedHash": "23d2f8906f622176117610b575988bba76a204e0ce8463691b856195d5515761"
-    },
     "audit": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
@@ -50,11 +45,6 @@
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "computedHash": "ba9804e22f6e983717166cd19b1aaf6fe6a0e3894184de9d146848b21d7842ff"
-    },
-    "churn-prevention": {
-      "source": "coreyhaines31/marketingskills",
-      "sourceType": "github",
-      "computedHash": "f58eebfa1604da618519105448b7f67e3d8467bd1f3a443881710e2a8f97e8de"
     },
     "clarify": {
       "source": "pbakaus/impeccable",
@@ -320,16 +310,6 @@
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
       "computedHash": "50b3d7bbee64c99e0f5c32cb99cd392def92d7a50cf627023368b29bc6c718e8"
-    },
-    "revops": {
-      "source": "coreyhaines31/marketingskills",
-      "sourceType": "github",
-      "computedHash": "505708b520758913bb7a45eaf77b2dd9c005d5750088ce6919960cbf450febb9"
-    },
-    "sales-enablement": {
-      "source": "coreyhaines31/marketingskills",
-      "sourceType": "github",
-      "computedHash": "9d972201e26c2afe2c333878ff21099e00682baa87637cd5a826f84713512535"
     },
     "schema-markup": {
       "source": "coreyhaines31/marketingskills",

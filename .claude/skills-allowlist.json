@@ -52,13 +52,6 @@
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
     },
-    "aso-audit": {
-      "source": "coreyhaines31/marketingskills",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
-    },
     "audit": {
       "source": "pbakaus/impeccable",
       "author_verified": false,
@@ -72,13 +65,6 @@
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
-    },
-    "churn-prevention": {
-      "source": "coreyhaines31/marketingskills",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
     },
     "clarify": {
       "source": "pbakaus/impeccable",
@@ -445,20 +431,6 @@
       "notes": "Audited MEH-402. Body scanned for injection canaries — clean. Chains to frontend-design → teach-impeccable on first invocation. Author: Paul Bakaus."
     },
     "referral-program": {
-      "source": "coreyhaines31/marketingskills",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
-    },
-    "revops": {
-      "source": "coreyhaines31/marketingskills",
-      "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
-    },
-    "sales-enablement": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
       "last_audit_date": null,
