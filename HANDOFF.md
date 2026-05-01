@@ -1856,14 +1856,22 @@ Main HEAD: e42127e (production still behind staging — needs promotion)
 ## Linear MEH-341
 No Linear MCP in this session. Mark MEH-341 as "Done" manually in Linear.
 
-## Open PRs (still pending)
-- #265 — MEH-236: CardHeart undo favorite (draft)
-- #266 — MEH-187: Vercel Speed Insights (draft)
-- #267 — MEH-88: products.image_url + CRUD — CI green (draft)
-- #268 — MEH-89: vacation return date banner + admin form (draft)
-- #270 — MEH-87: LoginPromptModal Tab focus trap (draft)
-- #272 — MEH-83: Lightbox on gallery images (draft)
-- #274 — MEH-84: GPS button on /map (draft)
+## Open PRs at session close
+
+**Open PRs at session close:** 14 (was 12 immediately after triage; +2 opened
+same day for unrelated work)
+
+- #364 (MEH-351 anthropic SDK, draft, In Progress)
+- 11 Dependabot PRs (#371–#382) — all CI green, awaiting review
+- #410 (MEH-306 sub-A: password policy backend, draft, opened today, CI green)
+- #412 (MEH-306 sub-B: password policy frontend, draft, opened today,
+  🔴 Playwright E2E failing — base is feature/meh-306a-backend-wireup,
+  not staging, so full CI suite didn't trigger; needs investigation
+  before #410/#412 can advance)
+
+**Next triage step:** Dependabot Actions batch (#371–#375) — safe-looking
+batch, all CI green for 3 days. fastapi 0.136.1 (#377) and pydantic 2.13.3
+(#381) flagged as significant bumps — handle separately, not in batch.
 
 ## Next task — start fresh session
 - MEH-342: CLAUDE.md is at 197 lines (over 150-line cap) — split overflow into `.claude/rules/`. First step: `wc -l CLAUDE.md` + identify sections ≥15 lines to move.
