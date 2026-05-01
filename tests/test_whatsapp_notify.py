@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 VALID_PRODUCER_REG = {
     "email": "producer287@test.com",
     "name": "שרה ישראלית",
-    "password": "Pass1234!",
+    "password": "SecurePass123!",
     "producer_name": "חוות MEH-287",
     "phone": "0501234567",
     "category_ids": [],

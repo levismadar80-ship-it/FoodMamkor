@@ -369,7 +369,7 @@ class TestAdminDashboardAnalytics:
         # one pending experience → badge = 4
         make_producer(db, name="Pending1", status="pending")
         p = make_producer(db, status="approved")
-        db.add(Report(producer_id=p.id, user_id=admin.id, reason="test"))
+        db.add(Report(producer_id=p.id, reporter_id=admin.id, reason="test"))
         owner = make_user(db, email="po@test.com")
         db.add(HomeProduct(
             user_id=owner.id, title="flagged", description="x",

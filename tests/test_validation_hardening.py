@@ -23,7 +23,7 @@ def test_register_rejects_short_password(client):
 def test_register_accepts_8_char_password(client):
     r = client.post(
         "/auth/register",
-        json={"email": "ok@test.com", "name": "OK", "password": "12345678"},
+        json={"email": "ok@test.com", "name": "OK", "password": "SecurePass123!"},
     )
     assert r.status_code == 200
 
