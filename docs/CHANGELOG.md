@@ -2,6 +2,36 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-364: RTL adjacency-aware suppression + 11 violations cleared
+
+verify-frontend agent (step 3) and `.claude/hooks/check-rtl.sh` now honor
+`rtl-ok` markers within ±1 line of a violation, mirroring
+`eslint-disable-next-line` / `biome-ignore` semantics. Replaces the prior
+file-path-only allowlist mechanism for legitimate centering / JSDoc /
+focus-position exceptions.
+
+- E12: `verify-frontend.md` step 3 rewritten to awk-based ±1 adjacency check.
+  Adds `SCAN_DIR_MISSING` guard alongside existing `ALLOWLIST_MISSING` handling.
+- `check-rtl.sh` PreToolUse hook: defers to scan-time check when `rtl-ok`
+  marker is present in new content (write-time permissive, scan-time strict).
+- 7 source-side markers added in natural positions:
+  - `ChatWidget.jsx` JSDoc lines 12, 14 — `(rtl-ok: comment-only)` appended
+  - `OnboardingTip.jsx` JSDoc line 13 — `(rtl-ok: comment-only)` appended
+  - `layout.js` line 121 — `{/* rtl-ok: focus position for accessibility */}`
+    inserted above skip-link `<a>`
+  - `Tooltip.jsx` lines 6, 7 — trailing `// rtl-ok: centering, not directional`
+    on POSITION_CLASSES object entries
+  - `page.js` line 349 — own-line `// rtl-ok: centering, not directional`
+    inserted above hero text className (mirrors existing eslint-disable
+    pattern in Toaster.jsx, NeighborClient.jsx, page.js:421, upgrade/page.js:51)
+- 4 violations (Toaster.jsx:24, NeighborClient.jsx:232, page.js:422,
+  upgrade/page.js:52) needed no source edit — existing
+  `// eslint-disable-next-line ... rtl-ok: ...` comments on the line above
+  are now within the ±1 window.
+- `verify-frontend.eval.md`: T5a/b/c/d/e + T6 cases added covering all
+  ±1 window edges + SCAN_DIR_MISSING.
+- Final RTL count on this branch: 0. Build + lint green.
+
 ## 2026-05-01 — MEH-396: CI actions bump (Node 24 compatibility)
 
 19 changes across 5 workflow files — eliminates all Node 20 deprecation warnings.

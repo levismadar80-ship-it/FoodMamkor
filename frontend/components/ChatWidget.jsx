@@ -9,9 +9,9 @@ import api from "@/lib/api";
  *
  * Launcher:
  *   Mobile: icon-only circle. bottom-32 when cookie banner visible,
- *     bottom-20 when dismissed. right-4. z-1100.
+ *     bottom-20 when dismissed. right-4. z-1100. (rtl-ok: comment-only)
  *   Desktop: pill with text on first visit, icon-only after user has
- *     opened once (chatWasOpened in localStorage). bottom-6 right-6.
+ *     opened once (chatWasOpened in localStorage). bottom-6 right-6. (rtl-ok: comment-only)
  *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
  * Panel:
