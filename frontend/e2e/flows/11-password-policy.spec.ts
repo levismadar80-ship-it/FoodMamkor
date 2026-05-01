@@ -20,9 +20,12 @@ const DENY_LISTED_12 = "unbelievable"; // 12 chars, in deny_list_10k.txt
 const SHORT_PASSWORD = "short_pass!"; // 11 chars, fails the 12 floor
 
 // Helper — generate a unique consumer signup payload per scenario so
-// tests don't collide on duplicate-email 400s.
+// tests don't collide on duplicate-email 400s. Includes Math.random()
+// suffix (MEH-417) to defeat parallel-worker collision when desktop +
+// mobile workers compute the same Date.now() ms — now that scenario 3
+// hits real /auth/register, identical-stamp emails would 409.
 function uniqueSignup(prefix: string) {
-  const stamp = Date.now().toString(36);
+  const stamp = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   return {
     email: `${prefix}+${stamp}@e2e.test`,
     name: `e2e ${prefix}`,
@@ -30,39 +33,6 @@ function uniqueSignup(prefix: string) {
 }
 
 test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
-  // MEH-306 sub-B Playwright mock — sub-A's /auth/check-password
-  // endpoint is on the unmerged feature branch (PR #410) so the
-  // staging Railway backend that Vercel preview proxies to returns
-  // 404. Mock the response shape here so frontend wiring (debounce,
-  // AbortController, tile render, 422-failures path) is what's
-  // actually under test.
-  //
-  // Note: pre-mock, scenario 3 (valid 12-char unique) was passing
-  // for the WRONG reason — fail-soft on 404 produced failures=[],
-  // which happens to be the success state. Post-mock it passes for
-  // the right reason: the mock genuinely returns failures=[] only
-  // for non-deny-listed candidates. Coverage upgrade.
-  //
-  // TODO: Remove this mock after both sub-A and sub-B merge to staging.
-  // Tracked in MEH-XXX (Smadar to file post-PR).
-  test.beforeEach(async ({ page }) => {
-    await page.route("**/api/auth/check-password", async (route) => {
-      const body = JSON.parse(route.request().postData() || "{}");
-      const candidate = (body.candidate || "").toString();
-      // Tiny in-test deny-list — only the values our scenarios use.
-      // Real backend uses the 10k SecLists corpus; we don't need parity.
-      const denyList = new Set(["unbelievable", "password1234", "password    "]);
-      const failures = denyList.has(candidate.trim().toLowerCase())
-        ? ["too_common"]
-        : [];
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ ok: failures.length === 0, failures }),
-      });
-    });
-  });
-
   test("Signup: short password is blocked with the Hebrew length message", async ({
     page,
   }) => {
@@ -128,42 +98,6 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     page,
   }) => {
     const u = uniqueSignup("ok");
-
-    // MEH-306: scenario-3-only mock for /auth/register + /auth/me. Sub-A's
-    // looser rate limits + PasswordField are on the unmerged feature branch,
-    // so staging Railway runs the pre-MEH-306 schema with a 3/hour per-IP
-    // cap on /auth/register. CI re-runs and the desktop+mobile parallel
-    // workers chew through that budget and produce 409 (email collision
-    // on identical Date.now() ms) or 429 (rate-limit). Mocking here lets
-    // the test prove the FRONTEND success path (button enables → submit
-    // fires → emailSent=true → "בדקי את האימייל שלך" renders) without
-    // depending on backend deployment timing. Scenarios 1-2 deliberately
-    // do NOT mock /auth/register so they exercise the real backend once
-    // sub-A merges. Removal tracked alongside the /check-password mock
-    // (MEH-XXX, post-merge cleanup ticket).
-    await page.route("**/api/auth/register", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ access_token: "test-token", token_type: "bearer" }),
-      });
-    });
-    await page.route("**/api/auth/me", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "00000000-0000-0000-0000-000000000000",
-          email: u.email,
-          name: u.name,
-          role: "consumer",
-          is_oauth: false,
-          is_producer: false,
-          email_verified: false,
-        }),
-      });
-    });
-
     await page.goto("/register");
 
     await page.getByLabel(/^שם מלא \*$/).fill(u.name);
