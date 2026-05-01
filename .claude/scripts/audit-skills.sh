@@ -138,6 +138,134 @@ if [ "$SELF_TEST" -eq 0 ]; then
   done <<< "$skill_names"
 fi
 
+# ---- Pass 5: subprocess-bypass coverage (MEH-422; skipped for self-test) ----
+# Verifies skills that reference bash shell-out patterns (node tools/, python
+# tools/, etc.) or import Python network libs declare their allowance via
+# allowlist fields allowed_shell_invocations / allowed_network_hosts.
+#
+# Uses a state machine to distinguish fenced code blocks from prose:
+#   - Match inside ``` fence  → real injection point, governed by allowlist
+#   - Match in prose text     → documentation mention, informational only
+#
+# Field semantics (mirrored from .claude/rules/skills.md):
+#   null/missing → no bypass declared. Match in code → CRITICAL.
+#   []           → explicit no-bypass policy (e.g., dead pointer documented).
+#                  Match in code → INFO (documented, not enforced).
+#   ["*"]        → wildcard (user-controlled). Pass-through.
+#   non-empty    → specific patterns approved. Pass-through (audit-time
+#                  PASS; runtime defense is the hook).
+if [ "$SELF_TEST" -eq 0 ]; then
+  if [ ! -f "$ALLOWLIST" ]; then
+    echo "[ERROR] $ALLOWLIST not found — cannot verify bypass coverage." >&2
+    exit 2
+  fi
+
+  BYPASS_BASH_RE='tools/(clis|integrations|REGISTRY)|(node|python[23]?|bash|sh)[[:space:]]+[^[:space:]]*tools/'
+  BYPASS_PY_RE='^[[:space:]]*(import[[:space:]]+(requests|urllib|socket|http\.client|aiohttp|httpx)|from[[:space:]]+(requests|urllib|http|aiohttp|httpx)[[:space:]]+import)'
+
+  for skill_dir in "$ROOT/.agents/skills"/*/; do
+    skill=$(basename "$skill_dir")
+
+    # Scan markdown files (SKILL.md + references/*.md) with code-fence awareness.
+    # Uses awk for speed — bash-loop-per-line is O(N) subshell spawns and
+    # takes minutes across 200+ files. awk handles state in a single pass.
+    md_in_code_hits=""
+    while IFS= read -r mdfile; do
+      [ -f "$mdfile" ] || continue
+      rel="${mdfile#$ROOT/}"
+      hits=$(awk -v rel="$rel" -v re="$BYPASS_BASH_RE" '
+        /^[[:space:]]*```/ { in_code = 1 - in_code; next }
+        in_code && $0 ~ re { printf "%s:%d: %s\n", rel, NR, $0 }
+      ' "$mdfile")
+      if [ -n "$hits" ]; then
+        md_in_code_hits=$(printf '%s\n%s' "$md_in_code_hits" "$hits")
+      fi
+    done < <(find "$skill_dir" -type f -name '*.md' 2>/dev/null)
+
+    # Scan Python scripts for network imports
+    py_hits=""
+    while IFS= read -r pyfile; do
+      [ -f "$pyfile" ] || continue
+      hits=$(grep -nE "$BYPASS_PY_RE" "$pyfile" 2>/dev/null || true)
+      if [ -n "$hits" ]; then
+        rel="${pyfile#$ROOT/}"
+        py_hits=$(printf '%s\n--- %s ---\n%s' "$py_hits" "$rel" "$hits")
+      fi
+    done < <(find "$skill_dir" -type f -name '*.py' 2>/dev/null)
+
+    # Look up declared fields. Use enum-style classification to avoid
+    # tojson string-encoding (which wraps null as "null" — bug found
+    # during Pass 5 self-test). NULL = unaudited; EMPTY = explicit
+    # no-bypass; WILDCARD = user-controlled (`["*"]`); SPECIFIC = listed.
+    classify_field='
+      .skills[$s][$field] as $v |
+      if $v == null then "NULL"
+      elif ($v | type) != "array" then "INVALID"
+      elif ($v | length) == 0 then "EMPTY"
+      elif ($v | length) == 1 and $v[0] == "*" then "WILDCARD"
+      else "SPECIFIC"
+      end'
+    shell_kind=$(jq -r --arg s "$skill" --arg field "allowed_shell_invocations" "$classify_field" "$ALLOWLIST" 2>/dev/null)
+    net_kind=$(jq -r --arg s "$skill" --arg field "allowed_network_hosts" "$classify_field" "$ALLOWLIST" 2>/dev/null)
+
+    # ---- Bash-bypass verdict ----
+    if [ -n "$md_in_code_hits" ]; then
+      case "$shell_kind" in
+        NULL)
+          CRITICAL=$((CRITICAL+1))
+          {
+            printf '\n[BYPASS-UNDECLARED] %s — bash shell-out pattern in code block but allowed_shell_invocations is null:' "$skill"
+            printf '%s\n' "$md_in_code_hits"
+            printf '  fix: add "allowed_shell_invocations" to skills-allowlist.json (use [] for dead-pointer policy).\n'
+          } >> "$REPORT_TMP"
+          ;;
+        EMPTY)
+          # Dead-pointer policy — info only
+          {
+            printf '\n[BYPASS-DEAD-POINTER] %s — bash shell-out in code block, allowed_shell_invocations=[] (preemptive block via hook):' "$skill"
+            printf '%s\n' "$md_in_code_hits" | head -5
+          } >> "$REPORT_TMP"
+          ;;
+        WILDCARD|SPECIFIC)
+          : # pass-through (hook enforces at runtime; allowlist documents intent)
+          ;;
+        INVALID)
+          CRITICAL=$((CRITICAL+1))
+          printf '\n[BYPASS-INVALID] %s — allowed_shell_invocations is not an array.\n' "$skill" >> "$REPORT_TMP"
+          ;;
+      esac
+    fi
+
+    # ---- Python-network verdict ----
+    if [ -n "$py_hits" ]; then
+      case "$net_kind" in
+        NULL)
+          CRITICAL=$((CRITICAL+1))
+          {
+            printf '\n[NETWORK-UNDECLARED] %s — Python network import in script but allowed_network_hosts is null:' "$skill"
+            printf '%s\n' "$py_hits"
+            printf '  fix: add "allowed_network_hosts" to skills-allowlist.json.\n'
+          } >> "$REPORT_TMP"
+          ;;
+        EMPTY)
+          CRITICAL=$((CRITICAL+1))
+          {
+            printf '\n[NETWORK-FORBIDDEN] %s — Python network import but allowed_network_hosts=[] (no-network policy):' "$skill"
+            printf '%s\n' "$py_hits"
+          } >> "$REPORT_TMP"
+          ;;
+        WILDCARD|SPECIFIC)
+          : # audit-time pass (hook + allowlist together)
+          ;;
+        INVALID)
+          CRITICAL=$((CRITICAL+1))
+          printf '\n[NETWORK-INVALID] %s — allowed_network_hosts is not an array.\n' "$skill" >> "$REPORT_TMP"
+          ;;
+      esac
+    fi
+  done
+fi
+
 # ---- Pass 4: hash enforcement (MEH-420; skipped for self-test) ----
 # Verifies every skill in skills-lock.json matches the hash that
 # compute-skill-hash.sh produces for its on-disk content. Closes the gap

@@ -4,6 +4,9 @@ How Mehamakor sandboxes the 83 third-party skills under `.agents/skills/`
 and `.claude/skills/`. Defense-in-depth: 5 layers, fail-closed by default.
 Hash enforcement (Layer 4) closed by MEH-420 after MEH-402 adversarial
 review found `computedHash` was decorative metadata that no script read.
+Subprocess-bypass class (Class A bash shell-out + Class B Python
+network) closed by MEH-422 — combines what was originally tracked as
+MEH-406 + MEH-421.
 
 Threat model basis: Snyk ToxicSkills (Feb 2026) — 13.4% of 3,984 ClawHub
 skills with critical security issues; 76 confirmed malicious payloads.
@@ -68,7 +71,9 @@ entry. Schema:
     "author_verified": false,
     "last_audit_date": "YYYY-MM-DD" | null,
     "audit_verdict": "approved" | "review_needed" | "approved_local_unlocked" | "blocked",
-    "notes": ""
+    "notes": "",
+    "allowed_network_hosts": null | [] | ["host"] | ["*"],
+    "allowed_shell_invocations": null | [] | ["cmd"]
   }
 }
 ```
@@ -233,6 +238,115 @@ escalation, not "concerning" notes in the allowlist:
 Single-class hits are usually documentation references and acceptable
 with explanatory notes. Multi-class hits in code blocks (not prose) are
 critical and must block the merge.
+
+---
+
+## Subprocess-bypass class (MEH-422)
+
+Two mechanisms that route command execution outside MEH-397's hooks:
+
+### Class A — Bash shell-out
+
+7 SKILL.md files in `coreyhaines31/marketingskills` (`ad-creative`,
+`ai-seo`, `analytics-tracking`, `email-sequence`, `launch-strategy`,
+`paid-ads`, `referral-program`) instruct Claude to invoke
+`node tools/clis/<x>.js` and reference `../../tools/REGISTRY.md`.
+Mehamakor has no `tools/` directory — dead pointers today, but a future
+commit adding `tools/clis/` would activate them silently.
+
+### Class B — Python network at script level
+
+2 scripts call `requests.get()` directly:
+- `audit_a11y.py` (israeli-accessibility-compliance) — selenium-based
+  a11y scan with user-supplied URL
+- `check_shabbat.py` (shabbat-aware-scheduler) — HebCal API for Shabbat
+  zmanim
+
+Plus 1 documentation case: `hebrew-nlp-toolkit` describes
+`transformers.from_pretrained()` (HuggingFace CDN) — no active script,
+but the pattern is documented for users.
+
+### Defense layers (MEH-422)
+
+**Layer 1 — `.claude/hooks/check-skill-bypass.sh`** (PreToolUse: Bash):
+- Pattern-match the Bash command. Two regex branches:
+  1. `tools/(clis|integrations|REGISTRY)` anywhere → block (exit 2)
+  2. `(node|python[23]?|bash|sh)\s+\S*tools/` → block (exit 2)
+- Direct invocation of known-network Python scripts
+  (`audit_a11y.py`, `check_shabbat.py`) → check skill's
+  `allowed_network_hosts` field; block if `null`/`[]`, allow otherwise
+- Fail-closed on jq missing, malformed JSON, empty input (matches
+  MEH-397 hook discipline post-MEH-402)
+- **What it does NOT catch:** `requests.get(...)` calls inside an
+  already-running Python process. Once `python script.py` is past
+  the hook, the running process is unhookable.
+
+**Layer 2 — Allowlist schema** (`.claude/skills-allowlist.json`):
+Two new optional fields per skill:
+
+| Field | `null`/missing | `[]` | `["*"]` | non-empty |
+|---|---|---|---|---|
+| `allowed_shell_invocations` | no bypass declared | dead-pointer policy | wildcard | specific patterns |
+| `allowed_network_hosts` | no bypass declared | no-network policy | wildcard | specific hosts |
+
+**Layer 3 — Audit Pass 5** (`audit-skills.sh`):
+Static verification at lint time:
+- SKILL.md + references/*.md scanned for bash-bypass patterns
+  **inside fenced code blocks only** (state-machine on ` ``` ` lines).
+  Prose mentions are ignored — they're documentation, not injection.
+- Skill scripts (`*.py`) scanned for network imports (`requests`,
+  `urllib`, `socket`, `http.client`, `aiohttp`, `httpx`).
+- For each match, allowlist field consulted:
+  - `null` → `[BYPASS-UNDECLARED]` / `[NETWORK-UNDECLARED]` critical
+  - `[]` (shell) → `[BYPASS-DEAD-POINTER]` informational
+  - `[]` (network) → `[NETWORK-FORBIDDEN]` critical
+  - `["*"]` / specific → audit-time pass
+
+### Known limitations (MEH-422 obfuscation bypass)
+
+The `check-skill-bypass.sh` hook and `audit-skills.sh` Pass 5 use
+literal pattern matching against shell command strings. The
+following obfuscation patterns evade detection:
+
+- Quote concatenation: `t""ools/`, `to'o'ls/`, etc.
+- Empty subshell: `t$()ools/`
+- Variable substitution: `T=tools; cd $T/clis`
+- Subshell printf: `$(printf '%s%s' too ls)/clis/`
+
+These require attacker control of the bash command string — either
+via rogue SKILL.md edit (caught by manual audit + hash enforcement
+post-audit) or direct prompt injection.
+
+Defense layers (defense-in-depth, not a sandbox):
+
+1. Manual SKILL.md audit (MEH-400/401/402/403) — visual review
+   catches obfuscation patterns at read time.
+2. MEH-420 hash enforcement — any post-audit content drift fails CI.
+3. `author_verified` field — anonymous authors get elevated scrutiny.
+4. MEH-422 literal pattern hook — catches non-obfuscated bypass.
+5. Same-class precedent: MEH-397 empty-input bypass is also
+   documented as a known limitation rather than fixed inline. Both
+   classes are gated by attacker control of the tool input string.
+
+### Honest limits
+
+The hook layer can't intercept `requests.get(...)` inside a Python
+process — by the time the script is running, the hook has already
+passed. The defense for the Python case is layered:
+1. Hook blocks `python tools/*` patterns (catches the obvious "run
+   a bypass script" attempt).
+2. Hook blocks direct invocation of known-network scripts
+   (`audit_a11y.py`, `check_shabbat.py`) when their skill's
+   `allowed_network_hosts` is `null`/`[]`.
+3. Pass 5 catches static imports in skill scripts at lint time.
+4. Allowlist documents intended hosts (informational; we cannot
+   statically determine the actual destination of every
+   `requests.get(url)` call).
+
+`["*"]` semantics for `allowed_network_hosts` accept that the
+destination is user-controlled (e.g., the audit target URL of
+`audit_a11y.py`). The skill becomes its own attack surface — user
+must trust the URL they pass.
 
 ---
 
