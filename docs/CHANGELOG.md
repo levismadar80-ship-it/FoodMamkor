@@ -12,6 +12,18 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-417 (cont.): /auth/register rate limit 3→10/hour
+
+Discovered during MEH-417 PR cycle 1 — staging Railway 3/hour limit was exhausted by recent CI activity (PR #410, #412 8 cycles, #418, #417). 10/hour is still tight enough to block brute-force signup while accommodating shared-IP traffic (corporate NAT, CGNAT, CI runners).
+
+Frontend PasswordPolicy (12-char + HIBP via MEH-306) provides the primary anti-abuse guard. Rate limit is defense-in-depth.
+
+Single-line change to `backend/app/routers/auth.py:237` (`/auth/register`, consumer signup). `/register/producer` (line 284) intentionally left at 3/hour — different threat model with heavier side effects (producer record + admin notification + WhatsApp). Reviewed in a separate follow-up if needed.
+
+`pytest tests/test_api.py + test_password_policy.py + test_auth.py` — 188 passed locally.
+
+Closes blocker for MEH-417 (mock removal). After merge, MEH-417 PR CI re-runs and exercises real `/auth/register` end-to-end.
+
 ## 2026-05-01 — MEH-418 + MEH-419: A11y sweep + /login copy cleanup
 
 - `/login`: replace specific char-count length-check copy ("סיסמא חייבת להכיל לפחות 8 תווים") with generic "הזיני סיסמה" — outdated post-MEH-306 (login validates the stored hash, no specific minimum).
