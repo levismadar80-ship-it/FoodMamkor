@@ -71,6 +71,25 @@ entry. Schema:
 }
 ```
 
+### `author_verified` field semantics
+
+- `true` ONLY when GitHub identity is independently verified — e.g.,
+  PGP-signed commits matching a known public key, public statement by
+  the named person linking to the GitHub account, or organization
+  membership verifiable via official channels.
+- `false` otherwise — including when the GitHub username matches a
+  public figure's name without further verification.
+- "Public figure" or "well-known author" is REPUTATION, not identity
+  verification. Do not flip to `true` based on reputation alone.
+- Reputation can still inform `audit_verdict` (lower scrutiny baseline)
+  but does not change `author_verified`.
+
+_Source: MEH-402 adversarial review (2026-05-01) — pbakaus/impeccable
+audit initially set 21 entries to `true` based on Paul Bakaus being a
+Google Developer Advocate; review caught the conflation of reputation
+with identity verification and flipped them back to `false` to match
+MEH-401 precedent._
+
 ### Audit verdict semantics
 
 | Verdict | Meaning | CI behavior |

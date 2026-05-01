@@ -12,6 +12,51 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
+
+**21 skills audited and approved** (review_needed → approved): `adapt`,
+`animate`, `arrange`, `audit`, `bolder`, `clarify`, `colorize`, `critique`,
+`delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`,
+`onboard`, `optimize`, `overdrive`, `polish`, `quieter`, `teach-impeccable`,
+`typeset`. 0 deletions, 0 blocked.
+
+**Author:** Paul Bakaus — Google Developer Advocate, public figure (lower
+scrutiny baseline than anonymous skills-il sources).
+
+**Audit depth:** chain analysis included `frontend-design` (chain root) +
+its 7 `reference/*.md` files (808 lines total) — all clean. 5 priority
+skills deep-read end-to-end (`teach-impeccable`, `harden`, `optimize`,
+`polish`, `critique`); remaining 16 full-body scanned for injection canaries
++ authority/silent patterns + network/exec/secret patterns. 0 hits across
+all four classes.
+
+**Architectural watch flags noted:**
+
+- `teach-impeccable` writes `.impeccable.md` to project root. Inert as of
+  MEH-402, but if Claude Code adds project-root auto-load behavior in
+  future, this becomes an injection vector. Manually re-audit periodically.
+- `frontend-design` is the chain root for 17 of 21 pbakaus/impeccable
+  skills. Integrity of this skill protects all chained skills — manually
+  re-audit periodically (lock file drift detection currently
+  non-functional, see MEH-407).
+
+**Adversarial review findings applied in same PR:**
+
+- `author_verified` flipped to `false` on all 21 entries (matches MEH-401
+  precedent). New rule documented in `.claude/rules/skills.md`: reputation
+  ≠ identity verification. "Public figure" alone never justifies `true`.
+- `computedHash` field in `skills-lock.json` discovered to be non-functional
+  across all 74 skills repo-wide — no script or workflow reads it. MEH-397's
+  stated 5-layer defense is functionally 4 layers. Deferred to MEH-407
+  (Priority 1) for fix. Watch-flag wording softened to "manually re-audit
+  periodically" since automated drift detection doesn't currently exist.
+
+**MEH-405 candidates from this batch:** 0 (no scripts directories, no
+Python network calls — all skills are pure prompt-only SKILL.md content).
+
+**Counts after PR:** allowlist 75→75 (no deletions), approved 15→36,
+review_needed 59→38.
+
 ## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup (5 deleted, 9 approved)
 
 **5 skills deleted** as out-of-scope for Mehamakor's food-marketplace mission:
