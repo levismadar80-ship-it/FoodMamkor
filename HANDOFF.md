@@ -1,7 +1,25 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-365 ✅ shipped via PR #441 — adjacency only; MEH-364 unblocked; follow-up ticket pending for consolidation + buffer-bug fix)
+> Last updated: 2026-05-01 (MEH-365 ✅ + MEH-364 ✅ shipped serially. RTL adjacency check active; 11 pre-existing violations annotated. MEH-426 follow-up tracked with archived patches at `docs/archive/meh-365/`.)
+
+## 2026-05-01 — MEH-364: 11 pre-existing RTL violations annotated (shipped)
+
+**Branch:** `feature/meh-364-rtl-cleanup-fresh` off `c0c0ddf` → squash-merged to `staging` as `b0f53b1`.
+**PR:** #442 (merged). Predecessor mixed-scope PR #438 closed earlier.
+**Linear:** MEH-364 → Done.
+
+### Shipped (source-only)
+- 7 active edits across 5 files; 4 violations needed no edit (existing `// eslint-disable-next-line ... rtl-ok: ...` comments now within ±1 window from MEH-365).
+- `ChatWidget.jsx:12, 14` — JSDoc append `(rtl-ok: comment-only)`
+- `OnboardingTip.jsx:13` — JSDoc append `(rtl-ok: comment-only)`
+- `layout.js:121` — `{/* rtl-ok: focus position for accessibility */}` above skip-link
+- `Tooltip.jsx:6, 7` — trailing `// rtl-ok: centering, not directional`
+- `page.js:349` — own-line `// rtl-ok` above hero className (Option Y)
+- 6 files in PR (5 source + CHANGELOG). Visual diff: zero className mutations, zero JSX restructuring.
+
+### After this PR
+verify-frontend RTL count on staging tip: **0** (down from 11).
 
 ## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (shipped)
 
