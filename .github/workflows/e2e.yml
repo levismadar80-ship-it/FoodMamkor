@@ -31,10 +31,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  filter:
+    name: Paths filter
+    runs-on: ubuntu-latest
+    if: github.event.deployment_status.state == 'success'
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'public/**'
+              - 'package.json'
+              - 'package-lock.json'
+
   e2e:
     name: Playwright E2E (Vercel preview)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: filter
 
     # Only run on successful deployments (preview or production).
     # The environment filter `startsWith(environment, 'Preview')` was removed
@@ -42,7 +63,10 @@ jobs:
     # and caused the condition to evaluate false → 2-second failure on every run.
     # Tests are read-only so running against production is safe; the concurrency
     # group (e2e-${{ deployment.ref }}) ensures no two runs race on the same ref.
-    if: github.event.deployment_status.state == 'success'
+    # paths-filter (MEH-424): skip when no frontend files changed.
+    if: |
+      github.event.deployment_status.state == 'success' &&
+      needs.filter.outputs.frontend == 'true'
 
     steps:
       - uses: actions/checkout@v6
