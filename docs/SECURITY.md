@@ -660,11 +660,12 @@ Authorship of the 83 skills (after MEH-397):
    npmjs, pypi, mehamakor, vercel, railway); Bash commands matching
    subprocess-bypass patterns (`tools/clis/`, `(node|python|bash|sh)
    ...tools/`) blocked. All hooks fail-closed if `jq` missing.
-2. **Allowlist registry** (`.claude/skills-allowlist.json`) — 83
-   entries; every skill on disk must be listed with a non-blocked
-   verdict. Verdict `approved_local_unlocked` is a 30-day transitional
-   slot for skills that bypassed the lock (currently
-   `ui-ux-pro-max`).
+2. **Allowlist registry** (`.claude/skills-allowlist.json`) — 71
+   entries (post MEH-423); every skill on disk must be listed with a
+   non-blocked verdict. Verdict `approved_local_unlocked` is a 30-day
+   transitional slot for skills that bypassed the lock; **after
+   MEH-423, no skill currently holds it** (ui-ux-pro-max was the
+   prior holder and is now locked).
 3. **Audit script** (`.claude/scripts/audit-skills.sh`) — scans every
    `SKILL.md` for 4 pattern classes (network / exec / secret-name /
    prompt-injection). Combination of ≥2 classes in a single file =
@@ -727,9 +728,9 @@ author" note in the allowlist.
 Skill content lives **once** at `.agents/skills/<name>/SKILL.md`. The
 harness reads from `.claude/skills/<name>` (a symlink mode `120000`
 to `../../.agents/skills/<name>`). Editing either path mutates the
-same on-disk content. `ui-ux-pro-max` is the one exception — a real
-directory under `.claude/skills/`, allowlisted as
-`approved_local_unlocked` until lock-up.
+same on-disk content. After MEH-423, all 71 skills follow this
+uniform pattern (the prior `ui-ux-pro-max` real-directory exception
+has been migrated and locked).
 
 #### Subprocess-bypass class (MEH-422)
 
