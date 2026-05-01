@@ -1,7 +1,61 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-402 — pbakaus/impeccable audit, PR pending; MEH-306 sub-A merged, sub-B PR #412 pending merge)
+> Last updated: 2026-05-01 (MEH-420 — skills-lock hash enforcement, PR pending; MEH-306 sub-A + sub-B merged)
+
+## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement (the bug surfaced in MEH-402)
+
+**Branch:** `feature/meh-420-skills-lock-hash-enforcement` off staging.
+**Status:** PR pending. Closes the gap MEH-402 adversarial review found.
+
+**What changed:**
+- New: `.claude/scripts/compute-skill-hash.sh` — deterministic SHA256
+  over all regular files in a skill dir (sorted, NUL-separated, LC_ALL=C).
+  Symlinks inside skill dirs fail-loud (security: symlinks bypass
+  content hashing, so silent acceptance would create a tampering blind
+  spot).
+- New: `.claude/scripts/backfill-skill-hashes.sh` — atomic lock rewrite
+  with `--dry-run` mode for CI. Missing-on-disk skills fatal in either
+  mode (per A8 acceptance, never silently skipped).
+- Modified: `.claude/scripts/audit-skills.sh` — added Pass 4 (hash
+  enforcement). Skipped under `--self-test`. Emits `[HASH-DRIFT]` or
+  `[HASH-COMPUTE]` findings; bumps CRITICAL.
+- Modified: `.github/workflows/skills-audit.yml` — added 3rd stage
+  ("Lock-drift verify") that runs `backfill --dry-run`; updated path
+  globs to include the two new scripts.
+- Backfilled: all 74 entries in `skills-lock.json` with correct hashes
+  (one-shot commit, separate from the infrastructure commit).
+- Updated: `.claude/rules/skills.md` (Layer 4 expanded with hash
+  enforcement subsection) + `docs/SECURITY.md` (5-layer description
+  updated to truthful claim — was decorative, now enforcing).
+
+**Tamper tests passing (the whole point of this PR):**
+
+| Tamper | Caught | How |
+|---|---|---|
+| Modify `SKILL.md` | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Modify `reference/typography.md` | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Modify `scripts/generate_doc.py` | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Add new file to skill dir | ✓ | `[HASH-DRIFT]`, exit 1 |
+| Rename file within skill dir | ✓ | `[HASH-DRIFT]` (path is in digest), exit 1 |
+| Symlink injection (`/etc/passwd`) | ✓ | `[HASH-COMPUTE]` + symlink error, exit 1 |
+
+**Adversarial probes passed:** determinism (same input → same hash),
+path invariance (different CWD → same hash), CLI surface (bad args → exit 2),
+empty input (deterministic), symlink rejection (exit 1).
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| All-files-by-default (not allowlist of extensions) | More secure: attacker adding new file types can't hide them |
+| Symlinks fail-loud (not silent skip) | `find -type f` excludes symlinks, so silent acceptance = tampering blind spot |
+| Per-file digest then digest-of-digests | Easier to debug single-file mismatches; standard cryptographic construction |
+| `LC_ALL=C sort -z` (NUL-delimited) | Cross-platform deterministic; handles pathological filenames |
+| Two separate commits (infra + backfill) | Clean review: infra logic separable from the 74-entry hash rewrite |
+| ui-ux-pro-max stays unlocked | Out of scope (separate ticket); not in skills-lock.json so unaffected |
+
+**Counts unchanged this PR:** allowlist 75, lock 74. Hashes corrected.
 
 ## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
 
@@ -30,7 +84,7 @@
 |---|---|---|
 | Skill chaining via "MANDATORY PREPARATION" — auto-invokes `frontend-design` → `teach-impeccable` | 17 of 21 (all except teach-impeccable, frontend-design itself, audit, extract) | Audited the full chain; chain only triggers under explicit user `/<skill>` invocation |
 | Persistent file write to project root: `.impeccable.md` (and optionally `.github/copilot-instructions.md` with user confirmation) | teach-impeccable | Inert in Mehamakor today (file not auto-loaded by CLAUDE.md or `.claude/rules/*`). Flagged for re-eval at every Claude Code major update — if auto-load behavior is added, this becomes an injection vector |
-| Chain root protects all chained skills | frontend-design | Manually re-audit periodically (lock drift detection deferred to MEH-407) |
+| Chain root protects all chained skills | frontend-design | Manually re-audit periodically (lock drift detection closed by MEH-420) |
 
 **Decisions made this session:**
 
@@ -57,7 +111,7 @@ currently decorative, not enforcing.** Implication: MEH-397's stated
 "5-layer defense" is functionally 4 layers. The lock layer (Layer 4 in
 the original spec) provides no detection of upstream content drift.
 
-Tracked as **MEH-407 (Priority 1)** — to be created in Linear by user
+Tracked as **MEH-420 (Priority 1, closed in this branch)** — created in Linear by user
 after merge. Surfaced during MEH-402 adversarial review while
 verifying the architectural watch flags' detection mechanism.
 

@@ -211,7 +211,7 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-402. Full body + 7 reference/*.md files (808 lines total) scanned — all clean. Chain root: instructs MUST-run of teach-impeccable when no design context exists. Author: Paul Bakaus. Chain root for 17 of 21 pbakaus/impeccable skills. Integrity of this skill protects all chained skills — manually re-audit periodically (lock file drift detection currently non-functional — see MEH-407)."
+      "notes": "Audited MEH-402. Full body + 7 reference/*.md files (808 lines total) scanned — all clean. Chain root: instructs MUST-run of teach-impeccable when no design context exists. Author: Paul Bakaus. Chain root for 17 of 21 pbakaus/impeccable skills. Integrity of this skill protects all chained skills — manually re-audit periodically (lock file drift detection closed by MEH-420)."
     },
     "harden": {
       "source": "pbakaus/impeccable",
@@ -512,7 +512,7 @@
       "author_verified": false,
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-402. Full body reviewed — 1-time setup that gathers design context and writes .impeccable.md to project root + optionally appends to .github/copilot-instructions.md. User-invoked, intended. Output file inert in Mehamakor (not auto-loaded by CLAUDE.md / .claude/rules/). Author: Paul Bakaus. Architectural watch: writes .impeccable.md to project root. Inert as of MEH-402, but if Claude Code adds project-root auto-load behavior in future, this becomes an injection vector. Manually re-audit periodically (lock file drift detection currently non-functional — see MEH-407)."
+      "notes": "Audited MEH-402. Full body reviewed — 1-time setup that gathers design context and writes .impeccable.md to project root + optionally appends to .github/copilot-instructions.md. User-invoked, intended. Output file inert in Mehamakor (not auto-loaded by CLAUDE.md / .claude/rules/). Author: Paul Bakaus. Architectural watch: writes .impeccable.md to project root. Inert as of MEH-402, but if Claude Code adds project-root auto-load behavior in future, this becomes an injection vector. Manually re-audit periodically (lock file drift detection closed by MEH-420)."
     },
     "typeset": {
       "source": "pbakaus/impeccable",

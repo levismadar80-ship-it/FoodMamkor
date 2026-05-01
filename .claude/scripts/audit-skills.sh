@@ -138,6 +138,55 @@ if [ "$SELF_TEST" -eq 0 ]; then
   done <<< "$skill_names"
 fi
 
+# ---- Pass 4: hash enforcement (MEH-420; skipped for self-test) ----
+# Verifies every skill in skills-lock.json matches the hash that
+# compute-skill-hash.sh produces for its on-disk content. Closes the gap
+# discovered in MEH-402 adversarial review where computedHash was a
+# decorative metadata field that no script actually read.
+if [ "$SELF_TEST" -eq 0 ]; then
+  LOCK="$ROOT/skills-lock.json"
+  COMPUTE="$ROOT/.claude/scripts/compute-skill-hash.sh"
+
+  if [ ! -f "$LOCK" ]; then
+    echo "[ERROR] $LOCK not found — cannot verify hash integrity." >&2
+    exit 2
+  fi
+
+  if [ ! -f "$COMPUTE" ]; then
+    echo "[ERROR] $COMPUTE not found — cannot verify hash integrity." >&2
+    exit 2
+  fi
+
+  while IFS= read -r skill; do
+    [ -z "$skill" ] && continue
+
+    skill_dir="$ROOT/.agents/skills/$skill"
+
+    if [ ! -d "$skill_dir" ]; then
+      CRITICAL=$((CRITICAL+1))
+      printf '\n[LOCK-DRIFT] %s — listed in skills-lock.json but directory missing on disk\n' "$skill" >> "$REPORT_TMP"
+      continue
+    fi
+
+    expected=$(jq -r --arg s "$skill" '.skills[$s].computedHash // ""' "$LOCK")
+    if ! actual=$(bash "$COMPUTE" "$skill_dir" 2>>"$REPORT_TMP"); then
+      CRITICAL=$((CRITICAL+1))
+      printf '\n[HASH-COMPUTE] %s — compute-skill-hash.sh failed (likely symlinks present in skill dir)\n' "$skill" >> "$REPORT_TMP"
+      continue
+    fi
+
+    if [ "$expected" != "$actual" ]; then
+      CRITICAL=$((CRITICAL+1))
+      {
+        printf '\n[HASH-DRIFT] %s — content drifted from skills-lock.json\n' "$skill"
+        printf '  expected: %s\n' "$expected"
+        printf '  actual:   %s\n' "$actual"
+        printf '  fix:      bash .claude/scripts/backfill-skill-hashes.sh\n'
+      } >> "$REPORT_TMP"
+    fi
+  done < <(jq -r '.skills | keys_unsorted[]' "$LOCK" | LC_ALL=C sort)
+fi
+
 # ---- Output ----
 if [ -s "$REPORT_TMP" ]; then
   cat "$REPORT_TMP"

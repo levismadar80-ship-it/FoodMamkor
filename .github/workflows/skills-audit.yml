@@ -1,14 +1,17 @@
 name: Skills Supply Chain Audit
 
-# MEH-397 — supply-chain gate for the 83 skills under .agents/skills/ and
-# .claude/skills/. Two-stage gate:
+# MEH-397 + MEH-420 — supply-chain gate for the 83 skills under
+# .agents/skills/ and .claude/skills/. Three-stage gate:
 #   1. self-test — ensures audit-skills.sh exits 1 on the bad-skill fixture
 #   2. real audit — ensures audit-skills.sh exits 0 on the live tree
 #       (no critical findings + every skill present in skills-allowlist.json
-#       with a non-blocked verdict).
+#       with a non-blocked verdict + every locked skill matches its
+#       computedHash via Pass 4)
+#   3. lock-drift verify — backfill --dry-run must exit 0 (catches PRs
+#       that change skill content without rerunning backfill)
 #
-# Triggers on changes to: skill content, lock, allowlist, audit script, the
-# script's own test fixtures, or the workflow file itself.
+# Triggers on changes to: skill content, lock, allowlist, audit/hash/backfill
+# scripts, audit fixtures, or the workflow file itself.
 
 on:
   pull_request:
@@ -18,6 +21,8 @@ on:
       - '.claude/skills/**'
       - '.claude/skills-allowlist.json'
       - '.claude/scripts/audit-skills.sh'
+      - '.claude/scripts/compute-skill-hash.sh'
+      - '.claude/scripts/backfill-skill-hashes.sh'
       - '.claude/scripts/test/**'
       - 'skills-lock.json'
       - '.github/workflows/skills-audit.yml'
@@ -72,3 +77,10 @@ jobs:
 
       - name: Real audit — live tree must exit 0
         run: bash .claude/scripts/audit-skills.sh
+
+      - name: Lock-drift verify — backfill --dry-run must exit 0
+        run: |
+          if ! bash .claude/scripts/backfill-skill-hashes.sh --dry-run; then
+            echo "::error::skills-lock.json drifted from skill content. Run 'bash .claude/scripts/backfill-skill-hashes.sh' locally and commit the updated lock."
+            exit 1
+          fi
