@@ -651,12 +651,15 @@ Authorship of the 83 skills (after MEH-397):
 
 ### 5-layer defense
 
-1. **Tool deny + WebFetch allowlist** (`.claude/settings.json` +
-   PreToolUse hooks at `.claude/hooks/check-env-read.sh` and
-   `.claude/hooks/check-webfetch-allowlist.sh`). Read on `.env` files
+1. **Tool deny + WebFetch allowlist + subprocess bypass guard**
+   (`.claude/settings.json` + PreToolUse hooks at
+   `.claude/hooks/check-env-read.sh`,
+   `.claude/hooks/check-webfetch-allowlist.sh`, and (MEH-422)
+   `.claude/hooks/check-skill-bypass.sh`). Read on `.env` files
    blocked; WebFetch limited to 7 parent domains (github, anthropic,
-   npmjs, pypi, mehamakor, vercel, railway). Hooks fail-closed if
-   `jq` missing.
+   npmjs, pypi, mehamakor, vercel, railway); Bash commands matching
+   subprocess-bypass patterns (`tools/clis/`, `(node|python|bash|sh)
+   ...tools/`) blocked. All hooks fail-closed if `jq` missing.
 2. **Allowlist registry** (`.claude/skills-allowlist.json`) — 83
    entries; every skill on disk must be listed with a non-blocked
    verdict. Verdict `approved_local_unlocked` is a 30-day transitional
@@ -727,6 +730,55 @@ to `../../.agents/skills/<name>`). Editing either path mutates the
 same on-disk content. `ui-ux-pro-max` is the one exception — a real
 directory under `.claude/skills/`, allowlisted as
 `approved_local_unlocked` until lock-up.
+
+#### Subprocess-bypass class (MEH-422)
+
+Combines what was originally tracked as MEH-406 (Python network
+bypass) + MEH-421 (bash shell-out). Two mechanisms route command
+execution outside MEH-397's hooks:
+
+- **Class A — Bash shell-out:** 7 SKILL.md files in
+  `coreyhaines31/marketingskills` reference `node tools/clis/<x>.js`
+  patterns. Mehamakor has no `tools/` directory today — dead pointer.
+- **Class B — Python network at script level:**
+  `audit_a11y.py` (selenium scan), `check_shabbat.py` (HebCal),
+  `hebrew-nlp-toolkit` (HuggingFace doc) — `requests.get(...)` runs
+  inside a Python process the Bash hook can't observe.
+
+**Defense (MEH-422):**
+
+1. **`.claude/hooks/check-skill-bypass.sh`** — PreToolUse(Bash) hook.
+   Pattern-matches `tools/clis/`, `tools/integrations/`,
+   `tools/REGISTRY`, and `(node|python|bash|sh) ...tools/` invocations.
+   Direct invocation of known-network Python scripts is allowed only
+   if the skill's `allowed_network_hosts` is set to `["*"]` or specific
+   hosts. Fail-closed on jq missing, malformed JSON, or empty input.
+2. **Allowlist schema** — `allowed_network_hosts` and
+   `allowed_shell_invocations` fields per skill. `null`/missing =
+   unaudited (Pass 5 critical on match); `[]` = explicit policy
+   (dead-pointer for shell, no-network for python); `["*"]` = wildcard;
+   non-empty = listed.
+3. **Audit Pass 5** (`audit-skills.sh`) — static lint-time
+   verification. Markdown scanning is **fenced-code-block-aware** via
+   state machine over ` ``` ` lines: matches in code blocks are
+   governed by allowlist; matches in prose are documentation,
+   informational only.
+
+**Honest limit:** the hook layer cannot intercept `requests.get(url)`
+calls inside an already-running Python process. Defense relies on
+audit-time script scanning + allowlist documentation. `["*"]`
+semantics accept that the URL is user-controlled — the user must
+trust what they pass.
+
+**Hook layer detects literal bypass patterns. Obfuscation via bash
+evaluation (variable substitution, quote concatenation, subshell
+expansion) is not detected by static pattern matching.** Examples
+that evade the hook: `t""ools/clis/`, `T=tools; cd $T/clis`,
+`$(printf '%s%s' too ls)/clis/`. This is defense-in-depth, not a
+complete sandbox. Primary defense against obfuscated supply-chain
+attacks is the audit + hash enforcement + author verification stack
+(see `.claude/rules/skills.md` "Known limitations (MEH-422
+obfuscation bypass)" for the full list).
 
 ---
 

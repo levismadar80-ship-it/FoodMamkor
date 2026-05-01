@@ -46,6 +46,17 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-422 skill-bypass guard — blocks subprocess invocations that bypass MEH-397 hooks (node tools/, python tools/, bash tools/, tools/clis/, tools/integrations/, tools/REGISTRY). Also blocks direct invocation of known-network skill scripts (audit_a11y.py, check_shabbat.py) when their skill's allowed_network_hosts is null/empty. Exit 2 = block. Fail-closed if jq missing or input malformed.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-skill-bypass.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
