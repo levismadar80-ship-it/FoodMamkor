@@ -65,9 +65,17 @@ done
 MATCHED=$(printf '%s' "$CONTENT" | grep -oE "$RTL_PATTERN" | head -3 | tr '\n' ' ')
 
 if [ -n "$MATCHED" ]; then
+  # Adjacency-aware suppression (mirrors verify-frontend agent step 3 rtl-ok
+  # rule): if the new content contains an rtl-ok marker, defer to the strict
+  # plus/minus-one-line check performed at scan time. Write-time policy is
+  # permissive on marker presence; the verify-frontend agent enforces correct
+  # marker placement before merge.
+  if printf '%s' "$CONTENT" | grep -q 'rtl-ok'; then
+    exit 0
+  fi
   echo "RTL violation in ${FILE_PATH:-<unknown file>}: physical class(es) detected: ${MATCHED}" >&2
-  echo "Use logical properties instead: start-*/end-* (left-*/right-*), ms-*/me-* (ml-*/mr-*), ps-*/pe-* (pl-*/pr-*), ms-auto (ml-auto)." >&2
-  echo "Real exception? Add file to ALLOWLIST in .claude/hooks/check-rtl.sh (see .claude/hooks/README.md)." >&2
+  echo "Use logical properties instead. See .claude/rules/rtl.md for the full mapping." >&2
+  echo "Real exception? Add an inline rtl-ok marker within plus/minus-one line of the violation, or add the file to ALLOWLIST in .claude/hooks/check-rtl.sh (see .claude/hooks/README.md)." >&2
   exit 2
 fi
 
