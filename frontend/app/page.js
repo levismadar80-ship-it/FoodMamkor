@@ -346,6 +346,7 @@ export default function HomePage() {
 
         {/* Text anchored to bottom 25% of hero */}
         <div
+          // rtl-ok: centering, not directional
           className="absolute left-0 right-0 text-center px-4 text-white"
           style={{ bottom: "25%" }}
         >
