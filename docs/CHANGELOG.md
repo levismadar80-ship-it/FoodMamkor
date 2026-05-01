@@ -12,6 +12,40 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## 2026-05-01 — MEH-420: skills-lock.json computedHash enforcement
+
+Closes the architectural gap MEH-402 adversarial review surfaced —
+`computedHash` was decorative metadata that no script read, so the
+"5-layer defense" was functionally 4. After this PR, layer 4 actually
+enforces.
+
+**Infrastructure (commit 1):**
+- New: `.claude/scripts/compute-skill-hash.sh` — deterministic SHA256
+  over all regular files in a skill dir. Symlinks fail-loud.
+- New: `.claude/scripts/backfill-skill-hashes.sh` — atomic lock rewrite
+  with `--dry-run`. A8 acceptance: missing-on-disk skills fatal in
+  either mode, never silently skipped.
+- Modified: `.claude/scripts/audit-skills.sh` — Pass 4 added (hash
+  enforcement; skipped under `--self-test`).
+- Modified: `.github/workflows/skills-audit.yml` — added 3rd stage
+  (`backfill --dry-run` must exit 0) and new path globs for the two
+  new scripts.
+- Updated: `.claude/rules/skills.md` (Layer 4 expanded), `docs/SECURITY.md`
+  (5-layer description now truthful).
+
+**Backfill (commit 2):** all 74 entries in `skills-lock.json` rewritten
+with correct hashes via `bash .claude/scripts/backfill-skill-hashes.sh`.
+One-shot commit, separate from infrastructure for clean review.
+
+**Tamper tests (the whole point):** passing on 6 attack vectors —
+modify SKILL.md, modify reference file, modify script file, add file,
+rename file, symlink injection. Audit script catches all 6 and exits 1
+with clear `[HASH-DRIFT]` or `[HASH-COMPUTE]` findings.
+
+**Out of scope:** ui-ux-pro-max remains `approved_local_unlocked`
+(separate ticket). MEH-405 / MEH-406 (Python network bypass) — different
+class of trust-model gap.
+
 ## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
 
 **21 skills audited and approved** (review_needed → approved): `adapt`,
@@ -38,7 +72,7 @@ all four classes.
 - `frontend-design` is the chain root for 17 of 21 pbakaus/impeccable
   skills. Integrity of this skill protects all chained skills — manually
   re-audit periodically (lock file drift detection currently
-  non-functional, see MEH-407).
+  non-functional, see MEH-420).
 
 **Adversarial review findings applied in same PR:**
 
@@ -47,7 +81,7 @@ all four classes.
   ≠ identity verification. "Public figure" alone never justifies `true`.
 - `computedHash` field in `skills-lock.json` discovered to be non-functional
   across all 74 skills repo-wide — no script or workflow reads it. MEH-397's
-  stated 5-layer defense is functionally 4 layers. Deferred to MEH-407
+  stated 5-layer defense is functionally 4 layers. Deferred to MEH-420
   (Priority 1) for fix. Watch-flag wording softened to "manually re-audit
   periodically" since automated drift detection doesn't currently exist.
 

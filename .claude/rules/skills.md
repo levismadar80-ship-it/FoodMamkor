@@ -2,6 +2,8 @@
 
 How Mehamakor sandboxes the 83 third-party skills under `.agents/skills/`
 and `.claude/skills/`. Defense-in-depth: 5 layers, fail-closed by default.
+Hash enforcement (Layer 4) closed by MEH-420 after MEH-402 adversarial
+review found `computedHash` was decorative metadata that no script read.
 
 Threat model basis: Snyk ToxicSkills (Feb 2026) — 13.4% of 3,984 ClawHub
 skills with critical security issues; 76 confirmed malicious payloads.
@@ -130,19 +132,68 @@ patterns.
 
 ---
 
-## Layer 4 — CI gate
+## Layer 4 — CI gate + hash enforcement
 
 `.github/workflows/skills-audit.yml` — runs on every PR touching
-`.agents/skills/**`, `.claude/skills/**`, the allowlist, the audit
-script, or `skills-lock.json`. Two-stage gate:
+`.agents/skills/**`, `.claude/skills/**`, the allowlist, the audit /
+compute-hash / backfill scripts, or `skills-lock.json`. Three-stage gate:
 
 1. **Self-test:** `bash .claude/scripts/audit-skills.sh --self-test` must
    exit 1 (proves the audit catches malicious patterns).
-2. **Real audit:** `bash .claude/scripts/audit-skills.sh` must exit 0
-   (proves the live tree is clean and every skill is allowlisted with
-   a non-blocked verdict).
+2. **Real audit:** `bash .claude/scripts/audit-skills.sh` must exit 0.
+   This includes Pass 4 — for every entry in `skills-lock.json`, the
+   audit recomputes the hash via `compute-skill-hash.sh` and fails on
+   any mismatch with `[HASH-DRIFT]` or `[HASH-COMPUTE]` findings.
+3. **Lock-drift verify:** `bash .claude/scripts/backfill-skill-hashes.sh
+   --dry-run` must exit 0. This catches PRs that modify skill content
+   without rerunning the backfill (Pass 4 catches the same condition,
+   but this step gives a single-purpose error message pointing at the
+   fix command).
 
-Failure of either stage blocks merge to staging or main.
+Failure of any stage blocks merge to staging or main.
+
+### Hash enforcement (MEH-420)
+
+The lock file is now the trust anchor for skill content, not just metadata.
+
+**Algorithm** — `.claude/scripts/compute-skill-hash.sh`:
+
+1. `find` all regular files under the skill dir, excluding `.git/`,
+   `__pycache__/`, `.DS_Store`, `*.pyc`. Symlinks fail-loud.
+2. Sort byte-order: `LC_ALL=C sort -z` (NUL-delimited, locale-independent).
+3. Per-file digest = `sha256( <relpath>\0 + content + \0 )`.
+4. Final hash = `sha256` of the concatenated per-file digests.
+
+**What's hashed:** every regular file (`SKILL.md`, `SKILL_HE.md`,
+`reference/*`, `references/*`, `scripts/*`, `data/*`, top-level JSON,
+anything else). All-files-by-default — an attacker adding an unknown
+file type can't hide it.
+
+**What's not hashed:** file modes (rwx), mtimes, directory entries
+themselves, symlinks (which are blocked outright by the symlink check).
+
+**Backfill** — `.claude/scripts/backfill-skill-hashes.sh`:
+
+- `--dry-run` (= `--verify`): print `OLD -> NEW` per drifted skill,
+  exit 1 if any drift, exit 0 if clean. CI calls this.
+- (no flag): atomic rewrite of `skills-lock.json` (tmp + jq validate +
+  mv). Used after audited content changes.
+- A skill listed in the lock but missing from disk is fatal in either
+  mode (exit 1, names the missing skill).
+
+**When you change a skill (e.g., audit + accept upstream version bump):**
+
+1. Update content under `.agents/skills/<name>/`.
+2. Run `bash .claude/scripts/backfill-skill-hashes.sh` (writes new hash).
+3. Commit lock + content together. CI Pass 4 + drift verify both pass.
+
+**When CI fails with `[HASH-DRIFT]`:** content changed without a lock
+update. Either revert the content or run the backfill.
+
+**When CI fails with `[HASH-COMPUTE]`:** symlinks present in the skill
+dir. Remove them or, if upstream legitimately needs one, add an explicit
+allowlist note before locking — `compute-skill-hash.sh` will not produce
+a hash for a skill containing symlinks.
 
 ---
 

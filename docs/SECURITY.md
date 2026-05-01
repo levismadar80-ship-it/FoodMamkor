@@ -667,14 +667,51 @@ Authorship of the 83 skills (after MEH-397):
    prompt-injection). Combination of ≥2 classes in a single file =
    critical, exit 1. Self-test fixture at
    `.claude/scripts/test/fixtures/bad-skill/SKILL.md` proves the
-   detector works.
-4. **CI gate** (`.github/workflows/skills-audit.yml`) — runs on every
-   PR touching skills, the lock, or the audit script. Two-stage:
-   self-test must exit 1 (proves detection); real audit must exit 0
-   (proves clean). Either failure blocks merge.
+   detector works. **Pass 4 (MEH-420)** also recomputes every locked
+   skill's content hash via `compute-skill-hash.sh` and fails on
+   `[HASH-DRIFT]` (content vs lock mismatch) or `[HASH-COMPUTE]`
+   (symlink injection inside skill dir).
+4. **CI gate + lock enforcement** (`.github/workflows/skills-audit.yml`)
+   — runs on every PR touching skills, the lock, the audit / hash /
+   backfill scripts, or the workflow. Three-stage: self-test must
+   exit 1 (proves detection); real audit must exit 0 (proves clean
+   content + matching hashes); `backfill-skill-hashes.sh --dry-run`
+   must exit 0 (catches PRs that change skill content without
+   rerunning the backfill). Any failure blocks merge.
 5. **Documentation** — full policy in
    [.claude/rules/skills.md](../.claude/rules/skills.md), 4-step
    add-skill protocol, 30-day SLA on transitional verdicts.
+
+#### Hash enforcement (MEH-420)
+
+Before MEH-420, layer 4's lock was decorative — `computedHash` values
+in `skills-lock.json` did not match actual `SKILL.md` SHA256s for any
+of the 74 locked skills, and no script or workflow read the field. The
+"5-layer defense" was functionally 4. MEH-402 adversarial review
+surfaced the gap; MEH-420 closed it.
+
+**Hash algorithm** — `.claude/scripts/compute-skill-hash.sh`:
+
+- All regular files in the skill dir contribute (SKILL.md, SKILL_HE.md,
+  reference/, references/, scripts/, data/, top-level JSON, anything else)
+- Excludes only known noise: `.git/`, `__pycache__/`, `.DS_Store`, `*.pyc`
+- Sorted byte-order via `LC_ALL=C sort -z` for cross-platform determinism
+- Per-file digest = `sha256(<relpath>\0 + content + \0)`; final = `sha256` of concatenated digests
+- Symlinks inside a skill dir fail-loud — they bypass `find -type f` so
+  silent acceptance would create a tampering blind spot
+
+**Backfill** — `.claude/scripts/backfill-skill-hashes.sh`:
+
+- Default mode rewrites `skills-lock.json` atomically (tmp + jq validate + mv)
+- `--dry-run` (= `--verify`) prints `OLD -> NEW` per drifted skill;
+  exit 1 if any drift, exit 0 if clean
+- A skill listed in the lock but missing from disk is fatal in either
+  mode (named in the error message; never silently skipped)
+
+**Threat model coverage:** the hash detects content edits, file additions,
+file renames within a skill, and symlink injection. It does not cover
+file modes (rwx) or directory mtimes — those aren't part of the prompt
+injection / supply-chain threat model.
 
 ### Adding a new skill
 
