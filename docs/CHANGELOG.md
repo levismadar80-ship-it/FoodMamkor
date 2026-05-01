@@ -12,6 +12,37 @@
 > paragraphs; post-restructure entries are short (PR number, date, what
 > shipped) and link out to the PR for details.
 
+## [שבוע של 1 במאי 2026] — אבטחה, שדרוגים ומדיניות סיסמאות
+
+22 PRs הוזגגו לstaging השבוע — השבוע הכי עמוס מאז תחילת הפרויקט. מוקד: מדיניות סיסמאות מקצה לקצה, סיור ביקורת על שרשרת אספקת skills, observability מלא עם Sentry, ושדרוג Next.js 14 → 16.
+
+### ✨ נוסף
+- MEH-306: מדיניות סיסמאות מקצה לקצה — validators + HIBP + Alembic בbackend, PasswordInput UI + שגיאות בעברית + force-logout בfrontend (PRs #408, #410, #412)
+- MEH-100: תמונת מייסדת ב-/about — החלפת Leaf placeholder בportrait Cloudinary 3:4 עם fallback (PR #397)
+- MEH-370: שדרוג Next.js 14.2.35 → 16.2.4 — 7 CVEs נסגרו, npm ci עם next@16 עובר (PR #395)
+
+### 🐛 תוקן
+- MEH-393: הודעת שגיאה 409 על רישום OAuth כפול מוצגת כ-toast ולא נבלעת (PR #406)
+- MEH-418+419: copy מטעה "8 תווים" ב-/login הוסרה; role="alert" נוסף ל-5 טפסים חסרים (PR #418)
+- MEH-382: race condition בפריסת Railway CI — retry עם exponential backoff (PR #401)
+- MEH-372: next-pwa הוסרה — חסמה Turbopack; PWA נדחתה לתמיכת Next.js מלאה (PR #403)
+- MEH-395: Password deny-list — strip whitespace לפני בדיקה, edge-case bypass נסגר (PR #410)
+
+### 🔧 שיפורים
+- MEH-397+400+401+402+420: סיור ביקורת על שרשרת אספקת skills — 78+ skills נבדקו, 8 נמחקו, computedHash נאכף (PRs #409, #413, #414, #416, #417)
+- MEH-379+380+381: CSP hardening ל-Sentry — connect-src לדומיינים ingest, worker-src blob:, report-uri מה-DSN (PR #399)
+- MEH-376: Sentry DSN חובר ל-Vercel — observability פעיל לראשונה בproduction
+- MEH-371: שדרוג Sentry SDK v8 → v10 (2 major-versions) — 4 vulns נסגרו (PR #396)
+- MEH-398: Sanitize CLI args בui-ux-pro-max — path traversal hardening (PR #411)
+- PR #404: חיבור fire_alerts() ליצירת מוצר — gap A מאודיט האבטחה נסגר
+
+### 📝 תיעוד
+- MEH-322: /ultrareview gate — נוסף ל-workflow.md + templates 02/04 (PR #407)
+- MEH-342: פיצול CLAUDE.md → .claude/rules/*.md — lazy-load per file path
+- MEH-360: תיעוד חסימת CC sandbox ל-Railway URLs — smoke verification חייבת לרוץ לוקאלית בלבד
+
+---
+
 ## 2026-05-01 — MEH-418 + MEH-419: A11y sweep + /login copy cleanup
 
 - `/login`: replace specific char-count length-check copy ("סיסמא חייבת להכיל לפחות 8 תווים") with generic "הזיני סיסמה" — outdated post-MEH-306 (login validates the stored hash, no specific minimum).

@@ -1,7 +1,27 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-418 + MEH-419 — a11y sweep + /login copy cleanup, PR pending; MEH-306 sub-A + sub-B merged; MEH-420 in flight)
+> Last updated: 2026-05-01 (סיכום שבועי — שבוע של 1 במאי 2026)
+
+## 📊 סיכום שבועי — שבוע של 1 במאי 2026
+
+### מצב נוכחי
+- **מדיניות סיסמאות** — הושלמה מקצה לקצה: backend (MEH-305, validators + HIBP + Alembic) + frontend (MEH-306, PasswordInput UI + שגיאות בעברית + force-logout). PRs #408, #410, #412 בstaging.
+- **שרשרת אספקת skills נוקתה** — סיור ביקורת על 78+ skills בחמישה מאגרים; 8 skills נמחקו, computedHash נאכף לראשונה (MEH-397/400/401/402/420).
+- **Sentry observability פעיל** — DSN חובר ל-Vercel, CSP hardening שלוש נקודות (MEH-376/379/380/381), SDK שודרג v8 → v10 (MEH-371).
+- **Next.js שודרג 14 → 16.2.4** (MEH-370, PR #395) — 7 CVEs נסגרו, חסם npm ci הוסר.
+- **תיקוני UX + a11y** — 409 OAuth כ-toast (MEH-393), copy מטעה ב-/login (MEH-418), role="alert" ב-5 טפסים (MEH-419), תמונת מייסדת ב-/about (MEH-100).
+
+### על הפרק (top 3 לפי עדיפות)
+1. **MEH-408 (Urgent)** — Production safety hardening: גיבויים מחוץ ל-Railway, הפרדת DB URLs, deny-list לפקודות הרסניות. הסיכון קיים כל יום שלא מטפלים.
+2. **MEH-229 (Urgent)** — Audit 3/7: Security — IDOR, rate limits, injection, secrets. חלק מסדרת 7 אודיטים לפני launch.
+3. **MEH-233 (Urgent)** — Audit 7/7: Mobile responsiveness — iPhone SE + Galaxy, 36 screens × Playwright.
+
+### חסמים
+- **MEH-319 (prod-blocker)** — WhatsApp regression: בעלת עסק נרשמת, מקבלת "שלחנו הודעת WhatsApp", ההודעה לא מגיעה. MEH-287 לא תיקן. דורש חקירה מעמיקה.
+- **MEH-351 (blocked by rebase)** — Bump anthropic 0.39 → 0.97: הבranch 67+ commits מאחורי staging. דורש rebase לפני שניתן להמשיך.
+
+---
 
 ## 2026-05-01 — MEH-418 + MEH-419: a11y sweep + /login copy cleanup
 
