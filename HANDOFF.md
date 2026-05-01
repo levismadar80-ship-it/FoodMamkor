@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-365 ✅ + MEH-364 ✅ shipped serially. RTL adjacency check active; 11 pre-existing violations annotated. MEH-426 follow-up tracked with archived patches at `docs/archive/meh-365/`.)
+> Last updated: 2026-05-01 (MEH-364 ✅ + MEH-363 ✅ shipped. RTL count 11 → 0 on staging; agent-permissions-investigation report archived. MEH-426 follow-up tracked at `docs/archive/meh-365/`.)
 
 ## 2026-05-01 — MEH-364: 11 pre-existing RTL violations annotated (shipped)
 
@@ -20,6 +20,53 @@
 
 ### After this PR
 verify-frontend RTL count on staging tip: **0** (down from 11).
+
+## 2026-05-01 — MEH-363: agent-permissions-investigation (read-only)
+
+**Branch:** `feature/meh-363-agent-permissions-investigation` off staging.
+**Status:** ✅ Merged — PR #439.
+**Linear:** MEH-363 → Done.
+
+**Goal:** document whether `tools:` frontmatter in `.claude/agents/*.md`
+is enforced or advisory, and map the layers that actually gate sub-agent
+tool use.
+
+**Headline finding:** frontmatter `tools:` is **advisory only**. A
+sub-agent (`verify-frontend`) declared with
+`tools: Bash(npm:*), Read, Grep, Glob` successfully invoked `Edit`
+against repository source files. The edits landed on disk
+(`frontend/app/layout.js`, `frontend/app/page.js`,
+`frontend/components/ui/Tooltip.jsx`) and were observable via
+`git diff`. They have been stashed, not committed
+(`stash@{0}: PROBE-1 evidence`).
+
+**Confirmed enforcement layers (in order):**
+
+1. `permissions.deny` (`.claude/settings.json:193-214`) — blocked
+   `Read(./frontend/.env)` with the harness's `"File is in a directory
+   that is denied by your permission settings."` formatting.
+2. PreToolUse hooks (`.claude/settings.json:3-92`) —
+   `check-bash-safety.sh` blocked both the sentinel
+   `echo "rm -rf /tmp/test"` and the real `rm -rf /tmp/...` call.
+
+**Per-agent isolation:** none. Sub-agents inherit the parent session's
+permission table and PreToolUse hooks; nothing else changes.
+
+**Recommendation:** treat `tools:` as documentation of intent. Any tool
+that would be dangerous in the wrong agent's hands must be gated at L1
+(`permissions.deny`) or L2 (PreToolUse hook). Not at frontmatter.
+
+**Artifacts:**
+- `docs/agent-permissions-investigation.md` — full probe transcripts
+  (verbatim), behavior table, layer diagram, recommendation.
+- `docs/CHANGELOG.md` — one-line entry.
+- This HANDOFF.md update.
+
+**Forbidden during investigation (and respected):** no destructive
+commands actually executed (sentinels only), no edits to settings
+files, no audit of MEH-397 allowlist correctness.
+
+**Follow-up:** MEH-425 (subagent tools: advisory hardening — see PR #439 description).
 
 ## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (shipped)
 
