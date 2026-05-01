@@ -6,16 +6,16 @@
     "ab-test-setup": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "ad-creative": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body + 2 references reviewed. Chains to product-marketing-context. Two findings: (1) Documentation references API keys via shell env vars (GEMINI_API_KEY, ELEVENLABS_API_KEY) in curl examples (references/generative-tools.md). Documentation only — not auto-invoked. User responsibility to manage credentials securely. (2) ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/google-ads.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "adapt": {
       "source": "pbakaus/impeccable",
@@ -27,16 +27,16 @@
     "ai-seo": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "analytics-tracking": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "animate": {
       "source": "pbakaus/impeccable",
@@ -76,9 +76,9 @@
     "cold-email": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body + 5 references reviewed (largest skill in batch, 7 files). Pure cold-email copy-writing guidance. Chains to product-marketing-context. Round-1 NETWORK regex hit was false-positive — `requests\\.` matched English word in prose at line 51 (\"beat meeting requests.\"). No actual code reference. Author: Corey Haines."
     },
     "colorize": {
       "source": "pbakaus/impeccable",
@@ -90,44 +90,44 @@
     "community-marketing": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "competitor-alternatives": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "competitor-profiling": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "content-strategy": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "copy-editing": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "copywriting": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "critique": {
       "source": "pbakaus/impeccable",
@@ -139,9 +139,9 @@
     "customer-research": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "delight": {
       "source": "pbakaus/impeccable",
@@ -153,9 +153,9 @@
     "directory-submissions": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "distill": {
       "source": "pbakaus/impeccable",
@@ -167,9 +167,9 @@
     "email-sequence": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "extract": {
       "source": "pbakaus/impeccable",
@@ -181,16 +181,16 @@
     "form-cro": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "free-tool-strategy": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "frontend-design": {
       "source": "pbakaus/impeccable",
@@ -307,30 +307,30 @@
     "launch-strategy": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "lead-magnets": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "marketing-ideas": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "marketing-psychology": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "normalize": {
       "source": "pbakaus/impeccable",
@@ -349,9 +349,9 @@
     "onboarding-cro": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "optimize": {
       "source": "pbakaus/impeccable",
@@ -370,23 +370,23 @@
     "page-cro": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "paid-ads": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "paywall-upgrade-cro": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "polish": {
       "source": "pbakaus/impeccable",
@@ -398,30 +398,30 @@
     "popup-cro": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "pricing-strategy": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "product-marketing-context": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body reviewed. Meta-skill — chain root for the other 33 coreyhaines/marketingskills entries (all reference product-marketing-context.md before asking questions). Writes `.agents/product-marketing-context.md` to project tree on user invocation. Reads codebase (README, package.json, marketing copy) read-only. Same architectural class as teach-impeccable (MEH-402) — persistent file in project tree, inert in Mehamakor today (not auto-loaded by CLAUDE.md or .claude/rules/). Manually re-audit periodically. Author: Corey Haines."
     },
     "programmatic-seo": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "quieter": {
       "source": "pbakaus/impeccable",
@@ -433,23 +433,23 @@
     "referral-program": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. ⚠️ ARCHITECTURAL: SKILL.md instructs Claude to invoke `node tools/clis/<x>.js` — dead pointer in Mehamakor today (no `tools/` dir exists). FUTURE RISK: if any commit adds `tools/clis/`, this skill auto-suggests shell execution that bypasses MEH-397 hooks. Tracked as MEH-XXX (separate ticket from MEH-406 Python bypass — different mechanism). Author: Corey Haines."
     },
     "schema-markup": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body reviewed. Pure schema.org / JSON-LD guidance. Code blocks are JSON-LD examples. No subprocess/eval/network/secrets/injection canaries, no tools/ shell-out. Chains to product-marketing-context. Author: Corey Haines."
     },
     "seo-audit": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Full body + 2 references reviewed (497 lines, longest in batch). Pure SEO audit guidance. Mentions `web_fetch` as a Claude tool (instructive context, not invocation). No tools/ shell-out. Chains to product-marketing-context. Author: Corey Haines."
     },
     "shabbat-aware-scheduler": {
       "source": "skills-il/localization",
@@ -461,23 +461,23 @@
     "signup-flow-cro": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "site-architecture": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "social-content": {
       "source": "coreyhaines31/marketingskills",
       "author_verified": false,
-      "last_audit_date": null,
-      "audit_verdict": "review_needed",
-      "notes": ""
+      "last_audit_date": "2026-05-01",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "teach-impeccable": {
       "source": "pbakaus/impeccable",
