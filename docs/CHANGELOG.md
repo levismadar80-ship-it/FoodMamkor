@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-365: consolidate RTL allowlist + add ±1 adjacency check
+
+- `rtl-allowlist.txt` becomes single source of truth for both `check-rtl.sh` hook and `verify-frontend` agent; structured with PATH EXCEPTIONS / CONTENT PATTERNS sections. `check-rtl.sh` now reads from the file (replaces hardcoded array) and supports `// rtl-ok` inline annotation with ±1 line adjacency window. `verify-frontend.md` updated with section-aware parser and per-violation awk that avoids false suppression when grep merges adjacent violation windows. Unblocks MEH-364.
+
 ## 2026-05-01 — MEH-424: skip Playwright E2E on docs-only PRs
 
 - PR #435 — `dorny/paths-filter@v3` filter job added to `e2e.yml`; E2E skips unless `frontend/**`, `public/**`, `package.json`, or `package-lock.json` are touched. Docs-only PRs (HANDOFF, CHANGELOG, workflow YAML) no longer trigger the full Playwright suite.

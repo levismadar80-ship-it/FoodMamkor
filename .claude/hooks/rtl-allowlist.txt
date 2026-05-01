@@ -1,3 +1,10 @@
+# .claude/hooks/rtl-allowlist.txt
+# Single source of truth for RTL exceptions.
+# Used by: .claude/hooks/check-rtl.sh (PreToolUse hook)
+#           .claude/agents/verify-frontend.md (RTL scan)
+# IMPORTANT: No blank lines — grep -v -f treats empty lines as match-everything.
+# ============ PATH EXCEPTIONS ============
+# Entire files whose LTR context justifies physical properties.
 frontend/app/map/MapClient.jsx
 frontend/components/ImageGallery.jsx
 frontend/components/Lightbox.jsx
@@ -6,5 +13,11 @@ frontend/app/login/page.js
 frontend/app/register/page.js
 frontend/app/settings/page.jsx
 frontend/app/reset-password/page.js
+# MEH-306: canonical eye-toggle exception (see .claude/rules/rtl.md)
 frontend/components/PasswordInput.jsx
+# TODO: chevron should use logical position (out of scope MEH-341)
 frontend/components/CategorySelector.jsx
+# ============ CONTENT PATTERNS ============
+# Inline annotation markers. A violation is suppressed when this string
+# appears on the same line or either adjacent line (±1 window).
+rtl-ok

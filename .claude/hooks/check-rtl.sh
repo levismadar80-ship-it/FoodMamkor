@@ -2,24 +2,32 @@
 # RTL physical-property guard (PreToolUse: Edit|Write|MultiEdit)
 # Blocks Tailwind classes that use physical left/right directions instead of logical start/end.
 # Exit 2 = block. Exit 0 = allow.
+# Single source of truth: .claude/hooks/rtl-allowlist.txt
+# Supports inline // rtl-ok annotation (±1 line adjacency).
 
-ALLOWLIST=(
-  "frontend/app/map/MapClient.jsx"
-  "frontend/components/ImageGallery.jsx"
-  "frontend/components/Lightbox.jsx"
-  "frontend/components/LoginPromptModal.jsx"
-  "frontend/app/login/page.js"
-  "frontend/app/register/page.js"
-  "frontend/app/settings/page.jsx"
-  "frontend/app/reset-password/page.js"
-  # MEH-306: canonical eye-toggle exception per RTL rules (see rtl.md
-  # "Intentional physical-property exceptions"). Sub-B consolidates the
-  # inline eye-toggle pattern from /register, /reset-password, and
-  # /settings into this reusable component.
-  "frontend/components/PasswordInput.jsx"
-  # TODO: chevron should use logical position (out of scope MEH-341)
-  "frontend/components/CategorySelector.jsx"
-)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALLOWLIST_FILE="$SCRIPT_DIR/rtl-allowlist.txt"
+
+# Fail-open if allowlist missing
+if [ ! -f "$ALLOWLIST_FILE" ]; then
+  echo "check-rtl.sh: rtl-allowlist.txt not found — RTL check skipped." >&2
+  exit 0
+fi
+
+# Load PATH_EXCEPTIONS and CONTENT_PATTERNS from allowlist
+mapfile -t PATH_EXCEPTIONS < <(awk '
+  /^#.*PATH EXCEPTIONS/  { section="path";    next }
+  /^#.*CONTENT PATTERNS/ { section="content"; next }
+  /^[[:space:]]*(#|$)/   { next }
+  section == "path"      { print }
+' "$ALLOWLIST_FILE")
+
+mapfile -t CONTENT_PATTERNS < <(awk '
+  /^#.*PATH EXCEPTIONS/  { section="path";    next }
+  /^#.*CONTENT PATTERNS/ { section="content"; next }
+  /^[[:space:]]*(#|$)/   { next }
+  section == "content"   { print }
+' "$ALLOWLIST_FILE")
 
 RTL_PATTERN='\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]'
 
@@ -48,26 +56,45 @@ if [ -z "$CONTENT" ]; then
 fi
 
 # Markdown documentation files: prose may reference physical class names
-# verbatim as examples (CLAUDE.md, workflow.md cite known LTR-input exceptions).
-# RTL enforcement is for runtime CSS, not for prose. MEH-355.
+# verbatim as examples. RTL enforcement is for runtime CSS, not prose. MEH-355.
 if [[ "$FILE_PATH" == *.md ]]; then
   exit 0
 fi
 
-# Check allowlist
-for allowed in "${ALLOWLIST[@]}"; do
+# Check path exceptions (file-path glob matching)
+for allowed in "${PATH_EXCEPTIONS[@]}"; do
   if [[ "$FILE_PATH" == *"$allowed"* ]]; then
     exit 0
   fi
 done
 
 # Check for physical RTL classes
-MATCHED=$(printf '%s' "$CONTENT" | grep -oE "$RTL_PATTERN" | head -3 | tr '\n' ' ')
+MATCHED=$(printf '%s' "$CONTENT" | grep -nE "$RTL_PATTERN")
 
 if [ -n "$MATCHED" ]; then
-  echo "RTL violation in ${FILE_PATH:-<unknown file>}: physical class(es) detected: ${MATCHED}" >&2
-  echo "Use logical properties instead: start-*/end-* (left-*/right-*), ms-*/me-* (ml-*/mr-*), ps-*/pe-* (pl-*/pr-*), ms-auto (ml-auto)." >&2
-  echo "Real exception? Add file to ALLOWLIST in .claude/hooks/check-rtl.sh (see .claude/hooks/README.md)." >&2
+  # Check each violation line for rtl-ok within +-1 lines (adjacency annotation)
+  ALL_ANNOTATED=true
+  while IFS=: read -r linenum _; do
+    start=$(( linenum > 1 ? linenum - 1 : 1 ))
+    window=$(printf '%s' "$CONTENT" | sed -n "${start},$((linenum + 1))p")
+    annotated=false
+    for cpat in "${CONTENT_PATTERNS[@]}"; do
+      if [ -n "$cpat" ] && printf '%s' "$window" | grep -q "$cpat"; then
+        annotated=true
+        break
+      fi
+    done
+    if ! $annotated; then
+      ALL_ANNOTATED=false
+      break
+    fi
+  done < <(printf '%s' "$CONTENT" | grep -nE "$RTL_PATTERN")
+  $ALL_ANNOTATED && exit 0
+
+  MATCHED_CLASSES=$(printf '%s' "$CONTENT" | grep -oE "$RTL_PATTERN" | head -3 | tr '\n' ' ')
+  echo "RTL violation in ${FILE_PATH:-<unknown file>}: physical class(es) detected: ${MATCHED_CLASSES}" >&2
+  echo "Use logical properties: start-*/end-* instead of left-*/right-*; ms-*/me-* instead of ml-*/mr-*; ps-*/pe-* instead of pl-*/pr-*." >&2
+  echo "Real exception? Add '// rtl-ok' within +-1 lines of each violation, or add file path to .claude/hooks/rtl-allowlist.txt." >&2
   exit 2
 fi
 

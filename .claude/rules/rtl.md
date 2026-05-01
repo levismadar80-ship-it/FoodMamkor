@@ -61,3 +61,42 @@ these tokens.
   `right-3` (physical), never `left-3`. Live in `/login` + `/register`.
 - **Leaflet tooltip z-index** — must be `500` (between markers:400 and
   bottom-sheet:600). See Map z-index tokens above.
+
+---
+
+## RTL allowlist — single source of truth (MEH-365)
+
+`.claude/hooks/rtl-allowlist.txt` is the **single source of truth** for RTL
+exceptions. Both enforcement tools read from it:
+
+- `check-rtl.sh` (PreToolUse hook) — blocks edits to non-allowlisted files
+  containing physical RTL classes unless annotated
+- `verify-frontend` agent — static scan reports violations not covered by
+  the allowlist
+
+### Two sections in the allowlist
+
+```
+# ============ PATH EXCEPTIONS ============
+# Files where physical properties are justified (entire file exempt).
+frontend/app/map/MapClient.jsx
+...
+
+# ============ CONTENT PATTERNS ============
+# Inline annotation markers (suppress individual violations).
+rtl-ok
+```
+
+### Inline `// rtl-ok` annotation
+
+Add `// rtl-ok` on the same line as a physical class, or either adjacent
+line (±1), to suppress a single violation without exempting the whole file:
+
+```jsx
+{/* rtl-ok */}
+<div className="left-1/2 -translate-x-1/2">   {/* horizontal center — direction-neutral */}
+```
+
+Both tools enforce the same ±1 adjacency window. Adding a new physical
+exception that isn't direction-neutral → add the file to PATH EXCEPTIONS
+in the allowlist (not an inline annotation).

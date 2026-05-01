@@ -31,9 +31,57 @@ You do NOT fix issues — report only.
    if [ ! -f "$ALLOWLIST" ]; then
      RTL_RESULT="ALLOWLIST_MISSING"
    else
-     RTL_RESULT=$(grep -rEn '\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]' \
-       "$REPO_ROOT/frontend/components" "$REPO_ROOT/frontend/app" \
-       | grep -v -f "$ALLOWLIST")
+     PATH_PAT=$(mktemp)
+     awk '
+       /^#.*PATH EXCEPTIONS/  { section="path";    next }
+       /^#.*CONTENT PATTERNS/ { section="content"; next }
+       /^[[:space:]]*(#|$)/   { next }
+       section == "path"      { print }
+     ' "$ALLOWLIST" > "$PATH_PAT"
+     CONTENT_PATS=$(awk '
+       /^#.*PATH EXCEPTIONS/  { section="path";    next }
+       /^#.*CONTENT PATTERNS/ { section="content"; next }
+       /^[[:space:]]*(#|$)/   { next }
+       section == "content"   { print }
+     ' "$ALLOWLIST" | paste -sd '|')
+     RTL_RESULT=$(
+       grep -rEn -B1 -A1 '\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]' \
+         "$REPO_ROOT/frontend/components" "$REPO_ROOT/frontend/app" \
+       | grep -v -f "$PATH_PAT" \
+       | awk -v cpats="$CONTENT_PATS" '
+           BEGIN { np = split(cpats, pats, "|"); buf_n = 0 }
+           /^--$/ { flush(); buf_n = 0; next }
+           {
+             buf[buf_n] = $0
+             np2 = split($0, parts, ":")
+             if (np2 >= 2 && parts[2] ~ /^[0-9]+$/) {
+               lnum[buf_n] = parts[2] + 0; is_match[buf_n] = 1
+             } else if (np2 >= 2 && parts[2] ~ /^[0-9]+-/) {
+               d = index(parts[2], "-")
+               lnum[buf_n] = substr(parts[2], 1, d - 1) + 0; is_match[buf_n] = 0
+             } else { lnum[buf_n] = 0; is_match[buf_n] = 0 }
+             buf_n++
+           }
+           END { flush() }
+           function has_cpat(line,    j) {
+             for (j = 1; j <= np; j++)
+               if (pats[j] != "" && index(line, pats[j]) > 0) return 1
+             return 0
+           }
+           function flush(    i, j, suppress) {
+             for (i = 0; i < buf_n; i++) {
+               if (!is_match[i]) continue
+               suppress = 0
+               for (j = 0; j < buf_n; j++)
+                 if (lnum[j] >= lnum[i]-1 && lnum[j] <= lnum[i]+1 && has_cpat(buf[j]))
+                   { suppress = 1; break }
+               if (!suppress) print buf[i]
+             }
+             buf_n = 0
+           }
+         '
+     )
+     rm -f "$PATH_PAT"
    fi
    ```
    If `RTL_RESULT == "ALLOWLIST_MISSING"`: do NOT report a count. The RTL
