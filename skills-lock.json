@@ -4,372 +4,372 @@
     "ab-test-setup": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "1312ab5ad54674a4cc14df9106161239573e7837641ccf4ea55e4dfc3c8a0a6c"
+      "computedHash": "1e72a2eec9001ecfab2ed2b424ba5a7e9bd2ace04a0b7f15677c3cc81592916d"
     },
     "ad-creative": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "5d8f869c7e683e4d4fc7aa7a2b0d370b0ad54a81d9cffb48736ffc47759b3f4d"
+      "computedHash": "410cb3c267e54c28c9173a879dfb5b536cd32c905d2907288de114f13938d58f"
     },
     "adapt": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "20b74ca9310c1339360b54916621f81abeac34576758bfffcd70062cfd1d73cd"
+      "computedHash": "2bd0dccbab52d0c773ceefab1b003683970c4b913c7af9bc16c2325a0ce07d40"
     },
     "ai-seo": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "0bda4a0839dbb8ecb19b40707299c2558ddc7b63164d1d8008209ce6d03772b7"
+      "computedHash": "e71b25c2be6f22d7f9ce1f10ed494410260e388ba3c7bf6c99d3b0878f621739"
     },
     "analytics-tracking": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "1ad3893d31e5df78cb4b4e16801f49acbdf82daed5f775748859ca7dc638d6d0"
+      "computedHash": "53096e72aa5eb4709f76c4f2fdb23a037782c2fd12be83c9667d88e50664b63a"
     },
     "animate": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "3ef78de08d30c9d0512d8841b5c629cf7583e8220ffe5c84178e0754606f9468"
+      "computedHash": "6cd175255a204f19ab2ea616c176621099511ddcd71a94a8b7eda53d39e68875"
     },
     "arrange": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "2a9340f0deeb9f513758cb91966654b47c5547d81c995c101cf8cb7f01e1387a"
+      "computedHash": "164ddb08243cb630594328126e2cb8e8ed3622dfdd7a71d9028d97d7d40f8aca"
     },
     "aso-audit": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "96bda37445a17eee85f5db77d136ce1cf9989f09e85a8abafbdcda0d48db8fbe"
+      "computedHash": "23d2f8906f622176117610b575988bba76a204e0ce8463691b856195d5515761"
     },
     "audit": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "bf302f77a47430b0996bea0200c10e247f968d45c16f4389fd14e5bdbe2b5a74"
+      "computedHash": "bf2f076264e4cd503d8df41c08165625a1bb53ca94c0d97a49721c3393265c36"
     },
     "bolder": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "7425ff87915f4a3ca6e2b9bd93f2dccebaa5d690761b4196d1b7a913e7c49cf2"
+      "computedHash": "ba9804e22f6e983717166cd19b1aaf6fe6a0e3894184de9d146848b21d7842ff"
     },
     "churn-prevention": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "ce389baf7e32cc942143503ecba7068784ca2c790460824c1e5a306d83d1283f"
+      "computedHash": "f58eebfa1604da618519105448b7f67e3d8467bd1f3a443881710e2a8f97e8de"
     },
     "clarify": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "955d6a8c76d586cf9762e4c1ab01c4b4bef838d142e51c53d3c5a086b2ce14d5"
+      "computedHash": "87448a91acaa0d1deb2ea156a2f8af1159b39bba48c3fa5b095ebee4cc32fd16"
     },
     "cold-email": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "6b2c73ca8ee9f2104958476078f50f92ac61ab1b63880762b52816c968a6fea6"
+      "computedHash": "dff3a26d9cb83a427c3e7538d5e85a07c9c3d6749f3cbbb9545f302e804beba6"
     },
     "colorize": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "a29101990cf8bddf1835159858cb9a1ebd3ac0011598cbed334f0f28c4aa67a2"
+      "computedHash": "cd231f68970d359723f4fddac8eb01f0fd7b2b08f35161b583107174afa17a15"
     },
     "community-marketing": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "1f42fea329b3aef50c1ddefa9c4208f54f042d5788936c8a96f7408d39d43d67"
+      "computedHash": "c3ce5b2773dc9beabe458688f75c0840cd6a49377dea45e0ec78cc01cb5b026f"
     },
     "competitor-alternatives": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "bbaf0d378114c7f1581ec63218c9061da983afc1e30887af69ba6ce7ce9cd4c1"
+      "computedHash": "8c9c3c9aa51069801dc9680467a48d08f17b3d8328320a72e726cedfabac0a94"
     },
     "competitor-profiling": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "e73fccef9dac89e1a6f0069d2948ae229ac1970b6e5aac3602020ecc05a701ec"
+      "computedHash": "19387bff5d2aa8bf98dc0de45953e7877fab0363ba21b75bad47e27e7d29f828"
     },
     "content-strategy": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "be124f3733b037fb8d859f275454ecd1c590759ef9ab184bea35ba1a0a38e14c"
+      "computedHash": "b5cf28241ab6f45e08c163b19c0d244d5f84550bfbff07bdc557dce6015c72ab"
     },
     "copy-editing": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "f1a31dc20a44b62d9a8b0e2c976e4cfaf12dd87e1c8a4ee8344bbf5aa8a73f63"
+      "computedHash": "9ad51c8ff410013e8a301ccfedc1a44c29c756e621dbd77538af006ec7448ff7"
     },
     "copywriting": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "2e83eda2221e97166172a0798e9b0379e34080595e107e2fc0cf580e9b3bbf7b"
+      "computedHash": "44f4334830835ed24ab79f796fa29e411f4fa83af882e64112f83c57a3e9421c"
     },
     "critique": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "a5dbfaf2d62a4012205323a45844171a9971fb1b418201592ba5039e78069d82"
+      "computedHash": "bd5ec3c81665a562f159b0c1ea775016a3f91cfaee822dd65986e000057fd8ed"
     },
     "customer-research": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "62fa7be6f387c021c2ced299b9b37b6a5dbfb938fd9325de461e31abd067ccbf"
+      "computedHash": "d2ec414f9e174c165cc030f67b13402d80b4e2ffe0dfb0a19117bc61d94f9d54"
     },
     "delight": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "98d151cec8988b45dbe8ed8017adfbf8953e4ee9345a478ad35c6ea16ba08d19"
+      "computedHash": "18ce3dab5ae8c68cab1d40ca19d9612a0254a9cffc36a3a3fc8dbccf9fd834a5"
     },
     "directory-submissions": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "e1ba854cfa09bf5b0dd11cc7be1fcad8bb51611d18d9d5fae38e8551a404bb41"
+      "computedHash": "b1846a18b15bf4a60aef394786154c37b182870af069acf3ec4b090af00be15d"
     },
     "distill": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "fb6257d06d3fe491dde3528493d30bc9a12329b6f61da8ef6429e9a579a61af9"
+      "computedHash": "83fb2e327adc3e1973de829e6875281d4832ba924fec0874c32ad5d188a31241"
     },
     "email-sequence": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "49c9d1795813eec119a1fd9344e763fc911c05616411a68117b30d77204fa399"
+      "computedHash": "69979ae3c3add59c4439630e132a3d86236a3614555f01e466b99bcd4950d6bc"
     },
     "extract": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "bb09b2fb79da58e670550d70d995de9128a5893901ecdb8c1f165157a1badc35"
+      "computedHash": "34fa341b9ff47b1780ef9625868e6389c079c034025a17401cb6a5dc4a2a0d56"
     },
     "form-cro": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "d6d5dcc076f4042b333a34bb707b3bde22bf1a67f9acfb598cb4d4bf1199f3d5"
+      "computedHash": "b02a76631a8f050a946caa6831894b9316d2b6994da9d1050953fa27f91e303b"
     },
     "free-tool-strategy": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "de49a0fd426d4710fc05b2759244588c6f5b5014d9cd9331a0d54dc655f023bc"
+      "computedHash": "108870d9694f0474d75d0387593a46e5e4e865c3cd93425e1bc2fc2dec31ee12"
     },
     "frontend-design": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "f8ecd3028ae60e1b710a9e1c13a43ddfb3a9d4bf67df99209a1855297c1ea2bd"
+      "computedHash": "5694ac09b961cdf532347a7e53910c8ea414b631aaa6452f7dae3274bd454e4b"
     },
     "harden": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "c7bd8bf067e761f4a8f4c17b907bacce7d8915391491b7c9b29ff70166bc6628"
+      "computedHash": "b6a900fd1ee2f6dbb06faeeb5ca6bd513e9427c36089926ad161f2d76c34429e"
     },
     "hebrew-content-writer": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "d0413b71e6a1d1f01d494b6a97fc3db509ba66aaa9ca65f1c670cb74ec5a31a3"
+      "computedHash": "80537030153f582926937f0f40a70fda9d665ef9ae8f1e74c0d9d932990d4ed0"
     },
     "hebrew-document-generator": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "8bacee679ca291aadcd77b0d447042dba7eeb10d25165cd639073ec7426b3627"
+      "computedHash": "ff216ababd5806d4f09d6d5fed70fe331b2b8f9abbf68481565a62826b7de91f"
     },
     "hebrew-i18n": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "7a29b357abe7d75a534de5fede86590522d3c2e8c1a7bfe8f7110b016137874c"
+      "computedHash": "54c94e5d6e384c31fedb7ddf704ddb01c196a9dc3bb7055cce912c1018d01522"
     },
     "hebrew-legal-research": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
-      "computedHash": "3e88b2dacfdc8fa6f950c888a0a8cbdde72c27df6d5d39c1120943b288228dee"
+      "computedHash": "270cf24b20b85c906b167252fb3ac33a87a1edbbbd6782e20d6d614cf46d6a64"
     },
     "hebrew-nlp-toolkit": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "66a18993fd2937c04b9e1eacb064738c46a60aa013c5aa59e75904452495b5fa"
+      "computedHash": "5be7351cf196bcb1b6037ed2547fd2f571030e3f1dcf09d19657460dd8f1c234"
     },
     "hebrew-rtl-best-practices": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "5f9bfa52cdc9dc4f3c5b6db5700fe1790a8a07058dc48c81a52a7caf55eb7404"
+      "computedHash": "0ff5fb9b8e683a6bfca60d98a6cf67eb351c4645d7d1e867aabf2cfcf78a0cca"
     },
     "hebrew-tailwind-preset": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "586187888aa5f0df86af8b5c1964dcab0db022038fd3489a0236afcbf8f7a007"
+      "computedHash": "c6363f1fc0f9e7295c60ad91f6bf3983e4469b8932d879d7b1f729da4042839b"
     },
     "israeli-accessibility-compliance": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "d6cd5604853b871ab238aee08b18bc2315e23f3324d3ac49b6bac550a1fb4d23"
+      "computedHash": "130396bf536feafae9739f2dd01c06adc35d06f4ea53b9b13dd35732d6fca72a"
     },
     "israeli-ai-compliance-kit": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
-      "computedHash": "7b061fed7a7096508402291a90c80869be9e239c04f4c202ffc386a013dcd81d"
+      "computedHash": "4855845a255f3dd43aa1cf8381c8aed513478ed151ccff92d0e1de0f55980619"
     },
     "israeli-appsec-scanner": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
-      "computedHash": "f282dda511a856e044c6248d594b6d0ebd1d18b254d634607584add80d4570db"
+      "computedHash": "42db68da7941ae076dd2ab783a1386e76d10c5ca2c6140d132619f0a86a35f21"
     },
     "israeli-cyber-regulations": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
-      "computedHash": "ae092a52d33180f53e9eb71dfce6d227604497280f61781be33cd5a31a04906a"
+      "computedHash": "0d81b1355e4158f30c96ed8717e8403e69aeee4e2ad22b4cdda563c8c075e73d"
     },
     "israeli-ecommerce-compliance": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
-      "computedHash": "7dd8652ed8db28226aef01be5c2c4c95f1b6136cdba1febcc4b93c7892b2f55c"
+      "computedHash": "b0616834ab7c3fe5c303cca637c4489661c5af99fb6a546dc14b0e81e7bae4da"
     },
     "israeli-privacy-shield": {
       "source": "skills-il/security-compliance",
       "sourceType": "github",
-      "computedHash": "ffe1f2b16f88631c34ede5e9314fca6b5e88b4b1dc8369117e7715a9fa9362c0"
+      "computedHash": "ff211148de907e3ecfde2c9f75ccbd037f6500e9407f27abf85d822704cd16c6"
     },
     "israeli-ui-design-system": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "aade6874c239452d73a572b54e0b5a1d4c203e9323fcb26d69ad64ec1f2d1ffe"
+      "computedHash": "03a197b658716b282eb0a7c8ff6ddc1ef4745270ea3c63cb373303d079139ee9"
     },
     "launch-strategy": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "7f4783f7dd813e76684185f397c148b362147267c370331a7a9cf6e778189d8c"
+      "computedHash": "ce60bbdfac125adf761e040f6bbe4682aa03edb8a762e63fe79efb3d2a626239"
     },
     "lead-magnets": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "b71ffc7be2d96e4887ccedf457d02c395f78e68723dab59bd8d6a2a9959ec6c4"
+      "computedHash": "4f232d381644db7eb6d3734cc9283505bb384c343169931339cc03da4b135e8b"
     },
     "marketing-ideas": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "6463f11419704994d58248c398b99c6b097eac24f72f4c86bea1565e435e222e"
+      "computedHash": "f207121e15a7fd55c4a17e1d4db85b36544555085ea976ed57b734b3101a67fb"
     },
     "marketing-psychology": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "ddec844d01d102687f89749e1d3a9f7a9019010dce1039a7d442189f39726ad4"
+      "computedHash": "ebdac33322bb3497b5f4a7d3950896a2e444d685d8c94ef424a93d7f46cf6ef9"
     },
     "normalize": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "209464da656b28060b4c0e10c3770fdd1985fe2a4755b30c04b4a924808a4f8f"
+      "computedHash": "0f2037b63e7b267c9b9f40dad5c00ad07d835722e284b7fc1a51bc1b8057f875"
     },
     "onboard": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "7ad2499be7047831977dd1408af55d0f326d9aaf685ca37a6153cb886c4d0971"
+      "computedHash": "e6e306131e624caae7eb9666bbe0a397d889573c721473ab8c5ef41dee69711a"
     },
     "onboarding-cro": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "9d935c024e0768c8b805852fbf9419c2e8c56be2b9e62e89d43a390008bd1229"
+      "computedHash": "48215e8fcea35223286344ae65608d08519355d98be47a4407f7e1a1f8a53d76"
     },
     "optimize": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "f61bf3d1f96ec0427b1f1e83f8a68baf304e9cfd90635631327ab9f712585115"
+      "computedHash": "663cab7cbc8d203223c90eb677cdb77e585d3757849935268c2b619e34536546"
     },
     "overdrive": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "148cccee462a59fb15ed54c6b5ef053b1ecb9ce691a8ffa8490788e8031d6785"
+      "computedHash": "8d2a1d24e36479071de27c2931ce01c961909fe2bac988c36e215edd6e55334e"
     },
     "page-cro": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "9505748dba2319487b285f8ab8c1e5417fce38a512d596e1c9e2e87b34b196e1"
+      "computedHash": "5f09d519ccffc5e1005662ed2841907bfe8eaaecfb185508e599f341e3abed17"
     },
     "paid-ads": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "096374424df9b5246f48a1ccbb193eae68a5f2190523dcc0ff50c43dbb368290"
+      "computedHash": "532b8631ffaef79f20b18c62ccd7f127071374d001a9cc6ef8a9bf12f22929aa"
     },
     "paywall-upgrade-cro": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "f3955bea72dc22cf5b8e2387ee310a519302ab02518498e045055b1b9bd62a0f"
+      "computedHash": "03ce2a3225250d4ba38d7e522d19f3538ffba04e99c8b4e0479066cadaa13184"
     },
     "polish": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "ff757399bae6ac3a3de92ad34deec6ac18bc778633320522bf09031df6a6a8b7"
+      "computedHash": "4c5491749765e0087a74df471cc31ba4e5f52a69ce0f75fbc4c5c24d9a72ae81"
     },
     "popup-cro": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "5b97d79f11192e1fff0b6797629ccdd7515c82f57d1502b761e58679df2b56e5"
+      "computedHash": "243c777883e29c37ac396d1ad5e3a9fab9e36437e93b197c6fd1e51118d41819"
     },
     "pricing-strategy": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "4312095789cc328883428b1f9bd61549ca44b376aeda8d62bb977efad017e594"
+      "computedHash": "93fba17d70788488f1358376c720760b689551520fb98340644f6995747aeabd"
     },
     "product-marketing-context": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "21dd05f970ba54406d7405f92240853f809d0fed09ef6ca2a9204abcdd21548a"
+      "computedHash": "6f6a91f0339ad613bfa453635878ceb99da2f263cf28ba30bce16de8879a8e21"
     },
     "programmatic-seo": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "40b8fe29a6c9cb0606e6fa77aff227cf275e3808adf66e5ef69e02dcf60a7303"
+      "computedHash": "c57c3b790c900025b0d57078cdd06b0ffbc18032f48c88259e39e54b27fb56ed"
     },
     "quieter": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "5a19677046d48f1cca67175ad336308e8e2744d1a4d1ab0a2760338855fa2f1e"
+      "computedHash": "e5f736ba836a4c0e7dc694345403bbf5cd5ae089a7154a00e214359b90c90c05"
     },
     "referral-program": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "baefa6ed79c591d16e3056f3d8544fa2d60b896a618b931f37bf89da7af518d3"
+      "computedHash": "50b3d7bbee64c99e0f5c32cb99cd392def92d7a50cf627023368b29bc6c718e8"
     },
     "revops": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "3d80242e14a9824d2c33b9b5e957fc47c190f522f8f5f13c7cd9612784053a58"
+      "computedHash": "505708b520758913bb7a45eaf77b2dd9c005d5750088ce6919960cbf450febb9"
     },
     "sales-enablement": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "7447155639ac2677bc23ef826b079bbf8e415ec35900f6a3c7b25c33e6ad856a"
+      "computedHash": "9d972201e26c2afe2c333878ff21099e00682baa87637cd5a826f84713512535"
     },
     "schema-markup": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "6319ded25235292939050de1c51a98c6633d79f793396506eda2fa8265343758"
+      "computedHash": "2045da81214229b6da60f5ca3d5bf17151c0ec15fdb57239e47fdede73a41c6f"
     },
     "seo-audit": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "ddd028951738fcbcdebf0f9bd90b708c55d1b9370a31603e0c13e5b262d8b8bb"
+      "computedHash": "0f94fee0685ef8ab51ca1ef327e029a502f8c53392844510f79c2c05e6afe1eb"
     },
     "shabbat-aware-scheduler": {
       "source": "skills-il/localization",
       "sourceType": "github",
-      "computedHash": "0ce620c827da30a93ac44370f5f39833044654e6e3c3e101a3b8a5b119581c2d"
+      "computedHash": "37d17057850beb40d5482efdc12a58757fa87d642700f9b04323e3c969607d74"
     },
     "signup-flow-cro": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "8c4b9ce342ccb721eed9a4c1eb0d1ea647e5f1a77db8609509181c62636acf61"
+      "computedHash": "8c77e74cbb260f07e0a9ebb65a84b1268366c7f43738e764e18e7e3c1532cbe5"
     },
     "site-architecture": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "4cdfd1ba49925184462a7524586a5ec0b127668498e7bf2972ef0d4c112e9585"
+      "computedHash": "0cc324048596aa6396a9d0f44ceb100a527bfb67fbf1897d28c10b5de9d130a9"
     },
     "social-content": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
-      "computedHash": "252f58c9993ea38761a6b6cc6f0bbe83fb13f94387a925a57049ca3ca3793b6b"
+      "computedHash": "d8caca221bb9a23b51651ee3ddc2f41193fcd3b0e6e9aae0c4021bac152befad"
     },
     "teach-impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "b3b5541bb9b0a260af793c7d79c2db4a436c2cd9384be34a4024c7f28af72e62"
+      "computedHash": "bd570d2be6efa83e3ed77eb12621c1a4d0d034f02e0e59c5df223a26a24bff18"
     },
     "typeset": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "566473e23aa6230a40ddfad43e2da496e40314523bd20af8a677f0d40e1430f3"
+      "computedHash": "1e84bde5d1fa1c6a1e7fddc6b833dec7726ea58196ab6303464355927d902aef"
     }
   }
 }
