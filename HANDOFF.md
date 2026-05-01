@@ -1,7 +1,52 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-401 — skills-il/localization audit + cleanup, PR pending)
+> Last updated: 2026-05-01 (MEH-402 — pbakaus/impeccable audit, PR pending)
+
+## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
+
+**Branch:** `feature/meh-402-audit-pbakaus-impeccable` off staging.
+**Status:** draft PR pending merge.
+
+**Approved (21 skills, all from review_needed → approved):** `adapt`,
+`animate`, `arrange`, `audit`, `bolder`, `clarify`, `colorize`, `critique`,
+`delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`,
+`onboard`, `optimize`, `overdrive`, `polish`, `quieter`, `teach-impeccable`,
+`typeset`. 0 deletions, 0 blocked.
+
+**Author:** Paul Bakaus — Google Developer Advocate, public figure.
+
+**Audit pattern:**
+- 5 priority skills deep-read end-to-end: `teach-impeccable`, `harden`,
+  `optimize`, `polish`, `critique`.
+- `frontend-design` (chain root) deep-read with 7 `reference/*.md` files
+  (808 lines total) — all clean.
+- Remaining 16 full-body scanned for injection canaries + authority/silent
+  patterns + network/exec/secret patterns. Zero hits across all classes.
+
+**Architectural patterns surfaced:**
+
+| Pattern | Skills affected | Status |
+|---|---|---|
+| Skill chaining via "MANDATORY PREPARATION" — auto-invokes `frontend-design` → `teach-impeccable` | 17 of 21 (all except teach-impeccable, frontend-design itself, audit, extract) | Audited the full chain; chain only triggers under explicit user `/<skill>` invocation |
+| Persistent file write to project root: `.impeccable.md` (and optionally `.github/copilot-instructions.md` with user confirmation) | teach-impeccable | Inert in Mehamakor today (file not auto-loaded by CLAUDE.md or `.claude/rules/*`). Flagged for re-eval at every Claude Code major update — if auto-load behavior is added, this becomes an injection vector |
+| Chain root protects all chained skills | frontend-design | Re-audit required on every upstream pbakaus/impeccable version bump |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 0 deletions | All 21 are generic UI/UX design tools, in-scope for the food marketplace frontend |
+| Author auto-verified (`author_verified: true`) | Paul Bakaus is a public figure (Google Developer Advocate) — different baseline than anonymous skills-il authors |
+| Sample audit (Option C: 5 deep + 16 quick) approved by user | Balances thoroughness with audit velocity; full-body scan still applied to all 21 |
+| 0 MEH-405 candidates this batch | No scripts directories exist; all skills are pure prompt-only SKILL.md content |
+
+**Counts after PR:** allowlist 75→75 (no deletions), approved 15→36,
+review_needed 59→38.
+
+**Follow-up:** none from this batch. MEH-405 still tracks the broader
+Python-script network-bypass scope from MEH-401 (audit_a11y.py,
+check_shabbat.py).
 
 ## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup
 
