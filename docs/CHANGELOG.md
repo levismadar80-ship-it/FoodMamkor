@@ -21,6 +21,18 @@ No infrastructure changes — that scope shipped under MEH-365 (PR #441).
 Build + lint green; visual diff is comment-only (zero className mutations,
 zero JSX restructuring).
 
+## 2026-05-01 — MEH-363: agent-permissions-investigation report
+
+Read-only security investigation. Finding: `tools:` frontmatter in
+`.claude/agents/*.md` is **advisory, not enforced** — a sub-agent
+declared with `tools: Bash(npm:*), Read, Grep, Glob` successfully
+invoked `Edit` and mutated three files on disk. The actual sub-agent
+boundary is the session-level `permissions.deny` + PreToolUse hooks
+(both confirmed working: env-file Read blocked at L1, `rm -rf` blocked
+at L2). No per-agent isolation beyond what the parent session has.
+Full probe transcripts, behavior table, and layer diagram in
+[docs/agent-permissions-investigation.md](./agent-permissions-investigation.md).
+
 ## 2026-05-01 — MEH-365: RTL adjacency-aware suppression (mechanism)
 
 verify-frontend agent (step 3) and `.claude/hooks/check-rtl.sh` now honor
