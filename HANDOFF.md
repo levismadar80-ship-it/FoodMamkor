@@ -1,7 +1,70 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-04-30 (MEH-401 — skills-il/localization audit + cleanup, PR pending)
+> Last updated: 2026-05-01 (MEH-402 — pbakaus/impeccable audit, PR pending)
+
+## 2026-05-01 — MEH-402: pbakaus/impeccable audit (21 approved, 0 blocked)
+
+**Branch:** `feature/meh-402-audit-pbakaus-impeccable` off staging.
+**Status:** draft PR pending merge.
+
+**Approved (21 skills, all from review_needed → approved):** `adapt`,
+`animate`, `arrange`, `audit`, `bolder`, `clarify`, `colorize`, `critique`,
+`delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`,
+`onboard`, `optimize`, `overdrive`, `polish`, `quieter`, `teach-impeccable`,
+`typeset`. 0 deletions, 0 blocked.
+
+**Author:** Paul Bakaus — Google Developer Advocate, public figure.
+
+**Audit pattern:**
+- 5 priority skills deep-read end-to-end: `teach-impeccable`, `harden`,
+  `optimize`, `polish`, `critique`.
+- `frontend-design` (chain root) deep-read with 7 `reference/*.md` files
+  (808 lines total) — all clean.
+- Remaining 16 full-body scanned for injection canaries + authority/silent
+  patterns + network/exec/secret patterns. Zero hits across all classes.
+
+**Architectural patterns surfaced:**
+
+| Pattern | Skills affected | Status |
+|---|---|---|
+| Skill chaining via "MANDATORY PREPARATION" — auto-invokes `frontend-design` → `teach-impeccable` | 17 of 21 (all except teach-impeccable, frontend-design itself, audit, extract) | Audited the full chain; chain only triggers under explicit user `/<skill>` invocation |
+| Persistent file write to project root: `.impeccable.md` (and optionally `.github/copilot-instructions.md` with user confirmation) | teach-impeccable | Inert in Mehamakor today (file not auto-loaded by CLAUDE.md or `.claude/rules/*`). Flagged for re-eval at every Claude Code major update — if auto-load behavior is added, this becomes an injection vector |
+| Chain root protects all chained skills | frontend-design | Manually re-audit periodically (lock drift detection deferred to MEH-407) |
+
+**Decisions made this session:**
+
+| Decision | Rationale |
+|---|---|
+| 0 deletions | All 21 are generic UI/UX design tools, in-scope for the food marketplace frontend |
+| `author_verified: false` on all 21 (matches MEH-401 precedent) | Reputation ≠ identity verification. New rule documented in `.claude/rules/skills.md`. "Public figure" alone never justifies `true`; only PGP-signed commits / public statement linking to GitHub account / verifiable org membership count |
+| Sample audit (Option C: 5 deep + 16 quick) approved by user | Balances thoroughness with audit velocity; full-body scan still applied to all 21 |
+| 0 MEH-405 candidates this batch | No scripts directories exist; all skills are pure prompt-only SKILL.md content |
+
+**Counts after PR:** allowlist 75→75 (no deletions), approved 15→36,
+review_needed 59→38.
+
+**Follow-up:** none from this batch. MEH-405 still tracks the broader
+Python-script network-bypass scope from MEH-401 (audit_a11y.py,
+check_shabbat.py).
+
+### Discovered architectural finding (deferred)
+
+`computedHash` field in `skills-lock.json` does NOT match actual SHA256
+of `SKILL.md` files for any of 74 skills. No script in `.claude/scripts/`
+or workflow in `.github/workflows/` reads the field. **Lock file is
+currently decorative, not enforcing.** Implication: MEH-397's stated
+"5-layer defense" is functionally 4 layers. The lock layer (Layer 4 in
+the original spec) provides no detection of upstream content drift.
+
+Tracked as **MEH-407 (Priority 1)** — to be created in Linear by user
+after merge. Surfaced during MEH-402 adversarial review while
+verifying the architectural watch flags' detection mechanism.
+
+**MEH-402 mitigation in this PR:** softened "re-audit on every upstream
+version bump" wording in teach-impeccable + frontend-design notes to
+"manually re-audit periodically" since automated drift detection is
+non-functional.
 
 ## 2026-04-30 — MEH-401: skills-il/localization audit + scope cleanup
 
