@@ -6,6 +6,78 @@
 
 Live experiment to determine whether L2 hooks see calling-agent identity. `.claude/hooks/check-rtl.sh` was temporarily instrumented (5 lines), three trials captured, hook restored byte-identical (sha256 match). Finding: HOOK_INPUT contains two new top-level fields (`agent_id`, `agent_type`) when the call originates from a sub-agent; absent (not null — absent) for main-context calls. This means the PreToolUse layer CAN gate per-agent — invalidates the implicit MEH-363 assumption that L2 is caller-blind. Phase 2 follow-up ticket outlined: `check-agent-allowlist.sh` reading a JSON map of `agent_type → allowed tools`. Phase 4 invariant added to `.claude/rules/security.md` codifying that `tools:` frontmatter is advisory only. Bonus finding: `verify-frontend` agent declined the probe with prompt-level discipline; only the `general-purpose` fallback agent produced the subagent HOOK_INPUT sample.
 
+## 2026-05-02 — MEH-407 Phase 2.3: split MapClient.jsx into 4 hooks + 6 components
+
+Phase 2 PR #3 (final) of the god-file refactor planned in
+`docs/REFACTOR_PLAN.md` (merged in PR #431; PR2 ProducerDetail in
+PR #446; PR1 main.py in PR #444). `frontend/app/map/MapClient.jsx`
+shrinks from **885 → 310 lines (65% reduction)** across **14 commits**.
+Highest-risk file in MEH-407 (Risk 5/5, central component). Zero
+behavior change.
+
+- **4 hooks under `frontend/app/map/state/`:**
+  - `useMapFilters.js` — chip / city / committed-bounds state + the
+    derived `filteredByCategory` and `visibleProducers` lists +
+    handlers for chip clicks, reset, and the body-class effect that
+    co-locates with `selectedProducer` ownership.
+  - `useProducersFeed.js` — `/producers` + `/categories` initial fetch
+    + `loadProducers` helper with toast-on-error.
+  - `useMapSync.js` — Leaflet refs (`mapApiRef`, `mapRef`, `cardRefs`),
+    `registerMapApi` dual-pane reconciliation, marker/card click+hover
+    handlers, and the `handleSearchThisArea` geo-fetch. The
+    **boundsAreValid guard** at source `:386-393` and the verbatim
+    deps array `[mapBounds, chipState, categories, cityFilter]` with
+    its `// eslint-disable-next-line react-hooks/exhaustive-deps`
+    marker travel byte-for-byte. Magic-number 400ms hover debounce
+    extracted to `HOVER_DEBOUNCE_MS` constant per smell #7.
+  - `useFirstVisitHints.js` — onboarding hint timer + click dismiss,
+    legend click-outside, visited-IDs seed, splitRatio, sheetSnap,
+    mobileView. Self-contained (zero cross-hook inputs after the 11a
+    corrective commit that broke the original 2-hook ↔ 3-hook cycle).
+
+- **6 components under `frontend/app/map/components/`:**
+  `FilterChipsBar`, `MapPane` (RTL exception zone — 4 of 6 `// rtl-ok`
+  markers), `MapCardList`, `DesktopMiniPopup` (z-[600]),
+  `CityPickerModal` (z-[9000]), and `MobileSheetSelectedCard`
+  (extracted in commit 11b after slim shell exceeded the line target
+  — 5 → 6 components is a documented plan deviation).
+
+- **Inline in `MapClient.jsx` shell** (per commit 11a, breaks the
+  hook composition cycle): `useUserCity()` lifted from
+  `useFirstVisitHints`; `showCityPicker` / `locationModalOpen` /
+  `gpsLoading` / `sortBy` shell-state; 2 cross-hook effects
+  (location-modal trigger, focusProducer deep-link); 2 cross-hook
+  handlers (`handleMapCitySelected`, `handleGpsClick`); 2 layout
+  shells (desktop split-pane + mobile bottom-sheet). Cycle root
+  cause + fix described in detail in `docs/REFACTOR_PLAN.md` §File 1
+  "Implementation note".
+
+- **PR2 helper relocation (Q1 resolution B, commit 8):**
+  `frontend/app/producer/[id]/lib/contact-tracking.js` moved to
+  `frontend/lib/contact-tracking.js` (shared) so `/map`'s
+  `DesktopMiniPopup` + `MobileSheetSelectedCard` could call
+  `pingWhatsAppBeacon` without a cross-route import. The 3 PR2
+  consumers (`ActionRow`, `ContactSidebar`, `StickyContactBar`)
+  were updated to `@/lib/contact-tracking`. Helper bodies
+  byte-identical.
+
+- **Verification (CC sandbox):**
+  - `npm run build` ✅ Compiled in 13.2s, TypeScript clean, 45/45
+    pages generated, `/map` (Static, 1h revalidate) in route table.
+  - **RTL parity:** 6 real `// rtl-ok` className markers post-refactor =
+    6 pre-refactor. Distribution: 4 in `MapPane.jsx`, 1 in
+    `DesktopMiniPopup.jsx`, 1 in `MobileSheetSelectedCard.jsx`.
+  - **Z-index parity:** 8 tokens post = 8 pre. Same set
+    `{z-[50], z-[600], z-[800], z-[900], 3× z-[1000], z-[9000]}`,
+    each preserved at the JSX node it came from.
+  - `.claude/hooks/check-rtl.sh` PreToolUse guard fired twice on
+    JSDoc-substring false positives during extraction; resolved by
+    rewording the prose (no className changes).
+
+- **Pytest baseline:** pre-refactor 157 passed (run locally on
+  Postgres-18). Post-refactor verification deferred to Smadar
+  (CC sandbox lacks Postgres).
+
 ## 2026-05-01 — MEH-426: RTL allowlist consolidation + T_adj_6 regression test
 
 Adapts the PR #440 archive (`docs/archive/meh-365/`) to current staging. `rtl-allowlist.txt` restructured with `# === PATH EXCEPTIONS ===` / `# === CONTENT PATTERNS ===` section markers; `check-rtl.sh` refactored to `mapfile` from the allowlist file (eliminates the dual-source-of-truth between its inline `ALLOWLIST=( ... )` array and the file) and tightened to a per-violation ±1 window (every violation must be annotated, was previously permissive on any `rtl-ok` in content). `verify-frontend.md` adapted to extract `PATH_PAT` from the sectioned allowlist; the per-file `getline` awk is preserved (already passes T_adj_6 by construction; the patch's grep-buffer per-violation awk was rejected after tracing showed it does not parse line numbers from grep `-B1 -A1` context lines and therefore fails its own regression test). T_adj_6 added to `verify-frontend.eval.md` as a regression test for the merged-buffer false-negative class. Closes the MEH-426 follow-up opened when PR #440 was deferred to keep MEH-365 (PR #441) reviewable.
