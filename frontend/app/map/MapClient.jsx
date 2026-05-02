@@ -13,6 +13,7 @@ import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
+import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import MapBottomSheet, { PEEK, HALF, FULL } from "@/components/MapBottomSheet";
 import LocationModal from "@/components/LocationModal";
 import { useUserCity } from "@/lib/use-user-city";
@@ -840,7 +841,7 @@ export default function MapPage() {
                     </div>
                   )}
                   {spPhone && (
-                    <a href={getWhatsAppHref(spPhone, `היי! מצאתי אותך במהמקור — ${sp.name || ""}`)} target="_blank" rel="noopener noreferrer" onClick={() => { try { navigator.sendBeacon?.(`/api/producers/${sp.id}/whatsapp-click`); } catch {} }} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
+                    <a href={getWhatsAppHref(spPhone, `היי! מצאתי אותך במהמקור — ${sp.name || ""}`)} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(sp.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
                       WhatsApp
                     </a>
