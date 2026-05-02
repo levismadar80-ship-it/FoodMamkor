@@ -136,9 +136,9 @@ files, no audit of MEH-397 allowlist correctness.
 Source-side `// rtl-ok` markers for the 11 pre-existing staging violations are next, on a fresh `feature/meh-364-rtl-cleanup-fresh` branch off `c0c0ddf`. **Holding for explicit "go MEH-364" before starting.**
 
 ### Follow-up ticket pending (consolidation + buffer-bug fix)
-PR #440's broader work is preserved at:
-- `/tmp/meh-365-consolidation-with-buffer-fix.patch` — full 735-line diff (11 files: rtl-allowlist.txt restructure with `# === PATH EXCEPTIONS` / `# === CONTENT PATTERNS` sections, check-rtl.sh state-machine parser, verify-frontend.md per-violation awk, rtl.md docs, plus CHANGELOG + SECURITY + DEPLOYMENT + dependency-audit.yml entries).
-- `/tmp/meh-365-buffer-bug-fix.awk` — standalone reference for the merged-buffer false-negative fix with T_adj_6 regression test rationale documented in-comment.
+PR #440's broader work is **permanently archived** via PR #443 / SHA `a133921` at:
+- `docs/archive/meh-365/consolidation-with-buffer-fix.patch` — full 735-line diff (11 files: rtl-allowlist.txt restructure with `# === PATH EXCEPTIONS` / `# === CONTENT PATTERNS` sections, check-rtl.sh state-machine parser, verify-frontend.md per-violation awk, rtl.md docs, plus CHANGELOG + SECURITY + DEPLOYMENT + dependency-audit.yml entries).
+- `docs/archive/meh-365/buffer-bug-fix.awk` — standalone reference for the merged-buffer false-negative fix with T_adj_6 regression test rationale documented in-comment.
 
 The buffer-bug fix is a real bug class: `grep -B1 -A1` merges adjacent violation context windows into a single `--`-separated group, and a buffer-wide `rtl-ok` check would silently suppress unrelated violations. PR #441 does NOT include this fix; the per-violation per-file awk reads from disk and only inspects the same file's ±1 lines, which avoids the merged-buffer pitfall by design — but the underlying regression test is still valuable for the consolidation ticket.
 
