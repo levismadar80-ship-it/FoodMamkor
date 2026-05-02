@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import {
@@ -46,6 +46,20 @@ export function useMapFilters({
   const [mapMoved, setMapMoved] = useState(false);
   const [selectedProducer, setSelectedProducer] = useState(null);
   const [activeCategoryNames, setActiveCategoryNames] = useState(null);
+
+  // MEH-30 follow-up: when the bottom sheet is open, mark the body so
+  // CSS can hide the CookieBanner (which otherwise peeks below the
+  // sheet's bottom edge — see globals.css `.sheet-open` rule).
+  // Co-located with selectedProducer ownership; was MapClient.jsx:185-193.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (selectedProducer) {
+      document.body.classList.add("sheet-open");
+    } else {
+      document.body.classList.remove("sheet-open");
+    }
+    return () => document.body.classList.remove("sheet-open");
+  }, [selectedProducer]);
 
   // MEH-14: chip state per the new spec. Exactly one category chip
   // is active at a time ("all" is the reset sentinel); organic +
