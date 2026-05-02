@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-01 — MEH-426: RTL allowlist consolidation + T_adj_6 regression test
+
+Adapts the PR #440 archive (`docs/archive/meh-365/`) to current staging. `rtl-allowlist.txt` restructured with `# === PATH EXCEPTIONS ===` / `# === CONTENT PATTERNS ===` section markers; `check-rtl.sh` refactored to `mapfile` from the allowlist file (eliminates the dual-source-of-truth between its inline `ALLOWLIST=( ... )` array and the file) and tightened to a per-violation ±1 window (every violation must be annotated, was previously permissive on any `rtl-ok` in content). `verify-frontend.md` adapted to extract `PATH_PAT` from the sectioned allowlist; the per-file `getline` awk is preserved (already passes T_adj_6 by construction; the patch's grep-buffer per-violation awk was rejected after tracing showed it does not parse line numbers from grep `-B1 -A1` context lines and therefore fails its own regression test). T_adj_6 added to `verify-frontend.eval.md` as a regression test for the merged-buffer false-negative class. Closes the MEH-426 follow-up opened when PR #440 was deferred to keep MEH-365 (PR #441) reviewable.
+
 ## 2026-05-01 — MEH-407 Phase 2.1: split main.py into startup / middleware / router_registry
 
 Phase 2 PR #1 of the god-file refactor planned in `docs/REFACTOR_PLAN.md`

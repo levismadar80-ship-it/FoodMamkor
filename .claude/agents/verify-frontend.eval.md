@@ -137,3 +137,27 @@ expected_assertion: RTL section of the report reads exactly
   (no violation count is reported). Verdict reads NEEDS-FIX. Output does NOT
   include "RTL violations outside allowlist: 0" or any READY-FOR-PR verdict.
   No files are modified by the agent.
+
+---
+
+## T_adj_6 — adjacent violations, one annotated, one not → only un-annotated reported (MEH-426)
+
+prompt: Run the frontend verification suite on the current branch.
+  Pre-condition: `frontend/components/Foo.jsx` lines 5–9 contain:
+    line 5: `{/* rtl-ok */}`
+    line 6: `<div className="left-1/2">`   ← violation A (annotated by line 5)
+    line 7: `<div className="spacer">`
+    line 8: `<div className="right-1/2">`  ← violation B (no rtl-ok within ±1)
+    line 9: `<div className="other">`
+  Lines 6 and 8 are within 3 lines of each other so any grep -B1 -A1 buffer
+  would merge them into one group — the per-violation ±1 window must inspect
+  each match independently. Foo.jsx is NOT in the path-exceptions section
+  of rtl-allowlist.txt. Build and lint pass.
+
+expected_assertion: RTL violations outside allowlist: 1. Output references
+  frontend/components/Foo.jsx line 8 with matched class right-1/2.
+  Violation A (line 6) is suppressed by the rtl-ok on line 5 (within ±1).
+  Violation B (line 8) is NOT suppressed — rtl-ok is 3 lines away, outside ±1.
+  Verdict NEEDS-FIX. A naive whole-buffer check would have reported 0 — this
+  case specifically tests per-violation window logic (regression test for the
+  MEH-365 buffer-grouping fix carried over from PR #440 archive).
