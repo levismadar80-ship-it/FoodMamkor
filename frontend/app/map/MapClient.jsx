@@ -21,24 +21,13 @@ import { useMapSync } from "./state/useMapSync";
 import { useProducersFeed } from "./state/useProducersFeed";
 
 /**
- * /map page shell. Compose-only after MEH-407 PR3 — every meaningful
- * piece of logic now lives in 4 hooks (useFirstVisitHints,
- * useProducersFeed, useMapFilters, useMapSync) and 5 components
- * (FilterChipsBar, MapPane, MapCardList, DesktopMiniPopup,
- * CityPickerModal).
+ * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
+ * + 6 components + a small set of cross-hook handlers/effects that
+ * have to live in the shell to keep the hook composition acyclic.
  *
- * Inline in this shell (per the corrective commit 11a):
- *   - useUserCity() lifted from useFirstVisitHints to break the
- *     hook composition cycle
- *   - showCityPicker / locationModalOpen / gpsLoading shell-state
- *   - 3 effects: location-modal trigger, focusProducer deep-link,
- *     and the desktop sortBy state (legacy UI control, source line 78)
- *   - 2 handlers: handleMapCitySelected, handleGpsClick
- *   - 2 layout shells (desktop split-pane + mobile bottom-sheet)
- *   - The mobile-sheet pinned-card IIFE (only consumer of
- *     <MapBottomSheet> children prop, not generalizable)
- *
- * Render-order audit vs source: see commit message of step 11.
+ * Composition order: hooks → cross-hook handlers/effects → JSX shells.
+ * Full split rationale + cycle-break notes in
+ * docs/REFACTOR_PLAN.md §File 1 ("Implementation note").
  */
 export default function MapPage() {
   // Self-contained hook (zero cross-hook inputs after 11a).
