@@ -33,9 +33,17 @@ You do NOT fix issues — report only.
    elif [ ! -d "$REPO_ROOT/frontend/components" ] || [ ! -d "$REPO_ROOT/frontend/app" ]; then
      RTL_RESULT="SCAN_DIR_MISSING"
    else
+     PATH_PAT=$(mktemp)
+     awk '
+       /^#.*PATH EXCEPTIONS/  { section="path";    next }
+       /^#.*CONTENT PATTERNS/ { section="content"; next }
+       /^[[:space:]]*(#|$)/   { next }
+       section == "path"      { print }
+     ' "$ALLOWLIST" > "$PATH_PAT"
      RAW=$(grep -rEn '\b(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]' \
        "$REPO_ROOT/frontend/components" "$REPO_ROOT/frontend/app" 2>/dev/null \
-       | grep -v -f "$ALLOWLIST" || true)
+       | grep -v -f "$PATH_PAT" || true)
+     rm -f "$PATH_PAT"
      RTL_RESULT=$(printf '%s\n' "$RAW" | awk -F: '
        NF < 3 { next }
        !cached[$1]++ {
