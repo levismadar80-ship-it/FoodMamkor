@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-02 — MEH-425 Phase 1: PreToolUse hook input introspection
+
+Live experiment to determine whether L2 hooks see calling-agent identity. `.claude/hooks/check-rtl.sh` was temporarily instrumented (5 lines), three trials captured, hook restored byte-identical (sha256 match). Finding: HOOK_INPUT contains two new top-level fields (`agent_id`, `agent_type`) when the call originates from a sub-agent; absent (not null — absent) for main-context calls. This means the PreToolUse layer CAN gate per-agent — invalidates the implicit MEH-363 assumption that L2 is caller-blind. Phase 2 follow-up ticket outlined: `check-agent-allowlist.sh` reading a JSON map of `agent_type → allowed tools`. Phase 4 invariant added to `.claude/rules/security.md` codifying that `tools:` frontmatter is advisory only. Bonus finding: `verify-frontend` agent declined the probe with prompt-level discipline; only the `general-purpose` fallback agent produced the subagent HOOK_INPUT sample.
+
 ## 2026-05-01 — MEH-426: RTL allowlist consolidation + T_adj_6 regression test
 
 Adapts the PR #440 archive (`docs/archive/meh-365/`) to current staging. `rtl-allowlist.txt` restructured with `# === PATH EXCEPTIONS ===` / `# === CONTENT PATTERNS ===` section markers; `check-rtl.sh` refactored to `mapfile` from the allowlist file (eliminates the dual-source-of-truth between its inline `ALLOWLIST=( ... )` array and the file) and tightened to a per-violation ±1 window (every violation must be annotated, was previously permissive on any `rtl-ok` in content). `verify-frontend.md` adapted to extract `PATH_PAT` from the sectioned allowlist; the per-file `getline` awk is preserved (already passes T_adj_6 by construction; the patch's grep-buffer per-violation awk was rejected after tracing showed it does not parse line numbers from grep `-B1 -A1` context lines and therefore fails its own regression test). T_adj_6 added to `verify-frontend.eval.md` as a regression test for the merged-buffer false-negative class. Closes the MEH-426 follow-up opened when PR #440 was deferred to keep MEH-365 (PR #441) reviewable.
