@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-03 — MEH-356: env vars rule added to .claude/rules/workflow.md
+
+Docs-only. Added regression rule 8 — "Never add new env vars without listing them explicitly and waiting for confirmation" — to the Regression prevention rules block in `.claude/rules/workflow.md`. One line, no other files touched.
+
 ## 2026-05-02 — MEH-425 Phase 1: PreToolUse hook input introspection
 
 Live experiment to determine whether L2 hooks see calling-agent identity. `.claude/hooks/check-rtl.sh` was temporarily instrumented (5 lines), three trials captured, hook restored byte-identical (sha256 match). Finding: HOOK_INPUT contains two new top-level fields (`agent_id`, `agent_type`) when the call originates from a sub-agent; absent (not null — absent) for main-context calls. This means the PreToolUse layer CAN gate per-agent — invalidates the implicit MEH-363 assumption that L2 is caller-blind. Phase 2 follow-up ticket outlined: `check-agent-allowlist.sh` reading a JSON map of `agent_type → allowed tools`. Phase 4 invariant added to `.claude/rules/security.md` codifying that `tools:` frontmatter is advisory only. Bonus finding: `verify-frontend` agent declined the probe with prompt-level discipline; only the `general-purpose` fallback agent produced the subagent HOOK_INPUT sample.

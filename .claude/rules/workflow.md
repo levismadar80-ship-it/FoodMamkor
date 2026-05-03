@@ -202,6 +202,8 @@ summary + pointer here.
 7. **Docs-only files → direct commit to staging, no PR.**
    `HANDOFF.md` / `CHANGELOG.md` / `ROADMAP.md` / `MANUAL_TESTING.md`
    do not need a PR.
+8. **Never add new env vars without listing them explicitly**
+   **and waiting for confirmation.**
 
 ---
 

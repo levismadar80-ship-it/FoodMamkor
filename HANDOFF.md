@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-03 (MEH-407 DONE — PR #448 squash-merged to staging, SHA ded66f6. All 3 phases complete. Next task: unknown — no open issue assigned.)
+> Last updated: 2026-05-03 (MEH-356 in flight — env vars rule added to workflow.md, draft PR open. MEH-407 DONE — PR #448 squash-merged to staging, SHA ded66f6. All 3 phases complete.)
 
 ## 2026-05-03 — MEH-407 Phase 2.3: MapClient.jsx split — MERGED (PR #448, SHA ded66f6)
 
