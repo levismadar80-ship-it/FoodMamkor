@@ -1,6 +1,6 @@
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 
-import { pingWhatsAppBeacon } from "../lib/contact-tracking";
+import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 /**
  * Mobile-only sticky bar that slides in from the bottom when the

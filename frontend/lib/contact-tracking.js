@@ -1,19 +1,27 @@
 /**
- * Contact tracking helpers for ProducerDetail.
+ * Contact tracking helpers for any /producer surface.
  *
- * Three call patterns extracted from the pre-refactor ProducerDetail.jsx:
+ * Originally introduced under app/producer/[id]/lib/contact-tracking.js
+ * during MEH-407 Phase 2 PR2 (ProducerDetail split). Promoted to the
+ * shared frontend/lib/ in MEH-407 Phase 2 PR3 so the /map surface can
+ * call pingWhatsAppBeacon from DesktopMiniPopup + the mobile-sheet
+ * pinned-card without a route-cross-route import.
+ *
+ * Three call patterns currently consume this module:
  *
  *   1. trackContactClick(producerId, method) — POST to /api/.../contact-click
- *      with optional bearer token. Used by the four sidebar tiles
+ *      with optional bearer token. Used by the four ContactSidebar tiles
  *      (phone / instagram / website / email).
  *
  *   2. pingWhatsAppBeacon(producerId) — sendBeacon to .../whatsapp-click.
- *      Called from all three primary-CTA sites (inline, sidebar, sticky bar).
+ *      Called from primary-CTA sites: ProducerDetail inline + sidebar +
+ *      sticky bar; /map DesktopMiniPopup + mobile-sheet pinned card.
  *
  *   3. markWhatsAppClickedLocal(producerId) — localStorage write that
- *      unlocks the review form. Called from inline + sidebar primary CTA
- *      ONLY. The mobile sticky bar deliberately omits this (see
- *      StickyContactBar.jsx for the TODO).
+ *      unlocks the review form. Called from ProducerDetail's inline +
+ *      sidebar primary CTA ONLY. The mobile sticky bar AND the /map
+ *      WhatsApp sites deliberately omit this — see StickyContactBar.jsx
+ *      and DesktopMiniPopup.jsx for the matching TODOs.
  *
  * All helpers are fail-soft — every external surface is wrapped so a
  * failed beacon, fetch, or storage write cannot break the user flow.

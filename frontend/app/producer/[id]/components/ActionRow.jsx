@@ -5,7 +5,7 @@ import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import WhatsAppShareButton from "@/components/WhatsAppShareButton";
 import { getPrimaryMethod } from "@/lib/contact-method";
 
-import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "../lib/contact-tracking";
+import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 
 /**
  * Mobile inline CTA + the cross-breakpoint action row underneath it.

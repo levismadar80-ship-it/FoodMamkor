@@ -6,7 +6,7 @@ import ShareButton from "@/components/ShareButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
 
-import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "../lib/contact-tracking";
+import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 
 /**
  * Desktop sticky contact sidebar — `<aside>` rendered as the second
