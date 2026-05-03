@@ -1,9 +1,26 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-02 (MEH-407 Phase 2.3 in flight — MapClient.jsx split, branch `feature/meh-407-refactor-map-client` 14 commits ahead of staging, NOT pushed. Awaiting Smadar's post-baseline pytest + manual /map mobile + desktop verify on Vercel preview before push. PR1 + PR2 already merged.)
+> Last updated: 2026-05-03 (MEH-407 DONE — PR #448 squash-merged to staging, SHA ded66f6. All 3 phases complete. Next task: unknown — no open issue assigned.)
 
-## 2026-05-02 — MEH-407 Phase 2.3: MapClient.jsx split (in flight, NOT pushed)
+## 2026-05-03 — MEH-407 Phase 2.3: MapClient.jsx split — MERGED (PR #448, SHA ded66f6)
+
+PR #448 merged to staging via squash merge. MEH-407 status → Done in Linear.
+All gating CI checks passed: frontend lint ✅, frontend build ✅, backend pytest ✅ (157 passed), adversarial review ✅, API contract ✅.
+
+Rebase fix: staging had advanced with MEH-426 (rtl-allowlist consolidation) and MEH-425 (PreToolUse hook introspection). Resolved one textual conflict in `docs/CHANGELOG.md`, added 3 new map component files to `.claude/hooks/rtl-allowlist.txt` (MapPane.jsx, DesktopMiniPopup.jsx, MobileSheetSelectedCard.jsx).
+
+Lint fix: `useFirstVisitHints.js:54` had `// eslint-disable-next-line @typescript-eslint/no-unused-vars` — invalid in a JS-only project (TS ESLint plugin not loaded). Removed the line (both variables are returned from the hook so no rule fires anyway).
+
+**Smoke verify deferred to Smadar** (CC sandbox cannot reach Railway):
+```bash
+curl -sS https://foodmamkor-staging.up.railway.app/health
+# expect: {"status":"ok","db_init":"ready"}
+```
+
+**Manual /map verify still pending** (9 mobile + desktop checks in PR body). Smadar to run before closing MEH-407 entirely.
+
+## 2026-05-02 — MEH-407 Phase 2.3: MapClient.jsx split (MERGED — see above)
 
 **Branch:** `feature/meh-407-refactor-map-client` off `staging` (`24d0dfd`).
 **PR:** not yet opened — push gated on Smadar's post-baseline + manual verify.
