@@ -53,7 +53,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 `feature/* → staging → main`. Always branch from `staging`, never from `main`. Hotfixes back-merged to `staging` immediately. Full setup: [.claude/rules/deployment.md](./.claude/rules/deployment.md) + [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
 
 ## Workflow + execution rules
-20 workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + PR Review Workflow + /loop patterns: [.claude/rules/workflow.md](./.claude/rules/workflow.md). Code execution principles (exec §7–13): [.claude/rules/code-execution.md](./.claude/rules/code-execution.md). Prompt compression (Caveman): [.claude/rules/prompting.md](./.claude/rules/prompting.md). RTL: [.claude/rules/rtl.md](./.claude/rules/rtl.md). Security: [.claude/rules/security.md](./.claude/rules/security.md). Skills supply chain (MEH-397): [.claude/rules/skills.md](./.claude/rules/skills.md). File edit safety: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md).
+20 workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + PR Review Workflow + /loop patterns: [.claude/rules/workflow.md](./.claude/rules/workflow.md). Code execution principles (exec §7–13): [.claude/rules/code-execution.md](./.claude/rules/code-execution.md). Prompt compression (Caveman) + Templates v2.1 (00-08): [.claude/rules/prompting.md](./.claude/rules/prompting.md). RTL: [.claude/rules/rtl.md](./.claude/rules/rtl.md). Security: [.claude/rules/security.md](./.claude/rules/security.md). Skills supply chain (MEH-397): [.claude/rules/skills.md](./.claude/rules/skills.md). File edit safety: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md).
 
 ## Documentation map
 | File | What's in it |

@@ -407,3 +407,11 @@ Code session = quota usage. Use on-demand, never always-on.
 - 5+ concurrent loops in same session
 
 Tasks auto-expire after 7 days.
+
+---
+
+## Templates rule
+
+Before any task: identify which template applies (00-08), read it, then
+respond. If task type is unclear — ask, don't guess. Templates live in
+[.claude/rules/prompting.md](./prompting.md) → `## Templates`.

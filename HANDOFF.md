@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-407 Phase 2.1 in flight — main.py split open as draft PR awaiting Smadar's post-baseline pytest counts. MEH-364 ✅ + MEH-363 ✅ shipped earlier in the day.)
+> Last updated: 2026-05-03 (MEH-358 ✅ — Templates v2.1 docs sync shipped as draft PR. MEH-427 ✅ + MEH-426 ✅ + MEH-425 ✅ shipped in prior sessions.)
 
 ## 2026-05-01 — MEH-407 Phase 2.1: main.py split (in flight, draft PR)
 
