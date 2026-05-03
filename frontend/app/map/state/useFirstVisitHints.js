@@ -51,7 +51,6 @@ export function useFirstVisitHints() {
   const [splitRatio, setSplitRatio] = useState("40fr 60fr");
   const [sheetSnap, setSheetSnap] = useState(PEEK);
   // MEH-14: mobile map/list toggle. Desktop ignores this (always shows both).
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [mobileView, setMobileView] = useState("map");
 
   // Recently-viewed seed on mount (was bundled into the producers/
