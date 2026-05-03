@@ -1,7 +1,106 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-01 (MEH-407 Phase 2.1 in flight — main.py split open as draft PR awaiting Smadar's post-baseline pytest counts. MEH-364 ✅ + MEH-363 ✅ shipped earlier in the day.)
+> Last updated: 2026-05-02 (MEH-407 Phase 2.3 in flight — MapClient.jsx split, branch `feature/meh-407-refactor-map-client` 14 commits ahead of staging, NOT pushed. Awaiting Smadar's post-baseline pytest + manual /map mobile + desktop verify on Vercel preview before push. PR1 + PR2 already merged.)
+
+## 2026-05-02 — MEH-407 Phase 2.3: MapClient.jsx split (in flight, NOT pushed)
+
+**Branch:** `feature/meh-407-refactor-map-client` off `staging` (`24d0dfd`).
+**PR:** not yet opened — push gated on Smadar's post-baseline + manual verify.
+**Linear:** MEH-407 (Phase 2.3 of 3 — final post-launch refactor).
+**Highest-risk file in MEH-407** (Risk 5/5, central component).
+
+### New module layout
+After this PR, `frontend/app/map/MapClient.jsx` is a 310-line shell
+that composes 4 hooks + 6 components, with 4 cross-hook
+handlers/effects pulled inline to keep hook composition acyclic.
+
+| Path | Owns |
+|---|---|
+| `frontend/app/map/MapClient.jsx` (310 lines) | Shell — `useUserCity()`, shell-state (`showCityPicker`, `locationModalOpen`, `gpsLoading`, `sortBy`), 2 cross-hook effects (location-modal trigger, focusProducer deep-link), 2 cross-hook handlers (`handleMapCitySelected`, `handleGpsClick`), and the desktop split-pane + mobile bottom-sheet JSX shells. |
+| `frontend/app/map/state/useMapFilters.js` | Chip/city/committed-bounds state, `buildParams`, chip click handlers, `filteredByCategory` + `visibleProducers` derived lists. Body-class effect (selectedProducer watcher) co-located here. |
+| `frontend/app/map/state/useProducersFeed.js` | `/producers` + `/categories` initial fetch, `loadProducers` helper. |
+| `frontend/app/map/state/useMapSync.js` | Leaflet refs, dual-pane `registerMapApi` reconciliation, marker/card click+hover handlers, `handleSearchThisArea` geo-fetch. The `boundsAreValid` guard (was source `:386-393`) and the verbatim deps array `[mapBounds, chipState, categories, cityFilter]` with the `// eslint-disable-next-line react-hooks/exhaustive-deps` marker travel byte-for-byte. `HOVER_DEBOUNCE_MS = 400` const at module top. |
+| `frontend/app/map/state/useFirstVisitHints.js` | Self-contained shell-UX state — `showMapHint` + onboarding hint, `legendOpen` + click-outside, `visitedIds` seed, `splitRatio`, `sheetSnap`, `mobileView`. Zero cross-hook inputs after corrective commit 11a. |
+| `frontend/app/map/components/FilterChipsBar.jsx` | Two ChipScrollRow rows + active-filter tag list. |
+| `frontend/app/map/components/MapPane.jsx` | Map viewport: `<MapComponent>` (dynamic) + showMapHint overlay + "search this area" button + empty-state card + desktop GPS button + collapsible legend. RTL exception zone (4 of 6 `// rtl-ok` markers, z-[800] / z-[900] / 3×z-[1000]). |
+| `frontend/app/map/components/MapCardList.jsx` | Vertical producer list with hover/active rings. Empty-state has wider reset (clears cityFilter). |
+| `frontend/app/map/components/DesktopMiniPopup.jsx` | Bottom-end pinned popup (z-[600]). WhatsApp CTA uses `pingWhatsAppBeacon`. |
+| `frontend/app/map/components/CityPickerModal.jsx` | Overlay (z-[9000]) for "משלוח אליי" chip when no city saved. |
+| `frontend/app/map/components/MobileSheetSelectedCard.jsx` | Pinned card at top of `<MapBottomSheet>`. WhatsApp CTA uses `pingWhatsAppBeacon`. |
+
+### Cross-hook surfaces inline in `MapClient.jsx` (and why)
+Pre-refactor `MapClient.jsx` declared all state in one function so
+closure access was free. Post-refactor, hook composition order has
+to be acyclic — and the natural acyclic order
+(`firstVisitHints → feed → filters → sync`) leaves four surfaces
+that need values from *multiple* hooks:
+
+| Surface | Source line | Reads from |
+|---|---|---|
+| `handleMapCitySelected` | `:171-180` | `setUserCity` (shell), `setCityFilter` (filters), `loadProducers` (feed) |
+| `handleGpsClick` | `:430-455` | `mapApiRef` (sync) + `showToast` |
+| Location-modal trigger effect | `:162-169` | `userCity` (shell) |
+| focusProducer deep-link effect | `:196-215` | `feed.allProducers`, `sync.mapApiRef`, `filters.setActiveProducerId` |
+
+Trying to absorb any of these into a hook recreated the cycle. They
+live in the shell. See `docs/REFACTOR_PLAN.md` §File 1
+"Implementation note" for the cycle root cause + fix narrative.
+
+### Where things moved (file:line, pre → post)
+- `MapClient.jsx:39-40` (`allProducers`, `categories` state) → `useProducersFeed.js:9-10`
+- `MapClient.jsx:41-76` (chip / city / bounds state) → `useMapFilters.js:43-66`
+- `MapClient.jsx:77` (`showCityPicker`) → `MapClient.jsx:50` (lifted to shell after 11a)
+- `MapClient.jsx:79-80, 82-89, 91-94, 96-102` (hint state + effects) → `useFirstVisitHints.js`
+- `MapClient.jsx:90` (`useUserCity()`) → `MapClient.jsx:49` (lifted to shell after 11a)
+- `MapClient.jsx:104-127` (refs + `registerMapApi`) → `useMapSync.js:73-99`
+- `MapClient.jsx:129-133` (initial fetch effect) → split: producers/categories to `useProducersFeed.js:36-40`, visitedIds seed to `useFirstVisitHints.js:54-56`
+- `MapClient.jsx:135-154` (onboarding hint effect) → `useFirstVisitHints.js:69-87`
+- `MapClient.jsx:161-169` (location-modal trigger) → `MapClient.jsx:135-145` (cross-hook, in shell)
+- `MapClient.jsx:171-180` (`handleMapCitySelected`) → `MapClient.jsx:91-100` (cross-hook, in shell)
+- `MapClient.jsx:185-193` (body-class effect) → `useMapFilters.js:55-66` (co-located with `selectedProducer`)
+- `MapClient.jsx:196-215` (deep-link effect) → `MapClient.jsx:147-167` (cross-hook, in shell)
+- `MapClient.jsx:217-227` (`loadProducers`) → `useProducersFeed.js:23-33`
+- `MapClient.jsx:232-296` (chip handlers) → `useMapFilters.js:71-130`
+- `MapClient.jsx:298-363` (sync handlers) → `useMapSync.js:101-156`
+- `MapClient.jsx:371-428` (`handleSearchThisArea`) → `useMapSync.js:165-225`
+- `MapClient.jsx:430-455` (`handleGpsClick`) → `MapClient.jsx:103-128` (cross-hook, in shell)
+- `MapClient.jsx:458-524` (legend toggles + visible chips + filter tags) → `useMapFilters.js:132-176`
+- `MapClient.jsx:527-574` (filterChipsBar JSX) → `components/FilterChipsBar.jsx`
+- `MapClient.jsx:577-664` (mapPane JSX + dynamic MapComponent decl) → `components/MapPane.jsx`
+- `MapClient.jsx:667-706` (cardList JSX) → `components/MapCardList.jsx`
+- `MapClient.jsx:709-738` (desktopMiniPopup IIFE) → `components/DesktopMiniPopup.jsx`
+- `MapClient.jsx:810-852` (mobile-sheet pinned-card IIFE) → `components/MobileSheetSelectedCard.jsx`
+- `MapClient.jsx:856-874` (city-picker overlay) → `components/CityPickerModal.jsx`
+
+### Verification done in CC sandbox
+- `wc -l MapClient.jsx`: 885 → 310 (65% reduction).
+- `npm run build` ✅ Compiled 13.2s, TypeScript clean, 45/45 pages, `/map` Static.
+- RTL parity: 6 real `// rtl-ok` markers post = 6 pre.
+- Z-index parity: 8 tokens post = 8 pre, same distribution.
+- `export default function MapPage` present.
+
+### Verification deferred to Smadar (CC sandbox limitations)
+- `pytest tests/test_api.py --tb=no -q | tail -1` — pre-baseline was 157 passed; expect identical post (backend untouched).
+- Manual `/map` verify on Vercel preview — 9 mobile/desktop checks per the PR3 plan's gate 5 (filter chips, city picker, GPS, sheet card click, marker click, search-this-area, first-visit hint, hover sync, mini-popup, split-pane).
+
+### Cycle-fix narrative (commit 11a corrective)
+First slim-shell composition attempt (commit 11 draft) hit a 2-hook
+cycle (`useMapFilters ↔ useFirstVisitHints`) and a 3-hook cycle
+(`useFirstVisitHints → useMapSync → useMapFilters →
+useFirstVisitHints`). Both were artifacts of the refactor — pre-refactor
+source had no cycle because everything was in one function. STOP-2-attempts
+protocol triggered, user picked "Option (a) recompose, smaller than my
+sketch": stripped 4 cross-hook surfaces from `useFirstVisitHints` and
+moved them inline to the shell. Plus 11b (extract pinned-card IIFE,
+5 → 6 components) and 11c (trim JSDoc, relocate prose to plan doc).
+
+### Open follow-ups (PR3-specific, NOT urgent)
+- Pre-existing in-flight fetch abort race (was flagged in PR2 adversarial
+  review) still exists in `useProducersFeed` — out of scope per the
+  over-engineering guard.
+- `mobileView` state preserved verbatim in `useFirstVisitHints` despite
+  being unused (regression rule 1: grep before delete).
 
 ## 2026-05-01 — MEH-407 Phase 2.1: main.py split (in flight, draft PR)
 

@@ -126,6 +126,52 @@ Notes on the split:
 
 ### e) Recommended order: **4th (last)** — see ordering table below.
 
+### f) Implementation note (Phase 2 PR3, 2026-05-02)
+
+Refactor shipped as 14 commits on `feature/meh-407-refactor-map-client`.
+Final composition in `MapClient.jsx`: **4 hooks + 6 components**, with a
+small set of cross-hook handlers/effects kept inline in the shell.
+
+**Hooks (4):**
+- `useFirstVisitHints()` — self-contained shell-UX state (showMapHint,
+  legend, visitedIds, splitRatio, sheetSnap, mobileView).
+- `useProducersFeed()` — `/producers` + `/categories` fetch +
+  `loadProducers` helper.
+- `useMapFilters({...})` — chip state, derived `filteredByCategory`/
+  `visibleProducers`, body-class effect (selectedProducer co-located).
+- `useMapSync({...})` — Leaflet refs, marker/card click+hover handlers,
+  `handleSearchThisArea` (incl. the dual-pane reconciliation guard +
+  the verbatim deps array `[mapBounds, chipState, categories, cityFilter]`
+  with the `// eslint-disable-next-line react-hooks/exhaustive-deps`
+  marker preserved).
+
+**Components (6):**
+- `FilterChipsBar`, `MapPane`, `MapCardList`, `DesktopMiniPopup`,
+  `CityPickerModal` per the original spec; plus `MobileSheetSelectedCard`
+  added in commit 11b after the slim shell exceeded the line target —
+  extraction of the pinned-card IIFE was the cleanest path to bring
+  `MapClient.jsx` near the <250-line aim.
+
+**Inline in shell** (per the corrective commit 11a that broke the
+hook composition cycle):
+- `useUserCity()` lifted from `useFirstVisitHints` to break the
+  2-hook cycle with `useMapFilters` + 3-hook cycle through `useMapSync`.
+- Shell-state: `showCityPicker`, `locationModalOpen`,
+  `locationModalFiredRef`, `gpsLoading`, `sortBy` (legacy desktop
+  dropdown).
+- 2 effects: location-modal trigger (depends on `userCity`),
+  focusProducer deep-link (depends on `feed.allProducers` +
+  `sync.mapApiRef` + `filters.setActiveProducerId`).
+- 2 handlers: `handleMapCitySelected`, `handleGpsClick`.
+- 2 layout shells (desktop split-pane + mobile bottom-sheet).
+
+The cycle was an artifact of splitting state ownership across
+hooks — pre-refactor `MapClient.jsx` declared everything in one
+function so closure access was free. Post-refactor, the hook
+composition order has to be acyclic, and the simplest acyclic
+order is `firstVisitHints → feed → filters → sync` with the
+cross-hook handlers/effects pulled into the shell.
+
 ---
 
 ## File 2 — `frontend/app/producer/[id]/ProducerDetail.jsx`

@@ -6,6 +6,9 @@
 # ============ PATH EXCEPTIONS ============
 # Entire files whose LTR context justifies physical properties.
 frontend/app/map/MapClient.jsx
+frontend/app/map/components/MapPane.jsx
+frontend/app/map/components/DesktopMiniPopup.jsx
+frontend/app/map/components/MobileSheetSelectedCard.jsx
 frontend/components/ImageGallery.jsx
 frontend/components/Lightbox.jsx
 frontend/components/LoginPromptModal.jsx
