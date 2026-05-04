@@ -1,7 +1,44 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-03 (MEH-356 in flight — env vars rule added to workflow.md, draft PR open. MEH-407 DONE — PR #448 squash-merged to staging, SHA ded66f6. All 3 phases complete.)
+> Last updated: 2026-05-04 (MEH-407 fully shipped — all 3 PRs merged. Round 2 + AI Guardrails epics queued, blocked by MEH-125 launch gate.)
+
+## 2026-05-04 — MEH-407 fully shipped + 2 follow-up epics queued
+
+### Shipped (Round 1 — reactive god-files refactor)
+All 3 MEH-407 PRs merged to staging (and promoted to main):
+- **PR #441** — `backend/app/main.py` (220 → 50 lines, compose-only shell)
+- **PR #446** — `frontend/app/producer/[id]/ProducerDetail.jsx` (900 → 181 lines, 4 hooks + 5 components + 2 lib utilities)
+- **PR #448** — `frontend/app/map/MapClient.jsx` (885 → 310 lines, 4 hooks + 6 components, includes commit 11a composition-cycle fix and commit 11b MobileSheetSelectedCard extraction)
+
+Total: ~2000 lines of god-files → ~540 lines of compose-only shells + 21 focused modules.
+Pre/post pytest baseline: 157/157 across all 3 PRs. Manual /map verification: 10/10 checks passed. Zero regressions reported.
+
+### Architectural lessons codified
+1. **Shell composition over hook composition** — a hook absorbing >3 cross-hook inputs creates cycles. Cross-hook effects belong in the shell, not in any single hook (MEH-407 PR3 commit 11a)
+2. **Pre/post baseline is non-negotiable** — pytest counts + npm run build + grep counts (RTL, z-index) before any structural change
+3. **WhatsApp dedup pattern lives in `frontend/lib/contact-tracking.js`** — shared between PR2 (ProducerDetail) and PR3 (MapClient)
+4. **Render-order parity audits prevent silent regressions** — z-index token set + RTL marker count must match pre/post
+
+### Queued (POST-LAUNCH ONLY, blocked by MEH-125)
+**MEH-436 epic — God-files Round 2 (reactive refactor):**
+- MEH-437: `frontend/app/page.js` (homepage, ~600 lines)
+- MEH-438: `backend/app/routers/producers.py` (~600 lines, `list_producers` has 16+ params)
+- MEH-439: `frontend/app/admin/producers/page.js` (~500-600 lines)
+- MEH-440: `backend/app/routers/auth.py` (~700 lines, central security — FINAL, depends on 437/438/439)
+
+**MEH-441 epic — AI Guardrails (proactive prevention):**
+- MEH-442: PreToolUse hook to protect lint configs (P1 Urgent, foundation)
+- MEH-443: Frontend ESLint guardrails (5 hardened rules, warn mode)
+- MEH-444: Backend Ruff guardrails (PL rules from Pylint, warn mode)
+- MEH-445: Lint feedback loop PostToolUse hook (3-strikes per file)
+- Source: Albro "ESLint as AI Guardrails" (Medium, Jan 2026)
+- Strategy: warn mode first → promote to error after MEH-437 + MEH-439 merged
+
+### Next session entry point
+Confirm MEH-407 status = Done in Linear. Then await launch + MEH-125 completion before starting MEH-436 PR1 (MEH-437, homepage refactor).
+
+---
 
 ## 2026-05-03 — MEH-407 Phase 2.3: MapClient.jsx split — MERGED (PR #448, SHA ded66f6)
 
