@@ -2,6 +2,18 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-291 Phase 1: Alembic migration — `producers.availability_state` + backfill
+
+First of a multi-PR consolidation of 3 overlapping availability mechanisms (`is_available_today` / `availability_status` / `vacation_until`) into a single durable enum. Phase 1 is migration-only — old columns preserved for the mandatory 7-day overlap; backend code + frontend follow in Phase 2 / Phase 3.
+
+**Migration:** `backend/alembic/versions/20260504_1911_2a74fa41ceb1_meh_291_add_availability_state.py` — `down_revision='e4da13353c58'`. `upgrade()` adds `availability_state VARCHAR(32) NOT NULL DEFAULT 'accepting_orders'` + partial index `idx_producers_availability_state WHERE availability_state != 'accepting_orders'` + backfill via CASE (`vacation`→`on_vacation`, `full`→`full_this_week`, `is_available_today=TRUE`→`available_today`, ELSE→`accepting_orders`). `downgrade()` drops index then column; old columns untouched so legacy readers keep working.
+
+**CI gate:** `EXPECTED_REV` bumped from `e4da13353c58` → `2a74fa41ceb1` at `.github/workflows/pr-checks.yml:107`. `EXPECTED_TABLES=34` unchanged (column added, no new table).
+
+**Adversarial review:** 20 FINDER candidates, 0 real issues — all disproven by ADVERSARY (transactional DDL safety, NULL fallthrough, partial-index syntax, index-name uniqueness, race-with-INSERTs all verified).
+
+**Local migration test deferred to Smadar / CI drift gate** — Claude Code sandbox has no Postgres on `localhost:5432` and no `alembic` CLI available. The CI step at `pr-checks.yml:95-117` exercises `alembic upgrade head` end-to-end against a fresh Postgres on every push, which is the same gate that validated MEH-305 / MEH-311 / MEH-313.
+
 ## 2026-05-04 — MEH-446: ESLint stale-disable cleanup + promote `reportUnusedDisableDirectives` to error
 
 Closes the MEH-443 follow-up. The 14 inline `eslint-disable` directives that became stale when MEH-443 added `sonarjs` + `unicorn` recommended configs are now removed; `linterOptions.reportUnusedDisableDirectives` flipped from `"warn"` to `"error"` so any future regression is blocked at lint time.
