@@ -8,6 +8,7 @@ Coverage:
   settings, analytics, page editing
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
+import pytest
 from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
 from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
 
@@ -1513,6 +1514,24 @@ class TestUploadGoogleAvatarOrNone:
         url = "https://lh3.googleusercontent.com/photo.jpg"
         assert _upload_google_avatar_or_none(url) == url
 
+    @staticmethod
+    def _fake_stream_cm(chunks):
+        """Build a context-manager-compatible mock for httpx.stream.
+
+        MEH-440-followup switched the avatar uploader from httpx.get
+        (full buffer) to httpx.stream (chunked + early-abort). Tests
+        mock the streaming response with a tiny stand-in that yields
+        the requested chunks from iter_bytes(...).
+        """
+        from unittest.mock import MagicMock
+        resp = MagicMock()
+        resp.raise_for_status.return_value = None
+        resp.iter_bytes.return_value = iter(chunks)
+        cm = MagicMock()
+        cm.__enter__.return_value = resp
+        cm.__exit__.return_value = False
+        return cm
+
     def test_httpx_error_is_fail_open(self, monkeypatch):
         from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
@@ -1520,42 +1539,94 @@ class TestUploadGoogleAvatarOrNone:
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
-        with patch("httpx.get", side_effect=Exception("network error")):
+        with patch("httpx.stream", side_effect=Exception("network error")):
             result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result is None
 
     def test_cloudinary_error_is_fail_open(self, monkeypatch):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
-        mock_resp = MagicMock()
-        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
-        mock_resp.raise_for_status.return_value = None
-        with patch("httpx.get", return_value=mock_resp):
+        cm = self._fake_stream_cm([b"\xff\xd8\xff" + b"\x00" * 100])
+        with patch("httpx.stream", return_value=cm):
             with patch("cloudinary.uploader.upload", side_effect=Exception("Cloudinary down")):
                 with patch("cloudinary.config"):
                     result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result is None
 
     def test_success_returns_cloudinary_url(self, monkeypatch):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
-        mock_resp = MagicMock()
-        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
-        mock_resp.raise_for_status.return_value = None
+        cm = self._fake_stream_cm([b"\xff\xd8\xff" + b"\x00" * 100])
         expected = "https://res.cloudinary.com/test-cloud/image/upload/mehamakor/avatars/abc.jpg"
-        with patch("httpx.get", return_value=mock_resp):
+        with patch("httpx.stream", return_value=cm):
             with patch("cloudinary.config"):
                 with patch("cloudinary.uploader.upload", return_value={"secure_url": expected}):
                     result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result == expected
+
+    def test_avatar_aborts_oversized_stream(self, monkeypatch):
+        """MEH-440-followup: streaming download aborts as soon as the
+        cumulative chunk size exceeds MAX_AVATAR_BYTES. Cloudinary
+        upload must NOT be reached, and the result must be None."""
+        from unittest.mock import patch
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        from app.services.oauth_verifiers import MAX_AVATAR_BYTES
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        # Build chunks that exceed MAX_AVATAR_BYTES (1 MB). Two chunks
+        # of 600 KiB each = 1.2 MB total — second chunk trips the cap.
+        big = b"\x00" * (600 * 1024)
+        cm = self._fake_stream_cm([big, big])
+        upload_called = {"n": 0}
+
+        def _upload_should_not_run(*_a, **_kw):
+            upload_called["n"] += 1
+            return {"secure_url": "should-not-reach"}
+
+        with patch("httpx.stream", return_value=cm):
+            with patch("cloudinary.config"):
+                with patch("cloudinary.uploader.upload", side_effect=_upload_should_not_run):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None, f"oversized stream must short-circuit (cap = {MAX_AVATAR_BYTES})"
+        assert upload_called["n"] == 0, "Cloudinary upload must not run after size-cap abort"
+
+
+class TestAuthEmailHtmlEscape:
+    """MEH-440-followup: name interpolation in HTML email bodies must
+    be html-escaped so a hostile registered name can't inject markup
+    into the rendered email. Plain-text body keeps the raw name (text
+    rendering doesn't interpret markup)."""
+
+    def test_email_escapes_html_in_name(self, monkeypatch):
+        captured = {}
+
+        def fake_send(email, subject, body, html=None):
+            captured["body"] = body
+            captured["html"] = html
+
+        monkeypatch.setattr("app.services.auth_emails.send_email", fake_send)
+
+        from app.services.auth_emails import send_verify_email
+        hostile = "<script>alert(1)</script>"
+        send_verify_email("u@example.com", hostile, "tok123")
+
+        # Plain-text body keeps the raw name.
+        assert hostile in captured["body"], "plain text must keep raw name"
+        # HTML body has the escaped form, never the raw markup.
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in captured["html"], \
+            "HTML body must contain the escaped name"
+        assert hostile not in captured["html"], \
+            "HTML body must not contain the unescaped name"
 
 
 class TestResetPasswordFlow:
@@ -2007,7 +2078,7 @@ class TestSanitizationIntegration:
 
 
 class TestAppleTokenVerification:
-    """MEH-337: pyjwt 2.9.0 → 2.12.0 bump (CVE-2026-32597).
+    """MEH-337 + MEH-440-followup. Apple OAuth verification + JWKS cache.
 
     Apple OAuth (routers/auth.py:_verify_apple_token, lines 944-975) is
     the ONLY pyjwt code path in the backend — primary auth uses joserfc.
@@ -2027,6 +2098,17 @@ class TestAppleTokenVerification:
     # All call sites MUST monkeypatch
     # pyjwt.algorithms.RSAAlgorithm.from_jwk; placeholder "n" will
     # not parse as a real RSA modulus.
+
+    @pytest.fixture(autouse=True)
+    def _reset_apple_jwks_cache(self):
+        """MEH-440-followup: clear the module-level JWKS cache between
+        tests so order-dependent state doesn't leak across cases."""
+        from app.services.oauth_verifiers import _APPLE_JWKS_CACHE
+        _APPLE_JWKS_CACHE["keys"] = None
+        _APPLE_JWKS_CACHE["fetched_at"] = None
+        yield
+        _APPLE_JWKS_CACHE["keys"] = None
+        _APPLE_JWKS_CACHE["fetched_at"] = None
 
     def _setup_mocks(self, monkeypatch, *, decoded_payload=None, decode_exc=None, jwks=None, header=None):
         from app import config
@@ -2169,6 +2251,57 @@ class TestAppleTokenVerification:
         monkeypatch.setattr(req_mod, "get", _capturing_get)
         _verify_apple_token("dummy.token.value")
         assert captured.get("timeout") == 8
+
+    def test_apple_jwks_cache_reuses_within_ttl(self, monkeypatch):
+        """MEH-440-followup: a second verify within the TTL window must
+        not re-fetch — the cached keys are reused."""
+        import requests as req_mod
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(monkeypatch)
+        call_count = {"n": 0}
+        original_fake = req_mod.get
+
+        def _counting_get(url, **kw):
+            call_count["n"] += 1
+            return original_fake(url, **kw)
+
+        monkeypatch.setattr(req_mod, "get", _counting_get)
+        _verify_apple_token("dummy.token.value")
+        _verify_apple_token("dummy.token.value")
+        assert call_count["n"] == 1, "cache should serve the second call"
+
+    def test_apple_jwks_cache_refetches_after_ttl(self, monkeypatch):
+        """MEH-440-followup: once the TTL has elapsed, the next verify
+        must re-fetch the JWKS."""
+        import requests as req_mod
+        from app.routers.auth import _verify_apple_token
+        from app.services import oauth_verifiers
+
+        self._setup_mocks(monkeypatch)
+        call_count = {"n": 0}
+        original_fake = req_mod.get
+
+        def _counting_get(url, **kw):
+            call_count["n"] += 1
+            return original_fake(url, **kw)
+
+        monkeypatch.setattr(req_mod, "get", _counting_get)
+
+        # Drive time forward by patching time.time to return a value
+        # past the TTL window between the two calls.
+        fake_now = [1_000.0]
+
+        def _fake_time():
+            return fake_now[0]
+
+        monkeypatch.setattr(oauth_verifiers.time, "time", _fake_time)
+
+        _verify_apple_token("dummy.token.value")
+        # Advance > TTL (3600s)
+        fake_now[0] += oauth_verifiers._APPLE_JWKS_TTL_SECONDS + 1
+        _verify_apple_token("dummy.token.value")
+        assert call_count["n"] == 2, "cache must expire after TTL"
 
 
 # ---------------------------------------------------------------------------

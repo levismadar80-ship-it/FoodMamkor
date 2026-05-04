@@ -14,15 +14,23 @@ Lazy imports of the optional provider deps (jwt, google.oauth2, httpx,
 cloudinary, requests) live INSIDE the try blocks so a missing optional
 dep gracefully fails to None instead of breaking import time.
 
-No module-level state — Apple JWKS is fetched fresh on every call (no
-caching today; preserve verbatim).
+MEH-440-followup hardening on top of the verbatim port:
 
-Lifted verbatim from auth.py during the MEH-440 refactor; only the
-function names and the avatar-cap constant name change (the public
-exports drop the leading underscore).
+  1. Apple JWKS caching — module-level dict with a 1-hour TTL. Apple
+     rotates JWKS infrequently; fresh fetch per login was wasteful. On
+     a fresh-fetch failure AFTER a successful prior fetch, falls back
+     to the cached keys (graceful degradation) instead of breaking
+     login during a transient appleid.apple.com outage.
+
+  2. Avatar download streams + aborts early. The original buffered
+     the entire body before checking the size cap; a hostile or
+     misconfigured URL could waste arbitrary memory/bandwidth. We now
+     stream in 8 KiB chunks and abort the connection as soon as the
+     accumulated size exceeds MAX_AVATAR_BYTES.
 """
 
 import logging
+import time
 import uuid
 
 from app.config import settings
@@ -31,6 +39,15 @@ logger = logging.getLogger(__name__)
 
 # 1 MB cap — Google avatars are tiny.
 MAX_AVATAR_BYTES = 1 * 1024 * 1024
+
+# Avatar streaming chunk size — 8 KiB balances loop overhead against
+# the worst-case overrun (one chunk past the cap before we notice).
+_AVATAR_CHUNK_SIZE = 8192
+
+# Apple JWKS cache: 1-hour TTL. Apple rotates keys on the order of
+# weeks / months, so an in-process cache keyed off the module is fine.
+_APPLE_JWKS_CACHE: dict = {"keys": None, "fetched_at": None}
+_APPLE_JWKS_TTL_SECONDS = 3600
 
 
 def upload_google_avatar_or_none(picture_url: str | None) -> str | None:
@@ -49,22 +66,26 @@ def upload_google_avatar_or_none(picture_url: str | None) -> str | None:
         import cloudinary
         import cloudinary.uploader
 
-        resp = httpx.get(picture_url, timeout=5, follow_redirects=True)
-        resp.raise_for_status()
-        contents = resp.content
-        if len(contents) > MAX_AVATAR_BYTES:
-            logger.warning(
-                "Google avatar too large (%d bytes), skipping Cloudinary re-host",
-                len(contents),
-            )
-            return None
+        # MEH-440-followup: stream + early-abort on size cap so a
+        # hostile or misconfigured URL can't waste arbitrary memory.
+        contents = bytearray()
+        with httpx.stream("GET", picture_url, timeout=5, follow_redirects=True) as resp:
+            resp.raise_for_status()
+            for chunk in resp.iter_bytes(chunk_size=_AVATAR_CHUNK_SIZE):
+                contents.extend(chunk)
+                if len(contents) > MAX_AVATAR_BYTES:
+                    logger.warning(
+                        "Google avatar exceeds %d bytes; aborting download",
+                        MAX_AVATAR_BYTES,
+                    )
+                    return None
         cloudinary.config(
             cloud_name=settings.cloudinary_cloud_name,
             api_key=settings.cloudinary_api_key,
             api_secret=settings.cloudinary_api_secret,
         )
         result = cloudinary.uploader.upload(
-            contents,
+            bytes(contents),
             folder="mehamakor/avatars",
             public_id=uuid.uuid4().hex,
             resource_type="image",
@@ -88,11 +109,45 @@ def verify_apple_token(id_token: str) -> dict | None:
         import jwt as pyjwt
         import requests
 
-        # Fetch Apple's public keys
-        apple_keys_url = "https://appleid.apple.com/auth/keys"
-        keys_response = requests.get(apple_keys_url, timeout=8)
-        keys_response.raise_for_status()
-        apple_keys = keys_response.json().get("keys")
+        # MEH-440-followup: 1-hour TTL cache on Apple JWKS. On a fresh
+        # fetch failure AFTER a successful prior fetch, fall back to
+        # the cached keys (graceful degradation). On first-time failure
+        # with no cache, re-raise so the outer except returns None.
+        now = time.time()
+        cached_keys = _APPLE_JWKS_CACHE["keys"]
+        fetched_at = _APPLE_JWKS_CACHE["fetched_at"]
+        cache_fresh = (
+            cached_keys is not None
+            and fetched_at is not None
+            and (now - fetched_at) < _APPLE_JWKS_TTL_SECONDS
+        )
+
+        if cache_fresh:
+            apple_keys = cached_keys
+        else:
+            try:
+                keys_response = requests.get(
+                    "https://appleid.apple.com/auth/keys", timeout=8
+                )
+                keys_response.raise_for_status()
+                apple_keys = keys_response.json().get("keys")
+                if apple_keys:
+                    _APPLE_JWKS_CACHE["keys"] = apple_keys
+                    _APPLE_JWKS_CACHE["fetched_at"] = now
+                elif cached_keys is not None:
+                    logger.warning(
+                        "[APPLE AUTH] Fresh JWKS empty; using cached keys"
+                    )
+                    apple_keys = cached_keys
+            except Exception as fetch_err:
+                if cached_keys is not None:
+                    logger.warning(
+                        f"[APPLE AUTH] JWKS refetch failed ({fetch_err}); using cached keys"
+                    )
+                    apple_keys = cached_keys
+                else:
+                    raise
+
         if not apple_keys:
             return None
 

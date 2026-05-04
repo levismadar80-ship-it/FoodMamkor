@@ -12,6 +12,7 @@ below, so they share imports and call-site context.
 """
 
 import uuid
+from html import escape as html_escape
 
 from app.config import settings
 from app.services.email import send_email
@@ -22,6 +23,9 @@ def gen_referral_code() -> str:
 
 
 def send_reset_email(email: str, name: str, reset_link: str) -> None:
+    # MEH-440-followup: escape name in HTML body. Plain-text body keeps
+    # raw name (text rendering doesn't interpret markup).
+    name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
         f"קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.\n\n"
@@ -41,7 +45,7 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
         <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
           <tr>
             <td style="text-align:right;direction:rtl;">
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לחצי על הכפתור לאיפוס הסיסמה (תוקף: שעה אחת):</p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{reset_link}"
@@ -70,6 +74,8 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
 def send_verify_email(email: str, name: str, token: str) -> None:
     """Send email-verification link via Resend. Fire-and-forget."""
     verify_url = f"{settings.frontend_url}/verify-email?token={token}"
+    # MEH-440-followup: escape name in HTML body (plain text unchanged).
+    name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
         f"לאימות כתובת האימייל שלך לחצי על הקישור הבא:\n\n"
@@ -89,7 +95,7 @@ def send_verify_email(email: str, name: str, token: str) -> None:
         <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
           <tr>
             <td style="text-align:right;direction:rtl;">
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך, לחצי על הכפתור:</p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{verify_url}"
