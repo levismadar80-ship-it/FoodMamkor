@@ -17,7 +17,6 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
 import { showToast } from "@/lib/toast";
 import AnimatedCounter from "@/components/AnimatedCounter";
-import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 import { useUserCity } from "@/lib/use-user-city";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
@@ -35,33 +34,14 @@ import {
   HomeHowItWorks,
 } from "@/app/home/HomeStaticBlocks";
 import { HomeHero } from "@/app/home/HomeHero";
+import { HomeCategoryGrid } from "@/app/home/HomeCategoryGrid";
+import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 
 const PAGE_SIZE = 8;
 
 // PREMIUM_DESIGN: parallax divider images between sections.
 const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
 const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80&fm=webp";
-
-// PREMIUM_DESIGN: category cards now use hand-drawn SVG line-art
-// (see CategoryIcons.jsx) instead of Phosphor — warmer, more unique
-// than a generic icon library. Match-terms + Unsplash images unchanged.
-const CATEGORY_CARDS = [
-  { key: "meat",  name: "בשר, עוף ודגים",    match: ["בשר", "עוף", "דגים"],        image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&fit=crop&auto=format&q=80&fm=webp" },
-  { key: "veg",   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],   image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format&q=80&fm=webp" },
-  { key: "dairy", name: "חלב וגבינות",        match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1771578742735-36009188c207?w=600&fit=crop&auto=format&q=80&fm=webp" },
-  { key: "bread", name: "לחמים ואפייה",       match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format&q=80&fm=webp" },
-  { key: "oil",   name: "שמנים ודבש",         match: ["שמן", "דבש"],                image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format&q=80&fm=webp" },
-  { key: "care",  name: "טיפוח וסבונים",      match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&fit=crop&auto=format&q=80&fm=webp" },
-];
-
-function matchCategoryId(cards, categories) {
-  return cards.map((card) => {
-    const found = categories.find((c) =>
-      card.match.some((m) => c.name && c.name.includes(m))
-    );
-    return { ...card, categoryId: found ? found.id : null };
-  });
-}
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -355,59 +335,10 @@ export default function HomePage() {
         <HolidayBanner />
       </div>
 
-      {/* =========================
-          CATEGORY GRID
-          ========================= */}
-      <section className="max-w-7xl mx-auto px-4 section-y">
-        <FadeInSection className="text-center mb-10">
-          <h2 className="font-headline font-bold text-site-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
-            גלי לפי קטגוריה
-          </h2>
-          <p className="text-site-muted text-base">ישר מבית העסק — בלי מתווכים</p>
-        </FadeInSection>
-        <div
-          className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3"
-          style={{ gap: "20px" }}
-        >
-          {categoryCards.map((card, idx) => {
-            // PREMIUM_DESIGN: hand-drawn line-art icon per category.
-            const LineArt = CATEGORY_ICONS[card.key];
-            return (
-            <motion.button
-              key={card.key}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-              onClick={() => handleCategoryCardClick(card)}
-              className="group relative overflow-hidden cursor-pointer text-right h-[140px] md:h-[280px]"
-              style={{
-                borderRadius: "16px",
-                backgroundImage: `url(${card.image})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-              aria-label={`הצג קטגוריה: ${card.name}`}
-            >
-              {/* Zooming bg layer — use transform on a pseudo-ish wrapper by scaling the button via group-hover */}
-              <div
-                className="absolute inset-0 transition-all duration-500 ease-out"
-                style={{ backgroundColor: "rgba(46,104,83,0.65)" }}
-              />
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out"
-                style={{ backgroundColor: "rgba(46,104,83,0.45)" }}
-              />
-              <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
-                {LineArt && <LineArt size={64} className="w-8 h-8 md:w-16 md:h-16" stroke="white" strokeWidth={1.75} />}
-                <h3 className="font-headline font-bold mt-2 md:mt-3 text-[22px]">
-                  {card.name}
-                </h3>
-              </div>
-            </motion.button>
-            );
-          })}
-        </div>
-      </section>
+      <HomeCategoryGrid
+        categoryCards={categoryCards}
+        onCardClick={handleCategoryCardClick}
+      />
 
       <HomeMarquee />
 
