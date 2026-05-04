@@ -1,7 +1,48 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-446 draft PR — ESLint stale-disable cleanup + promote `reportUnusedDisableDirectives` to error. MEH-447 merged earlier.)
+> Last updated: 2026-05-04 (MEH-440 merged. Round 2 god-files complete: 437/438/439/440 all in staging.)
+
+## 2026-05-04 — MEH-440: split auth.py into 3 services + harden Apple JWKS + email escape (MERGED)
+
+**Branch:** `feature/meh-440-refactor-auth-router` (deleted post-merge).
+**PR:** #468 (squash `7170280`).
+**Linear:** MEH-440. Closes the Round 2 god-files epic (MEH-436): MEH-437 + MEH-438 + MEH-439 + MEH-440 all shipped to staging.
+
+### What shipped
+- `backend/app/routers/auth.py` slimmed from **1149 → 854 lines (−26%)** via 3-service split:
+  - `backend/app/services/auth_emails.py` (158 LOC) — 4 email senders + `gen_referral_code`.
+  - `backend/app/services/auth_notifications.py` (90 LOC) — Twilio + admin email notifications (fire-and-forget, fail-open).
+  - `backend/app/services/oauth_verifiers.py` (204 LOC) — Apple JWKS verification, Google ID token verification, Cloudinary avatar re-host.
+- 3 hardening fixes folded into the refactor (commits `26a323b` + `227bcad`):
+  1. Apple JWKS 1-hour TTL cache + kid-miss refetch + negative cache during outage.
+  2. Avatar download switched from `httpx.get` (full buffer) to `httpx.stream` + 8 KiB chunks with early-abort at 1 MB cap.
+  3. `html.escape` applied to `name` interpolation in HTML email bodies (`send_reset_email`, `send_verify_email`).
+
+### Verification
+- pytest: **173 → 179 passed (+6 new)** including `TestAppleTokenVerification::test_apple_jwks_cache_reuses_within_ttl` / `_refetches_after_ttl` / `_kid_miss_refetches_once` / `_negative_cache_during_outage`, `TestUploadGoogleAvatarOrNone::test_avatar_aborts_oversized_stream`, and `TestAuthEmailHtmlEscape::test_email_escapes_html_in_name`.
+- Two `/adversarial-review` passes (initial + post-`227bcad`) — zero blockers found.
+- One `/ultrareview` pass — surfaced the kid-miss refetch + negative cache gaps that `227bcad` addresses.
+- All 12 CI checks green at merge time (8 success + 4 skipped Railway/probe steps).
+
+### Manual verification still pending (Smadar, on live staging)
+- [ ] Register a test consumer → welcome email + Gmail "Show original" base64 confirmation.
+- [ ] Login → refresh + `__Secure-Fgp` cookies set, `/auth/me` returns user.
+- [ ] Google OAuth → avatar Cloudinary re-host works (now via streaming).
+- [ ] Forgot-password round-trip → reset email arrives.
+- [ ] Watch Railway staging logs for ~3 min after deploy — confirm no `[APPLE AUTH]` / `[GOOGLE AUTH]` / `[EMAIL]` regression spam.
+
+CC sandbox cannot reach Railway (`host_not_allowed`, MEH-360) — these flows must be exercised on the live staging URL.
+
+### Round 2 god-files epic — DONE
+| PR | File | Lines (before → after) | Merged |
+|---|---|---|---|
+| MEH-437 (#463) | `frontend/app/page.js` | 959 → 178 (−81%) | ✅ |
+| MEH-438 (#466) | `backend/app/routers/producers.py` | 650 → 266 (−59%) | ✅ |
+| MEH-439 (#467) | `frontend/app/admin/producers/page.js` | 458 → 79 (−83%) | ✅ |
+| MEH-440 (#468) | `backend/app/routers/auth.py` | 1149 → 854 (−26%) | ✅ |
+
+---
 
 ## 2026-05-04 — MEH-446: ESLint stale-disable cleanup (DRAFT PR)
 
