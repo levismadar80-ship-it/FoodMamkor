@@ -7,13 +7,34 @@ import security from "eslint-plugin-security";
 export default [
   {
     linterOptions: {
-      reportUnusedDisableDirectives: "error",
+      // MEH-443: 14 pre-existing stale directives — promote to "error"
+      // after follow-up ticket audits + removes them.
+      reportUnusedDisableDirectives: "warn",
     },
   },
   ...nextCoreWebVitals,
   sonarjs.configs.recommended,
   unicorn.configs["flat/recommended"],
   security.configs.recommended,
+  // MEH-443: downgrade plugin recommended rules from "error" to "warn".
+  // Flat-config plugin .configs.recommended ships rules at "error" by default;
+  // spec calls for all-warn until MEH-437 + MEH-439 ship + 30-day soak.
+  // Preserves explicit "off" settings from the plugins' own recommended configs.
+  {
+    rules: Object.fromEntries(
+      Object.entries({
+        ...sonarjs.configs.recommended.rules,
+        ...unicorn.configs["flat/recommended"].rules,
+        ...security.configs.recommended.rules,
+      }).map(([k, v]) => {
+        if (v == null) return [k, v];
+        const severity = Array.isArray(v) ? v[0] : v;
+        if (severity === "off" || severity === 0) return [k, v];
+        const opts = Array.isArray(v) ? v.slice(1) : [];
+        return [k, opts.length ? ["warn", ...opts] : "warn"];
+      }),
+    ),
+  },
   {
     ignores: [
       "public/sw.js",
