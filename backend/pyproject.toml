@@ -40,3 +40,43 @@ dev = [
 [tool.uv]
 # This is a web application, not an installable package.
 package = false
+
+# ─────────────────────────────────────────────────────────────
+# MEH-444 / MEH-441 Wave 3/3 — AI Guardrails (PL rules from Pylint)
+# Source: Albro (Jan 2026, backend extension); Ruff PL docs (Astral 2025).
+# Severity model: Ruff has no warn level. PL rules selected → CI fails on
+# error → per-file-ignores carry existing-noise files until the
+# referenced refactor ticket lands and the ignore is removed.
+# ─────────────────────────────────────────────────────────────
+[tool.ruff.lint]
+extend-select = [
+  "PLR0913",  # too-many-arguments
+  "PLR0915",  # too-many-statements
+  "PLR0912",  # too-many-branches
+  "PLR0911",  # too-many-return-statements
+  "C901",     # McCabe complexity
+]
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-statements = 50
+max-branches = 12
+max-returns = 6
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# Existing god-files — large refactor tickets pending. Remove ignore after merge.
+"app/routers/producers.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-438
+"app/routers/auth.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-440
+
+# Audit follow-up — 1-over-threshold violations, light cleanup pending.
+"app/auth.py" = ["C901"]                              # MEH-447
+"app/routers/alerts.py" = ["PLR0913"]                 # MEH-447
+"app/routers/events.py" = ["PLR0913"]                 # MEH-447
+"app/routers/producer_me.py" = ["PLR0913", "C901"]    # MEH-447
+"app/services/analytics.py" = ["PLR0913"]             # MEH-447
+
+# Auto-generated migrations are long by design.
+"alembic/versions/**" = ["PLR0915", "PLR0912"]
