@@ -9,11 +9,9 @@ import { useLanguage } from "@/lib/language-context";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { setUserLocation } from "@/lib/user-location";
 import { motion } from "framer-motion";
-import { CaretDown, Crosshair, House, Leaf } from "@phosphor-icons/react";
+import { House, Leaf } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
 import HomeProductCard from "@/components/HomeProductCard";
-import SmartSearch from "@/components/SmartSearch";
-import HeroSearch from "@/components/HeroSearch";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import FadeInSection from "@/components/FadeInSection";
@@ -36,12 +34,9 @@ import {
   HomeFounderQuote,
   HomeHowItWorks,
 } from "@/app/home/HomeStaticBlocks";
+import { HomeHero } from "@/app/home/HomeHero";
 
 const PAGE_SIZE = 8;
-
-// OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
-// `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
-const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80&fm=webp";
 
 // PREMIUM_DESIGN: parallax divider images between sections.
 const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
@@ -312,114 +307,13 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* =========================
-          HERO — gardensweet.com style
-          background-attachment: fixed is the CSS parallax (spec §Hero).
-          .hero-parallax sets fixed; @media (pointer: coarse) falls back
-          to scroll because iOS Safari silently ignores fixed.
-          ========================= */}
-      <section
-        className="relative w-full hero-parallax"
-        aria-label="דף הבית — גלי בתי עסק מקומיים"
-        style={{
-          height: "100vh",
-          backgroundImage: `url(${HERO_IMAGE})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        {/* Gradient overlay — dark at bottom, fading up */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(46,74,46,0.88) 0%, rgba(46,74,46,0.40) 50%, rgba(0,0,0,0.10) 100%)",
-          }}
-        />
-
-        {/* Text anchored to bottom 25% of hero */}
-        <div
-          className="absolute left-0 right-0 text-center px-4 text-white"
-          style={{ bottom: "25%" }}
-        >
-          <motion.h1
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-headline font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
-            style={{ lineHeight: 1.15 }}
-          >
-            {t("hero_title")}
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-body mt-3 text-light"
-            style={{
-              fontSize: "18px",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
-            {fridayMode ? "שישי הגיע 🛒 מה הולך על שולחן השבת שלך?" : t("hero_subtitle")}
-          </motion.p>
-
-          {/* Pill search */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            role="search"
-            aria-label="חיפוש בתי עסק"
-            className="mx-auto mt-8 bg-white shadow-lg px-6 py-3.5"
-            style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
-          >
-            {/* MEH-99: HeroSearch routes to /producers?q= for filtered listing.
-                SmartSearch (routes to /search?q= results page) is retained
-                in the site header for secondary navigation. */}
-            <HeroSearch
-              placeholder={t("search_placeholder")}
-              srLabel={t("search_sr_label")}
-              className="w-full"
-            />
-          </motion.div>
-
-          {/* "Near me" geolocation button — task 11 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="mt-4"
-          >
-            <button
-              type="button"
-              onClick={handleNearMe}
-              disabled={geoLoading}
-              className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 px-5 py-2.5 rounded-full hover:bg-white/25 transition font-medium text-sm disabled:opacity-50"
-            >
-              <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
-              {geoLoading ? "מחפשת..." : "קרוב אלי"}
-            </button>
-          </motion.div>
-        </div>
-
-        {/* Scroll arrow — animate-bounce replaced with a subtle slow
-            fade+glide (PREMIUM_DESIGN rule: no bounce easing). The
-            `scroll-hint` keyframe lives in globals.css and respects
-            prefers-reduced-motion. */}
-        <button
-          type="button"
-          onClick={scrollToProducers}
-          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-          className="absolute left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition-opacity scroll-hint"
-          style={{ bottom: "32px" }}
-          aria-label="גלול לרשימת בתי העסק"
-        >
-          <CaretDown size={28} weight="bold" aria-hidden="true" />
-        </button>
-      </section>
+      <HomeHero
+        t={t}
+        fridayMode={fridayMode}
+        geoLoading={geoLoading}
+        onNearMe={handleNearMe}
+        onScrollDown={scrollToProducers}
+      />
 
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only */}
       {fridayMode && <FridayDeliveryStrip city={userCity} />}
