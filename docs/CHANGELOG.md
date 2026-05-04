@@ -2,6 +2,31 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-443: Frontend ESLint guardrails (MEH-441 Wave 2/3)
+
+Wave 2 of the AI Guardrails epic. Adds the 5 hardened ESLint rules from Albro's "ESLint as AI Guardrails" (Jan 2026) plus three plugin recommended configs, all in **warn** mode. Promote-to-error gated on MEH-437 + MEH-439 + 30-day soak.
+
+**File path correction:** spec said `frontend/.eslintrc.json`, but reality is `frontend/eslint.config.mjs` (ESLint v9 native flat config — landed in MEH-370 C3). MEH-442 hook's PROTECTED list already covers `eslint.config.{js,mjs,cjs,ts}`, so the manual-apply workflow held unchanged. Linear description updated post-merge.
+
+**5 core rules + beyond-basics (all warn):** `max-lines: 250`, `max-lines-per-function: 50`, `max-params: 2`, `no-magic-numbers` (with `ignore: [0, 1, -1, 2]`), `complexity: 10`, plus `max-depth: 4`, `max-statements: 20`, `id-length` (min 2, exceptions `i j x y _`), `eqeqeq: always`. Overrides: `app/**/page.js` → `max-lines: 400` (Next.js page composition); `__tests__/**` + `*.test.{js,jsx,ts,tsx}` → `max-lines-per-function: off`; `next.config.js` → `max-lines: off`.
+
+**Plugins (`-D`):** `eslint-plugin-sonarjs@^4.0.3`, `eslint-plugin-unicorn@^64.0.0`, `eslint-plugin-security@^4.0.0`. Pre-disabled 4 noisy unicorn rules (`prevent-abbreviations`, `filename-case`, `no-null`, `no-array-reduce`) — React idioms, Postgres null, opinionated reducer choice.
+
+**D2 — `noInlineConfig` rejected, replaced with `reportUnusedDisableDirectives`:** original spec called for `noInlineConfig: true`, but the codebase has 65 legitimate inline `eslint-disable` sites (load-once-by-id effects, `next.config.js` no-console for build logs, and the existing RTL `no-restricted-syntax` rule's *error message* literally instructs developers to use `eslint-disable-next-line` as the documented escape hatch). Enabling `noInlineConfig` would break the documented RTL workflow. Replaced with `linterOptions.reportUnusedDisableDirectives: "warn"` (option (b) per session decision). MEH-442 hook prevents config-level escapes; PR review remains the human gate for new inline disables. Future ticket can add `eslint-comments/require-description` once the 65 sites are audited. Severity is **warn** (not error) because plugin recommended configs surfaced 14 newly-stale directives — promote-to-error is the work of MEH-446.
+
+**Plugin-severity fix (post-apply):** flat-config plugin `.configs.recommended` exports default to **error** severity, not warn. Initial apply produced 633 errors (CI lint failed). Patch (`b75a068`) added a downgrade block that maps every imported rule to `warn` while preserving the plugins' explicit `"off"` settings (re-enabling them = wrong; maintainers turned them off intentionally) and rule options. Final state: **0 errors, 2,446 warnings** — CI lint passes (no `--max-warnings` flag).
+
+**Top 5 warning rules (post-baseline):**
+1. `id-length` — 790
+2. `no-magic-numbers` — 505
+3. `unicorn/prefer-global-this` — 186
+4. `max-lines-per-function` — 131
+5. `complexity` — 86
+
+**Pre/post baseline:** before MEH-443: 144 warnings. After: 2,446 warnings, 0 errors. Build remained green throughout. The warning explosion is the data we wanted — reveals exactly which god-files MEH-436 + MEH-437 + MEH-439 will need to refactor before promote-to-error.
+
+**Follow-up:** MEH-446 — *"Audit + remove 14 stale eslint-disable directives, then promote reportUnusedDisableDirectives to error."* Blocked by MEH-443 merge.
+
 ## 2026-05-04 — MEH-442: PreToolUse hook to protect lint configs (MEH-441 Wave 1/3)
 
 Foundation hook for the AI Guardrails epic (MEH-441). New `.claude/hooks/protect-lint-config.sh` (~30 lines, ~7ms) blocks Edit/Write/MultiEdit on `frontend/.eslintrc.*`, `frontend/eslint.config.*`, `backend/pyproject.toml`, `.claude/settings.json`, and itself (self-protect). Without this gate, AI could relax any lint rule shipped in MEH-443/444 by editing the config that defines it. Hook follows sibling pattern (`check-rtl.sh`, `check-bash-safety.sh`): jq-based JSON input parse, MultiEdit-aware (`tool_input.edits[].file_path`), fail-open if jq missing, exit 2 + `decision:block` JSON on match. `pyproject.toml` v1 blocks the entire file; v2 will scope to `[tool.ruff*]` sections only (TODO in source). Hook count 6→7, PreToolUse entries 8→9. See PR for verification outputs.

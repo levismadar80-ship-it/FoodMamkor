@@ -1,7 +1,43 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-442 draft PR opened — Wave 1/3 of MEH-441 AI Guardrails epic.)
+> Last updated: 2026-05-04 (MEH-443 draft PR — Wave 2/3 of MEH-441 AI Guardrails epic. Wave 1 (MEH-442) merged via PR #458 earlier today.)
+
+## 2026-05-04 — MEH-443: Frontend ESLint guardrails (DRAFT PR #459)
+
+**Branch:** `feature/meh-443-eslint-ai-guardrails` off `staging`.
+**PR:** #459 (draft).
+**Linear:** MEH-443 (Wave 2 of 3, MEH-441 AI Guardrails epic).
+
+### Shipped
+- 5 core rules from Albro (`max-lines`, `max-lines-per-function`, `max-params`, `no-magic-numbers`, `complexity`) + beyond-basics (`max-depth`, `max-statements`, `id-length`, `eqeqeq`) — all `warn`.
+- 3 plugin recommended configs (sonarjs, unicorn flat, security) at warn (downgraded from plugins' default error severity; preserves explicit `off`).
+- 4 unicorn pre-disables (`prevent-abbreviations`, `filename-case`, `no-null`, `no-array-reduce`).
+- Overrides: `app/**/page.js` → max-lines 400; tests → max-lines-per-function off; `next.config.js` → max-lines off.
+- `linterOptions.reportUnusedDisableDirectives: "warn"` (option (b) — `noInlineConfig: true` rejected because 65 existing legitimate inline disables incl. RTL escape hatch).
+- 3 deps installed: `eslint-plugin-{sonarjs@4.0.3, unicorn@64.0.0, security@4.0.0}`.
+- File-path correction: spec said `.eslintrc.json`, reality is `eslint.config.mjs` (ESLint v9 flat config from MEH-370 C3). MEH-442 hook PROTECTED list already covered both, so manual-apply workflow held.
+
+### Workflow notes (manual apply)
+- `frontend/eslint.config.mjs` is hook-protected (MEH-442). Smadar applied the target shape manually via heredoc + GitHub Desktop push.
+- Initial apply (`bcb6611`) used plugin recommended configs at default severity → 633 errors → CI lint failed.
+- Patch (`b75a068`): downgrade block preserves explicit `"off"` rules and rule options, maps everything else to `"warn"`. Plus `reportUnusedDisableDirectives: "error"` → `"warn"` for the 14 newly-stale directives.
+- GitHub MCP bypass of MEH-442 hook was rejected — confirmed reject for entire epic. "Never normalize the bypass."
+
+### Verification (all passed)
+- `npm run build`: green
+- `npx eslint .`: **0 errors, 2,446 warnings** (CI lint passes — no `--max-warnings` flag)
+- Top 5 rule hits: id-length 790, no-magic-numbers 505, unicorn/prefer-global-this 186, max-lines-per-function 131, complexity 86
+- Per-file probes: `app/page.js` (960 LOC) hits max-lines + sonarjs/unused-import; `app/admin/producers/page.js` (458 LOC) hits max-lines-per-function (function 410 LOC) + complexity 12; `app/map/MapClient.jsx` (post-MEH-407 split) still hits max-lines-per-function on `MapPage` (233 LOC inner) — confirms the 50-line ceiling catches god-functions even in already-refactored files
+
+### Follow-up filed
+- **MEH-446** (Backlog, Medium) — *Audit + remove 14 stale eslint-disable directives, then promote reportUnusedDisableDirectives to error.* Blocked by MEH-443 merge. Parent: MEH-441.
+
+### Status
+DRAFT PR #459 — awaiting Smadar's "approved, go merge" before flipping ready-for-review.
+Wave 3 (MEH-444 backend Ruff guardrails) blocked on MEH-443 merge.
+
+---
 
 ## 2026-05-04 — MEH-442: PreToolUse hook to protect lint configs (DRAFT PR)
 
