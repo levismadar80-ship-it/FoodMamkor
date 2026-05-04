@@ -26,7 +26,6 @@ export function useProducersFeed() {
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))
       .catch((err) => {
-        // eslint-disable-next-line no-console
         console.error("[חפשי באזור זה] GET /producers failed:", err);
         setAllProducers([]);
         showToast("לא הצלחנו לטעון עסקים — נסי שוב", "error");
@@ -36,7 +35,6 @@ export function useProducersFeed() {
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     loadProducers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { allProducers, setAllProducers, categories, loadProducers };

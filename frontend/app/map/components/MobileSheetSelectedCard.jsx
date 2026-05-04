@@ -37,7 +37,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   // Source line :814 defines `spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}``
   // but never uses it. Preserved verbatim per regression rule 1
   // (grep before delete) — do not remove.
-  const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;  // eslint-disable-line no-unused-vars
+  const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;
   const spPhone = normalizePhone(sp.phone);
   return (
     <div className="mb-3 bg-white rounded-[12px] border border-primary overflow-hidden shadow-sm">

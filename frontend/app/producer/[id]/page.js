@@ -25,7 +25,6 @@ function ProducerJsonLd({ producer }) {
   return (
     <script
       type="application/ld+json"
-      // eslint-disable-next-line react/no-danger -- ld+json schema; producer text fields sanitized server-side (MEH-329)
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   );

@@ -7,9 +7,9 @@ import security from "eslint-plugin-security";
 export default [
   {
     linterOptions: {
-      // MEH-443: 14 pre-existing stale directives — promote to "error"
-      // after follow-up ticket audits + removes them.
-      reportUnusedDisableDirectives: "warn",
+      // MEH-446: stale directives cleaned up — promoted to "error"
+      // so any future regression is blocked at lint time.
+      reportUnusedDisableDirectives: "error",
     },
   },
   ...nextCoreWebVitals,
