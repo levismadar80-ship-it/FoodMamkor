@@ -8,8 +8,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request,
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
 from app.auth import (
     create_access_token,
     create_refresh_token,
@@ -22,6 +20,16 @@ from app.auth import (
     verify_password,
 )
 from app.config import settings
+from app.services.auth_emails import (
+    gen_referral_code,
+    # Aliases preserve the legacy underscore-prefixed module attribute
+    # surface so tests that monkeypatch `app.routers.auth._send_*` keep
+    # working. New code should use the public names directly.
+    send_deletion_email as _send_deletion_email,
+    send_reset_email as _send_reset_email,
+    send_verify_email as _send_verify_email,
+    send_welcome_email as _send_welcome_email,
+)
 from app.services.email import send_email
 from app.services.password_policy import validate_password
 from app.database import get_db
@@ -29,10 +37,7 @@ from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
 from app.rate_limit import email_from_body, limiter
 
-
-def _gen_referral_code() -> str:
-    return uuid.uuid4().hex[:8]
-
+logger = logging.getLogger(__name__)
 
 _MAX_AVATAR_BYTES = 1 * 1024 * 1024  # 1 MB — Google avatars are tiny
 
@@ -269,7 +274,7 @@ async def register(request: Request, response: Response, data: UserRegister, bac
         city=data.city,
         phone=data.phone,
         role="consumer",
-        referral_code=_gen_referral_code(),
+        referral_code=gen_referral_code(),
         email_verified=False,
         email_verify_token=verify_token,
         email_verify_expires=verify_expires,
@@ -390,7 +395,7 @@ def register_producer(
             role="producer",
             producer_id=producer.id,
             is_producer=True,
-            referral_code=_gen_referral_code(),
+            referral_code=gen_referral_code(),
             email_verified=False,
             email_verify_token=verify_token,
             email_verify_expires=verify_expires,
@@ -481,7 +486,7 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
                 name=name,
                 google_id=google_id,
                 role="consumer",
-                referral_code=_gen_referral_code(),
+                referral_code=gen_referral_code(),
                 avatar_url=picture,
                 email_verified=True,
             )
@@ -575,7 +580,7 @@ def register_producer_oauth(
                 "email": email,
                 "name": full_name,
                 "role": "consumer",
-                "referral_code": _gen_referral_code(),
+                "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
             }
             if provider == "google":
@@ -695,7 +700,7 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
-                referral_code=_gen_referral_code(),
+                referral_code=gen_referral_code(),
                 email_verified=True,
             )
             db.add(user)
@@ -889,139 +894,6 @@ def delete_account(request: Request, user: User = Depends(get_current_user), db:
     return {"detail": "Account deleted successfully"}
 
 
-def _send_reset_email(email: str, name: str, reset_link: str):
-    body = (
-        f"שלום {name},\n\n"
-        f"קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.\n\n"
-        f"לחצי על הקישור הבא לאיפוס הסיסמה (תוקף: שעה אחת):\n"
-        f"{reset_link}\n\n"
-        f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
-          <tr>
-            <td style="text-align:right;direction:rtl;">
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לחצי על הכפתור לאיפוס הסיסמה (תוקף: שעה אחת):</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{reset_link}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  איפוס סיסמה
-                </a>
-              </div>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
-              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
-              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
-                <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-    send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
-
-
-def _send_verify_email(email: str, name: str, token: str):
-    """Send email-verification link via Resend. Fire-and-forget."""
-    verify_url = f"{settings.frontend_url}/verify-email?token={token}"
-    body = (
-        f"שלום {name},\n\n"
-        f"לאימות כתובת האימייל שלך לחצי על הקישור הבא:\n\n"
-        f"{verify_url}\n\n"
-        f"הקישור תקף ל-24 שעות.\n\n"
-        f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
-          <tr>
-            <td style="text-align:right;direction:rtl;">
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך, לחצי על הכפתור:</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{verify_url}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  אמתי את האימייל שלך
-                </a>
-              </div>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
-              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
-              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
-                <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-    send_email(email, "מהמקור - אמתי את האימייל שלך", body, html=html_body)
-
-
-def _send_welcome_email(email: str, name: str, role: str = "consumer"):
-    consumer_body = (
-        f"שלום {name},\n\n"
-        f"ברוכה הבאה למהמקור! 🌿\n\n"
-        f"עכשיו את יכולה לגלות בתי עסק מקומיים, כולם במקום אחד —\n"
-        f"כל האוכל האמיתי, במקום אחד.\n\n"
-        f"מה הלאה?\n"
-        f"  • גלי בתי עסק לפי עיר או קטגוריה: {settings.frontend_url}\n"
-        f"  • פתחי את המפה: {settings.frontend_url}/map\n"
-        f"  • שמרי עסקים מועדפים\n\n"
-        f"אם יש שאלות — פשוט תגיבי למייל הזה.\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    producer_body = (
-        f"שלום {name},\n\n"
-        f"ברוכה הבאה למהמקור! 🌿\n\n"
-        f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
-        f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
-        f"אחרי האישור תקבלי מייל עם הקישור לעסק שלך,\n"
-        f"ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
-        f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    body = producer_body if role == "producer" else consumer_body
-    send_email(email, "ברוכה הבאה למהמקור 🌿", body)
-
-
-def _send_deletion_email(email: str, name: str):
-    body = (
-        f"שלום {name},\n\n"
-        f"החשבון שלך במהמקור נמחק בהצלחה.\n"
-        f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
-        f"אם לא ביקשת למחוק את החשבון, צור איתנו קשר מיידית.\n\n"
-        f"בברכה,\nצוות מהמקור"
-    )
-    send_email(email, "מהמקור - החשבון שלך נמחק", body)
-
-
 def _verify_apple_token(id_token: str) -> dict | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
@@ -1138,7 +1010,7 @@ def _notify_admin_new_producer(name: str, city: str | None):
                 from_=settings.twilio_whatsapp_from,
                 to=settings.admin_whatsapp_to,
             )
-            logger.info(f"[WHATSAPP] Notification sent to admin")
+            logger.info("[WHATSAPP] Notification sent to admin")
         except Exception as e:
             logger.warning(f"[WHATSAPP] Failed: {e}")
     else:
