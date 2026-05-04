@@ -9,6 +9,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 import Pagination from "@/components/Pagination";
 import { clampPage } from "@/lib/pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
+import { exportProducersToCSV } from "@/lib/admin-producers-export";
 
 export default function ProducersPageWrapper() {
   return (
@@ -69,28 +70,7 @@ function ProducersAdminPage() {
     loadAllProducers();
   };
 
-  const exportExcel = () => {
-    // Build CSV from current visible rows (BOM for Excel UTF-8)
-    const headers = ["שם", "עיר", "טלפון", "אינסטגרם", "אתר", "סטטוס", "slug", "חנות פיזית", "משלוחים", "כל הארץ", "ערי משלוח"];
-    const rows = producers.map((p) => [
-      p.name, p.city || "", p.phone || "", p.instagram || "", p.website || "", p.status, p.slug || "",
-      // MEH-213 — location mode columns
-      p.has_physical_location !== false ? "כן" : "לא",
-      p.offers_delivery ? "כן" : "לא",
-      p.delivery_nationwide ? "כן" : "לא",
-      (p.delivery_cities || []).join(", "),
-    ]);
-    const csv = "\uFEFF" + [headers, ...rows]
-      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `producers-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportExcel = () => exportProducersToCSV(producers);
 
   // ----- Excel import -----
   const triggerImport = () => fileInputRef.current?.click();
