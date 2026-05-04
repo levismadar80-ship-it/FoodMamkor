@@ -68,6 +68,17 @@
         ]
       },
       {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-442 lint-config protection — blocks Edit/Write/MultiEdit on .eslintrc.*, eslint.config.*, backend/pyproject.toml (v1: full file), .claude/settings.json, and this hook itself. Self-protect prevents AI from disabling guardrails. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/protect-lint-config.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "Read",
         "hooks": [
           {

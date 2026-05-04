@@ -1,7 +1,33 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-407 fully shipped — all 3 PRs merged. Round 2 + AI Guardrails epics queued, blocked by MEH-125 launch gate.)
+> Last updated: 2026-05-04 (MEH-442 draft PR opened — Wave 1/3 of MEH-441 AI Guardrails epic.)
+
+## 2026-05-04 — MEH-442: PreToolUse hook to protect lint configs (DRAFT PR)
+
+**Branch:** `feature/meh-442-protect-lint-config-hook` off `staging`.
+**PR:** opened as draft (see PR list).
+**Linear:** MEH-442 (Wave 1 of 3, MEH-441 AI Guardrails epic — foundation).
+
+### Shipped
+- New hook `.claude/hooks/protect-lint-config.sh` (~30 LOC, ~7ms timing).
+- Registered as PreToolUse Edit|Write|MultiEdit in `.claude/settings.json` (entry #9).
+- Blocks edits to `frontend/.eslintrc.*`, `frontend/eslint.config.*`, `backend/pyproject.toml`, `.claude/settings.json`, and itself.
+- MultiEdit-aware (scans `.tool_input.edits[].file_path`).
+- Self-protect: once registered, AI cannot edit the hook to weaken it.
+- `pyproject.toml` v1 = full-file block; TODO comment in source for v2 to scope to `[tool.ruff*]` only.
+- Docs: `.claude/hooks/README.md` updated (inventory + timing rows). `docs/CHANGELOG.md` entry added.
+
+### Verification (all passed)
+- 5 manual tests: ESLint block, page.js allow, self-protect, MultiEdit block, pyproject.toml block + settings.json self-protect.
+- Timing: 7ms (target <100ms).
+- Hook count 6→7, PreToolUse entries 8→9.
+
+### Status
+DRAFT PR — awaiting Smadar's "approved, go merge" before flipping ready-for-review.
+Wave 2 (MEH-443 frontend ESLint rules) and Wave 3 (MEH-444 backend Ruff) blocked on MEH-442 merge.
+
+---
 
 ## 2026-05-04 — MEH-407 fully shipped + 2 follow-up epics queued
 

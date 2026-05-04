@@ -11,6 +11,7 @@ fail-open when dependencies are missing.
 | `session-start.sh` | SessionStart | Every new session | Injects branch + HANDOFF context into Claude's context window |
 | `check-rtl.sh` | PreToolUse | Edit / Write / MultiEdit | Blocks physical RTL classes (`left-*`, `right-*`, `ml-*`, `mr-*`, `pl-*`, `pr-*`) |
 | `check-bash-safety.sh` | PreToolUse | Bash | Blocks dangerous DDL (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`) and destructive filesystem commands (`rm -rf /`, `rm -rf ~`) |
+| `protect-lint-config.sh` | PreToolUse | Edit / Write / MultiEdit | MEH-442: blocks edits to lint configs (`frontend/.eslintrc.*`, `frontend/eslint.config.*`, `backend/pyproject.toml`), `.claude/settings.json`, and itself. Prevents AI from disabling MEH-441 lint guardrails. |
 
 ## Requirements
 
@@ -91,6 +92,7 @@ Measured with `time bash .claude/hooks/<script>.sh < sample.json`:
 | `session-start.sh` | ~80ms |
 | `check-rtl.sh` | ~30ms |
 | `check-bash-safety.sh` | ~25ms |
+| `protect-lint-config.sh` | ~7ms |
 
 All well under the 500ms target. If a hook exceeds 500ms, check for
 slow `git` operations (network mounts) or large stdin payloads.
