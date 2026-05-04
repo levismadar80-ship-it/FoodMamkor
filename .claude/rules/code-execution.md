@@ -37,6 +37,24 @@ Sources: Cursor · Devin · V0 · Manus · Windsurf (2026).
 
 ---
 
+## Linter-enforced reinforcement (MEH-443)
+
+The 5 core ESLint rules in `frontend/eslint.config.mjs` (warn mode) are
+the runtime enforcement of exec §7 (Lazy Edit) and exec §8 (Atomic Edits).
+They surface concretely the same patterns these principles guard against:
+
+| Linter rule | Reinforces |
+|---|---|
+| `max-lines: 250`, `max-lines-per-function: 50` | exec §7 — small, lazy edits over rewriting whole files |
+| `max-params: 2`, `complexity: 10`, `max-depth: 4` | exec §8 — atomic, all-or-nothing changes are easier when functions are simple |
+| `no-magic-numbers` | exec §10 — named constants give every value a `file:line` anchor |
+
+Warnings are not errors today. Promote to error after MEH-437 + MEH-439
+ship + 30-day soak. Until then, treat new lint warnings as a feedback
+signal, not a build gate.
+
+---
+
 ## Execution order per task
 
 - **Before:** read CLAUDE.md + HANDOFF → numbered plan → grep siblings
