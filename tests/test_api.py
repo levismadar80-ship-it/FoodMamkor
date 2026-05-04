@@ -2303,6 +2303,78 @@ class TestAppleTokenVerification:
         _verify_apple_token("dummy.token.value")
         assert call_count["n"] == 2, "cache must expire after TTL"
 
+    def test_apple_jwks_kid_miss_refetches_once(self, monkeypatch):
+        """MEH-468-followup: when the cache is fresh but the token's kid
+        is missing (Apple rotated keys mid-TTL), force exactly one
+        refetch and verify successfully against the new keyset."""
+        import time as time_mod
+        import requests as req_mod
+        import jwt as pyjwt
+        from app import config
+        from app.services import oauth_verifiers
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        # Pre-populate cache with the OLD kid; cache is fresh.
+        old_jwk = {**self.APPLE_JWK, "kid": "OLD-KID"}
+        new_jwk = {**self.APPLE_JWK, "kid": "NEW-KID"}
+        oauth_verifiers._APPLE_JWKS_CACHE["keys"] = [old_jwk]
+        oauth_verifiers._APPLE_JWKS_CACHE["fetched_at"] = time_mod.time()
+
+        # The (only) refetch returns the new keyset.
+        fetch_count = {"n": 0}
+
+        class _FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"keys": [new_jwk]}
+
+        def _counting_get(url, **kw):
+            fetch_count["n"] += 1
+            return _FakeResp()
+
+        monkeypatch.setattr(req_mod, "get", _counting_get)
+        monkeypatch.setattr(
+            pyjwt, "get_unverified_header", lambda token: {"kid": "NEW-KID"}
+        )
+        monkeypatch.setattr(
+            pyjwt.algorithms.RSAAlgorithm, "from_jwk", lambda *a, **kw: object()
+        )
+        monkeypatch.setattr(
+            pyjwt, "decode", lambda *a, **kw: {"sub": "u1", "email": "u@apple.com"}
+        )
+
+        result = _verify_apple_token("dummy.token.value")
+        assert fetch_count["n"] == 1, "kid miss must trigger exactly one refetch"
+        assert result == {"sub": "u1", "email": "u@apple.com"}
+
+    def test_apple_jwks_negative_cache_during_outage(self, monkeypatch):
+        """MEH-468-followup: when fetch fails with no cache, negative-cache
+        the failure so subsequent calls within the TTL window return None
+        without re-attempting the network — Apple stays unhammered."""
+        import requests as req_mod
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        fetch_count = {"n": 0}
+
+        def _failing_get(url, **kw):
+            fetch_count["n"] += 1
+            raise req_mod.exceptions.ConnectionError("apple offline")
+
+        monkeypatch.setattr(req_mod, "get", _failing_get)
+
+        # Three calls, all within the TTL window (real time barely moves).
+        assert _verify_apple_token("dummy.token.value") is None
+        assert _verify_apple_token("dummy.token.value") is None
+        assert _verify_apple_token("dummy.token.value") is None
+        assert fetch_count["n"] == 1, "outage must be negative-cached"
+
 
 # ---------------------------------------------------------------------------
 # MEH-386: BOLA regression tests

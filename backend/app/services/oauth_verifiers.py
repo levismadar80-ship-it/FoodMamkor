@@ -100,6 +100,63 @@ def upload_google_avatar_or_none(picture_url: str | None) -> str | None:
         return None
 
 
+def _fetch_apple_jwks_or_fallback(now: float, cached_keys: list | None) -> list | None:
+    """Fetch fresh JWKS from Apple, falling back to cached keys on any
+    failure. Re-raises only when no cached keys exist AND the fetch
+    raises (so the outer except returns None).
+
+    MEH-468-followup: bumps fetched_at on every fetch failure to
+    negative-cache outages and avoid 8s-timeout retry storms."""
+    import requests
+
+    try:
+        keys_response = requests.get(
+            "https://appleid.apple.com/auth/keys", timeout=8
+        )
+        keys_response.raise_for_status()
+        apple_keys = keys_response.json().get("keys")
+        if apple_keys:
+            _APPLE_JWKS_CACHE["keys"] = apple_keys
+            _APPLE_JWKS_CACHE["fetched_at"] = now
+            return apple_keys
+        if cached_keys is not None:
+            logger.warning("[APPLE AUTH] Fresh JWKS empty; using cached keys")
+            return cached_keys
+        return None
+    except Exception as fetch_err:
+        _APPLE_JWKS_CACHE["fetched_at"] = now
+        if cached_keys is not None:
+            logger.warning(
+                f"[APPLE AUTH] JWKS refetch failed ({fetch_err}); using cached keys"
+            )
+            return cached_keys
+        raise
+
+
+def _refetch_apple_jwks_for_kid_miss() -> list | None:
+    """MEH-468-followup: refetch Apple's JWKS once when a token's kid is
+    missing from the cached keyset (Apple may have rotated keys mid-TTL).
+
+    Returns the fresh keys list and updates the cache on success, or None
+    on any failure (network error, bad response, empty keyset)."""
+    try:
+        import requests
+
+        keys_response = requests.get(
+            "https://appleid.apple.com/auth/keys", timeout=8
+        )
+        keys_response.raise_for_status()
+        fresh_keys = keys_response.json().get("keys") or []
+        if not fresh_keys:
+            return None
+        _APPLE_JWKS_CACHE["keys"] = fresh_keys
+        _APPLE_JWKS_CACHE["fetched_at"] = time.time()
+        return fresh_keys
+    except Exception as refetch_err:
+        logger.warning(f"[APPLE AUTH] kid-miss refetch failed ({refetch_err})")
+        return None
+
+
 def verify_apple_token(id_token: str) -> dict | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
@@ -107,53 +164,36 @@ def verify_apple_token(id_token: str) -> dict | None:
         return None
     try:
         import jwt as pyjwt
-        import requests
 
         # MEH-440-followup: 1-hour TTL cache on Apple JWKS. On a fresh
         # fetch failure AFTER a successful prior fetch, fall back to
-        # the cached keys (graceful degradation). On first-time failure
-        # with no cache, re-raise so the outer except returns None.
+        # the cached keys (graceful degradation).
+        # MEH-468-followup: bump fetched_at on every fetch failure so we
+        # don't hammer Apple with 8s timeouts during an outage > TTL.
         now = time.time()
         cached_keys = _APPLE_JWKS_CACHE["keys"]
         fetched_at = _APPLE_JWKS_CACHE["fetched_at"]
         cache_fresh = (
-            cached_keys is not None
-            and fetched_at is not None
+            fetched_at is not None
             and (now - fetched_at) < _APPLE_JWKS_TTL_SECONDS
         )
 
-        if cache_fresh:
-            apple_keys = cached_keys
-        else:
-            try:
-                keys_response = requests.get(
-                    "https://appleid.apple.com/auth/keys", timeout=8
-                )
-                keys_response.raise_for_status()
-                apple_keys = keys_response.json().get("keys")
-                if apple_keys:
-                    _APPLE_JWKS_CACHE["keys"] = apple_keys
-                    _APPLE_JWKS_CACHE["fetched_at"] = now
-                elif cached_keys is not None:
-                    logger.warning(
-                        "[APPLE AUTH] Fresh JWKS empty; using cached keys"
-                    )
-                    apple_keys = cached_keys
-            except Exception as fetch_err:
-                if cached_keys is not None:
-                    logger.warning(
-                        f"[APPLE AUTH] JWKS refetch failed ({fetch_err}); using cached keys"
-                    )
-                    apple_keys = cached_keys
-                else:
-                    raise
-
+        apple_keys = (
+            cached_keys
+            if cache_fresh
+            else _fetch_apple_jwks_or_fallback(now, cached_keys)
+        )
         if not apple_keys:
             return None
 
         # Decode header to find the right key
         header = pyjwt.get_unverified_header(id_token)
         key = next((k for k in apple_keys if k["kid"] == header["kid"]), None)
+        if not key and cache_fresh:
+            fresh_keys = _refetch_apple_jwks_for_kid_miss()
+            if fresh_keys:
+                apple_keys = fresh_keys
+                key = next((k for k in apple_keys if k["kid"] == header["kid"]), None)
         if not key:
             return None
 
