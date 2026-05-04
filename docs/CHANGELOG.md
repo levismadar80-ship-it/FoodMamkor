@@ -2,6 +2,44 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-445: Lint-feedback PostToolUse hook (MEH-441 Wave 4/4 — epic truly complete)
+
+Closes the AI Guardrails epic. New `.claude/hooks/lint-feedback.sh` (~121 LOC) runs after every Edit/Write/MultiEdit on a code file, invokes the appropriate linter, and returns errors to Claude Code as feedback.
+
+**Signal model (3 strikes per file):**
+- Attempts 1–2 fail → `{"decision":"approve","reason":"..."}` + exit 0 (continue with feedback).
+- Attempt 3 fail → `{"decision":"block","reason":"⛔ CRITICAL: ..."}` + exit 2 (stop, human review). Counter then resets so the next session starts fresh on that file.
+- Pass → state file deleted, exit 0.
+
+**Routing:** `.js/.jsx/.ts/.tsx` → `cd frontend && npx --no-install eslint <file>`. `.py` → `cd backend && ruff check <file>`. Other extensions skipped silently. `.claude/*` paths skipped (self-protect, prevents recursion with MEH-442 hook and corruption of state files).
+
+**State storage:** `.claude/hooks/.lint-attempts/<md5_of_relpath>.count` — integer. Gitignored. The 3rd-strike message is human-facing only; no metadata file format.
+
+**Replaces** the prior inline PostToolUse ESLint hook. That hook had been a silent no-op since MEH-443 merged (it checked `frontend/.eslintrc.json` which no longer exists — config moved to `eslint.config.mjs`). Removal = pure cleanup, zero behavior change. New hook also drops `--max-warnings 0` so MEH-443's 2,446 legitimate warnings don't drown out real errors.
+
+**Defensive guards:**
+- Missing `jq` / `ruff` / `npx` / `node_modules` / lint config → silent exit 0 (never block on env issues).
+- Linter exit 2 (config error) → stderr warning + continue (don't escalate config bugs into blocks).
+- Linter exit ≠ 0/1/2 (crash) → stderr warning + continue.
+- First-fail-wins on MultiEdit: if multiple files in one MultiEdit, only the first failing file gets feedback this turn — preserves per-file 3-strikes counter integrity. Subsequent files get checked on Claude's next Edit cycle.
+
+**Verification — 8 manual tests + timing (all passed):**
+- (a) Clean frontend file → silent exit 0, no state.
+- (b) Buggy 1st invocation → `decision:approve` + "attempt 1/3" + state count=1.
+- (c) Same buggy file 2nd → "attempt 2/3", state count=2.
+- (d) Same buggy file 3rd → `decision:block` + ⛔ CRITICAL + exit 2 + state reset.
+- (e) Non-code file (.md) → silent exit 0.
+- (f) Self-protect (`.claude/hooks/lint-feedback.sh` as input) → silent exit 0.
+- (g) MultiEdit with clean+buggy → first-fail-wins, feedback for buggy only.
+- (h) Backend `.py` (`app/routers/admin.py`, 12 ruff errors) → `decision:approve` + ruff output delivered.
+- Timing on test (a): 2.405s (well under 10s timeout; npx eslint dominates).
+
+**Manual apply workflow:** `.claude/settings.json` is hook-protected (MEH-442). The PostToolUse-array mutation (remove inline hook + add MEH-445 entry) was applied via a Python `json` snippet that backs up to `settings.json.bak`, asserts current shape, mutates, writes with `json.dump(indent=2)`, and prints a unified diff for visual verification. Safer than editor-based JSON surgery for nested structures.
+
+**MEH-441 epic status:** Wave 1 ✅ MEH-442 (PR #458), Wave 2 ✅ MEH-443 (PR #459), Wave 3 ✅ MEH-444 (PR #460), Wave 4 (this PR). Epic closes on merge.
+
+**Follow-ups (Backlog):** MEH-446 (frontend stale eslint-disable cleanup), MEH-447 (backend audit-and-reduce, to file post-MEH-444 merge — both still queued).
+
 ## 2026-05-04 — MEH-444: Backend Ruff guardrails (MEH-441 Wave 3/3 — epic complete)
 
 Wave 3 of the AI Guardrails epic, closing MEH-441. Adds Pylint-equivalent rules to `backend/pyproject.toml` via Ruff: `PLR0913` (too-many-arguments, max-args=5), `PLR0915` (too-many-statements, max=50), `PLR0912` (too-many-branches, max=12), `PLR0911` (too-many-return-statements, max=6), `C901` (McCabe complexity, max=10).
