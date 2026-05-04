@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, House } from "@phosphor-icons/react";
 import FadeInSection from "@/components/FadeInSection";
+import HomeProductCard from "@/components/HomeProductCard";
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
 const MARQUEE_ITEMS = [
@@ -84,6 +85,93 @@ export function HomeFounderQuote() {
 }
 
 /**
+ * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
+ * the user opened recently (7-day TTL applied by the hook). Hidden
+ * when the list is empty.
+ */
+export function HomeRecentlyViewed({ items }) {
+  if (!items.length) return null;
+  return (
+    <section className="max-w-7xl mx-auto px-4 pb-10">
+      <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+        צפית לאחרונה
+      </h2>
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
+        {items.map((p) => {
+          const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+          const imgSrc = p.images?.[0];
+          return (
+            <Link
+              key={p.id}
+              href={href}
+              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
+            >
+              <div className="relative w-full h-[100px] bg-light overflow-hidden">
+                {imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={p.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-primary">
+                    <Leaf size={32} weight="duotone" aria-hidden="true" />
+                  </div>
+                )}
+              </div>
+              <div className="p-2.5">
+                <p className="font-headline font-bold text-sm text-site-text truncate">{p.name}</p>
+                <p className="text-xs text-site-muted truncate">{p.city}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * מהמטבח של השכן — preview (max 3). Full browse lives at /neighbor.
+ * Hidden entirely when the products list is empty.
+ */
+export function HomeKitchenPreview({ products, onWhatsAppClick }) {
+  if (!products.length) return null;
+  return (
+    <section
+      id="home-kitchen"
+      className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
+    >
+      <div className="flex items-baseline justify-between mb-6">
+        <h2
+          className="font-headline font-bold text-site-text inline-flex items-center gap-2"
+          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+        >
+          <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
+          מהמטבח של השכן
+        </h2>
+        <Link
+          href="/neighbor"
+          className="text-primary hover:underline text-sm font-medium whitespace-nowrap"
+        >
+          ראי עוד →
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {products.slice(0, 3).map((hp) => (
+          <HomeProductCard
+            key={hp.id}
+            product={hp}
+            onWhatsAppClick={() => onWhatsAppClick(hp.id)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
  * HOW IT WORKS — three-step explainer block.
  */
 export function HomeHowItWorks() {
@@ -106,6 +194,30 @@ export function HomeHowItWorks() {
             <p className="text-site-text/85 leading-relaxed">{step.text}</p>
           </FadeInSection>
         ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * CTA — "הוסיפי את העסק שלך". Static, prop-free.
+ */
+export function HomeCTA() {
+  return (
+    <section className="bg-primary-dark text-white py-20">
+      <div className="max-w-3xl mx-auto px-4 text-center">
+        <h2 className="font-headline font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
+          יש לך עסק? בואי אליו
+        </h2>
+        <p className="text-light/90 text-lg mb-8 max-w-xl mx-auto">
+          אם את בעלת עסק, חקלאית או מגדלת — הצטרפי לדירקטורי הראשון בישראל לאוכל אמיתי.
+        </p>
+        <Link
+          href="/register/producer"
+          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-light transition font-medium"
+        >
+          הוסיפי את העסק שלך 🌿
+        </Link>
       </div>
     </section>
   );
