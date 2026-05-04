@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta, date
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -70,6 +72,27 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
             db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
+def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
+    """MEH-447: extracted from update_my_producer to keep that handler under
+    C901's complexity threshold. Validates against RESERVED_SLUGS and finds
+    a non-colliding suffix (`-2`, `-3`, ...) against other producers."""
+    raw = _slugify_me(raw_slug)
+    if raw in RESERVED_SLUGS:
+        raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+    candidate = raw
+    counter = 2
+    while True:
+        if candidate not in RESERVED_SLUGS:
+            existing = db.query(Producer).filter(
+                Producer.slug == candidate,
+                Producer.id != producer_id,
+            ).first()
+            if not existing:
+                return candidate
+        candidate = f"{raw}-{counter}"
+        counter += 1
+
+
 @router.put("", response_model=ProducerDetailOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -97,23 +120,7 @@ def update_my_producer(
 
     # Validate and deduplicate slug if explicitly provided.
     if "slug" in payload and payload["slug"]:
-        raw = _slugify_me(payload["slug"])
-        if raw in RESERVED_SLUGS:
-            raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
-        # Ensure uniqueness — producers can't collide with each other or reserved routes.
-        candidate = raw
-        counter = 2
-        while True:
-            if candidate not in RESERVED_SLUGS:
-                existing = db.query(Producer).filter(
-                    Producer.slug == candidate,
-                    Producer.id != producer.id,
-                ).first()
-                if not existing:
-                    break
-            candidate = f"{raw}-{counter}"
-            counter += 1
-        payload["slug"] = candidate
+        payload["slug"] = _resolve_unique_slug(db, payload["slug"], producer.id)
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
@@ -259,14 +266,25 @@ def dashboard(
 # ============================================================
 
 
-def _count_in_window(db: Session, model, time_col, producer_id, *, days=None, extra_filter=None):
+@dataclass
+class WindowFilter:
+    """MEH-447: collapse the 2 optional kwargs of _count_in_window into a
+    single value object so the helper stays under PLR0913's 5-arg cap.
+    `extra_filter` is a SQLAlchemy ColumnElement — typed as Any to avoid
+    Pydantic-arbitrary-type friction on an internal-only helper."""
+
+    days: int | None = None
+    extra_filter: Any = None
+
+
+def _count_in_window(db: Session, model, time_col, producer_id, window: WindowFilter = WindowFilter()):
     """Count rows for the given model, optionally windowed to last N days."""
     q = db.query(func.count(model.id)).filter(model.producer_id == producer_id)
-    if days is not None:
-        cutoff = datetime.utcnow() - timedelta(days=days)
+    if window.days is not None:
+        cutoff = datetime.utcnow() - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
-    if extra_filter is not None:
-        q = q.filter(extra_filter)
+    if window.extra_filter is not None:
+        q = q.filter(window.extra_filter)
     return int(q.scalar() or 0)
 
 
@@ -294,9 +312,9 @@ def producer_analytics(
     # Time-windowed counts for the 3 main metrics.
     def windowed(model, time_col, *, extra=None):
         return {
-            "last_7d": _count_in_window(db, model, time_col, pid, days=7, extra_filter=extra),
-            "last_30d": _count_in_window(db, model, time_col, pid, days=30, extra_filter=extra),
-            "total": _count_in_window(db, model, time_col, pid, days=None, extra_filter=extra),
+            "last_7d": _count_in_window(db, model, time_col, pid, WindowFilter(days=7, extra_filter=extra)),
+            "last_30d": _count_in_window(db, model, time_col, pid, WindowFilter(days=30, extra_filter=extra)),
+            "total": _count_in_window(db, model, time_col, pid, WindowFilter(days=None, extra_filter=extra)),
         }
 
     profile_views = windowed(ProducerPageView, ProducerPageView.created_at)
