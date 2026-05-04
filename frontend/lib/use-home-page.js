@@ -275,6 +275,14 @@ export function useHomePage() {
 
   const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
 
+  // Advance from Step 0 onboarding tip. Resets the local 2s-delay gate
+  // so a future return to step 0 re-arms the delay (matches the original
+  // inline `() => { setStep0Visible(false); onboardAdvance(); }`).
+  const handleAdvanceFromStep0 = () => {
+    setStep0Visible(false);
+    onboardAdvance();
+  };
+
   // Derived values
   const visibleProducers = producers.slice(0, visibleCount);
   const hasMore = visibleCount < producers.length;
@@ -327,5 +335,6 @@ export function useHomePage() {
     toggleChip,
     handleClearCategory,
     handleLoadMore,
+    handleAdvanceFromStep0,
   };
 }
