@@ -2,6 +2,35 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-444: Backend Ruff guardrails (MEH-441 Wave 3/3 — epic complete)
+
+Wave 3 of the AI Guardrails epic, closing MEH-441. Adds Pylint-equivalent rules to `backend/pyproject.toml` via Ruff: `PLR0913` (too-many-arguments, max-args=5), `PLR0915` (too-many-statements, max=50), `PLR0912` (too-many-branches, max=12), `PLR0911` (too-many-return-statements, max=6), `C901` (McCabe complexity, max=10).
+
+**Severity model:** Ruff has no warn level (unlike ESLint). PL rules go in via `extend-select` and would fail CI on first hit. Carrier mechanism is **per-file-ignores**, populated from real audit data in this PR — **not** copied verbatim from the spec. Each ignore is annotated with the refactor ticket that will eventually remove it.
+
+**Audit results:** 8 files, 18 hits across 5 PL rules.
+- 2 god-files covered by existing tickets: `app/routers/producers.py` (MEH-438), `app/routers/auth.py` (MEH-440).
+- 5 "1-over-threshold" files surfaced without prior ticket: `app/auth.py` (C901 12 > 10), `app/routers/alerts.py` (PLR0913), `app/routers/events.py` (PLR0913), `app/routers/producer_me.py` (PLR0913 + C901 13 > 10), `app/services/analytics.py` (PLR0913). Bundled into a single follow-up: **MEH-447** (umbrella audit-and-reduce ticket).
+- Auto-generated `alembic/versions/**` ignored (PLR0915 + PLR0912) — long by design.
+
+**`tests/**` glob removed:** spec listed it but tests live at repo-root `/tests`, not `backend/tests/`. Ruff runs from `backend/` so the glob was a no-op. Removed from the final block to avoid carrying stale config.
+
+**File-path note:** `backend/pyproject.toml` is hook-protected by MEH-442. Manual apply via Smadar's heredoc (same workflow as MEH-443). The applied block recovered onto the correct branch via `git cherry-pick` after first landing on `feature/meh-443-eslint-ai-guardrails` — no force-push needed.
+
+**Verification (post-baseline on this branch):**
+- `ruff check --select PLR0913,PLR0915,PLR0912,PLR0911,C901 .` from `backend/` → **All checks passed** (0 PL violations).
+- Spot probe `app/routers/producers.py` → 0 PL hits (ignored as designed).
+- Spot probe `app/routers/system.py` → fully clean.
+- Negative test on `/tmp/probe.py` with `def f(a,b,c,d,e,f): ...` → PLR0913 fires.
+- Default-rule baseline unchanged: 56 errors pre + 56 post (existing E402/F401 noise — separate cleanup ticket, out of scope here).
+- Pytest deferred to local run (sandbox can't install backend deps; same Railway-precedent limitation).
+
+**Local invocation note:** Smadar's environment runs Python 3.14 + pip directly. Use `ruff check .` (not `python -m ruff check .` — Ruff installs as a standalone binary on her setup).
+
+**Follow-ups:** MEH-446 (frontend stale-disable cleanup, blocked by MEH-443 merge — merged), MEH-447 (backend audit-and-reduce, blocked by MEH-444 merge). Both Backlog priority Medium.
+
+**MEH-441 epic status:** Wave 1 ✅ (MEH-442, PR #458), Wave 2 ✅ (MEH-443, PR #459), Wave 3 (this PR). Epic closes on merge.
+
 ## 2026-05-04 — MEH-443: Frontend ESLint guardrails (MEH-441 Wave 2/3)
 
 Wave 2 of the AI Guardrails epic. Adds the 5 hardened ESLint rules from Albro's "ESLint as AI Guardrails" (Jan 2026) plus three plugin recommended configs, all in **warn** mode. Promote-to-error gated on MEH-437 + MEH-439 + 30-day soak.

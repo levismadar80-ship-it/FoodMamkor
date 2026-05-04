@@ -1,7 +1,45 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-443 draft PR — Wave 2/3 of MEH-441 AI Guardrails epic. Wave 1 (MEH-442) merged via PR #458 earlier today.)
+> Last updated: 2026-05-04 (MEH-444 draft PR — Wave 3/3 closes MEH-441 epic. MEH-442 + MEH-443 merged earlier today.)
+
+## 2026-05-04 — MEH-444: Backend Ruff guardrails (DRAFT PR — Wave 3/3, MEH-441 epic complete)
+
+**Branch:** `feature/meh-444-ruff-ai-guardrails` off `staging`.
+**PR:** to be opened as draft.
+**Linear:** MEH-444 (Wave 3 of 3, MEH-441 AI Guardrails epic — final).
+
+### Shipped
+- 5 PL rules added to `backend/pyproject.toml` `[tool.ruff.lint]`: PLR0913 (max-args=5), PLR0915 (max-statements=50), PLR0912 (max-branches=12), PLR0911 (max-returns=6), C901 (max-complexity=10).
+- Severity model: Ruff has no warn level → per-file-ignores carry existing-noise files until refactor tickets land.
+- 8-file / 18-hit audit produced final `[tool.ruff.lint.per-file-ignores]` block:
+  - 2 god-files: `producers.py` (MEH-438), `auth.py` (MEH-440).
+  - 5 "1-over-threshold" files (`app/auth.py`, `alerts.py`, `events.py`, `producer_me.py`, `analytics.py`) → MEH-447 umbrella ticket.
+  - `alembic/versions/**` (auto-generated, long by design).
+- Spec `tests/**` glob removed — no-op (tests at repo-root, ruff runs from `backend/`).
+
+### Workflow notes (manual apply + branch recovery)
+- `backend/pyproject.toml` is hook-protected (MEH-442). Smadar applied the block via heredoc.
+- First push landed on the closed `feature/meh-443-eslint-ai-guardrails` branch (force-update). Recovered by `git cherry-pick b473bd7` onto a fresh `feature/meh-444-ruff-ai-guardrails` branched off latest `staging`. No force-push to `staging`/`main` needed.
+- Local invocation on Smadar's Python 3.14 + pip env: `ruff check .` (not `python -m ruff` — installs as standalone binary).
+
+### Verification (all passed locally)
+- `ruff check --select PLR0913,PLR0915,PLR0912,PLR0911,C901 .` → All checks passed.
+- Spot probe `producers.py` → 0 PL hits (ignored).
+- Spot probe `system.py` → clean.
+- Negative test (`/tmp/probe.py` 6 args) → PLR0913 fires, exit 1.
+- Full `ruff check .` → 56 errors (identical to pre-baseline; existing E402/F401 default-rule noise unchanged, out of scope).
+- Pytest deferred to Smadar's local run pre-merge (sandbox can't install backend deps; `http-ece` wheel build fails).
+
+### Follow-up tickets
+- **MEH-446** (frontend stale-disable cleanup) — blocked by MEH-443 merge ✅; ready to start.
+- **MEH-447** (backend audit-and-reduce, 5 files / 6 funcs) — to file post-merge using same template as MEH-446. Inline comments in `pyproject.toml` already reference it.
+
+### Status
+DRAFT PR — awaiting Smadar's "approved, go merge" before flipping ready-for-review.
+**MEH-441 epic status: Wave 1 ✅ Wave 2 ✅ Wave 3 (this PR). Closes on merge.**
+
+---
 
 ## 2026-05-04 — MEH-443: Frontend ESLint guardrails (DRAFT PR #459)
 
