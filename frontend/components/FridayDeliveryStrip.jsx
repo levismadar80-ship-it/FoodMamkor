@@ -48,7 +48,7 @@ export default function FridayDeliveryStrip({ city }) {
       .get("/producers", { params })
       .then((r) => setProducers((r.data || []).slice(0, 12)))
       .catch(() => {});
-  }, [city]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [city]);
 
   if (producers.length === 0) return null;
 

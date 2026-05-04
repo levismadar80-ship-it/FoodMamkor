@@ -508,7 +508,7 @@ function PasswordChangeCard({ isOAuth }) {
               onChange={(e) => setConfirm(e.target.value)}
               required
               aria-invalid={mismatch || undefined}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
+              // rtl-ok
               className={`w-full border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-red-400" : "border-border"}`}
               dir="ltr"
             />
