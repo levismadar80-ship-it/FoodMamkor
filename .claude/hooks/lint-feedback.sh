@@ -31,6 +31,11 @@ PATHS=$(printf '%s' "$INPUT" | jq -r '
 
 mkdir -p "$STATE_DIR" 2>/dev/null
 
+# NOTE: First-fail-wins semantics. If MultiEdit touches multiple files
+# and the first one fails lint, we emit feedback for that file only and
+# exit. Subsequent files in the same MultiEdit aren't checked this run —
+# they get checked on the agent's next Edit cycle. This keeps the
+# feedback message focused and preserves the per-file 3-strikes counter.
 while IFS= read -r fp; do
   # Normalize to repo-relative path.
   case "$fp" in
@@ -99,8 +104,14 @@ while IFS= read -r fp; do
         exit 0
       fi
       ;;
+    2)
+      # Config error → stderr warning, don't block.
+      echo "lint-feedback: config error on $rel_path (exit 2), skipping" >&2
+      continue
+      ;;
     *)
-      # Unknown / config error → silent skip (don't block on bad config).
+      # Crash or unknown exit code → stderr warning, don't block.
+      echo "lint-feedback: linter crashed on $rel_path (exit $LINT_EXIT), skipping" >&2
       continue
       ;;
   esac
