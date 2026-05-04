@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-442: PreToolUse hook to protect lint configs (MEH-441 Wave 1/3)
+
+Foundation hook for the AI Guardrails epic (MEH-441). New `.claude/hooks/protect-lint-config.sh` (~30 lines, ~7ms) blocks Edit/Write/MultiEdit on `frontend/.eslintrc.*`, `frontend/eslint.config.*`, `backend/pyproject.toml`, `.claude/settings.json`, and itself (self-protect). Without this gate, AI could relax any lint rule shipped in MEH-443/444 by editing the config that defines it. Hook follows sibling pattern (`check-rtl.sh`, `check-bash-safety.sh`): jq-based JSON input parse, MultiEdit-aware (`tool_input.edits[].file_path`), fail-open if jq missing, exit 2 + `decision:block` JSON on match. `pyproject.toml` v1 blocks the entire file; v2 will scope to `[tool.ruff*]` sections only (TODO in source). Hook count 6→7, PreToolUse entries 8→9. See PR for verification outputs.
+
 ## 2026-05-03 — MEH-356: env vars rule added to .claude/rules/workflow.md
 
 Docs-only. Added regression rule 8 — "Never add new env vars without listing them explicitly and waiting for confirmation" — to the Regression prevention rules block in `.claude/rules/workflow.md`. One line, no other files touched.
