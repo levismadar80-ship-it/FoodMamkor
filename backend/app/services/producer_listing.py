@@ -49,6 +49,9 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     ("verified", "is_verified"),
     ("organic", "organic_certified"),
     ("is_available_today", "is_available_today"),
+    # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
+    # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
+    ("availability_state", "availability_state"),
     ("grass_fed", "grass_fed"),
     ("gluten_free", "gluten_free"),
     ("vegan", "vegan"),

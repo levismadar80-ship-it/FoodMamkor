@@ -51,6 +51,10 @@ def list_producers(
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
     is_available_today: bool | None = None,
+    # MEH-291 — durable 4-value enum filter. Phase 3 frontend will switch
+    # to this; the legacy is_available_today filter above stays during the
+    # 7-day overlap. Default listing behavior unchanged in Phase 2.
+    availability_state: str | None = None,
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
     vegan: bool | None = None,
@@ -80,6 +84,10 @@ def list_producers(
         category=category, delivery_city=delivery_city, has_delivery=has_delivery,
         verified=verified, organic=organic, kosher=kosher, city=city,
         is_available_today=is_available_today,
+        # MEH-291 — opt-in 4-value enum filter; default listing behavior
+        # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in
+        # Phase 3 alongside frontend).
+        availability_state=availability_state,
         grass_fed=grass_fed, gluten_free=gluten_free, vegan=vegan, lactose_free=lactose_free,
         sort=sort, search_q=search_q,
         limit=limit, offset=offset, exclude=exclude,

@@ -262,6 +262,17 @@ class ProducerImportResult(BaseModel):
     rows: list[ProducerImportPreviewRow]
 
 
+# MEH-291: 4-value enum that consolidates is_available_today + availability_status.
+# Tuple form is the runtime allowlist used by the field validator below and by
+# routers/producer_me.py for dual-write mirroring during the 7-day overlap.
+AVAILABILITY_STATES = (
+    "accepting_orders",   # default — "פתוח להזמנות"
+    "available_today",    # superset — זמין + פתוח
+    "full_this_week",     # "עמוסה השבוע"
+    "on_vacation",        # "בהפסקה" (requires vacation_until)
+)
+
+
 class ProducerUpdate(BaseModel):
     name: str | None = None
     contact_name: str | None = None
@@ -307,6 +318,9 @@ class ProducerUpdate(BaseModel):
     custom_questions: list[str] | None = None
     # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
     availability_status: str | None = None
+    # MEH-291 — 4-value enum that supersedes availability_status + is_available_today.
+    # During the 7-day overlap both fields are accepted and writes mirror to old columns.
+    availability_state: str | None = None
     vacation_until: date | None = None
 
     @field_validator("description")
@@ -325,6 +339,15 @@ class ProducerUpdate(BaseModel):
         allowed = {"available", "full", "vacation"}
         if v is not None and v not in allowed:
             raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
+
+    @field_validator("availability_state")
+    @classmethod
+    def _validate_availability_state(cls, v):
+        if v is not None and v not in AVAILABILITY_STATES:
+            raise ValueError(
+                f"availability_state חייב להיות אחד מ: {', '.join(AVAILABILITY_STATES)}"
+            )
         return v
 
     @field_validator("custom_questions")
@@ -380,6 +403,9 @@ class ProducerListOut(BaseModel):
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
+    # MEH-291: 4-value durable enum that supersedes the two above. During the
+    # 7-day overlap both surfaces are populated; reads should prefer this field.
+    availability_state: str = "accepting_orders"
     # MEH-155: optional vacation end date — auto-cleared when past.
     vacation_until: date | None = None
     # MEH-17: flexible contact methods.
@@ -421,12 +447,18 @@ class ProducerListOut(BaseModel):
         from app.services.trust_tier import compute_trust_tier
         self.trust_tier = compute_trust_tier(self)
         # MEH-155: if vacation_until has passed, treat as available in the API response.
+        # MEH-291: extend the same auto-clear to the new availability_state so
+        # both surfaces stay consistent during the 7-day overlap.
         if (
-            self.availability_status == "vacation"
-            and self.vacation_until is not None
+            self.vacation_until is not None
             and self.vacation_until < date.today()
+            and (
+                self.availability_status == "vacation"
+                or self.availability_state == "on_vacation"
+            )
         ):
             self.availability_status = "available"
+            self.availability_state = "accepting_orders"
             self.vacation_until = None
         return self
 
