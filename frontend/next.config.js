@@ -117,7 +117,6 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_API_URL ||
       "http://localhost:8000";
     // Print so any future "Failed to proxy" log can be cross-referenced.
-    // eslint-disable-next-line no-console
     console.log(`[next.config] /api/* → ${target}`);
     return [
       {
@@ -143,7 +142,6 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN) {
       disableLogger: true,
     });
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.warn("[next.config] Sentry DSN set but @sentry/nextjs not installed — skipping wrap.");
   }
 }

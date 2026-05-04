@@ -215,7 +215,6 @@ export function useMapSync({
     }
     const params = { ...chipParams, ...geoValidation.data };
     if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
       console.log("[חפשי באזור זה] GET /producers", params);
     }
     api

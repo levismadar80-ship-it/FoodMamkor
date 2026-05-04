@@ -149,7 +149,7 @@ export default function ProducersClient({
     };
     document.addEventListener("visibilitychange", refresh);
     return () => document.removeEventListener("visibilitychange", refresh);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
