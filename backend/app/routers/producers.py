@@ -70,7 +70,7 @@ from app.schemas.schemas import (
     ProducerDetailOut,
     ProducerListOut,
 )
-from app.services.analytics import track_producer_view
+from app.services.analytics import ViewContext, track_producer_view
 
 router = APIRouter(tags=["producers"])
 
@@ -422,10 +422,12 @@ def get_producer(
     track_producer_view(
         db,
         producer_id=producer_id,
-        viewer_ip=client_ip,
-        user_agent=request.headers.get("user-agent"),
-        viewer_user=viewer,
-        referrer=from_,
+        ctx=ViewContext(
+            viewer_ip=client_ip,
+            user_agent=request.headers.get("user-agent"),
+            viewer_user=viewer,
+            referrer=from_,
+        ),
     )
 
     return result

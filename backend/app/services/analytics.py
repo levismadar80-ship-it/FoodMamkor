@@ -30,6 +30,7 @@ import hashlib
 import logging
 import time
 from collections import deque
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from threading import Lock
 from typing import Optional
@@ -82,14 +83,23 @@ def hash_ip(ip: Optional[str]) -> Optional[str]:
     return hashlib.sha256(f"{ip}|{salt}".encode("utf-8")).hexdigest()
 
 
+@dataclass
+class ViewContext:
+    """MEH-447: bundle the per-request viewer context so track_producer_view
+    stays under PLR0913's 5-arg cap. Plain dataclass (not Pydantic) since
+    the User field is a SQLAlchemy ORM instance and this is internal-only."""
+
+    viewer_ip: Optional[str]
+    user_agent: Optional[str]
+    viewer_user: Optional[User]
+    referrer: Optional[str]
+
+
 def track_producer_view(
     db: Session,
     *,
     producer_id: UUID,
-    viewer_ip: Optional[str],
-    user_agent: Optional[str],
-    viewer_user: Optional[User],
-    referrer: Optional[str],
+    ctx: ViewContext,
 ) -> None:
     """Insert a ProducerPageView row for this request, best-effort.
 
@@ -99,22 +109,22 @@ def track_producer_view(
     computed so a 404 doesn't leave a view behind.
     """
     try:
-        if is_bot_user_agent(user_agent):
+        if is_bot_user_agent(ctx.user_agent):
             return
 
         city: Optional[str] = None
-        if viewer_user is not None and viewer_user.city:
-            city = viewer_user.city
+        if ctx.viewer_user is not None and ctx.viewer_user.city:
+            city = ctx.viewer_user.city
 
         # Only accept known referrer values — protects against callers
         # stuffing arbitrary strings into the column.
         normalized_referrer: Optional[str] = None
-        if referrer in {"search", "map", "category", "home", "favorites", "follow"}:
-            normalized_referrer = referrer
+        if ctx.referrer in {"search", "map", "category", "home", "favorites", "follow"}:
+            normalized_referrer = ctx.referrer
 
         row = ProducerPageView(
             producer_id=producer_id,
-            viewer_ip_hash=hash_ip(viewer_ip),
+            viewer_ip_hash=hash_ip(ctx.viewer_ip),
             city=city,
             referrer=normalized_referrer,
         )
