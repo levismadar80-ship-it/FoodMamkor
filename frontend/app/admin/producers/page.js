@@ -1,9 +1,9 @@
 "use client";
 
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Cow, Leaf, Package, Seal, Truck, Warning } from "@phosphor-icons/react";
+import { Cow, Leaf, Package, Seal, Truck } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import Pagination from "@/components/Pagination";
@@ -11,6 +11,7 @@ import { clampPage } from "@/lib/pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import { exportProducersToCSV } from "@/lib/admin-producers-export";
 import AdminProducersImportPreview from "./AdminProducersImportPreview";
+import AdminProducersToolbar from "./AdminProducersToolbar";
 
 export default function ProducersPageWrapper() {
   return (
@@ -36,7 +37,6 @@ function ProducersAdminPage() {
   const [importError, setImportError] = useState("");
   // MEH-53: which producer's story-card panel is open
   const [storyCardOpenId, setStoryCardOpenId] = useState(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadAllProducers();
@@ -74,11 +74,7 @@ function ProducersAdminPage() {
   const exportExcel = () => exportProducersToCSV(producers);
 
   // ----- Excel import -----
-  const triggerImport = () => fileInputRef.current?.click();
-
-  const handleImportFile = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  const handleImportFile = async (file) => {
     if (!file) return;
     setImportError("");
     setImporting(true);
@@ -150,69 +146,19 @@ function ProducersAdminPage() {
         <span className="text-sm text-text-secondary">{visible.length} רשומות</span>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <input
-          placeholder="חיפוש לפי שם או עיר..."
-          value={producerSearch}
-          onChange={(e) => setProducerSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && loadAllProducers()}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
-        />
-        <select
-          value={producerStatus}
-          onChange={(e) => setProducerStatus(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 bg-white"
-        >
-          <option value="all">כל הסטטוסים</option>
-          <option value="approved">פעילים</option>
-          <option value="pending">ממתינים</option>
-          <option value="inactive">מושהים</option>
-          <option value="rejected">נדחו</option>
-        </select>
-        <button onClick={() => loadAllProducers()} className="bg-secondary text-white px-4 py-2 rounded-[12px] text-sm">
-          חפש
-        </button>
-        <button
-          onClick={() => setIncompleteOnly((v) => !v)}
-          className={`px-4 py-2 rounded-[12px] text-sm border whitespace-nowrap transition ${
-            incompleteOnly
-              ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-              : "bg-white border-border text-text-secondary hover:border-yellow-400"
-          }`}
-          title="הצג רק עסקים שחסרים להם פרטים נדרשים"
-        >
-          <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {incompleteOnly ? "הצג הכל" : "פרטים חסרים"}
-          {incompleteCount > 0 && (
-            <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
-              {incompleteCount}
-            </span>
-          )}
-        </button>
-        <button onClick={exportExcel} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
-          📤 ייצוא
-        </button>
-        <button
-          onClick={triggerImport}
-          disabled={importing}
-          className="bg-white border border-primary text-primary px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
-        >
-          📥 ייבא מ-Excel
-        </button>
-        <Link
-          href="/admin/producers/new"
-          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm whitespace-nowrap text-center"
-        >
-          + בית עסק חדש
-        </Link>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          onChange={handleImportFile}
-          className="hidden"
-        />
-      </div>
+      <AdminProducersToolbar
+        producerSearch={producerSearch}
+        setProducerSearch={setProducerSearch}
+        producerStatus={producerStatus}
+        setProducerStatus={setProducerStatus}
+        incompleteOnly={incompleteOnly}
+        setIncompleteOnly={setIncompleteOnly}
+        incompleteCount={incompleteCount}
+        importing={importing}
+        onSearch={loadAllProducers}
+        onExport={exportExcel}
+        onImportFile={handleImportFile}
+      />
 
       {importError && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{importError}</div>
