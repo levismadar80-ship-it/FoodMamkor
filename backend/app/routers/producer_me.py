@@ -139,12 +139,14 @@ def update_my_producer(
 
     # MEH-54: fire delivery area alerts for newly added cities
     if new_cities:
-        from app.routers.alerts import fire_alerts
+        from app.routers.alerts import AlertContent, fire_alerts
         background_tasks.add_task(
             fire_alerts, db, producer.id, "delivery_area",
-            f"🚚 משלוחים חדשים: {producer.name}",
-            f"עכשיו מגיעים גם ל: {', '.join(new_cities)}",
-            f"/producer/{producer.id}",
+            AlertContent(
+                title=f"🚚 משלוחים חדשים: {producer.name}",
+                body=f"עכשיו מגיעים גם ל: {', '.join(new_cities)}",
+                url=f"/producer/{producer.id}",
+            ),
         )
 
     return producer
@@ -667,12 +669,14 @@ def create_my_product(
     # (see _ALERT_COL in routers/alerts.py).
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     producer_name = producer.name if producer else "בית העסק"
-    from app.routers.alerts import fire_alerts
+    from app.routers.alerts import AlertContent, fire_alerts
     background_tasks.add_task(
         fire_alerts, db, user.producer_id, "new_product",
-        f"🆕 מוצר חדש מ{producer_name}",
-        product.name,
-        f"/producer/{user.producer_id}",
+        AlertContent(
+            title=f"🆕 מוצר חדש מ{producer_name}",
+            body=product.name,
+            url=f"/producer/{user.producer_id}",
+        ),
     )
 
     return product
