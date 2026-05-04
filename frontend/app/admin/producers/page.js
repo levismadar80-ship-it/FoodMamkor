@@ -1,25 +1,10 @@
 "use client";
 
-import React, { Suspense } from "react";
-import Link from "next/link";
-import { Cow, Leaf, Package, Seal, Truck } from "@phosphor-icons/react";
-import Pagination from "@/components/Pagination";
-import StoryCardCanvas from "@/components/StoryCardCanvas";
+import { Suspense } from "react";
 import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
+import AdminProducersTable from "./AdminProducersTable";
 import { useAdminProducers } from "./use-admin-producers";
-
-function StatusBadge({ status }) {
-  const map = {
-    approved: { label: "פעיל", cls: "bg-primary text-white" },
-    pending: { label: "ממתין", cls: "bg-yellow-100 text-yellow-800" },
-    pending_whatsapp: { label: "ממתין — וואטסאפ", cls: "bg-orange-100 text-orange-800" },
-    rejected: { label: "נדחה", cls: "bg-red-100 text-red-700" },
-    inactive: { label: "מושהה", cls: "bg-gray-200 text-gray-700" },
-  };
-  const m = map[status] || { label: status, cls: "bg-gray-100" };
-  return <span className={`text-xs px-2 py-1 rounded-full ${m.cls}`}>{m.label}</span>;
-}
 
 export default function ProducersPageWrapper() {
   return (
@@ -29,200 +14,66 @@ export default function ProducersPageWrapper() {
   );
 }
 
+function PageHeader({ count }) {
+  return (
+    <div className="flex items-center justify-between">
+      <h1 className="text-2xl font-bold">בתי עסק</h1>
+      <span className="text-sm text-text-secondary">{count} רשומות</span>
+    </div>
+  );
+}
+
 function ProducersAdminPage() {
-  const {
-    producerSearch, setProducerSearch,
-    producerStatus, setProducerStatus,
-    incompleteOnly, setIncompleteOnly,
-    perPage, storyCardOpenId, setStoryCardOpenId,
-    loadAllProducers,
-    quickApprove, toggleStatus, deleteProducer, toggleAmbassador,
-    importPreview, setImportPreview, importing, importError,
-    handleImportFile, confirmImport,
-    exportExcel, handleStoryCardUpload, handlePerPageChange,
-    incompleteCount, visible, pagedVisible, safePage, totalPages,
-    setPage,
-  } = useAdminProducers();
+  const h = useAdminProducers();
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">בתי עסק</h1>
-        <span className="text-sm text-text-secondary">{visible.length} רשומות</span>
-      </div>
+      <PageHeader count={h.visible.length} />
 
       <AdminProducersToolbar
-        producerSearch={producerSearch}
-        setProducerSearch={setProducerSearch}
-        producerStatus={producerStatus}
-        setProducerStatus={setProducerStatus}
-        incompleteOnly={incompleteOnly}
-        setIncompleteOnly={setIncompleteOnly}
-        incompleteCount={incompleteCount}
-        importing={importing}
-        onSearch={loadAllProducers}
-        onExport={exportExcel}
-        onImportFile={handleImportFile}
+        producerSearch={h.producerSearch}
+        setProducerSearch={h.setProducerSearch}
+        producerStatus={h.producerStatus}
+        setProducerStatus={h.setProducerStatus}
+        incompleteOnly={h.incompleteOnly}
+        setIncompleteOnly={h.setIncompleteOnly}
+        incompleteCount={h.incompleteCount}
+        importing={h.importing}
+        onSearch={h.loadAllProducers}
+        onExport={h.exportExcel}
+        onImportFile={h.handleImportFile}
       />
 
-      {importError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{importError}</div>
+      {h.importError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{h.importError}</div>
       )}
 
-      {importPreview && (
+      {h.importPreview && (
         <AdminProducersImportPreview
-          preview={importPreview}
-          importing={importing}
-          onConfirm={confirmImport}
-          onCancel={() => setImportPreview(null)}
+          preview={h.importPreview}
+          importing={h.importing}
+          onConfirm={h.confirmImport}
+          onCancel={() => h.setImportPreview(null)}
         />
       )}
 
-      {/* Table */}
-      <div className="bg-white border border-border rounded-[12px] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">שם</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">עיר</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">קטגוריות</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">תגיות</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">סטטוס</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">פעולות</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedVisible.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-text-secondary">
-                    {incompleteOnly ? "כל בתי העסק שלמים 🎉" : "אין בתי עסק להצגה"}
-                  </td>
-                </tr>
-              )}
-              {pagedVisible.map((p) => {
-                const { missing, priority } = p._completeness;
-                const badge =
-                  priority === "red" ? (
-                    <span
-                      title={`חסרים פרטים: ${missing.join(", ")}`}
-                      className="inline-flex items-center text-base leading-none cursor-help"
-                      aria-label="חסרים פרטים קריטיים"
-                    >
-                      🔴
-                    </span>
-                  ) : priority === "yellow" ? (
-                    <span
-                      title={`חסרים פרטים: ${missing.join(", ")}`}
-                      className="inline-flex items-center text-base leading-none cursor-help"
-                      aria-label="חסרים פרטים"
-                    >
-                      🟡
-                    </span>
-                  ) : (
-                    <span
-                      title="כל הפרטים מולאו"
-                      className="inline-flex items-center text-base leading-none cursor-help opacity-60"
-                      aria-label="שלם"
-                    >
-                      🟢
-                    </span>
-                  );
-                return (
-                <React.Fragment key={p.id}>
-                <tr className="border-t hover:bg-background/50">
-                  <td className="px-4 py-3 font-medium">
-                    <div className="flex items-center gap-2">
-                      {badge}
-                      <span>{p.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-text-secondary">{p.city || "—"}</td>
-                  <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
-                  <td className="px-4 py-3 text-xs">
-                    <div className="flex gap-1 flex-wrap">
-                      {p.is_verified && <span title="מאומת"><Seal size={16} weight="fill" className="text-primary" aria-hidden="true" /></span>}
-                      {p.organic_certified && <span title="אורגני מוסמך"><Leaf size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-                      {p.grass_fed && <span title="גראס פד"><Cow size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-                      {p.has_delivery && <span title="משלוחים"><Truck size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-                      {p.pickup_points && <span title="נקודות איסוף"><Package size={16} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-                      {p.kosher && <span title={p.kosher}>✡️</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-3 flex-wrap">
-                      {p.status === "pending" && (
-                        <button onClick={() => quickApprove(p.id)} className="text-primary hover:underline text-xs font-medium">
-                          ✓ אשר
-                        </button>
-                      )}
-                      <Link href={`/admin/producers/${p.id}/edit`} className="text-primary hover:underline text-xs">
-                        עריכה
-                      </Link>
-                      {p.slug && (
-                        <Link href={`/${p.slug}`} target="_blank" className="text-text-secondary hover:text-primary text-xs">
-                          צפה
-                        </Link>
-                      )}
-                      {(p.status === "approved" || p.status === "inactive") && (
-                        <button onClick={() => toggleStatus(p.id)} className="text-text-secondary hover:text-primary text-xs">
-                          {p.status === "approved" ? "השהה" : "הפעל"}
-                        </button>
-                      )}
-                      {p.status === "approved" && (
-                        <button
-                          onClick={() => toggleAmbassador(p.id, p.ambassador)}
-                          className={`text-xs ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-site-muted hover:text-primary"}`}
-                          title={p.ambassador ? "הסר תפקיד שגרירה" : "הגדר כשגרירה"}
-                        >
-                          {p.ambassador ? "⭐ שגרירה" : "☆ שגריר"}
-                        </button>
-                      )}
-                      {p.status === "approved" && p.slug && (
-                        <button
-                          onClick={() => setStoryCardOpenId((prev) => prev === p.id ? null : p.id)}
-                          className="text-[#4cb08b] hover:underline text-xs"
-                          title="צור כרטיס אינסטגרם"
-                        >
-                          📸 סטורי
-                        </button>
-                      )}
-                      <button onClick={() => deleteProducer(p.id, p.name)} className="text-red-600 hover:underline text-xs">
-                        מחק
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {storyCardOpenId === p.id && (
-                  <tr>
-                    <td colSpan={6} className="px-6 pb-5 bg-background/60">
-                      <StoryCardCanvas
-                        producer={p}
-                        onUploaded={(url) => handleStoryCardUpload(p.id, url)}
-                      />
-                    </td>
-                  </tr>
-                )}
-                </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {/* MEH-23 — numbered pagination + per-page selector. */}
-        {visible.length > perPage && (
-          <div className="px-4 py-3 border-t border-border">
-            <Pagination
-              page={safePage}
-              totalPages={totalPages}
-              onChange={setPage}
-              perPage={perPage}
-              onPerPageChange={handlePerPageChange}
-            />
-          </div>
-        )}
-      </div>
+      <AdminProducersTable
+        rows={h.pagedVisible}
+        incompleteOnly={h.incompleteOnly}
+        storyCardOpenId={h.storyCardOpenId}
+        onSetStoryCardOpenId={h.setStoryCardOpenId}
+        onQuickApprove={h.quickApprove}
+        onToggleStatus={h.toggleStatus}
+        onToggleAmbassador={h.toggleAmbassador}
+        onDeleteProducer={h.deleteProducer}
+        onUploadStoryCard={h.handleStoryCardUpload}
+        page={h.safePage}
+        totalPages={h.totalPages}
+        perPage={h.perPage}
+        onPageChange={h.setPage}
+        onPerPageChange={h.handlePerPageChange}
+        visibleCount={h.visible.length}
+      />
     </div>
   );
 }
