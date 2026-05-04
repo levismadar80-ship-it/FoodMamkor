@@ -1,68 +1,14 @@
-from datetime import datetime
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel
-from sqlalchemy import exists, func, text
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user, get_current_user_optional, require_verified_email
 from app.database import get_db
-
-logger = structlog.get_logger(__name__)
-
-
-def _attach_badge_fields(producer):
-    """MEH-18 — hydrate the 3 computed fields the badge system consumes.
-    Safe to call on already-loaded ORM instances. Assumes the products
-    and delivery_areas collections are already loaded (via selectinload
-    in list queries, joinedload in detail queries).
-    """
-    try:
-        producer.products_count = len(producer.products or [])
-    except Exception:
-        logger.debug("[producers] products lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
-        producer.products_count = 0
-    try:
-        producer.delivery_count = len(producer.delivery_areas or [])
-    except Exception:
-        logger.debug("[producers] delivery_areas lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
-        producer.delivery_count = 0
-    if producer.created_at:
-        delta = datetime.utcnow() - producer.created_at
-        producer.days_since_created = max(0, delta.days)
-    else:
-        producer.days_since_created = None
-    return producer
-from app.models import Category, ContactClick, DeliveryArea, Favorite, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, SearchQuery, User
-from app.services.analytics import hash_ip
-
-
-def _attach_favorites_counts(producers, db):
-    """MEH-106: batch-load favorites_count for a list of producers (single query)."""
-    if not producers:
-        return producers
-    ids = [p.id for p in producers]
-    counts = dict(
-        db.query(Favorite.producer_id, func.count(Favorite.user_id))
-        .filter(Favorite.producer_id.in_(ids))
-        .group_by(Favorite.producer_id)
-        .all()
-    )
-    for p in producers:
-        p.favorites_count = counts.get(p.id, 0)
-    return producers
-
-
-def _attach_favorites_count(producer, db):
-    """MEH-106: load favorites_count for a single producer."""
-    producer.favorites_count = (
-        db.query(func.count(Favorite.user_id))
-        .filter(Favorite.producer_id == producer.id)
-        .scalar() or 0
-    )
-    return producer
+from app.models import Category, ContactClick, DeliveryArea, Producer, ProducerCategory, ProducerFollower, ProducerWhatsAppClick, Product, Report, SearchQuery, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryOut,
@@ -70,32 +16,18 @@ from app.schemas.schemas import (
     ProducerDetailOut,
     ProducerListOut,
 )
-from app.services.analytics import ViewContext, track_producer_view
+from app.services.analytics import ViewContext, hash_ip, track_producer_view
+from app.services.producer_queries import (
+    attach_badge_fields,
+    attach_favorites_count,
+    attach_favorites_counts,
+    create_producer_with_relations,
+    get_producer_or_404,
+    haversine_km,
+)
 
+logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["producers"])
-
-# Earth radius in km — used by the Haversine formula. Accurate enough for
-# city-scale directory queries (well under 0.5% error vs. WGS-84 ellipsoid).
-EARTH_RADIUS_KM = 6371.0
-
-
-def _haversine_km(lat: float, lng: float):
-    """
-    Haversine distance (in km) between the caller's (lat, lng) and each
-    producer row. Returns a SQLAlchemy expression that can be used in
-    SELECT, WHERE, and ORDER BY clauses. Runs entirely in Postgres — no
-    PostGIS required, just standard trig functions.
-
-    The inner sum can land a hair above 1.0 due to float rounding, which
-    would make acos() raise "input is out of range". func.least(1.0, ...)
-    clamps it.
-    """
-    cos_delta = (
-        func.cos(func.radians(lat)) * func.cos(func.radians(Producer.lat))
-        * func.cos(func.radians(Producer.lng) - func.radians(lng))
-        + func.sin(func.radians(lat)) * func.sin(func.radians(Producer.lat))
-    )
-    return EARTH_RADIUS_KM * func.acos(func.least(1.0, cos_delta))
 
 
 @router.get("/producers", response_model=list[ProducerListOut])
@@ -151,7 +83,7 @@ def list_producers(
     # two queries separate and apply each filter/join to BOTH so the total
     # count stays consistent with the page slice.
     if geo_search:
-        distance_expr = _haversine_km(lat, lng).label("distance_km")
+        distance_expr = haversine_km(lat, lng).label("distance_km")
         q = (
             db.query(Producer, distance_expr)
             .options(
@@ -176,7 +108,7 @@ def list_producers(
             .filter(Producer.status == "approved")
             .filter(Producer.has_physical_location.is_(True))
             .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
-            .filter(_haversine_km(lat, lng) <= radius_km)
+            .filter(haversine_km(lat, lng) <= radius_km)
         )
     else:
         order = (
@@ -331,15 +263,15 @@ def list_producers(
             # Attach computed distance so Pydantic's from_attributes picks
             # it up in ProducerListOut.
             producer.distance_km = round(float(distance_km), 2)
-            _attach_badge_fields(producer)
+            attach_badge_fields(producer)
             results.append(producer)
-        _attach_favorites_counts(results, db)
+        attach_favorites_counts(results, db)
         return results
 
     rows = q.offset(offset).limit(limit).all()
     for p in rows:
-        _attach_badge_fields(p)
-    _attach_favorites_counts(rows, db)
+        attach_badge_fields(p)
+    attach_favorites_counts(rows, db)
     return rows
 
 
@@ -366,8 +298,8 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
     )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    _attach_badge_fields(producer)
-    _attach_favorites_count(producer, db)
+    attach_badge_fields(producer)
+    attach_favorites_count(producer, db)
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
@@ -406,9 +338,9 @@ def get_producer(
             raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     # MEH-18 — compute badge fields from the already-loaded relationships.
-    _attach_badge_fields(producer)
+    attach_badge_fields(producer)
     # MEH-106: social proof count.
-    _attach_favorites_count(producer, db)
+    attach_favorites_count(producer, db)
 
     # Compute report_count from DB
     report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
@@ -449,9 +381,8 @@ def record_whatsapp_click(
     fire-and-forget, doesn't block the window. Rate-limited 10/minute
     per IP to bound abuse. Unknown producer IDs return 404.
     """
-    exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
-    if not exists:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # existence check — full row acceptable at 10/min rate limit
+    get_producer_or_404(db, producer_id)
     db.add(ProducerWhatsAppClick(
         producer_id=producer_id,
         user_id=current_user.id if current_user else None,
@@ -485,9 +416,8 @@ def record_contact_click(
     """
     if data.method not in _VALID_CONTACT_METHODS:
         raise HTTPException(status_code=422, detail="method לא חוקי")
-    exists = db.query(Producer.id).filter(Producer.id == producer_id).first()
-    if not exists:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # existence check — full row acceptable at 10/min rate limit
+    get_producer_or_404(db, producer_id)
     client_ip = request.client.host if request.client else None
     db.add(ContactClick(
         producer_id=producer_id,
@@ -512,36 +442,7 @@ def create_producer(
     get 401. The public "become a producer" signup flow lives at
     POST /auth/register/producer (see routers/auth.py) and is unaffected.
     """
-    from app.models import DeliveryArea as DA
-
-    producer = Producer(
-        name=data.name,
-        description=data.description,
-        city=data.city,
-        lat=data.lat,
-        lng=data.lng,
-        phone=data.phone,
-        instagram=data.instagram,
-        website=data.website,
-        status="pending",
-    )
-    db.add(producer)
-    db.flush()
-
-    for cid in data.category_ids:
-        db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
-
-    for da in data.delivery_areas:
-        db.add(DA(
-            producer_id=producer.id,
-            city=da.city,
-            min_order=da.min_order,
-            delivery_day=da.delivery_day,
-        ))
-
-    db.commit()
-    db.refresh(producer)
-    return producer
+    return create_producer_with_relations(db, data)
 
 
 @router.get("/categories", response_model=list[CategoryOut])
