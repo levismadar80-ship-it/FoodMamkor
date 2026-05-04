@@ -1,14 +1,11 @@
 import asyncio
 import logging
 import secrets
-import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
-
-logger = logging.getLogger(__name__)
 
 from app.auth import (
     create_access_token,
@@ -22,67 +19,34 @@ from app.auth import (
     verify_password,
 )
 from app.config import settings
-from app.services.email import send_email
+from app.services.auth_emails import (
+    gen_referral_code,
+    # Aliases preserve the legacy underscore-prefixed module attribute
+    # surface so tests that monkeypatch `app.routers.auth._send_*` keep
+    # working. New code should use the public names directly.
+    send_deletion_email as _send_deletion_email,
+    send_reset_email as _send_reset_email,
+    send_verify_email as _send_verify_email,
+    send_welcome_email as _send_welcome_email,
+)
+from app.services.auth_notifications import (
+    notify_admin_new_producer,
+    notify_producer_registered,
+)
+from app.services.oauth_verifiers import (
+    # Aliases preserve the legacy underscore-prefixed module attribute
+    # surface so tests that monkeypatch / import
+    # `app.routers.auth._verify_apple_token` / `_upload_google_avatar_or_none`
+    # keep working. New code should use the public names directly.
+    upload_google_avatar_or_none as _upload_google_avatar_or_none,
+    verify_apple_token as _verify_apple_token,
+    verify_google_token as _verify_google_token,
+)
 from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
 from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
 from app.rate_limit import email_from_body, limiter
-
-
-def _gen_referral_code() -> str:
-    return uuid.uuid4().hex[:8]
-
-
-_MAX_AVATAR_BYTES = 1 * 1024 * 1024  # 1 MB — Google avatars are tiny
-
-
-def _upload_google_avatar_or_none(picture_url: str | None) -> str | None:
-    """Download a Google profile picture and re-host it on Cloudinary.
-
-    Fail-open: any network or API error returns None so OAuth login is
-    never blocked. Returns the Cloudinary secure_url on success, or
-    picture_url unchanged when Cloudinary is not configured (dev only).
-    """
-    if not picture_url:
-        return None
-    if not settings.cloudinary_cloud_name:
-        return picture_url  # dev fallback — Cloudinary not wired up
-    try:
-        import httpx
-        import cloudinary
-        import cloudinary.uploader
-
-        resp = httpx.get(picture_url, timeout=5, follow_redirects=True)
-        resp.raise_for_status()
-        contents = resp.content
-        if len(contents) > _MAX_AVATAR_BYTES:
-            logger.warning(
-                "Google avatar too large (%d bytes), skipping Cloudinary re-host",
-                len(contents),
-            )
-            return None
-        cloudinary.config(
-            cloud_name=settings.cloudinary_cloud_name,
-            api_key=settings.cloudinary_api_key,
-            api_secret=settings.cloudinary_api_secret,
-        )
-        result = cloudinary.uploader.upload(
-            contents,
-            folder="mehamakor/avatars",
-            public_id=uuid.uuid4().hex,
-            resource_type="image",
-            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
-        )
-        return result["secure_url"]
-    except Exception:
-        logger.exception(
-            "Failed to re-host Google avatar from %s — login continues without avatar",
-            picture_url,
-        )
-        return None
-
-
 from app.schemas.schemas import (
     AppleAuthRequest,
     CheckPasswordRequest,
@@ -98,7 +62,7 @@ from app.schemas.schemas import (
     UserRegister,
 )
 
-
+logger = logging.getLogger(__name__)
 def _set_refresh_cookie(response: Response, user: User) -> None:
     """MEH-326: attach a fresh refresh-token cookie to the outgoing response.
 
@@ -269,7 +233,7 @@ async def register(request: Request, response: Response, data: UserRegister, bac
         city=data.city,
         phone=data.phone,
         role="consumer",
-        referral_code=_gen_referral_code(),
+        referral_code=gen_referral_code(),
         email_verified=False,
         email_verify_token=verify_token,
         email_verify_expires=verify_expires,
@@ -390,7 +354,7 @@ def register_producer(
             role="producer",
             producer_id=producer.id,
             is_producer=True,
-            referral_code=_gen_referral_code(),
+            referral_code=gen_referral_code(),
             email_verified=False,
             email_verify_token=verify_token,
             email_verify_expires=verify_expires,
@@ -406,8 +370,8 @@ def register_producer(
     p_city = producer.city
     p_phone = producer.phone
 
-    background_tasks.add_task(_notify_admin_new_producer, p_name, p_city)
-    background_tasks.add_task(_notify_producer_registered, p_name, p_phone)
+    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    background_tasks.add_task(notify_producer_registered, p_name, p_phone)
     if not upgrade_path:
         background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
         background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
@@ -481,7 +445,7 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
                 name=name,
                 google_id=google_id,
                 role="consumer",
-                referral_code=_gen_referral_code(),
+                referral_code=gen_referral_code(),
                 avatar_url=picture,
                 email_verified=True,
             )
@@ -575,7 +539,7 @@ def register_producer_oauth(
                 "email": email,
                 "name": full_name,
                 "role": "consumer",
-                "referral_code": _gen_referral_code(),
+                "referral_code": gen_referral_code(),
                 sub_field: oauth_sub,
             }
             if provider == "google":
@@ -695,7 +659,7 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
                 name=name,
                 apple_id=apple_id,
                 role="consumer",
-                referral_code=_gen_referral_code(),
+                referral_code=gen_referral_code(),
                 email_verified=True,
             )
             db.add(user)
@@ -888,262 +852,3 @@ def delete_account(request: Request, user: User = Depends(get_current_user), db:
 
     return {"detail": "Account deleted successfully"}
 
-
-def _send_reset_email(email: str, name: str, reset_link: str):
-    body = (
-        f"שלום {name},\n\n"
-        f"קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.\n\n"
-        f"לחצי על הקישור הבא לאיפוס הסיסמה (תוקף: שעה אחת):\n"
-        f"{reset_link}\n\n"
-        f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
-          <tr>
-            <td style="text-align:right;direction:rtl;">
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לחצי על הכפתור לאיפוס הסיסמה (תוקף: שעה אחת):</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{reset_link}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  איפוס סיסמה
-                </a>
-              </div>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
-              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
-              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
-                <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-    send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
-
-
-def _send_verify_email(email: str, name: str, token: str):
-    """Send email-verification link via Resend. Fire-and-forget."""
-    verify_url = f"{settings.frontend_url}/verify-email?token={token}"
-    body = (
-        f"שלום {name},\n\n"
-        f"לאימות כתובת האימייל שלך לחצי על הקישור הבא:\n\n"
-        f"{verify_url}\n\n"
-        f"הקישור תקף ל-24 שעות.\n\n"
-        f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    html_body = f"""\
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
-          <tr>
-            <td style="text-align:right;direction:rtl;">
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name},</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך, לחצי על הכפתור:</p>
-              <div style="text-align:center;margin:0 0 28px;">
-                <a href="{verify_url}"
-                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
-                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  אמתי את האימייל שלך
-                </a>
-              </div>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
-              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
-              <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
-                <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>"""
-    send_email(email, "מהמקור - אמתי את האימייל שלך", body, html=html_body)
-
-
-def _send_welcome_email(email: str, name: str, role: str = "consumer"):
-    consumer_body = (
-        f"שלום {name},\n\n"
-        f"ברוכה הבאה למהמקור! 🌿\n\n"
-        f"עכשיו את יכולה לגלות בתי עסק מקומיים, כולם במקום אחד —\n"
-        f"כל האוכל האמיתי, במקום אחד.\n\n"
-        f"מה הלאה?\n"
-        f"  • גלי בתי עסק לפי עיר או קטגוריה: {settings.frontend_url}\n"
-        f"  • פתחי את המפה: {settings.frontend_url}/map\n"
-        f"  • שמרי עסקים מועדפים\n\n"
-        f"אם יש שאלות — פשוט תגיבי למייל הזה.\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    producer_body = (
-        f"שלום {name},\n\n"
-        f"ברוכה הבאה למהמקור! 🌿\n\n"
-        f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
-        f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
-        f"אחרי האישור תקבלי מייל עם הקישור לעסק שלך,\n"
-        f"ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
-        f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
-        f"בברכה,\nצוות מהמקור 🌱"
-    )
-    body = producer_body if role == "producer" else consumer_body
-    send_email(email, "ברוכה הבאה למהמקור 🌿", body)
-
-
-def _send_deletion_email(email: str, name: str):
-    body = (
-        f"שלום {name},\n\n"
-        f"החשבון שלך במהמקור נמחק בהצלחה.\n"
-        f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
-        f"אם לא ביקשת למחוק את החשבון, צור איתנו קשר מיידית.\n\n"
-        f"בברכה,\nצוות מהמקור"
-    )
-    send_email(email, "מהמקור - החשבון שלך נמחק", body)
-
-
-def _verify_apple_token(id_token: str) -> dict | None:
-    """Verify Apple ID token and return user info."""
-    if not settings.apple_client_id:
-        logger.debug("[APPLE AUTH] No client ID configured, skipping verification")
-        return None
-    try:
-        import jwt as pyjwt
-        import requests
-
-        # Fetch Apple's public keys
-        apple_keys_url = "https://appleid.apple.com/auth/keys"
-        keys_response = requests.get(apple_keys_url, timeout=8)
-        keys_response.raise_for_status()
-        apple_keys = keys_response.json().get("keys")
-        if not apple_keys:
-            return None
-
-        # Decode header to find the right key
-        header = pyjwt.get_unverified_header(id_token)
-        key = next((k for k in apple_keys if k["kid"] == header["kid"]), None)
-        if not key:
-            return None
-
-        public_key = pyjwt.algorithms.RSAAlgorithm.from_jwk(key)
-        payload = pyjwt.decode(
-            id_token,
-            public_key,
-            algorithms=["RS256"],
-            audience=settings.apple_client_id,
-            issuer="https://appleid.apple.com",
-        )
-        return payload
-    except Exception as e:
-        logger.warning(f"[APPLE AUTH] Verification failed: {e}")
-        return None
-
-
-def _verify_google_token(id_token: str) -> dict | None:
-    """Verify Google ID token and return user info."""
-    if not settings.google_client_id:
-        # Fallback for development: decode without verification
-        logger.debug("[GOOGLE AUTH] No client ID configured, skipping verification")
-        return None
-    try:
-        from google.oauth2 import id_token as google_id_token
-        from google.auth.transport import requests
-
-        info = google_id_token.verify_oauth2_token(
-            id_token, requests.Request(), settings.google_client_id
-        )
-        return info
-    except Exception as e:
-        logger.warning(f"[GOOGLE AUTH] Verification failed: {e}")
-        return None
-
-
-def _notify_producer_registered(name: str, phone: str | None) -> bool:
-    """Send WhatsApp welcome + profile-completion link to the new producer.
-
-    MEH-287: returns True on success, False on skip/failure. Any skip
-    now emits logger.error with the exact missing piece so Railway /
-    Sentry surfaces the misconfiguration instead of silently failing.
-    """
-    missing = []
-    if not phone:
-        missing.append("phone")
-    if not settings.twilio_account_sid:
-        missing.append("TWILIO_ACCOUNT_SID")
-    if not settings.twilio_whatsapp_from:
-        missing.append("TWILIO_WHATSAPP_FROM")
-    if missing:
-        logger.error(
-            f"[WHATSAPP] Producer welcome SKIPPED for '{name}' — missing: {', '.join(missing)}"
-        )
-        return False
-    phone = phone.replace("-", "").strip()
-    if not phone.startswith("+"):
-        phone = "+972" + phone.lstrip("0")
-    message = (
-        f"ברוכה הבאה למהמקור! 🌿\n"
-        f"העסק '{name}' נרשם בהצלחה.\n"
-        f"השלימי את הפרופיל כדי שלקוחות יוכלו למצוא אותך:\n"
-        f"{settings.frontend_url}/producer/dashboard"
-    )
-    try:
-        from twilio.rest import Client
-        Client(settings.twilio_account_sid, settings.twilio_auth_token).messages.create(
-            body=message,
-            from_=settings.twilio_whatsapp_from,
-            to=f"whatsapp:{phone}",
-        )
-        logger.info("[WHATSAPP] Producer welcome sent")
-        return True
-    except Exception as e:
-        logger.error(
-            f"[WHATSAPP] Producer welcome FAILED for {phone}: {e}", exc_info=True
-        )
-        return False
-
-
-def _notify_admin_new_producer(name: str, city: str | None):
-    """Send WhatsApp + email notification to admin about new producer."""
-    message = (
-        f"בית עסק חדש: {name} - {city or 'לא צוין'}\n"
-        f"לאישור: {settings.frontend_url}/admin"
-    )
-    # WhatsApp via Twilio
-    if settings.twilio_account_sid and settings.admin_whatsapp_to:
-        try:
-            from twilio.rest import Client
-            client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-            client.messages.create(
-                body=message,
-                from_=settings.twilio_whatsapp_from,
-                to=settings.admin_whatsapp_to,
-            )
-            logger.info(f"[WHATSAPP] Notification sent to admin")
-        except Exception as e:
-            logger.warning(f"[WHATSAPP] Failed: {e}")
-    else:
-        logger.debug(f"[WHATSAPP] Would send: {message}")
-
-    # Email
-    if settings.admin_email:
-        send_email(settings.admin_email, f"מהמקור - בית עסק חדש: {name}", message)
