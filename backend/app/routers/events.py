@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_producer
 from app.database import get_db
-from app.models import Event, Producer, User
+from app.models import Event, User
 from app.services.sanitization import sanitize_text
 
 router = APIRouter(tags=["events"])
