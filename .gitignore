@@ -11,3 +11,5 @@ frontend/dist/
 .DS_Store
 .claude/worktrees/
 *.db
+# MEH-445: PostToolUse lint-feedback hook state files (per-file 3-strikes counter)
+.claude/hooks/.lint-attempts/

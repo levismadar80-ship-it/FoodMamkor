@@ -369,7 +369,7 @@ class TestAdminDashboardAnalytics:
         # one pending experience → badge = 4
         make_producer(db, name="Pending1", status="pending")
         p = make_producer(db, status="approved")
-        db.add(Report(producer_id=p.id, user_id=admin.id, reason="test"))
+        db.add(Report(producer_id=p.id, reporter_id=admin.id, reason="test"))
         owner = make_user(db, email="po@test.com")
         db.add(HomeProduct(
             user_id=owner.id, title="flagged", description="x",
@@ -377,10 +377,10 @@ class TestAdminDashboardAnalytics:
             is_active=True, moderation_status="FLAGGED",
         ))
         db.add(Experience(
-            user_id=owner.id, title="workshop", description="x",
+            host_user_id=owner.id, title="workshop", description="x",
             city="TLV", status="pending",
-            starts_at=datetime.utcnow() + timedelta(days=5),
-            duration_minutes=60, price=50, capacity=10,
+            event_date=(datetime.utcnow() + timedelta(days=5)).date(),
+            duration_minutes=60, price_per_person=50, max_participants=10,
         ))
         db.commit()
 

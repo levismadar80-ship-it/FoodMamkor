@@ -1,7 +1,7 @@
 name: PR Checks
 
 # Runs on every PR targeting staging or main.
-# Three jobs: build, pytest, adversarial-review.
+# Four jobs: build, pytest, test-inventory (non-gating), adversarial-review.
 # build + pytest are required status checks (configure in branch protection).
 # adversarial-review only runs if .github/scripts/adversarial-review.sh exists —
 # it's a hook point for wiring in the Claude CLI; currently always skipped.
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           version: "latest"
           enable-cache: true
@@ -128,7 +128,7 @@ jobs:
           echo "Tables (excl. alembic_version) = $TABLE_COUNT ✓"
 
       - name: Run tests
-        run: backend/.venv/bin/python -m pytest tests/test_api.py tests/test_password_policy.py -v --tb=long -x --timeout=60
+        run: backend/.venv/bin/python -m pytest tests/ -v --tb=long -x --timeout=60
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           # Stub secrets so imports don't fail — tests never hit real services.
@@ -136,7 +136,76 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
 
   # ─────────────────────────────────────────────
-  # JOB 3: adversarial-review
+  # JOB 3: test-inventory (MEH-394 Phase A)
+  # Non-gating full-suite run across all 17 test
+  # files. Output uploaded as artifact so Phase A
+  # inventory can be read without digging through
+  # raw CI logs. continue-on-error: true — never
+  # blocks merge regardless of failures.
+  # ─────────────────────────────────────────────
+  test-inventory:
+    name: Test inventory (full suite, non-gating)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Alembic upgrade head
+        working-directory: backend
+        run: .venv/bin/alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+
+      - name: Run full test inventory
+        run: |
+          backend/.venv/bin/python -m pytest tests/ -v --tb=short \
+            --no-header -p no:cacheprovider --timeout=60 \
+            --continue-on-collection-errors \
+            2>&1 | tee pytest-inventory.txt
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+
+      - name: Upload test inventory
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pytest-inventory
+          path: pytest-inventory.txt
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # JOB 4: adversarial-review
   # Only runs when .github/scripts/adversarial-review.sh exists.
   # To enable: add a shell script at that path that calls the Claude CLI
   # and exits non-zero on any BLOCK-level finding.
