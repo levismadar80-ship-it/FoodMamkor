@@ -10,6 +10,7 @@ import Pagination from "@/components/Pagination";
 import { clampPage } from "@/lib/pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import { exportProducersToCSV } from "@/lib/admin-producers-export";
+import AdminProducersImportPreview from "./AdminProducersImportPreview";
 
 export default function ProducersPageWrapper() {
   return (
@@ -217,68 +218,13 @@ function ProducersAdminPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{importError}</div>
       )}
 
-      {/* Import preview */}
       {importPreview && (
-        <div className="bg-white border border-border rounded-[12px] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg">תצוגה מקדימה של הייבוא</h2>
-            <div className="flex gap-2">
-              <button onClick={confirmImport} disabled={importing} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50">
-                {importing ? "מייבא..." : `אשר ייבוא (${importPreview.imported})`}
-              </button>
-              <button onClick={() => setImportPreview(null)} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
-                ביטול
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mb-4 text-center">
-            <div className="bg-green-50 rounded-[12px] p-3">
-              <p className="text-2xl font-bold text-primary">{importPreview.imported}</p>
-              <p className="text-xs text-text-secondary">לייבוא</p>
-            </div>
-            <div className="bg-yellow-50 rounded-[12px] p-3">
-              <p className="text-2xl font-bold text-yellow-700">{importPreview.skipped}</p>
-              <p className="text-xs text-text-secondary">דולגו</p>
-            </div>
-            <div className="bg-red-50 rounded-[12px] p-3">
-              <p className="text-2xl font-bold text-red-700">{importPreview.errors}</p>
-              <p className="text-xs text-text-secondary">שגיאות</p>
-            </div>
-          </div>
-          <div className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded-[8px]">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="text-end px-3 py-2">שורה</th>
-                  <th className="text-end px-3 py-2">שם</th>
-                  <th className="text-end px-3 py-2">עיר</th>
-                  <th className="text-end px-3 py-2">קטגוריה</th>
-                  <th className="text-end px-3 py-2">slug</th>
-                  <th className="text-end px-3 py-2">סטטוס</th>
-                </tr>
-              </thead>
-              <tbody>
-                {importPreview.rows.map((row) => (
-                  <tr
-                    key={row.row_number}
-                    className={`border-t ${row.errors.length ? "bg-red-50" : row.warnings.length ? "bg-yellow-50" : ""}`}
-                  >
-                    <td className="px-3 py-2">{row.row_number}</td>
-                    <td className="px-3 py-2">{row.data.name || "—"}</td>
-                    <td className="px-3 py-2">{row.data.city || "—"}</td>
-                    <td className="px-3 py-2">{row.data.category_name || "—"}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{row.data.slug || "—"}</td>
-                    <td className="px-3 py-2 text-xs">
-                      {row.errors.length > 0 && <span className="text-red-700">{row.errors.join(", ")}</span>}
-                      {row.errors.length === 0 && row.warnings.length > 0 && <span className="text-yellow-700">{row.warnings.join(", ")}</span>}
-                      {row.errors.length === 0 && row.warnings.length === 0 && <span className="text-primary">✓</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminProducersImportPreview
+          preview={importPreview}
+          importing={importing}
+          onConfirm={confirmImport}
+          onCancel={() => setImportPreview(null)}
+        />
       )}
 
       {/* Table */}
