@@ -12,6 +12,7 @@ fail-open when dependencies are missing.
 | `check-rtl.sh` | PreToolUse | Edit / Write / MultiEdit | Blocks physical RTL classes (`left-*`, `right-*`, `ml-*`, `mr-*`, `pl-*`, `pr-*`) |
 | `check-bash-safety.sh` | PreToolUse | Bash | Blocks dangerous DDL (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`) and destructive filesystem commands (`rm -rf /`, `rm -rf ~`) |
 | `protect-lint-config.sh` | PreToolUse | Edit / Write / MultiEdit | MEH-442: blocks edits to lint configs (`frontend/.eslintrc.*`, `frontend/eslint.config.*`, `backend/pyproject.toml`), `.claude/settings.json`, and itself. Prevents AI from disabling MEH-441 lint guardrails. |
+| `lint-feedback.sh` | PostToolUse | Edit / Write / MultiEdit | MEH-445: runs eslint (frontend) or ruff (backend) on the just-edited code file. Returns lint errors to Claude as feedback. 3-strikes-per-file: attempts 1-2 emit `decision:approve` + reason (continue with feedback), attempt 3 emits `decision:block` + exit 2. Skips `.claude/*` (self-protect) and missing tooling (silent exit 0). |
 
 ## Requirements
 
@@ -93,9 +94,28 @@ Measured with `time bash .claude/hooks/<script>.sh < sample.json`:
 | `check-rtl.sh` | ~30ms |
 | `check-bash-safety.sh` | ~25ms |
 | `protect-lint-config.sh` | ~7ms |
+| `lint-feedback.sh` | ~2400ms (cold; npx eslint dominates — clean-file path still invokes the linter) |
 
-All well under the 500ms target. If a hook exceeds 500ms, check for
-slow `git` operations (network mounts) or large stdin payloads.
+PreToolUse hooks all run well under 500ms. The PostToolUse
+`lint-feedback.sh` is intentionally slower because it invokes the real
+linter; budget is 10000ms (configured in settings.json).
+
+## lint-feedback state files (MEH-445)
+
+`lint-feedback.sh` writes per-file attempt counters to
+`.claude/hooks/.lint-attempts/<md5>.count` (gitignored). The hash is
+the md5 of the repo-relative path; the file contents are an integer.
+
+To reset all counters (e.g. after a long debugging session):
+
+```bash
+find .claude/hooks/.lint-attempts -type f -delete && \
+  rmdir .claude/hooks/.lint-attempts 2>/dev/null
+```
+
+A 3rd-strike `decision:block` resets that file's counter automatically,
+so the next session starts fresh on that file. Other files' counters
+are untouched.
 
 ## Troubleshooting
 

@@ -1,7 +1,49 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-444 draft PR — Wave 3/3 closes MEH-441 epic. MEH-442 + MEH-443 merged earlier today.)
+> Last updated: 2026-05-04 (MEH-445 draft PR — Wave 4/4 closes MEH-441 epic for real. MEH-442 + MEH-443 + MEH-444 merged earlier today.)
+
+## 2026-05-04 — MEH-445: Lint-feedback PostToolUse hook (DRAFT PR — Wave 4/4, MEH-441 epic complete)
+
+**Branch:** `feature/meh-445-lint-feedback-loop` off `staging`.
+**PR:** to be opened as draft.
+**Linear:** MEH-445 (Wave 4 of 4, MEH-441 AI Guardrails epic — final).
+
+### Shipped
+- New hook `.claude/hooks/lint-feedback.sh` (~121 LOC). Runs eslint or ruff on the just-edited code file via PostToolUse Edit|Write|MultiEdit.
+- 3-strikes-per-file: attempts 1–2 → `decision:approve` + reason (continue with feedback); attempt 3 → `decision:block` + exit 2 (stop). Counter auto-resets on 3rd strike.
+- State storage: `.claude/hooks/.lint-attempts/<md5>.count` (integer, gitignored).
+- `.gitignore` extended to ignore the state dir.
+- `.claude/settings.json` PostToolUse array rewritten: removed prior inline ESLint hook (was silent no-op post-MEH-443), added new MEH-445 entry. Manual apply via Python `json` snippet (heredoc safer than editor for nested JSON).
+- `.claude/hooks/README.md` updated: inventory row, timing row, "lint-feedback state files" section.
+- Defensive: missing jq/eslint/ruff/node_modules/lint config → silent exit 0. Linter exit 2 (config error) → stderr warning. Linter crash → stderr warning. First-fail-wins on MultiEdit (documented in source).
+
+### Workflow notes (manual apply + recovery)
+- `.claude/settings.json` is hook-protected (MEH-442). Smadar applied the JSON mutation via Python snippet that asserts shape before writing, backs up to `settings.json.bak`, and prints a unified diff for visual verification.
+- Hook itself (`lint-feedback.sh`) is NOT protected — created via Write tool directly.
+- `.gitignore` is NOT protected — edited directly.
+- Two fix-up commits during development: `161710b` (FIX 1+2: explicit exit-2/crash branches + first-fail-wins comment) and `2bf865f` (manual settings.json apply).
+
+### Verification (all 8 tests passed locally)
+- Test a (clean) — silent exit 0, no state file.
+- Test b (buggy 1st) — `decision:approve` + "attempt 1/3" + state count=1.
+- Test c (buggy 2nd) — "attempt 2/3", state count=2.
+- Test d (buggy 3rd) — `decision:block` + ⛔ CRITICAL + exit 2 + state reset.
+- Test e (non-code .md) — silent exit 0.
+- Test f (self-protect `.claude/hooks/*`) — silent exit 0.
+- Test g (MultiEdit clean+buggy) — first-fail-wins, feedback for buggy only.
+- Test h (backend `app/routers/admin.py`, 12 ruff errors) — `decision:approve` + ruff output delivered, "attempt 1/3".
+- Timing: 2.405s on clean file (npx eslint dominates). Within 10000ms timeout.
+
+### Status
+DRAFT PR — awaiting Smadar's "approved, go merge" before flipping ready-for-review.
+**MEH-441 epic status: Wave 1 ✅ Wave 2 ✅ Wave 3 ✅ Wave 4 (this PR). Closes on merge — epic truly done.**
+
+### Follow-ups
+- **MEH-446** (frontend stale eslint-disable cleanup) — already filed, blocked by MEH-443 merge ✅; ready to start.
+- **MEH-447** (backend audit-and-reduce, 5 files / 6 funcs) — to file post-merge using MEH-446 template.
+
+---
 
 ## 2026-05-04 — MEH-444: Backend Ruff guardrails (DRAFT PR — Wave 3/3, MEH-441 epic complete)
 
