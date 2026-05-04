@@ -71,12 +71,5 @@ max-complexity = 10
 "app/routers/producers.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-438
 "app/routers/auth.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-440
 
-# Audit follow-up — 1-over-threshold violations, light cleanup pending.
-"app/auth.py" = ["C901"]                              # MEH-447
-"app/routers/alerts.py" = ["PLR0913"]                 # MEH-447
-"app/routers/events.py" = ["PLR0913"]                 # MEH-447
-"app/routers/producer_me.py" = ["PLR0913", "C901"]    # MEH-447
-"app/services/analytics.py" = ["PLR0913"]             # MEH-447
-
 # Auto-generated migrations are long by design.
 "alembic/versions/**" = ["PLR0915", "PLR0912"]

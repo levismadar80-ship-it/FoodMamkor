@@ -8,6 +8,7 @@ PUT  /events/{id}                update (owner only)
 DELETE /events/{id}              delete (owner only)
 """
 from datetime import date, datetime, time
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_producer
 from app.database import get_db
-from app.models import Event, Producer, User
+from app.models import Event, User
 from app.services.sanitization import sanitize_text
 
 router = APIRouter(tags=["events"])
@@ -134,13 +135,22 @@ def _serialize(event: Event) -> EventOut:
 # ============================================================
 
 
+class EventFilters(BaseModel):
+    """MEH-447: query-param bag for GET /events. Used via
+    Annotated[EventFilters, Depends()] so FastAPI exposes each field as
+    an individual query parameter — preserving the pre-refactor OpenAPI
+    schema verbatim while keeping list_events under PLR0913's 5-arg cap."""
+
+    city: str | None = Field(default=None)
+    category: str | None = Field(default=None)
+    from_date: date | None = Field(default=None)
+    to_date: date | None = Field(default=None)
+    producer_id: UUID | None = Field(default=None)
+
+
 @router.get("/events", response_model=list[EventOut])
 def list_events(
-    city: str | None = None,
-    category: str | None = None,
-    from_date: date | None = None,
-    to_date: date | None = None,
-    producer_id: UUID | None = None,
+    filters: Annotated[EventFilters, Depends()],
     db: Session = Depends(get_db),
 ):
     q = (
@@ -148,19 +158,19 @@ def list_events(
         .options(joinedload(Event.producer))
         .filter(Event.is_active.is_(True))
     )
-    if producer_id:
-        q = q.filter(Event.producer_id == producer_id)
-    if city:
-        q = q.filter(Event.city == city)
-    if category:
-        q = q.filter(Event.category == category)
-    if from_date:
-        q = q.filter(Event.event_date >= from_date)
+    if filters.producer_id:
+        q = q.filter(Event.producer_id == filters.producer_id)
+    if filters.city:
+        q = q.filter(Event.city == filters.city)
+    if filters.category:
+        q = q.filter(Event.category == filters.category)
+    if filters.from_date:
+        q = q.filter(Event.event_date >= filters.from_date)
     else:
         # Default: only show events from today onward
         q = q.filter(Event.event_date >= date.today())
-    if to_date:
-        q = q.filter(Event.event_date <= to_date)
+    if filters.to_date:
+        q = q.filter(Event.event_date <= filters.to_date)
 
     events = q.order_by(Event.event_date.asc(), Event.event_time.asc()).all()
     return [_serialize(ev) for ev in events]
@@ -239,13 +249,15 @@ def create_event(
     )
 
     # MEH-54: notify favoriting users who opted in for new-event alerts
-    from app.routers.alerts import fire_alerts
+    from app.routers.alerts import AlertContent, fire_alerts
     producer_name = event.producer.name if event.producer else ""
     background_tasks.add_task(
         fire_alerts, db, user.producer_id, "new_event",
-        f"🎉 אירוע חדש: {data.title}",
-        f"{producer_name} — {data.city or ''}\n{data.event_date}",
-        f"/events/{event.id}",
+        AlertContent(
+            title=f"🎉 אירוע חדש: {data.title}",
+            body=f"{producer_name} — {data.city or ''}\n{data.event_date}",
+            url=f"/events/{event.id}",
+        ),
     )
 
     return _serialize(event)
