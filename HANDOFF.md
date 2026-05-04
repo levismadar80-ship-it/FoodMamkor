@@ -1,7 +1,37 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-447 draft PR — backend PL audit cleanup, removes 5 per-file-ignores added in MEH-444.)
+> Last updated: 2026-05-04 (MEH-446 draft PR — ESLint stale-disable cleanup + promote `reportUnusedDisableDirectives` to error. MEH-447 merged earlier.)
+
+## 2026-05-04 — MEH-446: ESLint stale-disable cleanup (DRAFT PR)
+
+**Branch:** `feature/meh-446-eslint-disable-cleanup` off `staging` (`8443ae3`).
+**PR:** to be opened as draft.
+**Linear:** MEH-446 (MEH-443 follow-up; part of MEH-441 epic).
+
+### What shipped
+- 14 stale inline `eslint-disable` directives audited and removed across 11 files (13 deletes + 1 `rtl-ok`-preserving replace on `app/settings/page.jsx:511`).
+- `frontend/eslint.config.mjs` line 12 promoted `"warn"` → `"error"` (manual apply, MEH-442 hook protects that file). Comment on lines 10–11 updated to reference MEH-446 closure.
+
+### Commits on branch
+- `4628f4d` MEH-446: remove 14 stale eslint-disable directives
+- `f1b4188` feat(MEH-446): promote reportUnusedDisableDirectives warn→error (manual apply)
+
+### Verification
+- `cd frontend && npx eslint . 2>&1 | grep -c "Unused eslint-disable"` → `0` (was 14).
+- Total problems: 2,446 → 2,432 (drop of exactly 14). 0 errors.
+- `rtl-ok` marker on `app/settings/page.jsx:511` survives within ±1 line of the physical class on `:512` — RTL hook proximity rule satisfied.
+
+### Definition of Done
+- [x] 14 stale directives removed (13 deletes + 1 rtl-ok-preserving replace)
+- [x] `eslint.config.mjs` line 12 `"warn"` → `"error"`
+- [x] `npx eslint .` reports 0 "Unused eslint-disable directive"
+- [ ] PR opened as draft
+
+### Next step
+Open draft PR → wait for CI green → on "ready for merge", flip to ready + merge to staging.
+
+---
 
 ## 2026-05-04 — MEH-447: Backend PL audit cleanup (DRAFT PR)
 

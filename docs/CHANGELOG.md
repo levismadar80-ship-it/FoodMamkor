@@ -2,6 +2,31 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-446: ESLint stale-disable cleanup + promote `reportUnusedDisableDirectives` to error
+
+Closes the MEH-443 follow-up. The 14 inline `eslint-disable` directives that became stale when MEH-443 added `sonarjs` + `unicorn` recommended configs are now removed; `linterOptions.reportUnusedDisableDirectives` flipped from `"warn"` to `"error"` so any future regression is blocked at lint time.
+
+**13 deletes — disable was suppressing a rule the new plugin set no longer activates:**
+- `app/[slug]/page.js:43`, `app/producer/[id]/page.js:28` — `react/no-danger` on JSON-LD `<script>` (next-core-web-vitals doesn't include it).
+- `app/map/components/MobileSheetSelectedCard.jsx:40` — `no-unused-vars` on intentionally-preserved `spHref`.
+- `app/map/state/useMapSync.js:218`, `app/map/state/useProducersFeed.js:29`, `lib/analytics.js:9`, `next.config.js:120`, `next.config.js:146` — `no-console` (rule not active).
+- `app/map/state/useProducersFeed.js:39`, `components/ChipScrollRow.jsx:50`, `components/FridayDeliveryStrip.jsx:51`, `components/ProducersClient.jsx:152`, `lib/auth-context.js:80` — `react-hooks/exhaustive-deps` (rule not firing on these specific useEffect call sites).
+
+**1 replace — preserve RTL hook proximity marker:**
+- `app/settings/page.jsx:511` — disable was carrying a `rtl-ok` trailer that the RTL hook + `verify-frontend` agent rely on (±1-line text match per `.claude/rules/rtl.md`). Replaced with a bare `// rtl-ok` so the RTL annotation survives.
+
+**Manual apply (`eslint.config.mjs` is protected by the MEH-442 hook):**
+- Lines 10–11: comment updated to reference MEH-446 closure.
+- Line 12: `reportUnusedDisableDirectives: "warn"` → `"error"`.
+
+**Verification:**
+- `cd frontend && npx eslint . 2>&1 | grep -c "Unused eslint-disable"` → `0` (was 14).
+- Total problems: 2,446 → 2,432 (drop of exactly 14).
+- 0 errors. 2,432 remaining warnings are pre-existing baseline noise (sonarjs + unicorn) — out of scope for MEH-446.
+- `rtl-ok` marker on `settings/page.jsx:511` confirmed within ±1 line of physical class on `:512` — RTL hook proximity rule satisfied.
+
+Comment-only edits — no code/logic changes across the 11 touched files.
+
 ## 2026-05-04 — MEH-447: Backend PL audit cleanup — 5 files / 6 violations
 
 Closes MEH-444's audit follow-up. The 5 per-file-ignores added as a workaround when MEH-444 introduced Ruff PL rules are now removed; all 6 underlying violations refactored. PL sweep across the entire backend reports `All checks passed!` with no audit-follow-up suppressions.
