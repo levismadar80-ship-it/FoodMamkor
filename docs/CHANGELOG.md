@@ -2,6 +2,36 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-04 — MEH-291 Phase 2: backend — `availability_state` model + endpoint + dual-write
+
+Phase 2 of the 4-phase consolidation. Wires the Phase-1 DB column into application code; old endpoints preserved + dual-write during the 7-day overlap. Frontend (5 surfaces) follows in Phase 3; column drops in Phase 4.
+
+**Model + schemas:**
+- `Producer.availability_state` ORM column (`String(32)`, NOT NULL, `server_default='accepting_orders'`) at `backend/app/models/models.py`.
+- `AVAILABILITY_STATES` module-level tuple in `backend/app/schemas/schemas.py` — single allowlist for the 4 enum values.
+- `ProducerUpdate.availability_state` field + `_validate_availability_state` field validator (Hebrew error).
+- `ProducerListOut.availability_state` default = `'accepting_orders'` (auto-flows to `ProducerDetailOut`).
+- Extended `_compute_trust_tier` auto-clear: when `vacation_until` is past, normalizes BOTH legacy `availability_status` AND new `availability_state` so reads stay consistent during the overlap.
+
+**Endpoints (`backend/app/routers/producer_me.py`):**
+- NEW `POST /producers/me/availability-state` — body `{ state, vacation_until? }`. Enforces `vacation_until` when `state='on_vacation'` (422 with `"תאריך חזרה לחופשה נדרש"`). Dual-writes to legacy columns via `_state_to_legacy` mapping.
+- Legacy `POST /availability` (toggle) — now mirrors to `availability_state` via `_legacy_to_state` (precedence: vacation > full > today > default; matches Phase 1 backfill CASE WHEN).
+- Legacy `POST /availability-status` — same mirror.
+- `GET /producers/me/dashboard` response now includes `availability_state` (defensive default `'accepting_orders'`).
+
+**Filter (`backend/app/routers/producers.py`):**
+- New optional `?availability_state=` query param. Default `/producers` listing behavior UNCHANGED in Phase 2 (Q4b decision — default-hide-`on_vacation` ships with the frontend in Phase 3).
+
+**MEH-447 baseline cleanup (in scope for this PR):**
+- Removed unused `HomeProductWhatsAppClick` import (`producer_me.py:31`).
+- Removed unused in-function `from app.models import Category` (`producer_me.py:139`).
+- Replaced `PhoneOtpToken.used == False` with `PhoneOtpToken.used.is_(False)` at 2 sites (`producer_me.py:628,662`) — canonical SQLAlchemy boolean idiom (generates `IS FALSE`).
+- These were the 4 ruff findings MEH-447 deferred as out-of-scope; same file Phase 2 is already touching, so cleared inline (Smadar-approved).
+
+**Tests:** `tests/test_api.py` extended with `TestAvailabilityState` class (11 cases): all 4 enum values via new endpoint, 422 for missing `vacation_until` on `on_vacation`, dual-write verification (state → legacy + legacy → state), auto-clear normalization, `vacation_until` round-trip preservation, new filter, legacy filter still works. 168 tests collected total (157 baseline + 11 new) — pytest run deferred to CI per documented sandbox limitation (no Postgres on `localhost:5432`; same precedent as MEH-447).
+
+**Adversarial review:** 26 FINDER candidates, 0 real issues — all disproven (transactional safety, validator placement, mirror precedence vs Phase 1 backfill, schema model_validator inheritance, SQLAlchemy parameter binding, test helper signatures verified at `conftest.py:111-160`).
+
 ## 2026-05-04 — MEH-291 Phase 1: Alembic migration — `producers.availability_state` + backfill
 
 First of a multi-PR consolidation of 3 overlapping availability mechanisms (`is_available_today` / `availability_status` / `vacation_until`) into a single durable enum. Phase 1 is migration-only — old columns preserved for the mandatory 7-day overlap; backend code + frontend follow in Phase 2 / Phase 3.
