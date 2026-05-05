@@ -2,6 +2,23 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-427: branch-base verification rule
+
+Documents the `git rev-list --count HEAD ^origin/staging` pre-commit
+check + abort/recreate protocol for the GitHub issue #24516 harness bug
+that creates branches off `main` instead of `staging`. Trap caught on
+MEH-363 PR #439 rebase (288-commit divergence) and earlier on MEH-374
+(62-commit divergence).
+
+- `.claude/rules/workflow.md` — new "Branch-base verification (CRITICAL)"
+  section before "Workflow rules 1–20", with the divergence command,
+  >50 threshold, and 7-step abort/recreate protocol.
+- `CLAUDE.md` line 18 — appended cross-reference to the new section.
+- `.claude/hooks/check-branch-base.sh` (Phase 2, optional) — PreToolUse
+  Bash hook script that blocks `git commit` when divergence >50.
+  Unwired by default — `.claude/settings.json` edits are blocked by
+  `protect-lint-config.sh`, so the file lands and the user wires it in.
+
 ## 2026-05-05 — MEH-455: docs — add `Closes MEH-XX` PR convention
 
 docs: MEH-455 — add Closes MEH-XX PR convention (new `docs/CONTRIBUTING.md` + 1-line CLAUDE.md pointer under Branch strategy). Step 1 of 3 (Step 2 = Linear scripts deferred, Step 3 = CI gate deferred).
