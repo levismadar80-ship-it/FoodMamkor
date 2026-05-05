@@ -59,6 +59,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 ## Documentation map
 | File | What's in it |
 |---|---|
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Single-page repo map — start here; lookup table + linkouts to all other docs |
 | [docs/DESIGN.md](./docs/DESIGN.md) | Colors, fonts, micro-copy, anti-patterns, hero/category/card specs |
 | [docs/DATA.md](./docs/DATA.md) | DB schema, all API endpoints, request/response shapes |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Branch strategy, Railway/Vercel/GitHub setup, dev workflow |
@@ -69,7 +70,6 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
-| [.ai/diagrams/](./.ai/diagrams/) | Auth flow, DB schema, API routes — Mermaid (auto-loaded via `--append-system-prompt`, sync per workflow rule 12) |
 
 ## Known Bug Patterns / Gotchas
 
