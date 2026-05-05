@@ -1,7 +1,11 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-05 (MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
+> Last updated: 2026-05-05 (MEH-450 doc rule added; MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
+
+## 2026-05-05 — MEH-450: risk-tiered review frequency rule (DOC-ONLY, branch pushed)
+
+MEH-450: added risk-tiered review frequency rule to `.claude/rules/workflow.md` (HIGH chunk-by-chunk, LOW end-to-end+session-state, DEFAULT ask). Cross-ref added to `CLAUDE.md` line 56 enum (no new line — 80-line cap maintained at 79). 3 commits on `feature/meh-450-risk-tiered-review` off `staging`. Branch pushed, awaiting Sapir to open PR.
 
 ## MEH-291 — Availability state consolidation
 

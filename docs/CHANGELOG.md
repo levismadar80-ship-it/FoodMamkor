@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-450: risk-tiered review frequency rule (workflow.md + CLAUDE.md cross-ref)
+
+Add risk-tiered review frequency rule (MEH-450) — `.claude/rules/workflow.md`. HIGH-RISK (auth, schema, central components, security, deploy-blocking) → chunk-by-chunk. LOW-RISK (single-file deps, copy/i18n, doc-only, tests) → end-to-end + session-state summary. DEFAULT → ask.
+
 ## 2026-05-05 — MEH-291 Phase 3: frontend — unified availability card across 5 surfaces + default-hide vacation
 
 Phase 3 of the 4-phase consolidation. Frontend now reads/writes the unified `availability_state` shipped in Phase 2; legacy `is_available_today` + `availability_status` columns + endpoints stay during the 7-day overlap (Phase 4 drops them).
