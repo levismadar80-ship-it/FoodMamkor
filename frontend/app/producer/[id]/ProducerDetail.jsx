@@ -65,7 +65,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   }
 
   const shareUrl = buildShareUrl(producer);
-  const isVacation = producer.availability_status === "vacation";
+  // MEH-291 — read from new availability_state with legacy fallback during the 7-day overlap.
+  const isVacation =
+    producer.availability_state === "on_vacation" ||
+    (!producer.availability_state && producer.availability_status === "vacation");
   const vacationReturnLabel = getVacationReturnLabel(producer);
   const producerInitials = getProducerInitials(producer);
   const primaryCategory = producer.categories?.[0];

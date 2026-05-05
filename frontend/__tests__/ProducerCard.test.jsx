@@ -75,6 +75,8 @@ const fullProducer = {
   city: "רחובות",
   images: ["https://example.com/photo.jpg"],
   is_verified: true,
+  // MEH-291 Phase 3 — new field (legacy is_available_today preserved during overlap).
+  availability_state: "available_today",
   is_available_today: true,
   reviews_count: 12,
   avg_rating: 4.5,
@@ -94,6 +96,7 @@ const minimalProducer = {
   city: "תל אביב",
   images: [],
   is_verified: false,
+  availability_state: "accepting_orders",
   is_available_today: false,
   reviews_count: 0,
   avg_rating: null,
@@ -199,25 +202,28 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
   });
 
-  it("renders a green dot when is_available_today=true", () => {
+  it("renders a green dot when availability_state='available_today'", () => {
     render(<ProducerCard producer={fullProducer} />);
     const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "available-today");
+    expect(dot).toHaveAttribute("data-status", "available_today");
     expect(dot.style.backgroundColor).toMatch(/rgb\(76, 176, 139\)/);
   });
 
-  it("renders an orange dot when availability_status='vacation' (overrides is_available_today)", () => {
+  it("renders an orange dot when availability_state='full_this_week'", () => {
     render(
-      <ProducerCard
-        producer={{
-          ...fullProducer,
-          is_available_today: true,
-          availability_status: "vacation",
-        }}
-      />,
+      <ProducerCard producer={{ ...fullProducer, availability_state: "full_this_week" }} />,
     );
     const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "vacation");
+    expect(dot).toHaveAttribute("data-status", "full_this_week");
+    expect(dot.style.backgroundColor).toMatch(/rgb\(249, 115, 22\)/);
+  });
+
+  it("renders an accent-warm dot when availability_state='on_vacation'", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, availability_state: "on_vacation" }} />,
+    );
+    const dot = screen.getByTestId("availability-dot");
+    expect(dot).toHaveAttribute("data-status", "on_vacation");
     expect(dot.style.backgroundColor).toMatch(/rgb\(239, 159, 39\)/);
   });
 

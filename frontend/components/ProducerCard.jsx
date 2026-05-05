@@ -47,10 +47,21 @@ const METHOD_LABEL = {
   email: "אימייל",
 };
 
-// Availability dot colors — vacation wins over is_available_today.
+// MEH-291 Phase 3 — badge color per the 4-state Decision tree.
+// accepting_orders → no dot, available_today → green, full_this_week → orange,
+// on_vacation → accent-warm. Read source switched from is_available_today +
+// availability_status to the unified availability_state. The legacy fields
+// stay populated by Phase 2's dual-write during the 7-day overlap, so the
+// fallback chain handles any race where the API hasn't caught up yet.
 function availabilityDotColor(producer) {
-  if (producer.availability_status === "vacation") return "#EF9F27"; // accent-warm
-  if (producer.is_available_today) return "#4cb08b"; // secondary (green)
+  const state = producer.availability_state;
+  if (state === "on_vacation") return "#EF9F27"; // accent-warm
+  if (state === "full_this_week") return "#f97316"; // orange
+  if (state === "available_today") return "#4cb08b"; // secondary (green)
+  if (state === "accepting_orders") return null;
+  // Fallback during overlap if availability_state is missing on a stale row.
+  if (producer.availability_status === "vacation") return "#EF9F27";
+  if (producer.is_available_today) return "#4cb08b";
   return null;
 }
 
@@ -290,9 +301,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               style={{ backgroundColor: dotColor }}
               data-testid="availability-dot"
               data-status={
-                producer.availability_status === "vacation"
-                  ? "vacation"
-                  : "available-today"
+                producer.availability_state ||
+                (producer.availability_status === "vacation"
+                  ? "on_vacation"
+                  : producer.is_available_today
+                    ? "available_today"
+                    : "accepting_orders")
               }
               aria-hidden="true"
             />

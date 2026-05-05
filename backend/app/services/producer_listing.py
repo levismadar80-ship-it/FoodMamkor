@@ -143,6 +143,15 @@ def _apply_scalar_filters(q, count_q, **filters: Any):
         q = q.filter(col == val)
         count_q = count_q.filter(col == val)
 
+    # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
+    # explicitly filter by availability_state, exclude vacation producers from
+    # the default listing (still reachable via direct slug / favorites / an
+    # explicit ?availability_state=on_vacation). User-visible behavior shift
+    # bundled with the Phase 3 frontend per Q2a.
+    if filters.get("availability_state") is None:
+        q = q.filter(Producer.availability_state != "on_vacation")
+        count_q = count_q.filter(Producer.availability_state != "on_vacation")
+
     kosher = filters.get("kosher")
     if kosher is not None:
         if kosher:

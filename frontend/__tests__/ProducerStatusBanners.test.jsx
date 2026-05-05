@@ -47,6 +47,8 @@ function makeDashboard(status) {
       name: "חוות הבוקר",
       status,
       slug: "chavat-haboker",
+      // MEH-291 Phase 3 — new field; legacy kept during 7-day overlap.
+      availability_state: "available_today",
       is_available_today: true,
       availability_status: "available",
       plan: "free",

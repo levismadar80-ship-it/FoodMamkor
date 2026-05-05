@@ -952,3 +952,39 @@ Added with `feature/session-handoff`.
 - [ ] EXPECT browser A: stays authenticated (new access token + rotated refresh cookie)
 - [ ] In browser B: click any protected action
 - [ ] EXPECT browser B: receives 401 on next refresh attempt → "פג תוקף" toast + redirect to `/login`
+
+## MEH-291 Phase 3 — Unified availability card across 5 surfaces (May 2026)
+
+### Producer dashboard (/producer/dashboard)
+- [ ] Open dashboard while logged in as a producer — איך לבדוק: navigate to `/producer/dashboard` — תוצאה מצופה: a single "מצב זמינות" card replaces the previous two stacked cards ("זמינות היום" + "סטטוס זמינות").
+- [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
+- [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
+- [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
+- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input appears below.
+- [ ] Pick a future date in the vacation input + blur — תוצאה מצופה: state persists; refresh page → still on vacation with the same date.
+- [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
+
+### ProducerCard badge dot
+- [ ] /map or /producers list, look at a producer with `availability_state='available_today'` — תוצאה מצופה: green dot next to the location line.
+- [ ] Producer with `full_this_week` — תוצאה מצופה: orange dot.
+- [ ] Producer with `on_vacation` — תוצאה מצופה: NOT visible in default `/producers` listing (default-hide). Visible only on direct slug / favorites / explicit `?availability_state=on_vacation`.
+
+### ProducerDetail banners (/producer/[id])
+- [ ] Producer with `accepting_orders` — תוצאה מצופה: AvailabilityBadge "פתוח להזמנות"; no extra banner.
+- [ ] Producer with `available_today` — תוצאה מצופה: AvailabilityBadge "זמינה היום 🟢"; no extra banner.
+- [ ] Producer with `full_this_week` — תוצאה מצופה: amber banner "⏳ זמני תגובה ארוכים יותר השבוע" below the highlights strip.
+- [ ] Producer with `on_vacation` — תוצאה מצופה: slate vacation banner "🌙 בית עסק זה בהפסקה כרגע" + return-date label. The full-this-week banner is suppressed.
+
+### Admin form (/admin/producers/new + /admin/producers/[id])
+- [ ] Open admin producer form — תוצאה מצופה: "מצב זמינות" section shows 4 radio pills matching dashboard labels.
+- [ ] Choose "בהפסקה ⏸" — תוצאה מצופה: vacation date field appears below.
+- [ ] Save form — תוצאה מצופה: PUT `/admin/producers/{id}` succeeds with `availability_state` in payload.
+- [ ] Reload edit page — תוצאה מצופה: form pre-populates with the saved state.
+
+### Friday delivery strip (homepage)
+- [ ] Load homepage on a Thursday/Friday window — תוצאה מצופה: strip shows producers where `availability_state='available_today'` (Network tab: GET `/producers?availability_state=available_today&page_size=12`).
+
+### Default `/producers` listing change
+- [ ] Mark a test producer as `on_vacation` via the dashboard or admin form — תוצאה מצופה: producer disappears from the default `/producers` list.
+- [ ] Hit `GET /producers?availability_state=on_vacation` directly — תוצאה מצופה: producer appears.
+- [ ] Visit producer's direct slug URL — תוצאה מצופה: detail page still loads with the vacation banner.

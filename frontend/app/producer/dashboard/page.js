@@ -66,7 +66,6 @@ export default function ProducerDashboardPage() {
   const [data, setData] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [vacationUntil, setVacationUntil] = useState("");
 
   useEffect(() => {
@@ -83,48 +82,27 @@ export default function ProducerDashboardPage() {
     api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
 
-  const toggleAvailability = async () => {
-    setSaving(true);
-    try {
-      const r = await api.post("/producers/me/availability");
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              producer: {
-                ...prev.producer,
-                is_available_today: r.data.is_available_today,
-              },
-            }
-          : prev,
-      );
-    } catch {
-      alert("לא הצלחנו לעדכן את סטטוס הזמינות — נסי שוב בעוד רגע");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // MEH-12 — durable availability status (available | full | vacation).
-  // Separate from the daily `is_available_today` toggle above; both
-  // coexist and render different badges on cards/detail pages.
-  const setAvailabilityStatus = async (status) => {
-    // Optimistic update so the pill lights up immediately on click.
+  // MEH-291 Phase 3 — unified 4-value availability enum. Replaces the
+  // old toggleAvailability + setAvailabilityStatus pair. Backend
+  // dual-writes to the legacy is_available_today + availability_status
+  // columns during the 7-day overlap; Phase 4 drops them.
+  const setAvailabilityState = async (state) => {
+    // Optimistic update so the radio lights up immediately on click.
     setData((prev) =>
       prev
         ? {
             ...prev,
-            producer: { ...prev.producer, availability_status: status },
+            producer: { ...prev.producer, availability_state: state },
           }
         : prev,
     );
     try {
-      const body = { status };
-      if (status === "vacation" && vacationUntil) body.vacation_until = vacationUntil;
-      await api.post("/producers/me/availability-status", body);
-      if (status !== "vacation") setVacationUntil("");
+      const body = { state };
+      if (state === "on_vacation" && vacationUntil) body.vacation_until = vacationUntil;
+      await api.post("/producers/me/availability-state", body);
+      if (state !== "on_vacation") setVacationUntil("");
     } catch {
-      alert("לא הצלחנו לעדכן את סטטוס הזמינות — נסי שוב בעוד רגע");
+      alert("לא הצלחנו לעדכן את מצב הזמינות — נסי שוב בעוד רגע");
       // Refetch on failure so the UI doesn't stay out of sync.
       api
         .get("/producers/me/dashboard")
@@ -224,64 +202,32 @@ export default function ProducerDashboardPage() {
         <VanityLinkCard slug={producer.slug} />
       )}
 
-      {/* Today's availability — hero action */}
-      <div
-        className={`rounded-[16px] p-6 mb-8 border transition ${
-          producer.is_available_today
-            ? "bg-primary text-white border-primary"
-            : "bg-white border-border text-site-text"
-        }`}
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-wider opacity-80 mb-1">זמינות היום</p>
-            <p className="font-headline text-2xl font-bold">
-              {producer.is_available_today ? "זמין היום ✓" : "לא מסומן זמין"}
-            </p>
-            <p className="text-sm mt-1 opacity-80">
-              {producer.is_available_today
-                ? "העסק שלך מסומן עם תגית 'זמין היום' על הכרטיסייה."
-                : "לקוחות יראו שיש לך זמינות מיוחדת היום."}
-            </p>
-          </div>
-          <button
-            onClick={toggleAvailability}
-            disabled={saving}
-            className={`px-5 py-3 rounded-[12px] font-medium transition disabled:opacity-60 ${
-              producer.is_available_today
-                ? "bg-white text-primary hover:bg-light"
-                : "bg-primary text-white hover:bg-primary-light"
-            }`}
-          >
-            {saving ? "..." : producer.is_available_today ? "בטל סימון" : "סמן זמין היום"}
-          </button>
-        </div>
-      </div>
-
-      {/* MEH-12 — durable availability status (colored-dot badge on
-          ProducerCard + ProducerDetail). Distinct from the per-day
-          "זמין היום" flag above. */}
+      {/* MEH-291 Phase 3 — unified availability card. Replaces the old
+          "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
+          enum. Backend dual-writes to legacy columns during the 7-day
+          overlap (Phase 4 drops them). */}
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-site-muted mb-1">
-          סטטוס זמינות
+          מצב זמינות
         </p>
         <p className="text-site-muted text-sm mb-4">
           בחרי את הסטטוס שיוצג ללקוחות בכרטיסייה ובעמוד העסק.
         </p>
-        <div role="radiogroup" aria-label="סטטוס זמינות" className="flex flex-wrap gap-2">
+        <div role="radiogroup" aria-label="מצב זמינות" className="flex flex-wrap gap-2">
           {[
-            { value: "available", label: "פתוח להזמנות", color: "#22c55e" },
-            { value: "full", label: "עמוס כרגע", color: "#f97316" },
-            { value: "vacation", label: "בהפסקה", color: "#9ca3af" },
+            { value: "accepting_orders", label: "פתוח להזמנות", color: "#22c55e" },
+            { value: "available_today",  label: "זמינה היום 🟢", color: "#4cb08b" },
+            { value: "full_this_week",   label: "עמוסה השבוע 🟠", color: "#f97316" },
+            { value: "on_vacation",      label: "בהפסקה ⏸",     color: "#9ca3af" },
           ].map((opt) => {
-            const active = (producer.availability_status || "available") === opt.value;
+            const active = (producer.availability_state || "accepting_orders") === opt.value;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                onClick={() => setAvailabilityStatus(opt.value)}
+                onClick={() => setAvailabilityState(opt.value)}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   active
                     ? "bg-primary text-white border-primary"
@@ -304,7 +250,7 @@ export default function ProducerDashboardPage() {
             );
           })}
         </div>
-        {(producer.availability_status || "available") === "vacation" && (
+        {(producer.availability_state || "accepting_orders") === "on_vacation" && (
           <div className="mt-4 flex items-center gap-3">
             <label htmlFor="vacation-until" className="text-sm text-site-muted whitespace-nowrap">
               חזרה ב:
@@ -315,14 +261,14 @@ export default function ProducerDashboardPage() {
               value={vacationUntil}
               min={new Date().toISOString().slice(0, 10)}
               onChange={(e) => setVacationUntil(e.target.value)}
-              onBlur={() => { if (vacationUntil) setAvailabilityStatus("vacation"); }}
+              onBlur={() => { if (vacationUntil) setAvailabilityState("on_vacation"); }}
               className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               dir="ltr"
             />
             {vacationUntil && (
               <button
                 type="button"
-                onClick={() => { setVacationUntil(""); setAvailabilityStatus("vacation"); }}
+                onClick={() => { setVacationUntil(""); setAvailabilityState("on_vacation"); }}
                 className="text-xs text-site-muted hover:text-red-600 transition"
                 aria-label="הסירי תאריך חזרה"
               >

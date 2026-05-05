@@ -2,6 +2,48 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-291 Phase 3: frontend — unified availability card across 5 surfaces + default-hide vacation
+
+Phase 3 of the 4-phase consolidation. Frontend now reads/writes the unified `availability_state` shipped in Phase 2; legacy `is_available_today` + `availability_status` columns + endpoints stay during the 7-day overlap (Phase 4 drops them).
+
+**Dashboard (`frontend/app/producer/dashboard/page.js`):**
+- Replaced the two stacked cards ("זמינות היום" toggle + "סטטוס זמינות" pills) with a single unified "מצב זמינות" card.
+- 4-radio group: "פתוח להזמנות" / "זמינה היום 🟢" / "עמוסה השבוע 🟠" / "בהפסקה ⏸" — labels verbatim per spec.
+- Conditional `vacation_until` date picker appears only when state=`on_vacation`.
+- Wired to `POST /producers/me/availability-state` (Phase 2 endpoint); dropped the two legacy endpoint calls.
+- InfoTooltip "מה ההבדל?" deferred to MEH-292 (Q3b — not shipped yet, no placeholder).
+
+**ProducerCard (`frontend/components/ProducerCard.jsx`):**
+- Badge dot color now reads from `availability_state` per the Decision tree: `accepting_orders`→none, `available_today`→green, `full_this_week`→orange, `on_vacation`→accent-warm.
+- Fallback chain reads legacy fields when `availability_state` missing on stale rows.
+- Friday-strip ribbon at line 333 deliberately kept on `is_available_today` (Phase 4 territory).
+
+**ProducerDetail (`frontend/app/producer/[id]/ProducerDetail.jsx` + `components/ProducerHeader.jsx`):**
+- `isVacation` derivation switched to `availability_state==='on_vacation'` with legacy fallback.
+- New amber banner "⏳ זמני תגובה ארוכים יותר השבוע" for `full_this_week` (suppressed during vacation).
+- `AvailabilityBadge` reads new state value; the old inline daily-availability dot replaced — its messaging now lives inside AvailabilityBadge for `available_today`.
+
+**AvailabilityBadge (`frontend/components/AvailabilityBadge.jsx`):**
+- Extended `STATUS_CONFIG` with the 4 new state keys (additive — legacy 3 keys preserved during overlap).
+- `CARD_HIDDEN_STATES = {available, accepting_orders}` set so card variant suppresses both default-open variants. Existing tests untouched and still pass.
+
+**Admin form (`frontend/components/admin/ProducerForm.jsx`):**
+- 4-value radio matching dashboard. State migration logic in `useEffect` derives `availability_state` from legacy fields when the API hasn't populated it yet.
+- Submission posts `availability_state` (Phase 2 `ProducerUpdate` schema accepts it).
+
+**FridayDeliveryStrip (`frontend/components/FridayDeliveryStrip.jsx`):**
+- Filter param swapped: `?is_available_today=true` → `?availability_state=available_today`.
+
+**Backend default-hide on_vacation (`backend/app/services/producer_listing.py`):**
+- Q2a — bundled into Phase 3 to ship the user-visible behavior shift in one PR. When `?availability_state=` is NOT explicitly passed, list query excludes `availability_state='on_vacation'` rows. Direct slug / favorites / explicit `?availability_state=on_vacation` still reach them.
+
+**Tests (`frontend/__tests__/`):**
+- `ProducerCard.test.jsx` — fixture adds `availability_state`; legacy "is_available_today=true" assertion replaced with state-based assertions; 2 new dot-color test cases for `full_this_week` + `on_vacation`. `data-status` attribute assertions updated from old hyphen-form to new underscore-form values matching the schema.
+- `ProducerStatusBanners.test.jsx` + `SettingsPage.test.jsx` — fixtures gain `availability_state`. Legacy fields kept (overlap).
+- Backend tests deferred to CI per documented sandbox limitation; Phase 2's `TestAvailabilityState` class still passes against new default-hide via the `availability_state is not None` guard.
+
+**Adversarial review:** 13 FINDER candidates, 0 real blockers — verified test fixture compatibility, default-hide guard, fallback chain, AvailabilityBadge backward-compat, admin form payload flow.
+
 ## 2026-05-04 — MEH-291 Phase 2: backend — `availability_state` model + endpoint + dual-write
 
 Phase 2 of the 4-phase consolidation. Wires the Phase-1 DB column into application code; old endpoints preserved + dual-write during the 7-day overlap. Frontend (5 surfaces) follows in Phase 3; column drops in Phase 4.
