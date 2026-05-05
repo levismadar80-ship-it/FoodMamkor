@@ -1,7 +1,26 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-05 (MEH-450 doc rule added; MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
+> Last updated: 2026-05-05 (MEH-455 PR ready-for-review; MEH-450 doc rule added; MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
+
+## 2026-05-05 — MEH-455: docs `Closes MEH-XX` PR convention (PR #478)
+
+**Branch:** `feature/meh-455-pr-convention` off `staging`.
+**PR:** #478 — first test of the convention itself (PR body ends with `Closes MEH-455`).
+**Linear:** MEH-455. Step 1 of 3 (Step 2 = Linear API scripts, Step 3 = CI gate — both deferred).
+
+### What shipped
+- New `docs/CONTRIBUTING.md` documenting the `Closes MEH-XX` PR-body convention + why both rails (branch name + PR body) reduce drift.
+- `CLAUDE.md` — added 1 line under `## Branch strategy` pointing to `docs/CONTRIBUTING.md`. File now at the 80-line cap (was 79); future structural additions need compression first.
+- `docs/CHANGELOG.md` — 1-line entry.
+
+### Verification
+- Docs-only — `npm run build` / `pytest` not required.
+- Acceptance test: on PR merge, Linear MEH-455 should auto-close. If it stays open → integration not fully wired (report back).
+
+### Out of scope
+- `.github/` workflows (Step 3 deferred).
+- Linear API scripts (Step 2 deferred).
 
 ## 2026-05-05 — MEH-450: risk-tiered review frequency rule (DOC-ONLY, branch pushed)
 

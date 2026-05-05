@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-455: docs — add `Closes MEH-XX` PR convention
+
+docs: MEH-455 — add Closes MEH-XX PR convention (new `docs/CONTRIBUTING.md` + 1-line CLAUDE.md pointer under Branch strategy). Step 1 of 3 (Step 2 = Linear scripts deferred, Step 3 = CI gate deferred).
+
 ## 2026-05-05 — MEH-453 Phase 1: envify URLs (frontend + backend FROM email)
 
 Code-only migration prep for the `mehamakor.online → mehamakor.co.il`
