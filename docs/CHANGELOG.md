@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-455: docs — add `Closes MEH-XX` PR convention
+
+docs: MEH-455 — add Closes MEH-XX PR convention (new `docs/CONTRIBUTING.md` + 1-line CLAUDE.md pointer under Branch strategy). Step 1 of 3 (Step 2 = Linear scripts deferred, Step 3 = CI gate deferred).
+
 ## 2026-05-05 — MEH-291 Phase 3: frontend — unified availability card across 5 surfaces + default-hide vacation
 
 Phase 3 of the 4-phase consolidation. Frontend now reads/writes the unified `availability_state` shipped in Phase 2; legacy `is_available_today` + `availability_status` columns + endpoints stay during the 7-day overlap (Phase 4 drops them).

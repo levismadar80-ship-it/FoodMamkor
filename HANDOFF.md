@@ -1,7 +1,28 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-440 merged. Round 2 god-files complete: 437/438/439/440 all in staging.)
+> Last updated: 2026-05-05 (MEH-455 draft PR open: docs-only, `Closes MEH-XX` PR convention.)
+
+## 2026-05-05 — MEH-455: docs `Closes MEH-XX` PR convention (DRAFT PR)
+
+**Branch:** `feature/meh-455-pr-convention` off `staging`.
+**PR:** draft — first test of the convention itself (PR body ends with `Closes MEH-455`).
+**Linear:** MEH-455. Step 1 of 3 (Step 2 = Linear API scripts, Step 3 = CI gate — both deferred).
+
+### What shipped
+- New `docs/CONTRIBUTING.md` documenting the `Closes MEH-XX` PR-body convention + why both rails (branch name + PR body) reduce drift.
+- `CLAUDE.md` — added 1 line under `## Branch strategy` pointing to `docs/CONTRIBUTING.md`. File now at the 80-line cap (was 79); future structural additions need compression first.
+- `docs/CHANGELOG.md` — 1-line entry.
+
+### Verification
+- Docs-only — `npm run build` / `pytest` not required.
+- Acceptance test: on PR merge, Linear MEH-455 should auto-close. If it stays open → integration not fully wired (report back).
+
+### Out of scope
+- `.github/` workflows (Step 3 deferred).
+- Linear API scripts (Step 2 deferred).
+
+---
 
 ## 2026-05-04 — MEH-440: split auth.py into 3 services + harden Apple JWKS + email escape (MERGED)
 
