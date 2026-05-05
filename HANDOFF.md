@@ -1,7 +1,31 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-04 (MEH-440 merged. Round 2 god-files complete: 437/438/439/440 all in staging.)
+> Last updated: 2026-05-05 (MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
+
+## MEH-291 — Availability state consolidation
+
+**Status:** Phases 1–3 ✅ shipped to staging. Phase 4 (legacy column removal) plan captured, execution held.
+
+**Phases shipped:**
+- Phase 1 (#469 → `0d90968`): Alembic migration + backfill — `availability_state` column added with partial index
+- Phase 2 (#470 → `5aeef41`): Backend model + endpoint + dual-write — `POST /producers/me/availability-state` live, legacy endpoints preserved
+- Phase 3 (#473 → `f686c75`): Frontend — 5 surfaces unified to single AvailabilityCard + default-hide vacation in `/producers`
+- Phase 4 plan (#474 → `9d8f204`): Plan captured in `docs/session-state.md`, execution gated
+
+**Soak window:** 7 days from `f686c75` (2026-05-05). Earliest Phase 4 execution: **2026-05-12**.
+
+**Phase 4 execution preconditions** (all must be true before PR opens):
+1. 7-day staging soak complete (≥ 2026-05-12)
+2. MEH-408 R2 backup layer live — Phase 4 is destructive (`DROP COLUMN`), backups required
+3. No dual-write divergence reported during soak
+4. Producer-traffic check on `/producers/me/availability-state` shows real writes
+
+**Phase 4 resume entry-point:** [`docs/session-state.md`](./docs/session-state.md) (full plan + Alembic revision content + adversarial pass).
+
+**Linear:** MEH-291 closed (Done). Phase 4 tracked in `[NEW_ISSUE_ID — fill after creation]`.
+
+---
 
 ## 2026-05-04 — MEH-440: split auth.py into 3 services + harden Apple JWKS + email escape (MERGED)
 
