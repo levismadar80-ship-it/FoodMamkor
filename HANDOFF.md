@@ -1,12 +1,12 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-05 (MEH-455 draft PR open: docs-only, `Closes MEH-XX` PR convention.)
+> Last updated: 2026-05-05 (MEH-455 PR ready-for-review; MEH-450 doc rule added; MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
 
-## 2026-05-05 — MEH-455: docs `Closes MEH-XX` PR convention (DRAFT PR)
+## 2026-05-05 — MEH-455: docs `Closes MEH-XX` PR convention (PR #478)
 
 **Branch:** `feature/meh-455-pr-convention` off `staging`.
-**PR:** draft — first test of the convention itself (PR body ends with `Closes MEH-455`).
+**PR:** #478 — first test of the convention itself (PR body ends with `Closes MEH-455`).
 **Linear:** MEH-455. Step 1 of 3 (Step 2 = Linear API scripts, Step 3 = CI gate — both deferred).
 
 ### What shipped
@@ -21,6 +21,32 @@
 ### Out of scope
 - `.github/` workflows (Step 3 deferred).
 - Linear API scripts (Step 2 deferred).
+
+## 2026-05-05 — MEH-450: risk-tiered review frequency rule (DOC-ONLY, branch pushed)
+
+MEH-450: added risk-tiered review frequency rule to `.claude/rules/workflow.md` (HIGH chunk-by-chunk, LOW end-to-end+session-state, DEFAULT ask). Cross-ref added to `CLAUDE.md` line 56 enum (no new line — 80-line cap maintained at 79). 3 commits on `feature/meh-450-risk-tiered-review` off `staging`. Branch pushed, awaiting Sapir to open PR.
+
+## MEH-291 — Availability state consolidation
+
+**Status:** Phases 1–3 ✅ shipped to staging. Phase 4 (legacy column removal) plan captured, execution held.
+
+**Phases shipped:**
+- Phase 1 (#469 → `0d90968`): Alembic migration + backfill — `availability_state` column added with partial index
+- Phase 2 (#470 → `5aeef41`): Backend model + endpoint + dual-write — `POST /producers/me/availability-state` live, legacy endpoints preserved
+- Phase 3 (#473 → `f686c75`): Frontend — 5 surfaces unified to single AvailabilityCard + default-hide vacation in `/producers`
+- Phase 4 plan (#474 → `9d8f204`): Plan captured in `docs/session-state.md`, execution gated
+
+**Soak window:** 7 days from `f686c75` (2026-05-05). Earliest Phase 4 execution: **2026-05-12**.
+
+**Phase 4 execution preconditions** (all must be true before PR opens):
+1. 7-day staging soak complete (≥ 2026-05-12)
+2. MEH-408 R2 backup layer live — Phase 4 is destructive (`DROP COLUMN`), backups required
+3. No dual-write divergence reported during soak
+4. Producer-traffic check on `/producers/me/availability-state` shows real writes
+
+**Phase 4 resume entry-point:** [`docs/session-state.md`](./docs/session-state.md) (full plan + Alembic revision content + adversarial pass).
+
+**Linear:** MEH-291 closed (Done). Phase 4 tracked in `[NEW_ISSUE_ID — fill after creation]`.
 
 ---
 

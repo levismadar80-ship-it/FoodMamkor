@@ -6,6 +6,39 @@
 
 docs: MEH-455 — add Closes MEH-XX PR convention (new `docs/CONTRIBUTING.md` + 1-line CLAUDE.md pointer under Branch strategy). Step 1 of 3 (Step 2 = Linear scripts deferred, Step 3 = CI gate deferred).
 
+## 2026-05-05 — MEH-453 Phase 1: envify URLs (frontend + backend FROM email)
+
+Code-only migration prep for the `mehamakor.online → mehamakor.co.il`
+canonical switch. **Production behavior unchanged** — fallbacks stay at
+`.online` until Phase 2 (DNS + Vercel + Railway + Resend + OAuth) sets
+the new env vars.
+
+- `frontend/lib/seo.js` — `SITE_URL` now uses the 3-tier fallback pattern
+  from `app/sitemap.js` (NEXT_PUBLIC_SITE_URL → SITE_URL → fallback).
+- `frontend/app/layout.js` — same 3-tier pattern; fixed pre-existing
+  hardcoded `.co.il` fallback back to `.online` for Phase 1.
+- `backend/app/services/email.py` — `_FROM_ADDRESS` module constant
+  removed; reads from `settings.email_from_address`.
+- `backend/app/config.py` — added `email_from_address` field.
+- `backend/app/routers/alerts.py` — WhatsApp alert URL prefix now uses
+  `settings.frontend_url`. **Bonus fix:** old `mehamakor.online{url}`
+  string was missing `https://` (link previews were flaky in some
+  WhatsApp clients); the new `{settings.frontend_url}{content.url}` is
+  fully qualified.
+- `backend/.env.example` + `frontend/.env.example` — added
+  `EMAIL_FROM_ADDRESS`, `VAPID_SUBJECT`, and migration note.
+- `frontend/__tests__/AdminHelp.test.jsx` — loosened exact `.online`
+  assertion to a `(.online|.co.il)` regex.
+- `docs/MANUAL_TESTING.md` — `og:url` test loosened to "matches
+  configured canonical".
+
+Phase 2 (DNS + Vercel + Railway + Resend + OAuth dashboard work,
+`robots.txt`, smoke test, deployment rules) follows in a separate PR.
+
+## 2026-05-05 — MEH-450: risk-tiered review frequency rule (workflow.md + CLAUDE.md cross-ref)
+
+Add risk-tiered review frequency rule (MEH-450) — `.claude/rules/workflow.md`. HIGH-RISK (auth, schema, central components, security, deploy-blocking) → chunk-by-chunk. LOW-RISK (single-file deps, copy/i18n, doc-only, tests) → end-to-end + session-state summary. DEFAULT → ask.
+
 ## 2026-05-05 — MEH-291 Phase 3: frontend — unified availability card across 5 surfaces + default-hide vacation
 
 Phase 3 of the 4-phase consolidation. Frontend now reads/writes the unified `availability_state` shipped in Phase 2; legacy `is_available_today` + `availability_status` columns + endpoints stay during the 7-day overlap (Phase 4 drops them).
