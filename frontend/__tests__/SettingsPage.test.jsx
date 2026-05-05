@@ -37,6 +37,8 @@ vi.mock("@/lib/api", () => ({
           producer: {
             name: "חוות השקמה",
             status: "approved",
+            // MEH-291 Phase 3 — new field; legacy kept during 7-day overlap.
+            availability_state: "full_this_week",
             availability_status: "full",
           },
           favorites_count: 7,

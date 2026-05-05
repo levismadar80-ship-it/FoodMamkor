@@ -57,28 +57,14 @@ export default function ProducerHeader({
             {producer.favorites_count} שמרו את העסק הזה
           </span>
         )}
-        {/* MEH-12 — durable availability status */}
+        {/* MEH-291 — unified 4-state availability. Backend dual-writes to the
+            legacy availability_status during the overlap, so the badge
+            falls back to the legacy field if a stale row hasn't picked
+            up availability_state yet. */}
         <AvailabilityBadge
-          status={producer.availability_status}
+          status={producer.availability_state || producer.availability_status}
           variant="detail"
         />
-        {/* Daily availability toggle — suppressed during vacation (badge + banner already signal it) */}
-        {producer.is_available_today != null && !isVacation && (
-          <span
-            className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full border ${
-              producer.is_available_today
-                ? "bg-green-50 border-green-200 text-green-800"
-                : "bg-gray-50 border-gray-200 text-gray-600"
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                producer.is_available_today ? "bg-[#4cb08b]" : "bg-gray-400"
-              }`}
-            />
-            {producer.is_available_today ? "זמינה היום" : "לא זמינה היום"}
-          </span>
-        )}
       </div>
 
       {producer.short_description && (
@@ -161,6 +147,15 @@ export default function ProducerHeader({
             verified_at={producer.kashrut_verified_at}
             expires_at={producer.kashrut_expires_at}
           />
+        </div>
+      )}
+
+      {/* MEH-291 — full_this_week banner (response-time hint, not a closure
+          signal). Suppressed during vacation since that banner already
+          dominates the messaging. */}
+      {producer.availability_state === "full_this_week" && !isVacation && (
+        <div className="mx-0 mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p className="text-sm font-bold text-amber-800">⏳ זמני תגובה ארוכים יותר השבוע</p>
         </div>
       )}
 
