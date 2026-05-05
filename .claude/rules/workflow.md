@@ -370,15 +370,14 @@ Smadar before starting**. Never silently downgrade to low-risk.
 
 Pattern: numbered plan first, **wait for `go`**, execute one chunk, wait for
 `go <chunk>` between chunks. MEH-326 (auth refactor) is the canonical
-example — chunked review caught two would-be-bad merges via Skeptic Mode.
+example — chunked review caught regressions via Skeptic Mode.
 
 ### LOW-RISK — end-to-end with single review
 
 - Single-file dependency upgrades (e.g. MEH-429 `psycopg2-binary` pin bump)
 - Copy/text changes (Hebrew strings, button labels, microcopy)
 - i18n sweeps (hardcoded → `t()` calls)
-- Single-component refactor (no shared state changes)
-- Doc-only edits (CHANGELOG, HANDOFF, this rule file)
+- Doc-only edits (CHANGELOG, HANDOFF, rule files (`.claude/rules/*.md`))
 - Test additions (no production code change)
 
 Pattern: numbered plan first, **wait for `go`**, then execute fully without
@@ -393,10 +392,10 @@ If the task doesn't clearly fit either tier, ask Smadar before starting.
 There is no third "medium" tier — the ask covers ambiguity.
 
 _Source: MEH-450 (2026-05-04). Evidence: MEH-326 auth refactor (chunked
-review justified), MEH-331/348 email transport bug (chunked review caught
-Quoted-Printable bug twice), MEH-429 psycopg2 (chunked review created
-unnecessary friction on a 1-line pin change). Mobile workflow friction
-amplifies the cost of unjustified checkpoints._
+review justified), MEH-331/348 email transport — chunked review caught
+Content-Transfer-Encoding regression, MEH-429 psycopg2 (chunked review
+created unnecessary friction on a 1-line pin change). Mobile workflow
+friction amplifies the cost of unjustified checkpoints._
 
 ---
 
