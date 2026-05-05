@@ -23,7 +23,7 @@
 
 **Phase 4 resume entry-point:** [`docs/session-state.md`](./docs/session-state.md) (full plan + Alembic revision content + adversarial pass).
 
-**Linear:** MEH-291 closed (Done). Phase 4 tracked in `[NEW_ISSUE_ID — fill after creation]`.
+**Linear:** MEH-291 closed (Done). Phase 4 tracked in MEH-456.
 
 ---
 
