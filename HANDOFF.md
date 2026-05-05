@@ -1,7 +1,23 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-05 (MEH-455 PR ready-for-review; MEH-450 doc rule added; MEH-291 Phases 1–3 shipped; Phase 4 held until 2026-05-12 + R2 backups live)
+> Last updated: 2026-05-05 (MEH-427 merged; MEH-453 merged; MEH-455 merged)
+
+## 2026-05-05 — MEH-427: branch-base verification rule (MERGED — #481, squash 1676a33)
+
+**Branch:** `feature/meh-427-branch-base-check` off `staging` (deleted post-merge).
+**PR:** #481 (squash `1676a33`). All CI green.
+
+### What shipped
+- `.claude/rules/workflow.md` — new `## Branch-base verification (CRITICAL)` section before `## Workflow rules 1–20`: divergence command, >50 threshold, 7-step abort/recreate protocol. Source attribution to MEH-363 (288 commits) and MEH-374 (62 commits).
+- `CLAUDE.md:18` — appended cross-reference to the new section (file stays at 80-line cap).
+- `.claude/hooks/check-branch-base.sh` — Phase 2 optional hook script. Unwired by default (`settings.json` blocked by `protect-lint-config.sh`). User wires it via a PreToolUse Bash entry when ready.
+- `docs/CHANGELOG.md` — entry.
+
+### Next: wire the hook (optional)
+To activate the hook, add a PreToolUse Bash entry in `.claude/settings.json` pointing to `check-branch-base.sh`. The file itself is ready — only the registration is missing.
+
+---
 
 ## 2026-05-05 — MEH-455: docs `Closes MEH-XX` PR convention (PR #478)
 
