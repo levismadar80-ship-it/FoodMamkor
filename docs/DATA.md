@@ -346,7 +346,14 @@ PUT    /producers/me                              producer
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
-POST   /producers/me/availability                 producer  — toggle is_available_today
+POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
+POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
+POST   /producers/me/availability-state            producer  — MEH-291 unified 4-value enum
+                                                              body: { state: "accepting_orders"|"available_today"|"full_this_week"|"on_vacation",
+                                                                      vacation_until?: ISO date }
+                                                              vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
+                                                              dual-writes to is_available_today + availability_status during 7-day overlap
+                                                              GET /producers supports ?availability_state= filter (opt-in; default listing unchanged in Phase 2)
 GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks

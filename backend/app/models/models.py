@@ -86,6 +86,14 @@ class Producer(Base):
     # Values: "available" (default) | "full" | "vacation". Rendered as a
     # colored-dot badge on ProducerCard + ProducerDetail.
     availability_status = Column(String(20), default="available")
+    # MEH-291: 4-value enum that consolidates is_available_today + availability_status.
+    # Old columns preserved during 7-day overlap; dual-write happens in producer_me.py.
+    # Phase 4 will drop is_available_today + availability_status; vacation_until stays.
+    availability_state = Column(
+        String(32),
+        nullable=False,
+        server_default=text("'accepting_orders'"),
+    )
     # MEH-155: optional vacation end date — cleared automatically when past.
     vacation_until = Column(Date, nullable=True)
     # MEH-102: weekly opening hours, free-text.  Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"

@@ -1164,6 +1164,189 @@ class TestVacationBadgeClear:
         assert resp.json()["vacation_until"] is None
 
 
+# ---------- MEH-291: availability_state consolidation (Phase 2) ----------
+
+class TestAvailabilityState:
+    """4-value enum that consolidates is_available_today + availability_status.
+
+    Phase 2 ships:
+      - new POST /producers/me/availability-state endpoint
+      - dual-write mirror in legacy POST /availability + /availability-status
+      - extended auto-clear when vacation_until is past
+      - optional ?availability_state= filter on /producers list
+    Old columns preserved during 7-day overlap; Phase 4 drops them.
+    """
+
+    @staticmethod
+    def _setup(db):
+        from app.models import User
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+        db.refresh(user)
+        # Re-fetch User so callers see producer_id wired
+        return db.query(User).filter(User.id == user.id).first(), producer
+
+    def test_new_endpoint_sets_accepting_orders(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "accepting_orders"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "accepting_orders"
+        db.refresh(producer)
+        assert producer.availability_state == "accepting_orders"
+
+    def test_new_endpoint_sets_available_today(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "available_today"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "available_today"
+        db.refresh(producer)
+        assert producer.availability_state == "available_today"
+        # Dual-write to legacy columns.
+        assert producer.is_available_today is True
+        assert producer.availability_status == "available"
+
+    def test_new_endpoint_sets_full_this_week(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "full_this_week"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "full_this_week"
+        db.refresh(producer)
+        assert producer.availability_status == "full"
+        assert producer.is_available_today is False
+
+    def test_new_endpoint_on_vacation_requires_vacation_until(self, client, db):
+        user, _ = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "on_vacation"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+        assert "תאריך חזרה לחופשה נדרש" in resp.text
+
+    def test_new_endpoint_on_vacation_with_date_dual_writes(self, client, db):
+        from datetime import date, timedelta
+        user, producer = self._setup(db)
+        future = (date.today() + timedelta(days=10)).isoformat()
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "on_vacation", "vacation_until": future},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["availability_state"] == "on_vacation"
+        assert body["vacation_until"] == future
+        db.refresh(producer)
+        assert producer.availability_state == "on_vacation"
+        assert producer.availability_status == "vacation"
+        assert producer.is_available_today is False
+        assert producer.vacation_until.isoformat() == future
+
+    def test_old_toggle_mirrors_to_state(self, client, db):
+        user, producer = self._setup(db)
+        # Start: is_available_today=False, availability_status='available'
+        # Toggle once → True → state='available_today'.
+        resp = client.post("/producers/me/availability", headers=auth_header(user))
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["is_available_today"] is True
+        assert body["availability_state"] == "available_today"
+        db.refresh(producer)
+        assert producer.availability_state == "available_today"
+        # Toggle again → False → state='accepting_orders'.
+        resp = client.post("/producers/me/availability", headers=auth_header(user))
+        assert resp.json()["availability_state"] == "accepting_orders"
+
+    def test_old_status_mirrors_full_to_full_this_week(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-status",
+            json={"status": "full"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "full_this_week"
+        db.refresh(producer)
+        assert producer.availability_state == "full_this_week"
+
+    def test_auto_clear_past_vacation_normalizes_both_fields(self, client, db):
+        from datetime import date, timedelta
+        producer = make_producer(db)
+        producer.availability_status = "vacation"
+        producer.availability_state = "on_vacation"
+        producer.vacation_until = date.today() - timedelta(days=2)
+        db.commit()
+
+        resp = client.get(f"/producers/{producer.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["availability_status"] == "available"
+        assert body["availability_state"] == "accepting_orders"
+        assert body.get("vacation_until") is None
+
+    def test_vacation_until_preserved_through_state_round_trip(self, client, db):
+        from datetime import date, timedelta
+        user, producer = self._setup(db)
+        future = (date.today() + timedelta(days=14)).isoformat()
+        # Set on_vacation with a date.
+        client.post(
+            "/producers/me/availability-state",
+            json={"state": "on_vacation", "vacation_until": future},
+            headers=auth_header(user),
+        )
+        # Switch back to accepting → vacation_until cleared.
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "accepting_orders"},
+            headers=auth_header(user),
+        )
+        assert resp.json()["vacation_until"] is None
+        db.refresh(producer)
+        assert producer.vacation_until is None
+
+    def test_filter_by_availability_state(self, client, db):
+        # Two approved producers: one available_today, one accepting_orders.
+        p1 = make_producer(db, name="Alpha", status="approved")
+        p1.availability_state = "available_today"
+        p2 = make_producer(db, name="Beta", status="approved")
+        p2.availability_state = "accepting_orders"
+        db.commit()
+
+        resp = client.get("/producers?availability_state=available_today")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "Alpha" in names
+        assert "Beta" not in names
+
+    def test_legacy_is_available_today_filter_still_works(self, client, db):
+        p1 = make_producer(db, name="Gamma", status="approved")
+        p1.is_available_today = True
+        p2 = make_producer(db, name="Delta", status="approved")
+        p2.is_available_today = False
+        db.commit()
+
+        resp = client.get("/producers?is_available_today=true")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "Gamma" in names
+        assert "Delta" not in names
+
+
 class TestMojibakeDetection:
     """MEH-154 — Excel import rejects mojibake'd Hebrew (UTF-8 decoded as Latin-1)."""
 

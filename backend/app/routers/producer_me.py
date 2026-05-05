@@ -28,8 +28,9 @@ import os
 import secrets
 import string
 
-from app.models.models import HomeProductWhatsAppClick, PhoneOtpToken, KashrutBadgeRequest
+from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
+    AVAILABILITY_STATES,
     ProducerDetailOut,
     ProducerUpdate,
     ProductCreate,
@@ -135,7 +136,6 @@ def update_my_producer(
 
     # Handle category updates
     if category_ids is not None:
-        from app.models import Category
         from app.models.models import ProducerCategory
         db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
         for cid in category_ids:
@@ -159,6 +159,34 @@ def update_my_producer(
     return producer
 
 
+# MEH-291 — dual-write helpers used during the 7-day overlap.
+# Phase 4 (separate PR) drops the legacy is_available_today + availability_status
+# columns and removes these helpers along with the legacy endpoints below.
+
+def _state_to_legacy(state: str) -> tuple[bool, str]:
+    """Map the new 4-value enum to the (is_available_today, availability_status)
+    pair so old readers (ProducerCard, ProducerDetail, dashboard) stay accurate
+    until the legacy columns are dropped."""
+    return {
+        "accepting_orders": (False, "available"),
+        "available_today":  (True,  "available"),
+        "full_this_week":   (False, "full"),
+        "on_vacation":      (False, "vacation"),
+    }[state]
+
+
+def _legacy_to_state(is_available_today: bool | None, availability_status: str | None) -> str:
+    """Inverse mapping. Precedence matches the Phase 1 backfill CASE WHEN tree:
+    vacation > full > is_available_today > default."""
+    if availability_status == "vacation":
+        return "on_vacation"
+    if availability_status == "full":
+        return "full_this_week"
+    if is_available_today:
+        return "available_today"
+    return "accepting_orders"
+
+
 @router.post("/availability")
 @limiter.limit("20/hour")
 def toggle_availability(
@@ -166,14 +194,24 @@ def toggle_availability(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
-    """Toggle today's availability for the logged-in producer."""
+    """Toggle today's availability for the logged-in producer.
+
+    Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to
+    `availability_state` so consumers reading the new column stay consistent.
+    """
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.is_available_today = not bool(producer.is_available_today)
+    producer.availability_state = _legacy_to_state(
+        producer.is_available_today, producer.availability_status
+    )
     producer.last_active_at = datetime.utcnow()
     db.commit()
-    return {"is_available_today": producer.is_available_today}
+    return {
+        "is_available_today": producer.is_available_today,
+        "availability_state": producer.availability_state,
+    }
 
 
 # MEH-12: durable availability status ("open | full | vacation") that
@@ -195,6 +233,8 @@ def set_availability_status(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    """Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the
+    durable status to `availability_state`."""
     if data.status not in AVAILABILITY_STATUSES:
         raise HTTPException(
             status_code=400,
@@ -205,10 +245,55 @@ def set_availability_status(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.availability_status = data.status
     producer.vacation_until = data.vacation_until if data.status == "vacation" else None
+    producer.availability_state = _legacy_to_state(
+        producer.is_available_today, producer.availability_status
+    )
     producer.last_active_at = datetime.utcnow()
     db.commit()
     return {
         "availability_status": producer.availability_status,
+        "availability_state": producer.availability_state,
+        "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
+    }
+
+
+# MEH-291 — new unified endpoint. Phase 3 frontend will call this exclusively;
+# the two legacy endpoints above stay during the 7-day overlap and dual-write.
+
+class AvailabilityStateUpdate(BaseModel):
+    state: str = Field(..., description="accepting_orders | available_today | full_this_week | on_vacation")
+    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
+
+
+@router.post("/availability-state")
+@limiter.limit("20/hour")
+def set_availability_state(
+    request: Request,
+    data: AvailabilityStateUpdate,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    if data.state not in AVAILABILITY_STATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
+        )
+    if data.state == "on_vacation" and data.vacation_until is None:
+        raise HTTPException(status_code=422, detail="תאריך חזרה לחופשה נדרש")
+
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    producer.availability_state = data.state
+    is_today, legacy_status = _state_to_legacy(data.state)
+    producer.is_available_today = is_today
+    producer.availability_status = legacy_status
+    producer.vacation_until = data.vacation_until if data.state == "on_vacation" else None
+    producer.last_active_at = datetime.utcnow()
+    db.commit()
+    return {
+        "availability_state": producer.availability_state,
         "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
     }
 
@@ -252,6 +337,9 @@ def dashboard(
             "is_available_today": bool(producer.is_available_today),
             # MEH-12 — dashboard toggle reads this to highlight the active pill
             "availability_status": producer.availability_status or "available",
+            # MEH-291 — durable 4-value enum that supersedes the two above.
+            # Defensive default in case ORM ever returns NULL despite NOT NULL.
+            "availability_state": producer.availability_state or "accepting_orders",
             "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
             "status": producer.status,
             "plan": producer.plan,
@@ -539,7 +627,7 @@ def send_phone_otp(
     # Invalidate any previous unused tokens for this producer
     db.query(PhoneOtpToken).filter(
         PhoneOtpToken.producer_id == producer.id,
-        PhoneOtpToken.used == False,
+        PhoneOtpToken.used.is_(False),
     ).update({"used": True})
 
     db.add(PhoneOtpToken(
@@ -573,7 +661,7 @@ def confirm_phone_otp(
         .filter(
             PhoneOtpToken.producer_id == producer.id,
             PhoneOtpToken.code == body.code,
-            PhoneOtpToken.used == False,
+            PhoneOtpToken.used.is_(False),
             PhoneOtpToken.expires_at > datetime.utcnow(),
         )
         .first()

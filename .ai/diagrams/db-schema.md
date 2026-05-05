@@ -49,7 +49,10 @@ erDiagram
         boolean is_verified
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
-        boolean is_available_today
+        boolean is_available_today "legacy — preserved during MEH-291 overlap"
+        string availability_status "legacy — preserved during MEH-291 overlap"
+        string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation"
+        date vacation_until "nullable — required when availability_state=on_vacation"
         string plan "free|premium"
         boolean grass_fed
         boolean organic_certified
