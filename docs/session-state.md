@@ -1,94 +1,97 @@
-# Session state — MEH-291 Phase 3 (PR pending)
+# Session state — MEH-291 Phase 4 (plan only — held for soak)
 
-> Written per workflow rule 14 + Phase 3 step 19. Resume with `/session-resume`.
-> Last updated: 2026-05-05, end of Phase 3 execution.
+> Written per workflow rule 14. Phase 4 is the final removal PR. Plan
+> approved by Smadar 2026-05-05; **execution held** until preconditions
+> below are met.
+> Last updated: 2026-05-05, end of Phase 3 merge + Phase 4 planning.
 
-## Branch + PR
+## MEH-291 progress
 
-- **Branch:** `feature/meh-291-phase-3-frontend` (off staging HEAD `5aeef41`, post-Phase-2 merge)
-- **HEAD commit:** TBD after step 17 commit
-- **PR:** opened at step 18 (NOT draft per Smadar's plan)
-- **Predecessors:**
-  - Phase 1 (#469): merged at `0d90968`
-  - Phase 2 (#470): merged at `5aeef41`
+| Phase | PR | SHA | Status |
+|---|---|---|---|
+| 1 — Alembic migration + backfill | #469 | `0d90968` | ✅ merged |
+| 2 — backend model + endpoint + dual-write | #470 | `5aeef41` | ✅ merged |
+| 3 — frontend 5 surfaces + default-hide vacation | #473 | `f686c75` | ✅ merged 2026-05-05 |
+| **4 — drop legacy columns + endpoints + helpers** | TBD | TBD | ⏸️ **plan only — held for soak** |
 
-## Phase 3 deliverables — final status
+## Phase 4 execution preconditions (ALL must be true before PR opens)
 
-| Step | Result |
+- [ ] **7-day staging soak complete** — earliest 2026-05-12 (Phase 3 merged 2026-05-05).
+- [ ] **MEH-408 R2 backup layer live** — Phase 4 drops 2 columns from `producers`; backups are non-negotiable for destructive schema changes.
+- [ ] **No dual-write divergence reported during soak** — Smadar spot-checks staging psql periodically; legacy + new columns must stay in sync via the dual-write mirror (Phase 2 helpers).
+- [ ] **Producer-traffic check on the new endpoint** — production logs / Vercel preview show real `POST /producers/me/availability-state` writes landing on `availability_state` (i.e., the new endpoint is being exercised by actual producer users).
+
+When all four preconditions are checked, Smadar issues `go execute` (with explicit override note OR post-soak greenlight). Do not branch, write Alembic revision, or open PR before that.
+
+## Phase 4 scope (plan, frozen)
+
+### Migration
+- NEW: `backend/alembic/versions/<DATE>_<HHMM>_<NEW_REV>_meh_291_drop_legacy_availability.py`
+- `down_revision='2a74fa41ceb1'` (Phase 1 head — staging now uses Phase 1's migration as the EXPECTED_REV, since Phases 2/3 added no new revisions).
+- Bump `EXPECTED_REV` at `.github/workflows/pr-checks.yml:107` from `"2a74fa41ceb1"` → new SHA. `EXPECTED_TABLES=34` unchanged.
+- Migration full content captured in chat-only code block (not on disk per Smadar's plan-only directive). Reverse-backfill on downgrade restores legacy columns + populates from `availability_state` via inverse CASE-WHEN tree.
+
+### Backend code removals
+| File | Lines | Action |
+|---|---|---|
+| `backend/app/models/models.py` | 84-91 | Drop `is_available_today` + `availability_status` columns |
+| `backend/app/schemas/schemas.py` | 307, 320, 336-342, 403, 405, 454-466 | Drop legacy fields, validator, simplify auto-clear |
+| `backend/app/routers/producer_me.py` | 115, 162-187, 190-216, 217-228, 230-258, 284-298, 337, 339 | Drop writable-field, helpers, legacy endpoints, dual-write block, dashboard fields |
+| `backend/app/routers/producers.py` | 53-56, 86 | Drop `is_available_today` query param + kwarg |
+| `backend/app/services/producer_listing.py` | 51, 294 | Drop `_SIMPLE_FILTERS` legacy entry + docstring mention |
+
+### Frontend code removals / simplifications
+| File | Action |
 |---|---|
-| 1. Plan summary | ✅ |
-| 2. `producer_listing.py` default-hide on_vacation | ✅ Inserted post `_SIMPLE_FILTERS` loop, only when `availability_state` filter not set |
-| 3. dashboard unified card | ✅ Replaced 2 stacked cards with single 4-radio card; `setAvailabilityState` handler; vacation date conditional on `on_vacation` |
-| 4. ProducerCard badge | ✅ 4-state Decision tree; legacy fallback chain; `data-status` updated to underscore form |
-| 5. ProducerDetail banner | ✅ Plus extended `AvailabilityBadge.STATUS_CONFIG` with 4 new keys; new `full_this_week` amber banner; dropped inline daily-availability dot (subsumed by AvailabilityBadge `available_today` label) |
-| 6. admin form 4-value radio | ✅ Radio + state migration logic + payload submission |
-| 7. FridayDeliveryStrip filter swap | ✅ |
-| 8-10. Test fixture updates | ✅ ProducerCard, ProducerStatusBanners, SettingsPage |
-| 11. /adversarial-review | ✅ 13 candidates, 0 real blockers |
-| 12. npm run build | ⏳ Deferred to CI (no `node_modules` in sandbox) |
-| 13. pytest | ⏳ Deferred to CI (no Postgres in sandbox; 15 availability+vacation tests collected cleanly) |
-| 14. MANUAL_TESTING.md Phase 3 section | ✅ 19 new test cases across 6 surfaces |
-| 15. CHANGELOG Phase 3 entry | ✅ |
-| 16. DESIGN.md | Skipped — no existing availability micro-copy section; new labels documented in CHANGELOG |
-| 17. Commit | TBD |
-| 18. Push + open PR | TBD |
-| 19. session-state.md | ✅ This file |
+| `frontend/components/ProducerCard.jsx` | Simplify `availabilityDotColor` to read only `availability_state`; switch Friday-strip ribbon (`:347`) to new field |
+| `frontend/components/AvailabilityBadge.jsx` | Drop legacy 3 keys from `STATUS_CONFIG`; reduce `CARD_HIDDEN_STATES` to `{accepting_orders}`; flip fallback to `accepting_orders` |
+| `frontend/components/admin/ProducerForm.jsx` | Drop legacy-fallback ternary in form-init useEffect |
+| `frontend/app/producer/[id]/ProducerDetail.jsx` | Simplify `isVacation` derivation |
+| `frontend/app/producer/[id]/components/ProducerHeader.jsx` | Drop `||` fallback on AvailabilityBadge status prop |
+| `frontend/app/producer/dashboard/page.js` | Drop legacy comment block |
+| `frontend/lib/map-chips.js` | Drop obsolete comment line `:30` |
 
-## Decisions implemented (Smadar Q1-Q7)
+### Test cleanup
+| File | Action |
+|---|---|
+| `tests/test_api.py` | Rewrite `TestVacationBadgeClear` (4 tests) to new state; drop `test_old_toggle_mirrors_to_state`, `test_old_status_mirrors_full_to_full_this_week`, `test_legacy_is_available_today_filter_still_works`; drop legacy assertions inside remaining `TestAvailabilityState` tests |
+| `frontend/__tests__/ProducerCard.test.jsx` | Drop `is_available_today` from fixtures |
+| `frontend/__tests__/ProducerStatusBanners.test.jsx` | Drop legacy fields from fixture |
+| `frontend/__tests__/SettingsPage.test.jsx` | Drop legacy field from fixture |
 
-- **Q1 sequencing:** A — branched off latest staging (post-Phase-2 merge).
-- **Q2 default-hide on_vacation:** Q2a — bundled into Phase 3.
-- **Q3 InfoTooltip:** Q3b — deferred to MEH-292; no placeholder.
-- **Q4 Hebrew copy:** verbatim from spec.
-- **Q5 test strategy:** Q5b — Jest fixture updates only; no Playwright.
-- **Q6 mobile preview:** Smadar verifies on iPhone post-PR-open.
-- **Q7 execution mode:** end-to-end with single review at end.
+### Docs
+| File | Action |
+|---|---|
+| `docs/DATA.md` | Drop legacy endpoint + column rows |
+| `.ai/diagrams/db-schema.md` | Drop legacy column rows from producers node |
+| `docs/CHANGELOG.md` | Phase 4 entry — closes MEH-291 |
+| `docs/MANUAL_TESTING.md` | Drop overlap-period test cases |
+| `HANDOFF.md` | Closure bullet |
 
-## Files changed (14)
+## Adversarial-review-style risk pass (12 candidates → 0 hard blockers)
 
-```
-backend/app/services/producer_listing.py            (default-hide on_vacation)
-docs/CHANGELOG.md                                   (Phase 3 entry)
-docs/MANUAL_TESTING.md                              (Phase 3 test section)
-docs/session-state.md                               (this file)
-frontend/__tests__/ProducerCard.test.jsx            (fixture + 2 new tests)
-frontend/__tests__/ProducerStatusBanners.test.jsx   (fixture)
-frontend/__tests__/SettingsPage.test.jsx            (fixture)
-frontend/app/producer/[id]/ProducerDetail.jsx       (isVacation derivation)
-frontend/app/producer/[id]/components/ProducerHeader.jsx (badge + banner + remove daily dot)
-frontend/app/producer/dashboard/page.js             (unified card; -saving state)
-frontend/components/AvailabilityBadge.jsx           (4 new state keys)
-frontend/components/FridayDeliveryStrip.jsx         (filter param swap)
-frontend/components/ProducerCard.jsx                (badge color logic)
-frontend/components/admin/ProducerForm.jsx          (4-value radio + state migration)
-```
+Verified at plan time:
+- F1 — slug routes / favorites / direct lookups consume `ProducerListOut` → `availability_state` only; no legacy reads.
+- F2 — `?availability_state=` filter unchanged in Phase 4.
+- F3 — analytics + admin + webhook surfaces grep clean of legacy refs.
+- F11 — no CI gate hardcodes test count.
 
-## Anticipated CI behavior on PR
-
-- ✅ `Frontend build (Next.js)` — should pass; no syntax errors found via local review.
-- ✅ `Frontend lint (RTL + Next.js rules)` — only logical CSS used; no physical directional classes introduced.
-- 🟢 `Backend tests (pytest)` — should pass; default-hide preserves all existing test behavior (fixtures default to `accepting_orders` via Phase 1 server_default).
-- 🟢 `Playwright E2E` — risk: any E2E that hits `/producers` and asserts specific counts. Producer fixtures default to `accepting_orders`, so default-hide is a no-op for them.
+Advisory items (verify at execution):
+- F4 — stale client caches (mitigated by 7-day soak).
+- F8 — orphan `vacation_until` on non-vacation rows (benign; auto-clear handles).
+- F10 — Friday-strip semantic shift from per-day boolean to durable enum (Smadar verifies on staging during soak).
+- F12 — MEH-408 R2 backup must be live (precondition above).
 
 ## Resume entry-point for next session
 
 1. `/session-resume` → reads this file.
-2. If PR CI green + Smadar approves: merge to staging.
-3. After 7-day staging verification: start Phase 4 (separate PR) — drop legacy columns + endpoints.
+2. Verify all 4 execution preconditions are checked.
+3. If all green: branch `feature/meh-291-phase-4-drop-legacy` off staging, write the Alembic revision file (using the chat-block content as template, with fresh SHA from `secrets.token_hex(6)`), execute the file removals per the §1.2-1.9 plan, run `/adversarial-review`, push, open PR (NOT draft).
+4. If any precondition is unmet: stop and report which one is blocking.
 
-## Phase 4 scope (next)
+## Constraint reminders
 
-- Drop `producers.is_available_today` column (Alembic migration).
-- Drop `producers.availability_status` column (Alembic migration).
-- Remove `is_available_today` query param from `routers/producers.py` + `services/producer_listing.py:_SIMPLE_FILTERS`.
-- Remove `POST /producers/me/availability` (toggle) endpoint.
-- Remove `POST /producers/me/availability-status` endpoint.
-- Remove `_state_to_legacy` + `_legacy_to_state` helpers in `producer_me.py`.
-- Remove legacy `STATUS_CONFIG` keys (`available`, `full`, `vacation`) from `AvailabilityBadge.jsx`.
-- Remove legacy fallback chain in `ProducerCard.jsx::availabilityDotColor`.
-- Update `ProducerCard.jsx:333` Friday-strip ribbon to read `availability_state==='available_today'`.
-- Update `models.py` Producer ORM: drop `is_available_today` + `availability_status` columns.
-- Update Pydantic schemas: drop legacy fields + `_validate_availability_status` validator.
-- Update `_compute_trust_tier` auto-clear: drop legacy `availability_status` branch.
-- Update `tests/test_api.py::TestVacationBadgeClear` — remove legacy assertions.
-- Update `frontend/__tests__/*` — drop legacy fields from fixtures.
+- ✗ Do not skip the soak window without explicit override (`go execute`).
+- ✗ Do not open Phase 4 PR before MEH-408 R2 backups are live.
+- ✗ Do not bundle Phase 4 with any other ticket (MEH-291 closure scope only).
+- ✗ Do not preserve "during overlap" comments in Phase 4 — the overlap is over.
