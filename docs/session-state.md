@@ -20,8 +20,10 @@
 - [ ] **MEH-408 R2 backup layer live** — Phase 4 drops 2 columns from `producers`; backups are non-negotiable for destructive schema changes.
 - [ ] **No dual-write divergence reported during soak** — Smadar spot-checks staging psql periodically; legacy + new columns must stay in sync via the dual-write mirror (Phase 2 helpers).
 - [ ] **Producer-traffic check on the new endpoint** — production logs / Vercel preview show real `POST /producers/me/availability-state` writes landing on `availability_state` (i.e., the new endpoint is being exercised by actual producer users).
+- [ ] **CI extends to migration+import round-trip** — Phase 4 PR's CI must run `alembic upgrade head` AND `python -c "from app.main import app"` against fresh Postgres in the same job. Catches the migration-success-but-app-import-failure window where DB has columns dropped but new code can't boot. Surfaced by deeper adversarial pass (NEW3); R2 backup is the recovery layer of last resort, this gate is the prevention layer.
+- [ ] **Endpoint client audit during soak** — confirm via Railway logs that only the web dashboard hits `POST /producers/me/availability` (toggle) and `POST /producers/me/availability-status`. If any non-web caller appears (mobile app, integration, scraper), route them to deprecation responses (410 Gone) before Phase 4 ships. Surfaced by deeper adversarial pass (NEW7).
 
-When all four preconditions are checked, Smadar issues `go execute` (with explicit override note OR post-soak greenlight). Do not branch, write Alembic revision, or open PR before that.
+When all six preconditions are checked, Smadar issues `go execute` (with explicit override note OR post-soak greenlight). Do not branch, write Alembic revision, or open PR before that.
 
 ## Phase 4 scope (plan, frozen)
 
