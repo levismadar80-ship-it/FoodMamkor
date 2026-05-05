@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-408 Phase 1: production safety deny-list
+
+Extended `.claude/hooks/check-bash-safety.sh` with `DROP SCHEMA`, bare `TRUNCATE`, `DELETE FROM` without `WHERE`, `rm -rf .`, `railway down|service delete`, `vercel --prod|rm`, and `$DATABASE_URL_PRODUCTION` substring blocks. Full deny-list documented in `.claude/rules/security.md`. No new hook file — single source of truth (extends existing canonical hook per `.claude/hooks/README.md`).
+
 ## 2026-05-05 — MEH-433: schema parity audit + ADR-006
 
 MEH-433: Schema parity audit baseline (`docs/SCHEMA_PARITY_AUDIT.md`) + ADR-006 (5 enforcement rules R1–R5). 11 drift findings; BLOCK + 2 INFO/WARN tracked in MEH-457, MEH-458, MEH-459.

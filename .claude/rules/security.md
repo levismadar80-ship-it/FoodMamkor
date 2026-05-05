@@ -45,3 +45,28 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
 Workflow rule 5a requires an additional **web-search CVE check** for
 these files. Run the check before `/adversarial-review` and include
 findings in the PR description.
+
+---
+
+## Production safety — deny-list (MEH-408)
+
+Commands forbidden inside any Claude Code session — must be run by
+Smadar directly in her own terminal, never by Claude. Mechanically
+enforced by `.claude/hooks/check-bash-safety.sh` (PreToolUse: Bash,
+exit 2 = block).
+
+| Pattern | Why blocked |
+|---|---|
+| `DROP TABLE` / `DROP DATABASE` / `DROP SCHEMA` | Schema changes go through Alembic migrations only ([docs/MIGRATIONS.md](../../docs/MIGRATIONS.md)). |
+| `TRUNCATE <table>` (any form, with or without `TABLE` keyword) | Reverses MEH-341 accept-risk — bare `TRUNCATE` was previously allowed; MEH-408 closes the gap. |
+| `DELETE FROM <table>` without a `WHERE` clause | Mass-delete; production data loss risk. Heuristic: command must contain the word `WHERE` somewhere. |
+| `rm -rf /` / `rm -rf ~` / `rm -rf $HOME` / `rm -rf .` | Filesystem destruction including the cwd (the repo). |
+| `railway down` / `railway service delete` | Tears down running production infra. |
+| `vercel --prod` / `vercel rm` | Direct production deploy / project deletion bypassing the `feature/* → staging → main` flow. |
+| Any command containing `$DATABASE_URL_PRODUCTION` | Production DB URL must never be touched from a Claude session — `psql`, `railway run`, `vercel env`, etc. Run from your terminal. |
+
+If you genuinely need one of these, run it yourself in Git Bash —
+the hook only governs Claude Code tool calls, not your own terminal.
+
+Cross-ref: `.claude/hooks/check-bash-safety.sh`,
+`.claude/hooks/README.md` ("extension path" section).
