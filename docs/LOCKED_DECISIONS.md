@@ -1,5 +1,7 @@
 # Locked Decisions
 
+> **Status:** Being migrated to `docs/decisions/`. Entries here remain authoritative until each is promoted to an ADR. See [`docs/decisions/README.md`](./decisions/README.md).
+
 Decisions locked after debugging pain — do not revert without opening a
 new issue and getting explicit approval. The "why" and "the trap" sections
 exist so future sessions don't accidentally re-introduce the original bug

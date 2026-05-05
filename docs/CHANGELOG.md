@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-432: establish ADR pattern + bootstrap 4 ADRs
+
+New `docs/decisions/` directory with `README.md` (index + how-to) + `_TEMPLATE.md` + 4 ADRs (001 JWT HttpOnly cookie, 002 Resend HTTP, 003 Alembic-only, 004 skills 5-layer). ADR-005 (`/adversarial-review` local extension) deferred until MEH-428 ships. `CLAUDE.md` documentation-map row swapped from `LOCKED_DECISIONS.md` to `docs/decisions/` (line count unchanged at 80). `LOCKED_DECISIONS.md` gets a deprecation banner pointing to the new location; entries remain authoritative until each is promoted to an ADR.
+
 ## 2026-05-05 — MEH-427: branch-base verification rule
 
 Documents the `git rev-list --count HEAD ^origin/staging` pre-commit

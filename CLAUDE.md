@@ -67,7 +67,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 | [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) | Alembic workflow: add column, local check, rollback, CI gate |
 | [docs/MODERATION.md](./docs/MODERATION.md) + [ADMIN.md](./docs/ADMIN.md) | Hybrid AI moderation + admin pages, seed, role enforcement |
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |
-| [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md) | Known bug patterns + Railway/Anthropic/Resend/PostGIS traps |
+| [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
 | [.ai/diagrams/](./.ai/diagrams/) | Auth flow, DB schema, API routes — Mermaid (auto-loaded via `--append-system-prompt`, sync per workflow rule 12) |
 
