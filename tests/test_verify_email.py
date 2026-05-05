@@ -73,7 +73,7 @@ class TestRegisterFiresVerifyEmail:
                 json={
                     "email": "dave@test.com",
                     "name": "Dave",
-                    "password": "Pass1234!",
+                    "password": "SecurePass123!",
                 },
             )
         assert resp.status_code == 200

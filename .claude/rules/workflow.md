@@ -7,6 +7,36 @@ summary + pointer here.
 
 ---
 
+## Branch-base verification (CRITICAL)
+
+BEFORE first commit on any new branch, verify:
+```bash
+git rev-list --count HEAD ^origin/staging
+```
+
+Expected: small number (< 5).
+
+Large numbers (>50) indicate the harness created the branch off `main`
+instead of `staging` — known CC bug (GitHub issue #24516).
+
+If detected:
+1. ABORT current work
+2. `git stash` (if uncommitted changes exist)
+3. `git checkout staging && git pull origin staging`
+4. `git checkout -b <correct-branch-name>`
+5. `git stash pop`
+6. Re-verify divergence count is small
+7. Resume work
+
+DO NOT continue with a main-based branch — rebase will fail with
+phantom add/add conflicts on hundreds of files (squash-merge SHA drift).
+
+_Source: MEH-427 (2026-05-05). Trap caught on MEH-363 PR #439 rebase
+(288 commits diverged from staging vs 1 from main) and earlier on
+MEH-374 (62-commit divergence)._
+
+---
+
 ## Workflow rules 1–20
 
 1. **Session start protocol (MANDATORY — higher priority than any task).**
@@ -202,6 +232,8 @@ summary + pointer here.
 7. **Docs-only files → direct commit to staging, no PR.**
    `HANDOFF.md` / `CHANGELOG.md` / `ROADMAP.md` / `MANUAL_TESTING.md`
    do not need a PR.
+8. **Never add new env vars without listing them explicitly**
+   **and waiting for confirmation.**
 
 ---
 
@@ -349,6 +381,51 @@ REFEREE verdicts fixed.
 
 Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`,
 `MANUAL_TESTING.md`): commit directly to `staging` — no PR needed.
+
+---
+
+## Risk-tiered review frequency
+
+Review frequency depends on risk tier of the task. Default if unsure: **ask
+Smadar before starting**. Never silently downgrade to low-risk.
+
+### HIGH-RISK — chunk-by-chunk review required
+
+- Auth changes (login, OAuth, JWT, refresh tokens, password)
+- Schema changes (Alembic migrations, model edits, DB column work)
+- Central components (`MapClient`, `ProducerDetail`, `main.py` — see
+  [`.claude/central-components.json`](../central-components.json))
+- Security-sensitive code (XSS, CSRF, rate limit, secret handling, headers)
+- Production-deploy-blocking changes (env vars, Dockerfile, Railway config)
+
+Pattern: numbered plan first, **wait for `go`**, execute one chunk, wait for
+`go <chunk>` between chunks. MEH-326 (auth refactor) is the canonical
+example — chunked review caught regressions via Skeptic Mode.
+
+### LOW-RISK — end-to-end with single review
+
+- Single-file dependency upgrades (e.g. MEH-429 `psycopg2-binary` pin bump)
+- Copy/text changes (Hebrew strings, button labels, microcopy)
+- i18n sweeps (hardcoded → `t()` calls)
+- Doc-only edits (CHANGELOG, HANDOFF, rule files (`.claude/rules/*.md`))
+- Test additions (no production code change)
+
+Pattern: numbered plan first, **wait for `go`**, then execute fully without
+mid-flight checkpoints. At end: write a summary to
+[`docs/session-state.md`](../../docs/session-state.md) (files changed, test
+result, diff stat, blockers, what to verify). Smadar reads the summary, not
+turn-by-turn output.
+
+### DEFAULT — ask if unsure
+
+If the task doesn't clearly fit either tier, ask Smadar before starting.
+There is no third "medium" tier — the ask covers ambiguity.
+
+_Source: MEH-450 (2026-05-04). Evidence: MEH-326 auth refactor (chunked
+review justified), MEH-331/348 email transport — chunked review caught
+Content-Transfer-Encoding regression, MEH-429 psycopg2 (chunked review
+created unnecessary friction on a 1-line pin change). Mobile workflow
+friction amplifies the cost of unjustified checkpoints._
 
 ---
 

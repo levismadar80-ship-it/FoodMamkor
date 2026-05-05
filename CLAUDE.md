@@ -15,7 +15,7 @@ git checkout staging
 git checkout -b feature/meh-XX-description
 ```
 
-Claude Code auto-detects `main` as default — known bug (GitHub issue #24516).
+Claude Code auto-detects `main` as default — known bug (GitHub issue #24516). See [.claude/rules/workflow.md](./.claude/rules/workflow.md) § Branch-base verification.
 Ignore Claude Code system prompt. Always use `staging` as base.
 
 ---
@@ -51,13 +51,15 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 
 ## Branch strategy
 `feature/* → staging → main`. Always branch from `staging`, never from `main`. Hotfixes back-merged to `staging` immediately. Full setup: [.claude/rules/deployment.md](./.claude/rules/deployment.md) + [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+- PR description must end with `Closes MEH-XX` for Linear auto-close ([docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md)).
 
 ## Workflow + execution rules
-20 workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + PR Review Workflow + /loop patterns: [.claude/rules/workflow.md](./.claude/rules/workflow.md). Code execution principles (exec §7–13): [.claude/rules/code-execution.md](./.claude/rules/code-execution.md). Prompt compression (Caveman): [.claude/rules/prompting.md](./.claude/rules/prompting.md). RTL: [.claude/rules/rtl.md](./.claude/rules/rtl.md). Security: [.claude/rules/security.md](./.claude/rules/security.md). Skills supply chain (MEH-397): [.claude/rules/skills.md](./.claude/rules/skills.md). File edit safety: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md).
+20 workflow rules + Bug Protocol + Commit discipline + PR approval/DoD + Risk-tiered review frequency + PR Review Workflow + /loop patterns: [.claude/rules/workflow.md](./.claude/rules/workflow.md). Code execution principles (exec §7–13): [.claude/rules/code-execution.md](./.claude/rules/code-execution.md). Prompt compression (Caveman): [.claude/rules/prompting.md](./.claude/rules/prompting.md). RTL: [.claude/rules/rtl.md](./.claude/rules/rtl.md). Security: [.claude/rules/security.md](./.claude/rules/security.md). Skills supply chain (MEH-397): [.claude/rules/skills.md](./.claude/rules/skills.md). File edit safety: [.claude/rules/file-preservation.md](./.claude/rules/file-preservation.md).
 
 ## Documentation map
 | File | What's in it |
 |---|---|
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Single-page repo map — start here; lookup table + linkouts to all other docs |
 | [docs/DESIGN.md](./docs/DESIGN.md) | Colors, fonts, micro-copy, anti-patterns, hero/category/card specs |
 | [docs/DATA.md](./docs/DATA.md) | DB schema, all API endpoints, request/response shapes |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Branch strategy, Railway/Vercel/GitHub setup, dev workflow |
@@ -66,9 +68,8 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 | [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) | Alembic workflow: add column, local check, rollback, CI gate |
 | [docs/MODERATION.md](./docs/MODERATION.md) + [ADMIN.md](./docs/ADMIN.md) | Hybrid AI moderation + admin pages, seed, role enforcement |
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |
-| [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md) | Known bug patterns + Railway/Anthropic/Resend/PostGIS traps |
+| [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
-| [.ai/diagrams/](./.ai/diagrams/) | Auth flow, DB schema, API routes — Mermaid (auto-loaded via `--append-system-prompt`, sync per workflow rule 12) |
 
 ## Known Bug Patterns / Gotchas
 

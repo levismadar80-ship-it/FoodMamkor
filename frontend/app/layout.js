@@ -17,7 +17,13 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 // to every page that doesn't override it. Individual page.js files
 // can extend via `export const metadata = { ... }` on server components
 // or via a wrapping server component for client pages.
-const SITE_URL = process.env.SITE_URL || "https://mehamakor.co.il";
+// MEH-453: 3-tier fallback mirrors frontend/app/sitemap.js:11-14. Phase 1
+// keeps the default at mehamakor.online so production behavior is
+// unchanged until env vars flip in Vercel (Phase 2).
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.SITE_URL ||
+  "https://mehamakor.online";
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
@@ -118,6 +124,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-20 md:pb-0">
+        {/* rtl-ok: focus position for accessibility */}
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           דלג לתוכן הראשי
         </a>

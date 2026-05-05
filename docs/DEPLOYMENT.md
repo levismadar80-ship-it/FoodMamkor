@@ -206,6 +206,8 @@ this codebase. Open:
 | → Required checks | `Frontend build (Next.js)` |
 | → Required checks | `Backend tests (pytest)` |
 | → Required checks | `Frontend lint (RTL + Next.js rules)` |
+| → Required checks | `Backend dependency audit (pip-audit)` |
+| → Required checks | `Frontend dependency audit (npm audit)` |
 | Require branches to be up to date before merging | ✅ |
 | Require linear history (squash or rebase only) | ✅ |
 | Do not allow bypassing the above settings | ✅ (applies to admins too) |
@@ -223,6 +225,8 @@ this codebase. Open:
 | → Required checks | `Frontend build (Next.js)` |
 | → Required checks | `Backend tests (pytest)` |
 | → Required checks | `Frontend lint (RTL + Next.js rules)` |
+| → Required checks | `Backend dependency audit (pip-audit)` |
+| → Required checks | `Frontend dependency audit (npm audit)` |
 | Require branches to be up to date before merging | ✅ |
 | Allow force pushes | ❌ disabled |
 | Allow deletions | ❌ disabled |
@@ -237,12 +241,16 @@ this codebase. Open:
 > is informational until that script is added.
 
 > **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
-> (npm audit)` are intentionally NOT required checks (MEH-330, sprint 1).**
-> Both jobs run with `continue-on-error: true` while the existing CVE
-> backlog (frontend 13 high / 6 moderate, backend 8 vulns at 2026-04-26)
-> is paid down under umbrella ticket **MEH-336**. Once the baseline
-> clears, flip both jobs' `continue-on-error` to `false` and add the two
-> job names as required checks under `staging` *and* `main` rules above.
+> (npm audit)` are required checks (MEH-336, 2026-05-01).** Both jobs run
+> with `continue-on-error: false`. The MEH-330 baseline (frontend 13 high
+> / 6 moderate, backend 8 vulns at 2026-04-26) was cleared and the gate
+> flipped to blocking on 2026-05-01. **Manual step on first deploy after
+> the flip:** add both job names to the required-checks lists under
+> `staging` *and* `main` in the GitHub branch-protection UI (the tables
+> above already reflect the post-flip state — but GitHub only auto-suggests
+> a check after it has run once on the protected branch, so on first run
+> push the merge PR, let CI complete, then add the two checks to the
+> branch-protection rule).
 
 After saving both rules, verify by attempting a direct push from a feature branch
 to `staging` — it should be rejected with "protected branch" error.

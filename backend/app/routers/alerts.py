@@ -5,8 +5,9 @@ Endpoints (all require auth):
   PUT  /users/me/favorites/{producer_id}/alerts  — upsert prefs + optional push sub
 
 Exported helper:
-  fire_alerts(db, producer_id, alert_type, title, body, url)
+  fire_alerts(db, producer_id, alert_type, content)
     alert_type: "new_event" | "new_product" | "delivery_area"
+    content: AlertContent(title, body, url)
     Called from events.py + producer_me.py via FastAPI BackgroundTasks.
 """
 from __future__ import annotations
@@ -17,6 +18,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
+
+from app.config import settings
 
 from app.auth import get_current_user
 from app.database import get_db
@@ -144,7 +147,17 @@ _ALERT_COL = {
 }
 
 
-def fire_alerts(db: Session, producer_id: UUID, alert_type: str, title: str, body: str, url: str = "/") -> None:
+class AlertContent(BaseModel):
+    """MEH-447: collapse (title, body, url) into a single payload object so
+    fire_alerts stays under PLR0913's 5-arg threshold without losing
+    keyword clarity at call sites."""
+
+    title: str
+    body: str
+    url: str = "/"
+
+
+def fire_alerts(db: Session, producer_id: UUID, alert_type: str, content: AlertContent) -> None:
     """Fan-out notifications to all users who opted in for alert_type on producer_id.
 
     Sends:
@@ -178,13 +191,24 @@ def fire_alerts(db: Session, producer_id: UUID, alert_type: str, title: str, bod
     for alert in alerts:
         if alert.push_subscription:
             try:
-                send_push_notification(alert.push_subscription, title=title, body=body, url=url)
+                send_push_notification(
+                    alert.push_subscription,
+                    title=content.title,
+                    body=content.body,
+                    url=content.url,
+                )
             except Exception as exc:
                 log.warning("push failed for user %s: %s", alert.user_id, exc)
 
         if alert.whatsapp_opt_in and alert.user and alert.user.phone:
             try:
-                _send_whatsapp_alert(alert.user.phone, f"{title}\n{body}\nmehamakor.online{url}")
+                # MEH-453: use canonical from settings.frontend_url. Bonus —
+                # old prefix lacked https://, so WhatsApp link previews were
+                # flaky; settings.frontend_url is fully-qualified.
+                _send_whatsapp_alert(
+                    alert.user.phone,
+                    f"{content.title}\n{content.body}\n{settings.frontend_url}{content.url}",
+                )
             except Exception as exc:
                 log.warning("whatsapp alert failed for user %s: %s", alert.user_id, exc)
 

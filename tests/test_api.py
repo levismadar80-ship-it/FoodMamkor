@@ -8,6 +8,7 @@ Coverage:
   settings, analytics, page editing
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
+import pytest
 from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
 from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
 
@@ -457,8 +458,8 @@ class TestMeh56WhatsAppOnboarding:
     def test_register_producer_sets_pending_whatsapp(self, client, db, monkeypatch):
         # Stub out Twilio and email so no network calls
         import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "_notify_admin_new_producer", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "_notify_producer_registered", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
         resp = client.post("/auth/register/producer", json={
@@ -1163,6 +1164,189 @@ class TestVacationBadgeClear:
         assert resp.json()["vacation_until"] is None
 
 
+# ---------- MEH-291: availability_state consolidation (Phase 2) ----------
+
+class TestAvailabilityState:
+    """4-value enum that consolidates is_available_today + availability_status.
+
+    Phase 2 ships:
+      - new POST /producers/me/availability-state endpoint
+      - dual-write mirror in legacy POST /availability + /availability-status
+      - extended auto-clear when vacation_until is past
+      - optional ?availability_state= filter on /producers list
+    Old columns preserved during 7-day overlap; Phase 4 drops them.
+    """
+
+    @staticmethod
+    def _setup(db):
+        from app.models import User
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+        db.refresh(user)
+        # Re-fetch User so callers see producer_id wired
+        return db.query(User).filter(User.id == user.id).first(), producer
+
+    def test_new_endpoint_sets_accepting_orders(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "accepting_orders"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "accepting_orders"
+        db.refresh(producer)
+        assert producer.availability_state == "accepting_orders"
+
+    def test_new_endpoint_sets_available_today(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "available_today"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "available_today"
+        db.refresh(producer)
+        assert producer.availability_state == "available_today"
+        # Dual-write to legacy columns.
+        assert producer.is_available_today is True
+        assert producer.availability_status == "available"
+
+    def test_new_endpoint_sets_full_this_week(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "full_this_week"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "full_this_week"
+        db.refresh(producer)
+        assert producer.availability_status == "full"
+        assert producer.is_available_today is False
+
+    def test_new_endpoint_on_vacation_requires_vacation_until(self, client, db):
+        user, _ = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "on_vacation"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+        assert "תאריך חזרה לחופשה נדרש" in resp.text
+
+    def test_new_endpoint_on_vacation_with_date_dual_writes(self, client, db):
+        from datetime import date, timedelta
+        user, producer = self._setup(db)
+        future = (date.today() + timedelta(days=10)).isoformat()
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "on_vacation", "vacation_until": future},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["availability_state"] == "on_vacation"
+        assert body["vacation_until"] == future
+        db.refresh(producer)
+        assert producer.availability_state == "on_vacation"
+        assert producer.availability_status == "vacation"
+        assert producer.is_available_today is False
+        assert producer.vacation_until.isoformat() == future
+
+    def test_old_toggle_mirrors_to_state(self, client, db):
+        user, producer = self._setup(db)
+        # Start: is_available_today=False, availability_status='available'
+        # Toggle once → True → state='available_today'.
+        resp = client.post("/producers/me/availability", headers=auth_header(user))
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["is_available_today"] is True
+        assert body["availability_state"] == "available_today"
+        db.refresh(producer)
+        assert producer.availability_state == "available_today"
+        # Toggle again → False → state='accepting_orders'.
+        resp = client.post("/producers/me/availability", headers=auth_header(user))
+        assert resp.json()["availability_state"] == "accepting_orders"
+
+    def test_old_status_mirrors_full_to_full_this_week(self, client, db):
+        user, producer = self._setup(db)
+        resp = client.post(
+            "/producers/me/availability-status",
+            json={"status": "full"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["availability_state"] == "full_this_week"
+        db.refresh(producer)
+        assert producer.availability_state == "full_this_week"
+
+    def test_auto_clear_past_vacation_normalizes_both_fields(self, client, db):
+        from datetime import date, timedelta
+        producer = make_producer(db)
+        producer.availability_status = "vacation"
+        producer.availability_state = "on_vacation"
+        producer.vacation_until = date.today() - timedelta(days=2)
+        db.commit()
+
+        resp = client.get(f"/producers/{producer.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["availability_status"] == "available"
+        assert body["availability_state"] == "accepting_orders"
+        assert body.get("vacation_until") is None
+
+    def test_vacation_until_preserved_through_state_round_trip(self, client, db):
+        from datetime import date, timedelta
+        user, producer = self._setup(db)
+        future = (date.today() + timedelta(days=14)).isoformat()
+        # Set on_vacation with a date.
+        client.post(
+            "/producers/me/availability-state",
+            json={"state": "on_vacation", "vacation_until": future},
+            headers=auth_header(user),
+        )
+        # Switch back to accepting → vacation_until cleared.
+        resp = client.post(
+            "/producers/me/availability-state",
+            json={"state": "accepting_orders"},
+            headers=auth_header(user),
+        )
+        assert resp.json()["vacation_until"] is None
+        db.refresh(producer)
+        assert producer.vacation_until is None
+
+    def test_filter_by_availability_state(self, client, db):
+        # Two approved producers: one available_today, one accepting_orders.
+        p1 = make_producer(db, name="Alpha", status="approved")
+        p1.availability_state = "available_today"
+        p2 = make_producer(db, name="Beta", status="approved")
+        p2.availability_state = "accepting_orders"
+        db.commit()
+
+        resp = client.get("/producers?availability_state=available_today")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "Alpha" in names
+        assert "Beta" not in names
+
+    def test_legacy_is_available_today_filter_still_works(self, client, db):
+        p1 = make_producer(db, name="Gamma", status="approved")
+        p1.is_available_today = True
+        p2 = make_producer(db, name="Delta", status="approved")
+        p2.is_available_today = False
+        db.commit()
+
+        resp = client.get("/producers?is_available_today=true")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert "Gamma" in names
+        assert "Delta" not in names
+
+
 class TestMojibakeDetection:
     """MEH-154 — Excel import rejects mojibake'd Hebrew (UTF-8 decoded as Latin-1)."""
 
@@ -1513,6 +1697,24 @@ class TestUploadGoogleAvatarOrNone:
         url = "https://lh3.googleusercontent.com/photo.jpg"
         assert _upload_google_avatar_or_none(url) == url
 
+    @staticmethod
+    def _fake_stream_cm(chunks):
+        """Build a context-manager-compatible mock for httpx.stream.
+
+        MEH-440-followup switched the avatar uploader from httpx.get
+        (full buffer) to httpx.stream (chunked + early-abort). Tests
+        mock the streaming response with a tiny stand-in that yields
+        the requested chunks from iter_bytes(...).
+        """
+        from unittest.mock import MagicMock
+        resp = MagicMock()
+        resp.raise_for_status.return_value = None
+        resp.iter_bytes.return_value = iter(chunks)
+        cm = MagicMock()
+        cm.__enter__.return_value = resp
+        cm.__exit__.return_value = False
+        return cm
+
     def test_httpx_error_is_fail_open(self, monkeypatch):
         from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
@@ -1520,42 +1722,94 @@ class TestUploadGoogleAvatarOrNone:
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
-        with patch("httpx.get", side_effect=Exception("network error")):
+        with patch("httpx.stream", side_effect=Exception("network error")):
             result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result is None
 
     def test_cloudinary_error_is_fail_open(self, monkeypatch):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
-        mock_resp = MagicMock()
-        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
-        mock_resp.raise_for_status.return_value = None
-        with patch("httpx.get", return_value=mock_resp):
+        cm = self._fake_stream_cm([b"\xff\xd8\xff" + b"\x00" * 100])
+        with patch("httpx.stream", return_value=cm):
             with patch("cloudinary.uploader.upload", side_effect=Exception("Cloudinary down")):
                 with patch("cloudinary.config"):
                     result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result is None
 
     def test_success_returns_cloudinary_url(self, monkeypatch):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         from app.routers.auth import _upload_google_avatar_or_none
         from app.config import settings
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
-        mock_resp = MagicMock()
-        mock_resp.content = b"\xff\xd8\xff" + b"\x00" * 100
-        mock_resp.raise_for_status.return_value = None
+        cm = self._fake_stream_cm([b"\xff\xd8\xff" + b"\x00" * 100])
         expected = "https://res.cloudinary.com/test-cloud/image/upload/mehamakor/avatars/abc.jpg"
-        with patch("httpx.get", return_value=mock_resp):
+        with patch("httpx.stream", return_value=cm):
             with patch("cloudinary.config"):
                 with patch("cloudinary.uploader.upload", return_value={"secure_url": expected}):
                     result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
         assert result == expected
+
+    def test_avatar_aborts_oversized_stream(self, monkeypatch):
+        """MEH-440-followup: streaming download aborts as soon as the
+        cumulative chunk size exceeds MAX_AVATAR_BYTES. Cloudinary
+        upload must NOT be reached, and the result must be None."""
+        from unittest.mock import patch
+        from app.routers.auth import _upload_google_avatar_or_none
+        from app.config import settings
+        from app.services.oauth_verifiers import MAX_AVATAR_BYTES
+        monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
+        monkeypatch.setattr(settings, "cloudinary_api_key", "key")
+        monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        # Build chunks that exceed MAX_AVATAR_BYTES (1 MB). Two chunks
+        # of 600 KiB each = 1.2 MB total — second chunk trips the cap.
+        big = b"\x00" * (600 * 1024)
+        cm = self._fake_stream_cm([big, big])
+        upload_called = {"n": 0}
+
+        def _upload_should_not_run(*_a, **_kw):
+            upload_called["n"] += 1
+            return {"secure_url": "should-not-reach"}
+
+        with patch("httpx.stream", return_value=cm):
+            with patch("cloudinary.config"):
+                with patch("cloudinary.uploader.upload", side_effect=_upload_should_not_run):
+                    result = _upload_google_avatar_or_none("https://lh3.googleusercontent.com/photo.jpg")
+        assert result is None, f"oversized stream must short-circuit (cap = {MAX_AVATAR_BYTES})"
+        assert upload_called["n"] == 0, "Cloudinary upload must not run after size-cap abort"
+
+
+class TestAuthEmailHtmlEscape:
+    """MEH-440-followup: name interpolation in HTML email bodies must
+    be html-escaped so a hostile registered name can't inject markup
+    into the rendered email. Plain-text body keeps the raw name (text
+    rendering doesn't interpret markup)."""
+
+    def test_email_escapes_html_in_name(self, monkeypatch):
+        captured = {}
+
+        def fake_send(email, subject, body, html=None):
+            captured["body"] = body
+            captured["html"] = html
+
+        monkeypatch.setattr("app.services.auth_emails.send_email", fake_send)
+
+        from app.services.auth_emails import send_verify_email
+        hostile = "<script>alert(1)</script>"
+        send_verify_email("u@example.com", hostile, "tok123")
+
+        # Plain-text body keeps the raw name.
+        assert hostile in captured["body"], "plain text must keep raw name"
+        # HTML body has the escaped form, never the raw markup.
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in captured["html"], \
+            "HTML body must contain the escaped name"
+        assert hostile not in captured["html"], \
+            "HTML body must not contain the unescaped name"
 
 
 class TestResetPasswordFlow:
@@ -2007,7 +2261,7 @@ class TestSanitizationIntegration:
 
 
 class TestAppleTokenVerification:
-    """MEH-337: pyjwt 2.9.0 → 2.12.0 bump (CVE-2026-32597).
+    """MEH-337 + MEH-440-followup. Apple OAuth verification + JWKS cache.
 
     Apple OAuth (routers/auth.py:_verify_apple_token, lines 944-975) is
     the ONLY pyjwt code path in the backend — primary auth uses joserfc.
@@ -2027,6 +2281,17 @@ class TestAppleTokenVerification:
     # All call sites MUST monkeypatch
     # pyjwt.algorithms.RSAAlgorithm.from_jwk; placeholder "n" will
     # not parse as a real RSA modulus.
+
+    @pytest.fixture(autouse=True)
+    def _reset_apple_jwks_cache(self):
+        """MEH-440-followup: clear the module-level JWKS cache between
+        tests so order-dependent state doesn't leak across cases."""
+        from app.services.oauth_verifiers import _APPLE_JWKS_CACHE
+        _APPLE_JWKS_CACHE["keys"] = None
+        _APPLE_JWKS_CACHE["fetched_at"] = None
+        yield
+        _APPLE_JWKS_CACHE["keys"] = None
+        _APPLE_JWKS_CACHE["fetched_at"] = None
 
     def _setup_mocks(self, monkeypatch, *, decoded_payload=None, decode_exc=None, jwks=None, header=None):
         from app import config
@@ -2169,6 +2434,129 @@ class TestAppleTokenVerification:
         monkeypatch.setattr(req_mod, "get", _capturing_get)
         _verify_apple_token("dummy.token.value")
         assert captured.get("timeout") == 8
+
+    def test_apple_jwks_cache_reuses_within_ttl(self, monkeypatch):
+        """MEH-440-followup: a second verify within the TTL window must
+        not re-fetch — the cached keys are reused."""
+        import requests as req_mod
+        from app.routers.auth import _verify_apple_token
+
+        self._setup_mocks(monkeypatch)
+        call_count = {"n": 0}
+        original_fake = req_mod.get
+
+        def _counting_get(url, **kw):
+            call_count["n"] += 1
+            return original_fake(url, **kw)
+
+        monkeypatch.setattr(req_mod, "get", _counting_get)
+        _verify_apple_token("dummy.token.value")
+        _verify_apple_token("dummy.token.value")
+        assert call_count["n"] == 1, "cache should serve the second call"
+
+    def test_apple_jwks_cache_refetches_after_ttl(self, monkeypatch):
+        """MEH-440-followup: once the TTL has elapsed, the next verify
+        must re-fetch the JWKS."""
+        import requests as req_mod
+        from app.routers.auth import _verify_apple_token
+        from app.services import oauth_verifiers
+
+        self._setup_mocks(monkeypatch)
+        call_count = {"n": 0}
+        original_fake = req_mod.get
+
+        def _counting_get(url, **kw):
+            call_count["n"] += 1
+            return original_fake(url, **kw)
+
+        monkeypatch.setattr(req_mod, "get", _counting_get)
+
+        # Drive time forward by patching time.time to return a value
+        # past the TTL window between the two calls.
+        fake_now = [1_000.0]
+
+        def _fake_time():
+            return fake_now[0]
+
+        monkeypatch.setattr(oauth_verifiers.time, "time", _fake_time)
+
+        _verify_apple_token("dummy.token.value")
+        # Advance > TTL (3600s)
+        fake_now[0] += oauth_verifiers._APPLE_JWKS_TTL_SECONDS + 1
+        _verify_apple_token("dummy.token.value")
+        assert call_count["n"] == 2, "cache must expire after TTL"
+
+    def test_apple_jwks_kid_miss_refetches_once(self, monkeypatch):
+        """MEH-468-followup: when the cache is fresh but the token's kid
+        is missing (Apple rotated keys mid-TTL), force exactly one
+        refetch and verify successfully against the new keyset."""
+        import time as time_mod
+        import requests as req_mod
+        import jwt as pyjwt
+        from app import config
+        from app.services import oauth_verifiers
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        # Pre-populate cache with the OLD kid; cache is fresh.
+        old_jwk = {**self.APPLE_JWK, "kid": "OLD-KID"}
+        new_jwk = {**self.APPLE_JWK, "kid": "NEW-KID"}
+        oauth_verifiers._APPLE_JWKS_CACHE["keys"] = [old_jwk]
+        oauth_verifiers._APPLE_JWKS_CACHE["fetched_at"] = time_mod.time()
+
+        # The (only) refetch returns the new keyset.
+        fetch_count = {"n": 0}
+
+        class _FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"keys": [new_jwk]}
+
+        def _counting_get(url, **kw):
+            fetch_count["n"] += 1
+            return _FakeResp()
+
+        monkeypatch.setattr(req_mod, "get", _counting_get)
+        monkeypatch.setattr(
+            pyjwt, "get_unverified_header", lambda token: {"kid": "NEW-KID"}
+        )
+        monkeypatch.setattr(
+            pyjwt.algorithms.RSAAlgorithm, "from_jwk", lambda *a, **kw: object()
+        )
+        monkeypatch.setattr(
+            pyjwt, "decode", lambda *a, **kw: {"sub": "u1", "email": "u@apple.com"}
+        )
+
+        result = _verify_apple_token("dummy.token.value")
+        assert fetch_count["n"] == 1, "kid miss must trigger exactly one refetch"
+        assert result == {"sub": "u1", "email": "u@apple.com"}
+
+    def test_apple_jwks_negative_cache_during_outage(self, monkeypatch):
+        """MEH-468-followup: when fetch fails with no cache, negative-cache
+        the failure so subsequent calls within the TTL window return None
+        without re-attempting the network — Apple stays unhammered."""
+        import requests as req_mod
+        from app import config
+        from app.routers.auth import _verify_apple_token
+
+        monkeypatch.setattr(config.settings, "apple_client_id", "test.client.id")
+
+        fetch_count = {"n": 0}
+
+        def _failing_get(url, **kw):
+            fetch_count["n"] += 1
+            raise req_mod.exceptions.ConnectionError("apple offline")
+
+        monkeypatch.setattr(req_mod, "get", _failing_get)
+
+        # Three calls, all within the TTL window (real time barely moves).
+        assert _verify_apple_token("dummy.token.value") is None
+        assert _verify_apple_token("dummy.token.value") is None
+        assert _verify_apple_token("dummy.token.value") is None
+        assert fetch_count["n"] == 1, "outage must be negative-cached"
 
 
 # ---------------------------------------------------------------------------

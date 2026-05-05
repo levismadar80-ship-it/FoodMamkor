@@ -77,7 +77,7 @@ export function AuthProvider({ children }) {
     };
     window.addEventListener("auth:expired", handle);
     return () => window.removeEventListener("auth:expired", handle);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const afterLogin = async (me) => {
     setUser(me);

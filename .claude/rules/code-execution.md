@@ -37,6 +37,29 @@ Sources: Cursor · Devin · V0 · Manus · Windsurf (2026).
 
 ---
 
+## Linter-enforced reinforcement (MEH-443)
+
+The 5 core ESLint rules in `frontend/eslint.config.mjs` (warn mode) are
+the runtime enforcement of exec §7 (Lazy Edit) and exec §8 (Atomic Edits).
+They surface concretely the same patterns these principles guard against:
+
+| Linter rule | Stack | Reinforces |
+|---|---|---|
+| `max-lines: 250`, `max-lines-per-function: 50` | ESLint (frontend) | exec §7 — small, lazy edits over rewriting whole files |
+| `max-params: 2`, `complexity: 10`, `max-depth: 4` | ESLint (frontend) | exec §8 — atomic, all-or-nothing changes are easier when functions are simple |
+| `no-magic-numbers` | ESLint (frontend) | exec §10 — named constants give every value a `file:line` anchor |
+| `PLR0913 max-args=5`, `C901 max-complexity=10`, `PLR0911 max-returns=6` | Ruff (backend) | exec §8 — same intent at the Python layer |
+| `PLR0915 max-statements=50`, `PLR0912 max-branches=12` | Ruff (backend) | exec §7 — keeps Python functions small enough to lazy-edit |
+
+Frontend warnings are not errors today (MEH-443). Backend Ruff has no
+warn level — PL rules ship as errors covered by `per-file-ignores`
+referencing the refactor ticket that will eventually remove the ignore
+(MEH-444). Promote frontend to error and remove backend ignores after
+MEH-437 / MEH-438 / MEH-439 / MEH-440 ship + 30-day soak. Until then,
+treat new lint signals as feedback, not a build gate.
+
+---
+
 ## Execution order per task
 
 - **Before:** read CLAUDE.md + HANDOFF → numbered plan → grep siblings

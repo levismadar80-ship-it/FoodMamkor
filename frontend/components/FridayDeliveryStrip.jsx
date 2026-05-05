@@ -42,13 +42,15 @@ export default function FridayDeliveryStrip({ city }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    const params = { is_available_today: true, page_size: 12 };
+    // MEH-291 Phase 3 — switched from is_available_today=true to the unified
+    // availability_state filter. Backend dual-writes during the 7-day overlap.
+    const params = { availability_state: "available_today", page_size: 12 };
     if (city) params.delivery_city = city;
     api
       .get("/producers", { params })
       .then((r) => setProducers((r.data || []).slice(0, 12)))
       .catch(() => {});
-  }, [city]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [city]);
 
   if (producers.length === 0) return null;
 

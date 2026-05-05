@@ -17,7 +17,7 @@ dependencies = [
     "pydantic-settings==2.5.2",
     "cloudinary==1.40.0",
     "google-auth==2.34.0",
-    "twilio==9.3.0",
+    "twilio==9.10.5",
     "PyJWT[crypto]==2.12.0",
     "requests==2.33.1",
     "httpx==0.27.2",
@@ -34,9 +34,42 @@ dependencies = [
 dev = [
     "pip-audit>=2.10.0",
     "pytest>=8.0",
-    "pytest-timeout>=2.0",
+    "pytest-timeout>=2.4.0",
 ]
 
 [tool.uv]
 # This is a web application, not an installable package.
 package = false
+
+# ─────────────────────────────────────────────────────────────
+# MEH-444 / MEH-441 Wave 3/3 — AI Guardrails (PL rules from Pylint)
+# Source: Albro (Jan 2026, backend extension); Ruff PL docs (Astral 2025).
+# Severity model: Ruff has no warn level. PL rules selected → CI fails on
+# error → per-file-ignores carry existing-noise files until the
+# referenced refactor ticket lands and the ignore is removed.
+# ─────────────────────────────────────────────────────────────
+[tool.ruff.lint]
+extend-select = [
+  "PLR0913",  # too-many-arguments
+  "PLR0915",  # too-many-statements
+  "PLR0912",  # too-many-branches
+  "PLR0911",  # too-many-return-statements
+  "C901",     # McCabe complexity
+]
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-statements = 50
+max-branches = 12
+max-returns = 6
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# Existing god-files — large refactor tickets pending. Remove ignore after merge.
+"app/routers/producers.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-438
+"app/routers/auth.py" = ["PLR0913", "PLR0915", "PLR0912", "C901"]  # MEH-440
+
+# Auto-generated migrations are long by design.
+"alembic/versions/**" = ["PLR0915", "PLR0912"]

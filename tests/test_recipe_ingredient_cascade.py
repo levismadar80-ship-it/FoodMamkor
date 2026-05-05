@@ -76,13 +76,14 @@ def test_delete_account_does_not_fail_on_recipe_ingredient(client, db):
     # A consumer adds a recipe whose ingredient references this producer.
     _make_recipe_with_ingredient(db, producer)
 
+    producer_id = producer.id
     r = client.delete("/auth/me", headers=auth_header(user))
     assert r.status_code == 200
 
     # Producer gone, but the recipe + ingredient survive (producer_id=NULL).
-    assert db.query(Producer).filter(Producer.id == producer.id).first() is None
+    assert db.query(Producer).filter(Producer.id == producer_id).first() is None
     surviving = db.query(RecipeIngredient).filter(
-        RecipeIngredient.producer_id == producer.id
+        RecipeIngredient.producer_id == producer_id
     ).count()
     assert surviving == 0  # FK no longer points at her
     # And there's still exactly one ingredient row in the DB (with producer_id=NULL).

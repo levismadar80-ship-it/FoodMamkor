@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
  *                       above the parent element (BottomNav tab steps).
  *
  * The "×" close button uses logical end-3 (visual left in RTL) so it sits
- * away from the right-aligned Hebrew text without overlap.
+ * away from the right-aligned Hebrew text without overlap. (rtl-ok: comment-only)
  */
 export default function OnboardingTip({
   show,

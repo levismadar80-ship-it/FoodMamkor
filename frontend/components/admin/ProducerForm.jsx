@@ -47,8 +47,9 @@ const EMPTY = {
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
-  // MEH-89 — availability
-  availability_status: "available",
+  // MEH-291 — unified 4-state availability. Backend dual-writes to legacy
+  // availability_status during the 7-day overlap; Phase 4 drops the legacy.
+  availability_state: "accepting_orders",
   vacation_until: "",
 };
 
@@ -92,8 +93,16 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         offers_delivery: initial.offers_delivery ?? false,
         delivery_nationwide: initial.delivery_nationwide ?? false,
         delivery_cities: initial.delivery_cities ?? [],
-        // MEH-89 — availability
-        availability_status: initial.availability_status ?? "available",
+        // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
+        availability_state:
+          initial.availability_state ??
+          (initial.availability_status === "vacation"
+            ? "on_vacation"
+            : initial.availability_status === "full"
+              ? "full_this_week"
+              : initial.is_available_today
+                ? "available_today"
+                : "accepting_orders"),
         vacation_until: initial.vacation_until ?? "",
       });
     }
@@ -154,8 +163,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean),
-      // MEH-89 — clear vacation_until when not on vacation
-      vacation_until: form.availability_status === "vacation" && form.vacation_until ? form.vacation_until : null,
+      // MEH-291 — clear vacation_until when not on vacation
+      vacation_until: form.availability_state === "on_vacation" && form.vacation_until ? form.vacation_until : null,
     };
 
     try {
@@ -573,16 +582,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       <Section title="זמינות">
         <div className="flex flex-wrap gap-2 mb-3">
           {[
-            { value: "available", label: "זמינה" },
-            { value: "full", label: "תפוסה" },
-            { value: "vacation", label: "בהפסקה" },
+            { value: "accepting_orders", label: "פתוח להזמנות" },
+            { value: "available_today",  label: "זמינה היום 🟢" },
+            { value: "full_this_week",   label: "עמוסה השבוע 🟠" },
+            { value: "on_vacation",      label: "בהפסקה ⏸" },
           ].map(({ value, label }) => (
             <button
               key={value}
               type="button"
-              onClick={() => update("availability_status", value)}
+              onClick={() => update("availability_state", value)}
               className={`px-4 py-1.5 rounded-full text-sm border transition ${
-                form.availability_status === value
+                form.availability_state === value
                   ? "bg-primary text-white border-primary"
                   : "border-border text-site-text hover:border-primary"
               }`}
@@ -591,7 +601,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             </button>
           ))}
         </div>
-        {form.availability_status === "vacation" && (
+        {form.availability_state === "on_vacation" && (
           <Field label="תאריך חזרה (אופציונלי)">
             <input
               type="date"

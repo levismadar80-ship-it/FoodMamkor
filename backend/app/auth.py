@@ -131,6 +131,60 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
             pass
 
 
+def _validate_access_scope(claims: dict) -> None:
+    # MEH-326: only access-scope tokens are valid here. Refresh tokens go
+    # to /auth/refresh; presenting one as a Bearer access token is rejected.
+    # Fail-open on missing scope claim — pre-MEH-326 tokens (no scope) are
+    # treated as access so existing 24h sessions don't get invalidated by
+    # the deploy. This mirrors the MEH-206 fail-open pattern below.
+    scope = claims.get("scope")
+    if scope is not None and scope != "access":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
+
+def _check_password_change_invalidation(user: User, claims: dict) -> None:
+    # MEH-305: invalidate sessions issued before the most-recent password
+    # change. Fail-open when iat is absent (legacy tokens issued before
+    # MEH-305 deployed) or when password_changed_at is NULL (user has
+    # never rotated their password). Mirrors the MEH-206 / MEH-327
+    # fail-open pattern below.
+    iat_claim = claims.get("iat")
+    if iat_claim is None or user.password_changed_at is None:
+        return
+    # int() coercion: iat is issued as int seconds; password_changed_at
+    # is a real datetime with microseconds. Without int(), `iat (int)
+    # < pwd.timestamp() (float-with-microseconds)` is True for ~1
+    # second after a password change → false 401 on the first
+    # post-change request from a token issued in the same second.
+    if iat_claim < int(user.password_changed_at.timestamp()):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="session_invalidated_by_password_change",
+        )
+
+
+def _check_token_version(user: User, claims: dict) -> None:
+    # MEH-206: token_version check — fail-open so tokens issued before
+    # this column was added (no `tv` claim) are still accepted.
+    tv = claims.get("tv")
+    if tv is not None and tv != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
+
+def _check_fingerprint(request: Request, claims: dict) -> None:
+    # MEH-327: fingerprint check — fail-open for tokens without the claim
+    # (pre-MEH-327, max 15-min window). Mirrors MEH-206/MEH-326 fail-open
+    # patterns. Gate runs before _maybe_bump_last_active so invalid tokens
+    # never write to the DB.
+    fp_claim = claims.get("userFingerprint")
+    if fp_claim is None:
+        logger.info("[auth] fingerprint absent — fail-open (pre-MEH-327 token)")
+        return
+    cookie_fp = request.cookies.get("__Secure-Fgp")
+    if cookie_fp is None or hash_fingerprint(cookie_fp) != fp_claim:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+
+
 def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
@@ -147,53 +201,18 @@ def get_current_user(
     except JoseError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
-    # MEH-326: only access-scope tokens are valid here. Refresh tokens go
-    # to /auth/refresh; presenting one as a Bearer access token is rejected.
-    # Fail-open on missing scope claim — pre-MEH-326 tokens (no scope) are
-    # treated as access so existing 24h sessions don't get invalidated by
-    # the deploy. This mirrors the MEH-206 fail-open pattern below.
-    scope = token_obj.claims.get("scope")
-    if scope is not None and scope != "access":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+    _validate_access_scope(token_obj.claims)
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
     if user.is_blocked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
-    # MEH-305: invalidate sessions issued before the most-recent password
-    # change. Fail-open when iat is absent (legacy tokens issued before
-    # MEH-305 deployed) or when password_changed_at is NULL (user has
-    # never rotated their password). Mirrors the MEH-206 / MEH-327
-    # fail-open pattern below.
-    iat_claim = token_obj.claims.get("iat")
-    if iat_claim is not None and user.password_changed_at is not None:
-        # int() coercion: iat is issued as int seconds; password_changed_at
-        # is a real datetime with microseconds. Without int(), `iat (int)
-        # < pwd.timestamp() (float-with-microseconds)` is True for ~1
-        # second after a password change → false 401 on the first
-        # post-change request from a token issued in the same second.
-        if iat_claim < int(user.password_changed_at.timestamp()):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="session_invalidated_by_password_change",
-            )
-    # MEH-206: token_version check — fail-open so tokens issued before
-    # this column was added (no `tv` claim) are still accepted.
-    tv = token_obj.claims.get("tv")
-    if tv is not None and tv != user.token_version:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
-    # MEH-327: fingerprint check — fail-open for tokens without the claim
-    # (pre-MEH-327, max 15-min window). Mirrors MEH-206/MEH-326 fail-open
-    # patterns. Gate runs before _maybe_bump_last_active so invalid tokens
-    # never write to the DB.
-    fp_claim = token_obj.claims.get("userFingerprint")
-    if fp_claim is not None:
-        cookie_fp = request.cookies.get("__Secure-Fgp")
-        if cookie_fp is None or hash_fingerprint(cookie_fp) != fp_claim:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
-    else:
-        logger.info("[auth] fingerprint absent — fail-open (pre-MEH-327 token)")
+
+    _check_password_change_invalidation(user, token_obj.claims)
+    _check_token_version(user, token_obj.claims)
+    _check_fingerprint(request, token_obj.claims)
+
     # Feed the admin DAU chart — throttled to at most 1 write per 5 min.
     _maybe_bump_last_active(db, user)
     return user

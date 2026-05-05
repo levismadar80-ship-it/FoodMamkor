@@ -47,7 +47,6 @@ export default function ChipScrollRow({
   // the reset and let scrollIntoView place it — avoids the
   // instant-to-0 then smooth-scroll flicker on URL-seeded state.
   // "all" counts as no active filter (it's the reset sentinel).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const hasActiveFilter =
       variant === "category"
