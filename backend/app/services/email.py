@@ -17,8 +17,6 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-_FROM_ADDRESS = "מהמקור <noreply@mehamakor.online>"
-
 
 def send_email(to: str, subject: str, body: str, html: str | None = None) -> None:
     """Send a plain-text (+ optional HTML) email via Resend. Always fail-open."""
@@ -33,7 +31,7 @@ def send_email(to: str, subject: str, body: str, html: str | None = None) -> Non
         import resend  # lazy import — only installed when key is configured
         resend.api_key = settings.resend_api_key
         params: dict = {
-            "from": _FROM_ADDRESS,
+            "from": settings.email_from_address,
             "to": to,
             "subject": subject,
             "text": body,

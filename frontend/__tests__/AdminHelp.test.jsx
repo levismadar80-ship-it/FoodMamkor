@@ -98,12 +98,15 @@ describe("AdminHelp page", () => {
     expect(emergency.textContent).toContain("ספאם");
   });
 
-  it("URLs section points to mehamakor.online + GitHub externally", () => {
+  it("URLs section points to the canonical site + GitHub externally", () => {
     render(<AdminHelpPage />);
     const hrefs = screen
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
-    expect(hrefs).toContain("https://mehamakor.online");
+    // MEH-453: accept either canonical (.online today, .co.il post-Phase 2).
+    expect(
+      hrefs.some((h) => h && /^https:\/\/mehamakor\.(online|co\.il)$/.test(h)),
+    ).toBe(true);
     expect(hrefs.some((h) => h?.includes("github.com"))).toBe(true);
   });
 

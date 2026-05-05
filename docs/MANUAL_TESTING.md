@@ -589,7 +589,7 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] View page source or `curl -s https://mehamakor.online/producer/1 | grep 'og:'` — `og:title` is the producer name (no "| מהמקור" suffix)
 - [ ] `og:description` is the first 120 chars of producer description
 - [ ] `og:image` is a Cloudinary URL with `w_1200,h_630,c_fill` transform
-- [ ] `og:url` uses `mehamakor.online` (not `.co.il`)
+- [ ] `og:url` matches the configured production canonical (NEXT_PUBLIC_SITE_URL / SITE_URL / fallback per `frontend/app/sitemap.js` 3-tier resolution)
 - [ ] Share a producer link on WhatsApp → preview shows producer photo + name + description snippet
 - [ ] Share a slug URL (e.g. `/havat-hashikma`) → same preview quality
 

@@ -19,6 +19,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
+from app.config import settings
+
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, FavoriteAlert, User
@@ -200,9 +202,12 @@ def fire_alerts(db: Session, producer_id: UUID, alert_type: str, content: AlertC
 
         if alert.whatsapp_opt_in and alert.user and alert.user.phone:
             try:
+                # MEH-453: use canonical from settings.frontend_url. Bonus —
+                # old prefix lacked https://, so WhatsApp link previews were
+                # flaky; settings.frontend_url is fully-qualified.
                 _send_whatsapp_alert(
                     alert.user.phone,
-                    f"{content.title}\n{content.body}\nmehamakor.online{content.url}",
+                    f"{content.title}\n{content.body}\n{settings.frontend_url}{content.url}",
                 )
             except Exception as exc:
                 log.warning("whatsapp alert failed for user %s: %s", alert.user_id, exc)

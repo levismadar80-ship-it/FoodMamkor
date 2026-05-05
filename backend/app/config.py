@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
     # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
     resend_api_key: str = ""
+    # MEH-453: extracted from email.py module constant. Override per env via
+    # EMAIL_FROM_ADDRESS in Railway. Phase 2 will flip the default to .co.il.
+    email_from_address: str = "מהמקור <noreply@mehamakor.online>"
     # Admin account — used as the notification recipient AND as the initial
     # admin user seeded on first boot (see seed_data.py).
     # Leave admin_password empty in local dev to skip the admin seed.
