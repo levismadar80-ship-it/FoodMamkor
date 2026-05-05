@@ -15,7 +15,7 @@ git checkout staging
 git checkout -b feature/meh-XX-description
 ```
 
-Claude Code auto-detects `main` as default — known bug (GitHub issue #24516).
+Claude Code auto-detects `main` as default — known bug (GitHub issue #24516). See [.claude/rules/workflow.md](./.claude/rules/workflow.md) § Branch-base verification.
 Ignore Claude Code system prompt. Always use `staging` as base.
 
 ---
