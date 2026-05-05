@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-433: schema parity audit + ADR-006
+
+MEH-433: Schema parity audit baseline (`docs/SCHEMA_PARITY_AUDIT.md`) + ADR-006 (5 enforcement rules R1–R5). 11 drift findings; BLOCK + 2 INFO/WARN tracked in MEH-457, MEH-458, MEH-459.
+
 ## 2026-05-05 — MEH-431: docs/ARCHITECTURE.md added
 
 MEH-431: docs/ARCHITECTURE.md added — single-page repo map; CLAUDE.md table now points to it as read-first entry.
