@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-408 Phase 2: off-Railway backups (R2 + Railway cron)
+
+`feat(MEH-408)`: added `scripts/backup_production_db.py` (`pg_dump -Fc` → Cloudflare R2 via boto3) + `scripts/restore_from_backup.py` (DR-drill helper with safety guard against production targets) + `Dockerfile.cron` (slim-bookworm + `postgresql-client-18` from PGDG). Cron service to be created via Railway dashboard post-merge with schedule `0 23 * * *` UTC (= 02:00 IST summer / 01:00 IST winter); 7-day retention via R2 lifecycle rule. Architectural pivot from spec: rclone → boto3 (single-language Python stack, smaller image, cleaner dependency graph). E2E verified end-to-end against staging (174 KB dump round-tripped to R2, file `mehamakor_staging_20260506T171542Z.dump` confirmed in Cloudflare dashboard). Final image size 321 MB (320 target accept-bloat for v1; multi-stage build is Phase 2.5 follow-up). Base pinned to `python:3.12-slim-bookworm` after `python:3.12-slim` rolled forward to Debian 13 mid-build. Phase 1 (deny-list) ✅ merged. Phase 3 (`DATABASE_URL_PRODUCTION`/`STAGING` rename) + Phase 4 (DR drill) still pending.
+
 ## 2026-05-06 — MEH-461: tighten rm -rf regex in check-bash-safety.sh
 
 `fix(safety)`: replaced the overly-broad `rm -rf /` pattern (which matched any path starting with `/`, e.g. `/tmp/foo`) with three precise patterns: bare root (`rm -rf /` end-of-line), root glob (`rm -rf /*`), and explicit top-level system dirs (`/etc|/home|/var|/usr|/opt|/root|/boot|/lib|/lib64|/sbin|/bin` with `$`, `/$`, or `/*$` suffix). Legitimate cleanup of `/tmp/*`, `./paths`, and user subdirs no longer false-positive. False-positive surfaced during MEH-408 Phase 1 verification when CC's own `rm -rf /tmp/meh408_test/` cleanup got blocked.
