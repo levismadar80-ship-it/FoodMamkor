@@ -80,7 +80,7 @@ awk -F: '
 
     rest = content
     classes = ""
-    while (match(rest, /(left-|right-|ml-|mr-|pl-|pr-)[0-9a-z]+/)) {
+    while (match(rest, /(left-|right-|ml-|mr-|pl-|pr-)[a-zA-Z0-9./\[\]_-]+/)) {
       if (classes != "") classes = classes ", "
       classes = classes substr(rest, RSTART, RLENGTH)
       rest = substr(rest, RSTART + RLENGTH)
