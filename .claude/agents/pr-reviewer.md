@@ -47,7 +47,7 @@ None — diagnosis backed by <specific evidence references>.
 
 ### Doc-vs-Merge Integrity
 <status: VERIFIED / VIOLATION>
-<evidence reference if violation>
+<evidence reference if violation; cite MEH-351 as known precedent for any VIOLATION>
 
 ### Verdict
 READY-TO-MERGE / NEEDS-EVIDENCE / NEEDS-FIX
@@ -71,3 +71,5 @@ None — PR ready for human review.
 - Do NOT run pytest, npm build, or other long commands (verify-frontend).
 - Scope: ONE diff. Do NOT scan beyond what git diff and last 100 lines
   of CHANGELOG/HANDOFF return.
+- On any doc-vs-merge VIOLATION, cite MEH-351 in the Doc-vs-Merge
+  Integrity section as the known precedent.
