@@ -17,6 +17,11 @@ _DEV_SECRET_SENTINEL = "__ephemeral_dev_secret__"
 
 class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5432/mehamakor"
+    # MEH-408 Phase 3: environment-aware DB URL. pydantic-settings maps these
+    # field names to DATABASE_URL_PRODUCTION and DATABASE_URL_STAGING env vars.
+    # _load_settings() below resolves which one to use based on ENV.
+    database_url_production: str = ""
+    database_url_staging: str = ""
     secret_key: str = _DEV_SECRET_SENTINEL  # overridden by SECRET_KEY / JWT_SECRET_KEY env
     algorithm: str = "HS256"
     # MEH-326: short-TTL access token (15 min) paired with a 14-day refresh
@@ -102,6 +107,21 @@ def _load_settings() -> Settings:
         os.environ["SECRET_KEY"] = os.environ["JWT_SECRET_KEY"]
 
     s = Settings()
+
+    # MEH-408 Phase 3: resolve database_url based on ENV.
+    # Priority: DATABASE_URL_<ENV> → DATABASE_URL (deprecated fallback).
+    _env = s.env.lower()
+    if _env == "production" and s.database_url_production:
+        s.database_url = s.database_url_production
+    elif _env == "staging" and s.database_url_staging:
+        s.database_url = s.database_url_staging
+    elif _env in ("production", "staging"):
+        logger.warning(
+            "DATABASE_URL_%s not set — falling back to DATABASE_URL "
+            "(deprecated; set DATABASE_URL_%s in Railway to suppress this).",
+            _env.upper(), _env.upper(),
+        )
+    # dev / test: s.database_url already carries DATABASE_URL (or localhost default).
 
     if s.secret_key == _DEV_SECRET_SENTINEL:
         if s.env.lower() == "production":
