@@ -1211,3 +1211,60 @@ class ReviewsPage(BaseModel):
     pages: int
 
     model_config = {"from_attributes": True}
+
+
+# --- Admin (admin.py + admin_extra.py) ---
+# MEH-460 Pkg 1: relocated from routers/admin.py + routers/admin_extra.py
+# per ADR-006 R1. Pure relocation — fields, validators, model_config
+# preserved verbatim. CategoryOut excluded — it was byte-identical to
+# the public CategoryOut in the Category section above; admin_extra.py
+# now imports it from there instead of redefining.
+
+# Admin: Moderation
+class RemoveListingBody(BaseModel):
+    reason: str | None = None
+
+
+class StoryCardUploadRequest(BaseModel):
+    image_data: str  # base64-encoded JPEG data URI: "data:image/jpeg;base64,..."
+
+
+# Admin: Users
+class UserAdminOut(BaseModel):
+    id: UUID
+    email: str
+    name: str
+    city: str | None = None
+    phone: str | None = None
+    role: str
+    is_blocked: bool = False
+    producer_id: UUID | None = None
+    favorites_count: int = 0
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserRoleUpdate(BaseModel):
+    role: str = Field(..., pattern="^(consumer|producer|admin)$")
+
+
+# Admin: Categories
+class CategoryIn(BaseModel):
+    name: str
+    emoji: str | None = None
+
+
+# Admin: Static Pages
+class StaticPageOut(BaseModel):
+    slug: str
+    title: str
+    body: str
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class StaticPageUpdate(BaseModel):
+    title: str
+    body: str
