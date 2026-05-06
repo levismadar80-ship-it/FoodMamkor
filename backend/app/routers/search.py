@@ -6,20 +6,21 @@ keystroke without abuse.
 
 No full-text index yet — plain ILIKE is fine at this scale (~hundreds of
 producers). If this grows past ~10k rows we'd swap to pg_trgm GIN.
+
+MEH-460 Pkg 3: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 import time
-from uuid import UUID
 
 import structlog
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
 from sqlalchemy import or_, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
+from app.schemas.schemas import CategoryHit, ProducerHit, ProductHit, SearchOut
 
 logger = structlog.get_logger(__name__)
 
@@ -28,38 +29,6 @@ _trending_cache: dict = {"data": None, "ts": 0.0}
 _TRENDING_TTL = 3600.0
 
 router = APIRouter(tags=["search"])
-
-
-class ProducerHit(BaseModel):
-    id: UUID
-    name: str
-    slug: str | None = None
-    city: str | None = None
-    avg_rating: float = 0
-    reviews_count: int = 0
-    image: str | None = None
-
-
-class ProductHit(BaseModel):
-    id: UUID
-    name: str
-    description: str | None = None
-    producer_id: UUID
-    producer_name: str
-    producer_slug: str | None = None
-
-
-class CategoryHit(BaseModel):
-    id: int
-    name: str
-    emoji: str | None = None
-
-
-class SearchOut(BaseModel):
-    producers: list[ProducerHit] = []
-    products: list[ProductHit] = []
-    cities: list[str] = []
-    categories: list[CategoryHit] = []
 
 
 def _empty() -> SearchOut:
