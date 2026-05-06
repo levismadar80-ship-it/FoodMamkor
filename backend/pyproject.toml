@@ -6,7 +6,7 @@ dependencies = [
     "fastapi==0.120.1",
     "uvicorn[standard]==0.30.6",
     "sqlalchemy==2.0.35",
-    "psycopg2-binary==2.9.12",
+    "psycopg2-binary==2.9.9",
     "alembic==1.13.2",
     "joserfc==1.6.4",
     "passlib[bcrypt]==1.7.4",
