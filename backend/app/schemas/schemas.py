@@ -44,10 +44,13 @@ class ProducerRegister(BaseModel):
     # router validates and raises 422 when they are absent in that case.
     email: EmailStr | None = None
     name: str | None = None
-    # MEH-248 — when a password is supplied (new-registration path), it
-    # must meet the same 8-char minimum as /register. The None case
-    # (authenticated user upgrading to producer, MEH-143) skips the check.
-    password: str | None = Field(default=None, min_length=8, max_length=200)
+    # MEH-457 — closes the MEH-306 sibling gap. PasswordField enforces
+    # the 12-char floor + whitespace strip when a password is supplied
+    # (new-registration path). The None case (authenticated user
+    # upgrading to producer, MEH-143) skips validation entirely. The
+    # full policy (HIBP, deny-list) runs in the handler via
+    # app.services.password_policy.validate_password.
+    password: PasswordField | None = None
     # Producer details
     producer_name: str
     description: str | None = None
