@@ -2,12 +2,13 @@
 users management, content (categories + static pages), analytics, settings.
 
 Lives in a separate file from admin.py to keep things readable.
+
+MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,14 @@ from app.models import (
     User,
 )
 from app.models.models import KashrutBadgeRequest
+from app.schemas.schemas import (
+    CategoryIn,
+    CategoryOut,
+    StaticPageOut,
+    StaticPageUpdate,
+    UserAdminOut,
+    UserRoleUpdate,
+)
 from app.services.analytics import server_health
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
@@ -37,25 +46,6 @@ SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
 # ============================================================
 # USERS
 # ============================================================
-
-
-class UserAdminOut(BaseModel):
-    id: UUID
-    email: str
-    name: str
-    city: str | None = None
-    phone: str | None = None
-    role: str
-    is_blocked: bool = False
-    producer_id: UUID | None = None
-    favorites_count: int = 0
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class UserRoleUpdate(BaseModel):
-    role: str = Field(..., pattern="^(consumer|producer|admin)$")
 
 
 @router.get("/users", response_model=list[UserAdminOut])
@@ -152,19 +142,6 @@ def user_favorites(
 # ============================================================
 
 
-class CategoryIn(BaseModel):
-    name: str
-    emoji: str | None = None
-
-
-class CategoryOut(BaseModel):
-    id: int
-    name: str
-    emoji: str | None = None
-
-    model_config = {"from_attributes": True}
-
-
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories_admin(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.id).all()
@@ -214,20 +191,6 @@ def delete_category(
     db.delete(cat)
     db.commit()
     return {"detail": "Category deleted"}
-
-
-class StaticPageOut(BaseModel):
-    slug: str
-    title: str
-    body: str
-    updated_at: datetime | None = None
-
-    model_config = {"from_attributes": True}
-
-
-class StaticPageUpdate(BaseModel):
-    title: str
-    body: str
 
 
 @router.get("/pages/{slug}", response_model=StaticPageOut)

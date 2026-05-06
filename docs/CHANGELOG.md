@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-460 Pkg 1: relocate admin.py + admin_extra.py schemas
+
+`refactor(MEH-460-pkg-1)`: moved 7 Pydantic schemas from `routers/admin.py` + `routers/admin_extra.py` to `backend/app/schemas/schemas.py` (new `# --- Admin ---` section at EOF). Pure relocation — fields, validators, `model_config` preserved verbatim. **Bonus dedupe:** `CategoryOut` in `admin_extra.py:160` was byte-identical to public `CategoryOut` in `schemas.py:117`; deleted duplicate, imported from canonical location instead. **Bonus lint cleanup on admin.py:** moved `logger = logging.getLogger(__name__)` from line 9 (BEFORE imports) to post-imports — was triggering E402 on 8 subsequent imports; removed 3 unused imports (`ProducerImportResult`, `ProducerImportPreviewRow`, `Category` — all F401, all pre-existing on staging). Removes both `admin.py` and `admin_extra.py` ALLOWLIST rows from `tests/test_schema_location.py` (now 0 BaseModel subclasses each). 4 packages remaining → 20 classes.
+
 ## 2026-05-06 — MEH-461: tighten rm -rf regex in check-bash-safety.sh
 
 `fix(safety)`: replaced the overly-broad `rm -rf /` pattern (which matched any path starting with `/`, e.g. `/tmp/foo`) with three precise patterns: bare root (`rm -rf /` end-of-line), root glob (`rm -rf /*`), and explicit top-level system dirs (`/etc|/home|/var|/usr|/opt|/root|/boot|/lib|/lib64|/sbin|/bin` with `$`, `/$`, or `/*$` suffix). Legitimate cleanup of `/tmp/*`, `./paths`, and user subdirs no longer false-positive. False-positive surfaced during MEH-408 Phase 1 verification when CC's own `rm -rf /tmp/meh408_test/` cleanup got blocked.

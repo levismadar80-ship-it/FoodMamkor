@@ -5,24 +5,23 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
-
-logger = logging.getLogger(__name__)
-from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
 from app.services.email import send_email
 from app.database import get_db
-from app.models import Category, DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
+from app.models import DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
 from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerDetailOut,
-    ProducerImportPreviewRow,
-    ProducerImportResult,
     ProducerUpdate,
+    RemoveListingBody,
+    StoryCardUploadRequest,
 )
 from app.slug_utils import RESERVED_SLUGS
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -426,10 +425,6 @@ def approve_flagged_listing(
     return {"detail": "Listing approved", "moderation_status": hp.moderation_status}
 
 
-class RemoveListingBody(BaseModel):
-    reason: str | None = None
-
-
 @router.post("/home-products/{product_id}/remove")
 def remove_flagged_listing(
     product_id: UUID,
@@ -477,10 +472,6 @@ def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Sess
 
 
 # --- MEH-53: Instagram story card ---
-
-class StoryCardUploadRequest(BaseModel):
-    image_data: str  # base64-encoded JPEG data URI: "data:image/jpeg;base64,..."
-
 
 @router.post("/producers/{producer_id}/story-card")
 def upload_story_card(
