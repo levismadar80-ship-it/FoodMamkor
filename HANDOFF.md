@@ -1,7 +1,40 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-408 Phase 2 — R2 backups + Dockerfile.cron, ready for review; MEH-373 — verify-frontend approximation drift closed via externalization)
+> Last updated: 2026-05-07 (MEH-367 — agent runtime budgets: i18n-scanner scope-aware glob + verify-frontend --skip-build, branch ready for PR)
+
+### MEH-367 — agent runtime budgets (branch ready for PR)
+
+Branch: `feature/meh-367-agent-runtime-budgets` off `origin/staging` at
+`a382f49` (MEH-373 squash). Two commits:
+
+- `7d9f7b7` `feat(MEH-367): i18n-scanner scope-aware glob + T4 eval`
+  — step 1 conditional: name a file/folder in the prompt → glob ONLY
+  that target; default unchanged. Runtime budget comment added (default
+  <60s, narrowed <30s). T4 appended.
+- `fdc2827` `feat(MEH-367): verify-frontend --skip-build flag + T7 eval`
+  — `--skip-build` developer fast-path skips `npm run build` (step 1)
+  and emits `Build: SKIPPED (--skip-build flag)`. Lint (step 2) + RTL
+  scan (step 3, MEH-373's `rtl-scan.sh`) still run. Verdict widened
+  from `Build=PASS` to `(Build=PASS OR Build=SKIPPED)`; all other
+  predicates verbatim. Runtime budget comment added (CI/Linux <60s,
+  Windows <300s, --skip-build <30s). T7 appended (T5/T6/T_adj_6
+  occupied — T7 is next slot).
+
+**Verification limits acknowledged in PR:** no automated eval runner
+exists for `.claude/agents/*.eval.md` — they are spec documents
+(prompt + expected_assertion). Spawning each subagent against fixture
+preconditions (T1–T4 / T1–T7) would burn real model budget and several
+fixtures (TestI18n.jsx, TestCard.jsx, mid-refactor allowlist moves)
+don't exist on this clean branch. Spec correctness verified by diff
+inspection; runtime budgets documented but not measured in this
+session. Windows local timing is documentation-only on this Linux
+sandbox.
+
+**Out of scope (per prompt):** `rtl-scan.sh` (MEH-373 territory),
+`code-simplifier.md`, `.claude/hooks/` (MEH-365), `rtl-allowlist.txt`
+(MEH-365), frontend/ + backend/ fixtures.
+
 
 ### MEH-408 Phase 2 — R2 backups + Dockerfile.cron (branch ready for review)
 
