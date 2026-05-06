@@ -1310,11 +1310,15 @@ Full DR drill checklist (run end-to-end at least once before MEH-408 closes):
 - **UTC cron + DST shift.** Schedule `0 23 * * *` UTC = 02:00 IST in summer
   and 01:00 IST in winter. Both are quiet hours; not worth implementing
   per-region cron logic for an hour drift.
-- **Image size 321 MB.** Initial target was 250 MB; PG 18 client + boto3
-  + transitive deps put it at 321. Acceptable for v1 — Railway does not
-  bill on image size, only build minutes (one-time per Dockerfile change).
-  Phase 2.5 follow-up: multi-stage build to drop apt build deps from the
-  runtime layer.
+- **Image size 250 MB (down from 321 MB, MEH-468).** Multi-stage build:
+  builder installs PGDG `postgresql-client-18` and is discarded; runtime
+  copies only `pg_dump` + `pg_restore` + `libpq.so.5*`, plus Kerberos/LDAP
+  auth-support libs (`libgssapi-krb5-2` + `libldap-2.5-0`) from Debian main.
+  Build-time `pg_dump --version` smoke test catches missing `.so` at build
+  time rather than Railway runtime. 250 MB = `python:3.12-slim-bookworm`
+  base (~130 MB) + Kerberos/LDAP stack (~25 MB) + boto3 (~25 MB); the
+  MEH-408 <250 MB target is met. Stretch goal of 180–220 MB not reached
+  — distroless/alpine base deferred to a future phase.
 - **Two `DATABASE_URL` forms.** The Railway-internal host
   (`postgres.railway.internal`) only resolves inside Railway's private
   network — it is the value the cron service uses. The public proxy host
