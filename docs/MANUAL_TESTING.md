@@ -3,6 +3,21 @@
 
 ---
 
+## Producer status labels (MEH-294)
+
+> Render-only Hebrew labels for `producer.status`. DB values unchanged (intentional per MEH-56). Source of truth: `frontend/lib/producer-status.js`.
+
+- [ ] Admin chip — `pending_whatsapp` — איך לבדוק: `/admin/producers`, סנני לפי `pending_whatsapp`; **תוצאה מצופה:** chip קורא "ממתינה לאימות WhatsApp" עם רקע `bg-orange-100`.
+- [ ] Admin chip — `pending` — **תוצאה מצופה:** "ממתינה לאישור האדמין", רקע `bg-yellow-100`.
+- [ ] Admin chip — `approved` — **תוצאה מצופה:** "מאושר", רקע `bg-primary` (לבן טקסט).
+- [ ] Admin chip — `rejected` — **תוצאה מצופה:** "נדחה", רקע `bg-red-100`.
+- [ ] Admin chip — `inactive` — **תוצאה מצופה:** "לא פעילה", רקע `bg-gray-200`.
+- [ ] Admin activity feed — איך לבדוק: `/admin` → סקציית "פעילות אחרונה"; **תוצאה מצופה:** ליד שם בית העסק מופיע `(label מתורגם)` ולא קוד גולמי.
+- [ ] Dashboard companion copy — איך לבדוק: התחברי כיוצרת בסטטוס `pending_whatsapp` → `/producer/dashboard`; **תוצאה מצופה:** מתחת לכפתור "השלימי פרופיל ←" מופיעה שורה "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"; "עריכת פרופיל" הוא link ל-`/settings`.
+- [ ] Unknown status fallback — איך לבדוק (סנכרונית): אם ה-DB מחזיר קוד שלא במפה; **תוצאה מצופה:** chip מציג את הקוד הגולמי (לא `undefined`, לא קריסה).
+
+---
+
 ## Password policy wire-up (MEH-306 sub-A backend)
 
 > Backend behavior only — UI checklist + Hebrew error rendering ship with sub-B.
