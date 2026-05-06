@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-303: mask phone number in logs (defense-in-depth)
+
+`feat(backend)`: added `mask_phone()` PII helper at `backend/app/utils/pii.py` — returns `<missing>` for `None`/empty, `***` for fewer than 4 digits, otherwise `***<last4>` after stripping non-digits (so `0501234567`, `+972501234567`, and `050-123-4567` all yield `***4567`). Wired into the only `logger` call site that interpolated raw `{phone}`: `backend/app/services/auth_notifications.py:62` (`[WHATSAPP] Producer welcome FAILED ...`). 6 unit tests at `tests/test_pii.py` cover None/empty/short/Israeli mobile/international/separators. Post-edit grep `grep -rn 'logger\.' backend/app/ | grep -E '\{phone[^}]*\}'` returns 0 hits. `rating_dispatcher.py:95` matched the broader `phone+logger` grep but only mentions phone in a literal reason string (`"buyer has no phone"`) — no PII interpolation, intentionally skipped. Closes MEH-303; MEH-287 follow-up F7 (PII-in-logs) resolved. Helper is generic — future PII fixes (other phone-in-log surfaces, masked email if scope expands) reuse it.
+
 ## 2026-05-06 — MEH-302: dedupe step-3 success screen copy when whatsapp_sent=false
 
 `feat(register)`: rewrote the yellow banner on `/register/producer` step 3 (whatsapp_sent=false branch only) as **diagnostic prose** instead of a redundant CTA. Old banner had "לא קיבלת הודעת WhatsApp?" + a button routing to the dashboard — duplicating the paragraph above ("הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד") and the primary "לדשבורד שלי" button below. New copy: "לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד." Plain text, no nested button — banner now adds a troubleshoot suggestion + fallback mention rather than a third CTA. Yellow `bg-amber-50` styling preserved. Bonus RTL fix in the same block: `text-right` → `text-end` (logical property per `.claude/rules/rtl.md`). Paragraph + whatsapp_sent=true branch + shared "מה הלאה?" card untouched. Closes MEH-302; resolves MEH-287 follow-up F6.
