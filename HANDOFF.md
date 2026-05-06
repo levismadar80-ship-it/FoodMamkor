@@ -1,7 +1,39 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-408 Phase 3 DATABASE_URL separation merged; MEH-367 agent runtime budgets merged)
+> Last updated: 2026-05-07 (MEH-408 Phase 3 DATABASE_URL separation merged; MEH-367 agent runtime budgets merged; MEH-385 pr-reviewer subagent open for review)
+
+### MEH-385 — pr-reviewer subagent (PR open, off staging)
+
+Branch: `feature/meh-385-pr-reviewer-subagent` (NOT the harness-assigned
+`claude/pr-reviewer-subagent-UVQp9`, which was branched off main; abandoned
+per CLAUDE.md rule 2). Two new files: `.claude/agents/pr-reviewer.md` +
+`.claude/agents/pr-reviewer.eval.md`. Diagnosis review (Skeptic Mode) —
+sibling to code-simplifier (style), verify-frontend (build), i18n-scanner.
+
+**Build pattern (eval-driven, MEH-345 precedent):** base rate 0/3 strict
+→ initial agent rate 1/3 (surfaced spec-vs-rules tensions T1/T2) → eval
+refinement (real Linear ID + test-file in diff) → 2/3 (T3 reproducibly
+skipped MEH-351 citation) → one-line citation hardening (symmetric with
+MEH-331 inline) → final 3/3 strict. Real-world: E1 PR #512 caught a
+`file-preservation` rule 4 violation; E2 MEH-351 retroactive synthetic
+returned NEEDS-FIX + VIOLATION + cited MEH-351 twice.
+
+**Decisions made this session:**
+- Agent body uses single-line bash only (MEH-373 lesson — agents
+  approximate complex bash poorly).
+- model: sonnet (matches code-simplifier; Opus reserved for adversarial
+  review).
+- Scope: ONE diff. No GitHub MCP integration (out of scope, future).
+- No auto-merge / auto-comment behavior (human-in-the-loop).
+- Symmetric precedent citation pattern: MEH-331 inline in Step 4 (live
+  verification), MEH-351 in Step 6 + Rules (doc-vs-merge VIOLATION).
+  Future precedents (MEH-XXX) follow the same symmetric placement.
+
+**CC environmental note:** `.claude/agents/*` loaded at session start.
+Step D + E ran via `general-purpose` with the full agent body inlined as
+operating instructions — equivalent behavior, ships now without waiting
+for a session restart.
 
 ### MEH-367 — agent runtime budgets (MERGED — squash `19ab4dd`, PR #509)
 
