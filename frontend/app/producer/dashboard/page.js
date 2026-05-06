@@ -6,6 +6,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getUpcomingHoliday } from "@/lib/holidays";
+import { PENDING_WHATSAPP_COMPANION_COPY } from "@/lib/producer-status";
 
 function VanityLinkCard({ slug }) {
   const url = `https://mehamakor.online/p/${slug}`;
@@ -170,6 +171,12 @@ export default function ProducerDashboardPage() {
           <Link href="/settings" className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition">
             השלימי פרופיל ←
           </Link>
+          <p className="text-xs text-site-muted mt-3">
+            {PENDING_WHATSAPP_COMPANION_COPY.split(" — ")[0]} —{" "}
+            <Link href="/settings" className="text-primary hover:underline">
+              עריכת פרופיל
+            </Link>
+          </p>
         </div>
       )}
 

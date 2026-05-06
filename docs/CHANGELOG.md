@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-294: Hebrew labels for producer status codes
+
+- MEH-294: Hebrew labels for producer status codes (PR title `feature/meh-294-status-labels`). New `frontend/lib/producer-status.js` centralises label + color tokens with raw-status fallback; `StatusBadge` in `frontend/app/admin/producers/AdminProducersTable.jsx` and admin activity feed in `frontend/app/admin/page.js:197` now use the central getter; `pending_whatsapp` dashboard banner gets the locked fallback companion copy with `/settings` link. DB values unchanged per MEH-56. `inactive → "לא פעילה"` (warm + factual, not punitive).
+
 ## 2026-05-06 — MEH-303: mask phone number in logs (defense-in-depth)
 
 `feat(backend)`: added `mask_phone()` PII helper at `backend/app/utils/pii.py` — returns `<missing>` for `None`/empty, `***` for fewer than 4 digits, otherwise `***<last4>` after stripping non-digits (so `0501234567`, `+972501234567`, and `050-123-4567` all yield `***4567`). Wired into the only `logger` call site that interpolated raw `{phone}`: `backend/app/services/auth_notifications.py:62` (`[WHATSAPP] Producer welcome FAILED ...`). 6 unit tests at `tests/test_pii.py` cover None/empty/short/Israeli mobile/international/separators. Post-edit grep `grep -rn 'logger\.' backend/app/ | grep -E '\{phone[^}]*\}'` returns 0 hits. `rating_dispatcher.py:95` matched the broader `phone+logger` grep but only mentions phone in a literal reason string (`"buyer has no phone"`) — no PII interpolation, intentionally skipped. Closes MEH-303; MEH-287 follow-up F7 (PII-in-logs) resolved. Helper is generic — future PII fixes (other phone-in-log surfaces, masked email if scope expands) reuse it.
