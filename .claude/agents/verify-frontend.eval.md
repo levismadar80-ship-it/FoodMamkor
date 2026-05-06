@@ -161,3 +161,20 @@ expected_assertion: RTL violations outside allowlist: 1. Output references
   Verdict NEEDS-FIX. A naive whole-buffer check would have reported 0 — this
   case specifically tests per-violation window logic (regression test for the
   MEH-365 buffer-grouping fix carried over from PR #440 archive).
+
+---
+
+## T7 — --skip-build fast path (MEH-367)
+
+prompt: Run the frontend verification suite on the current branch with the
+  --skip-build flag. Build step should be skipped entirely (no `npm run build`
+  invocation); lint and RTL scan should still run normally.
+
+expected_assertion: Build section reads exactly
+  `Build: SKIPPED (--skip-build flag)` (no PASS, no FAIL, no error line).
+  Lint section is populated as normal (PASS or FAIL with detail). RTL section
+  is populated as normal (count line, or one of the two loud-failure messages
+  if rtl-allowlist.txt or scan dir is missing). Agent runtime < 30s.
+  Verdict computed with Build=SKIPPED counting as not-failing: READY-FOR-PR
+  iff Lint=PASS AND RTL count=0 AND no RTL loud-failure; otherwise NEEDS-FIX.
+  No files are modified.
