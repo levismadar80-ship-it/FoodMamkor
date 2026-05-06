@@ -3,37 +3,53 @@
 > Read this before starting any work.
 > Last updated: 2026-05-07 (MEH-408 Phase 3 DATABASE_URL separation merged; MEH-367 agent runtime budgets merged)
 
-### MEH-367 — agent runtime budgets (branch ready for PR)
+### MEH-367 — agent runtime budgets (MERGED — squash `19ab4dd`, PR #509)
 
-Branch: `feature/meh-367-agent-runtime-budgets` off `origin/staging` at
-`a382f49` (MEH-373 squash). Two commits:
+Shipped: i18n-scanner scope-aware glob + verify-frontend `--skip-build`
+flag. Three commits squashed into staging at `19ab4dd`. CI 12/12 green.
+5/5 functional tests run in Linux sandbox (Test 1, Test 3a both
+i18n-scanner; Test 2, Test 3b verify-frontend).
 
-- `7d9f7b7` `feat(MEH-367): i18n-scanner scope-aware glob + T4 eval`
-  — step 1 conditional: name a file/folder in the prompt → glob ONLY
-  that target; default unchanged. Runtime budget comment added (default
-  <60s, narrowed <30s). T4 appended.
-- `fdc2827` `feat(MEH-367): verify-frontend --skip-build flag + T7 eval`
-  — `--skip-build` developer fast-path skips `npm run build` (step 1)
-  and emits `Build: SKIPPED (--skip-build flag)`. Lint (step 2) + RTL
-  scan (step 3, MEH-373's `rtl-scan.sh`) still run. Verdict widened
-  from `Build=PASS` to `(Build=PASS OR Build=SKIPPED)`; all other
-  predicates verbatim. Runtime budget comment added (CI/Linux <60s,
-  Windows <300s, --skip-build <30s). T7 appended (T5/T6/T_adj_6
-  occupied — T7 is next slot).
+**Test 2 partial — corrected analysis:** Test 2 validated flag
+detection + `Build: SKIPPED (--skip-build flag)` literal + RTL scan
+independence + Lint still runs. Test 2 did NOT validate the verdict
+positive path (Build=SKIPPED + Lint=PASS + RTL=0 → READY-FOR-PR)
+because sandbox lint was broken (`eslint-config-next` missing). The
+NEEDS-FIX outcome from Lint=FAIL alone does not distinguish
+PASS-equivalent from FAIL-equivalent verdict semantics for
+Build=SKIPPED.
 
-**Verification limits acknowledged in PR:** no automated eval runner
-exists for `.claude/agents/*.eval.md` — they are spec documents
-(prompt + expected_assertion). Spawning each subagent against fixture
-preconditions (T1–T4 / T1–T7) would burn real model budget and several
-fixtures (TestI18n.jsx, TestCard.jsx, mid-refactor allowlist moves)
-don't exist on this clean branch. Spec correctness verified by diff
-inspection; runtime budgets documented but not measured in this
-session. Windows local timing is documentation-only on this Linux
-sandbox.
+#### Post-merge gate (Smadar, on Windows local)
 
-**Out of scope (per prompt):** `rtl-scan.sh` (MEH-373 territory),
-`code-simplifier.md`, `.claude/hooks/` (MEH-365), `rtl-allowlist.txt`
-(MEH-365), frontend/ + backend/ fixtures.
+**MEH-367 cross-env validation:** spawn verify-frontend with
+`--skip-build` on a clean tree (no fixture, lint working in local env):
+
+```
+Agent(subagent_type="verify-frontend",
+      prompt="Run the frontend verification suite on the current branch with the --skip-build flag.")
+```
+
+Expected:
+- Build: `SKIPPED (--skip-build flag)`
+- Lint: PASS
+- RTL violations outside allowlist: baseline (whatever staging shows clean)
+- Verdict: **READY-FOR-PR**
+
+**If verdict ≠ READY-FOR-PR → reopen MEH-367.** The verdict-line OR
+clause `(Build=PASS OR Build=SKIPPED)` may not be parsing correctly
+under load — i.e., the model is reading "READY-FOR-PR only when
+Build=PASS" and ignoring the OR widening.
+
+Same pattern as MEH-373's Windows post-merge T3 ×5 validation
+(externalization fix verified by Linux sandbox; Windows cross-env
+re-run was the merge gate).
+
+**Out of scope notes (preserved from PR):** `rtl-scan.sh` (MEH-373
+territory), `code-simplifier.md`, `.claude/hooks/` (MEH-365),
+`rtl-allowlist.txt` (MEH-365), frontend/ + backend/ fixtures —
+none of these were touched. Eval-fixture gap (TestCard.jsx /
+TestI18n.jsx don't exist on staging) surfaced as a follow-up in
+the PR body but no ticket filed yet — Smadar's call.
 
 ### MEH-408 Phase 2 — R2 backups + Dockerfile.cron (branch ready for review)
 
