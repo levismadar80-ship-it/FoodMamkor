@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Cow, Leaf, Package, Seal, Truck } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
+import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -13,15 +14,9 @@ const ICON_SIZE_SM = 16;
 const TABLE_COLUMN_COUNT = 6;
 
 function StatusBadge({ status }) {
-  const map = {
-    approved: { label: "פעיל", cls: "bg-primary text-white" },
-    pending: { label: "ממתין", cls: "bg-yellow-100 text-yellow-800" },
-    pending_whatsapp: { label: "ממתין — וואטסאפ", cls: "bg-orange-100 text-orange-800" },
-    rejected: { label: "נדחה", cls: "bg-red-100 text-red-700" },
-    inactive: { label: "מושהה", cls: "bg-gray-200 text-gray-700" },
-  };
-  const m = map[status] || { label: status, cls: "bg-gray-100" };
-  return <span className={`text-xs px-2 py-1 rounded-full ${m.cls}`}>{m.label}</span>;
+  const label = getProducerStatusLabel(status);
+  const cls = getProducerStatusColor(status);
+  return <span className={`text-xs px-2 py-1 rounded-full ${cls}`}>{label}</span>;
 }
 
 function CompletenessBadge({ missing, priority }) {

@@ -1,7 +1,43 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-303 mask phone in logs — PR open; MEH-359 merged b17f0d7; MEH-302 merged 4c919c9; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-06 (MEH-294 Hebrew status labels — PR #515; MEH-303 mask phone in logs merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### MEH-294 — Hebrew labels for producer status codes (PR #515)
+
+**Branch (PR title):** `feature/meh-294-status-labels` off staging.
+**Push target (harness-pinned):** `claude/meh-294-status-labels-YXExf`.
+**Status:** PR #515 — branch was reset to `origin/staging` tip and changes re-applied because the original base (`e081366`, May 1) was ~80 commits stale; PR #467 had relocated `StatusBadge` from `admin/producers/page.js` to `AdminProducersTable.jsx`. Awaiting Smadar mobile QA before merge.
+
+**What shipped (frontend-only, render layer):**
+- New `frontend/lib/producer-status.js` — label map + color tokens + raw-status fallback. SEPARATOR CONTRACT documented inline (`" — "` em-dash with spaces) for the dashboard JSX split.
+- `frontend/app/admin/producers/AdminProducersTable.jsx` — `StatusBadge` now imports `getProducerStatusLabel` + `getProducerStatusColor` (replaces inline 5-entry map). Same JSX shape; color cls strings preserved verbatim.
+- `frontend/app/admin/page.js:197` — raw `({a.status})` → `({getProducerStatusLabel(a.status)})` in the recent-activity feed.
+- `frontend/app/producer/dashboard/page.js` — `pending_whatsapp` banner gets append-only fallback companion copy `"לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל"` (locked variant per Smadar 2026-05-07; MEH-287 / MEH-319 not yet closed). "עריכת פרופיל" is a `<Link>` to `/settings`.
+
+**Decision locked:** `inactive → "לא פעילה"` (NOT "מושעה"). Reasoning: `rejected` already covers admin punishment; `inactive` (admin.py:215 toggle) is neutral pause; brand voice = warm + factual; "מושעה" reserved for future violations-only state.
+
+**DB unchanged.** Per MEH-56, raw codes (`pending_whatsapp` / `pending` / `approved` / `rejected` / `inactive`) stay in DB. This PR wraps **rendering only**.
+
+**Out of scope (intentional):**
+- No `suspended` in the central map — DB only emits `inactive` (verified `backend/app/models/models.py:62`, `backend/app/routers/admin.py:87,215`).
+- Banner blocks at `producer/dashboard/page.js:134,149` and `settings/page.jsx:725-799` — conditional behavior only, no label render, no wrap.
+- `frontend/lib/admin-producers-export.js:20` — CSV export keeps raw `p.status`. Decision: CSV is data not UI; raw enums survive round-trip imports + match Linear/Asana/Jira export pattern. Separate MEH if admin-facing CSV translation is wanted later.
+- `settings/page.jsx:735` `status === "suspended"` is dead code today (DB never sends it). Backlog candidate, not MEH-294.
+
+### Tickets closed
+- MEH-294 — Hebrew producer status labels — Done
+
+### Files touched
+- NEW `frontend/lib/producer-status.js`
+- `frontend/app/admin/producers/AdminProducersTable.jsx` (StatusBadge wrap)
+- `frontend/app/admin/page.js` (activity-feed wrap)
+- `frontend/app/producer/dashboard/page.js` (companion copy append)
+- `docs/MANUAL_TESTING.md` (new section)
+- `docs/CHANGELOG.md` (one-line entry)
+- `HANDOFF.md` (this entry)
+
+---
 
 ### MEH-303 — mask phone in logger output (PR open)
 

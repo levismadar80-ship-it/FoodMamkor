@@ -13,6 +13,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { getProducerStatusLabel } from "@/lib/producer-status";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -194,7 +195,7 @@ export default function AdminDashboard() {
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}
                 </Link>
-                <span className="text-xs text-text-secondary">({a.status})</span>
+                <span className="text-xs text-text-secondary">({getProducerStatusLabel(a.status)})</span>
               </div>
               <span className="text-xs text-text-secondary">
                 {a.created_at ? new Date(a.created_at).toLocaleDateString("he-IL") : ""}
