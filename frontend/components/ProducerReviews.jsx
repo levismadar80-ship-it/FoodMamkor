@@ -27,7 +27,6 @@ export default function ProducerReviews({ producerId }) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [stars, setStars] = useState(0);
-  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -82,7 +81,6 @@ export default function ProducerReviews({ producerId }) {
     const mine = reviews.find((r) => r.user_id === user.id);
     if (mine) {
       setStars(mine.stars);
-      setTitle(mine.title || "");
       setBody(mine.body || "");
       // If they already have a review they passed the gate already
       setHasClickedWa(true);
@@ -100,7 +98,6 @@ export default function ProducerReviews({ producerId }) {
     try {
       const r = await api.post(`/producers/${producerId}/reviews`, {
         stars,
-        title: title || null,
         body: body || null,
       });
       setReviews((prev) => {
@@ -138,19 +135,6 @@ export default function ProducerReviews({ producerId }) {
             <div>
               <label className="block text-sm text-site-text mb-2">דירוג</label>
               <StarSelector value={stars} onChange={setStars} />
-            </div>
-            <div>
-              <label htmlFor="review-title" className="block text-sm text-site-text mb-1">
-                כותרת קצרה
-              </label>
-              <input
-                id="review-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={200}
-                className="w-full border border-border rounded-[8px] px-3 py-2 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
-                placeholder="לדוגמה: מוצר מעולה, מוכרת מקסימה"
-              />
             </div>
             <div>
               <label htmlFor="review-body" className="block text-sm text-site-text mb-1">
@@ -220,9 +204,6 @@ export default function ProducerReviews({ producerId }) {
                     )}
                   </span>
                 </div>
-                {review.title && (
-                  <h4 className="font-headline font-bold text-site-text mb-1">{review.title}</h4>
-                )}
                 {review.body && (
                   <p className="text-site-text/85 text-sm leading-relaxed whitespace-pre-line">
                     {review.body}
