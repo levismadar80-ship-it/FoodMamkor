@@ -3,6 +3,11 @@
 > Read this before starting any work.
 > Last updated: 2026-05-06 (MEH-408 Phase 1 — staging conflict resolved on PR #485)
 
+## 2026-05-06 — MEH-454 Phase 2 — canonical domain migration to mehamakor.co.il
+Status: mehamakor.co.il live. Resend verified. Env vars updated (Vercel + Railway).
+mehamakor.online → 301 redirect (pending Vercel config).
+Phase 3 (code envify): MEH-454 open.
+
 ### MEH-408 Phase 1 (PR #485) — merged
 
 Phase 1 of production safety hardening complete:

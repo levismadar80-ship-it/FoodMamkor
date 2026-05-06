@@ -10,4 +10,4 @@ Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 
-Sitemap: https://mehamakor.online/sitemap.xml
+Sitemap: https://mehamakor.co.il/sitemap.xml

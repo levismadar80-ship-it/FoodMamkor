@@ -13,7 +13,7 @@ never from `main`.
 
 | Branch | Role | Deploys to |
 |---|---|---|
-| `main` | Production | mehamakor.online + Railway prod env |
+| `main` | Production | mehamakor.co.il + Railway prod env |
 | `staging` | Pre-production testing | staging.mehamakor.online + Railway staging env |
 | `feature/*` | New work | Vercel preview URL only |
 
