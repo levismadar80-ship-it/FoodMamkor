@@ -905,11 +905,31 @@ FRONTEND_URL=https://mehamakor.online
 > Twilio / SMTP / Apple keys are optional for first launch — leave blank and
 > the matching features degrade gracefully.
 
-**Linking DATABASE_URL properly:**
+**Linking DATABASE_URL_PRODUCTION properly (MEH-408 Phase 3):**
+
+The backend now reads `DATABASE_URL_PRODUCTION` (production) and
+`DATABASE_URL_STAGING` (staging) instead of the bare `DATABASE_URL`. The old
+`DATABASE_URL` name is still accepted as a deprecated fallback (a warning is
+logged at startup if the env-specific var is missing).
+
+To link the DB reference for production:
 1. Click **+ New Variable** → **Add Reference**.
 2. Pick `mehamakor-db` → `DATABASE_URL`. Railway will template it as
    `${{mehamakor-db.DATABASE_URL}}`.
-3. This way, if the DB rotates credentials, the backend picks them up.
+3. **Rename the key** from `DATABASE_URL` to `DATABASE_URL_PRODUCTION`.
+4. Repeat for the staging environment using the key name `DATABASE_URL_STAGING`.
+
+**Migration order** (prevents production DB outage during the transition):
+
+- **Step 1:** Merge this PR — the fallback to `DATABASE_URL` stays in place,
+  so the existing Railway variable keeps working with no downtime.
+- **Step 2:** Add `DATABASE_URL_PRODUCTION` (production env) and
+  `DATABASE_URL_STAGING` (staging env) in the Railway dashboard, pointing at
+  the same DB reference as the current `DATABASE_URL`.
+- **Step 3:** Verify startup logs show no deprecation warning (`"falling back
+  to DATABASE_URL"`). Confirm `db_url = …` log line shows the correct host.
+- **Step 4:** Only after verification — remove the old `DATABASE_URL` variable
+  from Railway. The deprecated fallback is no longer needed.
 
 ### 2.4 Deploy
 
@@ -1323,8 +1343,10 @@ Full DR drill checklist (run end-to-end at least once before MEH-408 closes):
   (`postgres.railway.internal`) only resolves inside Railway's private
   network — it is the value the cron service uses. The public proxy host
   is the value Smadar uses for local `docker run` tests. Both point at
-  the same DB; do not mix them up. Phase 3 (`DATABASE_URL_PRODUCTION` /
-  `DATABASE_URL_STAGING` rename) makes this explicit.
+  the same DB; do not mix them up. MEH-408 Phase 3 introduced the
+  `DATABASE_URL_PRODUCTION` / `DATABASE_URL_STAGING` env var names to make
+  this distinction explicit; see §2.3 "Migration order" for the transition
+  steps.
 - **Base image pinned to `python:3.12-slim-bookworm`.** Plain
   `python:3.12-slim` rolled forward to Debian 13 (trixie) on 2026-05-06,
   breaking the PGDG `bookworm-pgdg` apt source (libldap-2.5-0 vs 2.6-0).

@@ -22,7 +22,8 @@ import app.models.models  # noqa: F401
 # ── alembic config ────────────────────────────────────────────────────────────
 config = context.config
 
-# Override sqlalchemy.url from pydantic-settings (reads DATABASE_URL env var).
+# Override sqlalchemy.url from pydantic-settings (reads DATABASE_URL_PRODUCTION
+# or DATABASE_URL_STAGING with DATABASE_URL fallback — see backend/app/config.py).
 # This means alembic.ini never contains a hardcoded connection string, and the
 # same file works identically for local dev, staging, and prod.
 from app.config import settings  # noqa: E402
