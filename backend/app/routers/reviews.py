@@ -9,6 +9,8 @@ MEH-103 verified reviews system:
   - Admin hide endpoint: PUT /admin/reviews/{id}/hide sets is_hidden=True.
   - Hidden reviews are excluded from public GET endpoints and aggregates.
   - Pagination: GET /producers/{id}/reviews returns 10 per page.
+
+MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 import json
 import logging
@@ -16,7 +18,6 @@ import math
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -25,7 +26,7 @@ from app.auth import get_current_user, require_admin
 from app.database import get_db
 from app.models import Producer, ProducerReview, ProducerWhatsAppClick, User
 from app.rate_limit import limiter
-from app.services.sanitization import sanitize_text
+from app.schemas.schemas import AdminReviewOut, ReviewCreateNested, ReviewOut, ReviewsPage
 
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
@@ -88,52 +89,6 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
     except Exception as exc:
         log.warning("[reviews] moderation call failed: %s — fail-open", exc)
         return "APPROVED"
-
-
-class ReviewCreateNested(BaseModel):
-    stars: int = Field(..., ge=1, le=5)
-    body: str = Field(..., min_length=10, max_length=500)
-
-    @field_validator("body")
-    @classmethod
-    def _sanitize_body(cls, v):
-        return sanitize_text(v, max_length=500)
-
-
-class ReviewOut(BaseModel):
-    id: UUID
-    producer_id: UUID
-    user_id: UUID
-    user_name: str | None = None
-    stars: int
-    body: str | None = None
-    created_at: str
-
-    model_config = {"from_attributes": True}
-
-
-class AdminReviewOut(BaseModel):
-    id: UUID
-    producer_id: UUID
-    producer_name: str | None = None
-    user_id: UUID
-    user_name: str | None = None
-    user_email: str | None = None
-    stars: int
-    body: str | None = None
-    is_hidden: bool
-    created_at: str
-
-    model_config = {"from_attributes": True}
-
-
-class ReviewsPage(BaseModel):
-    reviews: list[ReviewOut]
-    total: int
-    page: int
-    pages: int
-
-    model_config = {"from_attributes": True}
 
 
 PAGE_SIZE = 10

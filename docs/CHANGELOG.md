@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-458: relocate Event + Review schemas to schemas/ + R1 enforcement test
+
+`refactor(MEH-458)`: moved `EventCreate` / `EventUpdate` / `EventOut` / `EventFilters` from `routers/events.py` and `ReviewCreateNested` / `ReviewOut` / `AdminReviewOut` / `ReviewsPage` from `routers/reviews.py` to `backend/app/schemas/schemas.py` (new `# --- Event ---` and `# --- Review (ProducerReview) ---` sections). Pure relocation — fields, validators, `model_config`, and `created_at: str` (Drift #4) preserved verbatim. Added `tests/test_schema_location.py` AST walker that enforces ADR-006 R1: no `BaseModel`-direct subclass in `backend/app/routers/`. Audit Drift #2 (`docs/SCHEMA_PARITY_AUDIT.md`) was an under-count — 28 pre-existing violations across 11 routers are tracked under MEH-460 and pinned in the test's `ALLOWLIST`. Closes Drift #2 partially (Event + Review path); MEH-460 finishes the cleanup.
+
 ## 2026-05-05 — MEH-457: producer registration enforces password policy (close MEH-306 sibling gap)
 
 `fix(MEH-457)`: `/auth/register/producer` now `await`s `validate_password` (HIBP / deny-list / 12-char floor) on the new-account path, mirroring the `/register` pattern from MEH-306. `ProducerRegister.password` upgraded to `PasswordField | None` (12-char floor + whitespace strip) — was `str | None Field(min_length=8)`. Also stamps `password_changed_at` on the new User row, closing the MEH-305 sibling gap so JWT iat invalidation works for producers registered via this path. Upgrade path (logged-in user → producer) unchanged. Closes Drift #1 BLOCK from `docs/SCHEMA_PARITY_AUDIT.md`.
