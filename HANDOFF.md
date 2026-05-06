@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-408 Phase 2 — R2 backups + Dockerfile.cron, ready for review)
+> Last updated: 2026-05-06 (MEH-408 Phase 2 — R2 backups + Dockerfile.cron, ready for review; MEH-373 — verify-frontend approximation drift closed via externalization)
 
 ### MEH-408 Phase 2 — R2 backups + Dockerfile.cron (branch ready for review)
 
@@ -49,6 +49,36 @@ Chunk 3 (docs) about to land.
   — blocked by MEH-442 hook (cannot edit `backend/pyproject.toml`
   to add `moto[s3]` dev dep). Refining MEH-442 to allow additive
   deps edits would unblock.
+
+## 2026-05-06 — MEH-373 — verify-frontend RTL scan flake closed via externalization
+
+**Branch:** `feature/meh-373-verify-frontend-flake-fix` off staging. **PR:** to be opened (draft).
+
+**Goal:** close PR #391's T3 flake (10 vs 11 RTL violations across re-runs).
+
+**Investigation arc (5 phases):**
+1. **Phase A reproduction.** Snapshot page.js, inject `}}}` syntax error, run T3 prompt ×5 sequential. 4/5 reported 4 violations, 1/5 reported 9. Same class as PR #391 (combined-load step drift), different surface (filter-skip vs line-drop).
+2. **C1 — count-before-format prompt** (commit `af889bf`). 4-line addition to step 3: "count lines BEFORE any formatting … no truncation, no summarization." T3 ×5 = 5/5 at 4. Looked clean.
+3. **T1 surfaced count drift.** ProducerCard.jsx:42 ml-4 injection → agent emitted "RTL violations outside allowlist: 4" then listed 5 entries. Same bug class C1 was supposed to close: count vs content mismatch. C1 was placebo.
+4. **Root cause investigation.** Direct shell execution of step 3's awk pipeline → 0 violations. Every line in the previously-believed "baseline 4" had a `rtl-ok` marker on the line above (lines 23, 122, 51, 231); the awk adjacency rule correctly suppresses them. **The agents weren't running the script — they were approximating it.** The 15 prior agent runs reported 4/9/5 against deterministic ground truth of 0.
+5. **Externalization** (commit `daf62cf` + regex widening `543a3ed`). Moved step 3 to `.claude/scripts/rtl-scan.sh`. Agent now emits a single `bash …/rtl-scan.sh` invocation and copies stdout verbatim — no multi-line awk in the prompt, no class parsing in the agent. Class extraction (including `left-1/2`, `ml-0.5`, `left-[20px]`) handled by a single awk `match()` loop. mawk-compat: file boundary between grep and awk because mawk's `getline file < $1` silently fails when stdin is a pipe.
+
+**Verification on Linux sandbox:**
+- GROUND_TRUTH locked at 0 (3/3 byte-identical direct script runs).
+- T3 ×5 (build-error fixture, page.js with `}}}` injection): 5/5 reported `RTL_COUNT=0`, 0 violation lines emitted, Verdict NEEDS-FIX (build/lint failures gate verdict, RTL=0 alone doesn't).
+- T1 ×3 (ProducerCard.jsx:42 ml-4 injection): 3/3 reported `RTL_COUNT=1` with exactly `frontend/components/ProducerCard.jsx:42 — ml-4` in list. Class formatting verbatim.
+- T2 ×1 (clean tree): RTL=0, Build PASS, Lint PASS, Verdict READY-FOR-PR.
+- T4 dropped from regression (eval.md:44 = allowlist-missing → MEH-365 territory, in DO NOT TOUCH per task scope).
+
+**Outstanding:**
+- Smadar runs T3 ×5 on Windows env post-merge — final cross-env confirmation. If Windows still flakes after Linux 5/5, reopen with Windows-specific data (different mechanism; the externalized script itself is portable but the agent's tool execution may differ on Windows MinGW bash).
+- Path output format is now absolute (`/home/user/FoodMamkor/frontend/...`) instead of relative — script greps `$REPO_ROOT/frontend/...`. Cosmetic; PR notes it as optional follow-up if relative paths are preferred.
+- Eval file `.claude/agents/verify-frontend.eval.md` unchanged in this PR — T1/T2/T3 prompts unchanged (assertions still valid: T1 expects RTL ≥ 1 NEEDS-FIX, T2 expects RTL=0 READY-FOR-PR, T3 expects build error + NEEDS-FIX).
+
+**Commits on branch (3):**
+- `af889bf fix(MEH-373): C1 — count-before-format` (kept as instructional anchor)
+- `daf62cf feat(MEH-373): externalize RTL scan to .claude/scripts/rtl-scan.sh`
+- `543a3ed fix(MEH-373): widen RTL extraction regex for fractional/arbitrary Tailwind classes (slash, dot, brackets)`
 
 ## 2026-05-06 — MEH-463 — finish T3 env migration (close MEH-454 follow-up)
 
