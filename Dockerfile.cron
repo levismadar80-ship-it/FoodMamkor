@@ -12,7 +12,7 @@
 #
 # Last updated: 2026-05-07 (MEH-408 Phase 2).
 
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 # postgresql-client must match the server major version. Debian bookworm
 # (slim's base) ships PG 15 in its main repos — too old for our server
