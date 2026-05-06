@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-359: paths frontmatter for frontend.md + backend.md
+
+`docs`: add paths frontmatter to `.claude/rules/frontend.md` (globs `frontend/**/*.{jsx,js,ts,tsx,css,html,scss}`) and `.claude/rules/backend.md` (globs `backend/**/*.py`). MEH-342 follow-up — frontmatter coverage now complete across all 6 path-scoped rules files (rtl, db, code-execution, prompting, frontend, backend). Frontmatter-only change, zero body content edits.
+
 ## 2026-05-07 — MEH-408 Phase 3: DATABASE_URL_PRODUCTION / DATABASE_URL_STAGING separation
 
 `refactor(MEH-408-phase-3)`: `backend/app/config.py` now resolves `DATABASE_URL_PRODUCTION` (when `ENV=production`) or `DATABASE_URL_STAGING` (when `ENV=staging`) with a deprecated `DATABASE_URL` fallback (warning logged). Two new pydantic-settings fields (`database_url_production`, `database_url_staging`). `startup.py` logging updated to use `settings.database_url` (the resolved value) instead of raw `os.getenv("DATABASE_URL")`. `alembic/env.py` comment updated. `docs/DEPLOYMENT.md` §2.3 extended with "Migration order" 4-step transition guide (merge → add new Railway vars → verify → remove old var) to prevent production DB outage during the rename. Closes MEH-408 Phase 3.
