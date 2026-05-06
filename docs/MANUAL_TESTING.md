@@ -924,7 +924,7 @@ Added with `feature/session-handoff`.
 
 - [ ] `/register/producer` → submit הרשמה תקינה עם טלפון אמיתי → תוך 60 שניות מתקבלת הודעת WhatsApp "ברוכה הבאה למהמקור 🌿" — ודאי ש-TWILIO_* vars מוגדרים ב-Railway
 - [ ] Response של `POST /auth/register/producer` בDevTools → Network → מכיל `whatsapp_sent: true` (כשTwilio מוגדר) או `whatsapp_sent: false` (כשחסר)
-- [ ] Staging ללא `TWILIO_WHATSAPP_FROM` מוגדר → הרשמה חוזרת 200 + `whatsapp_sent: false` → success screen מציג banner צהוב "לא קיבלת הודעת WhatsApp?" עם קישור לדשבורד
+- [ ] Staging ללא `TWILIO_WHATSAPP_FROM` מוגדר → הרשמה חוזרת 200 + `whatsapp_sent: false` → success screen מציג banner צהוב diagnostic: "לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד." (טקסט בלבד — ללא כפתור; CTA הראשי "לדשבורד שלי" נשאר למטה) — MEH-302 dedupe
 - [ ] Railway logs בזמן ההרשמה ה-"חסרה" → `[WHATSAPP] Producer welcome SKIPPED — missing: TWILIO_WHATSAPP_FROM` ברמת ERROR (לא warning)
 - [ ] הרשמה עם `whatsapp_sent: true` → success screen מציג את הטקסט המקורי "שלחנו לך הודעת WhatsApp..." ללא banner
 

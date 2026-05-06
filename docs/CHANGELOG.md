@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-302: dedupe step-3 success screen copy when whatsapp_sent=false
+
+`feat(register)`: rewrote the yellow banner on `/register/producer` step 3 (whatsapp_sent=false branch only) as **diagnostic prose** instead of a redundant CTA. Old banner had "לא קיבלת הודעת WhatsApp?" + a button routing to the dashboard — duplicating the paragraph above ("הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד") and the primary "לדשבורד שלי" button below. New copy: "לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד." Plain text, no nested button — banner now adds a troubleshoot suggestion + fallback mention rather than a third CTA. Yellow `bg-amber-50` styling preserved. Bonus RTL fix in the same block: `text-right` → `text-end` (logical property per `.claude/rules/rtl.md`). Paragraph + whatsapp_sent=true branch + shared "מה הלאה?" card untouched. Closes MEH-302; resolves MEH-287 follow-up F6.
+
 ## 2026-05-06 — MEH-359: paths frontmatter for frontend.md + backend.md
 
 `docs`: add paths frontmatter to `.claude/rules/frontend.md` (globs `frontend/**/*.{jsx,js,ts,tsx,css,html,scss}`) and `.claude/rules/backend.md` (globs `backend/**/*.py`). MEH-342 follow-up — frontmatter coverage now complete across all 6 path-scoped rules files (rtl, db, code-execution, prompting, frontend, backend). Frontmatter-only change, zero body content edits.
