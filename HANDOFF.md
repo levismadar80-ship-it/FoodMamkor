@@ -1,7 +1,20 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-05 (MEH-427 merged; MEH-453 merged; MEH-455 merged)
+> Last updated: 2026-05-06 (MEH-408 Phase 1 — staging conflict resolved on PR #485)
+
+### MEH-408 Phase 1 (PR #485) — merged
+
+Phase 1 of production safety hardening complete:
+- `.claude/hooks/check-bash-safety.sh` extended with 7 new patterns
+  (DROP SCHEMA, bare TRUNCATE, DELETE FROM no-WHERE, rm -rf .,
+  railway down|service delete, vercel --prod|rm, $DATABASE_URL_PRODUCTION)
+- `.claude/rules/security.md` new "Production safety — deny-list" section
+- `CLAUDE.md` pointer added (preserves 80-line cap)
+- `docs/CHANGELOG.md` updated
+
+Phase 2 (R2 backup script + Railway cron) unblocked.
+MEH-461 (rm -rf regex tightening) unblocked.
 
 ## 2026-05-05 — MEH-427: branch-base verification rule (MERGED — #481, squash 1676a33)
 
