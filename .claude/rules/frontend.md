@@ -1,3 +1,14 @@
+---
+paths:
+  - "frontend/**/*.jsx"
+  - "frontend/**/*.js"
+  - "frontend/**/*.ts"
+  - "frontend/**/*.tsx"
+  - "frontend/**/*.css"
+  - "frontend/**/*.html"
+  - "frontend/**/*.scss"
+---
+
 # Frontend rules
 
 Next.js + Tailwind + Framer + Leaflet patterns. RTL-specific guidance
