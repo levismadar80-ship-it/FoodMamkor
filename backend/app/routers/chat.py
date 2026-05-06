@@ -22,13 +22,13 @@ Design notes:
     rather than crashing the widget.
 """
 import logging
-from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.rate_limit import limiter
+# MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
+from app.schemas.schemas import ChatRequest, ChatResponse
 
 logger = logging.getLogger(__name__)
 
@@ -140,23 +140,6 @@ def _strip_markdown(text: str) -> str:
         .replace("\n## ", "\n")
         .replace("\n### ", "\n")
     )
-
-
-# ---------- request/response schemas ----------
-
-class ChatMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=2000)
-
-
-class ChatRequest(BaseModel):
-    # Full conversation history. Client tracks the state and re-sends
-    # each turn — the API is stateless. We trim server-side as a backstop.
-    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
-
-
-class ChatResponse(BaseModel):
-    reply: str
 
 
 # ---------- Anthropic client (lazy, mirrors home_product_moderation) ----------
