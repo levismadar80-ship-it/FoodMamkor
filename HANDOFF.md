@@ -1,24 +1,28 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-359 paths frontmatter for frontend.md + backend.md — MEH-342 follow-up complete, 6 files now path-scoped; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-06 (MEH-359 merged b17f0d7; MEH-302 dedupe step-3 banner — PR open; MEH-385 pr-reviewer subagent open)
 
-### MEH-359 — paths frontmatter for frontend.md + backend.md (PR open)
+### MEH-302 — dedupe step-3 success screen banner (PR open)
 
-Branch: `feature/meh-359-rules-frontmatter-frontend-backend` off staging.
-Frontmatter-only change. Two files prepended:
+Branch: `feature/meh-302-dedupe-step3-banner-diagnostic` off staging.
+Single-file copy change — `frontend/app/register/producer/page.js`
+lines 535–542. Banner on whatsapp_sent=false branch rewritten as
+diagnostic prose (no nested button); paragraph + whatsapp_sent=true
+branch + shared "מה הלאה?" card untouched. Bonus RTL fix in the same
+block: `text-right` → `text-end`. Closes MEH-302; resolves MEH-287
+follow-up F6 (banner/paragraph dedupe).
 
-- `.claude/rules/frontend.md` — globs `frontend/**/*.{jsx,js,ts,tsx,css,html,scss}`
-- `.claude/rules/backend.md` — globs `backend/**/*.py`
+Vercel preview URL goes in the PR body once Vercel emits it. Smadar
+to smoke-test on mobile (390px): Hebrew RTL renders, banner reads as
+diagnostic not redundant, paragraph+banner together don't feel
+repetitive.
 
-Closes MEH-359. **MEH-342 frontmatter coverage now complete (6 files):**
-rtl, db, code-execution, prompting (PR #366) + frontend, backend (this PR).
-Zero body content edits; YAML validated.
+### MEH-359 — paths frontmatter for frontend.md + backend.md (MERGED — squash `b17f0d7`, PR #512)
 
-Manual loading tests deferred to Smadar (sandbox can't restart Claude
-Code session): edit a file under `frontend/` → frontend.md loads; under
-`backend/` → backend.md loads, frontend.md does not; at repo root →
-neither loads.
+Frontmatter coverage now complete across all 6 path-scoped rules files
+(rtl, db, code-execution, prompting + frontend, backend). MEH-342
+follow-up — closes MEH-359.
 
 ### MEH-385 — pr-reviewer subagent (PR open, off staging)
 

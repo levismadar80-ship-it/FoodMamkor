@@ -535,16 +535,9 @@ function RegisterProducerPageBody() {
             {!whatsappSent && (
               <div
                 role="status"
-                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-[12px] px-4 py-3 mb-6 text-sm text-right"
+                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-[12px] px-4 py-3 mb-6 text-sm text-end"
               >
-                לא קיבלת הודעת WhatsApp?{" "}
-                <button
-                  type="button"
-                  onClick={() => router.push("/producer/dashboard")}
-                  className="underline font-medium hover:text-amber-800"
-                >
-                  השלימי את הפרופיל ישירות מהדשבורד ←
-                </button>
+                לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד.
               </div>
             )}
             <div className="bg-light rounded-[16px] p-5 text-right mb-6">
