@@ -1,0 +1,56 @@
+# MEH-408 Phase 2 — backup cron service image.
+#
+# Slim Python base + postgresql-client-18 (matches Railway's PG 18 server)
+# + boto3 from scripts/requirements.txt. Fully isolated from the API
+# image (Dockerfile) — no shared lockfile, no backend/ deps. The only
+# Python package this image needs is boto3.
+#
+# Used by a separate Railway service whose Cron Schedule is set to
+# `0 23 * * *` UTC (= 02:00 IST summer / 01:00 IST winter). Per Railway
+# cron contract: container starts on schedule, runs the script once,
+# exits, container is destroyed.
+#
+# Last updated: 2026-05-07 (MEH-408 Phase 2).
+
+FROM python:3.12-slim-bookworm
+
+# postgresql-client must match the server major version. Debian bookworm
+# (slim's base) ships PG 15 in its main repos — too old for our server
+# (PG 18). Use the official PostgreSQL apt repo (apt.postgresql.org)
+# which publishes matched binaries for every supported major version.
+#
+# Sequence: install gnupg + ca-certs first (required to verify the PG
+# repo's signing key), drop the key into the keyring, add the repo to
+# sources.list.d, then apt-get install postgresql-client-18.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl gnupg \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
+    && apt-mark manual ca-certificates \
+    && apt-get purge -y --auto-remove curl gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Flush stdout immediately so Railway's log panel shows progress lines
+# instead of a single dump at the end. Same rationale as Dockerfile:49.
+ENV PYTHONUNBUFFERED=1
+
+# Install the cron-service-only Python deps (boto3). pip-installed
+# directly (no uv) — single-line requirements file, no need for the
+# uv lockfile machinery here.
+COPY scripts/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Copy only the backup script. The restore script is for DR drills
+# (Smadar runs it manually); not needed in the cron image.
+COPY scripts/backup_production_db.py /app/backup_production_db.py
+
+# Run once and exit. Railway re-invokes per Cron Schedule —
+# DO NOT loop, sleep, or daemonize.
+CMD ["python", "/app/backup_production_db.py"]

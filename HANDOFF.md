@@ -1,7 +1,54 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-408 Phase 1 — staging conflict resolved on PR #485)
+> Last updated: 2026-05-06 (MEH-408 Phase 2 — R2 backups + Dockerfile.cron, ready for review)
+
+### MEH-408 Phase 2 — R2 backups + Dockerfile.cron (branch ready for review)
+
+Branch: `feature/meh-408-phase-2-r2-backups`. Commits `ced6ca3` (scripts +
+Dockerfile.cron) + `4655d07` (slim-bookworm pin) on the feature branch;
+Chunk 3 (docs) about to land.
+
+**E2E verified end-to-end against staging:**
+- `docker build -f Dockerfile.cron -t meh-cron-test .` → image 321 MB.
+- `docker run --rm --env-file .env.staging meh-cron-test` → exit 0,
+  log shows `Backup OK — mehamakor_staging_20260506T171542Z.dump (174,162 bytes)`.
+- File confirmed visible in Cloudflare dashboard under
+  `r2://mehamakor-backups/`.
+
+**What ships:**
+- `scripts/backup_production_db.py` — pg_dump (`-Fc`) → R2 via boto3.
+- `scripts/restore_from_backup.py` — R2 → pg_restore (DR-drill helper;
+  refuses production targets).
+- `scripts/requirements.txt` — `boto3==1.35.49` (cron-only deps,
+  isolated from backend/uv).
+- `Dockerfile.cron` — `python:3.12-slim-bookworm` + PG-18 client from
+  PGDG + `apt-mark manual ca-certificates` to survive `--auto-remove`.
+- `.gitignore` — `.env.staging` + `.env.*` coverage.
+- `docs/DEPLOYMENT.md` § 10 — Railway cron service setup (A), R2
+  lifecycle rule (B), manual backup recipe (C), restore procedure (D),
+  Known limitations (E).
+- `docs/MANUAL_TESTING.md` — DR-drill 6-step checklist (Phase 4 prep).
+
+**Still pending (Smadar — manual, after merge):**
+- Create the Railway cron service per DEPLOYMENT.md §10 A
+  (cron schedule + env vars + Dockerfile.cron path).
+- Configure R2 lifecycle rule for 7-day retention per §10 B.
+- Run the Phase 4 DR drill once before MEH-408 closes.
+
+**Phase 3 (next) — pending:**
+- `DATABASE_URL_PRODUCTION` / `DATABASE_URL_STAGING` rename in Railway
+  envs + `backend/app/config.py` reads the right var per environment.
+- Will close the "two URL forms" footnote in DEPLOYMENT.md §10 E.
+
+**Phase 2.5 follow-ups (no ticket yet):**
+- Slack/Resend alert on cron non-zero exit.
+- Cron logs streamed to Sentry (Railway free tier rolls logs at 7d).
+- Multi-stage Docker build to drop image size below 250 MB.
+- Unit tests for `backup_production_db.py` / `restore_from_backup.py`
+  — blocked by MEH-442 hook (cannot edit `backend/pyproject.toml`
+  to add `moto[s3]` dev dep). Refining MEH-442 to allow additive
+  deps edits would unblock.
 
 ## 2026-05-06 — MEH-463 — finish T3 env migration (close MEH-454 follow-up)
 
