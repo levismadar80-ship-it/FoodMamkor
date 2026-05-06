@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-408 Phase 2 — R2 backups + Dockerfile.cron, ready for review; MEH-373 — verify-frontend approximation drift closed via externalization)
+> Last updated: 2026-05-07 (MEH-408 Phase 4 DR drill — PASS; MEH-468 multi-stage Dockerfile.cron merged 321MB → 250MB)
 
 ### MEH-408 Phase 2 — R2 backups + Dockerfile.cron (branch ready for review)
 
@@ -44,7 +44,7 @@ Chunk 3 (docs) about to land.
 **Phase 2.5 follow-ups (no ticket yet):**
 - Slack/Resend alert on cron non-zero exit.
 - Cron logs streamed to Sentry (Railway free tier rolls logs at 7d).
-- Multi-stage Docker build to drop image size below 250 MB.
+- ~~Multi-stage Docker build to drop image size below 250 MB.~~ ✅ Done — MEH-468 PR #507 merged, 321MB → 250MB.
 - Unit tests for `backup_production_db.py` / `restore_from_backup.py`
   — blocked by MEH-442 hook (cannot edit `backend/pyproject.toml`
   to add `moto[s3]` dev dep). Refining MEH-442 to allow additive
@@ -60,6 +60,17 @@ Specialized variants of `/adversarial-review`, each with FINDER → ADVERSARY �
 - `/adversarial-review-size` (93 lines) — diff touches any file in `.claude/central-components.json`. MEH-407 god-files family.
 
 Multiple variants may apply to one PR. `.claude/rules/workflow.md` PR Review Workflow section now points at all 4. Closes MEH-428.
+
+### MEH-408 Phase 4 — DR drill (2026-05-06)
+
+Drill executed manually:
+- Source backup: `mehamakor_staging_20260506T171542Z.dump` (174 KB, Cloudflare R2)
+- Restored to: local Docker `postgres:18` container (port 5433)
+- Row counts: producers 15/15 ✓, categories 15/15 ✓, cities 0/0 ✓,
+  users 277 vs 299 (22 rows drift — expected, backup taken ~2h before drill)
+- Outcome: **PASS** — backup is restorable, pipeline validated end-to-end
+
+Phase 4 complete. MEH-408 all phases done (Phase 3 — `DATABASE_URL` rename — still pending as a separate follow-up).
 
 ## 2026-05-06 — MEH-373 — verify-frontend RTL scan flake closed via externalization
 
