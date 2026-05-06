@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-462: tighten MEH-427 branch-base rule (assert current branch)
+
+`docs(MEH-462)`: added `git branch --show-current` assertion to the Branch-base verification rule in `.claude/rules/workflow.md`. The existing `git rev-list --count HEAD ^origin/staging` check returns 0 when local staging matches origin, missing the case where HEAD is *on* `staging` directly — the exact slip that hit MEH-459 (commit landed on local staging; recovered via `git branch <feature> <SHA>` + push + `git reset --keep origin/staging`). Both checks are now required before any read/write tool call on a new ticket.
+
 ## 2026-05-06 — MEH-459: drop unused Review.title column (Drift #3 — full cleanup)
 
 `chore(MEH-459)`: dropped `producer_reviews.title` (3-layer dead code from audit Drift #3) via Alembic revision `261e8d6ab23a`. Cleanup was end-to-end: ORM field removal (`models.py`), 5 frontend locations in `ProducerReviews.jsx` (state, pre-fill, POST body, form input + label, render block) — original audit under-counted by 3. The form input was a silent UX bug (Pydantic `extra='ignore'` discarded posted titles with 200 OK). Closes Drift #3 from `docs/SCHEMA_PARITY_AUDIT.md`. EXPECTED_REV bumped from `2a74fa41ceb1` to `261e8d6ab23a`.
