@@ -2,7 +2,6 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -11,8 +10,10 @@ from app.database import get_db
 from app.models import Category, ContactClick, Producer, ProducerWhatsAppClick, Report, User
 from app.rate_limit import limiter
 from app.routers.producer_follows import router as producer_follows_router
+# MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
     CategoryOut,
+    ContactClickIn,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
@@ -214,10 +215,6 @@ def record_whatsapp_click(
 
 
 _VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email"})
-
-
-class ContactClickIn(BaseModel):
-    method: str
 
 
 @router.post("/producers/{producer_id}/contact-click", status_code=204)

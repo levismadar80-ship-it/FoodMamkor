@@ -17,14 +17,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ROUTERS_DIR = REPO_ROOT / "backend" / "app" / "routers"
 
-# Pre-existing R1 violations from before MEH-458. New entries are NOT
-# permitted — to add a class to a router, instead move it to
-# backend/app/schemas/schemas.py per R1. Cleanup plan: MEH-460.
-ALLOWLIST: dict[str, frozenset[str]] = {
-    "backend/app/routers/producers.py":   frozenset({"ContactClickIn"}),
-    "backend/app/routers/referrals.py":   frozenset({"ClaimReferralRequest"}),
-    "backend/app/routers/marketing.py":   frozenset({"StatsOut", "NewsletterIn", "ContactIn"}),
-}
+# MEH-460 closed (2026-05-06): all 28 pre-existing R1 violations relocated
+# to backend/app/schemas/schemas.py across Pkgs 1–5. The empty dict is
+# retained intentionally — the enforcement mechanism stays in place so any
+# future, deliberately-temporary R1 debt can be tracked here with a paired
+# cleanup ticket. Both tests below pass trivially on an empty allowlist:
+# `_no_unallowlisted_basemodel` enforces strict R1 (every router must be
+# clean), and `_allowlist_entries_still_exist` is a no-op over zero entries.
+ALLOWLIST: dict[str, frozenset[str]] = {}
 
 
 def _find_basemodel_classes(py_path: Path) -> set[str]:
