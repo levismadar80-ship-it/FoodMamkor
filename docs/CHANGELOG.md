@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-460 Pkg 2: relocate users_me.py + producer_me.py schemas
+
+`refactor(MEH-460-pkg-2)`: moved 5 Pydantic schemas from `routers/users_me.py` (`ProfileUpdate`, `PasswordChange`) and `routers/producer_me.py` (`AvailabilityStatusUpdate`, `AvailabilityStateUpdate`, `BioGenerateIn`) to `backend/app/schemas/schemas.py` (new `# --- Users ---` + `# --- Producer Me ---` sections at EOF). Pure relocation — fields, validators, `model_config` preserved verbatim. `AVAILABILITY_STATUSES` (legacy {"available","full","vacation"} runtime-validation set) correctly stays in `producer_me.py` — handler-side concern, not a schema field. Schema relocation does **not** affect the in-flight MEH-291 availability-state migration; both legacy + new surfaces still ship during the 7-day overlap, Phase 4 will drop the legacy. Removes both router rows from `tests/test_schema_location.py:ALLOWLIST`. 3 packages remaining → 15 classes.
+
 ## 2026-05-06 — MEH-460 Pkg 1: relocate admin.py + admin_extra.py schemas
 
 `refactor(MEH-460-pkg-1)`: moved 7 Pydantic schemas from `routers/admin.py` + `routers/admin_extra.py` to `backend/app/schemas/schemas.py` (new `# --- Admin ---` section at EOF). Pure relocation — fields, validators, `model_config` preserved verbatim. **Bonus dedupe:** `CategoryOut` in `admin_extra.py:160` was byte-identical to public `CategoryOut` in `schemas.py:117`; deleted duplicate, imported from canonical location instead. **Bonus lint cleanup on admin.py:** moved `logger = logging.getLogger(__name__)` from line 9 (BEFORE imports) to post-imports — was triggering E402 on 8 subsequent imports; removed 3 unused imports (`ProducerImportResult`, `ProducerImportPreviewRow`, `Category` — all F401, all pre-existing on staging). Removes both `admin.py` and `admin_extra.py` ALLOWLIST rows from `tests/test_schema_location.py` (now 0 BaseModel subclasses each). 4 packages remaining → 20 classes.

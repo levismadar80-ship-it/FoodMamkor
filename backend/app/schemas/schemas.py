@@ -1268,3 +1268,48 @@ class StaticPageOut(BaseModel):
 class StaticPageUpdate(BaseModel):
     title: str
     body: str
+
+
+# --- Users (users_me.py) ---
+# MEH-460 Pkg 2: relocated from routers/users_me.py per ADR-006 R1.
+# Pure relocation — fields preserved verbatim. Validators (verify_password,
+# validate_password) stay in the change_password handler, not the schema.
+class ProfileUpdate(BaseModel):
+    """PATCH body — any subset of fields may be omitted."""
+    name: str | None = Field(None, min_length=1, max_length=200)
+    email: EmailStr | None = None
+    avatar_url: str | None = None
+    city: str | None = Field(None, max_length=100)
+
+
+class PasswordChange(BaseModel):
+    # current_password stays a plain str (not PasswordField) — old passwords
+    # may predate the policy and shorter values must still be acceptable as
+    # current. The verify_password call is the only authority on its validity.
+    current_password: str = Field(..., min_length=1)
+    # MEH-306: 12-char floor at schema layer; deny-list / HIBP / reuse run in
+    # the change_password handler via validate_password.
+    new_password: PasswordField
+
+
+# --- Producer Me (producer_me.py) ---
+# MEH-460 Pkg 2: relocated from routers/producer_me.py per ADR-006 R1.
+# AvailabilityStatusUpdate is the legacy MEH-291 surface; AvailabilityStateUpdate
+# is the new 4-value enum surface. Both kept during the 7-day overlap;
+# Phase 4 will drop the legacy. Schema relocation does NOT affect MEH-291.
+# AVAILABILITY_STATUSES (the legacy {"available","full","vacation"} set used
+# only by the handler for runtime validation) stays in producer_me.py — it's
+# not a schema field. AVAILABILITY_STATES (the new 4-value tuple) lives in
+# this file already (see Producer section above, MEH-291).
+class AvailabilityStatusUpdate(BaseModel):
+    status: str = Field(..., description="available | full | vacation")
+    vacation_until: date | None = Field(None, description="Optional return date (vacation only)")
+
+
+class AvailabilityStateUpdate(BaseModel):
+    state: str = Field(..., description="accepting_orders | available_today | full_this_week | on_vacation")
+    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
+
+
+class BioGenerateIn(BaseModel):
+    source: str = Field(..., min_length=1, max_length=500)

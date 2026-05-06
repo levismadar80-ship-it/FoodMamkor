@@ -26,8 +26,6 @@ ALLOWLIST: dict[str, frozenset[str]] = {
     "backend/app/routers/producers.py":   frozenset({"ContactClickIn"}),
     "backend/app/routers/referrals.py":   frozenset({"ClaimReferralRequest"}),
     "backend/app/routers/marketing.py":   frozenset({"StatsOut", "NewsletterIn", "ContactIn"}),
-    "backend/app/routers/producer_me.py": frozenset({"AvailabilityStatusUpdate", "AvailabilityStateUpdate", "BioGenerateIn"}),
-    "backend/app/routers/users_me.py":    frozenset({"ProfileUpdate", "PasswordChange"}),
     "backend/app/routers/search.py":      frozenset({"ProducerHit", "ProductHit", "CategoryHit", "SearchOut"}),
 }
 
