@@ -3,12 +3,13 @@
 Sits at prefix /users/me and handles profile update + password change.
 Account deletion is already served by DELETE /auth/me — not duplicated
 here to avoid two code paths on the same destructive action.
+
+MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.auth import generate_fingerprint, get_current_user, hash_password, verify_password
@@ -23,29 +24,10 @@ from app.rate_limit import limiter
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
-from app.schemas.password import PasswordField
-from app.schemas.schemas import UserOut
+from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
 from app.services.password_policy import validate_password
 
 router = APIRouter(prefix="/users/me", tags=["users"])
-
-
-class ProfileUpdate(BaseModel):
-    """PATCH body — any subset of fields may be omitted."""
-    name: str | None = Field(None, min_length=1, max_length=200)
-    email: EmailStr | None = None
-    avatar_url: str | None = None
-    city: str | None = Field(None, max_length=100)
-
-
-class PasswordChange(BaseModel):
-    # current_password stays a plain str (not PasswordField) — old passwords
-    # may predate the policy and shorter values must still be acceptable as
-    # current. The verify_password call is the only authority on its validity.
-    current_password: str = Field(..., min_length=1)
-    # MEH-306: 12-char floor at schema layer; deny-list / HIBP / reuse run in
-    # the change_password handler via validate_password.
-    new_password: PasswordField
 
 
 @router.patch("", response_model=UserOut)

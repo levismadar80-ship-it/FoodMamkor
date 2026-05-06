@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload
 
@@ -31,14 +30,17 @@ import string
 from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
     AVAILABILITY_STATES,
-    ProducerDetailOut,
-    ProducerUpdate,
-    ProductCreate,
-    ProductUpdate,
-    ProductOut,
+    AvailabilityStateUpdate,
+    AvailabilityStatusUpdate,
+    BioGenerateIn,
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
+    ProducerDetailOut,
+    ProducerUpdate,
+    ProductCreate,
+    ProductOut,
+    ProductUpdate,
 )
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
@@ -222,11 +224,6 @@ def toggle_availability(
 AVAILABILITY_STATUSES = {"available", "full", "vacation"}
 
 
-class AvailabilityStatusUpdate(BaseModel):
-    status: str = Field(..., description="available | full | vacation")
-    vacation_until: date | None = Field(None, description="Optional return date (vacation only)")
-
-
 @router.post("/availability-status")
 def set_availability_status(
     data: AvailabilityStatusUpdate,
@@ -259,11 +256,6 @@ def set_availability_status(
 
 # MEH-291 — new unified endpoint. Phase 3 frontend will call this exclusively;
 # the two legacy endpoints above stay during the 7-day overlap and dual-write.
-
-class AvailabilityStateUpdate(BaseModel):
-    state: str = Field(..., description="accepting_orders | available_today | full_this_week | on_vacation")
-    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
-
 
 @router.post("/availability-state")
 @limiter.limit("20/hour")
@@ -724,10 +716,6 @@ def request_kashrut_badge(
 # ---------------------------------------------------------------------------
 # MEH-56: AI bio generator
 # ---------------------------------------------------------------------------
-
-class BioGenerateIn(BaseModel):
-    source: str = Field(..., min_length=1, max_length=500)
-
 
 @router.post("/bio/generate")
 @limiter.limit("5/hour")
