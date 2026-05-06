@@ -82,6 +82,10 @@ You do NOT fix issues — report only.
    Otherwise, each non-empty line in `RTL_RESULT` is a violation. Format each
    as: `file:line — class`.
 
+   After grep, count lines BEFORE any formatting. Output the count
+   first, then the violations verbatim — no reformatting, no truncation,
+   no summarization until all lines have been emitted.
+
 4. Return this exact report and nothing else:
 
 ```
