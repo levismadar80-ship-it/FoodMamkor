@@ -55,8 +55,20 @@ while IFS= read -r fp; do
       lint_target="${rel_path#frontend/}"
       ;;
     *.py)
-      linter="backend"
-      lint_target="${rel_path#backend/}"
+      # MEH-467: route by location. Files under backend/ use backend/pyproject.toml
+      # (existing path); files outside backend/ (e.g. tests/, scripts/) need to run
+      # ruff from the repo root or they 502/E902 with "no such file or directory"
+      # because ${rel_path#backend/} is a no-op when the path doesn't start with
+      # backend/, and ruff was being invoked from the wrong cwd.
+      if [[ "$rel_path" == backend/* ]]; then
+        linter="backend"
+        lint_target="${rel_path#backend/}"
+        work_dir="$REPO_ROOT/backend"
+      else
+        linter="repo-root"
+        lint_target="$rel_path"
+        work_dir="$REPO_ROOT"
+      fi
       ;;
     *)
       continue
@@ -72,8 +84,19 @@ while IFS= read -r fp; do
     LINT_EXIT=$?
   else
     command -v ruff >/dev/null 2>&1 || continue
-    [ -f "$REPO_ROOT/backend/pyproject.toml" ] || continue
-    LINT_OUTPUT=$(cd "$REPO_ROOT/backend" && ruff check "$lint_target" 2>&1)
+    # MEH-467: ruff config must live under work_dir for auto-discovery to apply
+    # the right [tool.ruff.lint] / per-file-ignores. If repo root has no ruff
+    # config (e.g. tests/ being linted but no top-level ruff.toml), skip rather
+    # than running with default rules that diverge from backend/pyproject.toml.
+    if [ -f "$work_dir/pyproject.toml" ] && grep -q '^\[tool\.ruff' "$work_dir/pyproject.toml" 2>/dev/null; then
+      :
+    elif [ -f "$work_dir/ruff.toml" ] || [ -f "$work_dir/.ruff.toml" ]; then
+      :
+    else
+      echo "lint-feedback: no ruff config under $work_dir — skipping $rel_path" >&2
+      continue
+    fi
+    LINT_OUTPUT=$(cd "$work_dir" && ruff check "$lint_target" 2>&1)
     LINT_EXIT=$?
   fi
 
