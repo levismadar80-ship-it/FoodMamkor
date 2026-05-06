@@ -9,15 +9,20 @@ summary + pointer here.
 
 ## Branch-base verification (CRITICAL)
 
-BEFORE first commit on any new branch, verify:
+Before any read/write tool call on a new ticket — and before any
+`git commit` — run BOTH:
+
 ```bash
-git rev-list --count HEAD ^origin/staging
+git branch --show-current      # MUST NOT equal staging or main
+git rev-list --count HEAD ^origin/staging   # MUST be < 5
 ```
 
-Expected: small number (< 5).
+If `git branch --show-current` returns `staging` or `main`, run
+`git checkout -b feature/meh-XXX-<slug> origin/staging` **immediately**,
+before any read/write tool call.
 
-Large numbers (>50) indicate the harness created the branch off `main`
-instead of `staging` — known CC bug (GitHub issue #24516).
+Large divergence (>50) indicates the harness created the branch off
+`main` instead of `staging` — known CC bug (GitHub issue #24516).
 
 If detected:
 1. ABORT current work
@@ -31,9 +36,11 @@ If detected:
 DO NOT continue with a main-based branch — rebase will fail with
 phantom add/add conflicts on hundreds of files (squash-merge SHA drift).
 
-_Source: MEH-427 (2026-05-05). Trap caught on MEH-363 PR #439 rebase
-(288 commits diverged from staging vs 1 from main) and earlier on
-MEH-374 (62-commit divergence)._
+_Source: MEH-427 (2026-05-05) for the divergence check; MEH-462
+(2026-05-06) added the `git branch --show-current` assertion after the
+MEH-459 branch slip exposed that divergence returns 0 when `HEAD ==
+origin/staging`. Earlier divergence traps: MEH-363 PR #439 (288 commits)
+and MEH-374 (62 commits)._
 
 ---
 
