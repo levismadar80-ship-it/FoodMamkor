@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -1352,3 +1353,57 @@ class SearchOut(BaseModel):
     products: list[ProductHit] = []
     cities: list[str] = []
     categories: list[CategoryHit] = []
+
+
+# --- Alerts (alerts.py) ---
+# MEH-460 Pkg 4: relocated from routers/alerts.py per ADR-006 R1.
+# AlertContent has cross-router callers (events.py, producer_me.py); the
+# router re-exports it via `from app.schemas.schemas import AlertContent`
+# so existing `from app.routers.alerts import AlertContent` paths keep
+# resolving without touching the callers (same pattern as Pkg 1).
+class AlertPrefsIn(BaseModel):
+    notify_new_product: bool = True
+    notify_new_event: bool = True
+    notify_delivery_area: bool = True
+    whatsapp_opt_in: bool = False
+    push_subscription: dict | None = None
+
+
+class AlertPrefsOut(BaseModel):
+    enabled: bool
+    notify_new_product: bool
+    notify_new_event: bool
+    notify_delivery_area: bool
+    whatsapp_opt_in: bool
+    has_push: bool
+
+
+class AlertContent(BaseModel):
+    """MEH-447: collapse (title, body, url) into a single payload object so
+    fire_alerts stays under PLR0913's 5-arg threshold without losing
+    keyword clarity at call sites."""
+
+    title: str
+    body: str
+    url: str = "/"
+
+
+# --- Chat (chat.py) ---
+# MEH-460 Pkg 4: relocated from routers/chat.py per ADR-006 R1.
+# ChatRequest composes list[ChatMessage]; all 3 moved together so the
+# reference resolves in module order. Router-local concerns (CHAT_MODEL,
+# MAX_HISTORY_TURNS, MAX_OUTPUT_TOKENS, SYSTEM_PROMPT, _strip_markdown,
+# _get_client) stay in chat.py — handler-side, not schema fields.
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class ChatRequest(BaseModel):
+    # Full conversation history. Client tracks the state and re-sends
+    # each turn — the API is stateless. We trim server-side as a backstop.
+    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+
+
+class ChatResponse(BaseModel):
+    reply: str
