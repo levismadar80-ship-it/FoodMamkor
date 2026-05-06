@@ -12,10 +12,8 @@ log = structlog.get_logger("mehamakor.startup")
 
 
 def _redacted_db_url() -> str:
-    """Log-safe version of DATABASE_URL: scheme + host + db only, no password."""
-    raw = os.getenv("DATABASE_URL", "")
-    if not raw:
-        return "<unset>"
+    """Log-safe version of the resolved database URL: scheme + host + db only, no password."""
+    raw = settings.database_url
     try:
         p = urlparse(raw)
         host = p.hostname or "?"
@@ -56,7 +54,7 @@ async def _init_db_background(app: FastAPI) -> None:
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
     log.info("mehamakor backend starting up")
-    log.info("DATABASE_URL  = %s", _redacted_db_url())
+    log.info("db_url        = %s", _redacted_db_url())
     log.info("PORT          = %s", os.getenv("PORT", "<unset, default 8000>"))
     log.info("SECRET_KEY set= %s", "yes" if os.getenv("SECRET_KEY") else "no (using default)")
     log.info("ADMIN_EMAIL   = %s", os.getenv("ADMIN_EMAIL") or "<unset>")

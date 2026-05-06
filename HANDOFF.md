@@ -69,7 +69,22 @@ Drill executed manually on Smadar's Windows + Docker Desktop:
   users 277/299 (22 rows drift — expected, backup taken ~2h before drill)
 - Outcome: **PASS** — backup is restorable, pipeline validated end-to-end
 
-Phase 4 complete. MEH-408 all phases done (Phase 3 — `DATABASE_URL` rename — still pending as a separate follow-up).
+Phase 4 complete.
+
+### MEH-408 Phase 3 — DATABASE_URL separation (branch: feature/meh-408-phase-3-db-url-separation)
+
+Backend now reads `DATABASE_URL_PRODUCTION` (production) or `DATABASE_URL_STAGING` (staging)
+with `DATABASE_URL` as deprecated fallback. Changes: `backend/app/config.py` (+2 fields +
+resolution logic), `backend/app/startup.py` (logging cleanup), `backend/alembic/env.py`
+(comment update), `docs/DEPLOYMENT.md` (§2.3 migration order 4-step guide).
+
+**Smadar's manual Railway steps after merge (in order — see DEPLOYMENT.md §2.3):**
+1. Add `DATABASE_URL_PRODUCTION` in Railway production env (same value as current `DATABASE_URL`)
+2. Add `DATABASE_URL_STAGING` in Railway staging env
+3. Verify startup logs: no "falling back to DATABASE_URL" warning
+4. Remove old `DATABASE_URL` from Railway (both envs)
+
+MEH-408 all phases complete once Phase 3 Railway vars are set.
 
 ## 2026-05-06 — MEH-373 — verify-frontend RTL scan flake closed via externalization
 
