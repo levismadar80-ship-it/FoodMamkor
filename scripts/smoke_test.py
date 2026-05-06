@@ -6,7 +6,7 @@ immediately after every production deploy and to fail loudly with an
 actionable message when a security primitive is wrong.
 
 Usage:
-  python scripts/smoke_test.py https://mehamakor.online
+  python scripts/smoke_test.py https://mehamakor.co.il
   python scripts/smoke_test.py https://foodmamkor-staging.up.railway.app
 
 Exit codes:
