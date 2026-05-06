@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-461: tighten rm -rf regex in check-bash-safety.sh
+
+`fix(safety)`: replaced the overly-broad `rm -rf /` pattern (which matched any path starting with `/`, e.g. `/tmp/foo`) with three precise patterns: bare root (`rm -rf /` end-of-line), root glob (`rm -rf /*`), and explicit top-level system dirs (`/etc|/home|/var|/usr|/opt|/root|/boot|/lib|/lib64|/sbin|/bin` with `$`, `/$`, or `/*$` suffix). Legitimate cleanup of `/tmp/*`, `./paths`, and user subdirs no longer false-positive. False-positive surfaced during MEH-408 Phase 1 verification when CC's own `rm -rf /tmp/meh408_test/` cleanup got blocked.
+
 ## 2026-05-06 — MEH-462: tighten MEH-427 branch-base rule (assert current branch)
 
 `docs(MEH-462)`: added `git branch --show-current` assertion to the Branch-base verification rule in `.claude/rules/workflow.md`. The existing `git rev-list --count HEAD ^origin/staging` check returns 0 when local staging matches origin, missing the case where HEAD is *on* `staging` directly — the exact slip that hit MEH-459 (commit landed on local staging; recovered via `git branch <feature> <SHA>` + push + `git reset --keep origin/staging`). Both checks are now required before any read/write tool call on a new ticket.

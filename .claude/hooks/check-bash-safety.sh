@@ -2,7 +2,7 @@
 # Bash safety guard (PreToolUse: Bash)
 # Blocks dangerous DB DDL and destructive filesystem commands.
 # Exit 2 = block. Exit 0 = allow.
-# Last updated: 2026-05-05 (MEH-408 production-safety deny-list extension)
+# Last updated: 2026-05-06 (MEH-461 tighten rm -rf regex; MEH-408 production-safety deny-list extension)
 
 # Require jq — fail-open if missing
 if ! command -v jq >/dev/null 2>&1; then
@@ -59,7 +59,11 @@ if echo "$COMMAND" | grep -iqE 'DELETE[[:space:]]+FROM[[:space:]]+'; then
   fi
 fi
 
-check_pattern 'rm[[:space:]]+-rf[[:space:]]+/'      "rm -rf /"            "$FS_GUIDANCE"
+# MEH-461: tightened from broad 'rm -rf /' (which matched any path starting with /, e.g. /tmp/foo).
+# Now: bare root, root glob, and explicit top-level system dirs only.
+check_pattern 'rm[[:space:]]+-rf[[:space:]]+/[[:space:]]*$' "rm -rf / (root)" "$FS_GUIDANCE"
+check_pattern 'rm[[:space:]]+-rf[[:space:]]+/\*' "rm -rf /* (root glob)" "$FS_GUIDANCE"
+check_pattern 'rm[[:space:]]+-rf[[:space:]]+/(etc|home|var|usr|opt|root|boot|lib|lib64|sbin|bin)([[:space:]]*$|/[[:space:]]*$|/\*[[:space:]]*$)' "rm -rf <top-level system dir>" "$FS_GUIDANCE"
 check_pattern 'rm[[:space:]]+-rf[[:space:]]+~'      "rm -rf ~ (home dir)" "$FS_GUIDANCE"
 check_pattern 'rm[[:space:]]+-rf[[:space:]]+\$HOME' "rm -rf \$HOME"       "$FS_GUIDANCE"
 check_pattern 'rm[[:space:]]+-rf[[:space:]]+\.[[:space:]]*$' "rm -rf . (cwd)" "$FS_GUIDANCE"
