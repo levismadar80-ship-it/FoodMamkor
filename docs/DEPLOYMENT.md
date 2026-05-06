@@ -1194,3 +1194,135 @@ The Dockerfile uses BuildKit cache mounts so the `~/.cache/uv` wheel cache
 survives across Railway builds. When only app code changes (not deps), the
 `uv sync` layer is a cache hit and the build skips re-downloading packages
 entirely.
+
+## 10. MEH-408 Phase 2 — Backup Operations
+
+Daily off-Railway snapshot of the production DB to Cloudflare R2.
+Independent failure mode from Railway's managed backups (which die
+with the volume if it is deleted — the PocketOS lesson).
+
+The cron is a **separate Railway service** built from `Dockerfile.cron`
+in this repo, scheduled via the Railway dashboard. The main API service
+is unchanged.
+
+### A. Railway cron service — one-time setup
+
+Create the cron service once after this PR merges to staging.
+
+1. Railway dashboard → existing project → **+ New** → **GitHub Repo** → select `FoodMamkor`.
+2. Service name: `cron-backup`.
+3. **Settings → Build**:
+   - Builder: `Dockerfile`
+   - Dockerfile Path: `Dockerfile.cron`
+4. **Settings → Service Variables** — add:
+   - `DATABASE_URL` → use the **internal** form (`postgresql://…@postgres.railway.internal:5432/…`), NOT the public proxy host. Internal networking is faster and removes the egress cost.
+   - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` — copy from production env (already configured during Phase 1 prep).
+   - `ENV=production`
+5. **Settings → Cron Schedule**: `0 23 * * *` (UTC).
+   - That is **02:00 IST in summer (DST)** and **01:00 IST in winter**. The 1-hour seasonal shift is acceptable for v1 — backup runs at a quiet hour either way (see Known Limitations).
+6. **Settings → Networking**: leave default. Cron services don't expose ports.
+7. Deploy. Watch the first scheduled run in **Deployments → Logs**:
+   - Expect: `Backup OK — mehamakor_production_<timestamp>.dump (<bytes> bytes)`.
+
+### B. R2 lifecycle rule — 7-day retention
+
+Configure once in Cloudflare. Independent of the script: backup creation
+and retention are deliberately separate failure modes (one breaking does
+not break the other).
+
+1. Cloudflare dashboard → **R2** → bucket `mehamakor-backups`.
+2. **Settings** → **Object lifecycle rules** → **Add rule**.
+3. Action: **Delete objects after a number of days** → `7`.
+4. Prefix filter: leave blank (apply to all objects in the bucket).
+5. Save.
+
+Cloudflare runs the rule within ~24h of the trigger time; expired objects
+disappear without manual intervention.
+
+### C. Manual backup (any time, locally)
+
+Smadar runs this from her own Git Bash on Windows when she wants a
+backup outside the cron schedule (e.g., before a risky deploy).
+
+```bash
+# Build the cron image once (re-runs only when Dockerfile.cron changes)
+docker build -f Dockerfile.cron -t meh-cron-test .
+
+# .env.staging template — fill in real values, NEVER commit this file
+# (.env.* is in .gitignore)
+cat > .env.staging <<'EOF'
+DATABASE_URL=postgresql://postgres:<password>@<public-host>:<port>/<db>
+R2_ACCOUNT_ID=<from Cloudflare dashboard>
+R2_ACCESS_KEY_ID=<from R2 → Manage R2 API tokens>
+R2_SECRET_ACCESS_KEY=<from R2 → Manage R2 API tokens>
+R2_BUCKET_NAME=mehamakor-backups
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+ENV=staging
+EOF
+
+# Run the backup
+docker run --rm --env-file .env.staging meh-cron-test
+# Expect: exit 0, log shows "Backup OK — mehamakor_staging_<timestamp>.dump"
+```
+
+For a manual backup against the **production** DB from your laptop, swap
+the `.env.staging` values for the production public URL + `ENV=production`.
+**Never commit either file.** The `--env-file` form keeps secrets out of
+your shell history.
+
+### D. Restore procedure (DR drill prep)
+
+`scripts/restore_from_backup.py` downloads from R2 and runs `pg_restore`
+against the target DB. The script **refuses** any target URL containing
+the substring `production` (case-insensitive) or matching `$DATABASE_URL_PRODUCTION`
+when set — production restore is a manual operation, not a script invocation.
+
+```bash
+# Set R2 creds in your shell (no DATABASE_URL needed; the target is an arg)
+export $(grep -v '^DATABASE_URL=' .env.staging | xargs)
+
+# Make sure pg_restore is on PATH (Windows PostgreSQL 18 install)
+export PATH="/c/Program Files/PostgreSQL/18/bin:$PATH"
+
+# Create a clean target DB
+createdb mehamakor_dr_test
+
+# Restore the most recent backup
+python scripts/restore_from_backup.py --latest postgresql://localhost/mehamakor_dr_test
+# Expect: exit 0, row counts table for producers/users/categories/cities
+
+# Or restore a specific file
+python scripts/restore_from_backup.py mehamakor_production_20260507T230000Z.dump \
+    postgresql://localhost/mehamakor_dr_test
+```
+
+Full DR drill checklist (run end-to-end at least once before MEH-408 closes):
+[docs/MANUAL_TESTING.md → MEH-408 Phase 4 — DR drill](./MANUAL_TESTING.md).
+
+### E. Known limitations (v1, accepted)
+
+- **No alerting on cron failure.** Detection is manual: weekly check that
+  the R2 bucket lists a file dated within the last 24h. Phase 2.5 follow-up:
+  Slack webhook or Resend email on non-zero exit.
+- **Railway log retention is 7 days on the free tier.** If a backup error
+  occurs and is not noticed within a week, the post-mortem trail is gone.
+  Phase 2.5 follow-up: stream cron logs to Sentry or to R2 itself.
+- **UTC cron + DST shift.** Schedule `0 23 * * *` UTC = 02:00 IST in summer
+  and 01:00 IST in winter. Both are quiet hours; not worth implementing
+  per-region cron logic for an hour drift.
+- **Image size 321 MB.** Initial target was 250 MB; PG 18 client + boto3
+  + transitive deps put it at 321. Acceptable for v1 — Railway does not
+  bill on image size, only build minutes (one-time per Dockerfile change).
+  Phase 2.5 follow-up: multi-stage build to drop apt build deps from the
+  runtime layer.
+- **Two `DATABASE_URL` forms.** The Railway-internal host
+  (`postgres.railway.internal`) only resolves inside Railway's private
+  network — it is the value the cron service uses. The public proxy host
+  is the value Smadar uses for local `docker run` tests. Both point at
+  the same DB; do not mix them up. Phase 3 (`DATABASE_URL_PRODUCTION` /
+  `DATABASE_URL_STAGING` rename) makes this explicit.
+- **Base image pinned to `python:3.12-slim-bookworm`.** Plain
+  `python:3.12-slim` rolled forward to Debian 13 (trixie) on 2026-05-06,
+  breaking the PGDG `bookworm-pgdg` apt source (libldap-2.5-0 vs 2.6-0).
+  Bookworm support runs through ~2028; revisit when planning the trixie
+  jump (also bump the pgdg sources line in the same commit).
