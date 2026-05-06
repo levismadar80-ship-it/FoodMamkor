@@ -1,3 +1,8 @@
+---
+paths:
+  - "backend/**/*.py"
+---
+
 # Backend rules
 
 FastAPI + SQLAlchemy + Pydantic patterns. Deeper decisions (why no

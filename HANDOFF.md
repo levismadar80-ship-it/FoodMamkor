@@ -1,7 +1,24 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-408 Phase 3 DATABASE_URL separation merged; MEH-367 agent runtime budgets merged; MEH-385 pr-reviewer subagent open for review)
+> Last updated: 2026-05-06 (MEH-359 paths frontmatter for frontend.md + backend.md — MEH-342 follow-up complete, 6 files now path-scoped; MEH-385 pr-reviewer subagent open)
+
+### MEH-359 — paths frontmatter for frontend.md + backend.md (PR open)
+
+Branch: `feature/meh-359-rules-frontmatter-frontend-backend` off staging.
+Frontmatter-only change. Two files prepended:
+
+- `.claude/rules/frontend.md` — globs `frontend/**/*.{jsx,js,ts,tsx,css,html,scss}`
+- `.claude/rules/backend.md` — globs `backend/**/*.py`
+
+Closes MEH-359. **MEH-342 frontmatter coverage now complete (6 files):**
+rtl, db, code-execution, prompting (PR #366) + frontend, backend (this PR).
+Zero body content edits; YAML validated.
+
+Manual loading tests deferred to Smadar (sandbox can't restart Claude
+Code session): edit a file under `frontend/` → frontend.md loads; under
+`backend/` → backend.md loads, frontend.md does not; at repo root →
+neither loads.
 
 ### MEH-385 — pr-reviewer subagent (PR open, off staging)
 
