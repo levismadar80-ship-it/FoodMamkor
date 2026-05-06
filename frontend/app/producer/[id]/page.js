@@ -1,7 +1,6 @@
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_URL } from "@/lib/env";
 
 async function getProducer(id) {
   try {
