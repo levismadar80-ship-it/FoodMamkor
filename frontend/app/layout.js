@@ -12,18 +12,13 @@ import ChatWidget from "@/components/ChatWidget";
 import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { env, SITE_URL } from "@/lib/env";
 
 // LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
 // to every page that doesn't override it. Individual page.js files
 // can extend via `export const metadata = { ... }` on server components
 // or via a wrapping server component for client pages.
-// MEH-453: 3-tier fallback mirrors frontend/app/sitemap.js:11-14. Phase 1
-// keeps the default at mehamakor.online so production behavior is
-// unchanged until env vars flip in Vercel (Phase 2).
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.SITE_URL ||
-  "https://mehamakor.online";
+// MEH-454 Phase 3: SITE_URL helper validated by Zod at build time (lib/env.js).
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
@@ -105,7 +100,7 @@ export const viewport = {
 };
 
 // FINAL_AUDIT: Microsoft Clarity — opt-in via NEXT_PUBLIC_CLARITY_PROJECT_ID.
-const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
+const CLARITY_PROJECT_ID = env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 
 export default function RootLayout({ children }) {
   return (
