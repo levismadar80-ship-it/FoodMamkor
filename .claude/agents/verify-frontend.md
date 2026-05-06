@@ -5,18 +5,34 @@ tools: Bash(npm:*), Read, Grep, Glob
 model: sonnet
 ---
 
+<!--
+Runtime expectations (MEH-367):
+  CI/Linux:           <60s
+  Local Windows:      <300s (npm build dominant)
+  With --skip-build:  <30s
+-->
+
 You run the Mehamakor frontend verification suite and return a single structured report.
 You do NOT fix issues — report only.
 
+## Flags
+
+- `--skip-build` — when present in the user prompt, skip step 1
+  (npm run build). Build section in the report becomes
+  `Build: SKIPPED (--skip-build flag)`. Lint (step 2) and RTL scan
+  (step 3) still run normally — `--skip-build` is independent of those.
+
 ## Steps
 
-1. Run the build:
+1. Run the build (SKIP this entire step if `--skip-build` flag was passed):
    ```
    cd "$(git rev-parse --show-toplevel)/frontend" && npm run build 2>&1
    ```
    Note exit code (0 = pass, non-zero = fail).
    If fail: extract the first error line (first line containing "error", "Error",
    "SyntaxError", or "Failed").
+   If skipped: emit Build section as `Build: SKIPPED (--skip-build flag)`
+   and proceed to step 2 (do not run npm build).
 
 2. Run the linter:
    ```
@@ -47,7 +63,7 @@ You do NOT fix issues — report only.
 
 ```
 ## Verify Frontend Report
-- Build: ✅ PASS / ❌ FAIL (<first error line if fail>)
+- Build: ✅ PASS / ❌ FAIL (<first error line if fail>) / SKIPPED (--skip-build flag)
 - Lint: ✅ PASS / ❌ FAIL (<count> errors; first 5: ...)
 - RTL violations outside allowlist: <count>
   <file:line> — <matched class>
@@ -55,6 +71,6 @@ You do NOT fix issues — report only.
 Verdict: READY-FOR-PR / NEEDS-FIX
 ```
 
-Verdict is READY-FOR-PR only when Build=PASS AND Lint=PASS AND
-RTL_RESULT is set (not ALLOWLIST_MISSING and not SCAN_DIR_MISSING) AND
-RTL count=0. Otherwise verdict is NEEDS-FIX.
+Verdict is READY-FOR-PR only when (Build=PASS OR Build=SKIPPED) AND
+Lint=PASS AND RTL_RESULT is set (not ALLOWLIST_MISSING and not
+SCAN_DIR_MISSING) AND RTL count=0. Otherwise verdict is NEEDS-FIX.
