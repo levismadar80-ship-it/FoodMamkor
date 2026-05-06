@@ -50,6 +50,17 @@ Chunk 3 (docs) about to land.
   to add `moto[s3]` dev dep). Refining MEH-442 to allow additive
   deps edits would unblock.
 
+## 2026-05-06 — MEH-428: 4 adversarial-review variants shipped
+
+Specialized variants of `/adversarial-review`, each with FINDER → ADVERSARY → REFEREE skeleton narrowed to a documented incident family. Per ADR-005.
+
+- `/adversarial-review-types` (73 lines) — diff touches `backend/app/models/`, `backend/app/schemas/`, `frontend/lib/schemas.js`, or `backend/alembic/versions/`. MEH-283/321 schema-drift family.
+- `/adversarial-review-errors` (70 lines) — diff touches services/routers/background tasks or any try/except in side-effect code. MEH-325 silent-except family.
+- `/adversarial-review-coverage` (82 lines) — diff extracts a helper, edits a central component, adds an API endpoint, or adds a React component. PR #43 bare-identifier family.
+- `/adversarial-review-size` (93 lines) — diff touches any file in `.claude/central-components.json`. MEH-407 god-files family.
+
+Multiple variants may apply to one PR. `.claude/rules/workflow.md` PR Review Workflow section now points at all 4. Closes MEH-428.
+
 ## 2026-05-06 — MEH-373 — verify-frontend RTL scan flake closed via externalization
 
 **Branch:** `feature/meh-373-verify-frontend-flake-fix` off staging. **PR:** to be opened (draft).

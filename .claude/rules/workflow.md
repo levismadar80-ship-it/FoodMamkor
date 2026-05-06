@@ -472,6 +472,27 @@ Paste all output in one message with clear section headers:
 This is the standard handoff to Claude.ai for code review.
 GitHub MCP is not available in the Claude.ai web interface.
 
+### Specialized adversarial-review variants (MEH-428)
+
+The base `/adversarial-review` is the general fallback. Four specialized
+variants narrow FINDER to documented incident families (per ADR-005). Pick
+the variant matching the diff; use the base when the class is unknown:
+
+- `/adversarial-review-types` — diff touches `backend/app/models/`,
+  `backend/app/schemas/`, `frontend/lib/schemas.js`, or
+  `backend/alembic/versions/` (MEH-283/321 schema-drift family).
+- `/adversarial-review-errors` — diff touches `backend/app/services/`,
+  `backend/app/routers/`, background tasks, or any `try:`/`except:` in
+  side-effect code (MEH-325 silent-except family).
+- `/adversarial-review-coverage` — diff extracts a helper, edits a
+  central component, adds an API endpoint, or adds a React component
+  (PR #43 bare-identifier family).
+- `/adversarial-review-size` — diff touches any file in
+  `.claude/central-components.json` (MEH-407 god-files family).
+
+Multiple variants may apply to one PR — run each that fits. ADR-005
+records the local-extension-vs-plugin decision.
+
 ---
 
 ## /loop — usage patterns
