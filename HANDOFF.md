@@ -1,22 +1,29 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-359 merged b17f0d7; MEH-302 dedupe step-3 banner — PR open; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-06 (MEH-303 mask phone in logs — PR open; MEH-359 merged b17f0d7; MEH-302 merged 4c919c9; MEH-385 pr-reviewer subagent open)
 
-### MEH-302 — dedupe step-3 success screen banner (PR open)
+### MEH-303 — mask phone in logger output (PR open)
 
-Branch: `feature/meh-302-dedupe-step3-banner-diagnostic` off staging.
-Single-file copy change — `frontend/app/register/producer/page.js`
-lines 535–542. Banner on whatsapp_sent=false branch rewritten as
-diagnostic prose (no nested button); paragraph + whatsapp_sent=true
-branch + shared "מה הלאה?" card untouched. Bonus RTL fix in the same
-block: `text-right` → `text-end`. Closes MEH-302; resolves MEH-287
-follow-up F6 (banner/paragraph dedupe).
+Branch: `feature/meh-303-mask-phone-logs` off staging. Defense-in-depth
+PII helper. New `backend/app/utils/pii.py::mask_phone()` returns
+`<missing>` / `***` / `***<last4>`. Wired into the only `{phone}` log
+interpolation site: `backend/app/services/auth_notifications.py:62`
+(WHATSAPP welcome FAILED). 6 pytest cases at `tests/test_pii.py`
+(None / empty / too-short / IL mobile / international / separators).
+Post-edit `grep -rn 'logger\.' backend/app/ | grep -E '\{phone[^}]*\}'`
+returns 0. Closes MEH-303; resolves MEH-287 follow-up F7.
 
-Vercel preview URL goes in the PR body once Vercel emits it. Smadar
-to smoke-test on mobile (390px): Hebrew RTL renders, banner reads as
-diagnostic not redundant, paragraph+banner together don't feel
-repetitive.
+Layout note: introduces `backend/app/utils/` package alongside the
+existing flat `backend/app/slug_utils.py` (minor inconsistency,
+accepted — spec authoritative). Future refactor of `slug_utils.py`
+→ `utils/slug.py` is a separate ticket if it bothers us.
+
+### MEH-302 — dedupe step-3 success screen banner (MERGED — squash `4c919c9`, PR #514)
+
+Banner on `/register/producer` step 3 (whatsapp_sent=false) rewritten
+as diagnostic prose; bonus `text-right` → `text-end` RTL fix. Closes
+MEH-302; resolves MEH-287 follow-up F6.
 
 ### MEH-359 — paths frontmatter for frontend.md + backend.md (MERGED — squash `b17f0d7`, PR #512)
 
