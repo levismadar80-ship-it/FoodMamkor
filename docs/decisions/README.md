@@ -25,10 +25,8 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [002](./ADR-002-email-resend-http.md) | Email via Resend HTTP API, not SMTP | Accepted | 2026-04-21 | Railway SMTP block |
 | [003](./ADR-003-alembic-migrations-only.md) | DB schema via Alembic only | Accepted | 2026-04-24 | MEH-265 |
 | [004](./ADR-004-skills-lockdown-5-layers.md) | Skills supply chain — 5-layer defense | Accepted | 2026-04-30 | MEH-397 |
+| [005](./ADR-005-adversarial-review-local-extension.md) | `/adversarial-review` local extension vs plugin | Accepted | 2026-05-01 | MEH-428 |
 | [006](./ADR-006-schema-parity-discipline.md) | Schema parity discipline — 5 enforcement rules | Accepted | 2026-05-05 | MEH-433 |
-
-## Pending
-- ADR-005 — `/adversarial-review` local extension vs plugin → blocked on MEH-428 shipping. Open a follow-up after merge.
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated
