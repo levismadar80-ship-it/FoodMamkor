@@ -32,4 +32,4 @@ export const SITE_URL =
   env.NEXT_PUBLIC_SITE_URL || "https://mehamakor.co.il";
 
 export const API_URL =
-  env.BACKEND_URL || env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
