@@ -3,6 +3,30 @@
 > Read this before starting any work.
 > Last updated: 2026-05-06 (MEH-408 Phase 1 — staging conflict resolved on PR #485)
 
+## 2026-05-06 — MEH-463 — finish T3 env migration (close MEH-454 follow-up)
+
+**Branch:** `feature/meh-463-finish-env-migration` off staging. **PR:** to be opened (draft).
+
+**Goal:** close the scope gap MEH-454 Phase 3 left behind. Phase 3 migrated 4 entry points (sitemap.js, layout.js, seo.js + the schema itself); 12 `process.env` reads in 11 other files were tracked as a follow-up. This PR finishes that sweep.
+
+**What shipped:**
+- 11 files migrated from `process.env.X` to `import { env, SITE_URL, API_URL } from "@/lib/env"`. Pattern A (5 files using `API_URL`): `app/[slug]/page.js`, `app/producer/[id]/page.js`, `app/producers/page.jsx`, `app/map/page.js`, `lib/push.js`. Pattern B (6 files using OAuth/SUPPORT_PHONE/etc.): `app/register/page.js`, `app/login/page.js`, `app/settings/page.jsx`, `components/ProducerOAuthButtons.jsx`, `components/AppleAuthButton.jsx`, `components/GoogleAuthButton.jsx`.
+- Bonus: `app/producers/page.jsx:18` had a hardcoded `const SITE_URL = "https://mehamakor.online"` literal (orphan from before MEH-454 Phase 2). Replaced with `import { SITE_URL } from "@/lib/env"`. Single coherent PR per user direction.
+- Redundant `typeof process !== "undefined"` guards in `register/page.js` + `login/page.js` dropped — `env` always resolves at module load, so the guard was always-true.
+
+**NODE_ENV carve-out:** 4 reads of `process.env.NODE_ENV` in `app/error.js`, `app/map/state/useMapSync.js`, `lib/analytics.js` left as raw `process.env`. NODE_ENV is a Node built-in managed by the framework, not a developer-configured app var — T3 env docs explicitly do not recommend wrapping it. Verification step 3 grep target updated to "only env.js + 4 NODE_ENV reads" to reflect this.
+
+**Verification:**
+- `npm run build` — passes.
+- `npx vitest run __tests__/env.test.js` — 4/4 green.
+- `grep -rn "process.env" frontend/app/ frontend/lib/ frontend/components/` — only `lib/env.js` (schema source-of-truth) + 4 NODE_ENV reads.
+- `grep -rn "process.env" frontend/components/` — 0 matches.
+- Full vitest baseline parity: 25 pre-existing failures unchanged. Zero new regressions.
+
+**No schema changes:** every var encountered was already declared in `lib/env.js` after MEH-454 Phase 3.
+
+**No `.env.example` changes:** all migrated vars already documented.
+
 ## 2026-05-06 — MEH-454 Phase 3 — type-safe env validation (@t3-oss/env-nextjs + Zod)
 
 **Branch:** `feature/meh-454-typesafe-env-validation` off staging. **PR:** to be opened (draft).

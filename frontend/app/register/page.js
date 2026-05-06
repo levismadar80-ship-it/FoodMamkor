@@ -12,6 +12,7 @@ import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
+import { env } from "@/lib/env";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -125,10 +126,8 @@ export default function RegisterPage() {
     passwordOk &&
     agreedToTerms;
 
-  const googleConfigured =
-    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  const appleConfigured =
-    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+  const googleConfigured = !!env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
   if (emailSent) {

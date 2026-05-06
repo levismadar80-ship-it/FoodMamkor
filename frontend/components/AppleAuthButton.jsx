@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { env } from "@/lib/env";
 
 export default function AppleAuthButton({ onSuccess, onError }) {
   const { loginWithApple } = useAuth();
-  const clientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
-  const redirectUri = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
+  const clientId = env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+  const redirectUri = env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
 
   useEffect(() => {
     if (!clientId || typeof window === "undefined") return;

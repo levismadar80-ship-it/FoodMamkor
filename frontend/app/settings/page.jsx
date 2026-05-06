@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
+import { env } from "@/lib/env";
 
 export default function SettingsPage() {
   return (
@@ -1022,7 +1023,7 @@ function SupportModal({ onClose }) {
         <h2 className="font-semibold text-site-text text-lg">צרי קשר</h2>
         <p className="text-sm text-site-muted">נשמח לעזור. בחרי את הדרך הנוחה לך:</p>
         <a
-          href={`https://wa.me/${process.env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
+          href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"

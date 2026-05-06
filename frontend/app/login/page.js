@@ -10,6 +10,7 @@ import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 import { showToast } from "@/lib/toast";
+import { env } from "@/lib/env";
 
 /**
  * Login page (docs/archive/FEEDBACK_FIXES.md fix 2).
@@ -69,10 +70,8 @@ function LoginPageBody() {
     }
   };
 
-  const googleConfigured =
-    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  const appleConfigured =
-    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+  const googleConfigured = !!env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
   // tasks_for_claude_code.md task 8 — inline field-level validation.

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import ProducersClient from "@/components/ProducersClient";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
+import { API_URL, SITE_URL } from "@/lib/env";
 
 /**
  * Public paginated index (MEH-23). Server-rendered so crawlers can
@@ -13,9 +14,6 @@ import { clampPage } from "@/lib/pagination";
  * against the same /producers API without breaking SSR for crawlers.
  */
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const SITE_URL = "https://mehamakor.online";
 const PER_PAGE = 24;
 
 async function fetchPage(page) {

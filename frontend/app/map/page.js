@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MapClient from "./MapClient";
+import { API_URL } from "@/lib/env";
 
 export const metadata = {
   title: "מפת בתי עסק",
@@ -18,8 +19,6 @@ export const metadata = {
   },
   alternates: { canonical: "/map" },
 };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
  * MEH-151: Fetch a representative batch of producers server-side.

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
+import { env } from "@/lib/env";
 
 /**
  * MEH-170 — Google + Apple buttons for Step 0 of /register/producer.
@@ -20,9 +21,9 @@ import { useGoogleSignIn } from "@/lib/use-google-sign-in";
  */
 
 export default function ProducerOAuthButtons({ onSuccess, onError }) {
-  const googleId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  const appleId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
-  const appleRedirect = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
+  const googleId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const appleId = env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+  const appleRedirect = env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
 
   const googleBtnRef = useRef(null);
   const [loading, setLoading] = useState(false);
