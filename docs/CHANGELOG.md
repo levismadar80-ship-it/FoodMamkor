@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — docs: write ADR-005 (close MEH-432 Pending entry)
+
+`docs`: ADR-005 (`/adversarial-review` local extension vs plugin install) was queued in `docs/decisions/README.md` Pending section since MEH-432 merge, gated on MEH-428 shipping the 4 variants. Decision was already made — recording the ADR now reflects ADR philosophy: ADRs document *decisions*, not just shipped implementations. Variants implementation tracked under MEH-428 (Backlog). Removes the Pending section from `docs/decisions/README.md`.
+
 ## 2026-05-06 — MEH-467: fix lint-feedback hook path-routing for repo-root Python files
 
 `fix(MEH-467)`: hook was failing E902 (file not found) on Python files outside `backend/` because `${rel_path#backend/}` was a no-op for paths that don't start with `backend/`, and the hook then ran `cd backend && ruff check <full-relpath>` which couldn't find the file. Hook misclassified E902 as a real lint error and incremented the 3-strike counter, causing false blocks on repo-root files like `tests/test_schema_location.py` (surfaced during MEH-460 Pkg 4-5). Fixed by branching on whether `rel_path` starts with `backend/`: backend files use existing logic; repo-root files cd to `$REPO_ROOT` and pass the full relpath. Graceful skip if no ruff config at repo root (defensive — current repo has no top-level `pyproject.toml` with `[tool.ruff]`, so `tests/*.py` edits now no-op the ruff check rather than emitting a phantom failure). Original MEH-467 premise (CI-vs-hook ruleset mismatch) was empirically disproved — CI doesn't run ruff at all (`.github/workflows/` has zero ruff invocations); hook was already aligned to `backend/pyproject.toml` via cwd auto-discovery. Linear ticket scope rewritten after empirical investigation.
