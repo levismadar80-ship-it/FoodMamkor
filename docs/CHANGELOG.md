@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-05 — MEH-457: producer registration enforces password policy (close MEH-306 sibling gap)
+
+`fix(MEH-457)`: `/auth/register/producer` now `await`s `validate_password` (HIBP / deny-list / 12-char floor) on the new-account path, mirroring the `/register` pattern from MEH-306. `ProducerRegister.password` upgraded to `PasswordField | None` (12-char floor + whitespace strip) — was `str | None Field(min_length=8)`. Also stamps `password_changed_at` on the new User row, closing the MEH-305 sibling gap so JWT iat invalidation works for producers registered via this path. Upgrade path (logged-in user → producer) unchanged. Closes Drift #1 BLOCK from `docs/SCHEMA_PARITY_AUDIT.md`.
+
 ## 2026-05-05 — MEH-433: schema parity audit + ADR-006
 
 MEH-433: Schema parity audit baseline (`docs/SCHEMA_PARITY_AUDIT.md`) + ADR-006 (5 enforcement rules R1–R5). 11 drift findings; BLOCK + 2 INFO/WARN tracked in MEH-457, MEH-458, MEH-459.

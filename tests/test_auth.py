@@ -334,3 +334,78 @@ class TestForgotPasswordRateLimits:
             ]
         assert statuses[:10] == [200] * 10
         assert statuses[10] == 429
+
+
+# ---------- Producer signup policy (MEH-457) ----------
+
+class TestProducerSignupPolicy:
+    """MEH-457 — close MEH-306 sibling gap on /auth/register/producer.
+
+    Mirrors TestSignupPolicy. The autouse `_mock_hibp_clean` fixture
+    stubs HIBP to "no match"; the breach test patches `_check_hibp`
+    directly to return True.
+    """
+
+    VALID_REG = {
+        "email": "p@x.com",
+        "name": "P",
+        "password": SAFE_PASSWORD,
+        "producer_name": "X",
+        "phone": "0501234567",
+        "category_ids": [],
+        "primary_contact_method": "whatsapp",
+    }
+
+    def test_producer_signup_short_password_rejected_422(self, client):
+        # 11 chars — PasswordField min_length=12 short-circuits at Pydantic.
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_REG, "password": "short_pass!"},
+        )
+        assert resp.status_code == 422
+
+    def test_producer_signup_breached_password_rejected(self, client):
+        # Override the autouse HIBP=False stub to simulate a breach hit.
+        with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
+            resp = client.post("/auth/register/producer", json=self.VALID_REG)
+        assert resp.status_code == 422
+        body = resp.json()
+        assert "too_common" in body["detail"]["failures"]
+
+    def test_producer_signup_deny_listed_password_rejected(self, client):
+        # 12-char deny-listed credential — blocked locally, HIBP not called.
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_REG, "password": DENY_LISTED_AT_LENGTH},
+        )
+        assert resp.status_code == 422
+        assert "too_common" in resp.json()["detail"]["failures"]
+
+    def test_producer_signup_valid_password_succeeds(self, client, db):
+        from app.models import User
+
+        before = datetime.now(timezone.utc) - timedelta(seconds=1)
+        resp = client.post("/auth/register/producer", json=self.VALID_REG)
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]
+        # MEH-457 closes MEH-305 sibling gap: producer User must have iat anchor.
+        user = db.query(User).filter(User.email == "p@x.com").first()
+        assert user is not None
+        assert user.password_changed_at is not None
+        assert user.password_changed_at >= before
+
+    def test_producer_upgrade_path_unaffected_by_policy(self, client, db):
+        # Authenticated consumer → POST without password → 200.
+        # PasswordField | None = None must still allow the upgrade flow (MEH-143).
+        u = make_user(db, email="upgrade@x.com", password=SAFE_PASSWORD)
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                "producer_name": "Y",
+                "phone": "0501234567",
+                "category_ids": [],
+                "primary_contact_method": "whatsapp",
+            },
+            headers=auth_header(u),
+        )
+        assert resp.status_code == 200

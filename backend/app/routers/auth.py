@@ -251,7 +251,7 @@ async def register(request: Request, response: Response, data: UserRegister, bac
 
 @router.post("/register/producer", response_model=ProducerRegistrationResponse)
 @limiter.limit("3/hour")  # SECURITY FIX #2
-def register_producer(
+async def register_producer(
     request: Request,
     response: Response,
     data: ProducerRegister,
@@ -282,6 +282,13 @@ def register_producer(
                 status_code=409,
                 detail="האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך.",
             )
+
+        # MEH-457 — close the MEH-306 sibling gap. Same fail-open contract
+        # as /auth/register: HIBP timeouts/5xx do not block; only deny-list
+        # / confirmed breach matches block. No current_hash — fresh signup.
+        result = await validate_password(data.password)
+        if not result.ok:
+            raise HTTPException(status_code=422, detail={"failures": result.failures})
 
     # MEH-17: validate primary contact method has its required field filled.
     method = (data.primary_contact_method or "whatsapp").strip().lower()
@@ -349,7 +356,12 @@ def register_producer(
         user = User(
             email=data.email,
             name=data.name,
-            password_hash=hash_password(data.password),
+            # MEH-457: bcrypt blocks ~50-200ms; off-loop required because the
+            # handler is now async (validate_password awaits HIBP).
+            password_hash=await asyncio.to_thread(hash_password, data.password),
+            # MEH-457 (closes MEH-305 sibling gap): stamp the iat anchor so
+            # JWTs issued before a future password change can be invalidated.
+            password_changed_at=datetime.now(timezone.utc),
             phone=data.phone,
             role="producer",
             producer_id=producer.id,
