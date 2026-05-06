@@ -1070,3 +1070,144 @@ class CategoryRequestOut(BaseModel):
 class CategoryRequestUpdate(BaseModel):
     status: str = Field(..., pattern="^(pending|approved|rejected|merged)$")
     admin_notes: str | None = None
+
+
+# --- Event ---
+# MEH-458: relocated from routers/events.py per ADR-006 R1.
+# Pure relocation — fields, validators, model_config preserved verbatim.
+class EventCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=300)
+    description: str | None = None
+    event_date: date
+    event_time: time | None = None
+    location: str | None = None
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    image_url: str | None = None
+    category: str = Field(..., min_length=1, max_length=30)
+    price: int = 0
+    max_participants: int | None = None
+    registration_url: str | None = None
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
+    @field_validator("location")
+    @classmethod
+    def _sanitize_location(cls, v):
+        return sanitize_text(v, max_length=200)
+
+
+class EventUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    event_date: date | None = None
+    event_time: time | None = None
+    location: str | None = None
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    image_url: str | None = None
+    category: str | None = None
+    price: int | None = None
+    max_participants: int | None = None
+    registration_url: str | None = None
+    is_active: bool | None = None
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000)
+
+    @field_validator("location")
+    @classmethod
+    def _sanitize_location(cls, v):
+        return sanitize_text(v, max_length=200)
+
+
+class EventOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    producer_name: str | None = None
+    title: str
+    description: str | None = None
+    event_date: date
+    event_time: time | None = None
+    location: str | None = None
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    image_url: str | None = None
+    category: str
+    price: int
+    max_participants: int | None = None
+    registration_url: str | None = None
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class EventFilters(BaseModel):
+    """MEH-447: query-param bag for GET /events. Used via
+    Annotated[EventFilters, Depends()] so FastAPI exposes each field as
+    an individual query parameter — preserving the pre-refactor OpenAPI
+    schema verbatim while keeping list_events under PLR0913's 5-arg cap."""
+
+    city: str | None = Field(default=None)
+    category: str | None = Field(default=None)
+    from_date: date | None = Field(default=None)
+    to_date: date | None = Field(default=None)
+    producer_id: UUID | None = Field(default=None)
+
+
+# --- Review (ProducerReview) ---
+# MEH-458: relocated from routers/reviews.py per ADR-006 R1.
+# created_at: str preserved (Drift #4 in audit, intentional out-of-scope).
+class ReviewCreateNested(BaseModel):
+    stars: int = Field(..., ge=1, le=5)
+    body: str = Field(..., min_length=10, max_length=500)
+
+    @field_validator("body")
+    @classmethod
+    def _sanitize_body(cls, v):
+        return sanitize_text(v, max_length=500)
+
+
+class ReviewOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    user_id: UUID
+    user_name: str | None = None
+    stars: int
+    body: str | None = None
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class AdminReviewOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    producer_name: str | None = None
+    user_id: UUID
+    user_name: str | None = None
+    user_email: str | None = None
+    stars: int
+    body: str | None = None
+    is_hidden: bool
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewsPage(BaseModel):
+    reviews: list[ReviewOut]
+    total: int
+    page: int
+    pages: int
+
+    model_config = {"from_attributes": True}

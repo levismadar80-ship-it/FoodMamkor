@@ -6,105 +6,25 @@ GET  /events/{id}                event detail
 POST /events                     create event (producer only)
 PUT  /events/{id}                update (owner only)
 DELETE /events/{id}              delete (owner only)
+
+MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
-from datetime import date, datetime, time
+from datetime import date, datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user, require_producer
 from app.database import get_db
 from app.models import Event, User
-from app.services.sanitization import sanitize_text
+from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
 
 router = APIRouter(tags=["events"])
 
 
 VALID_CATEGORIES = {"סדנה", "סיור", "שוק", "קטיף", "טעימות", "אחר"}
-
-
-# ============================================================
-# Schemas
-# ============================================================
-
-
-class EventCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=300)
-    description: str | None = None
-    event_date: date
-    event_time: time | None = None
-    location: str | None = None
-    city: str | None = None
-    lat: float | None = None
-    lng: float | None = None
-    image_url: str | None = None
-    category: str = Field(..., min_length=1, max_length=30)
-    price: int = 0
-    max_participants: int | None = None
-    registration_url: str | None = None
-
-    @field_validator("description")
-    @classmethod
-    def _sanitize_description(cls, v):
-        return sanitize_text(v, max_length=2000)
-
-    @field_validator("location")
-    @classmethod
-    def _sanitize_location(cls, v):
-        return sanitize_text(v, max_length=200)
-
-
-class EventUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    event_date: date | None = None
-    event_time: time | None = None
-    location: str | None = None
-    city: str | None = None
-    lat: float | None = None
-    lng: float | None = None
-    image_url: str | None = None
-    category: str | None = None
-    price: int | None = None
-    max_participants: int | None = None
-    registration_url: str | None = None
-    is_active: bool | None = None
-
-    @field_validator("description")
-    @classmethod
-    def _sanitize_description(cls, v):
-        return sanitize_text(v, max_length=2000)
-
-    @field_validator("location")
-    @classmethod
-    def _sanitize_location(cls, v):
-        return sanitize_text(v, max_length=200)
-
-
-class EventOut(BaseModel):
-    id: UUID
-    producer_id: UUID
-    producer_name: str | None = None
-    title: str
-    description: str | None = None
-    event_date: date
-    event_time: time | None = None
-    location: str | None = None
-    city: str | None = None
-    lat: float | None = None
-    lng: float | None = None
-    image_url: str | None = None
-    category: str
-    price: int
-    max_participants: int | None = None
-    registration_url: str | None = None
-    is_active: bool
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
 
 
 def _serialize(event: Event) -> EventOut:
@@ -133,19 +53,6 @@ def _serialize(event: Event) -> EventOut:
 # ============================================================
 # Routes
 # ============================================================
-
-
-class EventFilters(BaseModel):
-    """MEH-447: query-param bag for GET /events. Used via
-    Annotated[EventFilters, Depends()] so FastAPI exposes each field as
-    an individual query parameter — preserving the pre-refactor OpenAPI
-    schema verbatim while keeping list_events under PLR0913's 5-arg cap."""
-
-    city: str | None = Field(default=None)
-    category: str | None = Field(default=None)
-    from_date: date | None = Field(default=None)
-    to_date: date | None = Field(default=None)
-    producer_id: UUID | None = Field(default=None)
 
 
 @router.get("/events", response_model=list[EventOut])
