@@ -5,17 +5,17 @@ about page contact form). All endpoints are anonymous — no auth required.
 """
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.email import send_email
-from app.services.sanitization import sanitize_text
 from app.database import get_db
 from app.models import Category, ContactMessage, DeliveryArea, NewsletterSubscriber, Producer
 from app.rate_limit import limiter
+# MEH-460 Pkg 5 (FINAL): schemas relocated to app.schemas.schemas per ADR-006 R1.
+from app.schemas.schemas import ContactIn, NewsletterIn, StatsOut
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +25,6 @@ router = APIRouter(tags=["marketing"])
 # ============================================================
 # STATS — GET /stats
 # ============================================================
-
-
-class StatsOut(BaseModel):
-    producers_count: int
-    categories_count: int
 
 
 @router.get("/stats", response_model=StatsOut)
@@ -52,10 +47,6 @@ def get_stats(db: Session = Depends(get_db)):
 # ============================================================
 
 
-class NewsletterIn(BaseModel):
-    email: EmailStr
-
-
 @router.post("/newsletter", status_code=201)
 @limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
 def subscribe_newsletter(request: Request, data: NewsletterIn, db: Session = Depends(get_db)):
@@ -73,27 +64,6 @@ def subscribe_newsletter(request: Request, data: NewsletterIn, db: Session = Dep
     db.add(sub)
     db.commit()
     return {"detail": "נרשמת! 🌱"}
-
-
-# ============================================================
-# CONTACT — POST /contact
-# ============================================================
-
-
-class ContactIn(BaseModel):
-    name: str = Field(..., min_length=1, max_length=200)
-    email: EmailStr
-    message: str = Field(..., min_length=1, max_length=5000)
-
-    @field_validator("name")
-    @classmethod
-    def _sanitize_name(cls, v):
-        return sanitize_text(v, max_length=200)
-
-    @field_validator("message")
-    @classmethod
-    def _sanitize_message(cls, v):
-        return sanitize_text(v, max_length=5000)
 
 
 # ============================================================

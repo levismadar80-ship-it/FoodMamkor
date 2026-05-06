@@ -1407,3 +1407,48 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+# --- Marketing (marketing.py) ---
+# MEH-460 Pkg 5 (FINAL): relocated from routers/marketing.py per ADR-006 R1.
+# ContactIn's @field_validator validators call sanitize_text — already
+# imported at the top of this file (line 9). Handler-side concerns
+# (_send_contact_email, rate-limit decorators) stay in marketing.py.
+class StatsOut(BaseModel):
+    producers_count: int
+    categories_count: int
+
+
+class NewsletterIn(BaseModel):
+    email: EmailStr
+
+
+class ContactIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    email: EmailStr
+    message: str = Field(..., min_length=1, max_length=5000)
+
+    @field_validator("name")
+    @classmethod
+    def _sanitize_name(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("message")
+    @classmethod
+    def _sanitize_message(cls, v):
+        return sanitize_text(v, max_length=5000)
+
+
+# --- Producers (router) ---
+# MEH-460 Pkg 5 (FINAL): relocated from routers/producers.py per ADR-006 R1.
+# producers.py is a central component — only the class itself moved.
+# Handler-side concerns (_VALID_CONTACT_METHODS frozenset at producers.py:216,
+# the record_contact_click handler) stay in the router.
+class ContactClickIn(BaseModel):
+    method: str
+
+
+# --- Referrals (referrals.py) ---
+# MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
+class ClaimReferralRequest(BaseModel):
+    code: str
