@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-06 — MEH-459: drop unused Review.title column (Drift #3 — full cleanup)
+
+`chore(MEH-459)`: dropped `producer_reviews.title` (3-layer dead code from audit Drift #3) via Alembic revision `261e8d6ab23a`. Cleanup was end-to-end: ORM field removal (`models.py`), 5 frontend locations in `ProducerReviews.jsx` (state, pre-fill, POST body, form input + label, render block) — original audit under-counted by 3. The form input was a silent UX bug (Pydantic `extra='ignore'` discarded posted titles with 200 OK). Closes Drift #3 from `docs/SCHEMA_PARITY_AUDIT.md`. EXPECTED_REV bumped from `2a74fa41ceb1` to `261e8d6ab23a`.
+
 ## 2026-05-06 — MEH-458: relocate Event + Review schemas to schemas/ + R1 enforcement test
 
 `refactor(MEH-458)`: moved `EventCreate` / `EventUpdate` / `EventOut` / `EventFilters` from `routers/events.py` and `ReviewCreateNested` / `ReviewOut` / `AdminReviewOut` / `ReviewsPage` from `routers/reviews.py` to `backend/app/schemas/schemas.py` (new `# --- Event ---` and `# --- Review (ProducerReview) ---` sections). Pure relocation — fields, validators, `model_config`, and `created_at: str` (Drift #4) preserved verbatim. Added `tests/test_schema_location.py` AST walker that enforces ADR-006 R1: no `BaseModel`-direct subclass in `backend/app/routers/`. Audit Drift #2 (`docs/SCHEMA_PARITY_AUDIT.md`) was an under-count — 28 pre-existing violations across 11 routers are tracked under MEH-460 and pinned in the test's `ALLOWLIST`. Closes Drift #2 partially (Event + Review path); MEH-460 finishes the cleanup.

@@ -597,7 +597,6 @@ class ProducerReview(Base):
     producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     stars = Column(Integer, nullable=False)  # 1-5
-    title = Column(String(200), nullable=True)
     body = Column(Text, nullable=True)
     is_hidden = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
