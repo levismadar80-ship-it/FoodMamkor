@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-383: codify observability dashboard-receipt protocol
+
+`docs(rules)`: new `.claude/rules/observability.md` codifying dashboard-receipt protocol — observability tickets (Sentry, logging, monitoring, alerting) require real-event verification at the destination dashboard before "Done". CLAUDE.md line 57 extended with one-line pointer (still 80-line cap).
+
 ## 2026-05-06 — MEH-294: Hebrew labels for producer status codes
 
 - MEH-294: Hebrew labels for producer status codes (PR title `feature/meh-294-status-labels`). New `frontend/lib/producer-status.js` centralises label + color tokens with raw-status fallback; `StatusBadge` in `frontend/app/admin/producers/AdminProducersTable.jsx` and admin activity feed in `frontend/app/admin/page.js:197` now use the central getter; `pending_whatsapp` dashboard banner gets the locked fallback companion copy with `/settings` link. DB values unchanged per MEH-56. `inactive → "לא פעילה"` (warm + factual, not punitive).
