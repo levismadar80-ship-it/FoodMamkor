@@ -29,7 +29,7 @@ export const env = createEnv({
 });
 
 export const SITE_URL =
-  env.NEXT_PUBLIC_SITE_URL || env.SITE_URL || "https://mehamakor.co.il";
+  env.NEXT_PUBLIC_SITE_URL || "https://mehamakor.co.il";
 
 export const API_URL =
   env.BACKEND_URL || env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
