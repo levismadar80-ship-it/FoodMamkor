@@ -60,14 +60,13 @@ Specialized variants of `/adversarial-review`, each with FINDER → ADVERSARY �
 - `/adversarial-review-size` (93 lines) — diff touches any file in `.claude/central-components.json`. MEH-407 god-files family.
 
 Multiple variants may apply to one PR. `.claude/rules/workflow.md` PR Review Workflow section now points at all 4. Closes MEH-428.
-
 ### MEH-408 Phase 4 — DR drill (2026-05-06)
 
-Drill executed manually:
+Drill executed manually on Smadar's Windows + Docker Desktop:
 - Source backup: `mehamakor_staging_20260506T171542Z.dump` (174 KB, Cloudflare R2)
 - Restored to: local Docker `postgres:18` container (port 5433)
 - Row counts: producers 15/15 ✓, categories 15/15 ✓, cities 0/0 ✓,
-  users 277 vs 299 (22 rows drift — expected, backup taken ~2h before drill)
+  users 277/299 (22 rows drift — expected, backup taken ~2h before drill)
 - Outcome: **PASS** — backup is restorable, pipeline validated end-to-end
 
 Phase 4 complete. MEH-408 all phases done (Phase 3 — `DATABASE_URL` rename — still pending as a separate follow-up).
