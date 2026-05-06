@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-468: multi-stage Dockerfile.cron (321 MB → 250 MB)
+
+`perf(MEH-468)`: refactored `Dockerfile.cron` from single-stage (321 MB) to two-stage build — 71 MB / 22% reduction, hitting the MEH-408 target exactly. **Builder** (`python:3.12-slim-bookworm AS builder`) installs the PGDG apt repo + `postgresql-client-18` with full apt machinery (curl + gnupg + ca-certificates); the entire builder layer is discarded. **Runtime** (`python:3.12-slim-bookworm`) installs only the auth-support libs from Debian main repos — `ca-certificates` + `libgssapi-krb5-2` (transitively pulls libkrb5-3, libk5crypto3, libkrb5support0, libkeyutils1, libcom-err2) + `libldap-2.5-0` (pulls libsasl2-2 transitively). Bookworm-specific `-2.5` variant matches DEPLOYMENT.md §10 E base-image pin. `pg_dump` + `pg_restore` binaries copied from `/usr/lib/postgresql/18/bin/` to `/usr/local/bin/`; `libpq.so.5*` (PGDG PG18 build — Debian main only ships PG15) wildcard-copied to `/usr/lib/x86_64-linux-gnu/`. `psql` omitted — `backup_production_db.py` only invokes `pg_dump`. Build-time smoke test (`RUN ldconfig && pg_dump --version`) surfaces missing `.so` at build time rather than at Railway runtime. 250 MB reflects `python:3.12-slim-bookworm` base (~130 MB) + Kerberos/LDAP stack (~25 MB, higher than estimated) + boto3 transitive (~25 MB); stretch goal of 180–220 MB not reached. E2E verified: 177,257-byte dump uploaded to R2 (`mehamakor_staging_20260506T194505Z.dump` confirmed in Cloudflare dashboard). Closes the Phase 2.5 follow-up promised in MEH-408.
+
 ## 2026-05-06 — docs: write ADR-005 (close MEH-432 Pending entry)
 
 `docs`: ADR-005 (`/adversarial-review` local extension vs plugin install) was queued in `docs/decisions/README.md` Pending section since MEH-432 merge, gated on MEH-428 shipping the 4 variants. Decision was already made — recording the ADR now reflects ADR philosophy: ADRs document *decisions*, not just shipped implementations. Variants implementation tracked under MEH-428 (Backlog). Removes the Pending section from `docs/decisions/README.md`.

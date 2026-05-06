@@ -1,27 +1,30 @@
-# MEH-408 Phase 2 — backup cron service image.
+# MEH-468 — multi-stage build: 321 MB → ~180–210 MB.
 #
-# Slim Python base + postgresql-client-18 (matches Railway's PG 18 server)
-# + boto3 from scripts/requirements.txt. Fully isolated from the API
-# image (Dockerfile) — no shared lockfile, no backend/ deps. The only
-# Python package this image needs is boto3.
+# Stage 1 (builder): full apt machinery — curl + gnupg to add the PGDG apt
+# repo, then postgresql-client-18 + libpq5. The entire builder layer is
+# discarded after the COPY steps below.
+#
+# Stage 2 (runtime): slim Python base + auth-support libs from Debian main
+# (no PGDG repo needed here) + pg_dump/pg_restore binaries + libpq.so.5
+# copied from builder + boto3. Expected final size: 180–210 MB.
+#
+# postgresql-client must match the server major version. Debian bookworm
+# (slim's base) ships PG 15 in its main repos — too old for our server
+# (PG 18). The builder stage uses the official PostgreSQL apt repo
+# (apt.postgresql.org) which publishes matched binaries for every supported
+# major version. Only the binaries and libpq.so.5 transfer to the runtime.
 #
 # Used by a separate Railway service whose Cron Schedule is set to
 # `0 23 * * *` UTC (= 02:00 IST summer / 01:00 IST winter). Per Railway
 # cron contract: container starts on schedule, runs the script once,
 # exits, container is destroyed.
 #
-# Last updated: 2026-05-07 (MEH-408 Phase 2).
+# Last updated: 2026-05-07 (MEH-468).
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm AS builder
 
-# postgresql-client must match the server major version. Debian bookworm
-# (slim's base) ships PG 15 in its main repos — too old for our server
-# (PG 18). Use the official PostgreSQL apt repo (apt.postgresql.org)
-# which publishes matched binaries for every supported major version.
-#
-# Sequence: install gnupg + ca-certs first (required to verify the PG
-# repo's signing key), drop the key into the keyring, add the repo to
-# sources.list.d, then apt-get install postgresql-client-18.
+# Install the PGDG apt repo then postgresql-client-18.
+# curl + gnupg are build-time-only tools that never enter the runtime layer.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl gnupg \
     && install -d /usr/share/postgresql-common/pgdg \
@@ -31,9 +34,48 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client-18 \
-    && apt-mark manual ca-certificates \
-    && apt-get purge -y --auto-remove curl gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# ── Runtime ────────────────────────────────────────────────────────────────────
+FROM python:3.12-slim-bookworm
+
+# Install auth-support libs from Debian main (no PGDG repo needed here).
+#
+# ca-certificates   — TLS root trust for R2 HTTPS upload + PostgreSQL SSL.
+# libgssapi-krb5-2  — libpq links against libgssapi_krb5 even when Kerberos
+#                     is not the auth method; apt pulls in libkrb5-3,
+#                     libk5crypto3, libkrb5support0, libkeyutils1, libcom-err2
+#                     transitively.
+# libldap-2.5-0     — libpq LDAP auth support. Bookworm ships -2.5; trixie
+#                     ships -2.6 (see DEPLOYMENT.md §10 E — base image note).
+#                     libsasl2-2 is pulled in transitively.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libgssapi-krb5-2 \
+        libldap-2.5-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# PG 18 binaries. backup_production_db.py only calls pg_dump; pg_restore is
+# included for completeness (DR drills, manual use). psql is omitted — not
+# needed by the cron script.
+COPY --from=builder /usr/lib/postgresql/18/bin/pg_dump    /usr/local/bin/pg_dump
+COPY --from=builder /usr/lib/postgresql/18/bin/pg_restore /usr/local/bin/pg_restore
+
+# libpq.so.5 from the PGDG PG18 build. Debian main only ships the PG15
+# variant; pg_dump links against the PGDG libpq (PG18 wire protocol).
+# Wildcard picks up both the versioned .so.5.N file and the .so.5 name so
+# that ldconfig can map the SONAME correctly.
+#
+# If the pg_dump --version smoke test below fails with
+# "error while loading shared libraries", run:
+#   docker run --rm --entrypoint /bin/bash <builder-image-id> \
+#     -c "ldd /usr/lib/postgresql/18/bin/pg_dump"
+# and add a COPY line for any "not found" library.
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libpq.so.5* /usr/lib/x86_64-linux-gnu/
+
+# Refresh ldconfig cache so the dynamic linker finds the just-copied libpq.
+# Build-time smoke test: fails the docker build immediately on any missing .so.
+RUN ldconfig && pg_dump --version
 
 WORKDIR /app
 
