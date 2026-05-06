@@ -3,10 +3,29 @@
 > Read this before starting any work.
 > Last updated: 2026-05-06 (MEH-408 Phase 1 — staging conflict resolved on PR #485)
 
-## 2026-05-06 — MEH-454 Phase 2 — canonical domain migration to mehamakor.co.il
-Status: mehamakor.co.il live. Resend verified. Env vars updated (Vercel + Railway).
-mehamakor.online → 301 redirect (pending Vercel config).
-Phase 3 (code envify): MEH-454 open.
+## 2026-05-06 — MEH-454 Phase 3 — type-safe env validation (@t3-oss/env-nextjs + Zod)
+
+**Branch:** `feature/meh-454-typesafe-env-validation` off staging. **PR:** to be opened (draft).
+
+**Goal:** prevention layer for the MEH-453/Phase-2 audit gap — `process.env.X` was unchecked-string-or-undefined everywhere; a missing var silently fell through to a hardcoded fallback. Centralize the schema, validate at build time, fail loudly on invalid env.
+
+**What shipped:**
+- New `frontend/lib/env.js` — Zod schema for all 9 declared env vars (8 from `.env.example` + `NEXT_PUBLIC_CLARITY_PROJECT_ID` which was used in `layout.js:108` but undocumented). Helpers: `SITE_URL` (3-tier fallback → `https://mehamakor.co.il`), `API_URL` (3-tier fallback → `http://localhost:8000`).
+- `frontend/next.config.js:1` — `require("jiti")(__filename)("./lib/env")` runs the schema at config-load. Invalid env → build aborts with explicit Zod error.
+- Migrated `frontend/app/sitemap.js` (4 `process.env` reads → 0), `frontend/app/layout.js` (3 → 0), `frontend/lib/seo.js` (2 → 0, re-exports `SITE_URL` so existing consumers don't break).
+- `.env.example` — documented `NEXT_PUBLIC_CLARITY_PROJECT_ID` + added schema-source-of-truth note.
+- `frontend/__tests__/env.test.js` — 4 cases (valid / missing-optional / invalid URL / invalid phone). All green.
+- Deps: `@t3-oss/env-nextjs ^0.13.11`, `jiti ^2.7.0` (devDep). `zod ^4.4.2` already present.
+
+**Verification:**
+- `npm run build` — passes.
+- `NEXT_PUBLIC_SITE_URL=not-a-url npm run build` — fails with explicit Zod error (regression bait laid).
+- `npx vitest run __tests__/env.test.js` — 4/4 green.
+- Full suite: 25 pre-existing failures on staging baseline, 25 with our changes (unchanged), +4 new tests (env.test.js). Zero new regressions.
+
+**Scope discipline:** spec listed 4 entry points (sitemap.js, layout.js, seo.js, api.js — last had no `process.env` reads, no edit needed). Verify-step-5 expected zero `process.env` outside `lib/env.js`, but **9 files in `frontend/app/`** + **6 files in `frontend/components/`** still read `process.env` directly. They're outside the scope's `ONLY:` list and inside the `<forbidden>` list respectively. Follow-up ticket to broaden migration to those 15 files.
+
+**`SITE_URL` fallback flip:** new fallback is `https://mehamakor.co.il` (was `.online`). Approved as intentional Phase 3 behavior — any deploy without `NEXT_PUBLIC_SITE_URL` set now lands on the canonical domain, not the legacy one.
 
 ### MEH-408 Phase 1 (PR #485) — merged
 

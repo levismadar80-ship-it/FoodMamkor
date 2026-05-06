@@ -11,13 +11,11 @@
  * tested without a DOM.
  */
 
-// MEH-453: 3-tier fallback mirrors frontend/app/sitemap.js:11-14.
-// Phase 1 keeps the literal default at mehamakor.online; Phase 2 flips
-// to mehamakor.co.il via env vars in Vercel — no code change needed.
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  process.env.SITE_URL ||
-  "https://mehamakor.online";
+// MEH-454 Phase 3: SITE_URL helper centralized in lib/env.js (Zod-validated
+// at build time). Re-exported here so existing consumers of @/lib/seo keep
+// working unchanged.
+import { SITE_URL } from "./env";
+export { SITE_URL };
 
 /**
  * Build the <title> per the MEH-9 spec:
