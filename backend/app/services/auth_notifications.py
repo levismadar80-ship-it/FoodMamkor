@@ -15,6 +15,7 @@ import logging
 
 from app.config import settings
 from app.services.email import send_email
+from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
         return True
     except Exception as e:
         logger.error(
-            f"[WHATSAPP] Producer welcome FAILED for {phone}: {e}", exc_info=True
+            f"[WHATSAPP] Producer welcome FAILED for {mask_phone(phone)}: {e}", exc_info=True
         )
         return False
 
