@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -1211,3 +1212,198 @@ class ReviewsPage(BaseModel):
     pages: int
 
     model_config = {"from_attributes": True}
+
+
+# --- Admin (admin.py + admin_extra.py) ---
+# MEH-460 Pkg 1: relocated from routers/admin.py + routers/admin_extra.py
+# per ADR-006 R1. Pure relocation — fields, validators, model_config
+# preserved verbatim. CategoryOut excluded — it was byte-identical to
+# the public CategoryOut in the Category section above; admin_extra.py
+# now imports it from there instead of redefining.
+
+# Admin: Moderation
+class RemoveListingBody(BaseModel):
+    reason: str | None = None
+
+
+class StoryCardUploadRequest(BaseModel):
+    image_data: str  # base64-encoded JPEG data URI: "data:image/jpeg;base64,..."
+
+
+# Admin: Users
+class UserAdminOut(BaseModel):
+    id: UUID
+    email: str
+    name: str
+    city: str | None = None
+    phone: str | None = None
+    role: str
+    is_blocked: bool = False
+    producer_id: UUID | None = None
+    favorites_count: int = 0
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserRoleUpdate(BaseModel):
+    role: str = Field(..., pattern="^(consumer|producer|admin)$")
+
+
+# Admin: Categories
+class CategoryIn(BaseModel):
+    name: str
+    emoji: str | None = None
+
+
+# Admin: Static Pages
+class StaticPageOut(BaseModel):
+    slug: str
+    title: str
+    body: str
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class StaticPageUpdate(BaseModel):
+    title: str
+    body: str
+
+
+# --- Users (users_me.py) ---
+# MEH-460 Pkg 2: relocated from routers/users_me.py per ADR-006 R1.
+# Pure relocation — fields preserved verbatim. Validators (verify_password,
+# validate_password) stay in the change_password handler, not the schema.
+class ProfileUpdate(BaseModel):
+    """PATCH body — any subset of fields may be omitted."""
+    name: str | None = Field(None, min_length=1, max_length=200)
+    email: EmailStr | None = None
+    avatar_url: str | None = None
+    city: str | None = Field(None, max_length=100)
+
+
+class PasswordChange(BaseModel):
+    # current_password stays a plain str (not PasswordField) — old passwords
+    # may predate the policy and shorter values must still be acceptable as
+    # current. The verify_password call is the only authority on its validity.
+    current_password: str = Field(..., min_length=1)
+    # MEH-306: 12-char floor at schema layer; deny-list / HIBP / reuse run in
+    # the change_password handler via validate_password.
+    new_password: PasswordField
+
+
+# --- Producer Me (producer_me.py) ---
+# MEH-460 Pkg 2: relocated from routers/producer_me.py per ADR-006 R1.
+# AvailabilityStatusUpdate is the legacy MEH-291 surface; AvailabilityStateUpdate
+# is the new 4-value enum surface. Both kept during the 7-day overlap;
+# Phase 4 will drop the legacy. Schema relocation does NOT affect MEH-291.
+# AVAILABILITY_STATUSES (the legacy {"available","full","vacation"} set used
+# only by the handler for runtime validation) stays in producer_me.py — it's
+# not a schema field. AVAILABILITY_STATES (the new 4-value tuple) lives in
+# this file already (see Producer section above, MEH-291).
+class AvailabilityStatusUpdate(BaseModel):
+    status: str = Field(..., description="available | full | vacation")
+    vacation_until: date | None = Field(None, description="Optional return date (vacation only)")
+
+
+class AvailabilityStateUpdate(BaseModel):
+    state: str = Field(..., description="accepting_orders | available_today | full_this_week | on_vacation")
+    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
+
+
+class BioGenerateIn(BaseModel):
+    source: str = Field(..., min_length=1, max_length=500)
+
+
+# --- Search (search.py) ---
+# MEH-460 Pkg 3: relocated from routers/search.py per ADR-006 R1.
+# Pure relocation — fields preserved verbatim. SearchOut composes the 3
+# Hit classes; all 4 move together so the list[X] references resolve in
+# module order. Router-local concerns (_trending_cache, _TRENDING_TTL,
+# _HEBREW_PREFIXES, _strip_hebrew_prefix, _empty) stay in search.py —
+# handler-side, not schema fields.
+class ProducerHit(BaseModel):
+    id: UUID
+    name: str
+    slug: str | None = None
+    city: str | None = None
+    avg_rating: float = 0
+    reviews_count: int = 0
+    image: str | None = None
+
+
+class ProductHit(BaseModel):
+    id: UUID
+    name: str
+    description: str | None = None
+    producer_id: UUID
+    producer_name: str
+    producer_slug: str | None = None
+
+
+class CategoryHit(BaseModel):
+    id: int
+    name: str
+    emoji: str | None = None
+
+
+class SearchOut(BaseModel):
+    producers: list[ProducerHit] = []
+    products: list[ProductHit] = []
+    cities: list[str] = []
+    categories: list[CategoryHit] = []
+
+
+# --- Alerts (alerts.py) ---
+# MEH-460 Pkg 4: relocated from routers/alerts.py per ADR-006 R1.
+# AlertContent has cross-router callers (events.py, producer_me.py); the
+# router re-exports it via `from app.schemas.schemas import AlertContent`
+# so existing `from app.routers.alerts import AlertContent` paths keep
+# resolving without touching the callers (same pattern as Pkg 1).
+class AlertPrefsIn(BaseModel):
+    notify_new_product: bool = True
+    notify_new_event: bool = True
+    notify_delivery_area: bool = True
+    whatsapp_opt_in: bool = False
+    push_subscription: dict | None = None
+
+
+class AlertPrefsOut(BaseModel):
+    enabled: bool
+    notify_new_product: bool
+    notify_new_event: bool
+    notify_delivery_area: bool
+    whatsapp_opt_in: bool
+    has_push: bool
+
+
+class AlertContent(BaseModel):
+    """MEH-447: collapse (title, body, url) into a single payload object so
+    fire_alerts stays under PLR0913's 5-arg threshold without losing
+    keyword clarity at call sites."""
+
+    title: str
+    body: str
+    url: str = "/"
+
+
+# --- Chat (chat.py) ---
+# MEH-460 Pkg 4: relocated from routers/chat.py per ADR-006 R1.
+# ChatRequest composes list[ChatMessage]; all 3 moved together so the
+# reference resolves in module order. Router-local concerns (CHAT_MODEL,
+# MAX_HISTORY_TURNS, MAX_OUTPUT_TOKENS, SYSTEM_PROMPT, _strip_markdown,
+# _get_client) stay in chat.py — handler-side, not schema fields.
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class ChatRequest(BaseModel):
+    # Full conversation history. Client tracks the state and re-sends
+    # each turn — the API is stateless. We trim server-side as a backstop.
+    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+
+
+class ChatResponse(BaseModel):
+    reply: str

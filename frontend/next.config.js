@@ -1,3 +1,8 @@
+// Validate env at build/config-load time. Throws Zod error if any
+// declared var fails the schema in frontend/lib/env.js. jiti loads the
+// ESM module from this CommonJS config.
+require("jiti")(__filename)("./lib/env");
+
 // When deployed to a Vercel preview URL (not production, not local dev),
 // Vercel injects its "live feedback" widget at
 // https://vercel.live/_next-live/feedback/feedback.js which lets reviewers

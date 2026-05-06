@@ -3,11 +3,12 @@
 import { useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
+import { env } from "@/lib/env";
 
 export default function GoogleAuthButton({ onSuccess, onError }) {
   const { loginWithGoogle } = useAuth();
   const buttonRef = useRef(null);
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const handleCredentialResponse = async (response) => {
     try {

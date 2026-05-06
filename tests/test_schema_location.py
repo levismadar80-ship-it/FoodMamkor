@@ -21,16 +21,9 @@ ROUTERS_DIR = REPO_ROOT / "backend" / "app" / "routers"
 # permitted — to add a class to a router, instead move it to
 # backend/app/schemas/schemas.py per R1. Cleanup plan: MEH-460.
 ALLOWLIST: dict[str, frozenset[str]] = {
-    "backend/app/routers/alerts.py":      frozenset({"AlertPrefsIn", "AlertPrefsOut", "AlertContent"}),
-    "backend/app/routers/admin.py":       frozenset({"RemoveListingBody", "StoryCardUploadRequest"}),
-    "backend/app/routers/admin_extra.py": frozenset({"UserAdminOut", "UserRoleUpdate", "CategoryIn", "CategoryOut", "StaticPageOut", "StaticPageUpdate"}),
-    "backend/app/routers/chat.py":        frozenset({"ChatMessage", "ChatRequest", "ChatResponse"}),
     "backend/app/routers/producers.py":   frozenset({"ContactClickIn"}),
     "backend/app/routers/referrals.py":   frozenset({"ClaimReferralRequest"}),
     "backend/app/routers/marketing.py":   frozenset({"StatsOut", "NewsletterIn", "ContactIn"}),
-    "backend/app/routers/producer_me.py": frozenset({"AvailabilityStatusUpdate", "AvailabilityStateUpdate", "BioGenerateIn"}),
-    "backend/app/routers/users_me.py":    frozenset({"ProfileUpdate", "PasswordChange"}),
-    "backend/app/routers/search.py":      frozenset({"ProducerHit", "ProductHit", "CategoryHit", "SearchOut"}),
 }
 
 

@@ -16,7 +16,6 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from app.config import settings
@@ -24,32 +23,15 @@ from app.config import settings
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, FavoriteAlert, User
+# MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
+# AlertContent is re-exported here so existing
+# `from app.routers.alerts import AlertContent` callers
+# (events.py, producer_me.py) keep working without scope creep.
+from app.schemas.schemas import AlertContent, AlertPrefsIn, AlertPrefsOut
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users/me/favorites", tags=["alerts"])
-
-
-# ============================================================
-# Schemas
-# ============================================================
-
-
-class AlertPrefsIn(BaseModel):
-    notify_new_product: bool = True
-    notify_new_event: bool = True
-    notify_delivery_area: bool = True
-    whatsapp_opt_in: bool = False
-    push_subscription: dict | None = None
-
-
-class AlertPrefsOut(BaseModel):
-    enabled: bool
-    notify_new_product: bool
-    notify_new_event: bool
-    notify_delivery_area: bool
-    whatsapp_opt_in: bool
-    has_push: bool
 
 
 # ============================================================
@@ -145,16 +127,6 @@ _ALERT_COL = {
     "new_product": "notify_new_product",
     "delivery_area": "notify_delivery_area",
 }
-
-
-class AlertContent(BaseModel):
-    """MEH-447: collapse (title, body, url) into a single payload object so
-    fire_alerts stays under PLR0913's 5-arg threshold without losing
-    keyword clarity at call sites."""
-
-    title: str
-    body: str
-    url: str = "/"
 
 
 def fire_alerts(db: Session, producer_id: UUID, alert_type: str, content: AlertContent) -> None:
