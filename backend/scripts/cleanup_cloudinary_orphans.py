@@ -122,6 +122,14 @@ def build_parser() -> argparse.ArgumentParser:
             f"{BATCH_SIZE_HARD_CAP}. Default: {BATCH_SIZE_HARD_CAP}."
         ),
     )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help=(
+            "Skip the confirmation prompt. Required for non-TTY contexts "
+            "(CI/cron). Default: prompt for explicit lowercase 'yes'."
+        ),
+    )
     return parser
 
 
@@ -329,6 +337,96 @@ def print_dry_run_summary(
     print("=" * 60)
 
 
+def _confirm_or_abort(
+    orphan_count: int,
+    total_bytes: int,
+    *,
+    _input=input,
+) -> None:
+    """Block on stdin for an explicit lowercase `yes`. Anything else aborts
+    with exit code 0 and an `Aborted.` line on stdout. Accidental Enter,
+    typo, or partial-match (`y`, `Y`, `YES`) cannot proceed to delete.
+
+    `_input` is a keyword-only seam for tests — production passes the
+    builtin `input`. After read, `.strip()` is applied so a trailing newline
+    or surrounding whitespace doesn't accidentally fail the equality check.
+    """
+    prompt = (
+        f"Delete {orphan_count} orphans ({_format_bytes(total_bytes)})? "
+        f"Type 'yes' to confirm: "
+    )
+    response = _input(prompt)
+    if response.strip() != "yes":
+        print("Aborted.")
+        sys.exit(0)
+
+
+def _batch_delete_orphans(
+    orphans: list[tuple[str, str, int]],
+    batch_size: int,
+) -> tuple[int, int, int]:
+    """Delete `orphans` in chunks of `batch_size` via
+    `cloudinary.api.delete_resources`. Returns `(deleted, not_found, errors)`.
+
+    Per-batch exception handling: if `delete_resources` raises, the entire
+    batch is counted as `errors` and the loop continues to the next batch.
+    Rationale: a transient network blip in batch 5 of 20 should not
+    abort sweeps 6-20. Progress accumulated by successful batches is real;
+    the next cleanup run picks up the remainder.
+
+    Per-asset status (from `result["deleted"]` dict per asset):
+      - `"deleted"`     → INFO log + deleted++
+      - `"not_found"`   → WARNING log + not_found++
+      - any other value → WARNING log with status string + errors++
+
+    Kwargs to `delete_resources` are locked at `type="upload"`,
+    `resource_type="image"`, `invalidate=False` — matches Phase 1 SDK
+    signature research.
+    """
+    import cloudinary  # noqa: F401, PLC0415 — needed before cloudinary.api is importable
+    import cloudinary.api  # noqa: PLC0415
+
+    deleted = 0
+    not_found = 0
+    errors = 0
+
+    for batch_start in range(0, len(orphans), batch_size):
+        batch = orphans[batch_start:batch_start + batch_size]
+        batch_pids = [public_id for public_id, _, _ in batch]
+        try:
+            result = cloudinary.api.delete_resources(
+                public_ids=batch_pids,
+                type="upload",
+                resource_type="image",
+                invalidate=False,
+            )
+        except Exception as exc:
+            logger.error(
+                "cloudinary.api.delete_resources failed for batch of %d: %s",
+                len(batch_pids),
+                exc,
+            )
+            errors += len(batch_pids)
+            continue
+
+        per_id_status = (
+            result.get("deleted", {}) if isinstance(result, dict) else {}
+        )
+        for pid in batch_pids:
+            status = per_id_status.get(pid, "missing-from-response")
+            if status == "deleted":
+                logger.info("deleted %s", pid)
+                deleted += 1
+            elif status == "not_found":
+                logger.warning("not_found %s", pid)
+                not_found += 1
+            else:
+                logger.warning("unexpected status %r for %s", status, pid)
+                errors += 1
+
+    return deleted, not_found, errors
+
+
 def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO,
@@ -381,13 +479,31 @@ def main(argv: list[str] | None = None) -> int:
     logger.info("Cloudinary candidates after filters: %d", len(candidates))
 
     orphans = compute_orphans(candidates, referenced)
+
+    if args.apply and not orphans:
+        # Empty-orphan short-circuit — still print the summary so the
+        # operator gets a confirmation that nothing was needed, rather
+        # than silently exiting with no output.
+        logger.info("Nothing to delete; orphan list is empty.")
+        print_dry_run_summary(candidates, referenced, orphans)
+        return 0
+
     if args.apply:
-        # I.5 will replace this raise with the real confirm-prompt + batch-delete
-        # flow. The hard gate keeps a half-finished --apply path from slipping
-        # through review during I.4.
-        raise NotImplementedError(
-            "--apply not yet implemented (deferred to Chunk I.5)"
+        total_bytes = sum(b for _, _, b in orphans)
+        if not args.yes:
+            _confirm_or_abort(len(orphans), total_bytes)
+        logger.info("Beginning batch delete of %d orphans...", len(orphans))
+        deleted, not_found, errors = _batch_delete_orphans(
+            orphans, args.batch_size
         )
+        logger.info(
+            "Delete summary: deleted=%d not_found=%d errors=%d",
+            deleted,
+            not_found,
+            errors,
+        )
+        return 1 if (not_found > 0 or errors > 0) else 0
+
     print_dry_run_summary(candidates, referenced, orphans)
     return 0
 
