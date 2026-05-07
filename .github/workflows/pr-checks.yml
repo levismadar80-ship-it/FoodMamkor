@@ -10,6 +10,12 @@ on:
   pull_request:
     branches: [staging, main]
 
+# MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
+# triggers (calls the PR Files API). Same shape as e2e.yml.
+permissions:
+  contents: read
+  pull-requests: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
