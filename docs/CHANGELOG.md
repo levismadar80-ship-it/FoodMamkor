@@ -2,6 +2,21 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-487: wire `anthropics/claude-code-action@v1` for adversarial PR review
+
+`ci(MEH-487)`: wires the official Anthropic GitHub Action for fresh-eyes PR review; deletes the dead JOB 4 skeleton from `pr-checks.yml`.
+
+- **NEW `.github/workflows/claude-review.yml`** — runs `anthropics/claude-code-action@v1` on `pull_request: [opened, synchronize]`. `continue-on-error: true` for calibration. Concurrency key follows MEH-485 canonical pattern (`workflow + head_ref || ref`). Permissions: `contents:read` + `pull-requests:write` + `issues:write` (action posts the review comment). Model: `claude-sonnet-4-6` (per MEH-487 spec). Workflow YAML carries a thin pointer; the full prompt lives in `docs/CLAUDE-REVIEW.md` so calibration history shows up in `git log docs/CLAUDE-REVIEW.md`.
+- **DELETED `pr-checks.yml` JOB 4** (lines 250-283 pre-edit) — `adversarial-review` was a hook-point skeleton conditioned on `.github/scripts/adversarial-review.sh` existing; the script never landed (revised approach uses the action, not custom CLI shell-out per MEH-487 revision 2026-05-07). Header comment updated: "Three jobs: build, pytest, test-inventory (non-gating)."
+- **NEW `docs/CLAUDE-REVIEW.md`** — canonical prompt + 6 focus areas (security / RTL / schema-drift / scope creep / Hebrew copy / test coverage) + output format contract + calibration plan (5-PR window, >70%/30-70%/<30% decision matrix). "Always post a comment" rule explicit during calibration so silent no-op doesn't masquerade as a clean diff.
+- **`docs/DEPLOYMENT.md`** — note at §C rewritten: `Adversarial review (calibration)` is NOT a required check during the calibration window; promoted to required check after the tally crosses >70% useful in a follow-up PR.
+- **ADR-007 forward-link** — `docs/decisions/ADR-007-expand-contract-schema-changes.md` not yet on staging (MEH-486 in flight on parallel branch). Prompt references ADR-007 as a *concept* ("expand-contract pattern, per ADR-007"); file path commented `<!-- TODO: ADR-007 path lands when MEH-486 merges to staging -->`.
+- **Calibration tally** — lives in `HANDOFF.md` "Claude Review calibration" subsection. Smadar updates per PR before merge.
+- **Forbidden, per spec** — no custom `.github/scripts/adversarial-review.sh`; no inline prompt in YAML beyond ~10-line pointer; no branch-protection required-check change on day 1.
+- Added `id-token: write` permission — required by `claude-code-action@v1` for OIDC.
+
+Closes MEH-487.
+
 ## 2026-05-07 — MEH-483: /health/{liveness,readiness} split + LOG_FORMAT default flip + Sentry per-request scope shim
 
 `feat(MEH-483)`: backend observability — readiness-gated healthchecks, JSON-by-default logs in non-dev, request-scope shim ready for Sentry SDK init.
