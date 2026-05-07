@@ -82,7 +82,7 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
 
   it("renders without crash when pending_producers and recent_activity are null", async () => {
     apiResponseRef.current = { data: minDashboard() };
-    const { default: AdminDashboard } = await import("@/app/admin/page");
+    const { default: AdminDashboard } = await import("@/app/[locale]/admin/page");
     render(<AdminDashboard />);
     await waitFor(() => expect(screen.getByText("לוח מחוונים")).toBeInTheDocument());
     expect(screen.getByText("אין בקשות ממתינות")).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
         recent_activity: [],
       }),
     };
-    const { default: AdminDashboard } = await import("@/app/admin/page");
+    const { default: AdminDashboard } = await import("@/app/[locale]/admin/page");
     render(<AdminDashboard />);
     await waitFor(() => expect(screen.getByText("חוות האגס")).toBeInTheDocument());
   });
@@ -110,7 +110,7 @@ describe("AdminAnalyticsPage — null array guards (MEH-147)", () => {
 
   it("renders without crash when by_city, top_producers, and map_points are null", async () => {
     apiResponseRef.current = { data: minAnalytics() };
-    const { default: AdminAnalyticsPage } = await import("@/app/admin/analytics/page");
+    const { default: AdminAnalyticsPage } = await import("@/app/[locale]/admin/analytics/page");
     render(<AdminAnalyticsPage />);
     await waitFor(() => expect(screen.getByText("אנליטיקס")).toBeInTheDocument());
     // All three null arrays should render the empty state
@@ -126,7 +126,7 @@ describe("AdminAnalyticsPage — null array guards (MEH-147)", () => {
         map_points: [],
       }),
     };
-    const { default: AdminAnalyticsPage } = await import("@/app/admin/analytics/page");
+    const { default: AdminAnalyticsPage } = await import("@/app/[locale]/admin/analytics/page");
     render(<AdminAnalyticsPage />);
     await waitFor(() => expect(screen.getByText("תל אביב")).toBeInTheDocument());
     expect(screen.getByText("ירושלים")).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe("CategoriesEditor — empty state (MEH-147)", () => {
 
   it("shows empty state text when category list is empty", async () => {
     apiResponseRef.current = { data: [] };
-    const { default: AdminContentPage } = await import("@/app/admin/content/page");
+    const { default: AdminContentPage } = await import("@/app/[locale]/admin/content/page");
     render(<AdminContentPage />);
     await waitFor(() =>
       expect(screen.getByText("אין נתונים להצגה")).toBeInTheDocument(),
@@ -152,7 +152,7 @@ describe("CategoriesEditor — empty state (MEH-147)", () => {
     apiResponseRef.current = {
       data: [{ id: 1, name: "חלב ומוצריו", emoji: "🥛" }],
     };
-    const { default: AdminContentPage } = await import("@/app/admin/content/page");
+    const { default: AdminContentPage } = await import("@/app/[locale]/admin/content/page");
     render(<AdminContentPage />);
     await waitFor(() =>
       expect(screen.getByDisplayValue("חלב ומוצריו")).toBeInTheDocument(),

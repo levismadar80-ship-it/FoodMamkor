@@ -3,6 +3,10 @@
 // ESM module from this CommonJS config.
 require("jiti")(__filename)("./lib/env");
 
+// MEH-471: next-intl App Router plugin — wires getRequestConfig from i18n/request.js.
+const createNextIntlPlugin = require("next-intl/plugin");
+const withNextIntl = createNextIntlPlugin("./i18n/request.js");
+
 // When deployed to a Vercel preview URL (not production, not local dev),
 // Vercel injects its "live feedback" widget at
 // https://vercel.live/_next-live/feedback/feedback.js which lets reviewers
@@ -132,7 +136,7 @@ const nextConfig = {
   },
 };
 
-let finalConfig = nextConfig;
+let finalConfig = withNextIntl(nextConfig);
 
 // Wrap with Sentry only when @sentry/nextjs is installed AND a DSN is
 // configured. This keeps dev/CI builds working without the package.

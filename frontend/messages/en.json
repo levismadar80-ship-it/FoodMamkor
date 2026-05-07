@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "discover": "Discover",
+    "map": "Map",
+    "events": "Events",
+    "neighbor": "Neighbor",
+    "about": "About",
+    "favorites": "Favorites",
+    "admin": "Admin",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "add_business": "Add Your Business",
+    "mobile_label": "Mobile navigation",
+    "profile": "Profile",
+    "footer": {
+      "discover": "Discover",
+      "community": "Community",
+      "businesses": "Businesses",
+      "trust": "Trust & Transparency",
+      "home": "Home",
+      "map": "Map",
+      "all_businesses": "All Businesses",
+      "new_businesses": "New Businesses",
+      "events": "Events",
+      "neighbor_kitchen": "Neighbor's Kitchen",
+      "about": "About",
+      "add_business": "Add Your Business",
+      "login": "Sign In",
+      "manage": "Manage Business",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "accessibility": "Accessibility",
+      "contact": "Contact Us",
+      "copyright": "Mehamakor. All rights reserved.",
+      "made_with_love": "Made with love in Israel 🌿"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Real Food, Straight From the Source",
+      "subtitle": "Local businesses, all in one place."
+    },
+    "search": {
+      "placeholder": "Search fresh veggies, grass-fed beef...",
+      "sr_label": "Search businesses and cities",
+      "submit": "Search"
+    }
+  },
+  "common": {
+    "cta": {
+      "show_on_map": "Show on Map",
+      "more_info": "More Info"
+    }
+  }
+}

@@ -32,8 +32,9 @@ t() or i18n() wrapper. You do NOT modify files — report only.
    - Block comment: line is inside `/* ... */`
    - JSDoc block: inside `/** ... */`
    - Test file: filename contains `.test.` or `.spec.`
-   - Already wrapped: Hebrew text appears inside `t("...")`, `t('...')`, `i18n("...")`,
-     or `i18n('...')`
+   - Already wrapped: Hebrew text appears inside `t("...")`, `t('...')`, `` t(`...`) ``,
+     `i18n("...")`, `i18n('...')`, or `` i18n(`...`) `` (template-literal form covers
+     interpolated strings like `` t(`hello ${name}`) ``)
    - Translation dict key/value: file contains `translations = {` or similar dict
 
    **REPORT:**

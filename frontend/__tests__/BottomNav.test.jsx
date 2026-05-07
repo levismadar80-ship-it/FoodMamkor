@@ -12,17 +12,16 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: userRef.current }),
 }));
 
-vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({
-    t: (key) =>
-      ({
-        nav_discover: "גלה",
-        nav_map: "מפה",
-        nav_neighbor: "מהשכן",
-        nav_profile: "פרופיל",
-        nav_mobile_label: "ניווט מובייל",
-      }[key] || key),
-  }),
+// MEH-471: BottomNav reads useTranslations() from next-intl directly.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) =>
+    ({
+      "nav.discover": "גלה",
+      "nav.map": "מפה",
+      "nav.neighbor": "מהשכן",
+      "nav.profile": "פרופיל",
+      "nav.mobile_label": "ניווט מובייל",
+    }[key] || key),
 }));
 
 vi.mock("next/link", () => ({
