@@ -31,11 +31,15 @@ def _run_db_init_sync() -> None:
     log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
     from app.database import Base, engine
-    Base.metadata.create_all(bind=engine)  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
+
+    Base.metadata.create_all(
+        bind=engine
+    )  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
     log.info("[bg 1/2] models imported OK")
 
     log.info("[bg 2/2] running seed_data.seed()...")
     from seed_data import seed
+
     seed()
     log.info("[bg 2/2] seed OK")
 
@@ -46,7 +50,10 @@ async def _init_db_background(app: FastAPI) -> None:
         log.info("background DB init complete — all tables/migrations/seed ready")
         app.state.db_init_status = "ready"
     except Exception:
-        log.error("background DB init failed — /producers et al will 500 until fixed", exc_info=True)
+        log.error(
+            "background DB init failed — /producers et al will 500 until fixed",
+            exc_info=True,
+        )
         app.state.db_init_status = "failed"
 
 
@@ -56,17 +63,21 @@ async def lifespan(app: FastAPI):
     log.info("mehamakor backend starting up")
     log.info("db_url        = %s", _redacted_db_url())
     log.info("PORT          = %s", os.getenv("PORT", "<unset, default 8000>"))
-    log.info("SECRET_KEY set= %s", "yes" if os.getenv("SECRET_KEY") else "no (using default)")
+    log.info(
+        "SECRET_KEY set= %s", "yes" if os.getenv("SECRET_KEY") else "no (using default)"
+    )
     log.info("ADMIN_EMAIL   = %s", os.getenv("ADMIN_EMAIL") or "<unset>")
     log.info("=" * 60)
     log.info("scheduling DB init in background — /health is live NOW")
 
     _missing = [
-        name for name, val in [
+        name
+        for name, val in [
             ("ADMIN_EMAIL", settings.admin_email),
             ("RESEND_API_KEY", settings.resend_api_key),
             ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
-        ] if not val
+        ]
+        if not val
     ]
     if _missing:
         log.warning(

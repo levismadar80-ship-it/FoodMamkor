@@ -3,6 +3,7 @@
 These are used by the public site (hero social-proof bar, footer newsletter,
 about page contact form). All endpoints are anonymous — no auth required.
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, Request
@@ -12,8 +13,15 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.services.email import send_email
 from app.database import get_db
-from app.models import Category, ContactMessage, DeliveryArea, NewsletterSubscriber, Producer
+from app.models import (
+    Category,
+    ContactMessage,
+    DeliveryArea,
+    NewsletterSubscriber,
+    Producer,
+)
 from app.rate_limit import limiter
+
 # MEH-460 Pkg 5 (FINAL): schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ContactIn, NewsletterIn, StatsOut
 
@@ -30,9 +38,7 @@ router = APIRouter(tags=["marketing"])
 @router.get("/stats", response_model=StatsOut)
 def get_stats(db: Session = Depends(get_db)):
     producers_count = (
-        db.query(func.count(Producer.id))
-        .filter(Producer.status == "approved")
-        .scalar()
+        db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar()
         or 0
     )
     categories_count = db.query(func.count(Category.id)).scalar() or 0
@@ -49,7 +55,9 @@ def get_stats(db: Session = Depends(get_db)):
 
 @router.post("/newsletter", status_code=201)
 @limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
-def subscribe_newsletter(request: Request, data: NewsletterIn, db: Session = Depends(get_db)):
+def subscribe_newsletter(
+    request: Request, data: NewsletterIn, db: Session = Depends(get_db)
+):
     email = data.email.lower().strip()
     existing = (
         db.query(NewsletterSubscriber)
@@ -114,9 +122,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
 
     # Always log so the message is visible in Railway logs even if Resend
     # is unconfigured or fails.
-    logger.info(
-        "New contact message: name=%s email=%s", msg.name, msg.email
-    )
+    logger.info("New contact message: name=%s email=%s", msg.name, msg.email)
 
     # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
     # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,

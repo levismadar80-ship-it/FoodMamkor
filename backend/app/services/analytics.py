@@ -26,12 +26,13 @@ The design deliberately avoids external dependencies (no MaxMind, no
 Prometheus) — everything is pure Python + SQLAlchemy, keeping the image
 small and the deploy fast.
 """
+
 import hashlib
 import logging
 import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from threading import Lock
 from typing import Optional
 from uuid import UUID
@@ -133,7 +134,8 @@ def track_producer_view(
     except Exception as exc:  # noqa: BLE001 — fail-open by design
         logger.warning(
             "[ANALYTICS] track_producer_view failed for producer=%s: %s",
-            producer_id, exc,
+            producer_id,
+            exc,
         )
         try:
             db.rollback()
@@ -196,6 +198,7 @@ def server_health() -> dict:
 # ============================================================
 # last_active_at updater
 # ============================================================
+
 
 def bump_user_last_active(db: Session, user_id: UUID) -> None:
     """Update `users.last_active_at = NOW()` for the given user.

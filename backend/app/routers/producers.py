@@ -7,9 +7,17 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user_optional, require_verified_email
 from app.database import get_db
-from app.models import Category, ContactClick, Producer, ProducerWhatsAppClick, Report, User
+from app.models import (
+    Category,
+    ContactClick,
+    Producer,
+    ProducerWhatsAppClick,
+    Report,
+    User,
+)
 from app.rate_limit import limiter
 from app.routers.producer_follows import router as producer_follows_router
+
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
     CategoryOut,
@@ -81,17 +89,30 @@ def list_producers(
 ):
     results, total_count = build_producers_query(
         db,
-        lat=lat, lng=lng, radius_km=radius_km,
-        category=category, delivery_city=delivery_city, has_delivery=has_delivery,
-        verified=verified, organic=organic, kosher=kosher, city=city,
+        lat=lat,
+        lng=lng,
+        radius_km=radius_km,
+        category=category,
+        delivery_city=delivery_city,
+        has_delivery=has_delivery,
+        verified=verified,
+        organic=organic,
+        kosher=kosher,
+        city=city,
         is_available_today=is_available_today,
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
         # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in
         # Phase 3 alongside frontend).
         availability_state=availability_state,
-        grass_fed=grass_fed, gluten_free=gluten_free, vegan=vegan, lactose_free=lactose_free,
-        sort=sort, search_q=search_q,
-        limit=limit, offset=offset, exclude=exclude,
+        grass_fed=grass_fed,
+        gluten_free=gluten_free,
+        vegan=vegan,
+        lactose_free=lactose_free,
+        sort=sort,
+        search_q=search_q,
+        limit=limit,
+        offset=offset,
+        exclude=exclude,
     )
     if response is not None:
         response.headers["X-Total-Count"] = str(total_count)
@@ -102,7 +123,10 @@ def list_producers(
 @limiter.limit("60/minute")
 def producers_count(request: Request, db: Session = Depends(get_db)):
     """MEH-159 — lightweight total count for keeping pagination fresh client-side."""
-    count = db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar() or 0
+    count = (
+        db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar()
+        or 0
+    )
     return {"count": count}
 
 
@@ -123,7 +147,12 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
-    report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer.id).scalar() or 0
+    report_count = (
+        db.query(func.count(Report.id))
+        .filter(Report.producer_id == producer.id)
+        .scalar()
+        or 0
+    )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
     return result
@@ -166,7 +195,12 @@ def get_producer(
     attach_favorites_count(producer, db)
 
     # Compute report_count from DB
-    report_count = db.query(func.count(Report.id)).filter(Report.producer_id == producer_id).scalar() or 0
+    report_count = (
+        db.query(func.count(Report.id))
+        .filter(Report.producer_id == producer_id)
+        .scalar()
+        or 0
+    )
     result = ProducerDetailOut.model_validate(producer)
     result.report_count = report_count
 
@@ -206,10 +240,12 @@ def record_whatsapp_click(
     """
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
-    db.add(ProducerWhatsAppClick(
-        producer_id=producer_id,
-        user_id=current_user.id if current_user else None,
-    ))
+    db.add(
+        ProducerWhatsAppClick(
+            producer_id=producer_id,
+            user_id=current_user.id if current_user else None,
+        )
+    )
     db.commit()
     return {"detail": "logged"}
 
@@ -238,12 +274,14 @@ def record_contact_click(
     # existence check — full row acceptable at 10/min rate limit
     get_producer_or_404(db, producer_id)
     client_ip = request.client.host if request.client else None
-    db.add(ContactClick(
-        producer_id=producer_id,
-        user_id=current_user.id if current_user else None,
-        method=data.method,
-        ip_hash=hash_ip(client_ip),
-    ))
+    db.add(
+        ContactClick(
+            producer_id=producer_id,
+            user_id=current_user.id if current_user else None,
+            method=data.method,
+            ip_hash=hash_ip(client_ip),
+        )
+    )
     db.commit()
 
 
@@ -267,5 +305,3 @@ def create_producer(
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.id).all()
-
-

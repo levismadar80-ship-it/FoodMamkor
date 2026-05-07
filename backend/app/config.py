@@ -22,7 +22,9 @@ class Settings(BaseSettings):
     # _load_settings() below resolves which one to use based on ENV.
     database_url_production: str = ""
     database_url_staging: str = ""
-    secret_key: str = _DEV_SECRET_SENTINEL  # overridden by SECRET_KEY / JWT_SECRET_KEY env
+    secret_key: str = (
+        _DEV_SECRET_SENTINEL  # overridden by SECRET_KEY / JWT_SECRET_KEY env
+    )
     algorithm: str = "HS256"
     # MEH-326: short-TTL access token (15 min) paired with a 14-day refresh
     # token delivered via HttpOnly cookie. The frontend axios interceptor
@@ -119,7 +121,8 @@ def _load_settings() -> Settings:
         logger.warning(
             "DATABASE_URL_%s not set — falling back to DATABASE_URL "
             "(deprecated; set DATABASE_URL_%s in Railway to suppress this).",
-            _env.upper(), _env.upper(),
+            _env.upper(),
+            _env.upper(),
         )
     # dev / test: s.database_url already carries DATABASE_URL (or localhost default).
 
@@ -129,7 +132,7 @@ def _load_settings() -> Settings:
             raise RuntimeError(
                 "SECURITY: JWT_SECRET_KEY (or SECRET_KEY) must be set in "
                 "production. Generate one with: python -c "
-                "\"import secrets; print(secrets.token_hex(32))\""
+                '"import secrets; print(secrets.token_hex(32))"'
             )
         # Dev mode: generate ephemeral secret so the app still boots without
         # config. Tokens become invalid on every restart, which is fine for dev.

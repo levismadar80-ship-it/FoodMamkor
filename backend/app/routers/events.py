@@ -9,6 +9,7 @@ DELETE /events/{id}              delete (owner only)
 
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
+
 from datetime import date, datetime
 from typing import Annotated
 from uuid import UUID
@@ -157,9 +158,13 @@ def create_event(
 
     # MEH-54: notify favoriting users who opted in for new-event alerts
     from app.routers.alerts import AlertContent, fire_alerts
+
     producer_name = event.producer.name if event.producer else ""
     background_tasks.add_task(
-        fire_alerts, db, user.producer_id, "new_event",
+        fire_alerts,
+        db,
+        user.producer_id,
+        "new_event",
         AlertContent(
             title=f"🎉 אירוע חדש: {data.title}",
             body=f"{producer_name} — {data.city or ''}\n{data.event_date}",

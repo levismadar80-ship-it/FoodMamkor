@@ -6,16 +6,23 @@ here to avoid two code paths on the same destructive action.
 
 MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
+
 import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
-from app.auth import generate_fingerprint, get_current_user, hash_password, verify_password
+from app.auth import (
+    generate_fingerprint,
+    get_current_user,
+    hash_password,
+    verify_password,
+)
 from app.database import get_db
 from app.models import User
 from app.rate_limit import limiter
+
 # MEH-306: cookie-issuance helpers live in routers/auth.py because login /
 # register / OAuth all share them. change_password needs the same helpers
 # to refresh cookies on the 204 (so /auth/refresh works after the password
@@ -102,7 +109,9 @@ async def change_password(
         )
     # MEH-306: passlib bcrypt verify blocks ~50-200ms; offload to a thread
     # so the async handler doesn't block the event loop.
-    if not await asyncio.to_thread(verify_password, data.current_password, user.password_hash):
+    if not await asyncio.to_thread(
+        verify_password, data.current_password, user.password_hash
+    ):
         raise HTTPException(
             status_code=403,
             detail="הסיסמה הנוכחית שגויה",

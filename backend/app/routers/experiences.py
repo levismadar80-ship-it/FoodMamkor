@@ -13,10 +13,11 @@ See docs/MODERATION.md for the shared moderation pattern. Experiences
 differ from home_products in that they ALWAYS require admin approval
 after the Claude verdict — the admin_experiences router handles that side.
 """
+
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -67,9 +68,7 @@ def _serialize_list(ex: Experience) -> dict:
         "is_recurring": bool(ex.is_recurring),
         "recurring_schedule": ex.recurring_schedule,
         "status": ex.status,
-        "host": (
-            {"id": ex.host.id, "name": ex.host.name} if ex.host else None
-        ),
+        "host": ({"id": ex.host.id, "name": ex.host.name} if ex.host else None),
         "created_at": ex.created_at,
     }
 
@@ -220,8 +219,7 @@ def submit_experience(
             status_code=400,
             detail={
                 "error": "experience_rejected",
-                "reason": verdict.get("reason")
-                or "התוכן לא מתאים לפלטפורמה",
+                "reason": verdict.get("reason") or "התוכן לא מתאים לפלטפורמה",
             },
         )
 
@@ -301,17 +299,19 @@ def update_experience(
         ex.status = "pending"
         ex.admin_feedback = None
         ex.rejection_reason = None
-        verdict = validate_experience({
-            "title": ex.title,
-            "description": ex.description,
-            "category": ex.category,
-            "city": ex.city,
-            "location_type": ex.location_type,
-            "price_per_person": (
-                str(ex.price_per_person) if ex.price_per_person else None
-            ),
-            "max_participants": ex.max_participants,
-        })
+        verdict = validate_experience(
+            {
+                "title": ex.title,
+                "description": ex.description,
+                "category": ex.category,
+                "city": ex.city,
+                "location_type": ex.location_type,
+                "price_per_person": (
+                    str(ex.price_per_person) if ex.price_per_person else None
+                ),
+                "max_participants": ex.max_participants,
+            }
+        )
         ex.moderation_status = verdict["status"]
         ex.moderation_reason = verdict.get("reason")
         ex.moderation_suggestion = verdict.get("suggestion")

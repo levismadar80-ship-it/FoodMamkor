@@ -10,6 +10,7 @@ Exported helper:
     content: AlertContent(title, body, url)
     Called from events.py + producer_me.py via FastAPI BackgroundTasks.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,6 +24,7 @@ from app.config import settings
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, FavoriteAlert, User
+
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 # AlertContent is re-exported here so existing
 # `from app.routers.alerts import AlertContent` callers
@@ -45,10 +47,14 @@ def get_alert_prefs(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    alert = db.query(FavoriteAlert).filter(
-        FavoriteAlert.user_id == user.id,
-        FavoriteAlert.producer_id == producer_id,
-    ).first()
+    alert = (
+        db.query(FavoriteAlert)
+        .filter(
+            FavoriteAlert.user_id == user.id,
+            FavoriteAlert.producer_id == producer_id,
+        )
+        .first()
+    )
     if not alert:
         return AlertPrefsOut(
             enabled=False,
@@ -75,17 +81,27 @@ def upsert_alert_prefs(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    fav = db.query(Favorite).filter(
-        Favorite.user_id == user.id,
-        Favorite.producer_id == producer_id,
-    ).first()
+    fav = (
+        db.query(Favorite)
+        .filter(
+            Favorite.user_id == user.id,
+            Favorite.producer_id == producer_id,
+        )
+        .first()
+    )
     if not fav:
-        raise HTTPException(status_code=400, detail="יש לשמור את בית העסק במועדפים תחילה")
+        raise HTTPException(
+            status_code=400, detail="יש לשמור את בית העסק במועדפים תחילה"
+        )
 
-    alert = db.query(FavoriteAlert).filter(
-        FavoriteAlert.user_id == user.id,
-        FavoriteAlert.producer_id == producer_id,
-    ).first()
+    alert = (
+        db.query(FavoriteAlert)
+        .filter(
+            FavoriteAlert.user_id == user.id,
+            FavoriteAlert.producer_id == producer_id,
+        )
+        .first()
+    )
 
     if alert:
         alert.notify_new_product = data.notify_new_product
@@ -129,7 +145,9 @@ _ALERT_COL = {
 }
 
 
-def fire_alerts(db: Session, producer_id: UUID, alert_type: str, content: AlertContent) -> None:
+def fire_alerts(
+    db: Session, producer_id: UUID, alert_type: str, content: AlertContent
+) -> None:
     """Fan-out notifications to all users who opted in for alert_type on producer_id.
 
     Sends:
