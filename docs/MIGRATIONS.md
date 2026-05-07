@@ -84,14 +84,18 @@ Postgres 15 service (fresh DB)
   → alembic upgrade head
   → psql verify: alembic_version = ef8fb1858f5b
   → psql verify: table count (excl. alembic_version) = 34
+  → alembic check                ← MEH-492
   → pytest
 ```
 
 **כשה-gate נכשל:**
 - `alembic_version` שגוי → migration chain שבורה (revision חסר, down_revision שגוי)
 - `table count` שגוי → טבלה נוספה/נמחקה ב-migration בלי לעדכן את `EXPECTED_TABLES`
+- `alembic check` נכשל (MEH-492) → drift בין `Base.metadata` (מודלים) לסכמה ש-`upgrade head` יצרה. הסיבה הקלאסית: הוסיפי שדה ל-`models.py` בלי `alembic revision --autogenerate`. הפלט מצביע על העמודה/הטבלה החסרה. תיקון: ג'נרטי revision חדש, הריצי `upgrade head` מקומית, ופחתי לעדכן את `EXPECTED_TABLES` אם זו טבלה חדשה.
 
 כאשר מוסיפים טבלה חדשה: עדכני `EXPECTED_TABLES=34` → `EXPECTED_TABLES=35` (וכן הלאה) ב-pr-checks.yml.
+
+**מקומית, לפני PR:** `cd backend && uv run alembic check` — אם CI ייכשל, זה ייכשל מקומית קודם. דורש Postgres רץ + `alembic upgrade head` ניקיון לפני זה.
 
 ---
 

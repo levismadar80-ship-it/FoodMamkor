@@ -168,6 +168,22 @@ jobs:
           fi
           echo "Tables (excl. alembic_version) = $TABLE_COUNT ✓"
 
+      # MEH-492 — Model-vs-migration drift gate.
+      # Compares Base.metadata (target_metadata in alembic/env.py:36)
+      # against the schema produced by `alembic upgrade head` above.
+      # Catches the class of bug where a column is added to a model
+      # without a paired revision: pytest passes (tests don't touch
+      # the new column), upgrade head passes (chain is intact),
+      # EXPECTED_TABLES still matches (count unchanged) — but
+      # production boot fails when the model tries to read/write the
+      # missing column. Requires Alembic ≥ 1.9 (pyproject pins 1.13.2).
+      - name: Alembic drift check (models vs migrations)
+        working-directory: backend
+        run: .venv/bin/alembic check
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+
       # MEH-489 — coverage gate at 70%. Drops `-x` so the full suite runs
       # (partial runs make coverage meaningless); drops `-v` for log
       # signal-to-noise (the coverage summary is now the load-bearing

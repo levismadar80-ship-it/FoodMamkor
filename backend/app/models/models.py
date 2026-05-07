@@ -157,6 +157,20 @@ class Producer(Base):
             text("to_tsvector('simple', name)"),
             postgresql_using="gin",
         ),
+        # idx_producers_availability_state — added in MEH-291 migration
+        # 2a74fa41ceb1 (2026-05-04). Partial index covers non-default
+        # availability states; pairs with producer_listing.py:174 filter.
+        # Predicate written in Postgres canonical form (varchar comparison
+        # with ::text casts + <> operator) to satisfy `alembic check`.
+        # Source migration uses `!=` → Postgres reconstructs as `<>` in
+        # pg_get_expr(), forcing the canonical-form match here.
+        Index(
+            "idx_producers_availability_state",
+            "availability_state",
+            postgresql_where=text(
+                "(availability_state)::text <> 'accepting_orders'::text"
+            ),
+        ),
     )
 
 
@@ -333,6 +347,17 @@ class Product(Base):
     )
 
     producer = relationship("Producer", back_populates="products")
+
+    # idx_products_dietary — added in MEH-293 migration 1afe844d11f4
+    # (2026-05-07). Partial index covers products with at least one
+    # dietary flag set; mirrors EXISTS-subquery filter pattern.
+    __table_args__ = (
+        Index(
+            "idx_products_dietary",
+            "producer_id",
+            postgresql_where=text("is_gluten_free OR is_vegan OR is_lactose_free"),
+        ),
+    )
 
 
 class DeliveryArea(Base):
