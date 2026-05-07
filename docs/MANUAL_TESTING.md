@@ -3,6 +3,20 @@
 
 ---
 
+## Product price validation (MEH-295 backend)
+
+> Backend-only checklist. Frontend form ships in Phase 3 PR. Endpoint: `POST /producers/me/products` + `PUT /producers/me/products/:id`. All POSTs require a producer-role JWT.
+
+- [ ] POST `price_min=0` — איך לבדוק: `curl -X POST -H "Authorization: Bearer $JWT" -d '{"name":"בדיקה","price_min":0}'`; **תוצאה מצופה:** 422 — Pydantic `ge=1` rejects.
+- [ ] POST `price_min=10001` — איך לבדוק: same shape, body `{"name":"בדיקה","price_min":10001}`; **תוצאה מצופה:** 422 — Pydantic `le=10000` rejects.
+- [ ] POST `price_min=50, price_max=30` — איך לבדוק: `{"name":"בדיקה","price_min":50,"price_max":30}`; **תוצאה מצופה:** 422 — `model_validator` rejects with `price_max must be greater than or equal to price_min`.
+- [ ] POST `price_min` only — איך לבדוק: `{"name":"בדיקה","price_min":50}`; **תוצאה מצופה:** 201; response body has `price_min: "50.00"` (string per Pydantic v2 Decimal serialization), `price_max: null`.
+- [ ] POST `price_min` + `price_max` — איך לבדוק: `{"name":"בדיקה","price_min":50,"price_max":80}`; **תוצאה מצופה:** 201; both fields serialized as strings: `"50.00"` and `"80.00"`.
+- [ ] PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PUT /producers/me/products/:id` with body `{"name":"שם חדש"}` only; **תוצאה מצופה:** 200; `price_range` value unchanged in DB.
+- [ ] Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **תוצאה מצופה:** columns `price_min numeric(10,2)` + `price_max numeric(10,2)` both present and nullable; `price_range varchar(50)` still present (legacy fallback).
+
+---
+
 ## Producer status labels (MEH-294)
 
 > Render-only Hebrew labels for `producer.status`. DB values unchanged (intentional per MEH-56). Source of truth: `frontend/lib/producer-status.js`.

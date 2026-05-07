@@ -109,7 +109,11 @@ users (
 
 categories     (id, name unique, emoji)
 producer_categories (producer_id FK, category_id FK, PK(both))
-products       (id, producer_id FK, name, description, price_range)
+products       (id, producer_id FK, name, description,
+                price_range,                        -- LEGACY free-text; drop tracked in MEH-295 follow-up
+                image_url,
+                price_min Numeric(10,2) NULL,       -- MEH-295: canonical min, Pydantic ge=1 le=10000 (required on create)
+                price_max Numeric(10,2) NULL)       -- MEH-295: canonical max, optional, validator: >= price_min
 delivery_areas (id, producer_id FK, city, min_order int, delivery_day)
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
