@@ -2,6 +2,29 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-485: CI concurrency-key fix + paths-filter on pr-checks.yml
+
+`ci(MEH-485)`: two CI optimizations targeting 30-50% minute savings on single-stack PRs.
+
+- **Bug 1 — concurrency keys** — 4 of 5 workflow files used a key derived from `github.ref`, which on `pull_request` events is `refs/pull/<n>/merge` (per-PR) but does not stably dedupe force-pushes within the same PR. Migrated to canonical `${{ github.workflow }}-${{ github.head_ref || github.ref }}` (Modexa "12 GHA moves" / Blacksmith pattern). `head_ref` resolves to the source branch on PRs and is empty elsewhere; the `||` fallback covers `push` / `schedule` / `workflow_dispatch` triggers.
+- **Files updated:** `pr-checks.yml`, `dependency-audit.yml`, `skills-audit.yml`, `deploy.yml` (per-job split, see below).
+- **`e2e.yml` intentionally untouched** — trigger is `deployment_status` (no `head_ref`); `e2e-${{ github.event.deployment.ref }}` is the MEH-424 design intent (scope by deployed SHA, not source branch).
+- **`deploy.yml` per-job split** — workflow-level `concurrency:` removed. 5 jobs each get their own `concurrency:` block:
+  - `lint`, `api-contract-static`, `api-contract-probe-staging` — canonical key, `cancel-in-progress: true` (CI checks; fresh run wins).
+  - `production`, `staging` — `${{ github.workflow }}-<job>-${{ github.ref }}`, **`cancel-in-progress: false`** (Railway data integrity; back-to-back pushes serialize, never abort mid-deploy).
+- **Bug 2 — no paths-filter on `pr-checks.yml`** — every PR ran full backend pytest + frontend build regardless of touched paths. Added new `changes` job using `dorny/paths-filter@v3` (pattern reused from `e2e.yml`, MEH-424). 4 downstream jobs gated:
+  - `build` — runs when `frontend || workflows`
+  - `pytest` — runs when `backend || workflows`
+  - `test-inventory` — runs when `backend || workflows`
+  - `adversarial-review` — runs when `frontend || backend || workflows`
+- **Skip-as-success contract** — GitHub reports skipped-via-job-`if:` jobs with `conclusion=success`; required-status checks (`build`, `pytest`) remain satisfied on docs-only PRs without manual override.
+- **Job `name:` fields preserved byte-identical** in all 4 gated jobs (branch-protection required-check identifiers).
+- **Adversarial-review step-level skip** (`if: steps.check.outputs.exists == 'true'` on the "Run adversarial review" step) preserved verbatim. Layered gating: paths-filter at job level + script-existence at step level.
+- **Out of scope** — Playwright sharding (separate ticket); self-hosted runners (MEH-270 explicitly out); branch-protection UI changes (Smadar handles in GitHub settings).
+- **`pr-checks.yml`**: added `permissions: contents:read, pull-requests:read` block — required for `dorny/paths-filter@v3` on `pull_request` events. Parity with e2e.yml. Discovered when Paths filter job exited at 6s on first PR run; surfaced + fixed on the same PR.
+
+Closes MEH-485.
+
 ## 2026-05-07 — MEH-472 PR-A: i18n Wave 2 translation sweep (Header, Footer, home page)
 
 `feat(MEH-472)`: Wave 2 of next-intl migration — ~88 new keys in `messages/he.json` + `en.json`; all hardcoded Hebrew replaced with `t()` in Header.jsx, Footer.jsx, HomeHero.jsx, HomeProducersGrid.jsx, HomeCategoryGrid.jsx, HomeStaticBlocks.jsx, UpcomingEventsPreview.jsx, BottomNav.jsx, and `app/[locale]/page.js`. Q7 gender-neutral plural imperatives applied throughout (נסי→נסו, הוסיפי→הוסיפו, הצטרפי→הצטרפו, שלחי→שלחו, התנתקי→התנתקו, ראי→ראו, מצאי→מצאו, גלי→גלו, קבלי→קבלו). Q3 `lib/categories.js` established with `categoryKey()` helper + 7 slug→key entries. PR-B (shim deletion + `lib/language-context.js` removal) deferred ≥ 2026-05-14 after 7-day staging burn-in. Bug fixed: `t("nav_login")` → `t("nav.login")` in Header.jsx mobile drawer.
