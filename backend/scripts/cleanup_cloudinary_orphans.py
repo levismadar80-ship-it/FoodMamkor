@@ -19,7 +19,9 @@ Chunk I lands in 5 sub-chunks:
 """
 import argparse
 import logging
+import re
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -29,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.cloudinary_utils import RESERVED_PUBLIC_ID_PREFIXES  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.database import SessionLocal  # noqa: E402
 from app.models import (  # noqa: E402
@@ -158,6 +161,108 @@ def build_referenced_url_set(db) -> set[str]:
     return referenced
 
 
+# Depth-1 filter for the bare `mehamakor` scan. Single segment under the
+# root means producer-uploaded image OR placeholder-uuid avatar; deeper
+# paths are reserved (mehamakor/producers/<id>/...) or future subfolders
+# the operator hasn't sanctioned (default-deny).
+_DEPTH_1_PUBLIC_ID_RE = re.compile(r"^mehamakor/[^/]+$")
+_RESOURCES_PAGE_SIZE = 500
+
+
+def _passes_depth_filter(public_id: str, scan_prefix: str) -> bool:
+    """Default-deny on unknown subfolders under mehamakor/ when scanning the
+    bare top-level. Sub-prefix scans (e.g. `mehamakor/avatars`) opt out —
+    the operator is explicitly targeting that subtree.
+    """
+    if scan_prefix != "mehamakor":
+        return True
+    return bool(_DEPTH_1_PUBLIC_ID_RE.match(public_id))
+
+
+def _passes_reject_filter(public_id: str) -> bool:
+    """Defense-in-depth filter on every page result before any delete call.
+    Independent of `app.cloudinary_utils.extract_public_id` so an SDK
+    response shape change cannot bypass it.
+    """
+    if "/placeholder" in public_id:
+        return False
+    if any(public_id.startswith(p) for p in RESERVED_PUBLIC_ID_PREFIXES):
+        return False
+    return True
+
+
+def _passes_age_filter(created_at_iso: str, cutoff: datetime) -> bool:
+    """True when the asset is older than the cutoff (safe to consider for
+    deletion). Strict `<` boundary: an asset whose `created_at == cutoff`
+    is treated as too young — protects in-flight upload races where
+    Cloudinary's `created_at` and our DB INSERT happen seconds apart.
+    """
+    created = datetime.fromisoformat(created_at_iso.replace("Z", "+00:00"))
+    return created < cutoff
+
+
+def list_cloudinary_assets(
+    prefixes: list[str],
+    min_age_hours: int,
+) -> list[tuple[str, str, int]]:
+    """List Cloudinary assets across `prefixes`, applying depth-1 filter,
+    reject list, and min-age cutoff. Returns `(public_id, secure_url, bytes)`
+    tuples surviving all filters.
+
+    Pagination terminates on missing or empty `next_cursor`. Any SDK
+    exception is logged with prefix context and re-raised — caller decides
+    exit code.
+    """
+    import cloudinary  # noqa: F401, PLC0415 — needed before cloudinary.api is importable
+    import cloudinary.api  # noqa: PLC0415
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=min_age_hours)
+    candidates: list[tuple[str, str, int]] = []
+    for scan_prefix in prefixes:
+        cursor: str | None = None
+        page = 0
+        while True:
+            page += 1
+            kwargs = {
+                "prefix": scan_prefix,
+                "type": "upload",
+                "resource_type": "image",
+                "max_results": _RESOURCES_PAGE_SIZE,
+            }
+            if cursor:
+                kwargs["next_cursor"] = cursor
+            try:
+                response = cloudinary.api.resources(**kwargs)
+            except Exception as exc:
+                logger.error(
+                    "cloudinary.api.resources failed for prefix=%r page=%d: %s",
+                    scan_prefix,
+                    page,
+                    exc,
+                )
+                raise
+            for asset in response.get("resources", []):
+                public_id = asset.get("public_id", "")
+                if not _passes_depth_filter(public_id, scan_prefix):
+                    continue
+                if not _passes_reject_filter(public_id):
+                    continue
+                created_at = asset.get("created_at", "")
+                if not _passes_age_filter(created_at, cutoff):
+                    continue
+                candidates.append(
+                    (
+                        public_id,
+                        asset.get("secure_url", ""),
+                        asset.get("bytes", 0),
+                    )
+                )
+            cursor = response.get("next_cursor")
+            if not cursor:
+                break
+    return candidates
+
+
 def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO,
@@ -200,7 +305,16 @@ def main(argv: list[str] | None = None) -> int:
         "Referenced-set built: %d unique URLs across 8 sources", len(referenced)
     )
 
-    # I.3-I.5 fill in: paginated resources() → orphan compute → --apply delete.
+    try:
+        candidates = list_cloudinary_assets(args.prefix, args.min_age_hours)
+    except Exception:
+        logger.exception(
+            "Cloudinary listing failed; aborting before any delete call"
+        )
+        return 1
+    logger.info("Cloudinary candidates after filters: %d", len(candidates))
+
+    # I.4-I.5 fill in: orphan compute → --apply delete.
     return 0
 
 
