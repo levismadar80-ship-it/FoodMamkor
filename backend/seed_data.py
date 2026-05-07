@@ -1,7 +1,5 @@
 """Seed the database with initial categories and sample producers."""
 
-import uuid
-
 from app.auth import hash_password
 from app.config import settings
 from app.database import SessionLocal

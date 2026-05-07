@@ -8,7 +8,7 @@ from app.auth import get_current_user, require_admin
 from app.database import get_db
 from app.models import Producer, Report, User
 from app.rate_limit import limiter
-from app.schemas.schemas import ReportCreate, ReportOut
+from app.schemas.schemas import ReportCreate
 
 router = APIRouter(tags=["reports"])
 

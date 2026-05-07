@@ -17,6 +17,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from sqlalchemy.orm import Session
+
+from app.models import Category, DeliveryArea, Producer, ProducerCategory
+from app.slug_utils import RESERVED_SLUGS
+
 # U+00D7 (×, multiplication sign) and U+00F8 (ø) appear when Hebrew UTF-8
 # bytes are decoded as Latin-1/Windows-1252 — the classic XLS mojibake.
 _MOJIBAKE_RE = re.compile(r"[×ø]")
@@ -24,12 +29,6 @@ _MOJIBAKE_RE = re.compile(r"[×ø]")
 
 def _has_mojibake(value: str | None) -> bool:
     return bool(value and _MOJIBAKE_RE.search(value))
-
-
-from sqlalchemy.orm import Session
-
-from app.models import Category, DeliveryArea, Producer, ProducerCategory
-from app.slug_utils import RESERVED_SLUGS
 
 
 def _slugify(text: str) -> str:

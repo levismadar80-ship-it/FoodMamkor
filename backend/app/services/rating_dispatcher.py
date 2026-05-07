@@ -20,9 +20,9 @@ from typing import Callable, Optional
 import structlog
 from sqlalchemy.orm import Session
 
-logger = structlog.get_logger(__name__)
-
 from app.models.models import HomeProductWhatsAppClick
+
+logger = structlog.get_logger(__name__)
 
 RATING_DELAY = timedelta(hours=24)
 

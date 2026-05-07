@@ -142,7 +142,7 @@ def _build_base_queries(
     return q, count_q
 
 
-def _apply_scalar_filters(q, count_q, **filters: Any):
+def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + 5 structurally distinct query branches (kosher / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
     # boolean column needs only an extra row, not a new branch.

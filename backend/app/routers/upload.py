@@ -14,15 +14,15 @@ import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
-
-log = logging.getLogger("app.upload")
+from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from sqlalchemy.orm import Session
+
+log = logging.getLogger("app.upload")
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
