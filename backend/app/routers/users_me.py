@@ -50,6 +50,13 @@ def update_profile(
     - Name is trimmed and must be non-empty.
     - Email uniqueness is re-checked; collisions are rejected with 409.
     """
+    # MEH-375: snapshot avatar BEFORE mutation so we can destroy the
+    # prior Cloudinary asset AFTER db.commit succeeds. The destroy site
+    # uses a value-changed guard (old != new), which covers both the
+    # current swap path and any future null-clear handler refactor
+    # without depending on the handler's "skip when None" idiom.
+    old_avatar = user.avatar_url
+
     if data.name is not None:
         trimmed = data.name.strip()
         if not trimmed:
@@ -75,6 +82,16 @@ def update_profile(
 
     db.commit()
     db.refresh(user)
+
+    # MEH-375: post-commit destroy of the prior avatar when its value
+    # changed, regardless of how the change happened (PATCH swap or
+    # future null-clear handler refactor). External-cleanup rule —
+    # destroy only after commit so a constraint failure leaves DB and
+    # Cloudinary in sync.
+    if old_avatar and old_avatar != user.avatar_url:
+        from app.cloudinary_utils import destroy_image
+        destroy_image(old_avatar)
+
     return user
 
 
