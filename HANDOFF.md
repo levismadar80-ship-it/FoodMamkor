@@ -1,9 +1,9 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-483 structlog + Request-ID + /health split DRAFT PR open; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-07 — MEH-483 structlog + Request-ID + /health/{liveness,readiness} (DRAFT PR open)
+### Session 2026-05-07 — MEH-483 structlog + Request-ID + /health/{liveness,readiness} (MERGED PR #541 b23f2ed)
 
 **Branch:** `feature/meh-483-structlog-request-id-health` off `origin/staging`. Switched FROM harness-mandated `claude/add-middleware-sentry-cNVe3` per CLAUDE.md workflow rule 3 + Smadar's explicit Q4 confirmation in plan review.
 
