@@ -160,10 +160,16 @@ class Producer(Base):
         # idx_producers_availability_state — added in MEH-291 migration
         # 2a74fa41ceb1 (2026-05-04). Partial index covers non-default
         # availability states; pairs with producer_listing.py:174 filter.
+        # Predicate written in Postgres canonical form (varchar comparison
+        # with ::text casts + <> operator) to satisfy `alembic check`.
+        # Source migration uses `!=` → Postgres reconstructs as `<>` in
+        # pg_get_expr(), forcing the canonical-form match here.
         Index(
             "idx_producers_availability_state",
             "availability_state",
-            postgresql_where=text("availability_state != 'accepting_orders'"),
+            postgresql_where=text(
+                "(availability_state)::text <> 'accepting_orders'::text"
+            ),
         ),
     )
 
