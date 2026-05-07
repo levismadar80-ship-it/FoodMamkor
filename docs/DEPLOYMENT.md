@@ -245,6 +245,17 @@ this codebase. Open:
 > follow-up PR flips it to blocking and adds the job name to the required
 > checks list above.
 
+> **`Backend lint (ruff)` is intentionally NOT a required check (yet).**
+> Wired via `.github/workflows/pr-checks.yml` `lint-backend` job
+> (MEH-488). Runs with `continue-on-error: true` during the calibration
+> window because the staging baseline currently has 18 ruff `check`
+> violations + 56 files needing format. After MEH-448 cleans the
+> baseline, a 1-line follow-up PR flips this to `false` AND Smadar adds
+> `Backend lint (ruff)` to the required-checks lists for both `staging`
+> and `main` (GitHub only auto-suggests a check after it's run once on
+> the protected branch — push the merge PR, let CI complete, then add
+> the check to the branch-protection rule).
+
 > **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
 > (npm audit)` are required checks (MEH-336, 2026-05-01).** Both jobs run
 > with `continue-on-error: false`. The MEH-330 baseline (frontend 13 high
