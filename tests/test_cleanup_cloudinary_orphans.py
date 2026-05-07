@@ -5,9 +5,11 @@ Pure unit tests — no DB, no Cloudinary network. Live Cloudinary calls
 arrive in I.3 / I.5; those tests will mock `cloudinary.api.*`.
 """
 import logging
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from app.cloudinary_utils import RESERVED_PUBLIC_ID_PREFIXES
 from app.models import Event, HomeProduct, Producer, User
 from scripts.cleanup_cloudinary_orphans import (
     ARRAY_URL_SOURCES,
@@ -17,8 +19,12 @@ from scripts.cleanup_cloudinary_orphans import (
     SCALAR_URL_SOURCES,
     _add_array_urls,
     _add_scalar_urls,
+    _passes_age_filter,
+    _passes_depth_filter,
+    _passes_reject_filter,
     build_parser,
     build_referenced_url_set,
+    list_cloudinary_assets,
     main,
 )
 
@@ -345,3 +351,352 @@ class TestBuildReferencedUrlSet:
         assert len(result) == 8
         for col in SCALAR_URL_SOURCES + ARRAY_URL_SOURCES:
             assert _url(col) in result
+
+
+# ---------- I.3: Cloudinary listing + filter helpers ----------
+
+
+class TestPassesDepthFilter:
+    def test_single_segment_under_mehamakor_root_kept(self):
+        assert _passes_depth_filter("mehamakor/abc123", "mehamakor") is True
+
+    def test_two_segments_under_mehamakor_root_dropped(self):
+        # mehamakor/avatars/<uuid> would be valid under prefix=mehamakor/avatars,
+        # but a top-level `mehamakor` scan must default-deny everything beneath
+        # the first slash so a future subfolder can't be silently swept.
+        assert _passes_depth_filter("mehamakor/avatars/xyz", "mehamakor") is False
+
+    def test_three_segments_under_mehamakor_root_dropped(self):
+        assert _passes_depth_filter("mehamakor/x/y/z", "mehamakor") is False
+
+    def test_subprefix_scan_no_depth_filter(self):
+        # Operator opted into mehamakor/avatars explicitly; depth filter disabled.
+        assert _passes_depth_filter(
+            "mehamakor/avatars/abc", "mehamakor/avatars"
+        ) is True
+
+    def test_subprefix_scan_deep_path_kept(self):
+        assert _passes_depth_filter(
+            "mehamakor/avatars/x/y", "mehamakor/avatars"
+        ) is True
+
+    def test_just_root_token_dropped(self):
+        # `mehamakor` with no leaf doesn't match `^mehamakor/[^/]+$`.
+        assert _passes_depth_filter("mehamakor", "mehamakor") is False
+
+    def test_trailing_slash_dropped(self):
+        assert _passes_depth_filter("mehamakor/", "mehamakor") is False
+
+
+class TestPassesRejectFilter:
+    def test_normal_public_id_kept(self):
+        assert _passes_reject_filter("mehamakor/abc123") is True
+
+    def test_reserved_namespace_dropped_via_imported_constant(self):
+        # The constant comes from app.cloudinary_utils — proves the script
+        # uses the single-source-of-truth, not a duplicated literal.
+        for reserved in RESERVED_PUBLIC_ID_PREFIXES:
+            assert (
+                _passes_reject_filter(reserved + "some-uuid/story-card") is False
+            )
+
+    def test_placeholder_substring_dropped(self):
+        # `/placeholder` anywhere in the public_id, not just as a prefix.
+        assert _passes_reject_filter("mehamakor/placeholder-x") is False
+        assert _passes_reject_filter("foo/placeholder/bar") is False
+
+    def test_avatar_path_kept(self):
+        assert _passes_reject_filter("mehamakor/avatars/user_abc123") is True
+
+
+class TestPassesAgeFilter:
+    def _cutoff(self, hours_ago: int) -> datetime:
+        return datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+
+    def test_older_than_cutoff_kept(self):
+        # 48h-old asset against a 24h cutoff → safe to delete.
+        assert _passes_age_filter("2020-01-01T00:00:00Z", self._cutoff(24)) is True
+
+    def test_younger_than_cutoff_dropped(self):
+        # Asset created "now + 1 hour" can't be older than any past cutoff.
+        future = (
+            datetime.now(timezone.utc) + timedelta(hours=1)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        assert _passes_age_filter(future, self._cutoff(24)) is False
+
+    def test_z_suffix_iso_handled(self):
+        # ISO format with Z (UTC) — the Cloudinary `created_at` shape.
+        assert _passes_age_filter("2020-01-01T00:00:00Z", self._cutoff(1)) is True
+
+    def test_offset_iso_handled(self):
+        # ISO format with explicit +00:00 offset (also valid).
+        assert (
+            _passes_age_filter("2020-01-01T00:00:00+00:00", self._cutoff(1))
+            is True
+        )
+
+    def test_strict_less_than_boundary(self):
+        # Asset created exactly at the cutoff is treated as too young.
+        # Strict `<` boundary documented in _passes_age_filter docstring.
+        cutoff = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        at_cutoff = "2026-01-01T00:00:00+00:00"
+        assert _passes_age_filter(at_cutoff, cutoff) is False
+
+
+class TestListCloudinaryAssets:
+    """Stub `cloudinary.api.resources` and exercise pagination + filter
+    composition. Sandbox-runnable — no real Cloudinary network."""
+
+    def _patch_resources(self, monkeypatch, pages_or_callable):
+        """Two modes:
+        - list of page-dicts → pop one per call
+        - callable → use as-is (lets the test verify kwargs)
+        """
+        # cloudinary.api is lazy-imported inside list_cloudinary_assets,
+        # so the SDK must already be resolvable; patching the attr on the
+        # real submodule survives that import.
+        import cloudinary.api as cloudinary_api
+
+        if callable(pages_or_callable):
+            fake = pages_or_callable
+        else:
+            pages = list(pages_or_callable)
+            calls: list[dict] = []
+
+            def fake(**kwargs):
+                calls.append(kwargs)
+                if not pages:
+                    raise AssertionError(
+                        "list_cloudinary_assets paged past the canned data"
+                    )
+                return pages.pop(0)
+
+            fake.calls = calls  # type: ignore[attr-defined]
+
+        monkeypatch.setattr(cloudinary_api, "resources", fake)
+        return fake
+
+    def _asset(self, public_id: str, *, created_at: str = "2020-01-01T00:00:00Z"):
+        return {
+            "public_id": public_id,
+            "secure_url": f"https://res.cloudinary.com/x/{public_id}.jpg",
+            "bytes": 1234,
+            "created_at": created_at,
+        }
+
+    def test_empty_response_returns_empty(self, monkeypatch):
+        self._patch_resources(monkeypatch, [{"resources": []}])
+        assert list_cloudinary_assets(["mehamakor"], min_age_hours=24) == []
+
+    def test_single_page_passes_all_filters(self, monkeypatch):
+        self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [
+                        self._asset("mehamakor/a"),
+                        self._asset("mehamakor/b"),
+                        self._asset("mehamakor/c"),
+                    ]
+                }
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert len(result) == 3
+        assert {pid for pid, _, _ in result} == {
+            "mehamakor/a",
+            "mehamakor/b",
+            "mehamakor/c",
+        }
+
+    def test_pagination_two_pages_terminates_on_missing_cursor(
+        self, monkeypatch
+    ):
+        fake = self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [self._asset("mehamakor/a")],
+                    "next_cursor": "cursor-1",
+                },
+                {"resources": [self._asset("mehamakor/b")]},  # no next_cursor
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert {pid for pid, _, _ in result} == {"mehamakor/a", "mehamakor/b"}
+        assert len(fake.calls) == 2
+        assert "next_cursor" not in fake.calls[0]
+        assert fake.calls[1].get("next_cursor") == "cursor-1"
+
+    def test_pagination_three_pages_terminates_on_empty_cursor(
+        self, monkeypatch
+    ):
+        # Defensive termination: empty string `next_cursor` (not just absent).
+        fake = self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [self._asset("mehamakor/a")],
+                    "next_cursor": "c1",
+                },
+                {
+                    "resources": [self._asset("mehamakor/b")],
+                    "next_cursor": "c2",
+                },
+                {
+                    "resources": [self._asset("mehamakor/c")],
+                    "next_cursor": "",  # explicit empty → terminate
+                },
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert len(result) == 3
+        assert len(fake.calls) == 3
+
+    def test_depth_2_path_under_mehamakor_root_filtered_out(self, monkeypatch):
+        self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [
+                        self._asset("mehamakor/keep_me"),
+                        self._asset("mehamakor/avatars/depth_2_dropped"),
+                        self._asset("mehamakor/sub/sub2/depth_3_dropped"),
+                    ]
+                }
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert {pid for pid, _, _ in result} == {"mehamakor/keep_me"}
+
+    def test_subprefix_scan_keeps_deep_paths(self, monkeypatch):
+        self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [
+                        self._asset("mehamakor/avatars/abc"),
+                        self._asset("mehamakor/avatars/x/y"),
+                    ]
+                }
+            ],
+        )
+        result = list_cloudinary_assets(
+            ["mehamakor/avatars"], min_age_hours=24
+        )
+        assert {pid for pid, _, _ in result} == {
+            "mehamakor/avatars/abc",
+            "mehamakor/avatars/x/y",
+        }
+
+    def test_placeholder_substring_filtered_out(self, monkeypatch):
+        self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [
+                        self._asset("mehamakor/placeholder-x"),
+                        self._asset("mehamakor/abc"),
+                    ]
+                }
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert {pid for pid, _, _ in result} == {"mehamakor/abc"}
+
+    def test_reserved_prefix_filtered_out(self, monkeypatch):
+        # Cloudinary will return mehamakor/producers/<id>/story-card under
+        # a `prefix=mehamakor` scan because Cloudinary's `prefix` is
+        # itself a substring filter, not a depth filter. Reject filter
+        # catches them.
+        reserved_pid = list(RESERVED_PUBLIC_ID_PREFIXES)[0] + "abc/story-card"
+        self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [
+                        self._asset(reserved_pid),
+                        self._asset("mehamakor/keep_me"),
+                    ]
+                }
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert {pid for pid, _, _ in result} == {"mehamakor/keep_me"}
+
+    def test_young_asset_filtered_out(self, monkeypatch):
+        future = (
+            datetime.now(timezone.utc) + timedelta(hours=1)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        self._patch_resources(
+            monkeypatch,
+            [
+                {
+                    "resources": [
+                        self._asset("mehamakor/young", created_at=future),
+                        self._asset("mehamakor/old"),  # 2020 → very old
+                    ]
+                }
+            ],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert {pid for pid, _, _ in result} == {"mehamakor/old"}
+
+    def test_sdk_exception_logged_and_re_raised(self, monkeypatch, caplog):
+        def boom(**kwargs):
+            raise RuntimeError("api broke")
+
+        self._patch_resources(monkeypatch, boom)
+        with caplog.at_level(
+            logging.ERROR, logger="scripts.cleanup_cloudinary_orphans"
+        ):
+            with pytest.raises(RuntimeError, match="api broke"):
+                list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert any(
+            "cloudinary.api.resources failed" in r.message
+            for r in caplog.records
+        )
+
+    def test_kwargs_to_resources_match_spec(self, monkeypatch):
+        fake = self._patch_resources(monkeypatch, [{"resources": []}])
+        list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert fake.calls[0] == {
+            "prefix": "mehamakor",
+            "type": "upload",
+            "resource_type": "image",
+            "max_results": 500,
+        }
+
+    def test_multi_prefix_scans_each(self, monkeypatch):
+        fake = self._patch_resources(
+            monkeypatch,
+            [
+                {"resources": [self._asset("mehamakor/a")]},
+                {"resources": [self._asset("mehamakor/avatars/b")]},
+            ],
+        )
+        result = list_cloudinary_assets(
+            ["mehamakor", "mehamakor/avatars"], min_age_hours=24
+        )
+        assert {pid for pid, _, _ in result} == {
+            "mehamakor/a",
+            "mehamakor/avatars/b",
+        }
+        assert [c["prefix"] for c in fake.calls] == [
+            "mehamakor",
+            "mehamakor/avatars",
+        ]
+
+    def test_returns_public_id_secure_url_bytes_tuple(self, monkeypatch):
+        self._patch_resources(
+            monkeypatch,
+            [{"resources": [self._asset("mehamakor/a")]}],
+        )
+        result = list_cloudinary_assets(["mehamakor"], min_age_hours=24)
+        assert result == [
+            (
+                "mehamakor/a",
+                "https://res.cloudinary.com/x/mehamakor/a.jpg",
+                1234,
+            )
+        ]
