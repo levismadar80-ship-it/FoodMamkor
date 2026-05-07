@@ -140,28 +140,55 @@ class DeliveryAreaOut(BaseModel):
 
 
 # --- Product ---
+# MEH-295: price_min/price_max are the canonical pricing fields.
+# price_range is kept Optional for legacy back-compat — drop tracked as
+# follow-up. Cross-field check (price_max >= price_min) is enforced via
+# model_validator. ProductUpdate validator only fires when BOTH fields
+# are present in the same payload; cross-payload merges (e.g. POST sets
+# min=50, later PUT sends only max=30) are NOT validated against
+# persisted state — frontend always sends both fields together.
 class ProductCreate(BaseModel):
     name: str
     description: str | None = None
-    price_range: str | None = None
+    price_range: str | None = None  # legacy: removal tracked in MEH-295 follow-up
     image_url: str | None = Field(None, max_length=500)
+    price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
+    price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
 
     @field_validator("image_url", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
         return None if v == "" else v
+
+    @model_validator(mode="after")
+    def check_price_max_gte_min(self):
+        if self.price_max is not None and self.price_max < self.price_min:
+            raise ValueError("price_max must be greater than or equal to price_min")
+        return self
 
 
 class ProductUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    price_range: str | None = None
+    price_range: str | None = None  # legacy: removal tracked in MEH-295 follow-up
     image_url: str | None = Field(None, max_length=500)
+    price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
 
     @field_validator("image_url", mode="before")
     @classmethod
     def empty_str_to_none(cls, v):
         return None if v == "" else v
+
+    @model_validator(mode="after")
+    def check_price_max_gte_min(self):
+        if (
+            self.price_min is not None
+            and self.price_max is not None
+            and self.price_max < self.price_min
+        ):
+            raise ValueError("price_max must be greater than or equal to price_min")
+        return self
 
 
 class ProductOut(BaseModel):
@@ -170,6 +197,8 @@ class ProductOut(BaseModel):
     description: str | None = None
     price_range: str | None = None
     image_url: str | None = None
+    price_min: Decimal | None = None
+    price_max: Decimal | None = None
 
     model_config = {"from_attributes": True}
 

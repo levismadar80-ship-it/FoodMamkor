@@ -44,7 +44,7 @@ class TestProductCRUD:
         user, _ = _make_producer_user(db)
         resp = client.post(
             "/producers/me/products",
-            json={"name": "לחם שיפון", "description": "מחמצת", "price_range": "₪25"},
+            json={"name": "לחם שיפון", "description": "מחמצת", "price_range": "₪25", "price_min": 25},
             headers=auth_header(user),
         )
         assert resp.status_code == 201
@@ -58,7 +58,7 @@ class TestProductCRUD:
         img = "https://res.cloudinary.com/demo/image/upload/v1/bread.jpg"
         resp = client.post(
             "/producers/me/products",
-            json={"name": "חלה", "image_url": img},
+            json={"name": "חלה", "image_url": img, "price_min": 18},
             headers=auth_header(user),
         )
         assert resp.status_code == 201
@@ -155,3 +155,83 @@ class TestProductCRUD:
         names = [p["name"] for p in resp.json()]
         assert "שלי" in names
         assert "שלהם" not in names
+
+
+class TestProductPriceValidation:
+    """MEH-295: Pydantic validation for price_min / price_max."""
+
+    def test_create_rejects_price_min_below_one(self, client, db):
+        user, _ = _make_producer_user(db)
+        resp = client.post(
+            "/producers/me/products",
+            json={"name": "מוצר", "price_min": 0},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_create_rejects_price_min_above_cap(self, client, db):
+        user, _ = _make_producer_user(db)
+        resp = client.post(
+            "/producers/me/products",
+            json={"name": "מוצר", "price_min": 10001},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_create_rejects_price_max_below_min(self, client, db):
+        user, _ = _make_producer_user(db)
+        resp = client.post(
+            "/producers/me/products",
+            json={"name": "מוצר", "price_min": 50, "price_max": 30},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_create_accepts_price_min_only(self, client, db):
+        user, _ = _make_producer_user(db)
+        resp = client.post(
+            "/producers/me/products",
+            json={"name": "מוצר", "price_min": 50},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["price_min"] == "50.00"
+        assert body["price_max"] is None
+
+    def test_create_accepts_price_min_and_max(self, client, db):
+        user, _ = _make_producer_user(db)
+        resp = client.post(
+            "/producers/me/products",
+            json={"name": "מוצר", "price_min": 50, "price_max": 80},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["price_min"] == "50.00"
+        assert body["price_max"] == "80.00"
+
+    def test_put_preserves_price_range_when_not_in_payload(self, client, db):
+        """Regression: PUT uses model_dump(exclude_unset=True) — fields the
+        client did NOT send must remain untouched. Locks in partial-update
+        semantics so legacy `price_range` survives an edit-just-the-name flow.
+        """
+        user, producer = _make_producer_user(db)
+        product = Product(
+            producer_id=producer.id,
+            name="גבינה ישנה",
+            price_range="₪45/ק״ג",
+        )
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+
+        resp = client.put(
+            f"/producers/me/products/{product.id}",
+            json={"name": "גבינה חדשה"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["name"] == "גבינה חדשה"
+        assert body["price_range"] == "₪45/ק״ג"

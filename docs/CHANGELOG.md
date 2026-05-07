@@ -2,6 +2,21 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-295: Product price validation (backend)
+
+`feat(MEH-295)`: split free-text `products.price_range` into two numeric columns so the producer dashboard can validate input and the public producer page can render a normalized range.
+
+- **Alembic `e4790e538aa2`** — additive migration: `products.price_min` + `products.price_max`, both `NUMERIC(10,2) NULL`. `price_range String(50)` is preserved as a legacy fallback (drop deferred to a follow-up after producer re-edit soak — free-text values like `"₪45/ק״ג"` cannot be unambiguously parsed).
+- **`ProductCreate`** — `price_min: Decimal = Field(..., ge=1, le=10000)` (required), `price_max: Decimal | None = Field(None, ge=1, le=10000)`. `model_validator(mode="after")` enforces `price_max >= price_min` when both present.
+- **`ProductUpdate`** — both fields optional with the same bounds; cross-field validator only fires when both are sent in the same payload (cross-payload merges against persisted state are NOT validated; frontend always sends both fields together).
+- **`ProductOut`** — adds `price_min` + `price_max` (`Decimal | None`); Pydantic v2 default serializes them as JSON strings (`"50.00"`). Frontend Phase 3 must `Number()`-coerce on read.
+- **Router unchanged** — `producer_me.py` POST uses `**data.model_dump()` and PUT uses `model_dump(exclude_unset=True)`. Both are field-list-agnostic; new schema fields propagate automatically. Locked by regression test `test_put_preserves_price_range_when_not_in_payload`.
+- **Tests** — `tests/test_product_image.py:TestProductPriceValidation` (6 cases): 422 on `price_min=0` / `price_min=10001` / `price_max < price_min`; 201 on `price_min` only / `price_min` + `price_max`; PUT preserves legacy `price_range` on partial update.
+- **CI gate** — `EXPECTED_REV` bumped from `261e8d6ab23a` → `e4790e538aa2` at `.github/workflows/pr-checks.yml:107`. `EXPECTED_TABLES=34` unchanged (column adds, no new table).
+- **Frontend ships separately** — `frontend/app/settings/page.jsx` form + `frontend/app/producer/[id]/components/ProducerSections.jsx` display in PR #2 after this deploys to staging Railway.
+
+Closes MEH-295 (after Phase 3 frontend PR merges).
+
 ## 2026-05-07 — MEH-335: fingerprint-mismatch security log + test coverage
 
 `feat(auth)`: added `logger.warning("[auth] fingerprint mismatch — possible token sidejacking", extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None})` before the 401 raise at `backend/app/auth.py:184` (`_check_fingerprint`) — gives an audit trail for token sidejacking attempts (MEH-325 pattern). Downgraded fail-open log at `backend/app/auth.py:181` from `logger.info` → `logger.debug` (message unchanged) — was noisy on every pre-MEH-327 legacy token. New test `tests/test_api.py::TestFingerprintCookie::test_get_current_user_optional_with_invalid_fingerprint_returns_none` documents the swallow-to-None behaviour of `get_current_user_optional` (`auth.py:221-234`) on fingerprint 401s. No auth logic changes. CLAUDE.md line 57 extended with MCP-tools standalone-CC note (80-line cap preserved). Closes MEH-335.

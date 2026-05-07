@@ -71,7 +71,10 @@ erDiagram
         uuid producer_id FK
         string name
         string description
-        string price_range
+        string price_range "legacy: drop tracked in MEH-295 follow-up"
+        string image_url
+        decimal price_min "MEH-295: NUMERIC(10,2) NULL"
+        decimal price_max "MEH-295: NUMERIC(10,2) NULL"
     }
 
     delivery_areas {
