@@ -10,8 +10,11 @@
 **Risk tier:** LOW (single workflow step + 1 doc paragraph). End-to-end execution per MEH-450.
 
 **What's done:**
-- **`.github/workflows/pr-checks.yml:171-186`** — NEW `Alembic drift check (models vs migrations)` step in the `pytest` job. Inserted AFTER `Verify alembic schema (34 tables + baseline revision)` and BEFORE the MEH-489 `Run tests with coverage gate` step. Same env block as the existing `alembic upgrade head` step (verbatim copy: `DATABASE_URL` + `SECRET_KEY` only).
+- **`.github/workflows/pr-checks.yml:171-186`** — NEW `Alembic drift check (models vs migrations)` step in the `pytest` job. Inserted AFTER `Verify alembic schema (34 tables + baseline revision)` and BEFORE the MEH-489 `Run tests with coverage gate` step. Same env block as the existing `alembic upgrade head` step (verbatim copy: `DATABASE_URL` + `SECRET_KEY` only). Ships AS REQUIRED — no `continue-on-error`.
+- **`backend/app/models/models.py`** — 2 partial-index declarations added (scope expansion, see below). Producer's existing `__table_args__` extended with `idx_producers_availability_state`; new `Product.__table_args__` carries `idx_products_dietary`. Each is verbatim equivalent of the source migration's `op.create_index` call.
 - **`docs/MIGRATIONS.md` "CI Migration Drift Gate"** — flow diagram + failure-mode list updated; new "מקומית, לפני PR" line documenting `cd backend && uv run alembic check`.
+
+**Scope expansion (drift fix folded into MEH-492):** First CI run on PR #549 reported real drift on staging baseline — gate working as designed. 2 partial indexes in DB, not declared on models: `idx_producers_availability_state` (MEH-291 migration `2a74fa41ceb1`) + `idx_products_dietary` (MEH-293 migration `1afe844d11f4`). Fix is mechanical (~10 lines, predicate strings byte-stable with migrations); folded inside MEH-492 to avoid running a second calibration→required cycle in parallel with MEH-488/MEH-505. Single PR ships gate AS REQUIRED.
 
 **Pre-flight verification:**
 - `alembic==1.13.2` in `backend/pyproject.toml:10` — well above 1.9 minimum. No bump needed.
