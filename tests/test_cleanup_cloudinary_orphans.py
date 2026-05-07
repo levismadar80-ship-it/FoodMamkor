@@ -131,8 +131,11 @@ class TestPrefixDefaultPostFill:
         self, monkeypatch, caplog
     ):
         # main() emits a "Parsed args: ... prefix=[...]" INFO line after
-        # post-filling, but only on the configured path. Stub the lazy
-        # cloudinary import so config(...) doesn't reach the network.
+        # post-filling, but only on the configured path. Stub the full
+        # pipeline (settings + DB + cloudinary.api.resources) so main()
+        # reaches the log line cleanly. Reuses the I.4 stub pattern;
+        # earlier I.1-era partial stub broke once I.3 added
+        # `import cloudinary.api` inside list_cloudinary_assets.
         from scripts import cleanup_cloudinary_orphans
 
         monkeypatch.setattr(
@@ -148,14 +151,29 @@ class TestPrefixDefaultPostFill:
             "cloudinary_api_secret",
             "secret",
         )
-        # Stub `import cloudinary` inside main() — the SDK is a real dep,
-        # but we don't want config() to do anything observable.
-        import sys
-        import types
 
-        fake_cloudinary = types.ModuleType("cloudinary")
-        fake_cloudinary.config = lambda **kwargs: None  # type: ignore[attr-defined]
-        monkeypatch.setitem(sys.modules, "cloudinary", fake_cloudinary)
+        class _FakeQuery:
+            def filter(self, *args, **kwargs):
+                return self
+
+            def __iter__(self):
+                return iter([])
+
+        class _FakeDB:
+            def query(self, col):
+                return _FakeQuery()
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans, "SessionLocal", lambda: _FakeDB()
+        )
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api, "resources", lambda **kwargs: {"resources": []}
+        )
 
         with caplog.at_level(
             logging.INFO, logger="scripts.cleanup_cloudinary_orphans"
