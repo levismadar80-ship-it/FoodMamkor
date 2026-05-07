@@ -10,6 +10,7 @@ Data source:
     https://data.gov.il/api/3/action/datastore_search
     resource_id: d4901968-dad3-4845-a9b0-a57d027f11ab (Israeli localities)
 """
+
 import os
 import sys
 

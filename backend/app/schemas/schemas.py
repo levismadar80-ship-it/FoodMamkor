@@ -249,6 +249,7 @@ class ProducerCreate(BaseModel):
 
 class ProducerAdminCreate(BaseModel):
     """Used by admin form — pre-approved, supports all extended fields."""
+
     name: str
     contact_name: str | None = None
     description: str | None = None
@@ -327,10 +328,10 @@ class ProducerImportResult(BaseModel):
 # Tuple form is the runtime allowlist used by the field validator below and by
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
 AVAILABILITY_STATES = (
-    "accepting_orders",   # default — "פתוח להזמנות"
-    "available_today",    # superset — זמין + פתוח
-    "full_this_week",     # "עמוסה השבוע"
-    "on_vacation",        # "בהפסקה" (requires vacation_until)
+    "accepting_orders",  # default — "פתוח להזמנות"
+    "available_today",  # superset — זמין + פתוח
+    "full_this_week",  # "עמוסה השבוע"
+    "on_vacation",  # "בהפסקה" (requires vacation_until)
 )
 
 
@@ -367,7 +368,9 @@ class ProducerUpdate(BaseModel):
     images: list[str] | None = None
     status: str | None = None
     category_ids: list[int] | None = None
-    delivery_area_cities: list[str] | None = None  # admin form: simple list of city names
+    delivery_area_cities: list[str] | None = (
+        None  # admin form: simple list of city names
+    )
     # MEH-213 — location mode
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
@@ -397,7 +400,9 @@ class ProducerUpdate(BaseModel):
     def _validate_availability_status(cls, v):
         allowed = {"available", "full", "vacation"}
         if v is not None and v not in allowed:
-            raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+            raise ValueError(
+                f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}"
+            )
         return v
 
     @field_validator("availability_state")
@@ -510,6 +515,7 @@ class ProducerListOut(BaseModel):
     @model_validator(mode="after")
     def _compute_trust_tier(self):
         from app.services.trust_tier import compute_trust_tier
+
         self.trust_tier = compute_trust_tier(self)
         # MEH-155: if vacation_until has passed, treat as available in the API response.
         # MEH-291: extend the same auto-clear to the new availability_state so
@@ -804,6 +810,7 @@ class HomeProductOut(BaseModel):
 
 class HomeProductModerationRequest(BaseModel):
     """Payload for the in-form validation call — no auth, no DB write."""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: str | None = None
     category: str | None = None
@@ -925,11 +932,13 @@ class ExperienceUpdate(BaseModel):
 
 class ExperienceModerationAction(BaseModel):
     """Admin action payload for reject / request-changes."""
+
     feedback: str | None = Field(None, max_length=2000)
 
 
 class ExperienceValidateRequest(BaseModel):
     """Real-time form validation. No auth, no persistence."""
+
     title: str = Field(..., min_length=1, max_length=300)
     description: str | None = None
     category: str | None = None
@@ -957,6 +966,7 @@ class ExperienceListOut(BaseModel):
     The full street address is private and only returned by the
     detail endpoint to the owner or an admin.
     """
+
     id: UUID
     title: str
     description: str
@@ -984,6 +994,7 @@ class ExperienceDetailOut(ExperienceListOut):
     """Detail view. Includes `address`, `requirements`, and the
     full moderation context — only returned to the owner or an admin
     when the experience is non-approved."""
+
     address: str | None = None
     requirements: str | None = None
     lat: float | None = None
@@ -1030,6 +1041,7 @@ class OutreachLeadCreate(BaseModel):
 class OutreachLeadUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted. Status is
     enum-validated at the route layer."""
+
     name: str | None = None
     phone: str | None = None
     instagram: str | None = None
@@ -1044,6 +1056,7 @@ class OutreachPrefillResponse(BaseModel):
     """Public response from /register/producer/prefill/{token} —
     intentionally narrow: only what the registration form needs to
     pre-fill. Notes + status are NOT exposed."""
+
     name: str
     phone: str | None = None
     instagram: str | None = None
@@ -1087,6 +1100,7 @@ class GroupBuyOut(BaseModel):
 
 class GroupBuyDetail(GroupBuyOut):
     """Full detail — includes whether the current user has committed."""
+
     user_committed: bool = False
     user_commit: GroupBuyCommitOut | None = None
 
@@ -1282,6 +1296,7 @@ class ReviewsPage(BaseModel):
 # the public CategoryOut in the Category section above; admin_extra.py
 # now imports it from there instead of redefining.
 
+
 # Admin: Moderation
 class RemoveListingBody(BaseModel):
     reason: str | None = None
@@ -1338,6 +1353,7 @@ class StaticPageUpdate(BaseModel):
 # validate_password) stay in the change_password handler, not the schema.
 class ProfileUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted."""
+
     name: str | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
     avatar_url: str | None = None
@@ -1365,12 +1381,19 @@ class PasswordChange(BaseModel):
 # this file already (see Producer section above, MEH-291).
 class AvailabilityStatusUpdate(BaseModel):
     status: str = Field(..., description="available | full | vacation")
-    vacation_until: date | None = Field(None, description="Optional return date (vacation only)")
+    vacation_until: date | None = Field(
+        None, description="Optional return date (vacation only)"
+    )
 
 
 class AvailabilityStateUpdate(BaseModel):
-    state: str = Field(..., description="accepting_orders | available_today | full_this_week | on_vacation")
-    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
+    state: str = Field(
+        ...,
+        description="accepting_orders | available_today | full_this_week | on_vacation",
+    )
+    vacation_until: date | None = Field(
+        None, description="Required when state='on_vacation'"
+    )
 
 
 class BioGenerateIn(BaseModel):

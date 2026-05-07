@@ -16,6 +16,7 @@ Design notes:
   - Uses the small-fast model for cheap per-request cost; the moderation
     prompt is short and the JSON output is tiny.
 """
+
 from __future__ import annotations
 
 import json

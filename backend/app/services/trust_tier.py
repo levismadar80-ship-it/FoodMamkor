@@ -1,9 +1,17 @@
 """MEH-51: real-time trust tier computation — never stored, always computed."""
 
-VALID_BADGE_CODES = frozenset({
-    "rabanut", "badatz", "chalak", "mehadrin",
-    "organic-kosher", "shmitta", "kilayim", "artisan-dairy",
-})
+VALID_BADGE_CODES = frozenset(
+    {
+        "rabanut",
+        "badatz",
+        "chalak",
+        "mehadrin",
+        "organic-kosher",
+        "shmitta",
+        "kilayim",
+        "artisan-dairy",
+    }
+)
 
 
 def compute_trust_tier(producer) -> int:
@@ -17,8 +25,9 @@ def compute_trust_tier(producer) -> int:
     """
     if getattr(producer, "ambassador", False):
         return 5
-    if (getattr(producer, "reviews_count", 0) or 0) >= 10 and \
-            (getattr(producer, "avg_rating", 0) or 0) >= 4.5:
+    if (getattr(producer, "reviews_count", 0) or 0) >= 10 and (
+        getattr(producer, "avg_rating", 0) or 0
+    ) >= 4.5:
         return 4
     if getattr(producer, "is_verified", False):
         return 3

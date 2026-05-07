@@ -4,10 +4,17 @@ import sys
 
 import structlog
 
-_SENSITIVE_KEYS = frozenset({
-    "password", "token", "secret", "authorization",
-    "access_token", "refresh_token", "api_key",
-})
+_SENSITIVE_KEYS = frozenset(
+    {
+        "password",
+        "token",
+        "secret",
+        "authorization",
+        "access_token",
+        "refresh_token",
+        "api_key",
+    }
+)
 
 
 def _redact_sensitive(logger, method, event_dict):
@@ -20,6 +27,7 @@ def _redact_sensitive(logger, method, event_dict):
 def _add_correlation_id(logger, method, event_dict):
     try:
         from asgi_correlation_id import correlation_id
+
         rid = correlation_id.get()
         if rid:
             event_dict["request_id"] = rid
@@ -66,7 +74,8 @@ def configure_logging() -> None:
         renderer = structlog.dev.ConsoleRenderer()
 
     structlog.configure(
-        processors=shared_processors + [
+        processors=shared_processors
+        + [
             structlog.processors.format_exc_info,
             renderer,
         ],

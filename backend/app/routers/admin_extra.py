@@ -5,6 +5,7 @@ Lives in a separate file from admin.py to keep things readable.
 
 MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
+
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
@@ -70,18 +71,20 @@ def list_users(
     )
     out = []
     for u in users:
-        out.append(UserAdminOut(
-            id=u.id,
-            email=u.email,
-            name=u.name,
-            city=u.city,
-            phone=u.phone,
-            role=u.role,
-            is_blocked=bool(u.is_blocked),
-            producer_id=u.producer_id,
-            favorites_count=fav_counts.get(u.id, 0),
-            created_at=u.created_at or datetime.utcnow(),
-        ))
+        out.append(
+            UserAdminOut(
+                id=u.id,
+                email=u.email,
+                name=u.name,
+                city=u.city,
+                phone=u.phone,
+                role=u.role,
+                is_blocked=bool(u.is_blocked),
+                producer_id=u.producer_id,
+                favorites_count=fav_counts.get(u.id, 0),
+                created_at=u.created_at or datetime.utcnow(),
+            )
+        )
     return out
 
 
@@ -96,7 +99,9 @@ def update_user_role(
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.email == SUPER_ADMIN_EMAIL:
-        raise HTTPException(status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי")
+        raise HTTPException(
+            status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי"
+        )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
     target.role = data.role
@@ -143,7 +148,9 @@ def user_favorites(
 
 
 @router.get("/categories", response_model=list[CategoryOut])
-def list_categories_admin(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def list_categories_admin(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     return db.query(Category).order_by(Category.id).all()
 
 
@@ -256,11 +263,13 @@ def get_analytics(
             .filter(User.created_at >= ref, User.created_at < next_month)
             .scalar()
         )
-        months.append({
-            "month": ref.strftime("%Y-%m"),
-            "producers": int(producers or 0),
-            "users": int(users or 0),
-        })
+        months.append(
+            {
+                "month": ref.strftime("%Y-%m"),
+                "producers": int(producers or 0),
+                "users": int(users or 0),
+            }
+        )
 
     # Producers per category
     cat_rows = (
@@ -305,12 +314,15 @@ def get_analytics(
     # Heat map points
     points = (
         db.query(Producer.id, Producer.name, Producer.lat, Producer.lng)
-        .filter(Producer.status == "approved", Producer.lat.isnot(None), Producer.lng.isnot(None))
+        .filter(
+            Producer.status == "approved",
+            Producer.lat.isnot(None),
+            Producer.lng.isnot(None),
+        )
         .all()
     )
     map_points = [
-        {"id": str(p.id), "name": p.name, "lat": p.lat, "lng": p.lng}
-        for p in points
+        {"id": str(p.id), "name": p.name, "lat": p.lat, "lng": p.lng} for p in points
     ]
 
     return {
@@ -366,7 +378,9 @@ def update_settings(
         if row:
             row.value = str(value) if value is not None else None
         else:
-            db.add(AdminSetting(key=key, value=str(value) if value is not None else None))
+            db.add(
+                AdminSetting(key=key, value=str(value) if value is not None else None)
+            )
     db.commit()
     return {"detail": "Settings updated"}
 
@@ -380,10 +394,18 @@ def test_service(
     from app.config import settings as cfg
 
     if service == "twilio":
-        ok = bool(cfg.twilio_account_sid and cfg.twilio_auth_token and cfg.twilio_whatsapp_from)
+        ok = bool(
+            cfg.twilio_account_sid
+            and cfg.twilio_auth_token
+            and cfg.twilio_whatsapp_from
+        )
         return {"ok": ok, "configured": ok, "service": "twilio"}
     if service == "cloudinary":
-        ok = bool(cfg.cloudinary_cloud_name and cfg.cloudinary_api_key and cfg.cloudinary_api_secret)
+        ok = bool(
+            cfg.cloudinary_cloud_name
+            and cfg.cloudinary_api_key
+            and cfg.cloudinary_api_secret
+        )
         return {"ok": ok, "configured": ok, "service": "cloudinary"}
     raise HTTPException(status_code=400, detail="שירות לא מוכר")
 
@@ -404,7 +426,12 @@ def get_dashboard(
 
     # feature/producer-analytics: pending moderation is the sum across
     # four queues. Individual counts stay available for the alert cards.
-    pending_producers = db.query(func.count(Producer.id)).filter(Producer.status.in_(["pending", "pending_whatsapp"])).scalar() or 0
+    pending_producers = (
+        db.query(func.count(Producer.id))
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .scalar()
+        or 0
+    )
     open_reports = db.query(func.count(Report.id)).scalar() or 0
     flagged_home_products = (
         db.query(func.count(HomeProduct.id))
@@ -425,18 +452,37 @@ def get_dashboard(
         or 0
     )
     pending_moderation_count = int(
-        pending_producers + open_reports + flagged_home_products + pending_experiences + pending_kashrut_requests
+        pending_producers
+        + open_reports
+        + flagged_home_products
+        + pending_experiences
+        + pending_kashrut_requests
     )
 
     stats = {
         "total_producers": db.query(func.count(Producer.id)).scalar() or 0,
-        "approved_producers": db.query(func.count(Producer.id)).filter(Producer.status == "approved").scalar() or 0,
+        "approved_producers": db.query(func.count(Producer.id))
+        .filter(Producer.status == "approved")
+        .scalar()
+        or 0,
         "pending_producers": int(pending_producers),
-        "new_producers_this_week": db.query(func.count(Producer.id)).filter(Producer.created_at >= week_ago).scalar() or 0,
+        "new_producers_this_week": db.query(func.count(Producer.id))
+        .filter(Producer.created_at >= week_ago)
+        .scalar()
+        or 0,
         "total_users": db.query(func.count(User.id)).scalar() or 0,
-        "new_users_this_week": db.query(func.count(User.id)).filter(User.created_at >= week_ago).scalar() or 0,
-        "total_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_active.is_(True)).scalar() or 0,
-        "hidden_home_products": db.query(func.count(HomeProduct.id)).filter(HomeProduct.is_hidden.is_(True)).scalar() or 0,
+        "new_users_this_week": db.query(func.count(User.id))
+        .filter(User.created_at >= week_ago)
+        .scalar()
+        or 0,
+        "total_home_products": db.query(func.count(HomeProduct.id))
+        .filter(HomeProduct.is_active.is_(True))
+        .scalar()
+        or 0,
+        "hidden_home_products": db.query(func.count(HomeProduct.id))
+        .filter(HomeProduct.is_hidden.is_(True))
+        .scalar()
+        or 0,
         "open_reports": int(open_reports),
         "total_events": db.query(func.count(Event.id)).scalar() or 0,
         "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
@@ -454,16 +500,16 @@ def get_dashboard(
         .all()
     )
     pending_list = [
-        {"id": str(p.id), "name": p.name, "city": p.city, "created_at": p.created_at.isoformat() if p.created_at else None}
+        {
+            "id": str(p.id),
+            "name": p.name,
+            "city": p.city,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+        }
         for p in pending
     ]
 
-    recent = (
-        db.query(Producer)
-        .order_by(Producer.created_at.desc())
-        .limit(5)
-        .all()
-    )
+    recent = db.query(Producer).order_by(Producer.created_at.desc()).limit(5).all()
     recent_activity = [
         {
             "type": "producer_added",
@@ -485,12 +531,18 @@ def get_dashboard(
             .filter(Producer.created_at >= ref, Producer.created_at < next_month)
             .scalar()
         )
-        months.append({"month": ref.strftime("%Y-%m"), "producers": int(producers or 0)})
+        months.append(
+            {"month": ref.strftime("%Y-%m"), "producers": int(producers or 0)}
+        )
 
     map_points = [
         {"id": str(p.id), "name": p.name, "lat": p.lat, "lng": p.lng}
         for p in db.query(Producer)
-        .filter(Producer.status == "approved", Producer.lat.isnot(None), Producer.lng.isnot(None))
+        .filter(
+            Producer.status == "approved",
+            Producer.lat.isnot(None),
+            Producer.lng.isnot(None),
+        )
         .limit(200)
         .all()
     ]
@@ -517,7 +569,9 @@ def get_dashboard(
     daily_active_users = []
     for i in range(29, -1, -1):
         d = today - timedelta(days=i)
-        daily_active_users.append({"date": d.isoformat(), "count": by_day.get(d.isoformat(), 0)})
+        daily_active_users.append(
+            {"date": d.isoformat(), "count": by_day.get(d.isoformat(), 0)}
+        )
 
     # Top 10 cities across ALL producer page views (where city is set).
     # Uses the same producer_page_views table as the per-producer dashboard.

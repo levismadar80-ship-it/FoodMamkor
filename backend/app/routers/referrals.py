@@ -1,4 +1,5 @@
 """MEH-49: Referral system endpoints."""
+
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.database import get_db
 from app.models.models import ReferralClick, User
+
 # MEH-460 Pkg 5 (FINAL): ClaimReferralRequest relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ClaimReferralRequest
 

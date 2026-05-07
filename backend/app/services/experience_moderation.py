@@ -27,6 +27,7 @@ suspicious one land in the admin queue.
 The verdict is recorded on `experiences.moderation_status` so admins
 see Claude's signal when reviewing the queue.
 """
+
 from __future__ import annotations
 
 import json
@@ -55,11 +56,14 @@ def _get_client():
     if _client is not None:
         return _client
     if not settings.anthropic_api_key:
-        logger.debug("[experience-moderation] ANTHROPIC_API_KEY not set — client unavailable")
+        logger.debug(
+            "[experience-moderation] ANTHROPIC_API_KEY not set — client unavailable"
+        )
         return None
     try:
         import anthropic
         import httpx
+
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
             http_client=httpx.Client(),
@@ -143,7 +147,9 @@ def _safe_decimal(value) -> float | None:
     try:
         return float(Decimal(str(value)))
     except Exception:
-        logger.debug("[experience-moderation] decimal conversion failed", value=repr(value))
+        logger.debug(
+            "[experience-moderation] decimal conversion failed", value=repr(value)
+        )
         return None
 
 
@@ -170,18 +176,14 @@ def validate_experience(payload: dict[str, Any]) -> dict:
 
     client = _get_client()
     if client is None:
-        logger.info(
-            "[experience-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED"
-        )
+        logger.info("[experience-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED")
         return {"status": "APPROVED", "reason": None, "suggestion": None}
 
     try:
         message = client.messages.create(
             model=HAIKU_MODEL,
             max_tokens=400,
-            messages=[
-                {"role": "user", "content": _build_prompt(normalized)}
-            ],
+            messages=[{"role": "user", "content": _build_prompt(normalized)}],
         )
         raw = ""
         for block in message.content:

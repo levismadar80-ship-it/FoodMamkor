@@ -13,6 +13,7 @@ Three surfaces, single owner (workflow.md "two parallel mechanisms" rule):
   working until the path is flipped to ``/health/readiness`` manually
   post-merge.
 """
+
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text

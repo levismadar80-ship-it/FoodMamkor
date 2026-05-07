@@ -66,7 +66,9 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
 ]
 
 
-def _build_base_queries(db: Session, *, geo: tuple[float, float, float] | None, sort: str | None):
+def _build_base_queries(
+    db: Session, *, geo: tuple[float, float, float] | None, sort: str | None
+):
     """Initial q + count_q.
 
     `geo=(lat, lng, radius_km)` activates the geo search path (Haversine
@@ -118,8 +120,10 @@ def _build_base_queries(db: Session, *, geo: tuple[float, float, float] | None, 
         return q, count_q
 
     order = (
-        Producer.avg_rating.desc(), Producer.reviews_count.desc()
-    ) if sort == "rating" else (Producer.created_at.desc(),)
+        (Producer.avg_rating.desc(), Producer.reviews_count.desc())
+        if sort == "rating"
+        else (Producer.created_at.desc(),)
+    )
     q = (
         db.query(Producer)
         .options(
@@ -181,18 +185,26 @@ def _apply_scalar_filters(q, count_q, **filters: Any):
             count_q = count_q.filter(Producer.kosher.isnot(None), Producer.kosher != "")
         else:
             q = q.filter((Producer.kosher.is_(None)) | (Producer.kosher == ""))
-            count_q = count_q.filter((Producer.kosher.is_(None)) | (Producer.kosher == ""))
+            count_q = count_q.filter(
+                (Producer.kosher.is_(None)) | (Producer.kosher == "")
+            )
 
     category = filters.get("category")
     if category is not None:
         q = q.join(ProducerCategory).filter(ProducerCategory.category_id == category)
-        count_q = count_q.join(ProducerCategory).filter(ProducerCategory.category_id == category)
+        count_q = count_q.join(ProducerCategory).filter(
+            ProducerCategory.category_id == category
+        )
 
     delivery_city = filters.get("delivery_city")
     has_delivery = filters.get("has_delivery")
     if delivery_city:
-        q = q.join(DeliveryArea).filter(func.lower(DeliveryArea.city) == delivery_city.lower())
-        count_q = count_q.join(DeliveryArea).filter(func.lower(DeliveryArea.city) == delivery_city.lower())
+        q = q.join(DeliveryArea).filter(
+            func.lower(DeliveryArea.city) == delivery_city.lower()
+        )
+        count_q = count_q.join(DeliveryArea).filter(
+            func.lower(DeliveryArea.city) == delivery_city.lower()
+        )
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
         count_q = count_q.filter(Producer.delivery_areas.any())
@@ -205,7 +217,9 @@ def _apply_scalar_filters(q, count_q, **filters: Any):
     return q, count_q
 
 
-def _apply_search_filter(db: Session, q, count_q, search_q: str | None, *, geo_search: bool):
+def _apply_search_filter(
+    db: Session, q, count_q, search_q: str | None, *, geo_search: bool
+):
     """MEH-99 cross-field search: name · description · city · category names · product names.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
@@ -325,9 +339,11 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     offset = filters.get("offset", 0)
     exclude = filters.get("exclude")
 
-    geo = (lat, lng, radius_km) if (
-        lat is not None and lng is not None and radius_km is not None
-    ) else None
+    geo = (
+        (lat, lng, radius_km)
+        if (lat is not None and lng is not None and radius_km is not None)
+        else None
+    )
     geo_search = geo is not None
 
     q, count_q = _build_base_queries(db, geo=geo, sort=sort)
@@ -343,5 +359,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     # "X מתוך Y" and numbered pagination.
     total_count = count_q.scalar() or 0
     _log_search(db, search_q, total_count)
-    results = _finalize_results(q, db, geo_search=geo_search, limit=limit, offset=offset)
+    results = _finalize_results(
+        q, db, geo_search=geo_search, limit=limit, offset=offset
+    )
     return results, total_count

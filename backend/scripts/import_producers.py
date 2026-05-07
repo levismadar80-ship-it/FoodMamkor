@@ -5,6 +5,7 @@ Usage:
 
 Excel column mapping is documented in app/services/producer_import.py.
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -50,13 +51,17 @@ def main():
     if error_rows:
         print("--- Errors ---")
         for r in error_rows:
-            print(f"  Row {r['row_number']} ({r['data'].get('name', '?')}): {', '.join(r['errors'])}")
+            print(
+                f"  Row {r['row_number']} ({r['data'].get('name', '?')}): {', '.join(r['errors'])}"
+            )
 
     warning_rows = [r for r in result["rows"] if r["warnings"] and not r["errors"]]
     if warning_rows:
         print("\n--- Warnings ---")
         for r in warning_rows:
-            print(f"  Row {r['row_number']} ({r['data'].get('name', '?')}): {', '.join(r['warnings'])}")
+            print(
+                f"  Row {r['row_number']} ({r['data'].get('name', '?')}): {', '.join(r['warnings'])}"
+            )
 
 
 if __name__ == "__main__":

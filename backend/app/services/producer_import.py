@@ -10,6 +10,7 @@ Excel column mapping (from admin_brief.docx, section 4):
   S=lng               T=price_range       U=grass_fed
   V=organic_certified W=admin_notes
 """
+
 from __future__ import annotations
 
 import re
@@ -23,6 +24,7 @@ _MOJIBAKE_RE = re.compile(r"[×ø]")
 
 def _has_mojibake(value: str | None) -> bool:
     return bool(value and _MOJIBAKE_RE.search(value))
+
 
 from sqlalchemy.orm import Session
 
@@ -124,7 +126,9 @@ def parse_row(row: list[Any], row_number: int) -> RowResult:
             "pickup_points": _yes_no(cells[9]),
             "has_delivery": _yes_no(cells[10]),
             "delivery_area_cities": [
-                c.strip() for c in (str(cells[11]) if cells[11] else "").split(",") if c.strip()
+                c.strip()
+                for c in (str(cells[11]) if cells[11] else "").split(",")
+                if c.strip()
             ],
             "kosher": _str(cells[12]),
             "description": _str(cells[13]),
@@ -142,8 +146,12 @@ def parse_row(row: list[Any], row_number: int) -> RowResult:
 
     # MEH-154: detect UTF-8 Hebrew decoded as Latin-1 (mojibake).
     # Check name + key text fields. × (U+00D7) is the dead-giveaway byte.
-    _text_fields = [name, result.data.get("city"), result.data.get("description"),
-                    result.data.get("contact_name")]
+    _text_fields = [
+        name,
+        result.data.get("city"),
+        result.data.get("description"),
+        result.data.get("contact_name"),
+    ]
     if any(_has_mojibake(f) for f in _text_fields):
         result.errors.append("קידוד לא תקין — שמרי את הקובץ כ-XLSX ולא XLS.")
         result.mojibake = True
@@ -204,7 +212,9 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             continue
 
         # Skip duplicates by name
-        existing = db.query(Producer).filter(Producer.name == parsed.data["name"]).first()
+        existing = (
+            db.query(Producer).filter(Producer.name == parsed.data["name"]).first()
+        )
         if existing:
             parsed.warnings.append("עסק עם שם זה כבר קיים — דולג")
             skipped += 1
