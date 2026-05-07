@@ -813,7 +813,7 @@ function ProductsSection() {
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", price_range: "", image_url: "" });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "" });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -857,12 +857,25 @@ function ProductsSection() {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError("שם המוצר הוא שדה חובה"); return; }
+    if (form.price_min === "") { setError("הכניסי מחיר"); return; }
+    const minNum = Number(form.price_min);
+    const maxNum = form.price_max === "" ? null : Number(form.price_max);
+    if (minNum < 1) { setError("המחיר חייב להיות לפחות 1 ₪"); return; }
+    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError("המחיר לא יכול לעבור 10,000 ₪"); return; }
+    if (maxNum !== null && maxNum < minNum) { setError("מחיר עד חייב להיות גבוה ממחיר מ-"); return; }
     setSaving(true);
     setError("");
     try {
-      const r = await api.post("/producers/me/products", form);
+      const body = {
+        name: form.name.trim(),
+        description: form.description || null,
+        image_url: form.image_url || null,
+        price_min: minNum,
+        price_max: maxNum,
+      };
+      const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", price_range: "", image_url: "" });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "" });
       setAdding(false);
     } catch {
       setError("שגיאה בשמירת המוצר");
@@ -917,7 +930,15 @@ function ProductsSection() {
             )}
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm text-site-text truncate">{product.name}</p>
-              {product.price_range && <p className="text-xs text-accent">{product.price_range}</p>}
+              {(() => {
+                if (product.price_min != null && product.price_max != null)
+                  return <p className="text-xs text-accent">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
+                if (product.price_min != null)
+                  return <p className="text-xs text-accent">₪{Number(product.price_min)}</p>;
+                if (product.price_range)
+                  return <p className="text-xs text-accent">{product.price_range}</p>;
+                return null;
+              })()}
             </div>
             <button
               onClick={() => handleDelete(product.id)}
@@ -938,25 +959,50 @@ function ProductsSection() {
               <X size={16} className="text-site-muted" aria-hidden="true" />
             </button>
           </div>
-          <input
-            required
-            placeholder="שם המוצר *"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-          />
-          <input
-            placeholder="תיאור קצר"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-          />
-          <input
-            placeholder="טווח מחיר (לדוג׳ ₪35–50)"
-            value={form.price_range}
-            onChange={(e) => setForm((f) => ({ ...f, price_range: e.target.value }))}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-          />
+          <div>
+            <label className="text-xs text-site-muted mb-1 block">שם המוצר *</label>
+            <input
+              required
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-site-muted mb-1 block">תיאור קצר</label>
+            <input
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-site-muted mb-1 block">מחיר מ- (₪)</label>
+              <input
+                required
+                type="number"
+                min={1}
+                max={10000}
+                step={0.5}
+                value={form.price_min}
+                onChange={(e) => setForm((f) => ({ ...f, price_min: e.target.value }))}
+                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-site-muted mb-1 block">מחיר עד- (₪) <span className="text-site-muted">אופציונלי</span></label>
+              <input
+                type="number"
+                min={1}
+                max={10000}
+                step={0.5}
+                value={form.price_max}
+                onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
+                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
           <div>
             <label className="text-xs text-site-muted mb-1 block">תמונת מוצר</label>
             {form.image_url ? (
@@ -992,7 +1038,7 @@ function ProductsSection() {
               disabled={saving || uploading}
               className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
             >
-              {saving ? "שומרת..." : "שמור מוצר"}
+              {saving ? "מוסיפה..." : "הוסיפי מוצר"}
             </button>
           </div>
         </form>
