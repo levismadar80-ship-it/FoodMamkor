@@ -429,47 +429,60 @@ Branch-state claims must be cross-verified via `git ls-remote origin` (or fresh 
 
 ---
 
-## Next session — MEH-375 Cloudinary cleanup (Chunks D–K)
+## Next session — MEH-375 Cloudinary cleanup (Chunks I → J2 → K)
 
-Branch: feature/meh-375-cloudinary-cleanup (pushed, not yet PR'd)
-Last commit: 43bab05
+Branch: feature/meh-375-cloudinary-cleanup at c981434 (last
+functional commit, Chunk H). HEAD is this HANDOFF commit on top.
+12 functional commits + 2 docs commits ahead of staging. No PR yet.
 
 Done so far:
-  - Chunk A: backend/app/cloudinary_utils.py (extract_public_id +
-    destroy_image + destroy_removed_images)
-  - Chunk B: /upload/avatar fixed per-user slot with overwrite=True
-  - Chunk C: producer.images diff-destroy on producer_me PUT +
-    admin PUT + admin DELETE producer (with Product cascade)
-  - All destroy invocations are POST-commit per MEH-375 pattern
-    (External-cleanup pattern, see Smadar memory #30 — destroy
-    AFTER db.commit, never mid-transaction)
+  - Chunk A + J1 + J1.5: backend/app/cloudinary_utils.py
+    (extract_public_id + destroy_image + destroy_removed_images
+     + 27 unit tests + 1 xfail-strict signed URL)
+  - Chunk B + B.5: /upload/avatar fixed per-user slot,
+    kwargs assertion locked
+  - Chunk C + fix: producer.images + Product cascade,
+    post-commit pattern established (memory rule from Smadar)
+  - Chunk D: home_products PUT + admin delete_listing
+  - Chunk E: auth.py delete_account 5-surface cascade
+  - Chunk F-amend: PATCH /users/me avatar two-guard destroy
+  - Chunk G: oauth_verifiers callers refactored to
+    deferred-upload (orphan-storm-per-login closed)
+  - Chunk H: DELETE producer_me/products/{id} post-commit destroy
 
-Remaining chunks (in order, WAIT gates between each):
-  D: home_products.py update + admin.py delete_listing —
-     same diff-destroy pattern as Chunk C, post-commit
-  E: auth.py delete_account cascade — capture user.avatar_url +
-     producer.images + every Product.image_url + every
-     home_product.photo + home_product.images BEFORE db.delete,
-     destroy AFTER commit
-  F: users_me.py PATCH /users/me — destroy old avatar_url AFTER
-     commit when avatar_url changes (YF-1 from PHASE 1)
-  G: oauth_verifiers.py deferred-upload refactor (YF-4)
-  H: producer_me.py DELETE product — destroy product.image_url
-     AFTER commit (YF-2 single-product surface)
-  I: backend/scripts/cleanup_cloudinary_orphans.py with
-     --min-age-hours flag default 24 + reject-list for
-     /placeholder + mehamakor/producers/* prefix
-  J2: tests/test_cloudinary_cleanup_script.py
-  K: CHANGELOG entry + HANDOFF.md update + final verify
+Remaining:
+  I:  backend/scripts/cleanup_cloudinary_orphans.py — NEW FILE,
+      ~150-200 lines. Paginate cloudinary.api.resources over the 2
+      prefixes (mehamakor/ depth-1 + mehamakor/avatars/), build
+      referenced-set from 6 DB sources (users.avatar_url,
+      producers.images[], producers.story_card_url for
+      defense-in-depth, home_products.photo,
+      home_products.images[], products.image_url), compute orphan
+      diff, --dry-run default, --apply prompts confirmation,
+      --min-age-hours N default 24 (race-condition guard),
+      explicit reject of /placeholder + mehamakor/producers/*
+      prefix, batch via cloudinary.api.delete_resources in 100s,
+      summary output (total / referenced / orphan / bytes).
 
-CI status to verify before resuming:
-  - Last 4 commits on the branch are green
-  - tests/test_cloudinary_cleanup.py 27 passed + 1 xfailed
-  - tests/test_avatar_upload.py 7 passed (B.5 extension)
+  J2: tests/test_cloudinary_cleanup_script.py — paginator mocked,
+      DB session mocked, dry-run does NOT call delete,
+      --apply + "yes" calls delete_resources in batches of 100,
+      --min-age-hours filter respected, reject-list applied.
 
-Pre-existing claude/* branches on remote (NOT this PR's concern,
-document at PR time): claude/add-branch-base-verification-sRqO7
-+ claude/weekly-summary-2026-05-01.
+  K:  CHANGELOG entry + HANDOFF final + manual verify checklist
+      (added during chunks E + G):
+        - delete_account integration test gap on populated
+          5-surface case
+        - oauth path (b) backfill + path (c) skip-upload contract
+          verification (instrument helper or add focused test)
+
+CI status to verify before resuming: confirm GitHub Actions green
+on the cumulative push (commits 86b8650 → c981434, plus this
+HANDOFF commit).
+
+Pre-existing claude/* branches on remote (NOT this PR's concern):
+  claude/add-branch-base-verification-sRqO7
+  claude/weekly-summary-2026-05-01
 
 ---
 
