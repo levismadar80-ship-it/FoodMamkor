@@ -19,9 +19,6 @@ const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", phone: "",
   category_ids: [],
-  gluten_free: false,
-  vegan: false,
-  lactose_free: false,
 };
 
 export default function RegisterProducerPage() {
@@ -189,9 +186,6 @@ function RegisterProducerPageBody() {
         producer_name: form.producer_name,
         phone: form.phone,
         category_ids: form.category_ids,
-        gluten_free: form.gluten_free,
-        vegan: form.vegan,
-        lactose_free: form.lactose_free,
         primary_contact_method: "whatsapp",
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
@@ -405,39 +399,7 @@ function RegisterProducerPageBody() {
               onRequestCategory={() => setShowCategoryModal(true)}
             />
 
-            {/* Dietary labels */}
-            <div>
-              <p className="text-sm font-medium text-site-text mb-2">סימוני תזונה (אופציונלי)</p>
-              <div className="flex flex-wrap gap-3">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.gluten_free}
-                    onChange={(e) => setAndSave((prev) => ({ ...prev, gluten_free: e.target.checked }))}
-                    className="w-4 h-4 accent-primary"
-                  />
-                  🌾 ללא גלוטן
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.vegan}
-                    onChange={(e) => setAndSave((prev) => ({ ...prev, vegan: e.target.checked }))}
-                    className="w-4 h-4 accent-primary"
-                  />
-                  🥦 טבעוני
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.lactose_free}
-                    onChange={(e) => setAndSave((prev) => ({ ...prev, lactose_free: e.target.checked }))}
-                    className="w-4 h-4 accent-primary"
-                  />
-                  🥛 ללא לקטוז
-                </label>
-              </div>
-            </div>
+            {/* MEH-293: dietary labels moved to per-product (frontend/app/settings/page.jsx ProductsSection). */}
 
             {/* Legal consent — Israeli Consumer Protection Law + food license declaration */}
             <label className="flex items-start gap-2 text-sm cursor-pointer">
