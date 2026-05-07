@@ -341,21 +341,24 @@ def _confirm_or_abort(
     orphan_count: int,
     total_bytes: int,
     *,
-    _input=input,
+    _input=None,
 ) -> None:
     """Block on stdin for an explicit lowercase `yes`. Anything else aborts
     with exit code 0 and an `Aborted.` line on stdout. Accidental Enter,
     typo, or partial-match (`y`, `Y`, `YES`) cannot proceed to delete.
 
-    `_input` is a keyword-only seam for tests — production passes the
-    builtin `input`. After read, `.strip()` is applied so a trailing newline
-    or surrounding whitespace doesn't accidentally fail the equality check.
+    `_input` is a keyword-only seam for direct tests. Default `None`
+    resolves to the live `input` builtin at call-time (NOT def-time) so
+    `monkeypatch.setattr("builtins.input", ...)` works through main()
+    integration tests too. After read, `.strip()` is applied so a trailing
+    newline or surrounding whitespace doesn't accidentally fail equality.
     """
+    reader = _input if _input is not None else input
     prompt = (
         f"Delete {orphan_count} orphans ({_format_bytes(total_bytes)})? "
         f"Type 'yes' to confirm: "
     )
-    response = _input(prompt)
+    response = reader(prompt)
     if response.strip() != "yes":
         print("Aborted.")
         sys.exit(0)
