@@ -2,6 +2,48 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-471: i18n Wave 1 — next-intl install + strangler-fig
+
+`feat(MEH-471)`: foundation cutover from homegrown `LanguageProvider` to **next-intl 4.11.0** (Next 16.2.4 compat). Both providers coexist during Wave 1; Wave 2 (MEH-472) deletes the homegrown shim. Branch switched from harness-mandated `claude/i18n-wave-1-foundation-kGlAP` to `feature/meh-471-i18n-wave-1-foundation` per CLAUDE.md workflow rule 3 (explicit Smadar permission).
+
+### What shipped
+- **`next-intl@^4`** installed (4.11.0 — peer-deps include Next 16; v3 was pinned to ≤Next 15).
+- **`frontend/i18n/{routing,request,navigation}.js`** — `defineRouting({locales:['he','en'], defaultLocale:'he', localePrefix:'as-needed'})`. JS, not TS (Q-NEW-B).
+- **`frontend/middleware.js`** — `createMiddleware(routing)`; matcher excludes `/api`, `/_next`, `/_vercel`, static assets.
+- **`frontend/messages/{he,en}.json`** — 39 keys ported with new namespacing (per plan §4): `nav.*`, `nav.footer.*`, `home.hero.*`, `home.search.*`, `common.cta.*`. Parity verified.
+- **`frontend/app/[locale]/`** — bulk `git mv` of all routes (33 directories + 4 root pages: page.js / error.js / loading.js / not-found.js). 10 absolute imports rewritten `@/app/...` → `@/app/[locale]/...`. Single-layout pattern (3a): `app/layout.js` deleted; `app/[locale]/layout.js` is the root.
+- **Exceptions kept at `app/` root:** `sitemap.js` (Wave 6 extends, not relocates), `globals.css` (CSS, not a route).
+- **Strangler-fig (`lib/language-context.js`)** — converted to delegating shim. `useLanguage()` still returns `{lang, setLang, t}`; internally `lang ← useLocale()`, `setLang → next-intl router.replace + localStorage write`, `t(oldKey) → useTranslations()(mapKey(oldKey))`. Old → new key map lives in **NEW `lib/i18n-key-map.js`** (deleted in Wave 2).
+- **`lib/use-home-page.js`** — cut over to `useTranslations()` directly with the same key-mapping wrap so downstream consumers (HomeHero etc) keep working with old keys until Wave 2.
+- **`Header.jsx` + `BottomNav.jsx`** — direct `useTranslations()` cutover with new dotted keys. Header still uses `useLanguage()` for `{lang, setLang}` (toggle UI at line 313).
+- **localStorage → cookie bridge** — on first mount, if `localStorage.lang` ∈ {he,en} and disagrees with current locale, the shim does a one-time `router.replace(pathname, {locale: stored})`. Documented edge case: preserves prior EN preference across the cutover.
+- **`lib/constants.js` (NEW) — `BRAND_NAME = "מהמקור"`** — replaced at 19 in-scope sites: `lib/seo.js` (×2), `app/[locale]/layout.js` (×3 — keywords/siteName/appleWebApp.title), 6 page.js metadata `siteName` exports (group-buys/experiences/events/map/neighbor/about), 2 `<Image alt>` (error.js / not-found.js), 6 components (Header alt, Footer alt, StoryCardCanvas canvas-text, ShareButton fallback title, HomeProductCard inline, DirectoryDisclaimer inline). Out of scope: `worker/index.js` (service worker; no React imports), 3 test assertions in `__tests__/` (assertions deliberately use literal string), embedded HE phrases like "במהמקור" / "למהמקור" (grammatical embeds, Wave 6).
+- **`__tests__/Header.test.jsx` + `BottomNav.test.jsx`** — mocks updated: `next-intl.useTranslations` mocked with new dotted keys; `language-context` mock retains only `{lang, setLang}` for Header.
+- **`.claude/agents/i18n-scanner.md`** — template-literal regex fix (plan §9.1): scanner now treats `` t(`...`) `` and `` i18n(`...`) `` as already-wrapped.
+
+### Q7 — gendered loading states
+**DECIDED** alongside Q1–Q6 in MEH-366 plan: normalize loading verbs to feminine, single key per state. Wave 2 spec already assumes this; not flagged as pending in this PR.
+
+### Verification
+- `npm run build` — green. All routes generated for both `/he/*` and `/en/*`; `localePrefix: 'as-needed'` strips `/he` at middleware so HE URLs are unchanged (`/`, `/producer/123`, `/map`).
+- `pytest tests/test_api.py` — deferred to Smadar (CC sandbox limitation per MEH-360); no backend touch in this PR so no regression risk.
+- Vercel preview verification (Step 8 #3–#8) — deferred to Smadar (CC cannot reach Railway/Vercel URLs per MEH-360).
+- `/adversarial-review-coverage` — deferred to Smadar (run after PR opened).
+
+### Out of scope (Wave 2+)
+- Deleting `language-context.js` + `i18n-key-map.js` (Wave 2 / MEH-472).
+- Migrating HomeHero / HomeStaticBlocks call sites from old → new keys (Wave 2).
+- New language toggle UI (Wave 5).
+- Per-locale `generateMetadata({params:{locale}})` (Wave 6 / MEH-476). Page metadata still uses HE titles + canonical "מהמקור" branding.
+- Sitemap.js extension for hreflang (Wave 6).
+- i18n-scanner scalability bug — separate ticket, parent MEH-345 (plan §9.2).
+
+### Known follow-ups
+- `app/sitemap.js` exception cleanly preserved at `app/` root — codify as a "non-locale-scoped root file" pattern in next i18n docs touch.
+- `app/messages/` route (different parent dir from new `frontend/messages/`) — verified no path collision.
+
+Closes MEH-471.
+
 ## 2026-05-07 — MEH-293 PR #1: dietary flags moved from producer to product (backend + migration)
 
 `feat(MEH-293)`: per-product dietary flags (`is_gluten_free` / `is_vegan` / `is_lactose_free`) replace the producer-level columns of the same name. Same anti-pattern fix as MEH-291 — a single business often sells both vegan and non-vegan items; storing the flag on the producer forced shoppers to filter on the worst-case denominator.

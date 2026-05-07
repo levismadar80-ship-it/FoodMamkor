@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
+import { BRAND_NAME } from "@/lib/constants";
 
 export default function NotFound() {
   return (
     <main className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
       <div className="text-center max-w-md">
         <Link href="/" className="inline-block mb-8" tabIndex={-1} aria-hidden="true">
-          <Image src="/logo.png" alt="מהמקור" width={120} height={40} className="mx-auto" />
+          <Image src="/logo.png" alt={BRAND_NAME} width={120} height={40} className="mx-auto" />
         </Link>
         <Leaf
           size={72}

@@ -1,4 +1,5 @@
 import AboutClient from "./AboutClient";
+import { BRAND_NAME } from "@/lib/constants";
 
 export const metadata = {
   title: "החזון שלנו — על מהמקור",
@@ -8,7 +9,7 @@ export const metadata = {
     title: "החזון שלנו — על מהמקור",
     description: "הסיפור של ספיר, הערכים וקריטריוני הכניסה.",
     type: "article",
-    siteName: "מהמקור",
+    siteName: BRAND_NAME,
     locale: "he_IL",
     images: ["/og-image.jpg"],
   },

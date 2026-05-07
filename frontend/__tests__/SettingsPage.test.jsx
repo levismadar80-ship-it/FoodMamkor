@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import SettingsPage from "@/app/settings/page";
+import SettingsPage from "@/app/[locale]/settings/page";
 
 // Mock router + search params
 const mockPush = vi.fn();

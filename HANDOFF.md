@@ -1,7 +1,48 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-293 PR #1 backend in review on `feature/meh-293-dietary-labels-on-products`; MEH-470 product edit flow — MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-471 i18n Wave 1 — branch `feature/meh-471-i18n-wave-1-foundation` ready for push + draft PR; MEH-293 PR #1 backend in review on `feature/meh-293-dietary-labels-on-products`; MEH-470 product edit flow — MERGED PR #528 434f891)
+
+### Session 2026-05-07 — MEH-471 i18n Wave 1 ready for review
+
+**Branch:** `feature/meh-471-i18n-wave-1-foundation` off `origin/staging`. Switched FROM harness-mandated `claude/i18n-wave-1-foundation-kGlAP` per CLAUDE.md workflow rule 3 (Smadar gave explicit permission in turn 4 of the session).
+
+**What's done:**
+- next-intl 4.11.0 installed (Next 16 compat; peer-deps verified — next-intl@^3 maxed at Next 15).
+- 39 keys ported to `frontend/messages/{he,en}.json` with new namespacing per plan §4 (nav.*, nav.footer.*, home.hero.*, home.search.*, common.cta.*).
+- All 33 route directories + 4 root pages bulk-moved to `frontend/app/[locale]/`. `sitemap.js` and `globals.css` kept at `app/` root. Root `app/layout.js` deleted; single layout at `app/[locale]/layout.js` (3a pattern).
+- `lib/language-context.js` converted to delegating shim. `lib/i18n-key-map.js` (NEW) holds old → new key map. Both deleted in Wave 2.
+- `Header.jsx`, `BottomNav.jsx` cut over to direct `useTranslations()` with new dotted keys. `lib/use-home-page.js` cut over with key-mapping wrap (preserves old-key API for downstream HomeHero etc).
+- localStorage → cookie one-time bridge in shim. `setLang()` writes both for back-compat.
+- `BRAND_NAME` constant in `lib/constants.js` — replaced at 19 in-scope sites.
+- `__tests__/Header.test.jsx` + `BottomNav.test.jsx` mocks updated for next-intl.
+- `.claude/agents/i18n-scanner.md` template-literal regex fix (plan §9.1).
+- `npm run build` clean.
+
+**Q decisions resolved this session:**
+- Q-NEW-A (Next 16 compat): `next-intl@^4` (4.11.0). v3 doesn't list Next 16 in peer-deps.
+- Q-NEW-B (TS vs JS): `.js` files, no TypeScript introduced.
+- Step 3a: single `app/[locale]/layout.js`, no root layout.
+- Q7 (gendered loading states): **DECIDED** alongside Q1–Q6 in MEH-366 plan — normalize to feminine. NOT pending. Wave 2 spec already assumes this outcome.
+
+**Next Smadar steps:**
+1. Push branch + open draft PR.
+2. Run `pytest tests/test_api.py` (CC sandbox missing alembic per MEH-360).
+3. Open Vercel preview; verify Step 8 matrix #3–#8: HE root navigable, EN /en/ navigable, header toggle round-trip, localStorage hydration, mobile preview at 375px.
+4. Run `/adversarial-review-coverage` (variant chosen per `.claude/rules/workflow.md` — adds React components + edits central layout).
+5. Run residual hardcoded-Hebrew scan (deterministic Python from MEH-366 plan §3) — expected ≈ 1,646 (1,721 − ~75 covered by next-intl now).
+6. After merge: 7-day staging burn-in before Wave 2 (MEH-472) starts deleting the shim.
+
+**Out of scope for this PR (filed elsewhere):**
+- HomeHero / HomeStaticBlocks call-site migration → Wave 2 (MEH-472).
+- Language toggle UI redesign → Wave 5.
+- Per-locale `generateMetadata` + sitemap hreflang → Wave 6 (MEH-476).
+- i18n-scanner scalability bug → separate ticket, parent MEH-345 (plan §9.2).
+
+**Branch-switch note for HANDOFF:** the harness session opened on `claude/i18n-wave-1-foundation-kGlAP`. Smadar approved switching to `feature/meh-471-i18n-wave-1-foundation` per CLAUDE.md workflow rule 3 (no `claude/*` branches). Old branch unmodified — no commits land there.
+
+---
+
 
 ### Session 2026-05-07 — Product surface complete + MEH-293 PR #1 staged
 - MEH-294 closed (PR #515) — Hebrew status labels
