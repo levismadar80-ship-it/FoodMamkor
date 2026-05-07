@@ -1215,7 +1215,7 @@ class TestApplyMainPath:
             cloudinary_resources=resources,
             cloudinary_delete_response=delete_response,
         )
-        rc = main(["--apply", "--yes"])
+        rc = main(["--apply", "--yes", "--prefix", "mehamakor"])
         assert rc == 0
         out = capsys.readouterr().out
         assert "Apply complete:" in out
