@@ -489,7 +489,6 @@ def google_auth(
     google_id = user_info["sub"]
     email = user_info.get("email", "")
     name = user_info.get("name", "")
-    picture = _upload_google_avatar_or_none(user_info.get("picture"))
 
     # Check if user exists by google_id or email
     is_new = False
@@ -508,6 +507,11 @@ def google_auth(
             user.email_verified = True
             db.commit()
         else:
+            # MEH-375 (YF-4): re-host the Google avatar only on the
+            # paths that will keep it. Existing-user-with-avatar logins
+            # skip the upload entirely, eliminating the per-login
+            # orphan storm.
+            picture = _upload_google_avatar_or_none(user_info.get("picture"))
             # Create new user — Google already verified the email
             user = User(
                 email=email,
@@ -523,11 +527,15 @@ def google_auth(
             db.refresh(user)
             is_new = True
 
-    # MEH-138: fill avatar_url from Google picture if not already set
-    # (don't overwrite a manually-uploaded photo).
-    if picture and not user.avatar_url:
-        user.avatar_url = picture
-        db.commit()
+    # MEH-138 + MEH-375: backfill avatar_url for existing users that
+    # don't have one yet — and only those. is_new path already set
+    # avatar_url above; skip to avoid a second upload (which would
+    # orphan the new-user upload above).
+    if not is_new and not user.avatar_url:
+        picture = _upload_google_avatar_or_none(user_info.get("picture"))
+        if picture:
+            user.avatar_url = picture
+            db.commit()
 
     if is_new:
         background_tasks.add_task(
@@ -597,11 +605,6 @@ def register_producer_oauth(
     full_name = (
         data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
     )
-    # Re-host the Google avatar once here so both new-user creation and the
-    # MEH-138 backfill use the same Cloudinary URL without a double upload.
-    picture_for_google = _upload_google_avatar_or_none(
-        user_info.get("picture") if provider == "google" else None
-    )
 
     # 1. Look up by provider sub first (stable identifier).
     is_new = False
@@ -619,6 +622,9 @@ def register_producer_oauth(
                     detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
                 )
         else:
+            # MEH-375 (YF-4): re-host the Google avatar only on the
+            # new-user creation path. Apple has no picture and the
+            # helper short-circuits to None for non-google.
             kwargs = {
                 "email": email,
                 "name": full_name,
@@ -627,7 +633,7 @@ def register_producer_oauth(
                 sub_field: oauth_sub,
             }
             if provider == "google":
-                kwargs["avatar_url"] = picture_for_google
+                kwargs["avatar_url"] = _upload_google_avatar_or_none(user_info.get("picture"))
             user = User(**kwargs)
             db.add(user)
             db.commit()
@@ -643,10 +649,13 @@ def register_producer_oauth(
             detail="יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.",
         )
 
-    # MEH-138 — backfill the Google avatar once, without overwriting a
-    # manually-uploaded photo.
-    if provider == "google":
-        if picture_for_google and not user.avatar_url:
+    # MEH-138 + MEH-375: backfill the Google avatar only when the
+    # existing user has no avatar yet. is_new path already set it
+    # above (or None if Google had no picture); skip to avoid a
+    # duplicate upload that would orphan the new-user asset.
+    if provider == "google" and not is_new and not user.avatar_url:
+        picture_for_google = _upload_google_avatar_or_none(user_info.get("picture"))
+        if picture_for_google:
             user.avatar_url = picture_for_google
             db.commit()
 
