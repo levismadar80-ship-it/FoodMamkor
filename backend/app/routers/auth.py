@@ -49,13 +49,17 @@ from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProd
 from app.rate_limit import email_from_body, limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
+    AppleAuthResponse,
     CheckPasswordRequest,
     ForgotPasswordRequest,
     GoogleAuthRequest,
+    GoogleAuthResponse,
     LoginRequest,
     ProducerOAuthSignupRequest,
+    ProducerOAuthSignupResponse,
     ProducerRegister,
     ProducerRegistrationResponse,
+    RegisterResponse,
     ResetPasswordRequest,
     Token,
     UserOut,
@@ -197,7 +201,7 @@ def logout(request: Request, response: Response):
     )
 
 
-@router.post("/register", response_model=Token)
+@router.post("/register", response_model=RegisterResponse)
 # SECURITY FIX #2: cap new signups per IP.
 # MEH-417: raised from 3/hour — accommodates shared-IP scenarios
 # (corporate NAT, CGNAT, CI runners) without meaningfully weakening
@@ -243,10 +247,14 @@ async def register(request: Request, response: Response, data: UserRegister, bac
     db.refresh(user)
     background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
     background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+    email_expected = bool(settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return RegisterResponse(
+        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        email_sent=email_expected,
+    )
 
 
 @router.post("/register/producer", response_model=ProducerRegistrationResponse)
@@ -413,9 +421,9 @@ def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db
     return {"exists": exists}
 
 
-@router.post("/google", response_model=Token)
+@router.post("/google", response_model=GoogleAuthResponse)
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
-def google_auth(request: Request, response: Response, data: GoogleAuthRequest, db: Session = Depends(get_db)):
+def google_auth(request: Request, response: Response, data: GoogleAuthRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Authenticate with Google ID token."""
     # MEH-253 — distinguish "Google OAuth isn't configured on this server"
     # (503) from "the token you sent is invalid" (401). Before this check,
@@ -436,6 +444,7 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
     picture = _upload_google_avatar_or_none(user_info.get("picture"))
 
     # Check if user exists by google_id or email
+    is_new = False
     user = db.query(User).filter(User.google_id == google_id).first()
     if not user:
         user = db.query(User).filter(User.email == email).first()
@@ -464,6 +473,7 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
             db.add(user)
             db.commit()
             db.refresh(user)
+            is_new = True
 
     # MEH-138: fill avatar_url from Google picture if not already set
     # (don't overwrite a manually-uploaded photo).
@@ -471,18 +481,25 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, d
         user.avatar_url = picture
         db.commit()
 
+    if is_new:
+        background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+    email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return GoogleAuthResponse(
+        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        email_sent=email_expected,
+    )
 
 
-@router.post("/register/producer/oauth", response_model=Token)
+@router.post("/register/producer/oauth", response_model=ProducerOAuthSignupResponse)
 @limiter.limit("10/minute")
 def register_producer_oauth(
     request: Request,
     response: Response,
     data: ProducerOAuthSignupRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """MEH-170 — OAuth as Step 0 of producer signup.
@@ -533,6 +550,7 @@ def register_producer_oauth(
     )
 
     # 1. Look up by provider sub first (stable identifier).
+    is_new = False
     user = db.query(User).filter(getattr(User, sub_field) == oauth_sub).first()
 
     # 2. Fall back to email lookup — MEH-166 takeover guard.
@@ -560,6 +578,7 @@ def register_producer_oauth(
             db.add(user)
             db.commit()
             db.refresh(user)
+            is_new = True
 
     # 3. If this account is already a producer, bail out — the producer
     # signup flow is for NEW producers. Existing ones should log in and
@@ -577,10 +596,16 @@ def register_producer_oauth(
             user.avatar_url = picture_for_google
             db.commit()
 
+    if is_new:
+        background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+    email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return ProducerOAuthSignupResponse(
+        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        email_sent=email_expected,
+    )
 
 
 @router.post("/login", response_model=Token)
@@ -632,9 +657,9 @@ def logout_all_devices(
     return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
 
 
-@router.post("/apple", response_model=Token)
+@router.post("/apple", response_model=AppleAuthResponse)
 @limiter.limit("10/minute")  # SECURITY FIX #2
-def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db: Session = Depends(get_db)):
+def apple_auth(request: Request, response: Response, data: AppleAuthRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Authenticate with Apple ID token."""
     # MEH-253 — 503 when the provider isn't configured (see google_auth).
     if not settings.apple_client_id:
@@ -651,6 +676,7 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
     name = data.name or email.split("@")[0]
 
     # Check if user exists by apple_id or email
+    is_new = False
     user = db.query(User).filter(User.apple_id == apple_id).first()
     if not user:
         user = db.query(User).filter(User.email == email).first()
@@ -677,11 +703,18 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, db:
             db.add(user)
             db.commit()
             db.refresh(user)
+            is_new = True
 
+    if is_new:
+        background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+    email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return AppleAuthResponse(
+        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        email_sent=email_expected,
+    )
 
 
 @router.post("/check-password")

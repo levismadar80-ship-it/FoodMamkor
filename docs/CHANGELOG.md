@@ -2,6 +2,38 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-470: Product Edit flow + PUT integration
+
+`feat(MEH-470)`: per-row inline Edit UI for producer products. Closes the edit gap deferred from MEH-295 Phase 3 (PR #525).
+
+- **`frontend/app/settings/page.jsx` — `ProductsSection`** — added `editingId` / `editForm` / `savingEdit` / `editUploading` state + `startEdit` / `cancelEdit` / `handleEdit` / `handleEditImageUpload` handlers. Per-row "ערכי" Pencil button (Phosphor — codebase is Phosphor-only, lucide-react reference in spec was a copy-paste from MEH-294) opens an inline edit form on the row's surface (NOT a modal). Only one row in edit mode at a time — clicking "ערכי" on row B while row A is editing reverts A and opens B fresh (state machine on `editingId`).
+- **Edit-load Decimal coerce** — `String(Number(product.price_min))` populates input value because `ProductOut` serializes Decimal as JSON string (`"50.00"`). Without coercion, native `<input type="number">` with `step={0.5}` rejected the string value and cleared the field.
+- **Legacy hint** — when `product.price_min == null && product.price_range` present (pre-MEH-295 row), inline form shows "המחיר הקיים: {price_range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)" above fields. Producer must enter numeric price to save — backend Pydantic `ProductUpdate` would otherwise 422 on missing required Decimal validation if min/max were passed.
+- **Validation mirror** — verbatim Hebrew copy from `handleAdd` (MEH-295 Phase 3): empty min, < 1, > 10000, max < min. Same order, same strings.
+- **PUT body** — full set: `{name, description, image_url, price_min, price_max}`. Backend `producer_me.py:792` uses `model_dump(exclude_unset=True)` — sending the full set is safe and explicit. `setProducts((p) => p.map(x => x.id === id ? r.data : x))` replaces the row with the response.
+- **Image upload duplication** — `handleEditImageUpload` parallels `handleAdd`'s `handleImageUpload` (~25 line dup). Shared helper would touch locked Add code (MEH-295 Phase 3 scope). Future polish ticket may DRY them.
+- **Buttons** — feminine voice: "שמרי שינויים" (submit) / "שומרת..." (loading) / "בטלי" (cancel — type=button, no API call).
+- **Verify** — `npm run build` green; RTL grep clean on touched region (only pre-existing `right-3` eye-toggle exceptions on password inputs, off the ProductsSection scope); `api.put` lands at `/producers/me/products/${id}`, `api.post` unchanged at `/producers/me/products`, `api.delete` unchanged.
+
+Closes MEH-470 (after this PR merges).
+
+## 2026-05-07 — MEH-295 Phase 3: 2-field price form + range display + Decimal coerce (frontend)
+
+`feat(MEH-295 Phase 3)`: wire the new `price_min` / `price_max` schema into the producer dashboard form and product display surfaces.
+
+- **`frontend/app/settings/page.jsx` — `ProductsSection`** — replaced single `price_range` text input with two `type="number"` inputs (`min={1} max={10000} step={0.5}`) inside a 2-col grid. Min required, max optional ("אופציונלי" hint inline on label). Form state reshaped to `{name, description, image_url, price_min, price_max}` (no `price_range` in new submissions). All four fields now use real `<label>` elements above the input — fixes the placeholder-as-label bug where labels vanished after typing (Bug-2 in MEH-295 spec; same bug class affected name/description/price). Image upload label was already correct.
+- **Client-side validation** (verbatim Hebrew copy, no rephrasing): empty min → "הכניסי מחיר", min < 1 → "המחיר חייב להיות לפחות 1 ₪", min/max > 10000 → "המחיר לא יכול לעבור 10,000 ₪", max < min → "מחיר עד חייב להיות גבוה ממחיר מ-".
+- **Display chain** (both `settings/page.jsx:920` + `producer/[id]/components/ProducerSections.jsx:176`) — range when both present (`₪50–₪80`), single when only `price_min` present (`₪50`), legacy raw `price_range` fallback for rows that pre-date the schema change, otherwise omit. `Number()` coerce on read because backend serializes Decimal as JSON string (`"50.00"`).
+- **Brand voice fix** — submit button copy updated to feminine: "שמור מוצר" → "הוסיפי מוצר" / "שומרת..." → "מוסיפה...".
+- **Out of scope** — edit-existing flow (PUT, "שמרי שינויים" copy, edit-load population, legacy hint) tracked separately as MEH-470. Half-shekel display polish (`formatPrice` helper) deferred until production feedback.
+- **Verify** — `npm run build` green; RTL grep clean on touched region (only pre-existing `right-3` exceptions on password inputs in `dir="ltr"` blocks); `price_range` token only in legacy display fallback, never in submit body.
+
+Closes MEH-295 (after this PR merges).
+
+## 2026-05-07 — MEH-469: MCP availability note in CLAUDE.md
+
+`docs`: extended `CLAUDE.md` line 57 (workflow + execution rules pointer) with proactive directive — when a task requires an MCP query (Resend delivery status, Postgres direct read, etc.), CC tells Smadar to open standalone CC (Git Bash → `claude`) instead of saying "no access" with no resolution path. Strengthens the MCP-tools note added by PR #521 with the actionable clause (MEH-384 finding). 80-line cap preserved. Closes MEH-469.
+
 ## 2026-05-07 — MEH-295: Product price validation (backend)
 
 `feat(MEH-295)`: split free-text `products.price_range` into two numeric columns so the producer dashboard can validate input and the public producer page can render a normalized range.
