@@ -2,6 +2,29 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-293 PR #1: dietary flags moved from producer to product (backend + migration)
+
+`feat(MEH-293)`: per-product dietary flags (`is_gluten_free` / `is_vegan` / `is_lactose_free`) replace the producer-level columns of the same name. Same anti-pattern fix as MEH-291 — a single business often sells both vegan and non-vegan items; storing the flag on the producer forced shoppers to filter on the worst-case denominator.
+
+- **Alembic revision `1afe844d11f4` (revises `e4790e538aa2`)** — adds 3 BOOLEAN NOT NULL DEFAULT FALSE columns on `products`, partial index `idx_products_dietary` on `(producer_id) WHERE is_gluten_free OR is_vegan OR is_lactose_free`, JOIN-backfill from producer flags so the EXISTS-based filter returns the same producer set on day 1 of the overlap. Producer columns untouched (7-day overlap; removal scheduled in a separate PR).
+- **`backend/app/models/models.py:285-291` — `Product` class** — 3 new columns with `nullable=False, server_default=text("false")` (matches MEH-291 `availability_state` pattern).
+- **`backend/app/schemas/schemas.py`** — `ProductCreate` / `ProductUpdate` / `ProductOut` extended with the 3 flags. `ProducerListOut` gains 3 aggregated `has_X_products` output fields (computed at attach time from preloaded `producer.products` — no extra query). Legacy `producer.gluten_free` / `vegan` / `lactose_free` fields preserved for the overlap.
+- **`backend/app/services/producer_listing.py`** — 3 entries removed from `_SIMPLE_FILTERS`; new `_DIETARY_FILTERS` block applies an `EXISTS` subquery: `Producer.products.any(Product.is_X.is_(True))` (or its inverse for `?vegan=false`). Public filter signature unchanged.
+- **`backend/app/services/producer_queries.py:51` — `attach_badge_fields`** — also computes `has_gluten_free_products` / `has_vegan_products` / `has_lactose_free_products` from the preloaded products list.
+- **NEW `tests/test_dietary_filter.py`** — 5 tests: (1) producer with at least one vegan product is in `?vegan=true`, (2) producer with zero products drops out (intentional MEH-293 behavior), (3) flipping the last vegan product to FALSE removes the producer, (4) `has_vegan_products` aggregated field reflects `any(p.is_vegan)`, (5) gluten_free and lactose_free filter independently.
+- **CI drift gate** — `EXPECTED_REV` bumped `e4790e538aa2 → 1afe844d11f4`. `EXPECTED_TABLES` stays 34 (no new table).
+- **Out of scope for this PR** — frontend (register removal, settings Add+Edit checkboxes, badge aggregation read site) tracked as MEH-293 PR #2. Producer-column removal scheduled +7 days (separate PR).
+- **Backfill verification** (run on staging post-`alembic upgrade head`):
+  ```sql
+  SELECT COUNT(*) FROM producers WHERE vegan = TRUE;             -- baseline
+  SELECT COUNT(DISTINCT producer_id) FROM products WHERE is_vegan = TRUE;  -- should match baseline modulo zero-product producers
+  SELECT COUNT(*) FROM products WHERE is_vegan = TRUE;            -- total products affected
+  -- repeat for gluten_free and lactose_free
+  ```
+- **Verify** — pytest deferred to user (CC sandbox missing alembic + pg_dump per CLAUDE.md MEH-360); structural review covered by `/adversarial-review-types` on schema files.
+
+Closes MEH-293 (after PR #2 ships and the 7-day overlap completes via the removal PR).
+
 ## 2026-05-07 — MEH-470: Product Edit flow + PUT integration
 
 `feat(MEH-470)`: per-row inline Edit UI for producer products. Closes the edit gap deferred from MEH-295 Phase 3 (PR #525).

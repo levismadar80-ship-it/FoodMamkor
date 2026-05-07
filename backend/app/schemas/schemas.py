@@ -173,6 +173,10 @@ class ProductCreate(BaseModel):
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal = Field(..., ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-293: per-product dietary flags (moved from producer level).
+    is_gluten_free: bool = False
+    is_vegan: bool = False
+    is_lactose_free: bool = False
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -193,6 +197,11 @@ class ProductUpdate(BaseModel):
     image_url: str | None = Field(None, max_length=500)
     price_min: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
     price_max: Decimal | None = Field(None, ge=Decimal("1"), le=Decimal("10000"))
+    # MEH-293: per-product dietary flags. Optional on update — exclude_unset
+    # in producer_me.update_my_product means an unsupplied field stays put.
+    is_gluten_free: bool | None = None
+    is_vegan: bool | None = None
+    is_lactose_free: bool | None = None
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -218,6 +227,10 @@ class ProductOut(BaseModel):
     image_url: str | None = None
     price_min: Decimal | None = None
     price_max: Decimal | None = None
+    # MEH-293: per-product dietary flags (moved from producer level).
+    is_gluten_free: bool = False
+    is_vegan: bool = False
+    is_lactose_free: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -449,6 +462,15 @@ class ProducerListOut(BaseModel):
     gluten_free: bool = False
     vegan: bool = False
     lactose_free: bool = False
+    # MEH-293: aggregated from products.is_X — `True` when at least one
+    # product on this producer carries the dietary flag. Computed at
+    # serialization time by attach_badge_fields (no extra query —
+    # producer.products is already selectinload'ed by producer_listing).
+    # Legacy producer-level columns above are preserved during the 7-day
+    # overlap; frontend reads `has_X_products || X` for badge display.
+    has_gluten_free_products: bool = False
+    has_vegan_products: bool = False
+    has_lactose_free_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None

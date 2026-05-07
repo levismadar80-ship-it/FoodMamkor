@@ -44,7 +44,7 @@ logger = structlog.get_logger(__name__)
 # (key in filters dict, attribute on Producer model) — covers the simple
 # `if v is not None: q = q.filter(Producer.<attr> == v)` pattern. The
 # remaining filter pairs (kosher, category, delivery_city, has_delivery,
-# city) need bespoke logic and stay inline below.
+# city, dietary) need bespoke logic and stay inline below.
 _SIMPLE_FILTERS: list[tuple[str, str]] = [
     ("verified", "is_verified"),
     ("organic", "organic_certified"),
@@ -53,9 +53,16 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
     ("availability_state", "availability_state"),
     ("grass_fed", "grass_fed"),
-    ("gluten_free", "gluten_free"),
-    ("vegan", "vegan"),
-    ("lactose_free", "lactose_free"),
+]
+
+# MEH-293 — dietary flags moved to products. Public filter signature is
+# unchanged (`?vegan=true` etc.); the SQL switches from
+# `Producer.vegan == TRUE` to an EXISTS subquery on Product.is_vegan, so a
+# producer matches when at least one of their products carries the flag.
+_DIETARY_FILTERS: list[tuple[str, str]] = [
+    ("gluten_free", "is_gluten_free"),
+    ("vegan", "is_vegan"),
+    ("lactose_free", "is_lactose_free"),
 ]
 
 
@@ -142,6 +149,21 @@ def _apply_scalar_filters(q, count_q, **filters: Any):
         col = getattr(Producer, attr)
         q = q.filter(col == val)
         count_q = count_q.filter(col == val)
+
+    # MEH-293 — dietary flag filter via EXISTS subquery on products.
+    # `?vegan=true` matches producers with at least one is_vegan=TRUE product;
+    # `?vegan=false` matches producers with no such product. The 7-day
+    # overlap migration backfilled `products.is_vegan = producers.vegan` so
+    # the matched set is identical on day 1 (modulo producers who had the
+    # flag set but zero products — they correctly drop out per MEH-293).
+    for key, prod_attr in _DIETARY_FILTERS:
+        val = filters.get(key)
+        if val is None:
+            continue
+        prod_col = getattr(Product, prod_attr)
+        cond = Producer.products.any(prod_col.is_(True))
+        q = q.filter(cond if val else ~cond)
+        count_q = count_q.filter(cond if val else ~cond)
 
     # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
     # explicitly filter by availability_state, exclude vacation producers from

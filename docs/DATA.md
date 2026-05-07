@@ -113,7 +113,10 @@ products       (id, producer_id FK, name, description,
                 price_range,                        -- LEGACY free-text; drop tracked in MEH-295 follow-up
                 image_url,
                 price_min Numeric(10,2) NULL,       -- MEH-295: canonical min, Pydantic ge=1 le=10000 (required on create)
-                price_max Numeric(10,2) NULL)       -- MEH-295: canonical max, optional, validator: >= price_min
+                price_max Numeric(10,2) NULL,       -- MEH-295: canonical max, optional, validator: >= price_min
+                is_gluten_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293: moved from producers (7-day overlap); EXISTS subquery powers /producers?gluten_free=true
+                is_vegan Boolean NOT NULL DEFAULT FALSE,         -- MEH-293: same
+                is_lactose_free Boolean NOT NULL DEFAULT FALSE)  -- MEH-293: same; partial index idx_products_dietary on (producer_id) WHERE any flag TRUE
 delivery_areas (id, producer_id FK, city, min_order int, delivery_day)
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
