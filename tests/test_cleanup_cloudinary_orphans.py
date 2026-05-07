@@ -1253,6 +1253,29 @@ class TestApplyMainPath:
         # below in test_apply_no_orphans which uses real semantics.)
         assert len(delete_calls) >= 1
 
+    def test_apply_yes_emits_summary_block_to_stdout(
+        self, monkeypatch, capsys
+    ):
+        # UX symmetry with dry-run: `--apply --yes 2>cleanup.log` must still
+        # show the final result on stdout. Operational logs stay on stderr;
+        # the summary box mirrors the dry-run block's aesthetic.
+        resources = [self._orphan_resource(0)]
+        delete_response = {"deleted": {"mehamakor/orphan_0": "deleted"}}
+        self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=resources,
+            cloudinary_delete_response=delete_response,
+        )
+        rc = main(["--apply", "--yes"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "Apply complete:" in out
+        assert "deleted=1" in out
+        assert "not_found=0" in out
+        assert "errors=0" in out
+        assert "CLEAN" in out
+        assert "exit code 0" in out
+
     def test_apply_yes_mixed_response_returns_one(self, monkeypatch):
         resources = [self._orphan_resource(i) for i in range(2)]
         delete_response = {

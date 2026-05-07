@@ -505,7 +505,20 @@ def main(argv: list[str] | None = None) -> int:
             not_found,
             errors,
         )
-        return 1 if (not_found > 0 or errors > 0) else 0
+        # Apply-path stdout summary — symmetric with the dry-run block so
+        # `--apply --yes 2>cleanup.log` still surfaces the final result on
+        # stdout. Operational logs (per-ID, listing, etc.) stay on stderr.
+        exit_code = 1 if (not_found > 0 or errors > 0) else 0
+        status = "PARTIAL" if exit_code else "CLEAN"
+        print()
+        print("=" * 60)
+        print(
+            f"Apply complete: deleted={deleted} not_found={not_found} "
+            f"errors={errors}"
+        )
+        print(f"Status: {status} — exit code {exit_code}")
+        print("=" * 60)
+        return exit_code
 
     print_dry_run_summary(candidates, referenced, orphans)
     return 0
