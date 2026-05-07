@@ -49,16 +49,26 @@ def haversine_km(lat: float, lng: float):
 
 
 def attach_badge_fields(producer):
-    """MEH-18 — hydrate the 3 computed fields the badge system consumes.
+    """MEH-18 — hydrate the computed fields the badge system consumes.
     Safe to call on already-loaded ORM instances. Assumes the products
     and delivery_areas collections are already loaded (via selectinload
     in list queries, joinedload in detail queries).
+
+    MEH-293: also aggregates per-product dietary flags into
+    `has_{gluten_free,vegan,lactose_free}_products` so the public listing
+    output reflects the moved flags without an extra query (products are
+    already loaded for products_count).
     """
     try:
-        producer.products_count = len(producer.products or [])
+        products = list(producer.products or [])
+        producer.products_count = len(products)
     except Exception:
         logger.debug("[producers] products lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
+        products = []
         producer.products_count = 0
+    producer.has_gluten_free_products = any(getattr(p, "is_gluten_free", False) for p in products)
+    producer.has_vegan_products = any(getattr(p, "is_vegan", False) for p in products)
+    producer.has_lactose_free_products = any(getattr(p, "is_lactose_free", False) for p in products)
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:

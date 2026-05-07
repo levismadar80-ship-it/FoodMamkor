@@ -1,14 +1,30 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-470 product edit flow — MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-293 PR #1 backend in review on `feature/meh-293-dietary-labels-on-products`; MEH-470 product edit flow — MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-07 — Product surface complete
+### Session 2026-05-07 — Product surface complete + MEH-293 PR #1 staged
 - MEH-294 closed (PR #515) — Hebrew status labels
 - MEH-295 closed (PR #519 backend + #525 frontend cdd975a) — 2-field price + validation + display chain
 - MEH-470 closed (PR #528 434f891) — Product Edit flow (inline per-row, PUT, Decimal-coerce-on-load, legacy hint, נקבה copy)
+- MEH-293 PR #1 (backend + Alembic `1afe844d11f4`) — branch `feature/meh-293-dietary-labels-on-products` ready for pre-push review. Overlap clock starts on staging deploy.
 
-**Next session:** pick next ticket from Linear. Product surface is fully closed.
+**Next session:** open MEH-293 PR #2 (frontend) once PR #1 lands; schedule producer-column removal PR for +7 days from staging deploy date.
+
+### MEH-293 — PR #1 backend (in pre-push review, 07.05.2026)
+
+**Branch:** `feature/meh-293-dietary-labels-on-products` off `origin/staging` post-MEH-470 (`434f891`).
+
+- Alembic `1afe844d11f4` (revises `e4790e538aa2`) — `products.is_gluten_free` / `is_vegan` / `is_lactose_free` BOOLEAN NOT NULL DEFAULT FALSE; partial index `idx_products_dietary` on `(producer_id) WHERE any flag TRUE`; JOIN-backfill from `producers.gluten_free` / `vegan` / `lactose_free` so the new EXISTS-based filter returns the same producer set on day 1.
+- `backend/app/models/models.py` Product class — 3 columns added with `server_default=text("false")`.
+- `backend/app/schemas/schemas.py` — ProductCreate / ProductUpdate / ProductOut extended (Update Optional[bool] for partial PUT). ProducerListOut gains aggregated `has_gluten_free_products` / `has_vegan_products` / `has_lactose_free_products` (computed at attach time, no extra query).
+- `backend/app/services/producer_listing.py` — `_DIETARY_FILTERS` block with EXISTS subquery (`Producer.products.any(Product.is_X.is_(True))`); legacy `_SIMPLE_FILTERS` rows removed for the 3 dietary keys. Filter signature unchanged on `/producers`.
+- `backend/app/services/producer_queries.py` — `attach_badge_fields` aggregates the 3 new fields from preloaded products.
+- `tests/test_dietary_filter.py` — 5 tests covering filter inclusion, zero-product edge case (intentional drop), flag flip, aggregated field, per-flag independence.
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped `e4790e538aa2 → 1afe844d11f4`. `EXPECTED_TABLES` stays 34.
+- Producer columns (`producers.gluten_free` / `vegan` / `lactose_free`) preserved during 7-day overlap. Removal scheduled in a separate PR after staging deploy + analytics parity check.
+
+**Out of scope (MEH-293 PR #2):** `frontend/app/register/producer/page.js` (3 checkboxes removal), `frontend/app/settings/page.jsx` ProductsSection (3 checkboxes added to Add + Edit forms), `frontend/components/admin/ProducerForm.jsx` (3 checkboxes removal), `frontend/lib/badges.js` (read aggregated fields with legacy fallback), `MANUAL_TESTING.md`.
 
 ---
 
