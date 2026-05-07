@@ -171,10 +171,17 @@ async def upload_avatar(
             api_key=settings.cloudinary_api_key,
             api_secret=settings.cloudinary_api_secret,
         )
+        # MEH-375: fixed public_id per user with overwrite=True so a
+        # re-upload reuses the same Cloudinary slot instead of creating a
+        # new asset and orphaning the previous one. PATCH /users/me still
+        # needs an explicit destroy hook (chunk F) for the case where the
+        # user swaps avatar_url without going through this endpoint.
         result = cloudinary.uploader.upload(
             contents,
             folder="mehamakor/avatars",
-            public_id=uuid.uuid4().hex,
+            public_id=f"user_{user.id}",
+            overwrite=True,
+            invalidate=True,
             resource_type="image",
             transformation=[
                 {"width": 400, "height": 400, "crop": "fill", "gravity": "face"}
