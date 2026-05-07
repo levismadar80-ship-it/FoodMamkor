@@ -11,11 +11,14 @@ creates a User row uses it together with one of the email senders
 below, so they share imports and call-site context.
 """
 
+import logging
 import uuid
 from html import escape as html_escape
 
 from app.config import settings
 from app.services.email import send_email
+
+logger = logging.getLogger(__name__)
 
 
 def gen_referral_code() -> str:
@@ -71,8 +74,13 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
     send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
 
 
-def send_verify_email(email: str, name: str, token: str) -> None:
-    """Send email-verification link via Resend. Fire-and-forget."""
+def send_verify_email(email: str, name: str, token: str) -> bool:
+    """Send email-verification link via Resend. Returns True when attempted with valid config."""
+    if not settings.resend_api_key:
+        logger.error(
+            "[EMAIL] verify email SKIPPED for '%s' — missing: RESEND_API_KEY", email
+        )
+        return False
     verify_url = f"{settings.frontend_url}/verify-email?token={token}"
     # MEH-440-followup: escape name in HTML body (plain text unchanged).
     name_html = html_escape(name or "")
@@ -120,9 +128,15 @@ def send_verify_email(email: str, name: str, token: str) -> None:
 </body>
 </html>"""
     send_email(email, "מהמקור - אמתי את האימייל שלך", body, html=html_body)
+    return True
 
 
-def send_welcome_email(email: str, name: str, role: str = "consumer") -> None:
+def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
+    if not settings.resend_api_key:
+        logger.error(
+            "[EMAIL] welcome email SKIPPED for '%s' — missing: RESEND_API_KEY", email
+        )
+        return False
     consumer_body = (
         f"שלום {name},\n\n"
         f"ברוכה הבאה למהמקור! 🌿\n\n"
@@ -147,6 +161,7 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> None:
     )
     body = producer_body if role == "producer" else consumer_body
     send_email(email, "ברוכה הבאה למהמקור 🌿", body)
+    return True
 
 
 def send_deletion_email(email: str, name: str) -> None:

@@ -114,6 +114,25 @@ class ProducerRegistrationResponse(Token):
     whatsapp_sent: bool
 
 
+# MEH-301: email pre-flight flags for registration endpoints.
+# True = RESEND_API_KEY present and background task dispatched.
+# False = missing config; frontend can show a diagnostic banner.
+class RegisterResponse(Token):
+    email_sent: bool
+
+
+class GoogleAuthResponse(Token):
+    email_sent: bool
+
+
+class AppleAuthResponse(Token):
+    email_sent: bool
+
+
+class ProducerOAuthSignupResponse(Token):
+    email_sent: bool
+
+
 # --- Category ---
 class CategoryOut(BaseModel):
     id: int
