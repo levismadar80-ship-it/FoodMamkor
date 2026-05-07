@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-472 PR-A: i18n Wave 2 translation sweep (Header, Footer, home page)
+
+`feat(MEH-472)`: Wave 2 of next-intl migration — ~88 new keys in `messages/he.json` + `en.json`; all hardcoded Hebrew replaced with `t()` in Header.jsx, Footer.jsx, HomeHero.jsx, HomeProducersGrid.jsx, HomeCategoryGrid.jsx, HomeStaticBlocks.jsx, UpcomingEventsPreview.jsx, BottomNav.jsx, and `app/[locale]/page.js`. Q7 gender-neutral plural imperatives applied throughout (נסי→נסו, הוסיפי→הוסיפו, הצטרפי→הצטרפו, שלחי→שלחו, התנתקי→התנתקו, ראי→ראו, מצאי→מצאו, גלי→גלו, קבלי→קבלו). Q3 `lib/categories.js` established with `categoryKey()` helper + 7 slug→key entries. PR-B (shim deletion + `lib/language-context.js` removal) deferred ≥ 2026-05-14 after 7-day staging burn-in. Bug fixed: `t("nav_login")` → `t("nav.login")` in Header.jsx mobile drawer.
+
 ## 2026-05-07 — MEH-479: drop legacy producer dietary columns + cleanup (closes MEH-293)
 
 `feat(MEH-479)`: destructive endpoint of MEH-293 — drops `producers.gluten_free` / `producers.vegan` / `producers.lactose_free` columns, removes the legacy `|| !!producer.X` fallback in `lib/badges.js`, cleans up Pydantic schemas, and pins the regression with 3 guard tests. Per-product `is_X` flags + aggregated `has_X_products` are now the single source of truth.

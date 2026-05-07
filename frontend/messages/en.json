@@ -12,6 +12,19 @@
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
+    "main_label": "Main navigation",
+    "search_label": "Search",
+    "menu_close": "Close menu",
+    "menu_open": "Open menu",
+    "lang_switch_to_en": "Switch to English",
+    "lang_switch_to_he": "Switch to Hebrew",
+    "lang_he": "Hebrew",
+    "lang_en": "EN",
+    "onboarding": {
+      "map": "Interactive map — discover local businesses near you 🗺️",
+      "profile": "Join to save favourite businesses and leave ratings 💚",
+      "profile_cta": "Got it, finish"
+    },
     "footer": {
       "discover": "Discover",
       "community": "Community",
@@ -29,21 +42,121 @@
       "manage": "Manage Business",
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
+      "privacy_short": "Privacy",
       "accessibility": "Accessibility",
       "contact": "Contact Us",
       "copyright": "Mehamakor. All rights reserved.",
-      "made_with_love": "Made with love in Israel 🌿"
+      "made_with_love": "Made with love in Israel 🌿",
+      "cta_pitch": "Do you have a local food business?",
+      "cta_subpitch": "Join thousands of business owners on Mehamakor",
+      "brand_aria": "Mehamakor — Home page",
+      "brand_tagline": "Straight from the source — local businesses, all in one place.",
+      "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
+      "nav_aria": "Footer navigation",
+      "nav_heading": "Navigation",
+      "nav_discover": "Discover businesses",
+      "newsletter_heading": "Good food is meant to be shared.",
+      "newsletter_label": "Newsletter email",
+      "newsletter_placeholder": "Your email, please",
+      "newsletter_submit": "Send",
+      "newsletter_success": "Welcome to Mehamakor 🌱 See you in your inbox"
     }
+  },
+  "auth": {
+    "verify": {
+      "banner": "📧 Verify your email to publish content",
+      "resend": "Resend",
+      "sent": "✓ Sent!",
+      "rate_limited": "Rate limited — try again in an hour"
+    }
+  },
+  "account": {
+    "menu": {
+      "profile": "My Profile",
+      "settings": "Settings",
+      "dashboard": "My Dashboard",
+      "admin": "Admin Panel",
+      "aria": "Menu — {name}",
+      "logout": "Sign Out"
+    }
+  },
+  "error": {
+    "try_again": "Error, please try again",
+    "generic": "Something went wrong, try again"
   },
   "home": {
     "hero": {
       "title": "Real Food, Straight From the Source",
-      "subtitle": "Local businesses, all in one place."
+      "subtitle": "Local businesses, all in one place.",
+      "friday_subtitle": "Friday is here 🛒 What's on the Shabbat table?",
+      "main_label": "Home — discover local businesses",
+      "search_area_label": "Search businesses",
+      "near_me": "Near me",
+      "searching": "Searching...",
+      "scroll_down_label": "Scroll to business listing"
     },
     "search": {
       "placeholder": "Search fresh veggies, grass-fed beef...",
       "sr_label": "Search businesses and cities",
       "submit": "Search"
+    },
+    "stats": {
+      "verified_businesses": "verified businesses",
+      "categories": "categories",
+      "countrywide": "across Israel"
+    },
+    "categories": {
+      "heading": "Browse by category",
+      "subheading": "Straight from the producer — no middlemen",
+      "aria": "Show category: {name}"
+    },
+    "producers": {
+      "heading": "Recommended businesses",
+      "map_link": "Show on map 🗺️",
+      "filter_prefix": "Filtering by:",
+      "counter": "Showing {shown} of {total}",
+      "hint_favorites": "Tap ❤️ on a business card to save favourites",
+      "filter_showing": "Showing:",
+      "clear_filter": "Clear filter",
+      "empty_heading": "No businesses found in this area — yet 🌱",
+      "empty_subtext": "Try changing the filter, or explore businesses on the map",
+      "explore_map": "Explore on map",
+      "load_more": "More businesses",
+      "onboarding0": "Discover local businesses — fresh vegetables, cheeses, sourdough and more 🌿 Tap a card to view details",
+      "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above 👆"
+    },
+    "founder_quote": {
+      "text": "Real food, from real people, right next door.",
+      "attribution": "Sapir, founder of Mehamakor →"
+    },
+    "recent": {
+      "heading": "Recently viewed"
+    },
+    "kitchen": {
+      "heading": "From the Neighbor's Kitchen",
+      "see_more": "See more →"
+    },
+    "how_it_works": {
+      "heading": "How it works",
+      "step01_title": "Find",
+      "step01_text": "Discover local businesses near you — fresh vegetables, farm cheeses, sourdough bread",
+      "step02_title": "Connect",
+      "step02_text": "Talk directly with the business on WhatsApp, by phone, or on Instagram",
+      "step03_title": "Receive",
+      "step03_text": "Real, fresh food straight from the source — no middlemen, no quality compromises"
+    },
+    "cta": {
+      "heading": "Have a business? Join us",
+      "body": "If you are a business owner, farmer, or grower — join Israel's first directory for real food.",
+      "button": "Add Your Business 🌿"
+    },
+    "new_businesses": {
+      "heading": "New businesses ✨"
+    },
+    "events": {
+      "heading": "Upcoming events 📅",
+      "all_events": "All events →",
+      "free": "Free"
     }
   },
   "common": {
@@ -51,5 +164,14 @@
       "show_on_map": "Show on Map",
       "more_info": "More Info"
     }
+  },
+  "category": {
+    "cooking": "Cooking",
+    "nutrition": "Nutrition",
+    "food_tour": "Food Tour",
+    "agriculture": "Agriculture",
+    "tasting": "Tasting",
+    "workshop": "Workshop",
+    "fermented": "Fermented"
   }
 }
