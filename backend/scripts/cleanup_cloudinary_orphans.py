@@ -465,7 +465,13 @@ def main(argv: list[str] | None = None) -> int:
 
     db = SessionLocal()
     try:
-        referenced = build_referenced_url_set(db)
+        try:
+            referenced = build_referenced_url_set(db)
+        except Exception:
+            logger.exception(
+                "DB query failed; aborting before Cloudinary listing"
+            )
+            return 1
     finally:
         db.close()
     logger.info(

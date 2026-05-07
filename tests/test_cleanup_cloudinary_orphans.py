@@ -1440,6 +1440,20 @@ class TestExitCodeMatrix:
             },
         )
 
+    def _setup_db_query_failed(self, monkeypatch):
+        # MEH-375 R3: build_referenced_url_set raising (e.g. schema drift,
+        # connection error) must produce clean exit-1, not a stacktrace —
+        # symmetric with the Cloudinary listing path.
+        self._stub_base(monkeypatch)
+        from scripts import cleanup_cloudinary_orphans
+
+        def _boom(db):
+            raise RuntimeError("simulated DB failure")
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans, "build_referenced_url_set", _boom
+        )
+
     @pytest.mark.parametrize(
         "scenario,argv,expected_code,expects_systemexit",
         [
@@ -1449,6 +1463,7 @@ class TestExitCodeMatrix:
             ("apply_no_orphans", ["--apply", "--yes"], 0, False),
             ("apply_user_aborts", ["--apply"], 0, True),
             ("dry_run", [], 0, False),
+            ("db_query_failed", [], 1, False),
         ],
     )
     def test_exit_code(
