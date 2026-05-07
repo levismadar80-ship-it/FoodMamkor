@@ -911,5 +911,15 @@ def delete_my_product(
     )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+
+    # MEH-375 (YF-2): capture image_url BEFORE db.delete; destroy after
+    # commit per the external-cleanup rule. Truthy guard skips the
+    # logger spam for products that never had an image.
+    old_image_url = product.image_url
+
     db.delete(product)
     db.commit()
+
+    if old_image_url:
+        from app.cloudinary_utils import destroy_image
+        destroy_image(old_image_url)
