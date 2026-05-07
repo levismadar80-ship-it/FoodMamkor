@@ -41,7 +41,7 @@ _TRANSFORMATION_PARAM_RE = re.compile(r"^[a-z]+_")
 # Story-card namespace — admin upload reuses public_id="story-card" per
 # producer with overwrite=True, so these assets are intentionally
 # long-lived and shared across producer versions. Never destroy.
-_RESERVED_PUBLIC_ID_PREFIXES = ("mehamakor/producers/",)
+RESERVED_PUBLIC_ID_PREFIXES = ("mehamakor/producers/",)
 
 
 def _is_transformation_segment(segment: str) -> bool:
@@ -103,7 +103,7 @@ def extract_public_id(url: str | None) -> str | None:
     public_id = _parse_public_id_from_upload_url(url)  # type: ignore[arg-type]
     if not public_id:
         return None
-    if any(public_id.startswith(prefix) for prefix in _RESERVED_PUBLIC_ID_PREFIXES):
+    if any(public_id.startswith(prefix) for prefix in RESERVED_PUBLIC_ID_PREFIXES):
         return None
     return public_id
 
