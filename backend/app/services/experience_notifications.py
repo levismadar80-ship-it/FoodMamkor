@@ -3,6 +3,7 @@
 All sends are best-effort via the shared send_email() helper (Resend HTTP API).
 The admin_experiences router must never fail because an email didn't go out.
 """
+
 from __future__ import annotations
 
 import logging

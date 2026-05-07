@@ -14,7 +14,11 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 @router.get("", response_model=list[RecipeOut])
 def list_recipes(category: int | None = None, db: Session = Depends(get_db)):
-    q = db.query(Recipe).options(joinedload(Recipe.ingredients)).filter(Recipe.status == "approved")
+    q = (
+        db.query(Recipe)
+        .options(joinedload(Recipe.ingredients))
+        .filter(Recipe.status == "approved")
+    )
     if category is not None:
         q = q.filter(Recipe.category_id == category)
     return q.order_by(Recipe.created_at.desc()).all()
@@ -53,12 +57,14 @@ def create_recipe(
     db.flush()
 
     for ing in data.ingredients:
-        db.add(RecipeIngredient(
-            recipe_id=recipe.id,
-            ingredient_name=ing.ingredient_name,
-            producer_id=ing.producer_id,
-            notes=ing.notes,
-        ))
+        db.add(
+            RecipeIngredient(
+                recipe_id=recipe.id,
+                ingredient_name=ing.ingredient_name,
+                producer_id=ing.producer_id,
+                notes=ing.notes,
+            )
+        )
 
     db.commit()
     db.refresh(recipe)

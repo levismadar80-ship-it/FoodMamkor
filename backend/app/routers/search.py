@@ -9,6 +9,7 @@ producers). If this grows past ~10k rows we'd swap to pg_trgm GIN.
 
 MEH-460 Pkg 3: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
+
 import time
 
 import structlog
@@ -157,8 +158,7 @@ def smart_search(
         .all()
     )
     categories = [
-        CategoryHit(id=c.id, name=c.name, emoji=c.emoji)
-        for c in category_rows
+        CategoryHit(id=c.id, name=c.name, emoji=c.emoji) for c in category_rows
     ]
 
     return SearchOut(
@@ -194,7 +194,9 @@ def trending_searches(db: Session = Depends(get_db)):
         ).fetchall()
         result = [row[0] for row in rows]
     except Exception:
-        logger.warning("[search] trending cache DB query failed — returning empty", exc_info=True)
+        logger.warning(
+            "[search] trending cache DB query failed — returning empty", exc_info=True
+        )
         result = []
 
     _trending_cache["data"] = result

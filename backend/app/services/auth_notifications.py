@@ -50,6 +50,7 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
     )
     try:
         from twilio.rest import Client
+
         Client(settings.twilio_account_sid, settings.twilio_auth_token).messages.create(
             body=message,
             from_=settings.twilio_whatsapp_from,
@@ -59,7 +60,8 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
         return True
     except Exception as e:
         logger.error(
-            f"[WHATSAPP] Producer welcome FAILED for {mask_phone(phone)}: {e}", exc_info=True
+            f"[WHATSAPP] Producer welcome FAILED for {mask_phone(phone)}: {e}",
+            exc_info=True,
         )
         return False
 
@@ -74,6 +76,7 @@ def notify_admin_new_producer(name: str, city: str | None) -> None:
     if settings.twilio_account_sid and settings.admin_whatsapp_to:
         try:
             from twilio.rest import Client
+
             client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
             client.messages.create(
                 body=message,

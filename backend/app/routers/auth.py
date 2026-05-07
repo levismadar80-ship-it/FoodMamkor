@@ -3,7 +3,15 @@ import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
@@ -45,7 +53,13 @@ from app.services.oauth_verifiers import (
 from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
-from app.models.models import Favorite, HomeProduct, HomeProductRating, HomeProductWhatsAppClick, Report
+from app.models.models import (
+    Favorite,
+    HomeProduct,
+    HomeProductRating,
+    HomeProductWhatsAppClick,
+    Report,
+)
 from app.rate_limit import email_from_body, limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
@@ -67,6 +81,8 @@ from app.schemas.schemas import (
 )
 
 logger = logging.getLogger(__name__)
+
+
 def _set_refresh_cookie(response: Response, user: User) -> None:
     """MEH-326: attach a fresh refresh-token cookie to the outgoing response.
 
@@ -141,18 +157,26 @@ def refresh_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="לא מחובר")
     claims = decode_refresh_token(cookie)
     if claims is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
     user_id = claims.get("sub")
     if user_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא"
+        )
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
     tv = claims.get("tv")
     if tv is None or tv != user.token_version:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
     # MEH-305 launch-safe migration: iat is missing from refresh tokens
     # issued before this deploy. Fail-open for up to 14d
     # (refresh_token_expire_days) until pre-deploy tokens naturally
@@ -171,7 +195,11 @@ def refresh_token(
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return Token(
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        )
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -208,7 +236,13 @@ def logout(request: Request, response: Response):
 # brute-force protection. Backend rate-limit complements frontend
 # PasswordPolicy which already enforces 12-char + HIBP (MEH-306).
 @limiter.limit("10/hour")
-async def register(request: Request, response: Response, data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def register(
+    request: Request,
+    response: Response,
+    data: UserRegister,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="האימייל כבר קיים במערכת")
 
@@ -252,7 +286,9 @@ async def register(request: Request, response: Response, data: UserRegister, bac
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return RegisterResponse(
-        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        ),
         email_sent=email_expected,
     )
 
@@ -341,12 +377,14 @@ async def register_producer(
             db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
 
     for da in data.delivery_areas:
-        db.add(DeliveryArea(
-            producer_id=producer.id,
-            city=da.city,
-            min_order=da.min_order,
-            delivery_day=da.delivery_day,
-        ))
+        db.add(
+            DeliveryArea(
+                producer_id=producer.id,
+                city=da.city,
+                min_order=da.min_order,
+                delivery_day=da.delivery_day,
+            )
+        )
 
     verify_token = secrets.token_urlsafe(32)
     verify_expires = datetime.utcnow() + timedelta(hours=24)
@@ -391,8 +429,12 @@ async def register_producer(
     background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
     background_tasks.add_task(notify_producer_registered, p_name, p_phone)
     if not upgrade_path:
-        background_tasks.add_task(_send_verify_email, user.email, user.name, verify_token)
-        background_tasks.add_task(_send_welcome_email, user.email, user.name, "producer")
+        background_tasks.add_task(
+            _send_verify_email, user.email, user.name, verify_token
+        )
+        background_tasks.add_task(
+            _send_welcome_email, user.email, user.name, "producer"
+        )
 
     # MEH-287: pre-flight check — whether the background task has the
     # config it needs to send. True = expected to send (Twilio may still
@@ -405,7 +447,9 @@ async def register_producer(
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return ProducerRegistrationResponse(
-        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        ),
         whatsapp_sent=whatsapp_expected,
     )
 
@@ -421,7 +465,13 @@ def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db
 
 @router.post("/google", response_model=GoogleAuthResponse)
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
-def google_auth(request: Request, response: Response, data: GoogleAuthRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def google_auth(
+    request: Request,
+    response: Response,
+    data: GoogleAuthRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """Authenticate with Google ID token."""
     # MEH-253 — distinguish "Google OAuth isn't configured on this server"
     # (503) from "the token you sent is invalid" (401). Before this check,
@@ -480,13 +530,17 @@ def google_auth(request: Request, response: Response, data: GoogleAuthRequest, b
         db.commit()
 
     if is_new:
-        background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+        background_tasks.add_task(
+            _send_welcome_email, user.email, user.name, "consumer"
+        )
     email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return GoogleAuthResponse(
-        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        ),
         email_sent=email_expected,
     )
 
@@ -540,7 +594,9 @@ def register_producer_oauth(
     # Apple only sends the name on the very first auth; callers may pass
     # it explicitly via `name`. Fall back to the Google "name" claim or
     # the email local-part so the User.name NOT NULL constraint holds.
-    full_name = data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
+    full_name = (
+        data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
+    )
     # Re-host the Google avatar once here so both new-user creation and the
     # MEH-138 backfill use the same Cloudinary URL without a double upload.
     picture_for_google = _upload_google_avatar_or_none(
@@ -595,34 +651,57 @@ def register_producer_oauth(
             db.commit()
 
     if is_new:
-        background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+        background_tasks.add_task(
+            _send_welcome_email, user.email, user.name, "consumer"
+        )
     email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return ProducerOAuthSignupResponse(
-        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        ),
         email_sent=email_expected,
     )
 
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # SECURITY FIX #2: brute-force protection
-def login(request: Request, response: Response, data: LoginRequest, db: Session = Depends(get_db)):
+def login(
+    request: Request,
+    response: Response,
+    data: LoginRequest,
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.email == data.email).first()
-    if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים")
+    if (
+        not user
+        or not user.password_hash
+        or not verify_password(data.password, user.password_hash)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
+        )
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="המשתמש חסום")
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return Token(
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        )
+    )
 
 
 @router.get("/me", response_model=UserOut)
 @limiter.limit("120/minute")
-def get_me(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_me(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Return current user, enriched with producer status/rejection_reason."""
     out = UserOut.model_validate(user)
     if user.producer_id:
@@ -652,12 +731,22 @@ def logout_all_devices(
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
-    return Token(access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)))
+    return Token(
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        )
+    )
 
 
 @router.post("/apple", response_model=AppleAuthResponse)
 @limiter.limit("10/minute")  # SECURITY FIX #2
-def apple_auth(request: Request, response: Response, data: AppleAuthRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def apple_auth(
+    request: Request,
+    response: Response,
+    data: AppleAuthRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """Authenticate with Apple ID token."""
     # MEH-253 — 503 when the provider isn't configured (see google_auth).
     if not settings.apple_client_id:
@@ -704,13 +793,17 @@ def apple_auth(request: Request, response: Response, data: AppleAuthRequest, bac
             is_new = True
 
     if is_new:
-        background_tasks.add_task(_send_welcome_email, user.email, user.name, "consumer")
+        background_tasks.add_task(
+            _send_welcome_email, user.email, user.name, "consumer"
+        )
     email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
     _set_fingerprint_cookie(response, fp)
     return AppleAuthResponse(
-        access_token=create_access_token(user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)),
+        access_token=create_access_token(
+            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+        ),
         email_sent=email_expected,
     )
 
@@ -742,7 +835,12 @@ async def check_password(request: Request, data: CheckPasswordRequest):
 # IP-keyed @limiter.limit needs no explicit key_func.
 @limiter.limit("10/15 minutes")
 @limiter.limit("5/15 minutes", key_func=email_from_body)
-def forgot_password(request: Request, data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def forgot_password(
+    request: Request,
+    data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """Send a password-reset email. Always returns 200 to prevent email enumeration."""
     user = db.query(User).filter(User.email == data.email).first()
     if user:
@@ -750,7 +848,11 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
         user.reset_token = token
         user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
         db.commit()
-        logger.info("[FORGOT-PW] token_stored user_id=%s expires=%s", user.id, user.reset_token_expires_at)
+        logger.info(
+            "[FORGOT-PW] token_stored user_id=%s expires=%s",
+            user.id,
+            user.reset_token_expires_at,
+        )
         reset_link = f"{settings.frontend_url}/reset-password?token={token}"
         background_tasks.add_task(_send_reset_email, user.email, user.name, reset_link)
     return {"detail": "אם האימייל קיים במערכת, ישלח קישור לאיפוס"}
@@ -763,15 +865,27 @@ def forgot_password(request: Request, data: ForgotPasswordRequest, background_ta
 # provides per-user pinning (single-use, 1-hour TTL); the IP cap blocks
 # brute-force token guessing.
 @limiter.limit("10/15 minutes")
-async def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+async def reset_password(
+    request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)
+):
     """Consume a reset token and update the password. Token is single-use, expires 1 hour."""
     user = db.query(User).filter(User.reset_token == data.token).first()
     if not user:
         logger.warning("[RESET] token_not_found token_prefix=%s", data.token[:8])
         raise HTTPException(status_code=404, detail="הקישור לא תקין")
-    if not user.reset_token_expires_at or user.reset_token_expires_at < datetime.utcnow():
-        logger.warning("[RESET] token_expired user_id=%s expires=%s now=%s", user.id, user.reset_token_expires_at, datetime.utcnow())
-        raise HTTPException(status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש")
+    if (
+        not user.reset_token_expires_at
+        or user.reset_token_expires_at < datetime.utcnow()
+    ):
+        logger.warning(
+            "[RESET] token_expired user_id=%s expires=%s now=%s",
+            user.id,
+            user.reset_token_expires_at,
+            datetime.utcnow(),
+        )
+        raise HTTPException(
+            status_code=410, detail="קישור האיפוס פג תוקף — בקשי קישור חדש"
+        )
     # MEH-306: full policy + reuse check. current_hash passed so user can't
     # re-set the same password (frequent attacker target on credential-stuffing
     # incidents). HIBP fail-open is internal to validate_password.
@@ -808,7 +922,10 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     if not user:
         logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
         raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
-    if user.email_verify_expires is None or user.email_verify_expires < datetime.utcnow():
+    if (
+        user.email_verify_expires is None
+        or user.email_verify_expires < datetime.utcnow()
+    ):
         logger.warning(
             "[VERIFY-EMAIL] token_expired user_id=%s expires=%s now=%s",
             user.id,
@@ -845,7 +962,11 @@ def resend_verify(
 
 @router.delete("/me")
 @limiter.limit("3/hour")
-def delete_account(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def delete_account(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Delete user account and all associated data.
 
     Required by Apple App Store Guidelines; also closes the GDPR /
@@ -870,7 +991,9 @@ def delete_account(request: Request, user: User = Depends(get_current_user), db:
     #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
     #    the explicit deletes for defense-in-depth against pre-cascade data.
     db.query(HomeProductRating).filter(HomeProductRating.user_id == user.id).delete()
-    db.query(HomeProductWhatsAppClick).filter(HomeProductWhatsAppClick.user_id == user.id).delete()
+    db.query(HomeProductWhatsAppClick).filter(
+        HomeProductWhatsAppClick.user_id == user.id
+    ).delete()
     db.query(HomeProduct).filter(HomeProduct.user_id == user.id).delete()
     db.query(Favorite).filter(Favorite.user_id == user.id).delete()
     db.query(Report).filter(Report.reporter_id == user.id).delete()
@@ -894,4 +1017,3 @@ def delete_account(request: Request, user: User = Depends(get_current_user), db:
     _send_deletion_email(user_email, user_name)
 
     return {"detail": "Account deleted successfully"}
-

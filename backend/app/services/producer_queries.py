@@ -40,11 +40,11 @@ def haversine_km(lat: float, lng: float):
     would make acos() raise "input is out of range". func.least(1.0, ...)
     clamps it.
     """
-    cos_delta = (
-        func.cos(func.radians(lat)) * func.cos(func.radians(Producer.lat))
-        * func.cos(func.radians(Producer.lng) - func.radians(lng))
-        + func.sin(func.radians(lat)) * func.sin(func.radians(Producer.lat))
-    )
+    cos_delta = func.cos(func.radians(lat)) * func.cos(
+        func.radians(Producer.lat)
+    ) * func.cos(func.radians(Producer.lng) - func.radians(lng)) + func.sin(
+        func.radians(lat)
+    ) * func.sin(func.radians(Producer.lat))
     return EARTH_RADIUS_KM * func.acos(func.least(1.0, cos_delta))
 
 
@@ -63,16 +63,28 @@ def attach_badge_fields(producer):
         products = list(producer.products or [])
         producer.products_count = len(products)
     except Exception:
-        logger.debug("[producers] products lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
+        logger.debug(
+            "[producers] products lazy-load failed, defaulting to 0",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
         products = []
         producer.products_count = 0
-    producer.has_gluten_free_products = any(getattr(p, "is_gluten_free", False) for p in products)
+    producer.has_gluten_free_products = any(
+        getattr(p, "is_gluten_free", False) for p in products
+    )
     producer.has_vegan_products = any(getattr(p, "is_vegan", False) for p in products)
-    producer.has_lactose_free_products = any(getattr(p, "is_lactose_free", False) for p in products)
+    producer.has_lactose_free_products = any(
+        getattr(p, "is_lactose_free", False) for p in products
+    )
     try:
         producer.delivery_count = len(producer.delivery_areas or [])
     except Exception:
-        logger.debug("[producers] delivery_areas lazy-load failed, defaulting to 0", producer_id=str(producer.id), exc_info=True)
+        logger.debug(
+            "[producers] delivery_areas lazy-load failed, defaulting to 0",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
         producer.delivery_count = 0
     if producer.created_at:
         delta = datetime.utcnow() - producer.created_at
@@ -103,7 +115,8 @@ def attach_favorites_count(producer, db: Session):
     producer.favorites_count = (
         db.query(func.count(Favorite.user_id))
         .filter(Favorite.producer_id == producer.id)
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     return producer
 
@@ -149,12 +162,14 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
 
     for da in data.delivery_areas:
-        db.add(DeliveryArea(
-            producer_id=producer.id,
-            city=da.city,
-            min_order=da.min_order,
-            delivery_day=da.delivery_day,
-        ))
+        db.add(
+            DeliveryArea(
+                producer_id=producer.id,
+                city=da.city,
+                min_order=da.min_order,
+                delivery_day=da.delivery_day,
+            )
+        )
 
     db.commit()
     db.refresh(producer)

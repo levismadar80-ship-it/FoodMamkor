@@ -25,12 +25,19 @@ def get_holiday_mode(request: Request):
     db = None
     try:
         db = SessionLocal()
-        rows = db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["holiday_override_enabled", "holiday_override_key"])
-        ).all()
+        rows = (
+            db.query(AdminSetting)
+            .filter(
+                AdminSetting.key.in_(
+                    ["holiday_override_enabled", "holiday_override_key"]
+                )
+            )
+            .all()
+        )
         kv = {r.key: r.value for r in rows}
         return {
-            "enabled": (kv.get("holiday_override_enabled") or "false").lower() == "true",
+            "enabled": (kv.get("holiday_override_enabled") or "false").lower()
+            == "true",
             "key": kv.get("holiday_override_key") or None,
         }
     finally:

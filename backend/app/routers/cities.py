@@ -3,6 +3,7 @@
 Rate-limited 60/min (anonymous). Returns up to 20 cities whose name_he
 starts with the query string (prefix match, case-insensitive).
 """
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 

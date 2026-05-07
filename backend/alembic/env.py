@@ -27,6 +27,7 @@ config = context.config
 # This means alembic.ini never contains a hardcoded connection string, and the
 # same file works identically for local dev, staging, and prod.
 from app.config import settings  # noqa: E402
+
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:

@@ -2,6 +2,79 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-448: clean baseline ruff violations + format pass
+
+`chore(MEH-448)`: 18 ruff `check` violations + 56 `ruff format` files cleaned to zero. Unblocks the MEH-488 calibration→required flip.
+
+**Verification:**
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → 0 errors
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files would be reformatted
+- `pytest --collect-only` → 489 tests collect cleanly (proxy for whitespace-sensitive bugs from format pass; full suite verification deferred to CI per MEH-360 sandbox limitation)
+
+**Commit split:**
+1. `style(MEH-448): ruff format auto-fixes across 56 files` (4c9cd68) — 56 files, 1346+/526−. Pure mechanical; scroll past for review.
+2. `chore(MEH-448): clean 18 ruff check violations (manual decisions)` (cbba799) — 9 files, 17+/20−. The 14 manual decisions listed below.
+
+### Phase 1a — auto-fixes (4 unused imports via `ruff check --fix`)
+
+Sibling-grep confirmed each name appears only at its import line:
+- `backend/app/services/analytics.py:35` — `datetime.timedelta`
+- `backend/app/routers/experiences.py:20` — `fastapi.Query`
+- `backend/app/routers/reports.py:11` — `app.schemas.schemas.ReportOut`
+- `backend/seed_data.py:3` — `uuid`
+
+**Spec deviation surfaced:** the MEH-488 calibration inventory listed 2 of these 4 (analytics + seed_data). `experiences.py:20` (`Query`) and `reports.py:11` (`ReportOut`) were missed by the calibration. Folded in here so the post-MEH-448 flip-PR doesn't trip over residual auto-fixables.
+
+### Phase 1b — `ruff format` (56 files reformatted)
+
+Pure mechanical: quote normalization, multi-line argument lists, trailing commas. 13 files already format-clean (mostly small modules). Cross-checked against `pytest --collect-only` — no whitespace-sensitive parse regressions.
+
+### Phase 2 — E402 manual decisions (10 errors → 0)
+
+| File | Lines | Decision | Rationale |
+|---|---|---|---|
+| `backend/scripts/seed_cities.py` | 21, 23, 24 | `# noqa: E402` per line | `sys.path.insert(0, ROOT)` at line 19 makes the script runnable directly from `backend/`. Imports MUST follow. Three noqa comments document the shim once each: `# noqa: E402  # imports must follow sys.path.insert (script run-from-backend shim)`. |
+| `backend/app/routers/upload.py` | 18→23 | MOVE `log = logging.getLogger("app.upload")` below imports | Statement was sitting between two import groups; doesn't depend on any of the imports below it. Root-cause fix, no noqa. |
+| `backend/app/services/rating_dispatcher.py` | 23→25 | MOVE `logger = structlog.get_logger(__name__)` below `HomeProductWhatsAppClick` import | Same pattern as upload.py. Root-cause fix, no noqa. |
+| `backend/app/services/producer_import.py` | 29, 31, 32 → above 22 | MOVE 3 imports (`sqlalchemy.orm`, `app.models`, `app.slug_utils`) ABOVE `_MOJIBAKE_RE` constant + `_has_mojibake` helper | `_MOJIBAKE_RE = re.compile(...)` doesn't reference any of the relocated imports; previous order was organizational drift. Root-cause fix, no noqa. |
+
+**Spec deviation surfaced:** MEH-488 calibration listed `upload.py` as 4 E402 errors (lines 21-24). Actual count was 6 (lines 19-24, including the `from app.auth ...` and `from app.config ...` lines). The MOVE fix resolves all 6 with one structural change.
+
+### Phase 3 — C901 inline noqa (1 error → 0)
+
+| File | Line | Decision | Rationale |
+|---|---|---|---|
+| `backend/app/services/producer_listing.py` | 145 | `# noqa: C901` inline on `_apply_scalar_filters` def | Read the full 65-line function in plan phase. Complexity 12 vs threshold 10 comes from: (a) 2 dispatch loops over `_SIMPLE_FILTERS` / `_DIETARY_FILTERS` (already minimized — each new boolean column = +1 row, not +1 branch), (b) 5 structurally-distinct branches: `availability_state` MEH-291 default-hide, `kosher` IS NULL OR empty-string, `category` JOIN ProducerCategory, `delivery_city`/`has_delivery` mutually-exclusive elif, `city` lowercase-compare. Each special-case branch has a different query shape — folding into the dispatch tables would obscure the structural distinctions. Refactor was considered; rejected because extracting `_apply_kosher_filter` / `_apply_category_filter` / etc. produces 7-line helpers reading as boilerplate while the dispatch reads less coherent overall. |
+
+`# noqa` is inline (not in `[tool.ruff.lint.per-file-ignores]`) because the lint-config protection hook (MEH-442/MEH-466) blocks `[tool.ruff*]` edits. Inline placement is the cleaner approach anyway — the rationale lives next to the code.
+
+### Phase 4 — original MEH-448 scope (`producer_me.py`) — NO-OP
+
+The 4 violations listed in the original MEH-448 spec (F401 `HomeProductWhatsAppClick`, F401 `Category`, E712×2 `== False` patterns) are **no longer present** in `producer_me.py`. Live `ruff check` shows zero violations there. Addressed by **MEH-447** (8443ae3 `Reduce backend complexity/args in 5 audit-flagged files`). CHANGELOG entry retained for traceability so future archeology shows MEH-448 was acknowledged as completed-by-side-effect.
+
+### Bug found in MEH-488 workflow — `ruff format --extend-exclude` is unsupported
+
+While running Phase 1b locally, hit `Usage: ruff format [OPTIONS] [FILES]...` because `ruff format` only accepts `--exclude`, not `--extend-exclude` (only `ruff check` supports the `extend-` form). The `lint-backend` job in `.github/workflows/pr-checks.yml` uses `--extend-exclude alembic/versions` for both check AND format steps — the format step is currently CLI-broken (always exits 1 with usage error, masquerading as a format-violation failure under `continue-on-error: true`).
+
+**Not fixed in this PR** (scope-locked to baseline cleanup). Smadar's post-MEH-448 flip-PR should change the format step's flag to `--exclude alembic/versions` while flipping `continue-on-error: true → false`.
+
+### Files modified
+
+- `backend/seed_data.py` (1)
+- `backend/scripts/seed_cities.py` (1)
+- `backend/app/routers/upload.py`, `experiences.py`, `reports.py` (3)
+- `backend/app/services/analytics.py`, `producer_import.py`, `producer_listing.py`, `rating_dispatcher.py` (4)
+- 56 files reformatted across `backend/app/**` + `backend/scripts/**` + alembic env.py
+
+### Smadar action items post-merge
+
+1. Open 1-line follow-up PR on `.github/workflows/pr-checks.yml`:
+   - Flip `lint-backend` job's `continue-on-error: true → false`.
+   - Change `--extend-exclude alembic/versions` to `--exclude alembic/versions` on the **format-check step only** (the check step keeps `--extend-exclude`).
+2. After that PR's CI run completes once on the protected branch: add `Backend lint (ruff)` to required-checks in `Settings → Branches → staging` AND `Settings → Branches → main`.
+
+Closes MEH-448.
+
 ## 2026-05-07 — MEH-489: pytest-cov + 70% coverage gate + Smokeshow badge
 
 `ci(MEH-489)`: backend coverage gating — pytest-cov + 70% threshold + Smokeshow upload + README badge. `test-inventory` job deleted; the gated `pytest` job now owns the full-suite run.

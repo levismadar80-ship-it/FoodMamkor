@@ -21,12 +21,14 @@ Design notes:
     Hebrew "the assistant is offline, please try again later" message
     rather than crashing the widget.
 """
+
 import logging
 
 from fastapi import APIRouter, HTTPException, Request
 
 from app.config import settings
 from app.rate_limit import limiter
+
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 
@@ -130,11 +132,10 @@ def _strip_markdown(text: str) -> str:
     if not text:
         return text
     return (
-        text
-        .replace("**", "")  # bold
+        text.replace("**", "")  # bold
         .replace("__", "")  # alt bold
-        .replace("*", "")   # lone emphasis
-        .replace("_", "")   # alt emphasis (safe: we don't use Hebrew words with _)
+        .replace("*", "")  # lone emphasis
+        .replace("_", "")  # alt emphasis (safe: we don't use Hebrew words with _)
         # Leading "# " heading markers at line starts — rare but defensive.
         .replace("\n# ", "\n")
         .replace("\n## ", "\n")
@@ -183,6 +184,7 @@ def _get_client():
 
 # ---------- endpoint ----------
 
+
 @router.post("", response_model=ChatResponse)
 @limiter.limit("10/minute")  # SECURITY: chat is unauth + costs $$, lock it down
 @limiter.limit("30/hour")
@@ -198,7 +200,7 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     # Trim to the last MAX_HISTORY_TURNS turns. A "turn" here = one
     # message regardless of role (the API just wants alternation, and
     # the UI guarantees it). Cap = 2 * MAX_HISTORY_TURNS messages.
-    history = body.messages[-(MAX_HISTORY_TURNS * 2):]
+    history = body.messages[-(MAX_HISTORY_TURNS * 2) :]
 
     # Convert to the Messages API shape. ChatMessage.role is already
     # restricted to user|assistant by Pydantic.

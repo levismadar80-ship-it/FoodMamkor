@@ -89,7 +89,9 @@ def upload_google_avatar_or_none(picture_url: str | None) -> str | None:
             folder="mehamakor/avatars",
             public_id=uuid.uuid4().hex,
             resource_type="image",
-            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+            transformation=[
+                {"width": 400, "height": 400, "crop": "fill", "gravity": "face"}
+            ],
         )
         return result["secure_url"]
     except Exception:
@@ -110,9 +112,7 @@ def _fetch_apple_jwks_or_fallback(now: float, cached_keys: list | None) -> list 
     import requests
 
     try:
-        keys_response = requests.get(
-            "https://appleid.apple.com/auth/keys", timeout=8
-        )
+        keys_response = requests.get("https://appleid.apple.com/auth/keys", timeout=8)
         keys_response.raise_for_status()
         apple_keys = keys_response.json().get("keys")
         if apple_keys:
@@ -142,9 +142,7 @@ def _refetch_apple_jwks_for_kid_miss() -> list | None:
     try:
         import requests
 
-        keys_response = requests.get(
-            "https://appleid.apple.com/auth/keys", timeout=8
-        )
+        keys_response = requests.get("https://appleid.apple.com/auth/keys", timeout=8)
         keys_response.raise_for_status()
         fresh_keys = keys_response.json().get("keys") or []
         if not fresh_keys:
@@ -174,8 +172,7 @@ def verify_apple_token(id_token: str) -> dict | None:
         cached_keys = _APPLE_JWKS_CACHE["keys"]
         fetched_at = _APPLE_JWKS_CACHE["fetched_at"]
         cache_fresh = (
-            fetched_at is not None
-            and (now - fetched_at) < _APPLE_JWKS_TTL_SECONDS
+            fetched_at is not None and (now - fetched_at) < _APPLE_JWKS_TTL_SECONDS
         )
 
         apple_keys = (

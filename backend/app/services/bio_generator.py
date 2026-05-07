@@ -6,6 +6,7 @@ raw text. Calls Claude Haiku to generate a Hebrew ≤150-char bio.
 
 Fail-open: returns "" if ANTHROPIC_API_KEY is missing or any step fails.
 """
+
 from __future__ import annotations
 
 import logging
@@ -92,7 +93,9 @@ def generate_bio(source: str) -> str:
     """
     client = _get_client()
     if not client:
-        logger.warning("[BIO] Anthropic client unavailable — returning empty (fail-open)")
+        logger.warning(
+            "[BIO] Anthropic client unavailable — returning empty (fail-open)"
+        )
         return ""
 
     text = source.strip()[:500]
@@ -116,13 +119,14 @@ def generate_bio(source: str) -> str:
                     "role": "user",
                     "content": (
                         "כתבי ביו בעברית בגוף נקבה, עד 150 תווים, לעסק מזון ישראלי "
-                        "על בסיס הטקסט הבא. החזירי רק את הביו, ללא הסברים:\n\n"
-                        + text
+                        "על בסיס הטקסט הבא. החזירי רק את הביו, ללא הסברים:\n\n" + text
                     ),
                 }
             ],
         )
-        bio = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "").strip()
+        bio = next(
+            (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
+        ).strip()
         return bio[:150]
     except Exception as e:
         logger.warning("[BIO] Haiku call failed: %s", e)

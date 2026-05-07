@@ -1,7 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-489 pytest-cov + 70% gate + Smokeshow DRAFT PR open; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-448 baseline ruff cleanup DRAFT PR open — unblocks MEH-488 flip; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-448 baseline ruff cleanup (DRAFT PR open)
+
+**Branch:** `feature/meh-448-clean-ruff-baseline` off `origin/staging` (2 commits).
+
+**Risk tier:** MEDIUM-HIGH per spec — multi-file production code, 1 complexity decision (C901), 56 format-only files. Plan-gated.
+
+**What's done:**
+- **Phase 1b** (commit 4c9cd68 `style`) — `ruff format --exclude alembic/versions .` reformatted 56 files (1346+/526−). Pure mechanical. `pytest --collect-only` confirms 489 tests still import cleanly post-format.
+- **Phase 1a** (commit cbba799 `chore`) — `ruff check --fix` removed 4 F401 unused imports. Sibling-grep confirmed each name appears only at its import line. Fixed: `analytics.py:35` (timedelta), `experiences.py:20` (Query), `reports.py:11` (ReportOut), `seed_data.py:3` (uuid).
+- **Phase 2** (same commit) — 4 manual decisions for 10 E402 errors:
+  1. `seed_cities.py:21,23,24` → `# noqa: E402` per line (sys.path.insert shim — legitimate).
+  2. `upload.py` → MOVE `log = logging.getLogger("app.upload")` from line 18 to line 23 (after import block). No noqa.
+  3. `rating_dispatcher.py` → MOVE `logger = structlog.get_logger(__name__)` from line 23 to line 25 (after `HomeProductWhatsAppClick` import). No noqa.
+  4. `producer_import.py` → MOVE 3 imports from lines 29-32 to ABOVE `_MOJIBAKE_RE` constant + `_has_mojibake` helper. No noqa.
+- **Phase 3** (same commit) — `producer_listing.py:145` `_apply_scalar_filters` got `# noqa: C901` inline with rationale (14 boolean filter pairs by design + 5 structurally-distinct branches; refactor would fragment coherent listing logic). Inline-noqa not pyproject because `[tool.ruff*]` edits are blocked by MEH-442/466.
+- **Phase 4** — original MEH-448 spec scope (4 violations in `producer_me.py`) was a NO-OP. All 4 were already cleaned by **MEH-447** (commit 8443ae3). Documented in CHANGELOG for traceability.
+- **CHANGELOG.md** — full per-file decision table + rationale for each noqa + spec-deviation audit (Query and ReportOut F401s missed by MEH-488 calibration; upload.py was 6 E402 not 4).
+- **HANDOFF.md** — this entry.
+
+**Bug found in MEH-488 workflow during execution:** `ruff format` only supports `--exclude`, not `--extend-exclude` — only `ruff check` accepts the `extend-` form. The `lint-backend` job's `ruff format --check . --extend-exclude alembic/versions` step is currently CLI-broken (always exits 1 with usage error, masquerading as a format-violation under `continue-on-error: true`). Not fixed here per scope rule. Smadar's post-MEH-448 flip-PR should swap the format step's flag to `--exclude alembic/versions` while flipping `continue-on-error: true → false` and adding the check to required-checks lists.
+
+**Verification:**
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → **0 errors** (was 18).
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → **0 files would be reformatted** (was 56).
+- `pytest --collect-only` → 489 tests collect cleanly. Full pytest suite verification deferred to CI per MEH-360 sandbox limitation (no Postgres).
+
+**Smadar action items post-merge:**
+1. Open 1-line follow-up PR on `pr-checks.yml`:
+   - Flip `lint-backend` `continue-on-error: true → false`.
+   - Fix the format step's flag: `--extend-exclude → --exclude` (only on the format step; check keeps `--extend-exclude`).
+2. After CI runs once on the protected branch with the renamed/un-calibrated check, add `Backend lint (ruff)` to required-checks in `Settings → Branches → staging` AND `Settings → Branches → main`.
+
+---
 
 ### Session 2026-05-07 — MEH-489 pytest-cov + 70% coverage gate + Smokeshow badge (DRAFT PR open)
 

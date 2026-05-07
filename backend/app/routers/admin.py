@@ -11,7 +11,14 @@ from app.auth import require_admin
 from app.config import settings
 from app.services.email import send_email
 from app.database import get_db
-from app.models import DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
+from app.models import (
+    DeliveryArea,
+    HomeProduct,
+    Producer,
+    ProducerCategory,
+    Recipe,
+    User,
+)
 from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerDetailOut,
@@ -49,7 +56,9 @@ def _yes_no(value) -> bool:
     return s in ("כן", "yes", "y", "true", "1", "v", "✓")
 
 
-def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = None) -> str:
+def _ensure_unique_slug(
+    db: Session, base_slug: str, exclude_id: UUID | None = None
+) -> str:
     """Append -2, -3, ... until slug is unique and not reserved."""
     if not base_slug:
         return base_slug
@@ -67,7 +76,9 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = N
 
 
 def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
-    db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
+    db.query(ProducerCategory).filter(
+        ProducerCategory.producer_id == producer.id
+    ).delete()
     for cid in category_ids:
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
 
@@ -83,7 +94,9 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
 
 @router.get("/producers", response_model=list[ProducerDetailOut])
 def list_producers(
-    status: str | None = Query(None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"),
+    status: str | None = Query(
+        None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"
+    ),
     search: str | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -114,7 +127,9 @@ def admin_create_producer(
     slug = data.slug or _slugify(data.name)
     # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
     if data.slug and _slugify(data.slug) in RESERVED_SLUGS:
-        raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+        raise HTTPException(
+            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
+        )
     slug = _ensure_unique_slug(db, slug)
 
     producer = Producer(
@@ -181,7 +196,9 @@ def admin_update_producer(
     if "slug" in payload and payload["slug"]:
         candidate = _slugify(payload["slug"])
         if candidate in RESERVED_SLUGS:
-            raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+            raise HTTPException(
+                status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
+            )
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
 
     # Mirror price_range → starting_price_label for backward-compat display
@@ -233,7 +250,9 @@ def admin_delete_producer(
 @router.post("/producers/import")
 async def import_producers_excel(
     file: UploadFile = File(...),
-    dry_run: bool = Query(True, description="Preview only — set false to actually save"),
+    dry_run: bool = Query(
+        True, description="Preview only — set false to actually save"
+    ),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -263,7 +282,9 @@ async def import_producers_excel(
 
 
 @router.get("/producers/pending", response_model=list[ProducerDetailOut])
-def pending_producers(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def pending_producers(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     return (
         db.query(Producer)
         .options(
@@ -278,7 +299,11 @@ def pending_producers(user: User = Depends(require_admin), db: Session = Depends
 
 
 @router.post("/producers/{producer_id}/approve")
-def approve_producer(producer_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def approve_producer(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -341,7 +366,9 @@ def reject_producer(
 
 # --- Hidden Home Listings ---
 @router.get("/home-products/hidden")
-def get_hidden_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def get_hidden_listings(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     """Get home products auto-hidden by negative ratings."""
     listings = db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).all()
     return [
@@ -357,7 +384,9 @@ def get_hidden_listings(user: User = Depends(require_admin), db: Session = Depen
 
 
 @router.post("/home-products/{product_id}/restore")
-def restore_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def restore_listing(
+    product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Listing not found")
@@ -367,7 +396,9 @@ def restore_listing(product_id: UUID, user: User = Depends(require_admin), db: S
 
 
 @router.delete("/home-products/{product_id}")
-def delete_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def delete_listing(
+    product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Listing not found")
@@ -378,7 +409,9 @@ def delete_listing(product_id: UUID, user: User = Depends(require_admin), db: Se
 
 # --- Moderation queue (FLAGGED by AI) ---
 @router.get("/home-products/flagged")
-def get_flagged_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def get_flagged_listings(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     """Return home products that AI moderation marked as FLAGGED —
     published but in the admin review queue.
     """
@@ -452,7 +485,9 @@ def pending_recipes(user: User = Depends(require_admin), db: Session = Depends(g
 
 
 @router.post("/recipes/{recipe_id}/approve")
-def approve_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def approve_recipe(
+    recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -462,7 +497,9 @@ def approve_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Ses
 
 
 @router.post("/recipes/{recipe_id}/reject")
-def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def reject_recipe(
+    recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -472,6 +509,7 @@ def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Sess
 
 
 # --- MEH-53: Instagram story card ---
+
 
 @router.post("/producers/{producer_id}/story-card")
 def upload_story_card(
@@ -491,6 +529,7 @@ def upload_story_card(
         data_uri = data_uri.split(",", 1)[1]
 
     import base64
+
     try:
         raw = base64.b64decode(data_uri)
     except Exception:
@@ -530,11 +569,19 @@ def upload_story_card(
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return {
         "total_producers": db.query(Producer).count(),
-        "pending_producers": db.query(Producer).filter(Producer.status.in_(["pending", "pending_whatsapp"])).count(),
-        "approved_producers": db.query(Producer).filter(Producer.status == "approved").count(),
+        "pending_producers": db.query(Producer)
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .count(),
+        "approved_producers": db.query(Producer)
+        .filter(Producer.status == "approved")
+        .count(),
         "total_users": db.query(User).count(),
-        "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),
-        "hidden_home_products": db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).count(),
+        "total_home_products": db.query(HomeProduct)
+        .filter(HomeProduct.is_active.is_(True))
+        .count(),
+        "hidden_home_products": db.query(HomeProduct)
+        .filter(HomeProduct.is_hidden.is_(True))
+        .count(),
     }
 
 

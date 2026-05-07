@@ -1,11 +1,17 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
+
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user, get_current_user_optional, require_admin, require_producer
+from app.auth import (
+    get_current_user,
+    get_current_user_optional,
+    require_admin,
+    require_producer,
+)
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.schemas.schemas import (
@@ -159,14 +165,20 @@ def create_group_buy(
     current_user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
-    producer = db.query(Producer).filter(Producer.id == current_user.producer_id).first()
+    producer = (
+        db.query(Producer).filter(Producer.id == current_user.producer_id).first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail="בעל עסק לא נמצא")
     if producer.status != "approved":
-        raise HTTPException(status_code=403, detail="רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכש")
+        raise HTTPException(
+            status_code=403, detail="רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכש"
+        )
 
     if data.price_per_unit_group >= data.price_per_unit_regular:
-        raise HTTPException(status_code=400, detail="מחיר קבוצתי חייב להיות נמוך מהמחיר הרגיל")
+        raise HTTPException(
+            status_code=400, detail="מחיר קבוצתי חייב להיות נמוך מהמחיר הרגיל"
+        )
     if data.deadline <= datetime.utcnow():
         raise HTTPException(status_code=400, detail="המועד האחרון חייב להיות בעתיד")
 
@@ -212,7 +224,9 @@ def admin_update_status(
 ):
     allowed = {"open", "funded", "cancelled", "fulfilled"}
     if status not in allowed:
-        raise HTTPException(status_code=400, detail=f"סטטוס לא תקין. אפשרויות: {allowed}")
+        raise HTTPException(
+            status_code=400, detail=f"סטטוס לא תקין. אפשרויות: {allowed}"
+        )
     gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")

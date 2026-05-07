@@ -9,23 +9,25 @@ This version:
   3. Uses a UUID for Cloudinary's public_id (not the user-supplied filename)
   4. Tells Cloudinary resource_type="image" which adds a server-side check
 """
+
 import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
-
-log = logging.getLogger("app.upload")
+from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from sqlalchemy.orm import Session
+
+log = logging.getLogger("app.upload")
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB — matches docs/SECURITY.md fix 6
+
 
 # Magic-byte signatures for the image formats we allow. Much cheaper and
 # less dependency-heavy than python-magic (which requires libmagic on the
@@ -79,7 +81,12 @@ async def upload_image(
     # Check freemium limit for producers
     if user.role == "producer" and user.producer_id:
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-        if producer and producer.plan == "free" and producer.images and len(producer.images) >= 3:
+        if (
+            producer
+            and producer.plan == "free"
+            and producer.images
+            and len(producer.images) >= 3
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="חשבון החינם מוגבל ל-3 תמונות. שדרגי לפרמיום להעלאה ללא הגבלה.",
@@ -114,7 +121,9 @@ async def upload_image(
         raise
     except Exception as e:
         log.error("Cloudinary upload failed: %s", e)
-        raise HTTPException(status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע")
+        raise HTTPException(
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+        )
 
 
 @router.post("/avatar")
@@ -167,7 +176,9 @@ async def upload_avatar(
             folder="mehamakor/avatars",
             public_id=uuid.uuid4().hex,
             resource_type="image",
-            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+            transformation=[
+                {"width": 400, "height": 400, "crop": "fill", "gravity": "face"}
+            ],
         )
         url = result["secure_url"]
         user.avatar_url = url
@@ -177,4 +188,6 @@ async def upload_avatar(
         raise
     except Exception as e:
         log.error("Cloudinary upload failed: %s", e)
-        raise HTTPException(status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע")
+        raise HTTPException(
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+        )

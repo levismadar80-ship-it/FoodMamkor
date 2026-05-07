@@ -28,6 +28,7 @@ class City(Base):
     Used to validate delivery_cities on producers — free text is forbidden
     to prevent duplicates and broken search (e.g. ת״א vs תל אביב-יפו).
     """
+
     __tablename__ = "cities"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -59,7 +60,9 @@ class Producer(Base):
     # business email — distinct from the owner user's login email.
     primary_contact_method = Column(String(20), default="whatsapp")
     contact_email = Column(String(200), nullable=True)
-    status = Column(String(20), default="pending")  # pending | approved | rejected | inactive
+    status = Column(
+        String(20), default="pending"
+    )  # pending | approved | rejected | inactive
     images = Column(ARRAY(Text), default=[])
     is_verified = Column(Boolean, default=False)
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
@@ -69,8 +72,12 @@ class Producer(Base):
     story_card_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
-    top_product_name = Column(String(200), nullable=True)  # featured product for cards/map
-    starting_price_label = Column(String(50), nullable=True)  # legacy alias for price_range
+    top_product_name = Column(
+        String(200), nullable=True
+    )  # featured product for cards/map
+    starting_price_label = Column(
+        String(50), nullable=True
+    )  # legacy alias for price_range
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
@@ -124,12 +131,24 @@ class Producer(Base):
     # never added it to the DB, baseline didn't pick it up).
     rejection_reason = Column(Text, nullable=True)
 
-    categories = relationship("Category", secondary="producer_categories", back_populates="producers")
-    products = relationship("Product", back_populates="producer", cascade="all, delete-orphan")
-    delivery_areas = relationship("DeliveryArea", back_populates="producer", cascade="all, delete-orphan")
-    favorited_by = relationship("Favorite", back_populates="producer", cascade="all, delete-orphan")
-    reports = relationship("Report", back_populates="producer", cascade="all, delete-orphan")
-    reviews = relationship("ProducerReview", back_populates="producer", cascade="all, delete-orphan")
+    categories = relationship(
+        "Category", secondary="producer_categories", back_populates="producers"
+    )
+    products = relationship(
+        "Product", back_populates="producer", cascade="all, delete-orphan"
+    )
+    delivery_areas = relationship(
+        "DeliveryArea", back_populates="producer", cascade="all, delete-orphan"
+    )
+    favorited_by = relationship(
+        "Favorite", back_populates="producer", cascade="all, delete-orphan"
+    )
+    reports = relationship(
+        "Report", back_populates="producer", cascade="all, delete-orphan"
+    )
+    reviews = relationship(
+        "ProducerReview", back_populates="producer", cascade="all, delete-orphan"
+    )
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
     __table_args__ = (
@@ -147,7 +166,9 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(200), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
-    password_hash = Column(String(200), nullable=True)  # nullable for Google OAuth users
+    password_hash = Column(
+        String(200), nullable=True
+    )  # nullable for Google OAuth users
     city = Column(String(100))
     phone = Column(String(20))
     role = Column(String(20), default="consumer")  # consumer | producer | admin
@@ -190,7 +211,9 @@ class User(Base):
     email_verify_expires = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
-    favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
+    favorites = relationship(
+        "Favorite", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @property
     def is_oauth(self) -> bool:
@@ -222,6 +245,7 @@ class OutreachLead(Base):
     application layer in the create endpoint, not as a DB UNIQUE
     constraint, so case-and-trim variations are caught the same way.
     """
+
     __tablename__ = "outreach_leads"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -233,7 +257,9 @@ class OutreachLead(Base):
     category = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
     source = Column(String(50), default="manual")  # manual | claude_search (future)
-    status = Column(String(20), default="new")     # new | contacted | replied | registered | declined
+    status = Column(
+        String(20), default="new"
+    )  # new | contacted | replied | registered | declined
     # Prefill token — minted on demand for "הכן פרופיל". Single-use is
     # not enforced; the token expires 30 days after mint and is rotated
     # whenever the admin clicks the button again.
@@ -259,21 +285,33 @@ class Category(Base):
     name = Column(String(100), nullable=False, unique=True)
     emoji = Column(String(10))
 
-    producers = relationship("Producer", secondary="producer_categories", back_populates="categories")
+    producers = relationship(
+        "Producer", secondary="producer_categories", back_populates="categories"
+    )
 
 
 class ProducerCategory(Base):
     __tablename__ = "producer_categories"
 
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), primary_key=True)
-    category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    category_id = Column(
+        Integer, ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True
+    )
 
 
 class Product(Base):
     __tablename__ = "products"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     name = Column(String(200), nullable=False)
     description = Column(Text)
     price_range = Column(String(50))  # legacy: removal tracked in MEH-295 follow-up
@@ -284,9 +322,15 @@ class Product(Base):
     # (producers.gluten_free / vegan / lactose_free) preserved during the
     # 7-day overlap; reads aggregate `any(p.is_X for p in producer.products)`
     # and the public filter switches to an EXISTS subquery on these.
-    is_gluten_free = Column(Boolean, default=False, nullable=False, server_default=text("false"))
-    is_vegan = Column(Boolean, default=False, nullable=False, server_default=text("false"))
-    is_lactose_free = Column(Boolean, default=False, nullable=False, server_default=text("false"))
+    is_gluten_free = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
+    is_vegan = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
+    is_lactose_free = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
 
     producer = relationship("Producer", back_populates="products")
 
@@ -295,7 +339,11 @@ class DeliveryArea(Base):
     __tablename__ = "delivery_areas"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     city = Column(String(100), nullable=False)
     min_order = Column(Integer)
     delivery_day = Column(String(50))
@@ -306,8 +354,14 @@ class DeliveryArea(Base):
 class Favorite(Base):
     __tablename__ = "favorites"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="favorites")
@@ -322,14 +376,23 @@ class FavoriteAlert(Base):
     push_subscription stores the Web Push API subscription JSON
     ({endpoint, keys: {p256dh, auth}}); nullable when push not granted.
     """
+
     __tablename__ = "favorite_alerts"
     __table_args__ = (
-        UniqueConstraint("user_id", "producer_id", name="uq_favorite_alert_per_producer"),
+        UniqueConstraint(
+            "user_id", "producer_id", name="uq_favorite_alert_per_producer"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     notify_new_product = Column(Boolean, default=True)
     notify_new_event = Column(Boolean, default=True)
     notify_delivery_area = Column(Boolean, default=True)
@@ -349,14 +412,23 @@ class ProducerFollower(Base):
     The notification transport itself (Twilio/FCM) is NOT wired up yet —
     this is the data-only foundation.
     """
+
     __tablename__ = "producer_followers"
     __table_args__ = (
-        UniqueConstraint("user_id", "producer_id", name="uq_one_follow_per_user_producer"),
+        UniqueConstraint(
+            "user_id", "producer_id", name="uq_one_follow_per_user_producer"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     notify_new_products = Column(Boolean, default=True)
     notify_back_in_stock = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -373,22 +445,32 @@ class Recipe(Base):
     description = Column(Text)
     steps = Column(JSON)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    submitted_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    submitted_by = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     status = Column(String(20), default="pending")  # pending | approved | rejected
     created_at = Column(DateTime, default=datetime.utcnow)
 
     category = relationship("Category")
     author = relationship("User")
-    ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+    ingredients = relationship(
+        "RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan"
+    )
 
 
 class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredients"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    recipe_id = Column(UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False)
+    recipe_id = Column(
+        UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False
+    )
     ingredient_name = Column(String(200), nullable=False)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="SET NULL"), nullable=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     notes = Column(Text)
 
     recipe = relationship("Recipe", back_populates="ingredients")
@@ -402,7 +484,9 @@ class HomeProduct(Base):
     __tablename__ = "home_products"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     title = Column(String(200), nullable=False)
     description = Column(Text)
     photo = Column(Text)  # Cloudinary URL (primary/cover — first of `images`)
@@ -421,33 +505,47 @@ class HomeProduct(Base):
     is_hidden = Column(Boolean, default=False)  # auto-hidden by 3 negative ratings
     # --- expanded fields (docs/archive/FIXES_V2.md fix 2) ---
     category = Column(String(50), nullable=True)  # בשר ועוף / דגים / ירקות / ...
-    prep_date = Column(Date, nullable=True)       # תאריך הכנה / קטיף
-    expiry_date = Column(Date, nullable=True)     # תאריך תפוגה
+    prep_date = Column(Date, nullable=True)  # תאריך הכנה / קטיף
+    expiry_date = Column(Date, nullable=True)  # תאריך תפוגה
     storage_type = Column(String(30), nullable=True)  # מקרר / מקפיא / טמפרטורת חדר
-    allergens = Column(Text, nullable=True)       # "חיטה, ביצים, חלב..."
-    kosher = Column(String(30), nullable=True)    # כשר / לא כשר / לא ידוע
+    allergens = Column(Text, nullable=True)  # "חיטה, ביצים, חלב..."
+    kosher = Column(String(30), nullable=True)  # כשר / לא כשר / לא ידוע
     is_organic = Column(Boolean, default=False)
-    unit = Column(String(30), nullable=True)      # ק״ג / יח׳ / ליטר / מנות
+    unit = Column(String(30), nullable=True)  # ק״ג / יח׳ / ליטר / מנות
     delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
     location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
-    images = Column(ARRAY(Text), default=[])      # up to 4 photos (Cloudinary URLs)
+    images = Column(ARRAY(Text), default=[])  # up to 4 photos (Cloudinary URLs)
     # AI moderation (see docs/MODERATION.md)
-    moderation_status = Column(String(20), default="APPROVED")  # APPROVED|FLAGGED|REJECTED
+    moderation_status = Column(
+        String(20), default="APPROVED"
+    )  # APPROVED|FLAGGED|REJECTED
     moderation_reason = Column(Text, nullable=True)
     moderation_suggestion = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
-    ratings = relationship("HomeProductRating", back_populates="home_product", cascade="all, delete-orphan")
-    whatsapp_clicks = relationship("HomeProductWhatsAppClick", back_populates="home_product", cascade="all, delete-orphan")
+    ratings = relationship(
+        "HomeProductRating", back_populates="home_product", cascade="all, delete-orphan"
+    )
+    whatsapp_clicks = relationship(
+        "HomeProductWhatsAppClick",
+        back_populates="home_product",
+        cascade="all, delete-orphan",
+    )
 
 
 class Report(Base):
     __tablename__ = "reports"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    reporter_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    reporter_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -459,8 +557,14 @@ class HomeProductWhatsAppClick(Base):
     __tablename__ = "home_product_whatsapp_clicks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    home_product_id = Column(UUID(as_uuid=True), ForeignKey("home_products.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    home_product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("home_products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     clicked_at = Column(DateTime, default=datetime.utcnow)
     rating_sent = Column(Boolean, default=False)
     rated = Column(Boolean, default=False)
@@ -475,7 +579,11 @@ class Event(Base):
     __tablename__ = "events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     title = Column(String(300), nullable=False)
     description = Column(Text)
     event_date = Column(Date, nullable=False)
@@ -520,6 +628,7 @@ class Experience(Base):
     (mirrors home_products.street/zip_code behaviour from FIXES_V2.md #7c).
     Only the owner + admin see the full address in the detail endpoint.
     """
+
     __tablename__ = "experiences"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -560,8 +669,12 @@ class Experience(Base):
     requirements = Column(Text, nullable=True)
 
     # Moderation
-    status = Column(String(30), default="pending")  # pending | approved | rejected | changes_requested
-    moderation_status = Column(String(20), nullable=True)  # APPROVED | FLAGGED | REJECTED
+    status = Column(
+        String(30), default="pending"
+    )  # pending | approved | rejected | changes_requested
+    moderation_status = Column(
+        String(20), nullable=True
+    )  # APPROVED | FLAGGED | REJECTED
     moderation_reason = Column(Text, nullable=True)
     moderation_suggestion = Column(Text, nullable=True)
     admin_feedback = Column(Text, nullable=True)  # populated on "request changes"
@@ -596,14 +709,23 @@ class ProducerReview(Base):
     HomeProductRating). One review per user per producer (unique constraint).
     Aggregates maintained on producers.avg_rating + reviews_count.
     """
+
     __tablename__ = "producer_reviews"
     __table_args__ = (
-        UniqueConstraint("producer_id", "user_id", name="uq_one_review_per_producer_per_user"),
+        UniqueConstraint(
+            "producer_id", "user_id", name="uq_one_review_per_producer_per_user"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     stars = Column(Integer, nullable=False)  # 1-5
     body = Column(Text, nullable=True)
     is_hidden = Column(Boolean, default=False)
@@ -615,14 +737,22 @@ class ProducerReview(Base):
 
 class HomeProductRating(Base):
     __tablename__ = "home_product_ratings"
-    __table_args__ = (
-        UniqueConstraint("click_id", name="uq_one_rating_per_click"),
-    )
+    __table_args__ = (UniqueConstraint("click_id", name="uq_one_rating_per_click"),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    click_id = Column(UUID(as_uuid=True), ForeignKey("home_product_whatsapp_clicks.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    home_product_id = Column(UUID(as_uuid=True), ForeignKey("home_products.id", ondelete="CASCADE"), nullable=False)
+    click_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("home_product_whatsapp_clicks.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    home_product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("home_products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     stars = Column(Integer, nullable=False)  # 1-5
     comment = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -672,7 +802,9 @@ class ProducerPageView(Base):
     # Where the view came from — lets the producer dashboard answer
     # "how often did people find me via search" without a separate impression
     # table. NULL = direct/unknown.
-    referrer = Column(String(30), nullable=True)  # search | map | category | home | None
+    referrer = Column(
+        String(30), nullable=True
+    )  # search | map | category | home | None
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
@@ -789,7 +921,9 @@ class GroupBuy(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     producer = relationship("Producer", backref="group_buys")
-    commits = relationship("GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan")
+    commits = relationship(
+        "GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan"
+    )
 
 
 class GroupBuyCommit(Base):
@@ -814,7 +948,9 @@ class GroupBuyCommit(Base):
     phone = Column(String(30), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),)
+    __table_args__ = (
+        UniqueConstraint("group_buy_id", "user_id", name="uq_group_buy_user"),
+    )
 
     group_buy = relationship("GroupBuy", back_populates="commits")
     user = relationship("User", backref="group_buy_commits")
@@ -855,7 +991,9 @@ class KashrutBadgeRequest(Base):
     )
     badge_code = Column(String(50), nullable=False)
     cert_url = Column(Text, nullable=True)
-    status = Column(String(20), default="pending", nullable=False)  # pending|approved|rejected
+    status = Column(
+        String(20), default="pending", nullable=False
+    )  # pending|approved|rejected
     reviewed_by = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -896,6 +1034,7 @@ class SearchQuery(Base):
     Written from producers.py:310 (after search).  Read from search.py:218 to
     compute /search/trending.
     """
+
     __tablename__ = "search_queries"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
