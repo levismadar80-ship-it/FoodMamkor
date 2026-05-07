@@ -1,7 +1,24 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-335 fingerprint hardening — PR open; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### MEH-335 — Fingerprint-mismatch security log + test coverage (PR open)
+
+**Branch:** `feature/meh-335-fingerprint-hardening` off staging.
+**Status:** PR open, awaiting CI green + Smadar review.
+
+**What shipped (backend logging + test — zero auth logic change):**
+- `backend/app/auth.py:184` — `logger.warning("[auth] fingerprint mismatch — possible token sidejacking", extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None})` inserted before the 401 raise. Gives audit trail for sidejacking attempts (MEH-325 pattern: logs on real event, not just on error path).
+- `backend/app/auth.py:181` — `logger.info` → `logger.debug` on the fail-open path. Message unchanged; was flooding logs on every pre-MEH-327 legacy token.
+- `tests/test_api.py::TestFingerprintCookie::test_get_current_user_optional_with_invalid_fingerprint_returns_none` — new test at line 2186. Documents that `get_current_user_optional` (auth.py:221-234) swallows fingerprint-mismatch 401s and returns None. Target endpoint: `GET /producers` (optional-auth).
+- `CLAUDE.md` line 57 — extended with MCP-tools standalone-CC note. Still 80 lines.
+
+**No Alembic migration** — logging-only, no schema change. **No diagrams update** — no behavior change.
+
+**Next session first step:** check CI on the PR; merge if green.
+
+---
 
 ### MEH-294 — Hebrew labels for producer status codes (PR #515)
 

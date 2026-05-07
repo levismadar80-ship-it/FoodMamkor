@@ -728,7 +728,7 @@ requires-dist = [
     { name = "slowapi", specifier = "==0.1.9" },
     { name = "sqlalchemy", specifier = "==2.0.35" },
     { name = "structlog", specifier = "==24.4.0" },
-    { name = "twilio", specifier = "==9.3.0" },
+    { name = "twilio", specifier = "==9.10.5" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.30.6" },
 ]
 
@@ -736,7 +736,7 @@ requires-dist = [
 dev = [
     { name = "pip-audit", specifier = ">=2.10.0" },
     { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-timeout", specifier = ">=2.0" },
+    { name = "pytest-timeout", specifier = ">=2.4.0" },
 ]
 
 [[package]]
@@ -2157,7 +2157,7 @@ wheels = [
 
 [[package]]
 name = "twilio"
-version = "9.3.0"
+version = "9.10.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -2165,9 +2165,9 @@ dependencies = [
     { name = "pyjwt" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/73/8f/498a4727a1126973bd6ad301576938f5ab5d388ca456c4d2de09da13ebba/twilio-9.3.0.tar.gz", hash = "sha256:538b260ab464cdfd8e7dc890337ef581fd59ceac92de9f58a678db93474323f4", size = 934708, upload-time = "2024-09-05T13:08:27.82Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/97/c439bc2c058f8a24edd732f5cc82adedd8794bcc2da0836c2eff1e2dbe91/twilio-9.10.5.tar.gz", hash = "sha256:d9f93b9280349ee7b52e7f17a0600fd7bfd0f7ff88eb00c40270164bc058743f", size = 1641690, upload-time = "2026-04-14T09:52:09.392Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/80/7bc7a33cb0f87a9672a6546e1e7730c8798506a2e6cbc5eab7a4b93ea855/twilio-9.3.0-py2.py3-none-any.whl", hash = "sha256:01e6cbc6d7eaf02918250918140cc764866d62b048a5732c097b12ab5ed4560e", size = 1783249, upload-time = "2024-09-05T13:08:25.8Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/97/4fdde5e54fcbb789aa1a70c371f2f33d7eb1e58e8a6131fdbd8a98490976/twilio-9.10.5-py2.py3-none-any.whl", hash = "sha256:7972db54496fbf501b238f34d1f717f80ff22720313dc706632787aad5934997", size = 2284944, upload-time = "2026-04-14T09:52:07.333Z" },
 ]
 
 [[package]]
