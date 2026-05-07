@@ -439,8 +439,24 @@ def delete_listing(
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Listing not found")
+
+    # MEH-375: capture HomeProduct's two image surfaces (cover photo +
+    # images list) BEFORE db.delete; destroy AFTER commit per the
+    # external-cleanup rule (DB and Cloudinary must agree on rollback).
+    # Distinct from the soft-delete at /home-products/{id} (sets
+    # is_active=False), which preserves assets for reactivation.
+    old_photo = hp.photo
+    old_images = list(hp.images or [])
+
     db.delete(hp)
     db.commit()
+
+    from app.cloudinary_utils import destroy_image
+    if old_photo:
+        destroy_image(old_photo)
+    for url in old_images:
+        destroy_image(url)
+
     return {"detail": "Listing deleted"}
 
 
