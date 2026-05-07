@@ -1,5 +1,7 @@
 # מהמקור (Mehamakor)
 
+[![Coverage](https://coverage-badge.samuelcolvin.workers.dev/show/levismadar80-ship-it/FoodMamkor.svg)](https://github.com/levismadar80-ship-it/FoodMamkor/actions/workflows/pr-checks.yml)
+
 > Israeli directory of local food producers and home cooks.
 > Live: **[mehamakor.online](https://mehamakor.online)** · Instagram: [@meha_makor](https://www.instagram.com/meha_makor)
 

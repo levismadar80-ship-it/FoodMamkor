@@ -2,6 +2,22 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-489: pytest-cov + 70% coverage gate + Smokeshow badge
+
+`ci(MEH-489)`: backend coverage gating — pytest-cov + 70% threshold + Smokeshow upload + README badge. `test-inventory` job deleted; the gated `pytest` job now owns the full-suite run.
+
+- **Baseline coverage measured locally before threshold set:** 77% (5,529 statements, 1,281 missed) across `backend/app/**`, 487 passed / 2 skipped / 0 failed. Run against a fresh Postgres + `alembic upgrade head` (CI's exact setup). Threshold chosen per spec rule `min(70, baseline − 2) = 70%` — leaves a 7-point buffer so a routine PR doesn't trip the gate, anything below 70% does.
+- **`backend/pyproject.toml:33-39`** — `pytest-cov>=7.0` added to `[dependency-groups].dev` (alongside `pytest`, `pytest-timeout`, `pip-audit`). `uv lock` regenerated; lock diff resolves +2 packages: `coverage==7.13.5` + `pytest-cov==7.1.0`.
+- **`.github/workflows/pr-checks.yml` "Run tests" step rewritten** — invocation now: `pytest tests/ --cov=backend/app --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=70 --tb=long --timeout=60`. Dropped `-x` (full suite must run for coverage to be accurate) and `-v` (coverage summary is now the load-bearing log signal). Failure tracebacks remain `--tb=long` for debugging quality.
+- **`.github/workflows/pr-checks.yml` NEW Smokeshow upload step** (Tiangolo pattern) — `uvx`-equivalent install + `smokeshow upload htmlcov` after pytest succeeds. Sets GitHub commit-status with `coverage` context + `"Coverage {coverage-percentage}"` description that the badge worker reads. `continue-on-error: true` covers the calibration window before `SMOKESHOW_AUTH_KEY` is configured. `if: success() && head.repo.full_name == github.repository` skips upload on fork PRs (no secret access there).
+- **`.github/workflows/pr-checks.yml:179-248` DELETED** — entire `test-inventory` job + leading comment block. The gated `pytest` job now runs the full suite; `continue-on-error: true` was always a band-aid (workflow.md "two parallel mechanisms" smell — same `tests/` source, two CI consumers). Header comment updated: "Two jobs: build, pytest (with coverage gate at 70%, MEH-489)."
+- **`README.md:3`** — badge inserted near top: `[![Coverage](https://coverage-badge.samuelcolvin.workers.dev/show/levismadar80-ship-it/FoodMamkor.svg)](pr-checks workflow URL)`. Badge endpoint reads the GH commit-status `coverage` context that smokeshow sets — same stable pattern Tiangolo uses publicly. Click-through links to the workflow run.
+- **`.gitignore`** — added `.coverage`, `coverage.xml`, `htmlcov/` (pytest-cov local artifacts; produced on every dev run now).
+- **Smadar action item post-merge** — add `SMOKESHOW_AUTH_KEY` repo secret. Generate via `pip install smokeshow && smokeshow generate-key` → output → repo Settings → Secrets and variables → Actions. Until the secret lands, the Smokeshow upload step exits non-zero but `continue-on-error: true` prevents merge breakage.
+- **Verification deferred to user (CC sandbox MEH-360):** Smokeshow upload itself cannot be verified from CC (no `SMOKESHOW_AUTH_KEY`, host outside WebFetch allowlist). Coverage measurement was verified locally by bootstrapping a Postgres cluster in the sandbox.
+
+Closes MEH-489.
+
 ## 2026-05-07 — MEH-487: wire `anthropics/claude-code-action@v1` for adversarial PR review
 
 `ci(MEH-487)`: wires the official Anthropic GitHub Action for fresh-eyes PR review; deletes the dead JOB 4 skeleton from `pr-checks.yml`.
