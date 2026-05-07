@@ -1,7 +1,38 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-485 CI concurrency-key fix + paths-filter (DRAFT PR open)
+
+**Branch:** `feature/meh-485-ci-concurrency-paths-filter` off `origin/staging`. Switched FROM harness-mandated `claude/review-docs-workflows-g6ThI` per CLAUDE.md workflow rule 3 (Smadar gave explicit permission in turn 2 of the session).
+
+**Risk tier:** HIGH (CI infrastructure that affects every PR + branch-protection required checks). Per MEH-450 chunk-by-chunk review: A → B → C with explicit `go` between each.
+
+**What's done:**
+- **Chunk A (`cbeb2bd`)** — canonical concurrency key `${{ github.workflow }}-${{ github.head_ref || github.ref }}` applied to `pr-checks.yml`, `dependency-audit.yml`, `skills-audit.yml`. `deploy.yml` workflow-level concurrency removed; per-job split: `lint`/`api-contract-static`/`api-contract-probe-staging` get canonical key + `cancel-in-progress: true`; `production`/`staging` deploys get `cancel-in-progress: false` (Railway data integrity). `e2e.yml` intentionally untouched (deployment_status events have no head_ref).
+- **Chunk B (`068682b`)** — `dorny/paths-filter@v3` `changes` job added to `pr-checks.yml` with frontend/backend/workflows filters. 4 downstream jobs gated via `needs: changes` + job-level `if:`. Adversarial-review step-level file-existence skip preserved verbatim. Job `name:` fields byte-identical (branch-protection identifiers preserved).
+- **Chunk C** — CHANGELOG + HANDOFF + DEPLOYMENT.md updated, branch pushed, DRAFT PR opened.
+- **Chunk D (`5b80bdb`)** — `permissions: contents:read, pull-requests:read` added to `pr-checks.yml` after the new Paths filter job exited at 6s on first PR run; `dorny/paths-filter@v3` needs `pull-requests: read` on `pull_request` triggers (parity with e2e.yml).
+
+**Skeptic-Mode finding flagged in plan, surfaced in PR body:** the Linear ticket framed Bug 1 as "two PRs targeting `staging` cancel each other" — actual `github.ref` on PR events is `refs/pull/<n>/merge` (per-PR), so cross-PR cancellation does not match the literal symptom. The canonical pattern is still strictly better (stable force-push dedupe within a single PR; survives non-PR triggers); the spec fix is correct, framing was loose. Linear ticket left intact.
+
+**Skip-as-success caveat — PR review checklist:** GitHub reports skipped-via-job-`if:` jobs with `conclusion=success`; required checks (`build`, `pytest`) remain satisfied on docs-only PRs. **First verification PR after merge** must be a docs-only touch (e.g. HANDOFF-only) — if branch protection blocks it, fix is the GitHub "Required workflows" feature, not removing the gating.
+
+**Next Smadar steps:**
+1. Review the DRAFT PR bundle (CHANGELOG, HANDOFF, DEPLOYMENT.md diffs + workflow diffs).
+2. Wait for CI to land on the PR itself — confirm `changes` job runs, `build`+`pytest` skip on this docs+CI-only PR (workflows touched → `workflows: true` → both run; backend/frontend untouched but the workflows path triggers them anyway, so this PR will exercise the full matrix).
+3. Open a follow-up docs-only test PR (touch HANDOFF.md only) AFTER merge — confirms skip-as-success contract.
+4. If skip-as-success holds → flip ready, squash-merge to staging.
+
+**Out of scope (filed elsewhere or deferred):**
+- Playwright sharding — separate ticket, not started.
+- Self-hosted runners — MEH-270 explicitly out.
+- Branch-protection UI changes — Smadar handles in GitHub settings if needed.
+
+**Branch-switch note for HANDOFF:** the harness session opened on `claude/review-docs-workflows-g6ThI`. Smadar approved switching to `feature/meh-485-ci-concurrency-paths-filter` per CLAUDE.md workflow rule 3 (no `claude/*` branches). Old branch unmodified — no commits land there.
+
+---
 
 ### Session 2026-05-07 — MEH-472 PR-A: i18n Wave 2 translation sweep
 

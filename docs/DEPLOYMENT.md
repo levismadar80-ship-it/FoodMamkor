@@ -652,13 +652,23 @@ on each job.
   `staging` runs only the staging job. The other job is skipped — no
   wasted runner minutes, and the Actions log shows exactly which
   environment ran.
-- **Per-environment concurrency.** The concurrency group is
-  `deploy-${{ github.ref_name }}` with `cancel-in-progress: true`. If two
-  pushes land on the same branch within seconds, only the latest one
-  fires the CLI. Crucially, a push to `main` and a push to `staging` do
-  **not** cancel each other — they're in different concurrency groups —
-  so promoting `staging → main` doesn't lose the staging deploy that
-  triggered moments earlier.
+- **Per-job concurrency (MEH-485).** `deploy.yml` no longer has a
+  workflow-level `concurrency:` block. Each of the 5 jobs declares
+  its own concurrency group:
+  - `production` → `${{ github.workflow }}-production-${{ github.ref }}`,
+    `cancel-in-progress: false` — back-to-back `main` pushes serialize,
+    they do **not** abort an in-flight Railway deploy (data integrity).
+  - `staging` → same shape, scoped to `staging` ref, also
+    `cancel-in-progress: false`.
+  - `lint`, `api-contract-static`, `api-contract-probe-staging` →
+    `${{ github.workflow }}-<job>-${{ github.head_ref || github.ref }}`
+    with `cancel-in-progress: true` (CI checks; fresh run wins on
+    force-push or back-to-back pushes).
+  Production and staging are still in different groups, so promoting
+  `staging → main` doesn't lose the in-flight staging deploy. The
+  practical change vs. the pre-MEH-485 single workflow-level block:
+  back-to-back same-branch deploys now queue serially instead of
+  cancelling the in-flight one.
 - **Manual trigger.** The `workflow_dispatch` trigger means you can also
   fire either redeploy from the Actions tab without pushing a commit —
   useful if Railway crashed and you need to nudge it without writing
