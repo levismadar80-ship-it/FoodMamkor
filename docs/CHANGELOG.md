@@ -2,6 +2,10 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-335: fingerprint-mismatch security log + test coverage
+
+`feat(auth)`: added `logger.warning("[auth] fingerprint mismatch — possible token sidejacking", extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None})` before the 401 raise at `backend/app/auth.py:184` (`_check_fingerprint`) — gives an audit trail for token sidejacking attempts (MEH-325 pattern). Downgraded fail-open log at `backend/app/auth.py:181` from `logger.info` → `logger.debug` (message unchanged) — was noisy on every pre-MEH-327 legacy token. New test `tests/test_api.py::TestFingerprintCookie::test_get_current_user_optional_with_invalid_fingerprint_returns_none` documents the swallow-to-None behaviour of `get_current_user_optional` (`auth.py:221-234`) on fingerprint 401s. No auth logic changes. CLAUDE.md line 57 extended with MCP-tools standalone-CC note (80-line cap preserved). Closes MEH-335.
+
 ## 2026-05-07 — MEH-383: codify observability dashboard-receipt protocol
 
 `docs(rules)`: new `.claude/rules/observability.md` codifying dashboard-receipt protocol — observability tickets (Sentry, logging, monitoring, alerting) require real-event verification at the destination dashboard before "Done". CLAUDE.md line 57 extended with one-line pointer (still 80-line cap).

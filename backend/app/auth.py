@@ -178,10 +178,14 @@ def _check_fingerprint(request: Request, claims: dict) -> None:
     # never write to the DB.
     fp_claim = claims.get("userFingerprint")
     if fp_claim is None:
-        logger.info("[auth] fingerprint absent — fail-open (pre-MEH-327 token)")
+        logger.debug("[auth] fingerprint absent — fail-open (pre-MEH-327 token)")
         return
     cookie_fp = request.cookies.get("__Secure-Fgp")
     if cookie_fp is None or hash_fingerprint(cookie_fp) != fp_claim:
+        logger.warning(
+            "[auth] fingerprint mismatch — possible token sidejacking",
+            extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None},
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
 
 

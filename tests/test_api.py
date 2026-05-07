@@ -2184,6 +2184,31 @@ class TestFingerprintCookie:
         low = fp_hdr.lower()
         assert "max-age=0" in low or "expires=" in low
 
+    def test_get_current_user_optional_with_invalid_fingerprint_returns_none(
+        self, client, db
+    ):
+        """Token has userFingerprint claim but cookie is wrong →
+        get_current_user_optional must return None (not 401).
+
+        Documents the swallow-to-None behaviour of get_current_user_optional
+        (auth.py:228-234): all non-403 HTTPExceptions are caught and
+        return None, so a fingerprint-mismatch 401 never bubbles to the caller.
+        """
+        make_user(db, email="fp7@test.com", password="Zx7Yp9Mq2Lr4")
+        login_res = self._login(client, "fp7@test.com")
+        access_token = login_res.json()["access_token"]
+
+        from fastapi.testclient import TestClient
+        from app.main import app as _app
+
+        attack_client = TestClient(_app)
+        res = attack_client.get(
+            "/producers",
+            headers={"Authorization": f"Bearer {access_token}"},
+            cookies={"__Secure-Fgp": "a" * 100},
+        )
+        assert res.status_code == 200  # viewer=None, request proceeds anonymously
+
 
 # ============================================================
 # MEH-329 — XSS sanitization sweep (integration tests)
