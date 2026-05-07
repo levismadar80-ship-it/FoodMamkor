@@ -67,8 +67,11 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
         </motion.p>
 
         {/* Pill search */}
+        {/* MEH-470: opacity removed from initial — SSR `style="opacity: 0"`
+            made [data-testid="hero-search"] fail Playwright toBeVisible()
+            on cold preview before hydration. Slide (y:30→0) preserved. */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
           role="search"

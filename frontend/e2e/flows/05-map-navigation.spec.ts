@@ -16,11 +16,17 @@ test.describe("Map", () => {
     await page.waitForLoadState("domcontentloaded");
     // MapComponent is ssr:false — dynamic import must complete before Leaflet
     // initialises and adds .leaflet-container. In CI (cold Vercel preview)
-    // the chunk fetch can take up to ~35s; 45s gives comfortable headroom.
-    // :visible scopes to the active viewport container — MapClient renders
-    // mapPane twice (desktop hidden lg:grid + mobile lg:hidden); both Leaflet
-    // instances mount, producing two .leaflet-container elements in the DOM.
-    await page.waitForSelector(".leaflet-container:visible", { timeout: 45_000 });
+    // the chunk fetch can take up to ~35s.
+    // MEH-470: `:visible` includes opacity check; Leaflet's CSS during init
+    // can leave opacity:0 mid-mount, causing flake. Wait for non-zero height
+    // instead — proves both DOM presence and layout readiness.
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector(".leaflet-container");
+        return el !== null && el.getBoundingClientRect().height > 0;
+      },
+      { timeout: 60_000 }
+    );
     // Allow tile + marker loading
     await page.waitForTimeout(2000);
 

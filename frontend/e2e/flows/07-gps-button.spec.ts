@@ -18,7 +18,15 @@ test.describe("GPS button on /map", () => {
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
     // Wait for Leaflet to mount from the dynamic import before checking GPS button.
-    await page.waitForSelector(".leaflet-container:visible", { timeout: 45_000 });
+    // MEH-470: `:visible` includes opacity check; Leaflet's CSS during init
+    // can leave opacity:0 mid-mount. Wait for non-zero height instead.
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector(".leaflet-container");
+        return el !== null && el.getBoundingClientRect().height > 0;
+      },
+      { timeout: 60_000 }
+    );
 
     // LocationModal (z-[9000]) opens 800ms after mount when no userCity is saved and
     // visually masks the GPS button (z-[1000]). Dismiss it via "דלגי לעכשיו" if present.

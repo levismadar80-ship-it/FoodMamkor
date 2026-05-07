@@ -32,7 +32,9 @@ test.describe("Calendar view on /events", () => {
   });
 
   test("toggle swaps to calendar mode and renders the grid", async ({ page }) => {
-    await page.goto("/events");
+    // MEH-470: networkidle waits for the mocked /api/events fetch to settle so
+    // EventsClient (Suspense child with useSearchParams) is in DOM, not just fallback.
+    await page.goto("/events", { waitUntil: "networkidle" });
     await page.waitForLoadState("domcontentloaded");
     // View-mode tablist is always rendered (not data-dependent) — explicit wait
     // avoids flaky getByRole assertions if React hydration is still settling.
@@ -56,7 +58,9 @@ test.describe("Calendar view on /events", () => {
   });
 
   test("day cells meet the 44px touch target", async ({ page }) => {
-    await page.goto("/events");
+    // MEH-470: networkidle waits for the mocked /api/events fetch to settle so
+    // EventsClient (Suspense child with useSearchParams) is in DOM, not just fallback.
+    await page.goto("/events", { waitUntil: "networkidle" });
     await page.waitForLoadState("domcontentloaded");
     await page.waitForSelector('[role="tablist"][aria-label="מצב תצוגה"]', { timeout: 10_000 });
     await page.getByRole("tab", { name: "לוח שנה", exact: true }).click();
