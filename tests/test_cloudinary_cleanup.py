@@ -84,6 +84,23 @@ class TestExtractPublicId:
         url = "https://res.cloudinary.com/mehamakor/image/upload/v1/mehamakor/abc.jpg?_a=ATAB"
         assert extract_public_id(url) == "mehamakor/abc"
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            "Signed Cloudinary URLs (s--<hash>--/...) are not currently "
+            "parsed by extract_public_id. We don't emit signed URLs today, "
+            "but if Cloudinary signing is ever enabled, the cleanup script "
+            "will silently miss orphans. Remove this xfail when signed-URL "
+            "parsing is implemented."
+        ),
+    )
+    def test_signed_url_parsing(self):
+        url = (
+            "https://res.cloudinary.com/mehamakor/image/upload/"
+            "s--abc123def--/v1/mehamakor/avatars/user_abc.jpg"
+        )
+        assert extract_public_id(url) == "mehamakor/avatars/user_abc"
+
 
 # ---------- destroy_image ----------
 
