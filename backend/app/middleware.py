@@ -26,6 +26,21 @@ except ImportError:  # pragma: no cover
 log = structlog.get_logger("mehamakor.middleware")
 
 
+def _redact_email(addr: str | None) -> str:
+    """MEH-493: PII-safe email redaction for Sentry user context.
+
+    `'alice@gmail.com'` → `'a***@gmail.com'`. Empty / None / no-`@`
+    inputs return `'<no-email>'` so Sentry never sees a half-redacted
+    address.
+    """
+    if not addr or "@" not in addr:
+        return "<no-email>"
+    local, _, domain = addr.partition("@")
+    if not local:
+        return "<no-email>"
+    return f"{local[0]}***@{domain}"
+
+
 async def add_security_headers(request: Request, call_next) -> Response:
     response: Response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -51,7 +66,9 @@ async def record_request_metrics(request: Request, call_next) -> Response:
 
 
 class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
-    """MEH-483: bind request_id + route + method to the current Sentry scope.
+    """MEH-483 + MEH-493: bind request_id + route + method tags, plus
+    request_info structured context, plus best-effort user.id, to the
+    current Sentry scope on every request.
 
     Plan B middleware ordering (locked): registered AFTER
     ``CorrelationIdMiddleware`` in ``add_middleware`` order. Starlette
@@ -63,9 +80,23 @@ class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
               →  SlowAPI  →  handler
 
     By tagging on request-in (before ``call_next``), any handler
-    exception that bubbles into Sentry already carries ``request_id``.
+    exception that bubbles into Sentry already carries the bindings.
     No-ops cleanly when ``sentry_sdk`` isn't installed (current state —
-    SDK init tracked in a MEH-483 follow-up).
+    SDK init tracked in MEH-500). The MEH-493 additions
+    (``set_context("request_info", ...)`` + ``set_user({"id": sub})``)
+    follow the same fail-open posture: any extraction failure is
+    swallowed, the request continues unaffected.
+
+    PII guard (MEH-493):
+      - NEVER attached: passwords, JWT tokens, OAuth secrets, request
+        body, session keys, full email.
+      - Allowed: route, method, full URL, client IP, request_id,
+        user.id (opaque UUID from JWT ``sub`` claim).
+      - Email: redacted via ``_redact_email`` before attach. Currently
+        unused because the access-token claims set
+        (``backend/app/auth.py:38-57``) does not include email — the
+        helper ships ready for MEH-500's ``before_send`` hook to
+        enrich from the User row if desired.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -80,9 +111,55 @@ class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
                         scope.set_tag("request_id", rid)
                     scope.set_tag("route", request.url.path)
                     scope.set_tag("method", request.method)
+                    # MEH-493 — request_info structured context.
+                    scope.set_context(
+                        "request_info",
+                        {
+                            "url": str(request.url),
+                            "method": request.method,
+                            "client": request.client.host
+                            if request.client is not None
+                            else "unknown",
+                        },
+                    )
+                    # MEH-493 — best-effort user.id from JWT sub claim.
+                    # No DB lookup (perf + middleware-decoupling).
+                    # Lazy import keeps the auth module out of the
+                    # cold-import path for unauthenticated routes.
+                    user_id = _try_extract_user_id(request)
+                    if user_id is not None:
+                        scope.set_user({"id": user_id})
             except Exception:  # pragma: no cover — defensive only
                 log.debug("[sentry] scope tag bind failed", exc_info=True)
         return await call_next(request)
+
+
+def _try_extract_user_id(request: Request) -> str | None:
+    """MEH-493: best-effort JWT ``sub`` extraction for Sentry user context.
+
+    Returns the ``sub`` claim (user UUID as string) or ``None`` on any
+    failure — missing header, malformed token, expired, wrong scope,
+    decode error. Never raises. No DB lookup by design.
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        return None
+    token = auth_header[7:].strip()
+    if not token:
+        return None
+    try:
+        from joserfc import jwt as _jose_jwt  # lazy import
+
+        from app.auth import _jwt_key
+        from app.config import settings as _settings
+
+        token_obj = _jose_jwt.decode(
+            token, _jwt_key(), algorithms=[_settings.algorithm]
+        )
+        sub = token_obj.claims.get("sub")
+        return str(sub) if sub else None
+    except Exception:  # JoseError, ImportError, anything — fail-open
+        return None
 
 
 def install_middlewares(app: FastAPI) -> None:

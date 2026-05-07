@@ -1,7 +1,34 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-448 baseline ruff cleanup DRAFT PR open — unblocks MEH-488 flip; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-493 Sentry context middleware DRAFT PR open — extends existing MEH-483 class, no-op until MEH-500 lands; MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-493 Sentry context middleware (DRAFT PR open)
+
+**Branch:** `feature/meh-493-sentry-context-middleware` off `origin/staging` (1 commit).
+
+**Risk tier:** MEDIUM (middleware ordering + JWT extraction surface). Plan-gated. Spec asked for a NEW class; plan caught the MEH-483 overlap and proposed extending the existing class (Path A). Approved with explicit deviation note + verify-on-SDK-land contract.
+
+**What's done:**
+- **`backend/app/middleware.py`** — extended `SentryRequestScopeMiddleware.dispatch` (the MEH-483 class) with `scope.set_context("request_info", {url, method, client})` + best-effort `scope.set_user({"id": <jwt-sub>})`. NEW module-level helpers: `_redact_email` (PII-safe email mask) + `_try_extract_user_id` (JWT `sub` claim extraction with full fail-open). Locked Plan B `add_middleware` order from MEH-483 preserved by construction — no ordering changes.
+- **`tests/test_sentry_context.py`** (NEW, 14 tests) — 7 `_redact_email` parametrized cases (valid emails + defensive shapes) · 3 dispatch cases (no-op when SDK absent · `set_context` correct shape with mocked SDK · malformed Bearer doesn't 500) · 4 `_try_extract_user_id` direct cases.
+- **CHANGELOG.md** — full change list + both spec deviations (Path A vs new class · email-not-in-JWT-claims) + verify-on-SDK-land contract.
+
+**Spec deviations (both surfaced + approved up front):**
+1. NOT a new class — extended existing `SentryRequestScopeMiddleware`. Avoids MEH-271 anti-pattern #1.
+2. Email NOT attached to `set_user` — JWT claims set is intentionally minimal (no email). `_redact_email` ships ready for MEH-500's `before_send` hook to enrich from the User row.
+
+**Verify-on-SDK-land contract:** middleware is a no-op until MEH-500 wires `sentry_sdk.init`. PII helper is dashboard-independent; unit-testable now. Dashboard receipt deferred to MEH-500 DoD per `.claude/rules/observability.md`. MEH-500's description amended (post-PR-open) with a single dashboard-verify checkbox covering both MEH-483 + MEH-493 surfaces.
+
+**Verification:**
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → 0 errors
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files
+- `pytest --collect-only` → 503 tests (+14 new, no parse regressions on the existing 489)
+- Full pytest deferred to CI (MEH-360 sandbox: conftest auto-loads DB fixtures)
+
+**Smadar action items post-merge:** none for MEH-493 itself. Blocking surface remains MEH-500 (Sentry SDK init); MEH-505 still gated on MEH-488 flip.
+
+---
 
 ### Session 2026-05-07 — MEH-448 baseline ruff cleanup (DRAFT PR open)
 

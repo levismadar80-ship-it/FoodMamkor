@@ -2,6 +2,41 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-493: extend SentryRequestScopeMiddleware with set_context + set_user (no-op until SDK lands)
+
+`feat(MEH-493)`: backend Sentry context middleware — `set_context("request_info", {...})` + best-effort `set_user({"id": <jwt-sub>})` + PII-safe email redaction helper. Ships as no-op shim until MEH-500 wires `sentry_sdk.init`.
+
+**Path deviation from MEH-493 spec:** extended the existing `SentryRequestScopeMiddleware` (from MEH-483) instead of creating a new `SentryContextMiddleware` class. Reason: avoid MEH-271 anti-pattern #1 (two parallel mechanisms). Spec was drafted without project_knowledge_search of existing middleware and asked for a new file under `backend/app/middleware/sentry_context.py`. Locked Plan B middleware ordering from MEH-483 (Sentry-scope-bind class registered INNER to `CorrelationIdMiddleware`) is preserved by construction — no `add_middleware` reordering. Scope-fix approved 2026-05-07.
+
+**Second minor spec deviation:** spec assumed user `email` was readily extractable from the request and could be redacted into the Sentry user payload. The project's access-token JWT claims set (`backend/app/auth.py:38-57`) intentionally contains only `sub`/`exp`/`iat`/`tv`/`scope` (+ optional `userFingerprint`) — no email. Email enrichment via DB lookup inside middleware was rejected on perf + fail-open grounds. The `_redact_email` helper still ships and is unit-tested (7 cases covering valid emails, empty/None/no-`@` defensive shapes); MEH-500's `before_send` hook can call it from a place that already has the User row.
+
+### Changes (1 file modified, 1 file added)
+
+- **`backend/app/middleware.py`** —
+  - NEW module-level helper `_redact_email(addr: str | None) -> str` — `'alice@gmail.com'` → `'a***@gmail.com'`. Empty/None/no-`@` → `'<no-email>'` (never half-redacted).
+  - `SentryRequestScopeMiddleware.dispatch` extended with `scope.set_context("request_info", {url, method, client})` + `scope.set_user({"id": sub})` when JWT extractable. Existing MEH-483 `set_tag` calls (`request_id`/`route`/`method`) preserved verbatim.
+  - NEW module-level helper `_try_extract_user_id(request) -> str | None` — best-effort `Authorization: Bearer <jwt>` → `sub` claim. No DB lookup. Lazy imports `joserfc.jwt` + `app.auth._jwt_key` to keep the auth module out of the cold-import path. Catches every `Exception` (JoseError, ImportError, anything) and returns `None` — fail-open posture per MEH-493 spec `<forbidden>`: "Failing the request if user extraction fails (always swallow exception)".
+  - Class docstring rewritten to enumerate the PII-guard contract: NEVER passwords / JWT tokens / OAuth secrets / request body / session keys / full email; allowed: route / method / full URL / client IP / request_id / user.id (opaque UUID).
+- **`tests/test_sentry_context.py`** (NEW, 14 tests) —
+  - 7 `_redact_email` parametrized cases.
+  - 3 dispatch cases: no-op when `_sentry_sdk is None` (current production state) · `set_context("request_info", ...)` called with `url/method/client` keys when SDK mocked in · malformed Bearer header → `set_user` NOT called, request still 200.
+  - 4 `_try_extract_user_id` direct cases: no header / Basic scheme / empty Bearer / malformed JWT → all return `None`.
+
+### Verification
+
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → 0 errors
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files would be reformatted
+- `pytest --collect-only` → 503 tests (was 489 before this PR; +14 from `test_sentry_context.py`)
+- Full pytest suite verification deferred to CI per MEH-360 (sandbox cannot reach Postgres; conftest.py auto-loads DB fixtures even for fixture-free unit tests)
+
+### Verify-on-SDK-land contract
+
+This middleware is a no-op until backend `sentry_sdk` is wired in MEH-500. The PII redaction helper is dashboard-independent and unit-testable now. Dashboard receipt verification (request_info context, user.id, redacted email tags) becomes part of MEH-500's DoD.
+
+Per `.claude/rules/observability.md` — bundle-side / env-var / SDK-load checks do not prove events arrive. Observability ticket Done state is gated on dashboard receipt. MEH-500's DoD is being amended to add a single check covering both MEH-483 + MEH-493 surfaces.
+
+Closes MEH-493.
+
 ## 2026-05-07 — MEH-448: clean baseline ruff violations + format pass
 
 `chore(MEH-448)`: 18 ruff `check` violations + 56 `ruff format` files cleaned to zero. Unblocks the MEH-488 calibration→required flip.
