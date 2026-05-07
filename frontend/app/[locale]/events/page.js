@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import EventsClient from "./EventsClient";
+import { BRAND_NAME } from "@/lib/constants";
 
 export const metadata = {
   title: "אירועים בחוות ואצל בתי עסק",
@@ -10,7 +11,7 @@ export const metadata = {
     description:
       "סדנאות, סיורים, ימים פתוחים וטעימות אצל בתי עסק מקומיים בישראל.",
     type: "website",
-    siteName: "מהמקור",
+    siteName: BRAND_NAME,
     locale: "he_IL",
     // Next.js replaces openGraph object on override — re-declare image.
     images: ["/og-image.jpg"],

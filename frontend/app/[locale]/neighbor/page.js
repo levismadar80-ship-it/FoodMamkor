@@ -1,4 +1,5 @@
 import NeighborClient from "./NeighborClient";
+import { BRAND_NAME } from "@/lib/constants";
 
 export const metadata = {
   title: "מהמטבח של השכן",
@@ -9,7 +10,7 @@ export const metadata = {
     description:
       "מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח.",
     type: "website",
-    siteName: "מהמקור",
+    siteName: BRAND_NAME,
     locale: "he_IL",
     images: ["/og-image.jpg"],
   },

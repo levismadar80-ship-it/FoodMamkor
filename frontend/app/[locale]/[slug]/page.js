@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import ProducerDetail from "@/app/producer/[id]/ProducerDetail";
+import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 

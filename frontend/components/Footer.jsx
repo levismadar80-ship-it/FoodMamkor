@@ -6,6 +6,7 @@ import { useState } from "react";
 import { InstagramLogo, ArrowLeft } from "@phosphor-icons/react";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
+import { BRAND_NAME } from "@/lib/constants";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -103,7 +104,7 @@ export default function Footer() {
             <Link href="/" aria-label="מהמקור — דף הבית">
               <Image
                 src="/logo-footer.png"
-                alt="מהמקור"
+                alt={BRAND_NAME}
                 width={140}
                 height={52}
                 className="mb-4 brightness-0 invert"

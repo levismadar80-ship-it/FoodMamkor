@@ -1,4 +1,5 @@
 import ExperiencesClient from "./ExperiencesClient";
+import { BRAND_NAME } from "@/lib/constants";
 
 export const metadata = {
   title: "חוויות וסדנאות קהילתיות",
@@ -9,7 +10,7 @@ export const metadata = {
     description:
       "סדנאות בישול, סיורי אוכל ושיעורי תזונה — מארחים מקומיים, חוויות אמיתיות.",
     type: "website",
-    siteName: "מהמקור",
+    siteName: BRAND_NAME,
     locale: "he_IL",
     images: ["/og-image.jpg"],
   },

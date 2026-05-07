@@ -15,6 +15,7 @@
 // at build time). Re-exported here so existing consumers of @/lib/seo keep
 // working unchanged.
 import { SITE_URL } from "./env";
+import { BRAND_NAME } from "./constants";
 export { SITE_URL };
 
 /**
@@ -24,7 +25,7 @@ export { SITE_URL };
  * With graceful fallbacks when category or city is missing.
  */
 export function buildTitle(producer) {
-  if (!producer?.name) return "מהמקור";
+  if (!producer?.name) return BRAND_NAME;
 
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";
@@ -225,7 +226,7 @@ export function buildProducerMetadata(producer) {
       images: img ? [{ url: img, width: 1200, height: 630 }] : [],
       type: "website",
       locale: "he_IL",
-      siteName: "מהמקור",
+      siteName: BRAND_NAME,
     },
   };
 }

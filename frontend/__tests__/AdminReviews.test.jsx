@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import AdminReviewsPage from "@/app/admin/reviews/page";
+import AdminReviewsPage from "@/app/[locale]/admin/reviews/page";
 
 // Mock Phosphor icons — spans so we can assert presence
 vi.mock("@phosphor-icons/react", () => ({

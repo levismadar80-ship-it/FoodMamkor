@@ -1,4 +1,7 @@
-import "./globals.css";
+import "../globals.css";
+import { notFound } from "next/navigation";
+import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
@@ -13,23 +16,19 @@ import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { env, SITE_URL } from "@/lib/env";
+import { BRAND_NAME } from "@/lib/constants";
+import { routing } from "@/i18n/routing";
 
-// LAUNCH_CHECKLIST week 1 — SEO. Rich default metadata that inherits
-// to every page that doesn't override it. Individual page.js files
-// can extend via `export const metadata = { ... }` on server components
-// or via a wrapping server component for client pages.
-// MEH-454 Phase 3: SITE_URL helper validated by Zod at build time (lib/env.js).
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
-// FINAL_AUDIT: OG image lives in /public/og-image.jpg (1200×630 recommended).
 const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: "%s | מהמקור",
+    template: `%s | ${BRAND_NAME}`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
@@ -39,7 +38,7 @@ export const metadata = {
     "אוכל בריא",
     "אוכל אורגני",
     "יצרנים ישראלים",
-    "מהמקור",
+    BRAND_NAME,
     "שוק איכרים",
   ],
   manifest: "/manifest.json",
@@ -57,7 +56,7 @@ export const metadata = {
     type: "website",
     locale: "he_IL",
     url: SITE_URL,
-    siteName: "מהמקור",
+    siteName: BRAND_NAME,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [
@@ -65,7 +64,7 @@ export const metadata = {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+        alt: SITE_TITLE,
       },
     ],
   },
@@ -82,14 +81,11 @@ export const metadata = {
   alternates: {
     canonical: SITE_URL,
   },
-  // iOS Safari: launch in standalone mode (no browser chrome) when added to Home Screen.
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "מהמקור",
+    title: BRAND_NAME,
   },
-  // Standard W3C replacement for apple-mobile-web-app-capable (deprecated iOS 17+).
-  // Keep appleWebApp above for iOS < 17 compatibility.
   other: {
     "mobile-web-app-capable": "yes",
   },
@@ -99,19 +95,26 @@ export const viewport = {
   themeColor: "#2e6853",
 };
 
-// FINAL_AUDIT: Microsoft Clarity — opt-in via NEXT_PUBLIC_CLARITY_PROJECT_ID.
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
 const CLARITY_PROJECT_ID = env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 
-export default function RootLayout({ children }) {
+export default async function LocaleLayout({ children, params }) {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
+  setRequestLocale(locale);
+
+  const dir = locale === "he" ? "rtl" : "ltr";
+
   return (
-    <html lang="he" dir="rtl">
+    <html lang={locale} dir={dir}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* OPTIMIZE: preconnect to Unsplash so the hero background
-            (which lives on a CSS `background-image` and therefore
-            bypasses next/image) starts downloading as early as possible.
-            Improves LCP on the homepage hero. */}
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap"
@@ -123,25 +126,23 @@ export default function RootLayout({ children }) {
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           דלג לתוכן הראשי
         </a>
-        <AuthProvider>
-          <LanguageProvider>
-          <SmoothScrollProvider>
-            <Header />
-            <main id="main-content" className="flex-1">{children}</main>
-            <FooterSlot />
-            <BottomNav />
-            <Toaster />
-            <CookieBanner />
-            {/* PREMIUM_DESIGN: subtle green dot cursor on desktop only —
-                component self-disables on touch + reduced-motion. */}
-            <CustomCursor />
-            {/* AI Q&A bot — desktop only, floating bottom-left.
-                Self-hides on mobile via `hidden md:flex`. */}
-            <ChatWidget />
-            <InstallPrompt />
-          </SmoothScrollProvider>
-          </LanguageProvider>
-        </AuthProvider>
+        <NextIntlClientProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <SmoothScrollProvider>
+                <Header />
+                <main id="main-content" className="flex-1">{children}</main>
+                <FooterSlot />
+                <BottomNav />
+                <Toaster />
+                <CookieBanner />
+                <CustomCursor />
+                <ChatWidget />
+                <InstallPrompt />
+              </SmoothScrollProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </NextIntlClientProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}
         <SpeedInsights />
       </body>

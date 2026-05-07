@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "discover": "גלה",
+    "map": "מפה",
+    "events": "אירועים",
+    "neighbor": "מהשכן",
+    "about": "אודות",
+    "favorites": "מועדפים",
+    "admin": "אדמין",
+    "login": "כניסה לחשבון",
+    "logout": "התנתק",
+    "add_business": "הוסיפי את העסק שלך",
+    "mobile_label": "ניווט מובייל",
+    "profile": "פרופיל",
+    "footer": {
+      "discover": "לגלות",
+      "community": "קהילה",
+      "businesses": "בתי עסק",
+      "trust": "שקיפות ואמון",
+      "home": "דף הבית",
+      "map": "מפה",
+      "all_businesses": "כל העסקים",
+      "new_businesses": "עסקים חדשים",
+      "events": "אירועים",
+      "neighbor_kitchen": "מהמטבח של השכן",
+      "about": "אודות",
+      "add_business": "הוסיפי את העסק שלך",
+      "login": "כניסה לחשבון",
+      "manage": "ניהול העסק",
+      "terms": "תנאי שימוש",
+      "privacy": "מדיניות פרטיות",
+      "accessibility": "הצהרת נגישות",
+      "contact": "יצירת קשר",
+      "copyright": "מהמקור. כל הזכויות שמורות.",
+      "made_with_love": "נעשה באהבה בישראל 🌿"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "האוכל הכי טוב קרוב אלייך. פשוט לא ידעת איפה.",
+      "subtitle": "בתי עסק מקומיים, כולם במקום אחד."
+    },
+    "search": {
+      "placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
+      "sr_label": "חיפוש בתי עסק וערים",
+      "submit": "חיפוש"
+    }
+  },
+  "common": {
+    "cta": {
+      "show_on_map": "הצג במפה",
+      "more_info": "לפרופיל המלא"
+    }
+  }
+}

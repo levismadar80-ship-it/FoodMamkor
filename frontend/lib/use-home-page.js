@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { useLanguage } from "@/lib/language-context";
+import { useTranslations } from "next-intl";
+import { mapKey } from "@/lib/i18n-key-map";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
 import { buildChipParams } from "@/lib/producer-filters";
@@ -35,7 +36,11 @@ const PAGE_SIZE = 8;
  */
 export function useHomePage() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
+  // old flat keys ("hero_title"). Wave 2 migrates those call sites and
+  // this wrap is removed.
+  const intlT = useTranslations();
+  const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
   const router = useRouter();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
