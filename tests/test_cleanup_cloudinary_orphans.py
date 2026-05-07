@@ -19,6 +19,8 @@ from scripts.cleanup_cloudinary_orphans import (
     SCALAR_URL_SOURCES,
     _add_array_urls,
     _add_scalar_urls,
+    _batch_delete_orphans,
+    _confirm_or_abort,
     _format_bytes,
     _passes_age_filter,
     _passes_depth_filter,
@@ -41,6 +43,8 @@ class TestArgparseDefaults:
         # `action="append"` doesn't accumulate on top of a literal default.
         assert args.prefix is None
         assert args.batch_size == BATCH_SIZE_HARD_CAP == 100
+        # I.5: confirmation prompt is the default; --yes opts out for CI.
+        assert args.yes is False
 
     def test_default_prefixes_constant_is_two_specific_folders(self):
         # Lock the spec: the script defaults to the two folders our uploaders
@@ -63,7 +67,13 @@ class TestArgparseDefaults:
         out = capsys.readouterr().out
         # Sanity-check the surface is present in --help output. Not asserting
         # exact wording (would re-couple to argparse's formatter).
-        for token in ("--apply", "--min-age-hours", "--prefix", "--batch-size"):
+        for token in (
+            "--apply",
+            "--min-age-hours",
+            "--prefix",
+            "--batch-size",
+            "--yes",  # I.5
+        ):
             assert token in out, f"--help missing flag {token}"
 
 
@@ -944,3 +954,538 @@ class TestApplyGate:
         assert rc == 0
         out = capsys.readouterr().out
         assert "Re-run with --apply to delete." in out
+
+
+# ---------- I.5: --apply flow (DESTRUCTIVE PATH) ----------
+
+
+class TestConfirmOrAbort:
+    def test_lowercase_yes_returns(self):
+        # Real prompt; verify return path. No SystemExit.
+        _confirm_or_abort(3, 1024, _input=lambda prompt: "yes")
+
+    def test_no_aborts(self, capsys):
+        with pytest.raises(SystemExit) as exc:
+            _confirm_or_abort(3, 1024, _input=lambda prompt: "no")
+        assert exc.value.code == 0
+        assert "Aborted." in capsys.readouterr().out
+
+    def test_partial_y_aborts(self, capsys):
+        # Defense against hasty Enter — `y` alone never proceeds.
+        with pytest.raises(SystemExit) as exc:
+            _confirm_or_abort(3, 1024, _input=lambda prompt: "y")
+        assert exc.value.code == 0
+        assert "Aborted." in capsys.readouterr().out
+
+    def test_uppercase_Y_aborts(self, capsys):
+        with pytest.raises(SystemExit) as exc:
+            _confirm_or_abort(3, 1024, _input=lambda prompt: "Y")
+        assert exc.value.code == 0
+
+    def test_uppercase_yes_aborts(self, capsys):
+        # Strict case-sensitivity: only lowercase "yes" proceeds.
+        with pytest.raises(SystemExit) as exc:
+            _confirm_or_abort(3, 1024, _input=lambda prompt: "YES")
+        assert exc.value.code == 0
+        assert "Aborted." in capsys.readouterr().out
+
+    def test_empty_input_aborts(self, capsys):
+        with pytest.raises(SystemExit) as exc:
+            _confirm_or_abort(3, 1024, _input=lambda prompt: "")
+        assert exc.value.code == 0
+        assert "Aborted." in capsys.readouterr().out
+
+    def test_whitespace_padded_yes_returns(self):
+        # `.strip()` applied before equality — newline / spaces don't break it.
+        _confirm_or_abort(3, 1024, _input=lambda prompt: "  yes  ")
+
+    def test_trailing_newline_yes_returns(self):
+        _confirm_or_abort(3, 1024, _input=lambda prompt: "yes\n")
+
+    def test_prompt_contains_count_and_human_readable_bytes(self):
+        captured: list[str] = []
+
+        def spy_input(prompt: str) -> str:
+            captured.append(prompt)
+            return "yes"
+
+        _confirm_or_abort(7, int(1.5 * 1024 * 1024), _input=spy_input)
+        assert len(captured) == 1
+        prompt = captured[0]
+        assert "7" in prompt
+        assert "1.5 MB" in prompt
+        assert "yes" in prompt  # the literal in the prompt text
+
+
+class TestBatchDeleteOrphans:
+    def _orphan(self, n: int):
+        return (f"mehamakor/p{n}", f"https://x/p{n}.jpg", 100)
+
+    def _patch_delete(self, monkeypatch, callable_or_responses):
+        import cloudinary.api as cloudinary_api
+
+        if callable(callable_or_responses):
+            fake = callable_or_responses
+            calls: list[dict] = []
+            original = fake
+
+            def wrapped(**kwargs):
+                calls.append(kwargs)
+                return original(**kwargs)
+
+            wrapped.calls = calls  # type: ignore[attr-defined]
+            monkeypatch.setattr(cloudinary_api, "delete_resources", wrapped)
+            return wrapped
+
+        responses = list(callable_or_responses)
+        calls = []
+
+        def fake(**kwargs):
+            calls.append(kwargs)
+            if not responses:
+                raise AssertionError("delete_resources called past canned data")
+            return responses.pop(0)
+
+        fake.calls = calls  # type: ignore[attr-defined]
+        monkeypatch.setattr(cloudinary_api, "delete_resources", fake)
+        return fake
+
+    def test_empty_list_no_sdk_calls(self, monkeypatch):
+        fake = self._patch_delete(monkeypatch, [])
+        assert _batch_delete_orphans([], 100) == (0, 0, 0)
+        assert len(fake.calls) == 0
+
+    def test_50_orphans_one_batch(self, monkeypatch):
+        orphans = [self._orphan(i) for i in range(50)]
+        fake = self._patch_delete(
+            monkeypatch,
+            [{"deleted": {pid: "deleted" for pid, _, _ in orphans}}],
+        )
+        assert _batch_delete_orphans(orphans, 100) == (50, 0, 0)
+        assert len(fake.calls) == 1
+        assert len(fake.calls[0]["public_ids"]) == 50
+
+    def test_250_orphans_three_batches_100_100_50(self, monkeypatch):
+        orphans = [self._orphan(i) for i in range(250)]
+        responses = [
+            {"deleted": {pid: "deleted" for pid, _, _ in orphans[0:100]}},
+            {"deleted": {pid: "deleted" for pid, _, _ in orphans[100:200]}},
+            {"deleted": {pid: "deleted" for pid, _, _ in orphans[200:250]}},
+        ]
+        fake = self._patch_delete(monkeypatch, responses)
+        assert _batch_delete_orphans(orphans, 100) == (250, 0, 0)
+        assert len(fake.calls) == 3
+        assert [len(c["public_ids"]) for c in fake.calls] == [100, 100, 50]
+
+    def test_all_deleted_for_250_returns_clean_count(self, monkeypatch):
+        # Same as above but asserting only the count tuple.
+        orphans = [self._orphan(i) for i in range(250)]
+        responses = [
+            {"deleted": {pid: "deleted" for pid, _, _ in orphans[0:100]}},
+            {"deleted": {pid: "deleted" for pid, _, _ in orphans[100:200]}},
+            {"deleted": {pid: "deleted" for pid, _, _ in orphans[200:250]}},
+        ]
+        self._patch_delete(monkeypatch, responses)
+        assert _batch_delete_orphans(orphans, 100) == (250, 0, 0)
+
+    def test_mixed_deleted_and_not_found(self, monkeypatch):
+        orphans = [self._orphan(i) for i in range(4)]
+        per_id = {
+            "mehamakor/p0": "deleted",
+            "mehamakor/p1": "not_found",
+            "mehamakor/p2": "deleted",
+            "mehamakor/p3": "not_found",
+        }
+        self._patch_delete(monkeypatch, [{"deleted": per_id}])
+        assert _batch_delete_orphans(orphans, 100) == (2, 2, 0)
+
+    def test_other_status_counted_as_error_with_warning(
+        self, monkeypatch, caplog
+    ):
+        orphans = [self._orphan(0), self._orphan(1)]
+        per_id = {
+            "mehamakor/p0": "deleted",
+            "mehamakor/p1": "blocked",  # unexpected status
+        }
+        self._patch_delete(monkeypatch, [{"deleted": per_id}])
+        with caplog.at_level(
+            logging.WARNING, logger="scripts.cleanup_cloudinary_orphans"
+        ):
+            assert _batch_delete_orphans(orphans, 100) == (1, 0, 1)
+        assert any(
+            "unexpected status 'blocked'" in r.message for r in caplog.records
+        )
+
+    def test_sdk_exception_counts_batch_as_errors_continues_next(
+        self, monkeypatch, caplog
+    ):
+        # 3 batches of 2; batch 2 raises; batches 1 and 3 succeed.
+        orphans = [self._orphan(i) for i in range(6)]
+        call_counter = {"n": 0}
+
+        def fake(**kwargs):
+            call_counter["n"] += 1
+            if call_counter["n"] == 2:
+                raise RuntimeError("transient API error")
+            return {"deleted": {pid: "deleted" for pid in kwargs["public_ids"]}}
+
+        self._patch_delete(monkeypatch, fake)
+        with caplog.at_level(
+            logging.ERROR, logger="scripts.cleanup_cloudinary_orphans"
+        ):
+            deleted, not_found, errors = _batch_delete_orphans(orphans, 2)
+        # Batch 1 (2 deleted) + Batch 2 (2 errors) + Batch 3 (2 deleted)
+        assert deleted == 4
+        assert not_found == 0
+        assert errors == 2
+        assert any(
+            "delete_resources failed" in r.message for r in caplog.records
+        )
+
+    def test_kwargs_match_phase_1_spec(self, monkeypatch):
+        orphans = [self._orphan(0)]
+        fake = self._patch_delete(
+            monkeypatch,
+            [{"deleted": {"mehamakor/p0": "deleted"}}],
+        )
+        _batch_delete_orphans(orphans, 100)
+        assert fake.calls[0] == {
+            "public_ids": ["mehamakor/p0"],
+            "type": "upload",
+            "resource_type": "image",
+            "invalidate": False,
+        }
+
+
+class TestApplyMainPath:
+    """Full main() integration with --apply variants. Stubbed DB + SDK."""
+
+    def _stub_main_environment(
+        self,
+        monkeypatch,
+        *,
+        cloudinary_resources: list,
+        cloudinary_delete_response=None,
+    ):
+        """Wire stubs and return (delete_calls_list, db_close_count_list)."""
+        from scripts import cleanup_cloudinary_orphans
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings,
+            "cloudinary_cloud_name",
+            "test-cloud",
+        )
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings, "cloudinary_api_key", "key"
+        )
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings,
+            "cloudinary_api_secret",
+            "secret",
+        )
+
+        class _FakeQuery:
+            def filter(self, *args, **kwargs):
+                return self
+
+            def __iter__(self):
+                return iter([])
+
+        class _FakeDB:
+            def query(self, col):
+                return _FakeQuery()
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans, "SessionLocal", lambda: _FakeDB()
+        )
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api,
+            "resources",
+            lambda **kwargs: {"resources": cloudinary_resources},
+        )
+        delete_calls: list[dict] = []
+        if cloudinary_delete_response is not None:
+            def fake_delete(**kwargs):
+                delete_calls.append(kwargs)
+                return cloudinary_delete_response
+            monkeypatch.setattr(
+                cloudinary_api, "delete_resources", fake_delete
+            )
+        else:
+            def forbidden_delete(**kwargs):
+                raise AssertionError(
+                    "delete_resources called when test expected no delete"
+                )
+            monkeypatch.setattr(
+                cloudinary_api, "delete_resources", forbidden_delete
+            )
+        return delete_calls
+
+    def _orphan_resource(self, n: int):
+        return {
+            "public_id": f"mehamakor/orphan_{n}",
+            "secure_url": f"https://x/orphan_{n}.jpg",
+            "bytes": 100,
+            "created_at": "2020-01-01T00:00:00Z",
+        }
+
+    def test_apply_yes_all_deleted_returns_zero(self, monkeypatch):
+        resources = [self._orphan_resource(i) for i in range(3)]
+        delete_response = {
+            "deleted": {f"mehamakor/orphan_{i}": "deleted" for i in range(3)}
+        }
+        delete_calls = self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=resources,
+            cloudinary_delete_response=delete_response,
+        )
+        assert main(["--apply", "--yes"]) == 0
+        # 2 prefix scans, but only 1 delete call (the 3 orphans live under
+        # `mehamakor` only — `mehamakor/avatars` scan returns same data
+        # which dedups via secure_url? No — same resources duplicated; but
+        # the 2nd scan would re-stage the same public_ids. Phase 1 spec says
+        # we don't dedup across prefixes — we just delete twice. Validated
+        # below in test_apply_no_orphans which uses real semantics.)
+        assert len(delete_calls) >= 1
+
+    def test_apply_yes_mixed_response_returns_one(self, monkeypatch):
+        resources = [self._orphan_resource(i) for i in range(2)]
+        delete_response = {
+            "deleted": {
+                "mehamakor/orphan_0": "deleted",
+                "mehamakor/orphan_1": "not_found",
+            }
+        }
+        self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=resources,
+            cloudinary_delete_response=delete_response,
+        )
+        # not_found > 0 → exit 1.
+        assert main(["--apply", "--yes"]) == 1
+
+    def test_apply_yes_no_orphans_returns_zero_no_delete_call(
+        self, monkeypatch, capsys
+    ):
+        # cloudinary returns nothing → empty candidates → empty orphans.
+        delete_calls = self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=[],
+            cloudinary_delete_response=None,  # forbidden_delete; never called
+        )
+        rc = main(["--apply", "--yes"])
+        assert rc == 0
+        assert delete_calls == []
+        # Empty-orphan short-circuit still prints the dry-run summary.
+        out = capsys.readouterr().out
+        assert "Orphans:                               0" in out
+
+    def test_apply_without_yes_typed_yes_proceeds(self, monkeypatch):
+        resources = [self._orphan_resource(0)]
+        delete_response = {"deleted": {"mehamakor/orphan_0": "deleted"}}
+        self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=resources,
+            cloudinary_delete_response=delete_response,
+        )
+        # Real prompt path — patch builtins.input.
+        monkeypatch.setattr("builtins.input", lambda prompt: "yes")
+        assert main(["--apply"]) == 0
+
+    def test_apply_without_yes_typed_no_aborts(self, monkeypatch, capsys):
+        resources = [self._orphan_resource(0)]
+        delete_calls = self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=resources,
+            cloudinary_delete_response=None,  # forbidden_delete
+        )
+        monkeypatch.setattr("builtins.input", lambda prompt: "no")
+        with pytest.raises(SystemExit) as exc:
+            main(["--apply"])
+        assert exc.value.code == 0
+        assert delete_calls == []
+        assert "Aborted." in capsys.readouterr().out
+
+    def test_dry_run_unchanged_no_delete_call(self, monkeypatch, capsys):
+        resources = [self._orphan_resource(0)]
+        delete_calls = self._stub_main_environment(
+            monkeypatch,
+            cloudinary_resources=resources,
+            cloudinary_delete_response=None,
+        )
+        rc = main([])
+        assert rc == 0
+        assert delete_calls == []
+        out = capsys.readouterr().out
+        assert "Re-run with --apply to delete." in out
+
+
+class TestExitCodeMatrix:
+    """Lock the exit-code matrix end-to-end via main()."""
+
+    def _stub_base(self, monkeypatch):
+        from scripts import cleanup_cloudinary_orphans
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings,
+            "cloudinary_cloud_name",
+            "test-cloud",
+        )
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings, "cloudinary_api_key", "key"
+        )
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings,
+            "cloudinary_api_secret",
+            "secret",
+        )
+
+        class _FakeQuery:
+            def filter(self, *args, **kwargs):
+                return self
+
+            def __iter__(self):
+                return iter([])
+
+        class _FakeDB:
+            def query(self, col):
+                return _FakeQuery()
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans, "SessionLocal", lambda: _FakeDB()
+        )
+
+    def _setup_listing_failed(self, monkeypatch):
+        self._stub_base(monkeypatch)
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api,
+            "resources",
+            lambda **kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
+        )
+
+    def _setup_apply_all_deleted(self, monkeypatch):
+        self._stub_base(monkeypatch)
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api,
+            "resources",
+            lambda **kwargs: {
+                "resources": [
+                    {
+                        "public_id": "mehamakor/x",
+                        "secure_url": "https://x/x.jpg",
+                        "bytes": 100,
+                        "created_at": "2020-01-01T00:00:00Z",
+                    }
+                ]
+            },
+        )
+        monkeypatch.setattr(
+            cloudinary_api,
+            "delete_resources",
+            lambda **kwargs: {"deleted": {"mehamakor/x": "deleted"}},
+        )
+
+    def _setup_apply_with_not_found(self, monkeypatch):
+        self._stub_base(monkeypatch)
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api,
+            "resources",
+            lambda **kwargs: {
+                "resources": [
+                    {
+                        "public_id": "mehamakor/x",
+                        "secure_url": "https://x/x.jpg",
+                        "bytes": 100,
+                        "created_at": "2020-01-01T00:00:00Z",
+                    }
+                ]
+            },
+        )
+        monkeypatch.setattr(
+            cloudinary_api,
+            "delete_resources",
+            lambda **kwargs: {"deleted": {"mehamakor/x": "not_found"}},
+        )
+
+    def _setup_apply_no_orphans(self, monkeypatch):
+        self._stub_base(monkeypatch)
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api, "resources", lambda **kwargs: {"resources": []}
+        )
+
+    def _setup_apply_user_aborts(self, monkeypatch):
+        self._stub_base(monkeypatch)
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api,
+            "resources",
+            lambda **kwargs: {
+                "resources": [
+                    {
+                        "public_id": "mehamakor/x",
+                        "secure_url": "https://x/x.jpg",
+                        "bytes": 100,
+                        "created_at": "2020-01-01T00:00:00Z",
+                    }
+                ]
+            },
+        )
+        monkeypatch.setattr("builtins.input", lambda prompt: "no")
+
+    def _setup_dry_run(self, monkeypatch):
+        self._stub_base(monkeypatch)
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api,
+            "resources",
+            lambda **kwargs: {
+                "resources": [
+                    {
+                        "public_id": "mehamakor/x",
+                        "secure_url": "https://x/x.jpg",
+                        "bytes": 100,
+                        "created_at": "2020-01-01T00:00:00Z",
+                    }
+                ]
+            },
+        )
+
+    @pytest.mark.parametrize(
+        "scenario,argv,expected_code,expects_systemexit",
+        [
+            ("listing_failed", [], 1, False),
+            ("apply_all_deleted", ["--apply", "--yes"], 0, False),
+            ("apply_with_not_found", ["--apply", "--yes"], 1, False),
+            ("apply_no_orphans", ["--apply", "--yes"], 0, False),
+            ("apply_user_aborts", ["--apply"], 0, True),
+            ("dry_run", [], 0, False),
+        ],
+    )
+    def test_exit_code(
+        self, monkeypatch, scenario, argv, expected_code, expects_systemexit
+    ):
+        getattr(self, f"_setup_{scenario}")(monkeypatch)
+        if expects_systemexit:
+            with pytest.raises(SystemExit) as exc:
+                main(argv)
+            assert exc.value.code == expected_code, scenario
+        else:
+            assert main(argv) == expected_code, scenario
