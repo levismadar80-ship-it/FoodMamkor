@@ -277,8 +277,10 @@ class Product(Base):
     producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(200), nullable=False)
     description = Column(Text)
-    price_range = Column(String(50))
+    price_range = Column(String(50))  # legacy: removal tracked in MEH-295 follow-up
     image_url = Column(Text)
+    price_min = Column(Numeric(10, 2), nullable=True)
+    price_max = Column(Numeric(10, 2), nullable=True)
 
     producer = relationship("Producer", back_populates="products")
 
