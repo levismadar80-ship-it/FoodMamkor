@@ -1,9 +1,24 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-448 baseline ruff cleanup DRAFT PR open — unblocks MEH-488 flip; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-448 MERGED PR #546 6a5657e — staging ruff baseline = 0 errors / 0 format-check files; MEH-505 filed (blocked by MEH-488) — flip lint-backend to required after #544 lands; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 still open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-07 — MEH-448 baseline ruff cleanup (DRAFT PR open)
+### Session 2026-05-07 — MEH-448 MERGED PR #546 + MEH-505 flip-ticket filed
+
+**MEH-448 outcome:** merged at `6a5657e`. Squash-merge with all CI green (Backend tests ✅, Frontend lint ✅, Adversarial review ✅, API contract ✅, Playwright E2E ✅). Pre-merge verification confirmed sandbox-permitted: `ruff check . --extend-exclude alembic/versions` → 0 errors, `ruff format --check --exclude alembic/versions .` → 0 files, `pytest --collect-only` → 489 tests. CI's full pytest (3:11 runtime — meaningful, not budget exhaustion) confirmed no whitespace-sensitive regression from the 56-file format pass.
+
+**MEH-505 (NEW, blocked by MEH-488):** filed via Linear MCP — "Flip lint-backend to required after MEH-448 cleanup". Priority 3 (Medium). Scope: 1-line `continue-on-error: true → false` flip on `pr-checks.yml` lint-backend job + 1 flag fix (`--extend-exclude → --exclude` on the format step only — bug surfaced during MEH-448 execution; `ruff format` doesn't accept `--extend-exclude`, only `ruff check` does). Cannot proceed until PR #544 (MEH-488) merges — staging currently has no lint-backend job to flip (verified via `git show origin/staging:.github/workflows/pr-checks.yml | grep -c lint-backend` → 0).
+
+**Smadar action sequence (when ready):**
+1. Merge PR #544 (MEH-488 calibration-mode lint-backend job + .editorconfig).
+2. Tell CC: "MEH-505 unblocked — open the flip-PR off staging".
+3. CC opens 1-line + 1-flag PR. After CI runs once on the protected branch, Smadar adds `Backend lint (ruff)` to required-checks in `Settings → Branches → staging` AND `main` (GH-UI only).
+
+**Calibration tally update:** added row to "Claude Review calibration" table for PR #546. 0 useful / 0 noise / Inconclusive — consistent with PR #544. 2nd data point. If PR #547 (next non-trivial PR) also lacks an adversarial-review comment → confirmed gap, file MEH-XXX investigation into why the action's `conclusion=success` runs aren't producing PR comments.
+
+---
+
+
 
 **Branch:** `feature/meh-448-clean-ruff-baseline` off `origin/staging` (2 commits).
 
@@ -91,9 +106,9 @@
 
 | PR # | Useful findings | Noise findings | Verdict | Notes |
 |---|---|---|---|---|
-| (this PR) | _ | _ | _ | first run — wires the action |
-| | | | | |
-| | | | | |
+| #542 (MEH-487) | _ | _ | _ | first run — wires the action |
+| #544 (MEH-488) | 0 (no comment) | 0 | Inconclusive | First non-failure adversarial run after `id-token: write` fix landed; no comment posted on PR. 1st data point. |
+| #546 (MEH-448) | 0 (no comment) | 0 | Inconclusive — consistent with #544 | 2nd data point. If #547 (next non-trivial PR) also lacks comment → confirmed gap, file MEH-XXX investigation. |
 | | | | | |
 | | | | | |
 
