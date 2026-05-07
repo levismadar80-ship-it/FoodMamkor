@@ -30,6 +30,25 @@
 - [ ] Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
 - [ ] RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, שני שדות המחיר ב-grid 2-עמודות נכנסים.
 
+### Dietary checkboxes per product (MEH-293 PR #2)
+
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים". Backend live with `is_X` columns + `has_X_products` aggregated read (PR #1 already merged).
+
+- [ ] Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת המחיר (price_min / price_max) ולפני העלאת התמונה מופיעה כותרת "סימוני תזונה (אופציונלי)" + 3 checkboxes (🌾 ללא גלוטן, 🥦 טבעוני, 🥛 ללא לקטוז).
+- [ ] Add form — 375px layout — איך לבדוק: באותו טופס במובייל (≤640px); **תוצאה מצופה:** 3 ה-checkboxes מסודרות בעמודה אחת (1-col), לא דחוסות.
+- [ ] Add form — ≥640px layout — איך לבדוק: באותו טופס בדסקטופ (≥640px); **תוצאה מצופה:** 3 ה-checkboxes ב-3 עמודות (`grid-cols-3`).
+- [ ] Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצאה מצופה:** ב-network tab, ה-POST `/producers/me/products` כולל `is_vegan: true, is_gluten_free: false, is_lactose_free: false`. ה-response מכיל `is_vegan: true`.
+- [ ] Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כולל את אותו block של 3 checkboxes באותו מיקום (אחרי המחיר, לפני התמונה). אם המוצר נשמר עם `is_vegan=true`, ה-checkbox טעון מסומן.
+- [ ] Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצאה מצופה:** ה-PUT body כולל `is_vegan: false`. השורה חוזרת ל-display mode.
+- [ ] Card aggregation — איך לבדוק: אחרי הוספת מוצר עם `is_vegan=true`, פתחי `/producers` כצרכן; **תוצאה מצופה:** ה-ProducerCard של אותה בעלת עסק מציג badge "טבעוני" (זה מ-`has_vegan_products: true` שה-backend מחזיר).
+- [ ] Card aggregation — toggle off — איך לבדוק: ערכי את המוצר היחיד עם `is_vegan=true` והסירי את הסימון; **תוצאה מצופה:** רענני `/producers` — ה-card כבר לא מציג badge "טבעוני" (כי `has_vegan_products` הפך ל-`false`).
+- [ ] Filter on /producers — איך לבדוק: `/producers?vegan=true` (או דרך ה-chip); **תוצאה מצופה:** רק בעלות עסק עם לפחות מוצר אחד שמסומן `is_vegan=true` מופיעות. בעלות עסק עם 0 מוצרים נופלות (התנהגות מכוונת — MEH-293 fix).
+- [ ] Register form — אין יותר checkboxes — איך לבדוק: `/register/producer`; **תוצאה מצופה:** לא מופיעים יותר 3 ה-checkboxes (gluten_free / vegan / lactose_free) או הכותרת "סימוני תזונה (אופציונלי)" ברמת בית העסק. הטופס מסתיים עם CategorySelector ועובר ל-Legal consent ישירות.
+- [ ] Admin form — אין יותר checkboxes — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** הסטריפ של הצ'קבוקסים מציג רק `grass_fed` ו-`is_verified` (3 ה-dietary הוסרו). שמירה עוברת.
+- [ ] Legacy producer (overlap) — איך לבדוק: בעלת עסק שנרשמה לפני MEH-293 ויש לה `producer.vegan=true` אבל אין מוצרים מסומנים; **תוצאה מצופה:** ה-card שלה עדיין מציג badge "טבעוני" (legacy fallback ב-`lib/badges.js` — `has_vegan_products || vegan`). הסרה ב-+7-day cleanup PR.
+
+---
+
 ### Product Edit flow (MEH-470)
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer with at least 2 existing products → `/settings` → "מוצרים".

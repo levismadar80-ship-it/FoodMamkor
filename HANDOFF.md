@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-471 i18n Wave 1 — branch `feature/meh-471-i18n-wave-1-foundation` ready for push + draft PR; MEH-293 PR #1 backend in review on `feature/meh-293-dietary-labels-on-products`; MEH-470 product edit flow — MERGED PR #528 434f891)
+> Last updated: 2026-05-07 (MEH-471 i18n Wave 1 ready for merge PR #532; MEH-293 PR #2 frontend in pre-push review on `feature/meh-293-frontend`; MEH-293 PR #1 backend MERGED PR #529 27d74e8 — back-merged main→staging by Smadar; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
 ### Session 2026-05-07 — MEH-471 i18n Wave 1 ready for review
 
@@ -26,12 +26,11 @@
 - Q7 (gendered loading states): **DECIDED** alongside Q1–Q6 in MEH-366 plan — normalize to feminine. NOT pending. Wave 2 spec already assumes this outcome.
 
 **Next Smadar steps:**
-1. Push branch + open draft PR.
-2. Run `pytest tests/test_api.py` (CC sandbox missing alembic per MEH-360).
-3. Open Vercel preview; verify Step 8 matrix #3–#8: HE root navigable, EN /en/ navigable, header toggle round-trip, localStorage hydration, mobile preview at 375px.
-4. Run `/adversarial-review-coverage` (variant chosen per `.claude/rules/workflow.md` — adds React components + edits central layout).
-5. Run residual hardcoded-Hebrew scan (deterministic Python from MEH-366 plan §3) — expected ≈ 1,646 (1,721 − ~75 covered by next-intl now).
-6. After merge: 7-day staging burn-in before Wave 2 (MEH-472) starts deleting the shim.
+1. Mobile QA on Vercel preview at 375px.
+2. Mark PR #532 ready (out of draft) → merge to staging.
+3. Run `/adversarial-review-coverage` post-merge if regression appears.
+4. Run residual hardcoded-Hebrew scan (deterministic Python from MEH-366 plan §3) — expected ≈ 1,646 (1,721 − ~75 covered by next-intl now).
+5. After merge: 7-day staging burn-in before Wave 2 (MEH-472) starts deleting the shim.
 
 **Out of scope for this PR (filed elsewhere):**
 - HomeHero / HomeStaticBlocks call-site migration → Wave 2 (MEH-472).
@@ -44,13 +43,14 @@
 ---
 
 
-### Session 2026-05-07 — Product surface complete + MEH-293 PR #1 staged
-- MEH-294 closed (PR #515) — Hebrew status labels
-- MEH-295 closed (PR #519 backend + #525 frontend cdd975a) — 2-field price + validation + display chain
-- MEH-470 closed (PR #528 434f891) — Product Edit flow (inline per-row, PUT, Decimal-coerce-on-load, legacy hint, נקבה copy)
-- MEH-293 PR #1 (backend + Alembic `1afe844d11f4`) — branch `feature/meh-293-dietary-labels-on-products` ready for pre-push review. Overlap clock starts on staging deploy.
+### Session 2026-05-07 — MEH-293 PR #2 frontend (in pre-push review)
+- MEH-293 PR #1 backend — MERGED PR #529 squash `27d74e8`. Alembic `1afe844d11f4` deployed to production Railway via main; Smadar back-merged main→staging so the 7-day overlap clock starts cleanly. Production deploy date: **2026-05-07**.
+- MEH-293 PR #2 frontend — branch `feature/meh-293-frontend` off staging tip `27d74e8`. Touches: register removal, admin removal, settings ProductsSection (Add+Edit checkboxes), `lib/badges.js` aggregation read with legacy fallback, `__tests__/badges.test.js` cases, CHANGELOG/MANUAL_TESTING/HANDOFF.
 
-**Next session:** open MEH-293 PR #2 (frontend) once PR #1 lands; schedule producer-column removal PR for +7 days from staging deploy date.
+**Next:** Smadar mobile QA on Vercel preview at 375px → mark draft PR ready → auto-merge fires. Then schedule **+7-day cleanup PR for 2026-05-14** (drops `producers.gluten_free`/`vegan`/`lactose_free` columns + `lib/badges.js` legacy fallback + `producer-filters.js` initial state + `map-chips.js` initial state).
+
+### Skeptic-Mode lesson codified this session
+Branch-state claims must be cross-verified via `git ls-remote origin` (or fresh `git fetch origin` then `git log origin/<branch>`) — **not** by relying on a single `mcp__github__list_branches` read or stale local `origin/<branch>` cache. PR #1's perceived "incident" (claimed merge to wrong base) was a false alarm caused by sandbox-tooling visibility gaps. No actual incident; production deploy on 2026-05-07 is intentional. Going forward: `git ls-remote origin` is the source of truth for any "does branch X exist on the remote" question.
 
 ### MEH-293 — PR #1 backend (in pre-push review, 07.05.2026)
 

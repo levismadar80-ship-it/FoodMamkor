@@ -814,7 +814,7 @@ function ProductsSection() {
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "" });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -877,10 +877,13 @@ function ProductsSection() {
         image_url: form.image_url || null,
         price_min: minNum,
         price_max: maxNum,
+        is_gluten_free: form.is_gluten_free,
+        is_vegan: form.is_vegan,
+        is_lactose_free: form.is_lactose_free,
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "" });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
       setAdding(false);
     } catch {
       setError("שגיאה בשמירת המוצר");
@@ -897,6 +900,9 @@ function ProductsSection() {
       image_url: product.image_url || "",
       price_min: product.price_min != null ? String(Number(product.price_min)) : "",
       price_max: product.price_max != null ? String(Number(product.price_max)) : "",
+      is_gluten_free: !!product.is_gluten_free,
+      is_vegan: !!product.is_vegan,
+      is_lactose_free: !!product.is_lactose_free,
     });
     setError("");
   };
@@ -953,6 +959,9 @@ function ProductsSection() {
         image_url: editForm.image_url || null,
         price_min: minNum,
         price_max: maxNum,
+        is_gluten_free: !!editForm.is_gluten_free,
+        is_vegan: !!editForm.is_vegan,
+        is_lactose_free: !!editForm.is_lactose_free,
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -1057,6 +1066,38 @@ function ProductsSection() {
                     onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
                     className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
                   />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-site-muted mb-2">סימוני תזונה (אופציונלי)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!!editForm.is_gluten_free}
+                      onChange={(e) => setEditForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    <span>🌾 ללא גלוטן</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!!editForm.is_vegan}
+                      onChange={(e) => setEditForm((f) => ({ ...f, is_vegan: e.target.checked }))}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    <span>🥦 טבעוני</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!!editForm.is_lactose_free}
+                      onChange={(e) => setEditForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
+                      className="w-4 h-4 accent-primary"
+                    />
+                    <span>🥛 ללא לקטוז</span>
+                  </label>
                 </div>
               </div>
               <div>
@@ -1197,6 +1238,38 @@ function ProductsSection() {
                 onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
                 className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
               />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-site-muted mb-2">סימוני תזונה (אופציונלי)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.is_gluten_free}
+                  onChange={(e) => setForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>🌾 ללא גלוטן</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.is_vegan}
+                  onChange={(e) => setForm((f) => ({ ...f, is_vegan: e.target.checked }))}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>🥦 טבעוני</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.is_lactose_free}
+                  onChange={(e) => setForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>🥛 ללא לקטוז</span>
+              </label>
             </div>
           </div>
           <div>

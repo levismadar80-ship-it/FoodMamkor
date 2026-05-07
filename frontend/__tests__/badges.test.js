@@ -73,16 +73,45 @@ describe("allBadges", () => {
     expect(allBadges({ grass_fed: true }).map((b) => b.key)).toEqual(["grass_fed"]);
   });
 
-  it("gluten_free — when gluten_free is true", () => {
+  it("gluten_free — when gluten_free is true (legacy producer-level, MEH-293 overlap)", () => {
     expect(allBadges({ gluten_free: true }).map((b) => b.key)).toEqual(["gluten_free"]);
   });
 
-  it("vegan — when vegan is true", () => {
+  it("vegan — when vegan is true (legacy producer-level, MEH-293 overlap)", () => {
     expect(allBadges({ vegan: true }).map((b) => b.key)).toEqual(["vegan"]);
   });
 
-  it("lactose_free — when lactose_free is true", () => {
+  it("lactose_free — when lactose_free is true (legacy producer-level, MEH-293 overlap)", () => {
     expect(allBadges({ lactose_free: true }).map((b) => b.key)).toEqual(["lactose_free"]);
+  });
+
+  // MEH-293: aggregated `has_X_products` is the canonical source post-7-day overlap.
+  // These cases pin the new code path so the +7-day cleanup PR (which removes the
+  // legacy `|| !!producer.X` fallback) doesn't silently break the badge surface.
+  it("gluten_free — when has_gluten_free_products is true (MEH-293 aggregated)", () => {
+    expect(allBadges({ has_gluten_free_products: true }).map((b) => b.key)).toEqual(["gluten_free"]);
+  });
+
+  it("vegan — when has_vegan_products is true (MEH-293 aggregated)", () => {
+    expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
+  });
+
+  it("lactose_free — when has_lactose_free_products is true (MEH-293 aggregated)", () => {
+    expect(allBadges({ has_lactose_free_products: true }).map((b) => b.key)).toEqual(["lactose_free"]);
+  });
+
+  it("dietary — both legacy + aggregated false yields no dietary badge", () => {
+    const keys = allBadges({
+      vegan: false,
+      gluten_free: false,
+      lactose_free: false,
+      has_vegan_products: false,
+      has_gluten_free_products: false,
+      has_lactose_free_products: false,
+    }).map((b) => b.key);
+    expect(keys).not.toContain("vegan");
+    expect(keys).not.toContain("gluten_free");
+    expect(keys).not.toContain("lactose_free");
   });
 
   it("kosher — when kosher is a non-empty string", () => {

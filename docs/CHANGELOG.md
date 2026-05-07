@@ -44,6 +44,20 @@
 
 Closes MEH-471.
 
+## 2026-05-07 — MEH-293 PR #2: dietary checkboxes on product form (frontend)
+
+`feat(MEH-293)`: per-product dietary checkboxes (`is_gluten_free` / `is_vegan` / `is_lactose_free`) on the producer dashboard, plus removal of the legacy producer-level checkboxes from register and admin forms. 7-day overlap remains active — `lib/badges.js` reads `has_X_products` (new aggregated field from PR #1) with `|| !!producer.X` legacy fallback so badges keep rendering for producers who haven't yet re-tagged at the product level.
+
+- **`frontend/app/register/producer/page.js`** — removed `gluten_free` / `vegan` / `lactose_free` from `EMPTY_FORM`, the API submit body, and the entire "סימוני תזונה (אופציונלי)" section (heading + wrapper + 3 checkboxes). Producers now tag dietary attributes per-product in `/settings`.
+- **`frontend/components/admin/ProducerForm.jsx`** — same removal: 3 keys from initial state + 3 sibling `<label>` checkbox blocks. `grass_fed` (above) and `is_verified` (below) untouched.
+- **`frontend/app/settings/page.jsx` `ProductsSection`** — added `is_gluten_free` / `is_vegan` / `is_lactose_free` to the form state initial value, the `handleAdd` POST body + reset, the `startEdit` editForm population (`!!product.is_X`, defensive against `null` from legacy rows), and the `handleEdit` PUT body. New 3-checkbox block in **both** the Add form and the Edit form, inserted between the price grid and the image upload. Layout: `grid grid-cols-1 sm:grid-cols-3 gap-2` (mobile-first — 1 col at <640px, 3 cols at ≥640px). Section heading: `<p className="text-xs text-site-muted mb-2">סימוני תזונה (אופציונלי)</p>`. Hebrew copy verbatim from spec: 🌾 ללא גלוטן · 🥦 טבעוני · 🥛 ללא לקטוז. `onChange` uses functional `setForm`/`setEditForm` (consistent with existing fields).
+- **`frontend/lib/badges.js`** — `earnsBadge` for the 3 dietary keys now returns `!!producer.has_X_products || !!producer.X` (aggregated-first, legacy-fallback). The `|| !!producer.X` fallback is removed in the +7-day cleanup PR. JSDoc updated to reflect both sources during overlap. `BADGE_CONFIG` and `BADGE_PRIORITY` unchanged — keys are stable.
+- **`frontend/__tests__/badges.test.js`** — 3 existing legacy-key cases relabeled "MEH-293 overlap" (still green, pinning the fallback). 3 new aggregated-key cases (`has_vegan_products: true` etc.) plus a "both false → no dietary badge" guard. Future +7-day cleanup PR will keep the aggregated cases and drop the legacy ones.
+- **Out of scope for this PR** — `frontend/lib/producer-filters.js` and `frontend/lib/map-chips.js` (filter chip keys still send `?vegan=true` to API; backend EXISTS subquery transparently handles the move per PR #1 — no frontend chip change). `ProducerCard.jsx` / `ProducerSections.jsx` unchanged (consume `BadgeRow` → `topBadges`/`allBadges` → `earnsBadge` — only `lib/badges.js` needed an update).
+- **+7-day cleanup PR scheduled for 2026-05-14** — drops `producers.gluten_free` / `vegan` / `lactose_free` columns + the legacy fallback in `lib/badges.js` + `producer-filters.js` initial state + `map-chips.js` initial state.
+
+Closes MEH-293 (after the +7-day cleanup PR ships).
+
 ## 2026-05-07 — MEH-293 PR #1: dietary flags moved from producer to product (backend + migration)
 
 `feat(MEH-293)`: per-product dietary flags (`is_gluten_free` / `is_vegan` / `is_lactose_free`) replace the producer-level columns of the same name. Same anti-pattern fix as MEH-291 — a single business often sells both vegan and non-vegan items; storing the flag on the producer forced shoppers to filter on the worst-case denominator.
