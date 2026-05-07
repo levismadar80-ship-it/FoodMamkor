@@ -2,6 +2,25 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-479: drop legacy producer dietary columns + cleanup (closes MEH-293)
+
+`feat(MEH-479)`: destructive endpoint of MEH-293 — drops `producers.gluten_free` / `producers.vegan` / `producers.lactose_free` columns, removes the legacy `|| !!producer.X` fallback in `lib/badges.js`, cleans up Pydantic schemas, and pins the regression with 3 guard tests. Per-product `is_X` flags + aggregated `has_X_products` are now the single source of truth.
+
+- **Alembic revision `80bbf0a24874` (revises `1afe844d11f4`)** — `op.drop_column('producers', 'lactose_free' / 'vegan' / 'gluten_free')`. Downgrade re-adds 3 columns as `Boolean nullable` (matching baseline shape, no `server_default`); values NOT backfilled (pre-launch acceptable — orphan check returned 0).
+- **`backend/app/models/models.py`** — `Producer` class: 3 column lines removed.
+- **`backend/app/schemas/schemas.py`** — 4 schemas cleaned: `ProducerRegister` / `ProducerAdminCreate` / `ProducerUpdate` / `ProducerListOut`. `has_gluten_free_products` / `has_vegan_products` / `has_lactose_free_products` on `ProducerListOut` preserved (canonical aggregated output, computed by `attach_badge_fields`).
+- **`backend/app/routers/auth.py:332-334`** — register handler stops writing `gluten_free=` / `vegan=` / `lactose_free=` to the new producer row. No replacement — dietary tagging is per-product via `/settings`.
+- **`backend/app/services/producer_listing.py`** — no edit. Already uses `Product.is_X` via `_DIETARY_FILTERS` (PR #1). `?vegan=true` query key contract preserved.
+- **`backend/app/routers/producers.py`** — no edit. URL query params `gluten_free` / `vegan` / `lactose_free` preserved (URL contract; backend EXISTS subquery routes them to `Product.is_X`).
+- **`frontend/lib/badges.js`** — `earnsBadge` cases simplified: `return !!producer.has_X_products` (no `|| !!producer.X` fallback). JSDoc updated.
+- **`frontend/__tests__/badges.test.js`** — removed 3 "legacy producer-level, MEH-293 overlap" cases; added 3 MEH-479 guard tests proving legacy keys do NOT earn dietary badges; migrated 2 fixture-style tests (`returns badges in priority order` + `counts the dietary label badges`) from `{vegan: true, ...}` to `{has_vegan_products: true, ...}`; simplified the "no dietary badge" guard to use only `has_X_products` keys.
+- **`.github/workflows/pr-checks.yml`** — `EXPECTED_REV` bumped `1afe844d11f4 → 80bbf0a24874`. `EXPECTED_TABLES` stays 34.
+- **CSS / RTL** — N/A (no UI changes; `ProductsSection` checkboxes locked from PR #2).
+- **Out of scope** — `frontend/lib/producer-filters.js` + `frontend/lib/map-chips.js` (URL chip key contract, unchanged); `frontend/components/admin/ProducerForm.jsx` informational comments (kept as evergreen architectural notes).
+- **Pre-merge gate (HIGH-RISK destructive schema)** — Smadar runs the orphan-check SQL block (see PR description) on staging Postgres before squash-merging. Auto-merge intentionally OFF.
+
+Closes MEH-293 + MEH-479.
+
 ## 2026-05-07 — MEH-471: i18n Wave 1 — next-intl install + strangler-fig
 
 `feat(MEH-471)`: foundation cutover from homegrown `LanguageProvider` to **next-intl 4.11.0** (Next 16.2.4 compat). Both providers coexist during Wave 1; Wave 2 (MEH-472) deletes the homegrown shim. Branch switched from harness-mandated `claude/i18n-wave-1-foundation-kGlAP` to `feature/meh-471-i18n-wave-1-foundation` per CLAUDE.md workflow rule 3 (explicit Smadar permission).

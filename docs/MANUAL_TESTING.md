@@ -30,6 +30,20 @@
 - [ ] Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
 - [ ] RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, שני שדות המחיר ב-grid 2-עמודות נכנסים.
 
+### Dietary cleanup verification (MEH-479 — closes MEH-293)
+
+> Smoke test on Vercel preview after MEH-479 merge. Confirms the destructive column drop didn't break the per-product flow that PR #2 wired up.
+
+- [ ] Smoke — `\d producers` — איך לבדוק: `railway connect Postgres` (staging), `\d producers`; **תוצאה מצופה:** טור `gluten_free` / `vegan` / `lactose_free` כבר לא מופיעים. `grass_fed` / `organic_certified` עדיין שם.
+- [ ] Smoke — fresh signup — איך לבדוק: `/register/producer` במובייל; **תוצאה מצופה:** הטופס לא מציג checkboxes לתזונה (כבר הוסרו ב-PR #2). הרשמה עוברת בלי 5xx (auth.py כבר לא כותב `gluten_free=` etc.).
+- [ ] Smoke — add product with vegan checked → card badge — איך לבדוק: התחברי כיוצרת חדשה, `/settings` → "מוצרים" → "הוסיפי מוצר", סמני 🥦 טבעוני, שמרי. פתחי `/producers`; **תוצאה מצופה:** ה-card שלך מציג badge "טבעוני" (`has_vegan_products` aggregated מ-`Product.is_vegan` דרך `attach_badge_fields`).
+- [ ] Smoke — `?vegan=true` filter — איך לבדוק: `/producers?vegan=true`; **תוצאה מצופה:** רק יוצרות עם לפחות מוצר אחד מסומן `is_vegan=TRUE` מופיעות. URL contract של ה-chip לא השתנה.
+- [ ] Regression — admin form — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** עדיין אין checkboxes לתזונה (הוסרו ב-PR #2). שמירה עוברת בלי שדות הישנים (Pydantic schema cleaned ב-MEH-479).
+- [ ] Regression — `/admin` listing — איך לבדוק: `/admin/producers`; **תוצאה מצופה:** טבלה לא תופסת 5xx (ה-`ProducerListOut` schema לא מבקש יותר את 3 השדות הישנים מה-DB).
+- [ ] Regression — badge fixture stale — איך לבדוק: ה-jest test `MEH-479 guard — legacy producer.vegan alone does NOT trigger badge` מאומת ב-CI; **תוצאה מצופה:** ירוק (אם נכשל → רגרסיה ל-7-day overlap, להזעיק).
+
+---
+
 ### Dietary checkboxes per product (MEH-293 PR #2)
 
 > Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים". Backend live with `is_X` columns + `has_X_products` aggregated read (PR #1 already merged).

@@ -329,9 +329,7 @@ async def register_producer(
         website=data.website,
         primary_contact_method=method,
         contact_email=data.contact_email,
-        gluten_free=data.gluten_free,
-        vegan=data.vegan,
-        lactose_free=data.lactose_free,
+        # MEH-293/MEH-479: dietary tagging is per-product via /settings.
         status="pending_whatsapp",
     )
     db.add(producer)
