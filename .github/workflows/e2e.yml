@@ -50,6 +50,13 @@ jobs:
               - 'public/**'
               - 'package.json'
               - 'package-lock.json'
+              # MEH-499: skip Playwright on docs-only diffs. Negation
+              # patterns mirror the docs-only file classes used in the
+              # PR-Checks workflow.
+              - '!**/*.md'
+              - '!docs/**'
+              - '!.changeset/**'
+              - '!CHANGELOG.md'
 
   e2e:
     name: Playwright E2E (Vercel preview)
