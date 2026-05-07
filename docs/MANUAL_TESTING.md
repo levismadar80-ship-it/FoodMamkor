@@ -15,6 +15,21 @@
 - [ ] PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PUT /producers/me/products/:id` with body `{"name":"שם חדש"}` only; **תוצאה מצופה:** 200; `price_range` value unchanged in DB.
 - [ ] Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **תוצאה מצופה:** columns `price_min numeric(10,2)` + `price_max numeric(10,2)` both present and nullable; `price_range varchar(50)` still present (legacy fallback).
 
+### Phase 3 — frontend form + display (MEH-295 Phase 3)
+
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים" section → "הוסיפי מוצר".
+
+- [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
+- [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
+- [ ] Legacy fallback — איך לבדוק: צפי ברשימת מוצרים שכבר קיימת ב-DB עם `price_range="₪45/ק״ג"` ו-`price_min=NULL`; **תוצאה מצופה:** card מציג את הטקסט הישן `"₪45/ק״ג"` ראו שפלא — fallback לעמודה הישנה. (אין need לעדכן ידנית; המוצר הישן ממשיך כמות שהוא עד עריכה עתידית.)
+- [ ] Validation — empty min — איך לבדוק: try submit עם price_min ריק; **תוצאה מצופה:** "הכניסי מחיר" + לא נשלחה בקשה.
+- [ ] Validation — min < 1 — איך לבדוק: הזיני 0 או 0.5 ב-min; **תוצאה מצופה:** "המחיר חייב להיות לפחות 1 ₪".
+- [ ] Validation — over cap — איך לבדוק: הזיני 10001 ב-min או ב-max; **תוצאה מצופה:** "המחיר לא יכול לעבור 10,000 ₪".
+- [ ] Validation — max < min — איך לבדוק: min=50, max=30; **תוצאה מצופה:** "מחיר עד חייב להיות גבוה ממחיר מ-".
+- [ ] Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (לא placeholder שנעלם). Bug-2 fix.
+- [ ] Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
+- [ ] RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, שני שדות המחיר ב-grid 2-עמודות נכנסים.
+
 ---
 
 ## Producer status labels (MEH-294)
