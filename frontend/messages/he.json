@@ -9,9 +9,22 @@
     "admin": "אדמין",
     "login": "כניסה לחשבון",
     "logout": "התנתק",
-    "add_business": "הוסיפי את העסק שלך",
+    "add_business": "הוסיפו את העסק שלך",
     "mobile_label": "ניווט מובייל",
     "profile": "פרופיל",
+    "main_label": "ניווט ראשי",
+    "search_label": "חיפוש",
+    "menu_close": "סגור תפריט",
+    "menu_open": "פתח תפריט",
+    "lang_switch_to_en": "Switch to English",
+    "lang_switch_to_he": "החלף לעברית",
+    "lang_he": "עברית",
+    "lang_en": "EN",
+    "onboarding": {
+      "map": "מפה אינטראקטיבית — גלו בתי עסק קרובים אליכם 🗺️",
+      "profile": "הצטרפו כדי לשמור עסקים מועדפים ולדרג 💚",
+      "profile_cta": "הבנתי, סיום"
+    },
     "footer": {
       "discover": "לגלות",
       "community": "קהילה",
@@ -24,26 +37,126 @@
       "events": "אירועים",
       "neighbor_kitchen": "מהמטבח של השכן",
       "about": "אודות",
-      "add_business": "הוסיפי את העסק שלך",
+      "add_business": "הוסיפו את העסק שלך",
       "login": "כניסה לחשבון",
       "manage": "ניהול העסק",
       "terms": "תנאי שימוש",
       "privacy": "מדיניות פרטיות",
+      "privacy_short": "פרטיות",
       "accessibility": "הצהרת נגישות",
       "contact": "יצירת קשר",
       "copyright": "מהמקור. כל הזכויות שמורות.",
-      "made_with_love": "נעשה באהבה בישראל 🌿"
+      "made_with_love": "נעשה באהבה בישראל 🌿",
+      "cta_pitch": "יש לך עסק מזון מקומי?",
+      "cta_subpitch": "הצטרפו לאלפי בעלות עסק במהמקור",
+      "brand_aria": "מהמקור — דף הבית",
+      "brand_tagline": "ישר מהמקור אליך — בתי עסק מקומיים, כולם במקום אחד.",
+      "instagram_aria": "עמוד האינסטגרם של מהמקור — נפתח בחלון חדש",
+      "nav_aria": "ניווט ראשי בפוטר",
+      "nav_heading": "ניווט",
+      "nav_discover": "גלה עסקים",
+      "newsletter_heading": "אוכל טוב לא שומרים לעצמנו.",
+      "newsletter_label": "אימייל לניוזלטר",
+      "newsletter_placeholder": "האימייל שלך, בבקשה",
+      "newsletter_submit": "שלחו",
+      "newsletter_success": "ברוכים הבאים למהמקור 🌱 נפגשות בתיבה"
     }
+  },
+  "auth": {
+    "verify": {
+      "banner": "📧 אמתו את האימייל שלכם כדי לפרסם תוכן",
+      "resend": "שלחו שוב",
+      "sent": "✓ נשלח!",
+      "rate_limited": "הגעת למגבלה — נסו שוב בעוד שעה"
+    }
+  },
+  "account": {
+    "menu": {
+      "profile": "הפרופיל שלי",
+      "settings": "הגדרות",
+      "dashboard": "לוח הבקרה שלי",
+      "admin": "ממשק אדמין",
+      "aria": "תפריט — {name}",
+      "logout": "התנתקו"
+    }
+  },
+  "error": {
+    "try_again": "שגיאה, נסו שוב",
+    "generic": "משהו השתבש, נסו שוב"
   },
   "home": {
     "hero": {
       "title": "האוכל הכי טוב קרוב אלייך. פשוט לא ידעת איפה.",
-      "subtitle": "בתי עסק מקומיים, כולם במקום אחד."
+      "subtitle": "בתי עסק מקומיים, כולם במקום אחד.",
+      "friday_subtitle": "שישי הגיע 🛒 מה הולך על שולחן השבת שלך?",
+      "main_label": "דף הבית — גלו בתי עסק מקומיים",
+      "search_area_label": "חיפוש בתי עסק",
+      "near_me": "קרוב אלי",
+      "searching": "בחיפוש...",
+      "scroll_down_label": "גלול לרשימת בתי העסק"
     },
     "search": {
       "placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
       "sr_label": "חיפוש בתי עסק וערים",
       "submit": "חיפוש"
+    },
+    "stats": {
+      "verified_businesses": "בתי עסק מאומתים",
+      "categories": "קטגוריות",
+      "countrywide": "מכל רחבי הארץ"
+    },
+    "categories": {
+      "heading": "גלו לפי קטגוריה",
+      "subheading": "ישר מבית העסק — בלי מתווכים",
+      "aria": "הצג קטגוריה: {name}"
+    },
+    "producers": {
+      "heading": "בתי עסק מומלצים",
+      "map_link": "הצג במפה 🗺️",
+      "filter_prefix": "מסנן לפי:",
+      "counter": "מציגים {shown} מתוך {total}",
+      "hint_favorites": "לחצו ❤️ בכרטיס עסק כדי לשמור עסקים שאהבתם",
+      "filter_showing": "מציג:",
+      "clear_filter": "נקה סינון",
+      "empty_heading": "לא מצאנו עסקים באזור הזה — עדיין 🌱",
+      "empty_subtext": "נסו לשנות את הסינון, או גלו בתי עסק על המפה",
+      "explore_map": "גלו על המפה",
+      "load_more": "עוד בתי עסק",
+      "onboarding0": "גלו בתי עסק מקומיים — ירקות טריים, גבינות, לחם מחמצת ועוד 🌿 לחצו על כרטיס כדי לצפות בפרטים",
+      "onboarding1": "סננו לפי אורגני, כשר, משלוח ועוד — לחצו על אחד מהכפתורים למעלה 👆"
+    },
+    "founder_quote": {
+      "text": "אוכל אמיתי, מאנשים אמיתיים, ממש ליד הבית.",
+      "attribution": "ספיר, מייסדת מהמקור →"
+    },
+    "recent": {
+      "heading": "צפית לאחרונה"
+    },
+    "kitchen": {
+      "heading": "מהמטבח של השכן",
+      "see_more": "ראו עוד →"
+    },
+    "how_it_works": {
+      "heading": "איך זה עובד?",
+      "step01_title": "מצאו",
+      "step01_text": "גלו בתי עסק קרובים אליכם — ירקות טריים, גבינות מהחווה, לחם מחמצת",
+      "step02_title": "צרו קשר",
+      "step02_text": "דברו ישירות עם בית העסק בוואטסאפ, בטלפון או באינסטגרם",
+      "step03_title": "קבלו",
+      "step03_text": "אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות"
+    },
+    "cta": {
+      "heading": "יש לך עסק? בואי אליו",
+      "body": "אם את בעלת עסק, חקלאית או מגדלת — הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.",
+      "button": "הוסיפו את העסק שלך 🌿"
+    },
+    "new_businesses": {
+      "heading": "עסקים חדשים ✨"
+    },
+    "events": {
+      "heading": "אירועים קרובים 📅",
+      "all_events": "לכל האירועים ←",
+      "free": "חינם"
     }
   },
   "common": {
@@ -51,5 +164,14 @@
       "show_on_map": "הצג במפה",
       "more_info": "לפרופיל המלא"
     }
+  },
+  "category": {
+    "cooking": "בישול",
+    "nutrition": "תזונה",
+    "food_tour": "סיור אוכל",
+    "agriculture": "חקלאות",
+    "tasting": "טעימות",
+    "workshop": "סדנה",
+    "fermented": "מותססים"
   }
 }

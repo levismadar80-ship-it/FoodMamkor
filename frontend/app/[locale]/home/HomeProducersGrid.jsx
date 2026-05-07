@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Leaf } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
@@ -39,21 +40,22 @@ export function HomeProducersGrid({
   onClearCategory,
   onLoadMore,
 }) {
+  const t = useTranslations();
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       <div className="flex items-center justify-between mb-8">
         <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
-          בתי עסק מומלצים
+          {t("home.producers.heading")}
         </h2>
         <Link href="/map" className="text-primary hover:underline flex items-center gap-1">
-          הצג במפה 🗺️
+          {t("home.producers.map_link")}
         </Link>
       </div>
 
       {/* Step 0 — producers grid tip (2s delay) */}
       <OnboardingTip
         show={step0Visible && onboardStep === 0}
-        text="גלי בתי עסק מקומיים — ירקות טריים, גבינות, לחם מחמצת ועוד 🌿 לחצי על כרטיס כדי לצפות בפרטים"
+        text={t("home.producers.onboarding0")}
         onDismiss={onboardDismiss}
         onNext={onAdvanceFromStep0}
       />
@@ -70,13 +72,13 @@ export function HomeProducersGrid({
       {/* Step 1 — filter chips tip */}
       <OnboardingTip
         show={onboardStep === 1}
-        text="סנני לפי אורגני, כשר, משלוח ועוד — לחצי על אחד מהכפתורים למעלה 👆"
+        text={t("home.producers.onboarding1")}
         onDismiss={onboardDismiss}
         onNext={onboardAdvance}
       />
       {Object.values(chips).some(Boolean) && (
         <p className="text-xs text-site-muted mb-4" aria-live="polite">
-          מסנן לפי:{" "}
+          {t("home.producers.filter_prefix")}{" "}
           {CHIPS_CONFIG.filter((c) => chips[c.key])
             .map((c) => c.label)
             .join(" · ")}
@@ -85,7 +87,7 @@ export function HomeProducersGrid({
 
       {filters.category && (
         <div className="mb-6 flex items-center gap-2">
-          <span className="text-sm text-site-muted">מציג:</span>
+          <span className="text-sm text-site-muted">{t("home.producers.filter_showing")}</span>
           {categories.find((c) => String(c.id) === filters.category) && (
             <span className="bg-light text-primary px-3 py-1 rounded-full text-sm">
               {categories.find((c) => String(c.id) === filters.category).emoji}{" "}
@@ -96,7 +98,7 @@ export function HomeProducersGrid({
             onClick={onClearCategory}
             className="text-sm text-primary hover:underline"
           >
-            נקה סינון
+            {t("home.producers.clear_filter")}
           </button>
         </div>
       )}
@@ -112,7 +114,7 @@ export function HomeProducersGrid({
               data-testid="producers-counter"
               aria-live="polite"
             >
-              מציגים {Math.min(visibleCount, producers.length)} מתוך {producers.length}
+              {t("home.producers.counter", { shown: Math.min(visibleCount, producers.length), total: producers.length })}
             </p>
           )}
           {showNewUserHint && visibleProducers.length > 0 && (
@@ -121,7 +123,7 @@ export function HomeProducersGrid({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
               </span>
-              לחצי ❤️ בכרטיס עסק כדי לשמור עסקים שאהבת
+              {t("home.producers.hint_favorites")}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
@@ -143,16 +145,16 @@ export function HomeProducersGrid({
                 <Leaf size={36} weight="duotone" className="text-primary" />
               </div>
               <h3 className="font-headline text-xl font-bold text-site-text mb-2">
-                לא מצאנו עסקים באזור הזה — עדיין 🌱
+                {t("home.producers.empty_heading")}
               </h3>
               <p className="text-site-muted mb-5 max-w-md mx-auto">
-                נסי לשנות את הסינון, או גלי בתי עסק על המפה
+                {t("home.producers.empty_subtext")}
               </p>
               <Link
                 href="/map"
                 className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-light transition font-medium"
               >
-                גלי על המפה
+                {t("home.producers.explore_map")}
               </Link>
             </div>
           )}
@@ -162,7 +164,7 @@ export function HomeProducersGrid({
                 onClick={onLoadMore}
                 className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-light transition font-medium"
               >
-                עוד בתי עסק
+                {t("home.producers.load_more")}
               </button>
             </div>
           )}

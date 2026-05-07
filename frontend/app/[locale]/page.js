@@ -19,6 +19,7 @@ import {
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
 import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
+import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
 
 // PREMIUM_DESIGN: parallax divider images between sections.
@@ -26,8 +27,9 @@ const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52
 const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80&fm=webp";
 
 export default function HomePage() {
+  const t = useTranslations();
   const {
-    t, user,
+    user,
     producers, homeProducts, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
@@ -43,7 +45,6 @@ export default function HomePage() {
   return (
     <div>
       <HomeHero
-        t={t}
         fridayMode={fridayMode}
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
@@ -62,14 +63,14 @@ export default function HomePage() {
           <span className="font-semibold tabular-nums">
             <AnimatedCounter target={statsProducersCount} />
           </span>{" "}
-          בתי עסק מאומתים
+          {t("home.stats.verified_businesses")}
           &nbsp;·&nbsp;
           <span className="font-semibold tabular-nums">
             <AnimatedCounter target={statsCategoriesCount} />
           </span>{" "}
-          קטגוריות
+          {t("home.stats.categories")}
           &nbsp;·&nbsp;
-          מכל רחבי הארץ
+          {t("home.stats.countrywide")}
         </p>
       </section>
 
@@ -128,7 +129,7 @@ export default function HomePage() {
       {newestProducers.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pb-20">
           <h2 className="font-headline font-bold text-site-text mb-8" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
-            עסקים חדשים ✨
+            {t("home.new_businesses.heading")}
           </h2>
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4">
             {newestProducers.map((p) => (

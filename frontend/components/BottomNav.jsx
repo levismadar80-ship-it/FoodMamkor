@@ -69,7 +69,7 @@ export default function BottomNav() {
               {showStep2 && (
                 <OnboardingTip
                   show
-                  text="מפה אינטראקטיבית — גלי בתי עסק קרובים אלייך 🗺️"
+                  text={t("nav.onboarding.map")}
                   onDismiss={onboardDismiss}
                   onNext={onboardAdvance}
                   placement="above"
@@ -78,8 +78,8 @@ export default function BottomNav() {
               {showStep3 && (
                 <OnboardingTip
                   show
-                  text="הצטרפי כדי לשמור עסקים מועדפים ולדרג 💚"
-                  cta="הבנתי, סיום"
+                  text={t("nav.onboarding.profile")}
+                  cta={t("nav.onboarding.profile_cta")}
                   onDismiss={onboardDismiss}
                   onNext={onboardDismiss}
                   placement="above"
