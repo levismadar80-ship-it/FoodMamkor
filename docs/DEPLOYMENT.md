@@ -236,9 +236,14 @@ this codebase. Open:
 > GitHub uses to identify required checks. If the workflow YAML changes a job name,
 > the branch protection rule must be updated to match.
 
-> **`Adversarial review` is intentionally NOT a required check.** It only runs
-> when `.github/scripts/adversarial-review.sh` exists (see workflow). The check
-> is informational until that script is added.
+> **`Adversarial review (calibration)` is intentionally NOT a required check.**
+> Wired via `.github/workflows/claude-review.yml`
+> (`anthropics/claude-code-action@v1`, MEH-487). Runs with
+> `continue-on-error: true` during the calibration window so findings are
+> informational. After the calibration tally crosses >70% useful (see
+> [docs/CLAUDE-REVIEW.md](./CLAUDE-REVIEW.md) → "Calibration plan"), a
+> follow-up PR flips it to blocking and adds the job name to the required
+> checks list above.
 
 > **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
 > (npm audit)` are required checks (MEH-336, 2026-05-01).** Both jobs run

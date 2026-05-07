@@ -1,7 +1,45 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-487 claude-code-action@v1 wired DRAFT PR open; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-487 wire `anthropics/claude-code-action@v1` for adversarial PR review (DRAFT PR open)
+
+**Branch:** `feature/meh-487-claude-review-action` off `origin/staging`. Switched FROM harness-mandated `claude/review-ci-workflows-aoEOR` per CLAUDE.md workflow rule 3 + Q0 confirmation in plan review.
+
+**Risk tier:** MEDIUM-LOW (CI-only, `continue-on-error: true`). Plan-gate then end-to-end execution per MEH-450.
+
+**What's done:**
+- **NEW `.github/workflows/claude-review.yml`** — `anthropics/claude-code-action@v1` on `pull_request: [opened, synchronize]`. Calibration mode (`continue-on-error: true`). MEH-485 canonical concurrency key. Permissions scoped to `contents:read` + `pull-requests:write` + `issues:write`. Model: `claude-sonnet-4-6`. Thin prompt pointer in YAML; full prompt lives in `docs/CLAUDE-REVIEW.md`.
+- **`pr-checks.yml`** — JOB 4 `adversarial-review` skeleton + the "Check for adversarial-review script" step DELETED (the `.github/scripts/adversarial-review.sh` shell-out approach was deprecated by MEH-487's revision 2026-05-07 in favor of the official action). Header comment updated to "Three jobs: build, pytest, test-inventory (non-gating)."
+- **NEW `docs/CLAUDE-REVIEW.md`** — canonical prompt (6 focus areas: security / RTL / schema-drift / scope creep / Hebrew copy / test coverage), output format contract, calibration plan (5-PR window with decision matrix), tuning protocol. "Always post a comment" rule explicit during calibration.
+- **`docs/DEPLOYMENT.md` §C** — note rewritten to point at `claude-review.yml` and mention the calibration window. NOT a required check on day 1.
+- **ADR-007 forward-link** — file not yet on staging (MEH-486 in flight); referenced as concept ("expand-contract pattern, per ADR-007"), path commented as TODO.
+
+**Pre-conditions (Smadar manual, confirmed before CC started):**
+- ✅ `ANTHROPIC_API_KEY` secret in repo Settings → Secrets and variables → Actions
+- ✅ Claude GitHub App installed via `/install-github-app`
+
+**What's pending:**
+- Watch the `Adversarial review (calibration)` job on PR — first run fires against this PR's own diff. Capture the comment text in the bundle.
+- After PR merges: monitor next 4 PRs, fill in the calibration tally subsection below.
+- Decision after PR #5: flip blocking / tune prompt / revert (per CLAUDE-REVIEW.md decision matrix).
+
+**Verification deferred to user (CC sandbox limitation, MEH-360):** the GitHub Action runs in CI; CC sandbox cannot reach Marketplace endpoints. The bundle reports the job's CI status; Smadar verifies the actual PR comment renders correctly.
+
+#### Claude Review calibration
+
+| PR # | Useful findings | Noise findings | Verdict | Notes |
+|---|---|---|---|---|
+| (this PR) | _ | _ | _ | first run — wires the action |
+| | | | | |
+| | | | | |
+| | | | | |
+| | | | | |
+
+Decision after PR #5 per `docs/CLAUDE-REVIEW.md` → "Calibration plan".
+
+---
 
 ### Session 2026-05-07 — MEH-483 structlog + Request-ID + /health/{liveness,readiness} (MERGED PR #541 b23f2ed)
 
