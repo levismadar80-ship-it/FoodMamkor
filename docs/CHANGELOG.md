@@ -13,6 +13,7 @@
 - **ADR-007 forward-link** — `docs/decisions/ADR-007-expand-contract-schema-changes.md` not yet on staging (MEH-486 in flight on parallel branch). Prompt references ADR-007 as a *concept* ("expand-contract pattern, per ADR-007"); file path commented `<!-- TODO: ADR-007 path lands when MEH-486 merges to staging -->`.
 - **Calibration tally** — lives in `HANDOFF.md` "Claude Review calibration" subsection. Smadar updates per PR before merge.
 - **Forbidden, per spec** — no custom `.github/scripts/adversarial-review.sh`; no inline prompt in YAML beyond ~10-line pointer; no branch-protection required-check change on day 1.
+- Added `id-token: write` permission — required by `claude-code-action@v1` for OIDC.
 
 Closes MEH-487.
 
