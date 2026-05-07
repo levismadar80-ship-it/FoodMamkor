@@ -1,9 +1,9 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-471 i18n Wave 1 ready for merge PR #532; MEH-293 PR #2 frontend in pre-push review on `feature/meh-293-frontend`; MEH-293 PR #1 backend MERGED PR #529 27d74e8 — back-merged main→staging by Smadar; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-07 — MEH-471 i18n Wave 1 ready for review
+### Session 2026-05-07 — MEH-471 i18n Wave 1 (MERGED PR #532 f7ea62e)
 
 **Branch:** `feature/meh-471-i18n-wave-1-foundation` off `origin/staging`. Switched FROM harness-mandated `claude/i18n-wave-1-foundation-kGlAP` per CLAUDE.md workflow rule 3 (Smadar gave explicit permission in turn 4 of the session).
 
@@ -42,12 +42,14 @@
 
 ---
 
+### Session 2026-05-07 — MEH-293 FULLY CLOSED via MEH-479
+- MEH-293 PR #1 backend — MERGED PR #529 squash `27d74e8`. Alembic `1afe844d11f4` (add `is_gluten_free` / `is_vegan` / `is_lactose_free` to products + JOIN-backfill + partial index `idx_products_dietary`).
+- MEH-293 PR #2 frontend — MERGED PR #531 squash `1a9d897`. Settings Add+Edit checkboxes, register/admin removal, `lib/badges.js` aggregation-with-fallback, badges test cases.
+- MEH-479 cleanup — branch `feature/meh-479-meh-293-removal` off staging tip `1a9d897`. **Pre-launch waiver — 7-day overlap window collapsed.** Alembic `80bbf0a24874` drops `producers.gluten_free / vegan / lactose_free`. Removes the `|| !!producer.X` fallback in `lib/badges.js`, cleans 4 Pydantic schemas, drops register-handler write. Adds 3 MEH-479 guard tests proving legacy keys do NOT trigger badges. Auto-merge OFF — Smadar manually squash-merges after orphan-check SQL passes.
 
-### Session 2026-05-07 — MEH-293 PR #2 frontend (in pre-push review)
-- MEH-293 PR #1 backend — MERGED PR #529 squash `27d74e8`. Alembic `1afe844d11f4` deployed to production Railway via main; Smadar back-merged main→staging so the 7-day overlap clock starts cleanly. Production deploy date: **2026-05-07**.
-- MEH-293 PR #2 frontend — branch `feature/meh-293-frontend` off staging tip `27d74e8`. Touches: register removal, admin removal, settings ProductsSection (Add+Edit checkboxes), `lib/badges.js` aggregation read with legacy fallback, `__tests__/badges.test.js` cases, CHANGELOG/MANUAL_TESTING/HANDOFF.
+**MEH-293 fully closed** once MEH-479 lands.
 
-**Next:** Smadar mobile QA on Vercel preview at 375px → mark draft PR ready → auto-merge fires. Then schedule **+7-day cleanup PR for 2026-05-14** (drops `producers.gluten_free`/`vegan`/`lactose_free` columns + `lib/badges.js` legacy fallback + `producer-filters.js` initial state + `map-chips.js` initial state).
+**Skeptic-Mode lesson codified earlier this session** — branch-state claims must be verified via `git ls-remote origin` (or fresh `git fetch + git log origin/<branch>`), not stale local `origin/<branch>` cache or single MCP read. PR #1's perceived "merged-to-wrong-base incident" was a sandbox tooling visibility gap, not a real issue.
 
 ### Skeptic-Mode lesson codified this session
 Branch-state claims must be cross-verified via `git ls-remote origin` (or fresh `git fetch origin` then `git log origin/<branch>`) — **not** by relying on a single `mcp__github__list_branches` read or stale local `origin/<branch>` cache. PR #1's perceived "incident" (claimed merge to wrong base) was a false alarm caused by sandbox-tooling visibility gaps. No actual incident; production deploy on 2026-05-07 is intentional. Going forward: `git ls-remote origin` is the source of truth for any "does branch X exist on the remote" question.

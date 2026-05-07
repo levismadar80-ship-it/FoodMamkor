@@ -74,9 +74,8 @@ class Producer(Base):
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
     organic_certified = Column(Boolean, default=False)
-    gluten_free = Column(Boolean, default=False)
-    vegan = Column(Boolean, default=False)
-    lactose_free = Column(Boolean, default=False)
+    # MEH-293/MEH-479: dietary flags moved to products.is_X (canonical) and
+    # ProducerListOut.has_X_products (aggregated, computed at attach time).
     has_delivery = Column(Boolean, default=False)
     pickup_points = Column(Boolean, default=False)
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין

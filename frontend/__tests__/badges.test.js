@@ -36,9 +36,9 @@ describe("allBadges", () => {
         products_count: 0,
         organic_certified: false,
         grass_fed: false,
-        gluten_free: false,
-        vegan: false,
-        lactose_free: false,
+        has_gluten_free_products: false,
+        has_vegan_products: false,
+        has_lactose_free_products: false,
         kosher: null,
       }),
     ).toEqual([]);
@@ -73,38 +73,39 @@ describe("allBadges", () => {
     expect(allBadges({ grass_fed: true }).map((b) => b.key)).toEqual(["grass_fed"]);
   });
 
-  it("gluten_free — when gluten_free is true (legacy producer-level, MEH-293 overlap)", () => {
-    expect(allBadges({ gluten_free: true }).map((b) => b.key)).toEqual(["gluten_free"]);
-  });
-
-  it("vegan — when vegan is true (legacy producer-level, MEH-293 overlap)", () => {
-    expect(allBadges({ vegan: true }).map((b) => b.key)).toEqual(["vegan"]);
-  });
-
-  it("lactose_free — when lactose_free is true (legacy producer-level, MEH-293 overlap)", () => {
-    expect(allBadges({ lactose_free: true }).map((b) => b.key)).toEqual(["lactose_free"]);
-  });
-
-  // MEH-293: aggregated `has_X_products` is the canonical source post-7-day overlap.
-  // These cases pin the new code path so the +7-day cleanup PR (which removes the
-  // legacy `|| !!producer.X` fallback) doesn't silently break the badge surface.
-  it("gluten_free — when has_gluten_free_products is true (MEH-293 aggregated)", () => {
+  // MEH-293/MEH-479: aggregated `has_X_products` is the canonical source.
+  // Legacy producer.X columns were dropped in MEH-479; the guard tests below
+  // confirm that even if a stale fixture sets producer.vegan=true (e.g. from
+  // an out-of-date API mock), it does NOT trigger a dietary badge.
+  it("gluten_free — when has_gluten_free_products is true", () => {
     expect(allBadges({ has_gluten_free_products: true }).map((b) => b.key)).toEqual(["gluten_free"]);
   });
 
-  it("vegan — when has_vegan_products is true (MEH-293 aggregated)", () => {
+  it("vegan — when has_vegan_products is true", () => {
     expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
   });
 
-  it("lactose_free — when has_lactose_free_products is true (MEH-293 aggregated)", () => {
+  it("lactose_free — when has_lactose_free_products is true", () => {
     expect(allBadges({ has_lactose_free_products: true }).map((b) => b.key)).toEqual(["lactose_free"]);
   });
 
-  it("dietary — both legacy + aggregated false yields no dietary badge", () => {
+  // MEH-479 guard tests — legacy producer.X keys must NOT earn a dietary
+  // badge after the column drop. Pins the regression that motivated MEH-479's
+  // single-source-of-truth refactor.
+  it("MEH-479 guard — legacy producer.gluten_free alone does NOT trigger badge", () => {
+    expect(allBadges({ gluten_free: true }).map((b) => b.key)).not.toContain("gluten_free");
+  });
+
+  it("MEH-479 guard — legacy producer.vegan alone does NOT trigger badge", () => {
+    expect(allBadges({ vegan: true }).map((b) => b.key)).not.toContain("vegan");
+  });
+
+  it("MEH-479 guard — legacy producer.lactose_free alone does NOT trigger badge", () => {
+    expect(allBadges({ lactose_free: true }).map((b) => b.key)).not.toContain("lactose_free");
+  });
+
+  it("dietary — all has_X_products false yields no dietary badge", () => {
     const keys = allBadges({
-      vegan: false,
-      gluten_free: false,
-      lactose_free: false,
       has_vegan_products: false,
       has_gluten_free_products: false,
       has_lactose_free_products: false,
@@ -144,9 +145,9 @@ describe("allBadges", () => {
       has_delivery: true,
       kosher: "חלבי",
       grass_fed: true,
-      gluten_free: true,
-      vegan: true,
-      lactose_free: true,
+      has_gluten_free_products: true,
+      has_vegan_products: true,
+      has_lactose_free_products: true,
       organic_certified: true,
       days_since_created: 5,
       is_recommended: true,
@@ -245,9 +246,9 @@ describe("badgeCount", () => {
   it("counts the dietary label badges", () => {
     expect(
       badgeCount({
-        gluten_free: true,
-        vegan: true,
-        lactose_free: true,
+        has_gluten_free_products: true,
+        has_vegan_products: true,
+        has_lactose_free_products: true,
       }),
     ).toBe(3);
   });

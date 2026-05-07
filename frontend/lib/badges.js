@@ -7,9 +7,9 @@
  *   new          (auto)    — producer.days_since_created <= 30
  *   organic      (manual)  — producer.organic_certified
  *   grass_fed    (manual)  — producer.grass_fed
- *   gluten_free  (manual)  — has_gluten_free_products (any product is_gluten_free) || producer.gluten_free (legacy, MEH-293 7-day overlap)
- *   vegan        (manual)  — has_vegan_products       (any product is_vegan)       || producer.vegan       (legacy, MEH-293 7-day overlap)
- *   lactose_free (manual)  — has_lactose_free_products(any product is_lactose_free)|| producer.lactose_free(legacy, MEH-293 7-day overlap)
+ *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
+ *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
+ *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   kosher       (manual)  — producer.kosher (any non-empty string)
  *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0
  *   products     (auto)    — producer.products_count >= 3
@@ -126,13 +126,12 @@ function earnsBadge(producer, key) {
     case "grass_fed":
       return !!producer.grass_fed;
     case "gluten_free":
-      // MEH-293: aggregated from products; legacy producer.gluten_free fallback
-      // remains during the 7-day overlap. Removed in the +7-day cleanup PR.
-      return !!producer.has_gluten_free_products || !!producer.gluten_free;
+      // MEH-293/MEH-479: aggregated from products.is_gluten_free.
+      return !!producer.has_gluten_free_products;
     case "vegan":
-      return !!producer.has_vegan_products || !!producer.vegan;
+      return !!producer.has_vegan_products;
     case "lactose_free":
-      return !!producer.has_lactose_free_products || !!producer.lactose_free;
+      return !!producer.has_lactose_free_products;
     case "kosher":
       return typeof producer.kosher === "string" && producer.kosher.trim().length > 0;
     case "delivery":

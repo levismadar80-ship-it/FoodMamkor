@@ -65,9 +65,7 @@ class ProducerRegister(BaseModel):
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
     category_ids: list[int] = []
-    gluten_free: bool = False
-    vegan: bool = False
-    lactose_free: bool = False
+    # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
@@ -270,9 +268,7 @@ class ProducerAdminCreate(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
-    gluten_free: bool = False
-    vegan: bool = False
-    lactose_free: bool = False
+    # MEH-293/MEH-479: dietary flags moved to products.is_X.
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
@@ -359,9 +355,7 @@ class ProducerUpdate(BaseModel):
     price_range: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
-    gluten_free: bool | None = None
-    vegan: bool | None = None
-    lactose_free: bool | None = None
+    # MEH-293/MEH-479: dietary flags moved to products.is_X.
     has_delivery: bool | None = None
     pickup_points: bool | None = None
     kosher: str | None = None
@@ -459,15 +453,12 @@ class ProducerListOut(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
-    gluten_free: bool = False
-    vegan: bool = False
-    lactose_free: bool = False
-    # MEH-293: aggregated from products.is_X — `True` when at least one
-    # product on this producer carries the dietary flag. Computed at
-    # serialization time by attach_badge_fields (no extra query —
-    # producer.products is already selectinload'ed by producer_listing).
-    # Legacy producer-level columns above are preserved during the 7-day
-    # overlap; frontend reads `has_X_products || X` for badge display.
+    # MEH-293/MEH-479: dietary flags live on products.is_X. The aggregated
+    # has_X_products fields below are computed at serialization time by
+    # attach_badge_fields — `True` when at least one product on this
+    # producer carries the dietary flag (no extra query — producer.products
+    # is already selectinload'ed by producer_listing). Frontend lib/badges.js
+    # reads these fields directly (no legacy fallback post MEH-479).
     has_gluten_free_products: bool = False
     has_vegan_products: bool = False
     has_lactose_free_products: bool = False
