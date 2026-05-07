@@ -1,7 +1,16 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-295 backend Phase 1+2 — PR #519 merging; MEH-335 fingerprint hardening — merged; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### MEH-295 backend — MERGED to staging (07.05.2026)
+- PR #519 squash-merged. Alembic e4790e538aa2 applied on Railway.
+- products table: price_min/price_max NUMERIC(10,2) NULL, price_range String(50) NULL preserved.
+- Pydantic schemas live: Create requires price_min, Update Optional, Out nullable.
+- ProductOut serializes Decimal as JSON string ("50.00") — Phase 3 frontend must Number() coerce.
+- 15/15 tests green incl. regression for PUT partial-update semantics.
+- REMAINING: Phase 3 frontend PR (settings/page.jsx + ProducerSections.jsx) + docs roll-in.
+- Branch deleted. Next session opens fresh branch off staging tip.
 
 ### MEH-295 (Backend) — IN REVIEW (PR #519)
 
