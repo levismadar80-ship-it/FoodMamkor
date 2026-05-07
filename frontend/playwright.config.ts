@@ -19,6 +19,7 @@ export default defineConfig({
     timezoneId: "Asia/Jerusalem",
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
+    reducedMotion: "reduce",
     ignoreHTTPSErrors: true,
     screenshot: "only-on-failure",
     trace: "on-first-retry",
