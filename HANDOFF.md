@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-06 (MEH-294 Hebrew status labels — PR #515; MEH-303 mask phone in logs merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
 ### MEH-294 — Hebrew labels for producer status codes (PR #515)
 
@@ -39,21 +39,29 @@
 
 ---
 
-### MEH-303 — mask phone in logger output (PR open)
+### MEH-383 — codify observability dashboard-receipt protocol (PR open)
 
-Branch: `feature/meh-303-mask-phone-logs` off staging. Defense-in-depth
-PII helper. New `backend/app/utils/pii.py::mask_phone()` returns
-`<missing>` / `***` / `***<last4>`. Wired into the only `{phone}` log
-interpolation site: `backend/app/services/auth_notifications.py:62`
-(WHATSAPP welcome FAILED). 6 pytest cases at `tests/test_pii.py`
-(None / empty / too-short / IL mobile / international / separators).
-Post-edit `grep -rn 'logger\.' backend/app/ | grep -E '\{phone[^}]*\}'`
-returns 0. Closes MEH-303; resolves MEH-287 follow-up F7.
+Branch: `feature/meh-383-codify-observability-protocol` off staging.
+Doc-only. New `.claude/rules/observability.md` (path-scoped to
+`frontend/sentry.*.config.*`, `frontend/instrumentation.*`,
+`frontend/next.config.js`, `backend/app/main.py`, `.env.example`).
+Workflow rule: observability tickets (Sentry, logging, monitoring,
+alerting) require real-event verification at destination dashboard
+before "Done". Anti-patterns + verification template + precedent
+incidents (MEH-371 STEP 9, MEH-376 retroactive, MEH-379+380+381 CSP
+gaps) included. CLAUDE.md line 57 extended with one-line pointer —
+still at 80-line cap. `.claude/rules/` now has 7 path-scoped files
+(rtl, db, code-execution, prompting, frontend, backend, observability)
+plus the always-load set (workflow, security, skills, testing,
+deployment, file-preservation). Closes MEH-383.
 
-Layout note: introduces `backend/app/utils/` package alongside the
-existing flat `backend/app/slug_utils.py` (minor inconsistency,
-accepted — spec authoritative). Future refactor of `slug_utils.py`
-→ `utils/slug.py` is a separate ticket if it bothers us.
+### MEH-303 — mask phone in logger output (MERGED — squash `863e5be`, PR #516)
+
+Defense-in-depth PII helper. New `backend/app/utils/pii.py::mask_phone()`
+returns `<missing>` / `***` / `***<last4>`. Wired into
+`backend/app/services/auth_notifications.py:62`. 6 pytest cases at
+`tests/test_pii.py`. Post-edit grep clean. Closes MEH-303; resolves
+MEH-287 follow-up F7.
 
 ### MEH-302 — dedupe step-3 success screen banner (MERGED — squash `4c919c9`, PR #514)
 
