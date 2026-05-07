@@ -173,9 +173,15 @@ export default function ProducerSections({
                   {product.description && (
                     <p className="text-sm text-site-muted mt-1 line-clamp-2">{product.description}</p>
                   )}
-                  {product.price_range && (
-                    <p className="text-accent font-medium mt-2">{product.price_range}</p>
-                  )}
+                  {(() => {
+                    if (product.price_min != null && product.price_max != null)
+                      return <p className="text-accent font-medium mt-2">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
+                    if (product.price_min != null)
+                      return <p className="text-accent font-medium mt-2">₪{Number(product.price_min)}</p>;
+                    if (product.price_range)
+                      return <p className="text-accent font-medium mt-2">{product.price_range}</p>;
+                    return null;
+                  })()}
                 </div>
               </div>
             ))}

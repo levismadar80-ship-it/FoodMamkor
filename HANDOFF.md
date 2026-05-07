@@ -3,14 +3,24 @@
 > Read this before starting any work.
 > Last updated: 2026-05-07 (MEH-469 MCP availability note — PR open; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
+### MEH-295 — FULLY CLOSED (07.05.2026, pending Phase 3 PR merge)
+
+**Phase 1+2 (backend) — MERGED PR #519:** Alembic `e4790e538aa2` live on Railway. `products` table: `price_min`/`price_max` `NUMERIC(10,2) NULL`, `price_range String(50) NULL` preserved as legacy. Pydantic schemas: Create requires `price_min`, Update Optional, Out nullable. ProductOut serializes Decimal as JSON string. 15/15 tests green incl. PUT partial-update regression.
+
+**Phase 3 (frontend) — branch `feature/meh-295-product-form-frontend` off `b4c4208`:**
+- `frontend/app/settings/page.jsx` `ProductsSection` — replaced single `price_range` text input with 2-col grid: `price_min` required + `price_max` optional, both `type="number"` `min={1} max={10000} step={0.5}`. Form state reshaped to `{name, description, image_url, price_min, price_max}`. All four form fields now use real `<label>` above input (fixes Bug-2 placeholder-as-label class). Submit body sends `price_min: Number(...)` + `price_max: Number(...) | null`. Client-side validation with verbatim Hebrew error copy.
+- Display chain on both `settings/page.jsx:920` + `producer/[id]/components/ProducerSections.jsx:176`: range when both present, single when only `price_min`, legacy raw `price_range` fallback for pre-schema rows, otherwise omit. `Number()` coerce on read (Pydantic v2 Decimal-as-string).
+- Brand voice fix in same surface: submit copy "שמור מוצר" → "הוסיפי מוצר", "שומרת..." → "מוסיפה...".
+- Edit flow (PUT, "שמרי שינויים", legacy hint, Decimal-coerce-on-load) deferred to **MEH-470**.
+- Half-shekel display polish (formatPrice helper) deferred until production feedback.
+- `npm run build` green; RTL grep clean on touched region; `price_range` token only in legacy display fallback, never in submit body.
+
 ### MEH-295 backend — MERGED to staging (07.05.2026)
 - PR #519 squash-merged. Alembic e4790e538aa2 applied on Railway.
 - products table: price_min/price_max NUMERIC(10,2) NULL, price_range String(50) NULL preserved.
 - Pydantic schemas live: Create requires price_min, Update Optional, Out nullable.
-- ProductOut serializes Decimal as JSON string ("50.00") — Phase 3 frontend must Number() coerce.
+- ProductOut serializes Decimal as JSON string ("50.00") — Phase 3 frontend Number() coerced on read.
 - 15/15 tests green incl. regression for PUT partial-update semantics.
-- REMAINING: Phase 3 frontend PR (settings/page.jsx + ProducerSections.jsx) + docs roll-in.
-- Branch deleted. Next session opens fresh branch off staging tip.
 
 ### MEH-469 — MCP availability note in CLAUDE.md (PR open)
 
