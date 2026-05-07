@@ -97,7 +97,8 @@ export function AuthProvider({ children }) {
     const res = await api.post("/auth/register", data);
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
-    return afterLogin(me.data);
+    await afterLogin(me.data);
+    return res.data;
   };
 
   const loginWithGoogle = async (idToken) => {

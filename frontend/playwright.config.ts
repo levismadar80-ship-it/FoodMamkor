@@ -10,12 +10,16 @@ export default defineConfig({
     ? [["html", { open: "never" }], ["list"]]
     : [["list"]],
   timeout: 30_000,
+  expect: {
+    timeout: 10_000,
+  },
   use: {
     baseURL: process.env.TEST_URL || "http://localhost:3000",
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
+    reducedMotion: "reduce",
     ignoreHTTPSErrors: true,
     screenshot: "only-on-failure",
     trace: "on-first-retry",

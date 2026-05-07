@@ -1,21 +1,65 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-295 backend Phase 1+2 — PR #519 merging; MEH-335 fingerprint hardening — merged; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-470 product edit flow — MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### MEH-295 (Backend) — IN REVIEW (PR #519)
+### Session 2026-05-07 — Product surface complete
+- MEH-294 closed (PR #515) — Hebrew status labels
+- MEH-295 closed (PR #519 backend + #525 frontend cdd975a) — 2-field price + validation + display chain
+- MEH-470 closed (PR #528 434f891) — Product Edit flow (inline per-row, PUT, Decimal-coerce-on-load, legacy hint, נקבה copy)
 
-- **Branch:** `feature/meh-295-product-price-validation` (off `origin/staging`).
-- **Status:** Phase 1 (Alembic `e4790e538aa2`) + Phase 2 (model + Pydantic + tests + EXPECTED_REV bump) complete. PR #519 ready, manual squash-merge authorized. Auto-merge OFF.
-- **Frontend (Phase 3):** deferred to a separate PR after Railway redeploys staging with the new schema. Surfaces: `frontend/app/settings/page.jsx:816-957` (form, two number inputs + Hebrew error copy verbatim from spec) + `frontend/app/producer/[id]/components/ProducerSections.jsx:176-177` (display range chain). NOT touching `ProducerCard.jsx` / `MapProducerCard.jsx` / `admin/ProducerForm.jsx` — those read `producer.price_range` (separate Producer entity column).
-- **Schema migration `e4790e538aa2`** runs on staging Railway during deploy. Additive + nullable → safe on populated tables. CC sandbox cannot reach Railway (MEH-360); Smadar verifies with `\d products` after Railway redeploy.
-- **PUT semantics confirmed = partial update.** `producer_me.py:794` uses `model_dump(exclude_unset=True)`; `tests/test_product_image.py::test_put_preserves_price_range_when_not_in_payload` locks it. Editing a single field preserves all others including legacy `price_range`.
-- **Open follow-ups (NOT this PR):** drop `Product.price_range` after producer re-edit soak; index `price_min`/`price_max` if a price-filter feature ships; Pydantic v2 Decimal-as-string JSON serialization (frontend must `Number()`-coerce on read).
+**Next session:** pick next ticket from Linear. Product surface is fully closed.
 
-### MEH-335 — Fingerprint-mismatch security log + test coverage (merged)
+---
+
+### MEH-470 — Product Edit flow + PUT integration (MERGED PR #528 434f891)
+
+**Branch:** `feature/meh-470-product-edit-flow` off `origin/staging` post-Phase-3 (cdd975a + back-merged staging incl. MEH-301 / MEH-429).
+
+- `frontend/app/settings/page.jsx` `ProductsSection` — added `editingId` / `editForm` / `savingEdit` / `editUploading` state. Per-row Pencil button (Phosphor — codebase Phosphor-only, lucide reference in spec was a copy-paste error) opens an inline edit form on the row. One row in edit mode at a time; switching rows reverts the prior. `startEdit` populates `editForm` from product including `String(Number(price_min))` Decimal-coerce-on-load. `handleEdit` mirrors `handleAdd` validation order + PUT body; backend `producer_me.py:792` uses `model_dump(exclude_unset=True)` so the full-set body is safe and explicit. `cancelEdit` resets state, no API call.
+- Legacy hint above form when `price_min == null && price_range` present: "המחיר הקיים: {price_range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)". Producer must enter numeric price to save.
+- Image upload duplicated to `handleEditImageUpload` (~25 lines) — sharing helper would touch locked Add code (MEH-295 Phase 3 scope).
+- Buttons: "שמרי שינויים" / "שומרת..." / "בטלי" (feminine voice, type=button on cancel).
+- `npm run build` green; RTL grep clean on touched region; `api.put` lands at `/producers/me/products/${id}`.
+
+**Out of scope:** backend (PUT verified by MEH-295 Phase 2 regression test), Add form, display chain, ProducerSections, ProducerCard family.
+
+### MEH-295 — FULLY CLOSED (07.05.2026, Phase 3 PR #525 merged cdd975a)
+
+**Phase 1+2 (backend) — MERGED PR #519:** Alembic `e4790e538aa2` live on Railway. `products` table: `price_min`/`price_max` `NUMERIC(10,2) NULL`, `price_range String(50) NULL` preserved as legacy. Pydantic schemas: Create requires `price_min`, Update Optional, Out nullable. ProductOut serializes Decimal as JSON string. 15/15 tests green incl. PUT partial-update regression.
+
+**Phase 3 (frontend) — branch `feature/meh-295-product-form-frontend` off `b4c4208`:**
+- `frontend/app/settings/page.jsx` `ProductsSection` — replaced single `price_range` text input with 2-col grid: `price_min` required + `price_max` optional, both `type="number"` `min={1} max={10000} step={0.5}`. Form state reshaped to `{name, description, image_url, price_min, price_max}`. All four form fields now use real `<label>` above input (fixes Bug-2 placeholder-as-label class). Submit body sends `price_min: Number(...)` + `price_max: Number(...) | null`. Client-side validation with verbatim Hebrew error copy.
+- Display chain on both `settings/page.jsx:920` + `producer/[id]/components/ProducerSections.jsx:176`: range when both present, single when only `price_min`, legacy raw `price_range` fallback for pre-schema rows, otherwise omit. `Number()` coerce on read (Pydantic v2 Decimal-as-string).
+- Brand voice fix in same surface: submit copy "שמור מוצר" → "הוסיפי מוצר", "שומרת..." → "מוסיפה...".
+- Edit flow (PUT, "שמרי שינויים", legacy hint, Decimal-coerce-on-load) deferred to **MEH-470**.
+- Half-shekel display polish (formatPrice helper) deferred until production feedback.
+- `npm run build` green; RTL grep clean on touched region; `price_range` token only in legacy display fallback, never in submit body.
+
+### MEH-295 backend — MERGED to staging (07.05.2026)
+- PR #519 squash-merged. Alembic e4790e538aa2 applied on Railway.
+- products table: price_min/price_max NUMERIC(10,2) NULL, price_range String(50) NULL preserved.
+- Pydantic schemas live: Create requires price_min, Update Optional, Out nullable.
+- ProductOut serializes Decimal as JSON string ("50.00") — Phase 3 frontend Number() coerced on read.
+- 15/15 tests green incl. regression for PUT partial-update semantics.
+
+### MEH-469 — MCP availability note in CLAUDE.md (PR open)
+
+**Branch:** `feature/meh-469-claude-md-mcp-note` off staging.
+**Status:** PR open, awaiting CI green + Smadar review.
+
+**What shipped (docs-only):**
+- `CLAUDE.md` line 57 — appended directive `" — for MCP queries, tell Smadar to open standalone CC."` to the existing MCP-tools note from PR #521. When CC encounters a task requiring an MCP query (Resend delivery status, Postgres direct read, etc.), it now has a documented resolution path instead of saying "no access". Still 80 lines.
+- Bonus: also fixes the stale MEH-335 "PR open" status below (PR #521 merged at 778dce3 last session; HANDOFF status-update push to staging was denied, so the file remained stale until now).
+
+**Next session first step:** check CI on the PR; merge if green.
+
+---
+
+### MEH-335 — Fingerprint-mismatch security log + test coverage (merged 778dce3)
 
 **Branch:** `feature/meh-335-fingerprint-hardening` off staging.
-**Status:** Merged to staging as `778dce3`.
+**Status:** Merged into staging via PR #521. All 11 CI checks green; zero review comments.
 
 **What shipped (backend logging + test — zero auth logic change):**
 - `backend/app/auth.py:184` — `logger.warning("[auth] fingerprint mismatch — possible token sidejacking", extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None})` inserted before the 401 raise. Gives audit trail for sidejacking attempts (MEH-325 pattern: logs on real event, not just on error path).

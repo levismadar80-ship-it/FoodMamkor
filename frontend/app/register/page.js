@@ -40,6 +40,7 @@ export default function RegisterPage() {
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordOk, setPasswordOk] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailExpected, setEmailExpected] = useState(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +66,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(form);
+      const regData = await register(form);
       // MEH-49: claim referral after successful registration (best-effort)
       if (referralCode) {
         try {
@@ -75,6 +76,7 @@ export default function RegisterPage() {
           // referral claim is non-blocking
         }
       }
+      setEmailExpected(regData?.email_sent !== false);
       setEmailSent(true);
     } catch (err) {
       const status = err.response?.status;
@@ -134,10 +136,20 @@ export default function RegisterPage() {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-          <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📧</div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את האימייל שלך</h1>
-          <p className="text-site-muted text-sm mb-1">שלחנו הודעת אימות ל-{form.email}</p>
-          <p className="text-site-muted text-sm mb-6">לחצי על הקישור במייל כדי להפעיל את החשבון</p>
+          {emailExpected ? (
+            <>
+              <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📧</div>
+              <h1 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את האימייל שלך</h1>
+              <p className="text-site-muted text-sm mb-1">שלחנו הודעת אימות ל-{form.email}</p>
+              <p className="text-site-muted text-sm mb-6">לחצי על הקישור במייל כדי להפעיל את החשבון</p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center text-3xl">✅</div>
+              <h1 className="font-headline text-2xl font-bold text-site-text mb-2">החשבון נוצר בהצלחה</h1>
+              <p className="text-site-muted text-sm mb-6">הרשמה הושלמה. ניתן להתחיל לגלות בתי עסק מקומיים.</p>
+            </>
+          )}
           <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center">
             המשיכי לאתר
           </Link>

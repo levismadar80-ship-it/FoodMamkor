@@ -1798,6 +1798,10 @@ class TestAuthEmailHtmlEscape:
             captured["html"] = html
 
         monkeypatch.setattr("app.services.auth_emails.send_email", fake_send)
+        # MEH-301: send_verify_email now pre-flights resend_api_key; patch it
+        # so the early-return guard doesn't short-circuit before send_email.
+        from app.services import auth_emails as _ae
+        monkeypatch.setattr(_ae.settings, "resend_api_key", "test-key")
 
         from app.services.auth_emails import send_verify_email
         hostile = "<script>alert(1)</script>"
