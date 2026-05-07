@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
@@ -15,13 +16,14 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
  *   onCardClick: (card) => void — invoked on card press.
  */
 export function HomeCategoryGrid({ categoryCards, onCardClick }) {
+  const t = useTranslations();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection className="text-center mb-10">
         <h2 className="font-headline font-bold text-site-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
-          גלי לפי קטגוריה
+          {t("home.categories.heading")}
         </h2>
-        <p className="text-site-muted text-base">ישר מבית העסק — בלי מתווכים</p>
+        <p className="text-site-muted text-base">{t("home.categories.subheading")}</p>
       </FadeInSection>
       <div
         className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3"
@@ -45,7 +47,7 @@ export function HomeCategoryGrid({ categoryCards, onCardClick }) {
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
-              aria-label={`הצג קטגוריה: ${card.name}`}
+              aria-label={t("home.categories.aria", { name: card.name })}
             >
               {/* Zooming bg layer — use transform on a pseudo-ish wrapper by scaling the button via group-hover */}
               <div

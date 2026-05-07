@@ -1,7 +1,46 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-472 PR-A: i18n Wave 2 translation sweep
+
+**Branch:** `feature/meh-472-i18n-wave-2-translation` off `origin/staging`. PR open (draft).
+
+**What's done:**
+- ~88 new keys in `messages/he.json` + `messages/en.json` (auth.verify, account.menu, error, home.*, category.*, nav.onboarding, nav.footer.* extensions).
+- Q7 gender-neutral plural imperatives applied to all primary files (8 files): נסי→נסו, הוסיפי→הוסיפו, הצטרפי→הצטרפו, שלחי→שלחו, התנתקי→התנתקו, ראי→ראו, מצאי→מצאו, גלי→גלו, קבלי→קבלו. ברוכה הבאה→ברוכים הבאים approved.
+- `Header.jsx` — 18 strings wired + `nav_login` → `nav.login` bug fixed; `UserMenu` sub-component adds internal `useTranslations()`.
+- `Footer.jsx` — `useTranslations` added; 16 strings wired including newsletter CTA, nav links, brand aria-labels.
+- `HomeHero.jsx` — internal `useTranslations()` added; removed `t` prop dependency; 8 strings wired (title, subtitle, friday mode, near-me, search-area aria, scroll-down label, geo-loading state).
+- `HomeProducersGrid.jsx` — 13 strings wired (heading, map link, onboarding tips, filter pill, counter, hint, empty state, load more).
+- `HomeCategoryGrid.jsx` — 3 strings wired (heading, subheading, card aria).
+- `HomeStaticBlocks.jsx` — `useTranslations` added to 5 exported functions; FounderQuote, RecentlyViewed, KitchenPreview, HowItWorks, HomeCTA all wired.
+- `UpcomingEventsPreview.jsx` — 3 strings wired (heading, link, free price).
+- `app/[locale]/page.js` — `t` from `useHomePage` replaced with direct `useTranslations()`; `t` prop removed from `<HomeHero>`; stats bar + new-businesses heading wired.
+- `BottomNav.jsx` — 3 onboarding tip strings wired (map, profile, profile CTA).
+- `frontend/lib/categories.js` (NEW) — Q3 slug→i18n-key map; `categoryKey()` helper; 7 Hebrew category labels → `category.*` keys.
+- `npm run build` clean (✓ 87/87 static pages).
+
+**Decisions made:**
+- `lib/language-context.js` shim kept alive (PR-B deletes it after 7-day burn-in ≥ 2026-05-14).
+- `lib/i18n-key-map.js` not deleted (PR-B territory).
+- MARQUEE_ITEMS in HomeStaticBlocks.jsx kept hardcoded (decorative labels, Wave 3 scope).
+- ParallaxQuote brand-voice strings kept hardcoded (brand voice, not Q7 scope).
+
+**Next Smadar steps:**
+1. Review draft PR (check Q7 changes look right, spot-check English en.json values).
+2. Mobile QA on Vercel preview.
+3. After 7-day staging burn-in → open MEH-472 PR-B (delete language-context.js shim + i18n-key-map.js).
+4. Run residual hardcoded-Hebrew scan: `python .claude/scripts/i18n-scan.py --format text` — expected drop from 2,331 to ~2,100 (class-a UI strings from primary 8 files now wired).
+
+**PR-B scope reminder (≥ 2026-05-14):**
+- Delete `lib/language-context.js` (strangler-fig shim).
+- Delete `lib/i18n-key-map.js`.
+- Update `lib/use-home-page.js` to remove `mapKey` wrapper, use `useTranslations()` directly.
+- Wire remaining non-primary files (admin, map components, etc.).
+
+---
 
 ### Session 2026-05-07 — MEH-471 i18n Wave 1 (MERGED PR #532 f7ea62e)
 

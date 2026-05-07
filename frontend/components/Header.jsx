@@ -62,9 +62,9 @@ export default function Header() {
       setResendSent(true);
     } catch (err) {
       if (err.response?.status === 429) {
-        setResendError("הגעת למגבלה — נסי שוב בעוד שעה");
+        setResendError(t("auth.verify.rate_limited"));
       } else {
-        setResendError("שגיאה, נסי שוב");
+        setResendError(t("error.try_again"));
       }
     }
     setResendSending(false);
@@ -203,7 +203,7 @@ export default function Header() {
         {/* NAV — col 2 = center on desktop; hidden on mobile. */}
         <nav
           className="hidden md:flex items-center gap-6 justify-self-center"
-          aria-label="ניווט ראשי"
+          aria-label={t("nav.main_label")}
         >
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
@@ -240,7 +240,7 @@ export default function Header() {
           {/* Search trigger — desktop only */}
           <button
             onClick={() => router.push("/search?focus=1")}
-            aria-label="חיפוש"
+            aria-label={t("nav.search_label")}
             className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition"
           >
             <MagnifyingGlass size={20} color="#6B6B6B" weight="regular" aria-hidden="true" />
@@ -264,7 +264,7 @@ export default function Header() {
         <div className="md:hidden flex items-center gap-1">
           <button
             onClick={() => router.push("/search?focus=1")}
-            aria-label="חיפוש"
+            aria-label={t("nav.search_label")}
             className={`p-2 ${transparent ? "text-white" : "text-site-muted"}`}
             style={transparentTextShadow}
           >
@@ -273,7 +273,7 @@ export default function Header() {
           <button
             className={`p-2 ${transparent ? "text-white" : "text-site-text"}`}
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={menuOpen ? "סגור תפריט" : "פתח תפריט"}
+            aria-label={menuOpen ? t("nav.menu_close") : t("nav.menu_open")}
             aria-expanded={menuOpen}
             style={transparentTextShadow}
           >
@@ -315,11 +315,11 @@ export default function Header() {
           <button
             onClick={() => setLang(lang === "he" ? "en" : "he")}
             className="text-sm text-site-muted border border-[#e8e0d0] rounded-full px-3 py-1 inline-flex items-center gap-1.5"
-            aria-label={lang === "he" ? "Switch to English" : "החלף לעברית"}
+            aria-label={lang === "he" ? t("nav.lang_switch_to_en") : t("nav.lang_switch_to_he")}
           >
-            <span className={lang === "he" ? "font-bold text-primary" : ""}>עברית</span>
+            <span className={lang === "he" ? "font-bold text-primary" : ""}>{t("nav.lang_he")}</span>
             <span className="text-border">/</span>
-            <span className={lang === "en" ? "font-bold text-primary" : ""}>EN</span>
+            <span className={lang === "en" ? "font-bold text-primary" : ""}>{t("nav.lang_en")}</span>
           </button>
 
           {user ? (
@@ -357,7 +357,7 @@ export default function Header() {
               className="block text-site-muted"
               onClick={() => setMenuOpen(false)}
             >
-              {t("nav_login")}
+              {t("nav.login")}
             </Link>
           )}
         </div>
@@ -365,7 +365,7 @@ export default function Header() {
 
       {user && user.email_verified === false && (
         <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm flex-wrap">
-          <span className="text-amber-800">📧 אמתי את האימייל שלך כדי לפרסם תוכן</span>
+          <span className="text-amber-800">{t("auth.verify.banner")}</span>
           {resendError ? (
             <span className="text-red-600 text-xs font-medium">{resendError}</span>
           ) : !resendSent ? (
@@ -374,10 +374,10 @@ export default function Header() {
               disabled={resendSending}
               className="text-primary hover:underline text-xs font-medium disabled:opacity-50"
             >
-              שלחי שוב
+              {t("auth.verify.resend")}
             </button>
           ) : (
-            <span className="text-green-600 text-xs font-medium">✓ נשלח!</span>
+            <span className="text-green-600 text-xs font-medium">{t("auth.verify.sent")}</span>
           )}
         </div>
       )}
@@ -436,16 +436,17 @@ function LoginPill({ label, transparent }) {
  * opens from the avatar's right edge downward.
  */
 function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShadow }) {
+  const t = useTranslations();
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
   const hasAvatar = !!user.avatar_url;
   const isProducer = user.role === "producer";
   const isAdmin = user.role === "admin";
 
   const items = [
-    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: "הפרופיל שלי" },
-    { href: "/settings?tab=security", label: "הגדרות" },
-    ...(isProducer ? [{ href: "/producer/dashboard", label: "לוח הבקרה שלי" }] : []),
-    ...(isAdmin ? [{ href: "/admin", label: "ממשק אדמין" }] : []),
+    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: t("account.menu.profile") },
+    { href: "/settings?tab=security", label: t("account.menu.settings") },
+    ...(isProducer ? [{ href: "/producer/dashboard", label: t("account.menu.dashboard") }] : []),
+    ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
   ];
 
   return (
@@ -455,7 +456,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`תפריט משתמשת — ${user.name}`}
+        aria-label={t("account.menu.aria", { name: user.name })}
         className="w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1"
         style={{
           backgroundColor: hasAvatar ? "transparent" : "#2e6853",
@@ -504,7 +505,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
             className="w-full text-right px-4 py-2 text-sm hover:bg-[#F5F0E8] transition"
             style={{ color: "#A32D2D" }}
           >
-            התנתקי
+            {t("account.menu.logout")}
           </button>
         </div>
       )}

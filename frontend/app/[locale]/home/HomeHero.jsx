@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CaretDown, Crosshair } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 
 // OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
@@ -16,11 +17,12 @@ const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=
  * .hero-parallax sets fixed; @media (pointer: coarse) falls back to
  * scroll because iOS Safari silently ignores fixed.
  */
-export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) {
+export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
+  const t = useTranslations();
   return (
     <section
       className="relative w-full hero-parallax"
-      aria-label="דף הבית — גלי בתי עסק מקומיים"
+      aria-label={t("home.hero.main_label")}
       style={{
         height: "100vh",
         backgroundImage: `url(${HERO_IMAGE})`,
@@ -50,7 +52,7 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
           className="font-headline font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
           style={{ lineHeight: 1.15 }}
         >
-          {t("hero_title")}
+          {t("home.hero.title")}
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 30 }}
@@ -63,7 +65,7 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
             textTransform: "uppercase",
           }}
         >
-          {fridayMode ? "שישי הגיע 🛒 מה הולך על שולחן השבת שלך?" : t("hero_subtitle")}
+          {fridayMode ? t("home.hero.friday_subtitle") : t("home.hero.subtitle")}
         </motion.p>
 
         {/* Pill search */}
@@ -72,7 +74,7 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
           role="search"
-          aria-label="חיפוש בתי עסק"
+          aria-label={t("home.hero.search_area_label")}
           className="mx-auto mt-8 bg-white shadow-lg px-6 py-3.5"
           style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
         >
@@ -80,8 +82,8 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
               SmartSearch (routes to /search?q= results page) is retained
               in the site header for secondary navigation. */}
           <HeroSearch
-            placeholder={t("search_placeholder")}
-            srLabel={t("search_sr_label")}
+            placeholder={t("home.search.placeholder")}
+            srLabel={t("home.search.sr_label")}
             className="w-full"
           />
         </motion.div>
@@ -100,7 +102,7 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
             className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 px-5 py-2.5 rounded-full hover:bg-white/25 transition font-medium text-sm disabled:opacity-50"
           >
             <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
-            {geoLoading ? "מחפשת..." : "קרוב אלי"}
+            {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
           </button>
         </motion.div>
       </div>
@@ -120,7 +122,7 @@ export function HomeHero({ t, fridayMode, geoLoading, onNearMe, onScrollDown }) 
         onClick={onScrollDown}
         className="absolute text-white/70 hover:text-white transition-opacity scroll-hint"
         style={{ bottom: "32px", left: "50%", transform: "translateX(-50%)" }}
-        aria-label="גלול לרשימת בתי העסק"
+        aria-label={t("home.hero.scroll_down_label")}
       >
         <CaretDown size={28} weight="bold" aria-hidden="true" />
       </button>

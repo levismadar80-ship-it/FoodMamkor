@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Leaf, House } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 import HomeProductCard from "@/components/HomeProductCard";
 
@@ -62,6 +63,7 @@ export function HomeMarquee() {
  * producer grid. Establishes personal voice before browse mode.
  */
 export function HomeFounderQuote() {
+  const t = useTranslations();
   return (
     <FadeInSection className="max-w-4xl mx-auto px-4 mb-8">
       <Link
@@ -73,10 +75,10 @@ export function HomeFounderQuote() {
         </div>
         <div className="flex-1">
           <p className="font-headline italic text-site-text text-lg md:text-xl leading-relaxed mb-2">
-            &ldquo;אוכל אמיתי, מאנשים אמיתיים, ממש ליד הבית.&rdquo;
+            &ldquo;{t("home.founder_quote.text")}&rdquo;
           </p>
           <p className="font-body text-sm text-primary group-hover:underline">
-            ספיר, מייסדת מהמקור →
+            {t("home.founder_quote.attribution")}
           </p>
         </div>
       </Link>
@@ -90,11 +92,12 @@ export function HomeFounderQuote() {
  * when the list is empty.
  */
 export function HomeRecentlyViewed({ items }) {
+  const t = useTranslations();
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
       <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
-        צפית לאחרונה
+        {t("home.recent.heading")}
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
         {items.map((p) => {
@@ -136,6 +139,7 @@ export function HomeRecentlyViewed({ items }) {
  * Hidden entirely when the products list is empty.
  */
 export function HomeKitchenPreview({ products, onWhatsAppClick }) {
+  const t = useTranslations();
   if (!products.length) return null;
   return (
     <section
@@ -148,13 +152,13 @@ export function HomeKitchenPreview({ products, onWhatsAppClick }) {
           style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
         >
           <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
-          מהמטבח של השכן
+          {t("home.kitchen.heading")}
         </h2>
         <Link
           href="/neighbor"
           className="text-primary hover:underline text-sm font-medium whitespace-nowrap"
         >
-          ראי עוד →
+          {t("home.kitchen.see_more")}
         </Link>
       </div>
 
@@ -175,18 +179,19 @@ export function HomeKitchenPreview({ products, onWhatsAppClick }) {
  * HOW IT WORKS — three-step explainer block.
  */
 export function HomeHowItWorks() {
+  const t = useTranslations();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
         <h2 className="font-headline font-bold text-site-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
-          איך זה עובד?
+          {t("home.how_it_works.heading")}
         </h2>
       </FadeInSection>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
         {[
-          { step: "01", title: "מצאי", text: "גלי בתי עסק קרובים אלייך — ירקות טריים, גבינות מהחווה, לחם מחמצת" },
-          { step: "02", title: "צרי קשר", text: "דברי ישירות עם בית העסק בוואטסאפ, בטלפון או באינסטגרם" },
-          { step: "03", title: "קבלי", text: "אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות" },
+          { step: "01", title: t("home.how_it_works.step01_title"), text: t("home.how_it_works.step01_text") },
+          { step: "02", title: t("home.how_it_works.step02_title"), text: t("home.how_it_works.step02_text") },
+          { step: "03", title: t("home.how_it_works.step03_title"), text: t("home.how_it_works.step03_text") },
         ].map((step, idx) => (
           <FadeInSection key={step.step} delay={idx * 0.12}>
             <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
@@ -203,20 +208,21 @@ export function HomeHowItWorks() {
  * CTA — "הוסיפי את העסק שלך". Static, prop-free.
  */
 export function HomeCTA() {
+  const t = useTranslations();
   return (
     <section className="bg-primary-dark text-white py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
         <h2 className="font-headline font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
-          יש לך עסק? בואי אליו
+          {t("home.cta.heading")}
         </h2>
         <p className="text-light/90 text-lg mb-8 max-w-xl mx-auto">
-          אם את בעלת עסק, חקלאית או מגדלת — הצטרפי לדירקטורי הראשון בישראל לאוכל אמיתי.
+          {t("home.cta.body")}
         </p>
         <Link
           href="/register/producer"
           className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-light transition font-medium"
         >
-          הוסיפי את העסק שלך 🌿
+          {t("home.cta.button")}
         </Link>
       </div>
     </section>
