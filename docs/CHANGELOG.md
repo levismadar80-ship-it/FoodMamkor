@@ -15,6 +15,10 @@
 
 Closes MEH-295 (after this PR merges).
 
+## 2026-05-07 — MEH-469: MCP availability note in CLAUDE.md
+
+`docs`: extended `CLAUDE.md` line 57 (workflow + execution rules pointer) with proactive directive — when a task requires an MCP query (Resend delivery status, Postgres direct read, etc.), CC tells Smadar to open standalone CC (Git Bash → `claude`) instead of saying "no access" with no resolution path. Strengthens the MCP-tools note added by PR #521 with the actionable clause (MEH-384 finding). 80-line cap preserved. Closes MEH-469.
+
 ## 2026-05-07 — MEH-295: Product price validation (backend)
 
 `feat(MEH-295)`: split free-text `products.price_range` into two numeric columns so the producer dashboard can validate input and the public producer page can render a normalized range.
