@@ -3,6 +3,97 @@
 
 ---
 
+# Verification Protocol — 3-Tier Division of Labor
+
+לפני כל verification of merged work או pre-merge PR, ה-3 tiers הבאים פועלים בסדר.
+ה-rule הבסיסי: **כל tier בודק רק מה ש-tier הקודם לא יכול**. ספיר מבחינת mobile רק
+לדברים שדורשים real-device perception.
+
+## Tier 1 — Claude (chat assistant)
+
+לפני בקשה מ-CC או מ-Smadar, Claude בודק content ישירות:
+
+**Tools:**
+- `web_fetch` על `https://staging.mehamakor.online` (production-ish state)
+- `Vercel:web_fetch_vercel_url` על branch previews
+  → bypasses Vercel Deployment Protection auth-block automatically
+  → לא צריך לכבות protection ידנית
+- `Vercel:get_access_to_vercel_url` — fallback אם web_fetch fails
+
+**Claude מאמת automatically:**
+- [ ] Strings present/correct (translations, Q7 plurals, brand voice)
+- [ ] RTL `dir="rtl"` + `lang="he"` ב-html element
+- [ ] ARIA labels (`aria-label`, `aria-describedby`)
+- [ ] Meta tags (description, keywords, og:*, twitter:*)
+- [ ] hreflang alternates (per Wave 6 SEO requirements)
+- [ ] Tailwind responsive classes present (md:, lg:, sm:)
+- [ ] RSC payload structure (component hierarchy, locale, messages namespace)
+- [ ] Specific link hrefs (CTA targets, nav links)
+
+**מה Claude לא יכולה (גם דרך web_fetch):**
+- JS-dependent UI (Leaflet map render, modal states, dropdown opens)
+- Animations / transitions
+- Computed CSS (post-render width/height)
+- Real interaction state (hover, focus, active)
+
+## Tier 2 — Claude Code (CC)
+
+CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו דורש human eyes.
+
+**Capabilities:**
+- bash + filesystem
+- Playwright (אם הוגדר ב-repo) — JS render, screenshots, interaction
+- Build/test execution (npm, pytest, jest)
+- /adversarial-review, custom .claude/ scripts
+
+**CC מאמת automatically:**
+- [ ] Build clean (npm run build)
+- [ ] All test suites green (pytest, jest, playwright)
+- [ ] Code-level grep patterns (forbidden imports absent, required present)
+- [ ] /adversarial-review on central components
+- [ ] EN/HE messages parity (jq diff)
+- [ ] Residual hardcoded count (.claude/scripts/i18n-scan.py)
+- [ ] Schema/migration consistency (alembic check)
+- [ ] Playwright smoke: critical pages load, expected text present
+- [ ] Playwright form submit: fetch fires (mock backend)
+- [ ] Screenshots @ 375px / 768px / 1440px → /tmp/screenshots/
+  (attach to report ONLY if regression visually suspected)
+
+**CC's report MUST collapse ✅ items:**
+- ✅ items → single summary line (e.g., "All 14 auto-checks passed")
+- ❌ items → STOP, file:line + issue, await fix
+- ⏳ items → clean checklist for Smadar (max 5-7 items, each <30 sec on phone)
+
+**מה CC לא יכול (real-device-only):**
+- Touch tap-feel (size measurable, feel isn't)
+- Animation smoothness on real CPU/GPU/network
+- Font anti-aliasing (varies by OS/device)
+- Color rendering (real screen color profile)
+- Perceived latency (felt-fast threshold)
+
+## Tier 3 — Smadar (mobile real device)
+
+ספיר's mobile session reserved exclusively for items above.
+**רף:** כל פריט ב-Tier 3 חייב להיות testable ב-<30 שניות על הטלפון.
+אם פריט לוקח יותר → CC יכול לאמת אותו, ספיר לא צריכה.
+
+**Smadar's checklist template:**
+- [ ] Touch target tap-feel @ 375px (BottomNav, filter chips, CTAs)
+- [ ] Animation smoothness on real device (hero parallax, marquee, dropdowns)
+- [ ] Font rendering on Frank Ruhl Libre headlines (anti-aliasing)
+- [ ] Perceived latency on async actions (newsletter submit, login, search)
+- [ ] RTL overflow @ narrow viewports (360px-375px range)
+- [ ] Color contrast on real screen (category card overlays, footer links)
+
+## Anti-patterns (forbidden)
+
+- ✗ Claude לעולם לא תבקש מ-Smadar לאמת content — ה-content נבדק ב-Tier 1
+- ✗ CC לעולם לא תבקש מ-Smadar לאמת test outcomes — CC רץ tests ב-Tier 2
+- ✗ CC לא ימסור wall של ✅ checkmarks ב-final report — Smadar קוראת רק ❌ + ⏳
+- ✗ Smadar לא תבדוק content בעצמה אם Claude לא ביקשה ← waste of mobile session
+
+---
+
 ## Product price validation (MEH-295 backend)
 
 > Backend-only checklist. Frontend form ships in Phase 3 PR. Endpoint: `POST /producers/me/products` + `PUT /producers/me/products/:id`. All POSTs require a producer-role JWT.
