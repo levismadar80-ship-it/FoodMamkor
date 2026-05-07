@@ -2,6 +2,21 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-470: Product Edit flow + PUT integration
+
+`feat(MEH-470)`: per-row inline Edit UI for producer products. Closes the edit gap deferred from MEH-295 Phase 3 (PR #525).
+
+- **`frontend/app/settings/page.jsx` — `ProductsSection`** — added `editingId` / `editForm` / `savingEdit` / `editUploading` state + `startEdit` / `cancelEdit` / `handleEdit` / `handleEditImageUpload` handlers. Per-row "ערכי" Pencil button (Phosphor — codebase is Phosphor-only, lucide-react reference in spec was a copy-paste from MEH-294) opens an inline edit form on the row's surface (NOT a modal). Only one row in edit mode at a time — clicking "ערכי" on row B while row A is editing reverts A and opens B fresh (state machine on `editingId`).
+- **Edit-load Decimal coerce** — `String(Number(product.price_min))` populates input value because `ProductOut` serializes Decimal as JSON string (`"50.00"`). Without coercion, native `<input type="number">` with `step={0.5}` rejected the string value and cleared the field.
+- **Legacy hint** — when `product.price_min == null && product.price_range` present (pre-MEH-295 row), inline form shows "המחיר הקיים: {price_range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)" above fields. Producer must enter numeric price to save — backend Pydantic `ProductUpdate` would otherwise 422 on missing required Decimal validation if min/max were passed.
+- **Validation mirror** — verbatim Hebrew copy from `handleAdd` (MEH-295 Phase 3): empty min, < 1, > 10000, max < min. Same order, same strings.
+- **PUT body** — full set: `{name, description, image_url, price_min, price_max}`. Backend `producer_me.py:792` uses `model_dump(exclude_unset=True)` — sending the full set is safe and explicit. `setProducts((p) => p.map(x => x.id === id ? r.data : x))` replaces the row with the response.
+- **Image upload duplication** — `handleEditImageUpload` parallels `handleAdd`'s `handleImageUpload` (~25 line dup). Shared helper would touch locked Add code (MEH-295 Phase 3 scope). Future polish ticket may DRY them.
+- **Buttons** — feminine voice: "שמרי שינויים" (submit) / "שומרת..." (loading) / "בטלי" (cancel — type=button, no API call).
+- **Verify** — `npm run build` green; RTL grep clean on touched region (only pre-existing `right-3` eye-toggle exceptions on password inputs, off the ProductsSection scope); `api.put` lands at `/producers/me/products/${id}`, `api.post` unchanged at `/producers/me/products`, `api.delete` unchanged.
+
+Closes MEH-470 (after this PR merges).
+
 ## 2026-05-07 — MEH-295 Phase 3: 2-field price form + range display + Decimal coerce (frontend)
 
 `feat(MEH-295 Phase 3)`: wire the new `price_min` / `price_max` schema into the producer dashboard form and product display surfaces.

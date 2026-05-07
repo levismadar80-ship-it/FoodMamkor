@@ -1,9 +1,21 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-469 MCP availability note — PR open; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-470 product edit flow — PR open; MEH-295 fully closed PR #525; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### MEH-295 — FULLY CLOSED (07.05.2026, pending Phase 3 PR merge)
+### MEH-470 — Product Edit flow + PUT integration (PR open)
+
+**Branch:** `feature/meh-470-product-edit-flow` off `origin/staging` post-Phase-3 (cdd975a + back-merged staging incl. MEH-301 / MEH-429).
+
+- `frontend/app/settings/page.jsx` `ProductsSection` — added `editingId` / `editForm` / `savingEdit` / `editUploading` state. Per-row Pencil button (Phosphor — codebase Phosphor-only, lucide reference in spec was a copy-paste error) opens an inline edit form on the row. One row in edit mode at a time; switching rows reverts the prior. `startEdit` populates `editForm` from product including `String(Number(price_min))` Decimal-coerce-on-load. `handleEdit` mirrors `handleAdd` validation order + PUT body; backend `producer_me.py:792` uses `model_dump(exclude_unset=True)` so the full-set body is safe and explicit. `cancelEdit` resets state, no API call.
+- Legacy hint above form when `price_min == null && price_range` present: "המחיר הקיים: {price_range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)". Producer must enter numeric price to save.
+- Image upload duplicated to `handleEditImageUpload` (~25 lines) — sharing helper would touch locked Add code (MEH-295 Phase 3 scope).
+- Buttons: "שמרי שינויים" / "שומרת..." / "בטלי" (feminine voice, type=button on cancel).
+- `npm run build` green; RTL grep clean on touched region; `api.put` lands at `/producers/me/products/${id}`.
+
+**Out of scope:** backend (PUT verified by MEH-295 Phase 2 regression test), Add form, display chain, ProducerSections, ProducerCard family.
+
+### MEH-295 — FULLY CLOSED (07.05.2026, Phase 3 PR #525 merged cdd975a)
 
 **Phase 1+2 (backend) — MERGED PR #519:** Alembic `e4790e538aa2` live on Railway. `products` table: `price_min`/`price_max` `NUMERIC(10,2) NULL`, `price_range String(50) NULL` preserved as legacy. Pydantic schemas: Create requires `price_min`, Update Optional, Out nullable. ProductOut serializes Decimal as JSON string. 15/15 tests green incl. PUT partial-update regression.
 
