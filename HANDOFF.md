@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-469 MCP availability note — PR open; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
 ### MEH-295 backend — MERGED to staging (07.05.2026)
 - PR #519 squash-merged. Alembic e4790e538aa2 applied on Railway.
@@ -12,19 +12,23 @@
 - REMAINING: Phase 3 frontend PR (settings/page.jsx + ProducerSections.jsx) + docs roll-in.
 - Branch deleted. Next session opens fresh branch off staging tip.
 
-### MEH-295 (Backend) — IN REVIEW (PR #519)
+### MEH-469 — MCP availability note in CLAUDE.md (PR open)
 
-- **Branch:** `feature/meh-295-product-price-validation` (off `origin/staging`).
-- **Status:** Phase 1 (Alembic `e4790e538aa2`) + Phase 2 (model + Pydantic + tests + EXPECTED_REV bump) complete. PR #519 ready, manual squash-merge authorized. Auto-merge OFF.
-- **Frontend (Phase 3):** deferred to a separate PR after Railway redeploys staging with the new schema. Surfaces: `frontend/app/settings/page.jsx:816-957` (form, two number inputs + Hebrew error copy verbatim from spec) + `frontend/app/producer/[id]/components/ProducerSections.jsx:176-177` (display range chain). NOT touching `ProducerCard.jsx` / `MapProducerCard.jsx` / `admin/ProducerForm.jsx` — those read `producer.price_range` (separate Producer entity column).
-- **Schema migration `e4790e538aa2`** runs on staging Railway during deploy. Additive + nullable → safe on populated tables. CC sandbox cannot reach Railway (MEH-360); Smadar verifies with `\d products` after Railway redeploy.
-- **PUT semantics confirmed = partial update.** `producer_me.py:794` uses `model_dump(exclude_unset=True)`; `tests/test_product_image.py::test_put_preserves_price_range_when_not_in_payload` locks it. Editing a single field preserves all others including legacy `price_range`.
-- **Open follow-ups (NOT this PR):** drop `Product.price_range` after producer re-edit soak; index `price_min`/`price_max` if a price-filter feature ships; Pydantic v2 Decimal-as-string JSON serialization (frontend must `Number()`-coerce on read).
+**Branch:** `feature/meh-469-claude-md-mcp-note` off staging.
+**Status:** PR open, awaiting CI green + Smadar review.
 
-### MEH-335 — Fingerprint-mismatch security log + test coverage (merged)
+**What shipped (docs-only):**
+- `CLAUDE.md` line 57 — appended directive `" — for MCP queries, tell Smadar to open standalone CC."` to the existing MCP-tools note from PR #521. When CC encounters a task requiring an MCP query (Resend delivery status, Postgres direct read, etc.), it now has a documented resolution path instead of saying "no access". Still 80 lines.
+- Bonus: also fixes the stale MEH-335 "PR open" status below (PR #521 merged at 778dce3 last session; HANDOFF status-update push to staging was denied, so the file remained stale until now).
+
+**Next session first step:** check CI on the PR; merge if green.
+
+---
+
+### MEH-335 — Fingerprint-mismatch security log + test coverage (merged 778dce3)
 
 **Branch:** `feature/meh-335-fingerprint-hardening` off staging.
-**Status:** Merged to staging as `778dce3`.
+**Status:** Merged into staging via PR #521. All 11 CI checks green; zero review comments.
 
 **What shipped (backend logging + test — zero auth logic change):**
 - `backend/app/auth.py:184` — `logger.warning("[auth] fingerprint mismatch — possible token sidejacking", extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None})` inserted before the 401 raise. Gives audit trail for sidejacking attempts (MEH-325 pattern: logs on real event, not just on error path).
