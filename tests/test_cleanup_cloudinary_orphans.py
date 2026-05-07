@@ -19,13 +19,16 @@ from scripts.cleanup_cloudinary_orphans import (
     SCALAR_URL_SOURCES,
     _add_array_urls,
     _add_scalar_urls,
+    _format_bytes,
     _passes_age_filter,
     _passes_depth_filter,
     _passes_reject_filter,
     build_parser,
     build_referenced_url_set,
+    compute_orphans,
     list_cloudinary_assets,
     main,
+    print_dry_run_summary,
 )
 
 
@@ -700,3 +703,244 @@ class TestListCloudinaryAssets:
                 1234,
             )
         ]
+
+
+# ---------- I.4: orphan compute + dry-run summary + --apply gate ----------
+
+
+class TestComputeOrphans:
+    def test_empty_candidates_returns_empty(self):
+        assert compute_orphans([], {"https://x/a.jpg"}) == []
+
+    def test_empty_referenced_all_orphans(self):
+        c = [
+            ("p1", "https://x/a.jpg", 100),
+            ("p2", "https://x/b.jpg", 200),
+            ("p3", "https://x/c.jpg", 300),
+        ]
+        assert compute_orphans(c, set()) == c
+
+    def test_all_referenced_no_orphans(self):
+        c = [("p1", "https://x/a.jpg", 100), ("p2", "https://x/b.jpg", 200)]
+        ref = {"https://x/a.jpg", "https://x/b.jpg"}
+        assert compute_orphans(c, ref) == []
+
+    def test_mixed_only_unmatched_returned_order_preserved(self):
+        c = [
+            ("p1", "https://x/a.jpg", 100),
+            ("p2", "https://x/b.jpg", 200),
+            ("p3", "https://x/c.jpg", 300),
+            ("p4", "https://x/d.jpg", 400),
+        ]
+        ref = {"https://x/a.jpg", "https://x/c.jpg"}
+        assert compute_orphans(c, ref) == [
+            ("p2", "https://x/b.jpg", 200),
+            ("p4", "https://x/d.jpg", 400),
+        ]
+
+    def test_comparison_key_is_secure_url_not_public_id(self):
+        # Same public_id, different secure_url → orphan. Locks the
+        # comparison key so a refactor can't accidentally switch to public_id.
+        c = [("same_pid", "https://x/different.jpg", 100)]
+        ref = {"same_pid"}  # public_id in the set, NOT secure_url
+        assert compute_orphans(c, ref) == c
+
+    def test_comparison_key_is_secure_url_not_bytes(self):
+        # bytes value should never affect membership.
+        c = [("p", "https://x/a.jpg", 999)]
+        assert compute_orphans(c, {"https://x/a.jpg"}) == []
+
+    def test_inputs_not_mutated(self):
+        candidates = [
+            ("p1", "https://x/a.jpg", 100),
+            ("p2", "https://x/b.jpg", 200),
+        ]
+        candidates_snapshot = list(candidates)
+        referenced = {"https://x/a.jpg"}
+        referenced_snapshot = set(referenced)
+        compute_orphans(candidates, referenced)
+        assert candidates == candidates_snapshot
+        assert referenced == referenced_snapshot
+
+
+class TestFormatBytes:
+    def test_bytes_under_kib(self):
+        assert _format_bytes(0) == "0 B"
+        assert _format_bytes(512) == "512 B"
+        assert _format_bytes(1023) == "1023 B"
+
+    def test_kilobytes(self):
+        assert _format_bytes(1024) == "1.0 KB"
+        assert _format_bytes(1536) == "1.5 KB"
+
+    def test_megabytes(self):
+        assert _format_bytes(1024 * 1024) == "1.0 MB"
+        assert _format_bytes(int(2.5 * 1024 * 1024)) == "2.5 MB"
+
+    def test_gigabytes(self):
+        assert _format_bytes(1024**3) == "1.0 GB"
+
+    def test_terabytes_fallback(self):
+        assert _format_bytes(2 * 1024**4) == "2.0 TB"
+
+
+class TestPrintDryRunSummary:
+    def _candidate(self, n: int, size: int = 100):
+        return (f"mehamakor/p{n}", f"https://res.cloudinary.com/x/p{n}.jpg", size)
+
+    def test_writes_to_stdout_not_stderr(self, capsys):
+        # Ops piping `2>cleanup.log` must preserve the summary on stdout.
+        candidates = [self._candidate(1), self._candidate(2)]
+        orphans = [self._candidate(2)]
+        print_dry_run_summary(candidates, {"https://x/p1.jpg"}, orphans)
+        captured = capsys.readouterr()
+        assert "Cloudinary candidates" in captured.out
+        assert "Cloudinary candidates" not in captured.err
+        assert captured.err == ""
+
+    def test_contains_all_required_count_lines(self, capsys):
+        candidates = [self._candidate(i, 100) for i in range(1, 4)]
+        orphans = [self._candidate(2, 100), self._candidate(3, 100)]
+        print_dry_run_summary(
+            candidates, {"https://res.cloudinary.com/x/p1.jpg"}, orphans
+        )
+        out = capsys.readouterr().out
+        assert "Cloudinary candidates (after filters): 3" in out
+        assert "DB-referenced URLs:                    1" in out
+        assert "Orphans:                               2" in out
+
+    def test_total_bytes_present_with_human_readable(self, capsys):
+        # 1.5 MB of orphans → both raw byte count and "1.5 MB" in output.
+        size = int(1.5 * 1024 * 1024)
+        orphan = self._candidate(1, size)
+        print_dry_run_summary([orphan], set(), [orphan])
+        out = capsys.readouterr().out
+        assert str(size) in out
+        assert "1.5 MB" in out
+
+    def test_sample_size_default_five(self, capsys):
+        # 7 orphans → only first 5 sampled by default.
+        orphans = [self._candidate(i) for i in range(1, 8)]
+        print_dry_run_summary(orphans, set(), orphans)
+        out = capsys.readouterr().out
+        for i in range(1, 6):
+            assert f"mehamakor/p{i}" in out
+        for i in range(6, 8):
+            assert f"mehamakor/p{i}" not in out
+        # Heading reflects actual shown count.
+        assert "First 5 orphan public_ids:" in out
+
+    def test_sample_size_param_respected(self, capsys):
+        orphans = [self._candidate(i) for i in range(1, 5)]
+        print_dry_run_summary(orphans, set(), orphans, sample_size=2)
+        out = capsys.readouterr().out
+        assert "mehamakor/p1" in out
+        assert "mehamakor/p2" in out
+        assert "mehamakor/p3" not in out
+        assert "First 2 orphan public_ids:" in out
+
+    def test_sample_is_first_n_of_input_order_not_sorted(self, capsys):
+        # Input order: p3, p1, p2. Sample must respect that — not alphabetical.
+        orphans = [self._candidate(3), self._candidate(1), self._candidate(2)]
+        print_dry_run_summary(orphans, set(), orphans, sample_size=2)
+        out = capsys.readouterr().out
+        # p3 and p1 should appear in that order; p2 not in the sample.
+        p3_idx = out.find("mehamakor/p3")
+        p1_idx = out.find("mehamakor/p1")
+        p2_idx = out.find("mehamakor/p2")
+        assert p3_idx != -1 and p1_idx != -1
+        assert p3_idx < p1_idx, "input order p3 → p1 must be preserved"
+        # p2 might still appear via the secure_url string elsewhere; check
+        # that the sample-block line `  - mehamakor/p2` is absent.
+        assert "  - mehamakor/p2" not in out
+        assert p2_idx == -1 or out.count("mehamakor/p2") < 3
+
+    def test_sample_when_fewer_orphans_than_sample_size(self, capsys):
+        orphans = [self._candidate(1), self._candidate(2)]
+        print_dry_run_summary(orphans, set(), orphans, sample_size=10)
+        out = capsys.readouterr().out
+        # Heading uses min(sample_size, len(orphans)) — locks against
+        # off-by-one ("First 10..." when only 2 exist would be misleading).
+        assert "First 2 orphan public_ids:" in out
+
+    def test_zero_orphans_skips_sample_block(self, capsys):
+        candidates = [self._candidate(1)]
+        print_dry_run_summary(candidates, {"https://x/p1.jpg"}, [])
+        out = capsys.readouterr().out
+        assert "Orphans:                               0" in out
+        # No "First N" heading when there's nothing to show.
+        assert "orphan public_ids:" not in out
+
+    def test_hint_line_present(self, capsys):
+        print_dry_run_summary([], set(), [])
+        out = capsys.readouterr().out
+        assert "Re-run with --apply to delete." in out
+
+
+class TestApplyGate:
+    """The hard guardrail: --apply raises NotImplementedError before the
+    delete path is reachable. I.5 replaces the raise with the real flow."""
+
+    def _stub_main_environment(self, monkeypatch):
+        """Wire a no-op DB + no-op Cloudinary so main() can execute up to
+        the --apply branch without touching real services."""
+        from scripts import cleanup_cloudinary_orphans
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings,
+            "cloudinary_cloud_name",
+            "test-cloud",
+        )
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings, "cloudinary_api_key", "key"
+        )
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans.settings,
+            "cloudinary_api_secret",
+            "secret",
+        )
+
+        class _FakeQuery:
+            def filter(self, *args, **kwargs):
+                return self
+
+            def __iter__(self):
+                return iter([])
+
+        class _FakeDB:
+            def query(self, col):
+                return _FakeQuery()
+
+            def close(self):
+                pass
+
+        monkeypatch.setattr(
+            cleanup_cloudinary_orphans, "SessionLocal", lambda: _FakeDB()
+        )
+        # cloudinary.config is harmless on real SDK; cloudinary.api.resources
+        # must return a list-shaped response.
+        import cloudinary.api as cloudinary_api
+
+        monkeypatch.setattr(
+            cloudinary_api, "resources", lambda **kwargs: {"resources": []}
+        )
+
+    def test_apply_raises_notimplemented(self, monkeypatch):
+        from scripts import cleanup_cloudinary_orphans
+
+        self._stub_main_environment(monkeypatch)
+        with pytest.raises(NotImplementedError, match="not yet implemented"):
+            cleanup_cloudinary_orphans.main(["--apply"])
+
+    def test_no_apply_completes_dry_run_and_returns_zero(
+        self, monkeypatch, capsys
+    ):
+        # Counterpart: without --apply, main() runs the full dry-run path
+        # and exits 0. Stdout has the summary block; no exception raised.
+        from scripts import cleanup_cloudinary_orphans
+
+        self._stub_main_environment(monkeypatch)
+        rc = cleanup_cloudinary_orphans.main([])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "Re-run with --apply to delete." in out
