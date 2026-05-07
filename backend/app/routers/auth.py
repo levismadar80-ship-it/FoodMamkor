@@ -52,7 +52,7 @@ from app.services.oauth_verifiers import (
 )
 from app.services.password_policy import validate_password
 from app.database import get_db
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
+from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product, User
 from app.models.models import (
     Favorite,
     HomeProduct,
@@ -987,6 +987,38 @@ def delete_account(
     user_name = user.name
     producer_id = user.producer_id
 
+    # MEH-375: capture every Cloudinary URL owned by this user BEFORE
+    # any db.delete, since the cascade detaches relationships and the
+    # URLs become unreachable post-commit. 5 surfaces:
+    #   A) user.avatar_url
+    #   B) producer.images           (if user.producer_id)
+    #   C) every Product.image_url   (for that producer)
+    #   D) every HomeProduct.photo   (user-owned, not producer-owned)
+    #   E) every HomeProduct.images  (same rows as D)
+    # producer.story_card_url is intentionally NOT captured — that
+    # namespace (mehamakor/producers/*) reuses public_ids per producer
+    # via overwrite=True, and destroy_image rejects the prefix anyway.
+    # Destroy runs AFTER the final db.commit so a constraint failure
+    # leaves DB and Cloudinary in sync.
+    captured_urls: list[str] = []
+    if user.avatar_url:
+        captured_urls.append(user.avatar_url)
+    if producer_id is not None:
+        producer_for_capture = db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer_for_capture is not None:
+            for url in (producer_for_capture.images or []):
+                if url:
+                    captured_urls.append(url)
+            for prod in db.query(Product).filter(Product.producer_id == producer_for_capture.id).all():
+                if prod.image_url:
+                    captured_urls.append(prod.image_url)
+    for hp in db.query(HomeProduct).filter(HomeProduct.user_id == user.id).all():
+        if hp.photo:
+            captured_urls.append(hp.photo)
+        for url in (hp.images or []):
+            if url:
+                captured_urls.append(url)
+
     # 1. Clean up user-linked (not producer-linked) rows that don't cascade
     #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
     #    the explicit deletes for defense-in-depth against pre-cascade data.
@@ -1012,6 +1044,16 @@ def delete_account(
     # 3. Finally, delete the user itself.
     db.delete(user)
     db.commit()
+
+    # MEH-375: post-commit Cloudinary cleanup. fail-open per
+    # destroy_image contract — failures log via app.upload, the cleanup
+    # script catches misses on its next run, and the DB cascade is
+    # never rolled back on a Cloudinary outage. Duplicate URLs across
+    # surfaces (rare, e.g. avatar reused as producer image) are
+    # idempotent — Cloudinary returns "not found" on the second call.
+    from app.cloudinary_utils import destroy_image
+    for url in captured_urls:
+        destroy_image(url)
 
     # Send confirmation email
     _send_deletion_email(user_email, user_name)
