@@ -429,6 +429,50 @@ Branch-state claims must be cross-verified via `git ls-remote origin` (or fresh 
 
 ---
 
+## Next session — MEH-375 Cloudinary cleanup (Chunks D–K)
+
+Branch: feature/meh-375-cloudinary-cleanup (pushed, not yet PR'd)
+Last commit: 43bab05
+
+Done so far:
+  - Chunk A: backend/app/cloudinary_utils.py (extract_public_id +
+    destroy_image + destroy_removed_images)
+  - Chunk B: /upload/avatar fixed per-user slot with overwrite=True
+  - Chunk C: producer.images diff-destroy on producer_me PUT +
+    admin PUT + admin DELETE producer (with Product cascade)
+  - All destroy invocations are POST-commit per MEH-375 pattern
+    (External-cleanup pattern, see Smadar memory #30 — destroy
+    AFTER db.commit, never mid-transaction)
+
+Remaining chunks (in order, WAIT gates between each):
+  D: home_products.py update + admin.py delete_listing —
+     same diff-destroy pattern as Chunk C, post-commit
+  E: auth.py delete_account cascade — capture user.avatar_url +
+     producer.images + every Product.image_url + every
+     home_product.photo + home_product.images BEFORE db.delete,
+     destroy AFTER commit
+  F: users_me.py PATCH /users/me — destroy old avatar_url AFTER
+     commit when avatar_url changes (YF-1 from PHASE 1)
+  G: oauth_verifiers.py deferred-upload refactor (YF-4)
+  H: producer_me.py DELETE product — destroy product.image_url
+     AFTER commit (YF-2 single-product surface)
+  I: backend/scripts/cleanup_cloudinary_orphans.py with
+     --min-age-hours flag default 24 + reject-list for
+     /placeholder + mehamakor/producers/* prefix
+  J2: tests/test_cloudinary_cleanup_script.py
+  K: CHANGELOG entry + HANDOFF.md update + final verify
+
+CI status to verify before resuming:
+  - Last 4 commits on the branch are green
+  - tests/test_cloudinary_cleanup.py 27 passed + 1 xfailed
+  - tests/test_avatar_upload.py 7 passed (B.5 extension)
+
+Pre-existing claude/* branches on remote (NOT this PR's concern,
+document at PR time): claude/add-branch-base-verification-sRqO7
++ claude/weekly-summary-2026-05-01.
+
+---
+
 ### MEH-470 — Product Edit flow + PUT integration (MERGED PR #528 434f891)
 
 **Branch:** `feature/meh-470-product-edit-flow` off `origin/staging` post-Phase-3 (cdd975a + back-merged staging incl. MEH-301 / MEH-429).
