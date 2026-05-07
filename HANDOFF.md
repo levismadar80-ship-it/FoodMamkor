@@ -1,7 +1,33 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-487 claude-code-action@v1 wired DRAFT PR open; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-489 pytest-cov + 70% gate + Smokeshow DRAFT PR open; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-489 pytest-cov + 70% coverage gate + Smokeshow badge (DRAFT PR open)
+
+**Branch:** `feature/meh-489-pytest-cov-70-gate` off `origin/staging` (1-commit divergence).
+
+**Risk tier:** MEDIUM (CI gate + dep change + workflow restructure). Plan-gate then end-to-end execution per MEH-450.
+
+**Baseline coverage measured in plan phase:** 77% (5,529 stmts, 1,281 missed) — 487 passed / 2 skipped / 0 failed against fresh Postgres + `alembic upgrade head`. Threshold set to **70%** (spec rule `min(70, baseline−2)`); 7-point buffer for routine PRs.
+
+**What's done:**
+- **`backend/pyproject.toml:33-39`** — added `pytest-cov>=7.0` to `[dependency-groups].dev`. `uv lock` regenerated; +2 packages: `coverage==7.13.5`, `pytest-cov==7.1.0`.
+- **`.github/workflows/pr-checks.yml` "Run tests" step rewritten** — `pytest --cov=backend/app --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=70 --tb=long --timeout=60`. Dropped `-x` (full suite needs to run for accurate coverage) and `-v` (signal-to-noise). Header comment updated to "Two jobs: build, pytest".
+- **`.github/workflows/pr-checks.yml` NEW Smokeshow upload step** (Tiangolo pattern) — `smokeshow upload htmlcov` with GH commit-status integration. `continue-on-error: true` only on this step. `if: success() && head.repo.full_name == github.repository` skips fork PRs.
+- **`.github/workflows/pr-checks.yml:179-248` DELETED** — entire `test-inventory` job + comment block. The gated pytest job now owns the full-suite run.
+- **`README.md:3`** — Samuel Colvin worker badge: `[![Coverage](https://coverage-badge.samuelcolvin.workers.dev/show/levismadar80-ship-it/FoodMamkor.svg)](workflow URL)`.
+- **`.gitignore`** — added `.coverage`, `coverage.xml`, `htmlcov/` (pytest-cov local artifacts).
+
+**Smadar action item post-merge (REQUIRED — Smokeshow non-functional until done):**
+- Add `SMOKESHOW_AUTH_KEY` repo secret. Generate via `pip install smokeshow && smokeshow generate-key` → output → repo `Settings → Secrets and variables → Actions`.
+- Until then, the Smokeshow upload step exits non-zero on every PR but `continue-on-error: true` prevents merge breakage. The README badge will show "unknown" / fail to render until first successful upload lands on staging post-secret.
+
+**Verification deferred to user (CC sandbox MEH-360):** Smokeshow upload cannot be exercised from CC (no `SMOKESHOW_AUTH_KEY`, host outside WebFetch allowlist). Coverage measurement was verified locally by bootstrapping a Postgres 16 cluster inside the CC sandbox; baseline 77% reproduces the CI environment exactly.
+
+**What's pending:** PR review, merge to staging, secret added, first post-secret CI run validates badge.
+
+---
 
 ### Session 2026-05-07 — MEH-487 wire `anthropics/claude-code-action@v1` for adversarial PR review (DRAFT PR open)
 

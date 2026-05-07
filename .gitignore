@@ -15,3 +15,7 @@ frontend/dist/
 *.db
 # MEH-445: PostToolUse lint-feedback hook state files (per-file 3-strikes counter)
 .claude/hooks/.lint-attempts/
+# MEH-489: pytest-cov local artifacts
+.coverage
+coverage.xml
+htmlcov/
