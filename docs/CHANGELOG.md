@@ -2,6 +2,52 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-492: alembic check CI gate (model-vs-migration drift) + 2 partial-index drift fixes
+
+`ci(MEH-492)`: catches the bug class where a column is added to a SQLAlchemy model without a paired Alembic revision — `pytest` passes (tests don't exercise the new column), `alembic upgrade head` passes (chain is intact), `EXPECTED_TABLES` still matches (count unchanged), but production boot fails reading/writing the missing column. `alembic check` (1.9+) compares `Base.metadata` against the post-`upgrade head` schema and surfaces the diff before merge.
+
+### Scope expansion — fixing the drift the gate found
+
+The first CI run on this PR (PR #549) **did exactly what the gate was designed to do** and reported real drift on staging baseline: 2 partial indexes existed in the DB schema (created by past migrations) but were not declared on the corresponding SQLAlchemy models. Scope expanded inside this PR rather than splitting to a follow-up ticket — fix is mechanical and avoids running a second calibration→required cycle in parallel with MEH-488/MEH-505.
+
+**Drift items found:**
+
+| Index | Migration that created it | Model now declares it |
+|---|---|---|
+| `idx_producers_availability_state` | `2a74fa41ceb1` (MEH-291, 2026-05-04) — partial: `WHERE availability_state != 'accepting_orders'` | `Producer.__table_args__` (`backend/app/models/models.py:161-168`) |
+| `idx_products_dietary` | `1afe844d11f4` (MEH-293, 2026-05-07) — partial: `WHERE is_gluten_free OR is_vegan OR is_lactose_free` | NEW `Product.__table_args__` (`backend/app/models/models.py:340-348`) |
+
+Both copied verbatim from the migration's `op.create_index(...)` predicate string — `postgresql_where=text("...")` byte-stable with the migration source. Each declaration carries a comment citing the source migration revision + ticket + role.
+
+### Why scope expansion vs separate ticket
+
+1. **Avoids double-calibration.** MEH-488 (ruff CI gate) is mid-calibration→required cycle (MEH-505 blocks on PR #544 merge). Shipping MEH-492 with `continue-on-error: true` would create a parallel flip-PR backlog. Two simultaneous calibrations is meta-cost we should avoid.
+2. **Fix is mechanical.** Both indexes are simple partial indexes; predicates are short single-line strings; the `Index(..., postgresql_where=text(...))` shape already exists in the file (`models.py:154-160` `idx_producers_name`). Not a new precedent.
+3. **Single PR ships gate AS REQUIRED.** No `continue-on-error` on the `Alembic drift check` step. The gate becomes blocking on day 1.
+
+### Changes
+
+- **`backend/app/models/models.py`** — 2 partial-index declarations added to fix the drift the gate surfaced. Producer's existing `__table_args__` extended with `idx_producers_availability_state`; new `Product.__table_args__` carries `idx_products_dietary`. Each declaration is the verbatim equivalent of the migration's `op.create_index(..., postgresql_where=sa.text("..."))` call, with a leading comment naming the source migration + ticket + role.
+- **`.github/workflows/pr-checks.yml:171-186`** — NEW `Alembic drift check (models vs migrations)` step in the `pytest` job. Inserted AFTER `Verify alembic schema (34 tables + baseline revision)` and BEFORE the MEH-489 `Run tests with coverage gate` step. Same env block as the existing `alembic upgrade head` step (verbatim copy: `DATABASE_URL` + `SECRET_KEY` only — no new secrets introduced). Fails CI on any drift; exit code from `alembic check` is the gate signal. **Ships AS REQUIRED — no `continue-on-error`.**
+- **`docs/MIGRATIONS.md` "CI Migration Drift Gate" section** — flow diagram updated (added `→ alembic check ← MEH-492` line), failure-mode list extended with the alembic-check failure rationale + recovery steps, new "מקומית, לפני PR" line documenting `cd backend && uv run alembic check`.
+
+### Pre-flight verification
+
+- **`backend/pyproject.toml:10`** — `alembic==1.13.2` (≥1.9 required by `check` subcommand). No bump needed.
+- **`backend/alembic/env.py:36`** — `target_metadata = Base.metadata` already set. `alembic check` reads this to know the "expected" schema. Path note: spec wrote `backend/app/alembic/env.py`, actual path is `backend/alembic/env.py` (env.py:1-19 prepends `backend/` to sys.path so `from app.database import Base` resolves at line 19).
+- **Local `alembic check` execution:** sandbox cannot reach Postgres (MEH-360); ran `cd backend && DATABASE_URL=... .venv/bin/alembic check` → command found, env loads, fails at psycopg2 connect with `Connection refused` — proves the binary path is correct. CI verification on PR.
+
+### What the gate does NOT cover
+
+- It compares the model graph against the live DB schema. If a model is added but the test suite never imports it (rare — `models/__init__.py` re-exports everything), `Base.metadata` won't include it and drift will be missed. Mitigated in this codebase by the existing `from app.models import *` re-export pattern.
+- It does NOT auto-generate a missing revision. The CI step fails loudly; the developer runs `alembic revision --autogenerate -m "MEH-XXX ..."` locally and ships a paired revision in the same PR.
+
+### Smadar action items
+
+- None pre-merge. Post-merge: any future "I added a column and CI fails" experience is the gate working as designed — the failure message names the missing column.
+
+Closes MEH-492.
+
 ## 2026-05-07 — MEH-493: extend SentryRequestScopeMiddleware with set_context + set_user (no-op until SDK lands)
 
 `feat(MEH-493)`: backend Sentry context middleware — `set_context("request_info", {...})` + best-effort `set_user({"id": <jwt-sub>})` + PII-safe email redaction helper. Ships as no-op shim until MEH-500 wires `sentry_sdk.init`.
