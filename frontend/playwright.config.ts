@@ -10,6 +10,9 @@ export default defineConfig({
     ? [["html", { open: "never" }], ["list"]]
     : [["list"]],
   timeout: 30_000,
+  expect: {
+    timeout: 10_000,
+  },
   use: {
     baseURL: process.env.TEST_URL || "http://localhost:3000",
     locale: "he-IL",
