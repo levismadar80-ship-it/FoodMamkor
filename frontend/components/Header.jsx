@@ -6,8 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import { useTranslations } from "next-intl";
 import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { BRAND_NAME } from "@/lib/constants";
 
 /**
  * Header (MEH-29 sticky / active / transparent) — layered on top of the
@@ -38,7 +40,8 @@ import api from "@/lib/api";
  */
 export default function Header() {
   const { user, logout } = useAuth();
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang } = useLanguage();
+  const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -124,10 +127,10 @@ export default function Header() {
   const showAddBusinessCta = !isProducer;
 
   const NAV_ITEMS = [
-    { href: "/", label: t("nav_discover") },
-    { href: "/map", label: t("nav_map") },
-    { href: "/neighbor", label: t("nav_neighbor") },
-    { href: "/about", label: t("nav_about") },
+    { href: "/", label: t("nav.discover") },
+    { href: "/map", label: t("nav.map") },
+    { href: "/neighbor", label: t("nav.neighbor") },
+    { href: "/about", label: t("nav.about") },
   ];
 
   const isHomepage = pathname === "/";
@@ -185,7 +188,7 @@ export default function Header() {
         <Link href="/" className="md:justify-self-start shrink-0">
           <Image
             src="/logo.png"
-            alt="מהמקור"
+            alt={BRAND_NAME}
             width={106}
             height={40}
             priority
@@ -253,7 +256,7 @@ export default function Header() {
               textShadow={transparentTextShadow}
             />
           ) : (
-            <LoginPill label={t("nav_login")} transparent={transparent} />
+            <LoginPill label={t("nav.login")} transparent={transparent} />
           )}
         </div>
 
@@ -305,7 +308,7 @@ export default function Header() {
               className="block text-primary font-semibold"
               onClick={() => setMenuOpen(false)}
             >
-              {t("nav_add_business")}
+              {t("nav.add_business")}
             </Link>
           )}
 
@@ -327,7 +330,7 @@ export default function Header() {
                 onClick={() => setMenuOpen(false)}
               >
                 <Heart size={16} weight="duotone" aria-hidden="true" />
-                {t("nav_favorites")}
+                {t("nav.favorites")}
               </Link>
               {user.role === "admin" && (
                 <Link
@@ -335,7 +338,7 @@ export default function Header() {
                   className="block text-secondary"
                   onClick={() => setMenuOpen(false)}
                 >
-                  {t("nav_admin")}
+                  {t("nav.admin")}
                 </Link>
               )}
               <button
@@ -345,7 +348,7 @@ export default function Header() {
                 }}
                 className="block text-red-500"
               >
-                {t("nav_logout")}
+                {t("nav.logout")}
               </button>
             </>
           ) : (

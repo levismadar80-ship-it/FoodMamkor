@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, MapTrifold, CookingPot, UserCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
-import { useLanguage } from "@/lib/language-context";
+import { useTranslations } from "next-intl";
 import OnboardingTip from "@/components/OnboardingTip";
 import { useOnboarding } from "@/lib/use-onboarding";
 
@@ -24,7 +24,7 @@ import { useOnboarding } from "@/lib/use-onboarding";
 export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const t = useTranslations();
   const { step: onboardStep, advance: onboardAdvance, dismiss: onboardDismiss } = useOnboarding();
 
   // Smart auth slot: guest→/login, consumer→/settings, producer→/producer/dashboard.
@@ -36,13 +36,13 @@ export default function BottomNav() {
     : "/login";
 
   const tabs = [
-    { href: "/", Icon: House, labelKey: "nav_discover", match: (p) => p === "/" },
-    { href: "/map", Icon: MapTrifold, labelKey: "nav_map", match: (p) => p === "/map" },
-    { href: "/neighbor", Icon: CookingPot, labelKey: "nav_neighbor", match: (p) => p.startsWith("/neighbor") },
+    { href: "/", Icon: House, labelKey: "nav.discover", match: (p) => p === "/" },
+    { href: "/map", Icon: MapTrifold, labelKey: "nav.map", match: (p) => p === "/map" },
+    { href: "/neighbor", Icon: CookingPot, labelKey: "nav.neighbor", match: (p) => p.startsWith("/neighbor") },
     {
       href: profileHref,
       Icon: UserCircle,
-      labelKey: "nav_profile",
+      labelKey: "nav.profile",
       match: (p) =>
         p.startsWith("/settings") || p === "/login" || p.startsWith("/producer/dashboard"),
     },
@@ -52,7 +52,7 @@ export default function BottomNav() {
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-[1000] bg-white border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      aria-label={t("nav_mobile_label")}
+      aria-label={t("nav.mobile_label")}
     >
       <ul className="grid grid-cols-4">
         {tabs.map((tab, idx) => {

@@ -7,7 +7,7 @@ import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
-import { UpcomingEventsPreview } from "@/app/home/UpcomingEventsPreview";
+import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
 import {
   HomeMarquee,
   HomeFounderQuote,
@@ -15,10 +15,10 @@ import {
   HomeRecentlyViewed,
   HomeKitchenPreview,
   HomeCTA,
-} from "@/app/home/HomeStaticBlocks";
-import { HomeHero } from "@/app/home/HomeHero";
-import { HomeCategoryGrid } from "@/app/home/HomeCategoryGrid";
-import { HomeProducersGrid } from "@/app/home/HomeProducersGrid";
+} from "@/app/[locale]/home/HomeStaticBlocks";
+import { HomeHero } from "@/app/[locale]/home/HomeHero";
+import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
+import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useHomePage } from "@/lib/use-home-page";
 
 // PREMIUM_DESIGN: parallax divider images between sections.

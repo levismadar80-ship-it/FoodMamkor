@@ -1,6 +1,7 @@
 import Link from "next/link";
 import MapClient from "./MapClient";
 import { API_URL } from "@/lib/env";
+import { BRAND_NAME } from "@/lib/constants";
 
 export const metadata = {
   title: "מפת בתי עסק",
@@ -10,7 +11,7 @@ export const metadata = {
     title: "מפת בתי עסק | מהמקור",
     description: "מצאי בתי עסק מקומיים לאוכל בריא על המפה.",
     type: "website",
-    siteName: "מהמקור",
+    siteName: BRAND_NAME,
     locale: "he_IL",
     // Include the shared OG image — Next.js REPLACES (not merges) the
     // openGraph object when overridden, so we have to re-declare the
