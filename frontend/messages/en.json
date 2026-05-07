@@ -173,5 +173,10 @@
     "tasting": "Tasting",
     "workshop": "Workshop",
     "fermented": "Fermented"
+  },
+  "seo": {
+    "home": {
+      "description": "Local food businesses, all in one place. Find real, fresh, and healthy food near you."
+    }
   }
 }
