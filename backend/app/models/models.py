@@ -281,6 +281,13 @@ class Product(Base):
     image_url = Column(Text)
     price_min = Column(Numeric(10, 2), nullable=True)
     price_max = Column(Numeric(10, 2), nullable=True)
+    # MEH-293: per-product dietary flags. Old producer-level columns
+    # (producers.gluten_free / vegan / lactose_free) preserved during the
+    # 7-day overlap; reads aggregate `any(p.is_X for p in producer.products)`
+    # and the public filter switches to an EXISTS subquery on these.
+    is_gluten_free = Column(Boolean, default=False, nullable=False, server_default=text("false"))
+    is_vegan = Column(Boolean, default=False, nullable=False, server_default=text("false"))
+    is_lactose_free = Column(Boolean, default=False, nullable=False, server_default=text("false"))
 
     producer = relationship("Producer", back_populates="products")
 
