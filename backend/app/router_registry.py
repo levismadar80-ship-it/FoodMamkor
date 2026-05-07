@@ -15,6 +15,7 @@ from app.routers import (
     experiences,
     favorites,
     group_buys,
+    health,
     holiday_mode,
     home_products,
     marketing,
@@ -67,5 +68,6 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(group_buys.admin_router)
     app.include_router(alerts.router)
     app.include_router(admin_kashrut.router)
+    app.include_router(health.router)
     app.include_router(system.router)
     app.include_router(holiday_mode.router)

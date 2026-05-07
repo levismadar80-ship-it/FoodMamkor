@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 
 from app.config import settings
 
@@ -10,10 +10,8 @@ def root():
     return {"message": "מהמקור API - ברוכים הבאים"}
 
 
-@router.api_route("/health", methods=["GET", "HEAD"])
-def health(request: Request):
-    db_state = getattr(request.app.state, "db_init_status", "not_scheduled")
-    return {"status": "ok", "db_init": db_state}
+# /health, /health/liveness, /health/readiness — moved to app/routers/health.py
+# (MEH-483: single owner per workflow.md "two parallel mechanisms" rule).
 
 
 @router.get("/push-vapid-key")
