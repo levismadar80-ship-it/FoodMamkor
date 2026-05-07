@@ -263,6 +263,72 @@ def list_cloudinary_assets(
     return candidates
 
 
+def compute_orphans(
+    candidates: list[tuple[str, str, int]],
+    referenced: set[str],
+) -> list[tuple[str, str, int]]:
+    """Return the subset of `candidates` whose `secure_url` is NOT in
+    `referenced`. Pure — no mutation of either input. Preserves input
+    ordering (which is the Cloudinary page-fetch order, prefix-by-prefix).
+
+    The comparison key is `secure_url` not `public_id`: every DB write site
+    persists the value of `cloudinary` `result["secure_url"]` directly, and
+    string equality on that value avoids parsing transformation prefixes
+    or version segments out of the URL — same posture as the helper's
+    `extract_public_id` xfail-strict on signed URLs (we just don't parse).
+    """
+    return [
+        (public_id, secure_url, size_bytes)
+        for (public_id, secure_url, size_bytes) in candidates
+        if secure_url not in referenced
+    ]
+
+
+def _format_bytes(n: int) -> str:
+    """Human-readable bytes, base-1024 with the conventional loose `KB`/`MB`/
+    `GB` suffixes. Matches `du -h` output and operator expectations in
+    ops summaries; not strict IEC binary prefixes (KiB/MiB/GiB)."""
+    if n < 1024:
+        return f"{n} B"
+    for suffix, scale in (("KB", 1024), ("MB", 1024**2), ("GB", 1024**3)):
+        if n < scale * 1024:
+            return f"{n / scale:.1f} {suffix}"
+    return f"{n / 1024**4:.1f} TB"
+
+
+def print_dry_run_summary(
+    candidates: list[tuple[str, str, int]],
+    referenced: set[str],
+    orphans: list[tuple[str, str, int]],
+    *,
+    sample_size: int = 5,
+) -> None:
+    """Print a block to STDOUT summarizing the dry-run result. Uses `print()`
+    not `logger.info` so operators can `2>cleanup.log` to capture stderr ops
+    output while preserving the human-readable summary on stdout. Sample
+    is the first-N orphans in input order (deterministic — no sorting).
+    """
+    total_bytes = sum(size_bytes for _, _, size_bytes in orphans)
+    print()
+    print("=" * 60)
+    print(f"Cloudinary candidates (after filters): {len(candidates)}")
+    print(f"DB-referenced URLs:                    {len(referenced)}")
+    print(f"Orphans:                               {len(orphans)}")
+    print(
+        f"Orphan total bytes:                    "
+        f"{total_bytes} ({_format_bytes(total_bytes)})"
+    )
+    print()
+    if orphans:
+        shown = min(sample_size, len(orphans))
+        print(f"First {shown} orphan public_ids:")
+        for public_id, _, _ in orphans[:sample_size]:
+            print(f"  - {public_id}")
+        print()
+    print("Re-run with --apply to delete.")
+    print("=" * 60)
+
+
 def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO,
@@ -314,7 +380,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     logger.info("Cloudinary candidates after filters: %d", len(candidates))
 
-    # I.4-I.5 fill in: orphan compute → --apply delete.
+    orphans = compute_orphans(candidates, referenced)
+    if args.apply:
+        # I.5 will replace this raise with the real confirm-prompt + batch-delete
+        # flow. The hard gate keeps a half-finished --apply path from slipping
+        # through review during I.4.
+        raise NotImplementedError(
+            "--apply not yet implemented (deferred to Chunk I.5)"
+        )
+    print_dry_run_summary(candidates, referenced, orphans)
     return 0
 
 
