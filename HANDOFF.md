@@ -1,9 +1,18 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-470 product edit flow — PR open; MEH-295 fully closed PR #525; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-470 product edit flow — MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### MEH-470 — Product Edit flow + PUT integration (PR open)
+### Session 2026-05-07 — Product surface complete
+- MEH-294 closed (PR #515) — Hebrew status labels
+- MEH-295 closed (PR #519 backend + #525 frontend cdd975a) — 2-field price + validation + display chain
+- MEH-470 closed (PR #528 434f891) — Product Edit flow (inline per-row, PUT, Decimal-coerce-on-load, legacy hint, נקבה copy)
+
+**Next session:** pick next ticket from Linear. Product surface is fully closed.
+
+---
+
+### MEH-470 — Product Edit flow + PUT integration (MERGED PR #528 434f891)
 
 **Branch:** `feature/meh-470-product-edit-flow` off `origin/staging` post-Phase-3 (cdd975a + back-merged staging incl. MEH-301 / MEH-429).
 
