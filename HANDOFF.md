@@ -1,7 +1,43 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-07 (MEH-483 structlog + Request-ID + /health split DRAFT PR open; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-07 — MEH-483 structlog + Request-ID + /health/{liveness,readiness} (DRAFT PR open)
+
+**Branch:** `feature/meh-483-structlog-request-id-health` off `origin/staging`. Switched FROM harness-mandated `claude/add-middleware-sentry-cNVe3` per CLAUDE.md workflow rule 3 + Smadar's explicit Q4 confirmation in plan review.
+
+**Risk tier:** HIGH (multi-file middleware + new healthcheck endpoints). Per MEH-450: numbered plan first, `go`, then end-to-end execution without mid-flight checkpoints — plan was approved with overrides on Sentry-init scope (Q1: shim only) and middleware ordering (Plan B locked, Plan A rejected as broken on contextvar timing).
+
+**What's done:**
+- **`backend/app/routers/health.py`** (NEW) — three endpoints: `/health/liveness` (200 alive, no DB), `/health/readiness` (200 ready / 503 with structured `reason`), `/health` (backwards-compat alias preserving pre-MEH-483 shape so `railway.json:8` healthcheck stays green at merge).
+- **`backend/app/routers/system.py:13-16`** — duplicate `/health` removed; single owner now in `health.py` (workflow.md two-parallel-mechanisms smell).
+- **`backend/app/router_registry.py`** — `health` router registered before `system`.
+- **`backend/app/logging_config.py:34`** — LOG_FORMAT default flipped: JSON unless `ENV=development`. No new env var.
+- **`backend/app/middleware.py`** — `SentryRequestScopeMiddleware` (BaseHTTPMiddleware) added; Plan B ordering locked (registered AFTER SlowAPI but BEFORE CorrelationId in `add_middleware` so it runs INNER to CorrelationId on request-in). No-op until `sentry_sdk.init()` lands.
+- **`tests/test_health.py`** (NEW) — 10 cases: liveness/readiness happy + sad paths, X-Request-ID round-trip, validator rejection.
+- **No new deps** — structlog + asgi-correlation-id already pinned.
+
+**Test result:** Full backend suite (`tests/`): **487 passed, 2 skipped, 0 failed** (pre-existing skips). Frontend `npm run build` green.
+
+**8-step verification result (issue spec):**
+1. ✅ pytest green (full 487-test suite)
+2. ✅ `curl /health/liveness` → 200 `{"status":"alive"}`
+3. ✅ `curl /health/readiness` → 200 `{"status":"ready","migrations":"unknown","db_init":"ready"}`
+4. ✅ Stop postgres → readiness → 503 `{"status":"not_ready","reason":"db_unreachable:OperationalError"}`
+5. ✅ X-Request-ID round-trip (UUID4 only — `asgi-correlation-id` default validator rejects non-UUID; auto-rewrite path tested)
+6. ⚠️ DEFERRED — Sentry tag dashboard receipt requires `sentry_sdk.init()` (not yet wired in backend). Will verify in the follow-up PR per `.claude/rules/observability.md`.
+7. ✅ JSON log format with `request_id` field bound when correlation_id is set (verified via in-process structlog test)
+8. ✅ Frontend `npm run build` clean (sanity)
+
+**Smadar manual steps post-merge:**
+1. **Railway service Settings → Networking → Healthcheck Path** — flip from `/health` to `/health/readiness` for proper readiness gating during deploys. The alias keeps deploy traffic flowing if you delay this; do it at your pace, then we can drop the alias in a follow-up.
+2. **Sentry SDK follow-up ticket** filed (see PR body for ID) — expects `BACKEND_SENTRY_DSN` env var, distinct from frontend `SENTRY_DSN`. Add to Railway env once the ticket starts.
+
+**Spec deviations called out in plan/PR (acknowledged):**
+- Sentry SDK was assumed wired in spec — it isn't. Shim path approved (Q1 option a). Follow-up ticket created.
+- X-Request-ID example `test-abc-123` won't round-trip — validator default is UUID4. Documented in test + PR; secure default kept.
+- Email-by-key masking processor deferred — existing `_redact_sensitive` covers password/token/api_key keys; manual masking already exists at `email.py:51`. Out of MEH-483 narrowed scope.
 
 ### Session 2026-05-07 — MEH-485 CI concurrency-key fix + paths-filter (DRAFT PR open)
 

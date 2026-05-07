@@ -1,17 +1,27 @@
 import time as _time
 
 import structlog
-from asgi_correlation_id import CorrelationIdMiddleware
+from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 from app.config import settings
 from app.rate_limit import limiter
 from app.services.analytics import record_request
+
+# MEH-483: Sentry SDK is not yet wired in backend (frontend-only today,
+# tracked in MEH-376/379). Shim no-ops cleanly until the follow-up
+# ticket adds `sentry_sdk.init(...)`.
+try:  # pragma: no cover — exercised once sentry_sdk lands
+    import sentry_sdk as _sentry_sdk  # type: ignore[import-not-found]
+except ImportError:  # pragma: no cover
+    _sentry_sdk = None
 
 log = structlog.get_logger("mehamakor.middleware")
 
@@ -40,18 +50,80 @@ async def record_request_metrics(request: Request, call_next) -> Response:
             log.debug("[metrics] record_request failed (non-fatal)", exc_info=True)
 
 
+class SentryRequestScopeMiddleware(BaseHTTPMiddleware):
+    """MEH-483: bind request_id + route + method to the current Sentry scope.
+
+    Plan B middleware ordering (locked): registered AFTER
+    ``CorrelationIdMiddleware`` in ``add_middleware`` order. Starlette
+    wraps middleware in reverse, so the later ``add_middleware`` call
+    becomes INNER on request-in. Request flow:
+
+        CORS  →  CorrelationId (sets contextvar)
+              →  SentryRequestScope (reads contextvar, tags Sentry scope)
+              →  SlowAPI  →  handler
+
+    By tagging on request-in (before ``call_next``), any handler
+    exception that bubbles into Sentry already carries ``request_id``.
+    No-ops cleanly when ``sentry_sdk`` isn't installed (current state —
+    SDK init tracked in a MEH-483 follow-up).
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        super().__init__(app)
+
+    async def dispatch(self, request: Request, call_next):
+        if _sentry_sdk is not None:
+            rid = correlation_id.get()
+            try:
+                with _sentry_sdk.configure_scope() as scope:
+                    if rid:
+                        scope.set_tag("request_id", rid)
+                    scope.set_tag("route", request.url.path)
+                    scope.set_tag("method", request.method)
+            except Exception:  # pragma: no cover — defensive only
+                log.debug("[sentry] scope tag bind failed", exc_info=True)
+        return await call_next(request)
+
+
 def install_middlewares(app: FastAPI) -> None:
     """Register middleware in the order required by the existing chain.
 
-    Order matters: CorrelationIdMiddleware must be added AFTER SlowAPIMiddleware
-    so request IDs appear on rate-limit (429) responses. The two `app.middleware("http")`
-    decorator-style middlewares register as the outermost layers, matching the
-    pre-refactor behavior of `@app.middleware("http")` declarations after
-    `app.add_middleware(...)` calls in main.py.
+    Locked ordering (Plan B per MEH-483 review):
+
+    ``add_middleware`` calls (Starlette wraps in reverse — later call =
+    inner on request-in)::
+
+        SlowAPIMiddleware            # innermost
+        SentryRequestScopeMiddleware # NEW — must run AFTER CorrelationId
+        CorrelationIdMiddleware      # sets `request_id` contextvar
+        CORSMiddleware               # outermost add_middleware
+
+    Decorator middlewares (registered after, become outer of all
+    ``add_middleware`` layers)::
+
+        add_security_headers
+        record_request_metrics
+
+    Request-in flow::
+
+        record_metrics → security_headers → CORS → CorrelationId
+                       → SentryRequestScope → SlowAPI → handler
+
+    Why this order:
+    - CorrelationId must wrap SlowAPI so 429 responses carry
+      ``X-Request-ID`` (pre-existing invariant — MEH-XXX).
+    - SentryRequestScope must be INNER to CorrelationId so the
+      ``request_id`` contextvar is populated when its ``dispatch``
+      runs. Reading the contextvar from a decorator-style
+      (outermost) middleware before ``call_next`` returns empty —
+      that mistake was caught in code review and locked here.
     """
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SlowAPIMiddleware)
+    # SentryRequestScope must be added AFTER SlowAPI but BEFORE
+    # CorrelationId so it ends up INNER to CorrelationId on request-in.
+    app.add_middleware(SentryRequestScopeMiddleware)
     app.add_middleware(CorrelationIdMiddleware, header_name="X-Request-ID")
 
     app.add_middleware(

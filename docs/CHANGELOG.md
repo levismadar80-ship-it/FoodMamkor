@@ -2,6 +2,24 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-07 — MEH-483: /health/{liveness,readiness} split + LOG_FORMAT default flip + Sentry per-request scope shim
+
+`feat(MEH-483)`: backend observability — readiness-gated healthchecks, JSON-by-default logs in non-dev, request-scope shim ready for Sentry SDK init.
+
+- **New `backend/app/routers/health.py`** — three endpoints, single owner per workflow.md "two parallel mechanisms":
+  - `GET /health/liveness` — 200 `{"status":"alive"}`, no DB call.
+  - `GET /health/readiness` — `SELECT 1` + `app.state.db_init_status` + Alembic head probe. 200 `{"status":"ready","migrations":"<rev>","db_init":"ready"}` or 503 `{"status":"not_ready","reason":"db_unreachable:<exc>" | "db_init_failed" | "db_init_pending"}`.
+  - `GET /health` (alias) — preserves pre-MEH-483 shape `{"status":"ok","db_init":<state>}`. Keeps `railway.json:8` healthcheck green at merge time. Smadar to flip Railway service Settings → Networking → Healthcheck Path to `/health/readiness` post-merge for proper readiness gating; alias removable in follow-up after path flip soaks.
+- **Removed `/health` from `backend/app/routers/system.py:13-16`** — single owner now in `health.py` (workflow.md "two parallel mechanisms" smell).
+- **`logging_config.py:34`** — LOG_FORMAT default flipped: JSON unless `ENV=development`. Explicit `LOG_FORMAT` env-var still wins. `ENV` is canonical (`config.py:37,113,127`); no new env-var introduced.
+- **Sentry per-request scope shim** — new `SentryRequestScopeMiddleware` in `backend/app/middleware.py`. Plan B ordering locked: registered AFTER `SlowAPIMiddleware`, BEFORE `CorrelationIdMiddleware` in `add_middleware` calls so it ends up INNER to CorrelationId on request-in (Starlette wraps in reverse). Reads `correlation_id.get()` AFTER the contextvar is bound, sets `request_id` + `route` + `method` Sentry scope tags on request-in so handler exceptions carry the tags. **No-op until `sentry_sdk` is installed and `sentry_sdk.init()` is called** — backend Sentry SDK is NOT yet wired (frontend-only today, MEH-376/379). Follow-up Linear ticket filed to wire `sentry-sdk[fastapi]` + `BACKEND_SENTRY_DSN`; this PR's shim activates immediately upon that follow-up landing.
+- **Tests** — `tests/test_health.py` (10 cases): liveness 200, liveness HEAD, readiness 200, readiness 503 on `db_init=failed`, readiness 503 on `db_init=initializing`, readiness 503 on `SELECT 1` raise, `/health` alias backwards-compat shape, X-Request-ID UUID round-trip, X-Request-ID auto-gen when absent, non-UUID X-Request-ID gets rewritten (documents `asgi-correlation-id` default validator behaviour).
+- **No new deps** — `structlog==24.4.0` + `asgi-correlation-id==4.3.4` already pinned in `backend/pyproject.toml:29-30`.
+- **Out of scope** — full email-address masking processor (spec mentioned `a***@gmail.com`). Existing `_redact_sensitive` covers password/token/secret/api_key keys; manual masking already exists at `backend/app/services/email.py:51`. Email-by-key processor deferred — minimal scope per HIGH-risk locked review.
+- **Deferred verification** — issue's `<verification_step>` #6 (Sentry dashboard receipt) cannot run today: `sentry_sdk` is not initialized in backend. Will verify via dashboard receipt (per `.claude/rules/observability.md`) on the follow-up PR that wires `sentry_sdk.init()`.
+
+Closes MEH-483.
+
 ## 2026-05-07 — MEH-485: CI concurrency-key fix + paths-filter on pr-checks.yml
 
 `ci(MEH-485)`: two CI optimizations targeting 30-50% minute savings on single-stack PRs.

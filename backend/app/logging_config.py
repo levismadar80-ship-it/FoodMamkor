@@ -31,7 +31,11 @@ def _add_correlation_id(logger, method, event_dict):
 def configure_logging() -> None:
     log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
     log_level = getattr(logging, log_level_name, logging.INFO)
-    log_format = os.getenv("LOG_FORMAT", "console").lower()
+    # MEH-483: default to JSON in non-dev so Railway/Sentry log searches
+    # can grep on `request_id`. `LOG_FORMAT` env var still wins when set.
+    # `ENV` is the canonical env var (config.py:37,113,127).
+    _is_dev = os.getenv("ENV", "development").lower() == "development"
+    log_format = os.getenv("LOG_FORMAT", "console" if _is_dev else "json").lower()
 
     shared_processors: list = [
         structlog.contextvars.merge_contextvars,
