@@ -1,0 +1,58 @@
+name: Claude PR Review
+
+# MEH-487 — adversarial PR review via the official Anthropic GitHub Action.
+# Calibration mode: continue-on-error: true for the first ~5 PRs so findings
+# are informational. After tally (HANDOFF.md "Claude Review calibration"
+# subsection), a follow-up ticket flips to blocking, tunes the prompt, or
+# reverts. Full prompt + calibration plan: docs/CLAUDE-REVIEW.md.
+#
+# Permissions: pull-requests:write + issues:write are required by
+# anthropics/claude-code-action@v1 to post the review comment. No other
+# write scopes — the action does not push code in this configuration.
+#
+# Concurrency: canonical MEH-485 key (workflow + head_ref || ref) so
+# force-pushes to the same PR cancel the in-flight review.
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Adversarial review (calibration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Calibration: never blocks merge while we measure signal:noise.
+    # Flip to false via a follow-up PR after the calibration tally
+    # crosses the >70% useful threshold (see docs/CLAUDE-REVIEW.md).
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Full history so the action can diff against the base branch.
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--model claude-sonnet-4-6"
+          prompt: |
+            You are reviewing a pull request for the mehamakor.online repo.
+
+            Read these files from the checked-out repo before commenting:
+            - CLAUDE.md (project standards, locked decisions, RTL rules)
+            - docs/CLAUDE-REVIEW.md (the full review prompt + output contract)
+
+            Follow docs/CLAUDE-REVIEW.md exactly: focus areas, output format,
+            and the "always post a comment" rule (post even when every
+            section is empty — empty sections must read "None.").

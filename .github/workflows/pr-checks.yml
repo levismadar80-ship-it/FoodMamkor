@@ -1,10 +1,10 @@
 name: PR Checks
 
 # Runs on every PR targeting staging or main.
-# Four jobs: build, pytest, test-inventory (non-gating), adversarial-review.
+# Three jobs: build, pytest, test-inventory (non-gating).
 # build + pytest are required status checks (configure in branch protection).
-# adversarial-review only runs if .github/scripts/adversarial-review.sh exists —
-# it's a hook point for wiring in the Claude CLI; currently always skipped.
+# Adversarial review now lives in .github/workflows/claude-review.yml
+# (MEH-487 — anthropics/claude-code-action@v1, calibration mode).
 
 on:
   pull_request:
@@ -246,38 +246,3 @@ jobs:
           name: pytest-inventory
           path: pytest-inventory.txt
           retention-days: 7
-
-  # ─────────────────────────────────────────────
-  # JOB 4: adversarial-review
-  # Only runs when .github/scripts/adversarial-review.sh exists.
-  # To enable: add a shell script at that path that calls the Claude CLI
-  # and exits non-zero on any BLOCK-level finding.
-  # ─────────────────────────────────────────────
-  adversarial-review:
-    name: Adversarial review
-    needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Check for adversarial-review script
-        id: check
-        run: |
-          if [ -f ".github/scripts/adversarial-review.sh" ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Adversarial review skipped::.github/scripts/adversarial-review.sh not found. Add a Claude CLI script there to enable automated adversarial review in CI."
-          fi
-
-      - name: Run adversarial review
-        if: steps.check.outputs.exists == 'true'
-        run: bash .github/scripts/adversarial-review.sh
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BASE_BRANCH: ${{ github.base_ref }}
