@@ -16,10 +16,43 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────
+  # JOB 0: paths-filter (MEH-485)
+  # Gates downstream jobs so frontend-only PRs skip
+  # backend pytest and vice versa. Pattern mirrored
+  # from e2e.yml (MEH-424). Skipped jobs report
+  # conclusion=success → branch-protection required
+  # checks remain satisfied without manual override.
+  # ─────────────────────────────────────────────
+  changes:
+    name: Paths filter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+              - 'package-lock.json'
+            backend:
+              - 'backend/**'
+            workflows:
+              - '.github/workflows/**'
+
+  # ─────────────────────────────────────────────
   # JOB 1: npm run build
   # ─────────────────────────────────────────────
   build:
     name: Frontend build (Next.js)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -50,6 +83,8 @@ jobs:
   # ─────────────────────────────────────────────
   pytest:
     name: Backend tests (pytest)
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -145,6 +180,8 @@ jobs:
   # ─────────────────────────────────────────────
   test-inventory:
     name: Test inventory (full suite, non-gating)
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -212,6 +249,8 @@ jobs:
   # ─────────────────────────────────────────────
   adversarial-review:
     name: Adversarial review
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
