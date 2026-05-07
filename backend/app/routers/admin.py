@@ -16,6 +16,7 @@ from app.models import (
     HomeProduct,
     Producer,
     ProducerCategory,
+    Product,
     Recipe,
     User,
 )
@@ -205,8 +206,17 @@ def admin_update_producer(
     if "price_range" in payload:
         producer.starting_price_label = payload["price_range"]
 
+    # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
+    # destroy URLs the admin dropped. Helper handles set diff + dedup +
+    # fail-open per-URL destroy.
+    old_images = list(producer.images or [])
+
     for field, value in payload.items():
         setattr(producer, field, value)
+
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+        destroy_removed_images(old_images, producer.images or [])
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
@@ -242,6 +252,23 @@ def admin_delete_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-375: destroy every Cloudinary asset owned by this producer
+    # BEFORE the DB cascade. destroy_image is fail-open — a Cloudinary
+    # outage logs at error level via app.upload but never rolls back the
+    # row delete (the cleanup script catches misses on its next run).
+    # Product.image_url is iterated explicitly because ondelete=CASCADE
+    # drops the rows but not the Cloudinary assets behind them.
+    # producer.story_card_url is intentionally NOT destroyed: that
+    # namespace (mehamakor/producers/*) reuses public_ids per producer
+    # via overwrite=True, and destroy_image rejects the prefix anyway.
+    from app.cloudinary_utils import destroy_image
+    for url in (producer.images or []):
+        destroy_image(url)
+    products = db.query(Product).filter(Product.producer_id == producer.id).all()
+    for product in products:
+        destroy_image(product.image_url)
+
     db.delete(producer)
     db.commit()
     return {"detail": "Producer deleted"}

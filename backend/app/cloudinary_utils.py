@@ -52,30 +52,24 @@ def _is_transformation_segment(segment: str) -> bool:
     return bool(_TRANSFORMATION_PARAM_RE.match(segment))
 
 
-def extract_public_id(url: str | None) -> str | None:
-    """Parse a Cloudinary secure_url back into its public_id.
-
-    Returns None for: empty input, non-Cloudinary URLs, local placeholders,
-    URLs that look malformed (no `/image/upload/` marker, no path after it),
-    and the reserved `mehamakor/producers/*` story-card namespace.
-    """
+def _looks_like_cloudinary_upload(url: object) -> bool:
+    """Cheap pre-check: shape-match before parsing. Catches None, non-str,
+    placeholder URLs, non-Cloudinary hosts, and Cloudinary URLs that
+    aren't `/image/upload/` style (e.g. `/image/fetch/`)."""
     if not url or not isinstance(url, str):
-        return None
+        return False
     if "/placeholder" in url:
-        return None
-    if "res.cloudinary.com" not in url:
-        return None
+        return False
+    return "res.cloudinary.com" in url and _UPLOAD_MARKER in url
 
+
+def _parse_public_id_from_upload_url(url: str) -> str | None:
+    """Strip transformation + version segments + leaf extension from the
+    `/image/upload/...` tail. Returns the joined public_id or None when
+    the URL has no parseable path after the marker."""
     idx = url.find(_UPLOAD_MARKER)
-    if idx == -1:
-        return None
-    tail = url[idx + len(_UPLOAD_MARKER):]
-    # Strip fragment / query so they don't bleed into the public_id.
-    tail = tail.split("?", 1)[0].split("#", 1)[0]
-    if not tail:
-        return None
-
-    segments = tail.split("/")
+    tail = url[idx + len(_UPLOAD_MARKER):].split("?", 1)[0].split("#", 1)[0]
+    segments = tail.split("/") if tail else []
     # Drop leading transformation segments (chained transforms appear as
     # multiple slash-separated groups: `w_400,h_400/c_fill/`).
     while segments and _is_transformation_segment(segments[0]):
@@ -85,7 +79,6 @@ def extract_public_id(url: str | None) -> str | None:
         segments.pop(0)
     if not segments:
         return None
-
     # Strip extension from the final segment only — public_ids may contain
     # dots in folder names but Cloudinary appends the format suffix to the
     # leaf.
@@ -95,8 +88,19 @@ def extract_public_id(url: str | None) -> str | None:
     if not last:
         return None
     segments[-1] = last
+    return "/".join(segments) or None
 
-    public_id = "/".join(segments)
+
+def extract_public_id(url: str | None) -> str | None:
+    """Parse a Cloudinary secure_url back into its public_id.
+
+    Returns None for: empty input, non-Cloudinary URLs, local placeholders,
+    URLs that look malformed (no `/image/upload/` marker, no path after it),
+    and the reserved `mehamakor/producers/*` story-card namespace.
+    """
+    if not _looks_like_cloudinary_upload(url):
+        return None
+    public_id = _parse_public_id_from_upload_url(url)  # type: ignore[arg-type]
     if not public_id:
         return None
     if any(public_id.startswith(prefix) for prefix in _RESERVED_PUBLIC_ID_PREFIXES):
@@ -145,3 +149,17 @@ def destroy_image(url: str | None) -> bool:
         return True
     log.error("Cloudinary destroy %s returned unexpected: %r", public_id, result)
     return False
+
+
+def destroy_removed_images(
+    old: list[str] | None,
+    new: list[str] | None,
+) -> None:
+    """Best-effort destroy every URL in `old` not present in `new`.
+
+    Uses set diff so a duplicate URL in `old` is destroyed only once
+    (idempotent at Cloudinary's side, but avoids redundant API calls).
+    """
+    new_set = set(new or [])
+    for url in set(old or []) - new_set:
+        destroy_image(url)

@@ -10,7 +10,7 @@ import logging
 
 import pytest
 
-from app.cloudinary_utils import destroy_image, extract_public_id
+from app.cloudinary_utils import destroy_image, destroy_removed_images, extract_public_id
 
 
 # ---------- extract_public_id ----------
@@ -205,3 +205,52 @@ class TestDestroyImage:
         with caplog.at_level(logging.ERROR, logger="app.upload"):
             assert destroy_image(url) is False
         assert any("returned unexpected" in r.message for r in caplog.records)
+
+
+# ---------- destroy_removed_images ----------
+
+
+class TestDestroyRemovedImages:
+    """Helper extracted from update_my_producer + admin_update_producer to
+    keep both handlers under the C901 max-complexity threshold. Tests
+    here lock the dedup contract (set diff, not list iteration) and the
+    no-op path so the call-site complexity stays at +1 branch."""
+
+    def test_empty_inputs_no_destroy_called(self, monkeypatch):
+        from app import cloudinary_utils
+
+        calls: list[str | None] = []
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        destroy_removed_images(None, None)
+        destroy_removed_images([], [])
+        assert calls == []
+
+    def test_all_old_urls_removed_destroys_each(self, monkeypatch):
+        from app import cloudinary_utils
+
+        calls: list[str | None] = []
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        destroy_removed_images(["a", "b", "c"], [])
+        # Order is unspecified (set iteration); compare as sets.
+        assert set(calls) == {"a", "b", "c"}
+        assert len(calls) == 3
+
+    def test_partial_overlap_destroys_only_removed(self, monkeypatch):
+        from app import cloudinary_utils
+
+        calls: list[str | None] = []
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        destroy_removed_images(["a", "b", "c"], ["a", "c", "d"])
+        assert calls == ["b"]
+
+    def test_duplicate_in_old_destroyed_once(self, monkeypatch):
+        # Dedup contract: set(old) - new_set, not list iteration. A
+        # duplicate URL in `old` (possible after a buggy upstream merge)
+        # must not produce two Cloudinary API calls.
+        from app import cloudinary_utils
+
+        calls: list[str | None] = []
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        destroy_removed_images(["a", "a", "b"], [])
+        assert set(calls) == {"a", "b"}
+        assert len(calls) == 2
