@@ -41,6 +41,9 @@ Always branch from `staging`, never from `main`. Both `staging` and `main` are
 PR-only — no direct pushes. See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for
 the full setup.
 
+Commit messages that follow `type(MEH-NNN): description` (e.g. `feat(MEH-123): add producer search`) are
+auto-detected by git-cliff and generate a `docs/CHANGELOG.md` entry on every push to `staging`.
+
 ## Local dev
 
 See [docs/DEPLOYMENT.md → Dev workflow](./docs/DEPLOYMENT.md). TL;DR:
