@@ -52,7 +52,7 @@ from app.services.oauth_verifiers import (
 )
 from app.services.password_policy import validate_password
 from app.database import get_db
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, User
+from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product, User
 from app.models.models import (
     Favorite,
     HomeProduct,
@@ -489,7 +489,6 @@ def google_auth(
     google_id = user_info["sub"]
     email = user_info.get("email", "")
     name = user_info.get("name", "")
-    picture = _upload_google_avatar_or_none(user_info.get("picture"))
 
     # Check if user exists by google_id or email
     is_new = False
@@ -508,6 +507,11 @@ def google_auth(
             user.email_verified = True
             db.commit()
         else:
+            # MEH-375 (YF-4): re-host the Google avatar only on the
+            # paths that will keep it. Existing-user-with-avatar logins
+            # skip the upload entirely, eliminating the per-login
+            # orphan storm.
+            picture = _upload_google_avatar_or_none(user_info.get("picture"))
             # Create new user — Google already verified the email
             user = User(
                 email=email,
@@ -523,11 +527,15 @@ def google_auth(
             db.refresh(user)
             is_new = True
 
-    # MEH-138: fill avatar_url from Google picture if not already set
-    # (don't overwrite a manually-uploaded photo).
-    if picture and not user.avatar_url:
-        user.avatar_url = picture
-        db.commit()
+    # MEH-138 + MEH-375: backfill avatar_url for existing users that
+    # don't have one yet — and only those. is_new path already set
+    # avatar_url above; skip to avoid a second upload (which would
+    # orphan the new-user upload above).
+    if not is_new and not user.avatar_url:
+        picture = _upload_google_avatar_or_none(user_info.get("picture"))
+        if picture:
+            user.avatar_url = picture
+            db.commit()
 
     if is_new:
         background_tasks.add_task(
@@ -597,11 +605,6 @@ def register_producer_oauth(
     full_name = (
         data.name or user_info.get("name") or (email.split("@")[0] if email else "חדשה")
     )
-    # Re-host the Google avatar once here so both new-user creation and the
-    # MEH-138 backfill use the same Cloudinary URL without a double upload.
-    picture_for_google = _upload_google_avatar_or_none(
-        user_info.get("picture") if provider == "google" else None
-    )
 
     # 1. Look up by provider sub first (stable identifier).
     is_new = False
@@ -619,6 +622,9 @@ def register_producer_oauth(
                     detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
                 )
         else:
+            # MEH-375 (YF-4): re-host the Google avatar only on the
+            # new-user creation path. Apple has no picture and the
+            # helper short-circuits to None for non-google.
             kwargs = {
                 "email": email,
                 "name": full_name,
@@ -627,7 +633,9 @@ def register_producer_oauth(
                 sub_field: oauth_sub,
             }
             if provider == "google":
-                kwargs["avatar_url"] = picture_for_google
+                kwargs["avatar_url"] = _upload_google_avatar_or_none(
+                    user_info.get("picture")
+                )
             user = User(**kwargs)
             db.add(user)
             db.commit()
@@ -643,10 +651,13 @@ def register_producer_oauth(
             detail="יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.",
         )
 
-    # MEH-138 — backfill the Google avatar once, without overwriting a
-    # manually-uploaded photo.
-    if provider == "google":
-        if picture_for_google and not user.avatar_url:
+    # MEH-138 + MEH-375: backfill the Google avatar only when the
+    # existing user has no avatar yet. is_new path already set it
+    # above (or None if Google had no picture); skip to avoid a
+    # duplicate upload that would orphan the new-user asset.
+    if provider == "google" and not is_new and not user.avatar_url:
+        picture_for_google = _upload_google_avatar_or_none(user_info.get("picture"))
+        if picture_for_google:
             user.avatar_url = picture_for_google
             db.commit()
 
@@ -987,6 +998,44 @@ def delete_account(
     user_name = user.name
     producer_id = user.producer_id
 
+    # MEH-375: capture every Cloudinary URL owned by this user BEFORE
+    # any db.delete, since the cascade detaches relationships and the
+    # URLs become unreachable post-commit. 5 surfaces:
+    #   A) user.avatar_url
+    #   B) producer.images           (if user.producer_id)
+    #   C) every Product.image_url   (for that producer)
+    #   D) every HomeProduct.photo   (user-owned, not producer-owned)
+    #   E) every HomeProduct.images  (same rows as D)
+    # producer.story_card_url is intentionally NOT captured — that
+    # namespace (mehamakor/producers/*) reuses public_ids per producer
+    # via overwrite=True, and destroy_image rejects the prefix anyway.
+    # Destroy runs AFTER the final db.commit so a constraint failure
+    # leaves DB and Cloudinary in sync.
+    captured_urls: list[str] = []
+    if user.avatar_url:
+        captured_urls.append(user.avatar_url)
+    if producer_id is not None:
+        producer_for_capture = (
+            db.query(Producer).filter(Producer.id == producer_id).first()
+        )
+        if producer_for_capture is not None:
+            for url in producer_for_capture.images or []:
+                if url:
+                    captured_urls.append(url)
+            for prod in (
+                db.query(Product)
+                .filter(Product.producer_id == producer_for_capture.id)
+                .all()
+            ):
+                if prod.image_url:
+                    captured_urls.append(prod.image_url)
+    for hp in db.query(HomeProduct).filter(HomeProduct.user_id == user.id).all():
+        if hp.photo:
+            captured_urls.append(hp.photo)
+        for url in hp.images or []:
+            if url:
+                captured_urls.append(url)
+
     # 1. Clean up user-linked (not producer-linked) rows that don't cascade
     #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
     #    the explicit deletes for defense-in-depth against pre-cascade data.
@@ -1012,6 +1061,17 @@ def delete_account(
     # 3. Finally, delete the user itself.
     db.delete(user)
     db.commit()
+
+    # MEH-375: post-commit Cloudinary cleanup. fail-open per
+    # destroy_image contract — failures log via app.upload, the cleanup
+    # script catches misses on its next run, and the DB cascade is
+    # never rolled back on a Cloudinary outage. Duplicate URLs across
+    # surfaces (rare, e.g. avatar reused as producer image) are
+    # idempotent — Cloudinary returns "not found" on the second call.
+    from app.cloudinary_utils import destroy_image
+
+    for url in captured_urls:
+        destroy_image(url)
 
     # Send confirmation email
     _send_deletion_email(user_email, user_name)

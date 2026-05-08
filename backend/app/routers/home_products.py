@@ -280,10 +280,32 @@ def update_home_product(
     # owner, which was inconsistent with CLAUDE.md rule #5.
     if hp.user_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not your listing")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+
+    # MEH-375: snapshot both photo + images BEFORE mutation so we can
+    # destroy dropped Cloudinary assets AFTER db.commit succeeds. Order
+    # matters — destroying mid-transaction would leave DB and Cloudinary
+    # out of sync if commit raises.
+    old_photo = hp.photo
+    old_images = list(hp.images or [])
+
+    for field, value in payload.items():
         setattr(hp, field, value)
     db.commit()
     db.refresh(hp)
+
+    # MEH-375: post-commit cleanup. Photo destroy guarded by both
+    # presence in payload (so a description-only update doesn't churn)
+    # and value-changed (so no-op PATCHes don't destroy the same URL).
+    if "photo" in payload and old_photo and old_photo != hp.photo:
+        from app.cloudinary_utils import destroy_image
+
+        destroy_image(old_photo)
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+
+        destroy_removed_images(old_images, hp.images or [])
+
     return _enrich_home_product(hp, db)
 
 

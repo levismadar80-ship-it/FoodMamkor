@@ -2,6 +2,28 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-375: Cloudinary orphan cleanup
+
+`feat(MEH-375)`: ship cascade destroy hooks + operator-facing batch cleanup script for Cloudinary orphan images. Closes the avatar-replace + producer/HomeProduct delete leak surfaced pre-launch. Staging validation: dry-run M=37 / N=2 / K=35 → `--apply` deleted 35/35 with 0 errors → post-apply verification K=0.
+
+- **`backend/app/cloudinary_utils.py` (NEW)** — helper module with `extract_public_id()`, `destroy_image()` (single-URL fail-open), `destroy_removed_images()` (set-diff helper), and `RESERVED_PUBLIC_ID_PREFIXES` (story-card namespace exclusion).
+- **Cascade destroy hooks across 8 delete surfaces** (all destroys run AFTER `db.commit()` per the external-cleanup invariant):
+  1. `auth.py:delete_account` — cascade capture + post-commit destroy
+  2. `users_me.py:update_profile` — avatar swap pre/post snapshot
+  3. `producer_me.py:update_my_producer` — gallery diff destroy
+  4. `producer_me.py:delete_my_product` — image_url destroy
+  5. `home_products.py:update_home_product` — photo + images diff destroy
+  6. `admin.py:admin_update_producer` — gallery diff destroy
+  7. `admin.py:admin_delete_producer` — producer + product cascade
+  8. `admin.py:delete_listing` (home_product hard-delete) — photo + images destroy
+- **`/upload/avatar` fixed-slot pattern** — `public_id=f"user_{user.id}"` + `overwrite=True` + `invalidate=True`. Re-uploads reuse the same Cloudinary slot instead of generating a new asset and orphaning the previous one.
+- **`backend/scripts/cleanup_cloudinary_orphans.py` (NEW)** — operator-facing dry-run/apply script. Default: dry-run (read-only listing + comparison). `--apply --yes` for destructive mode. Queries 8 DB image sources, lists Cloudinary assets under configurable prefixes, computes orphans via `secure_url` string equality. Safety: `--min-age-hours 24` (in-flight upload guard), per-batch error handling (continue on transient API errors), deterministic sample output, exit-code matrix.
+- **Tests** — 141 unit tests total (28 helper + 113 script).
+- **R3** — DB query failure wrapping in cleanup script (clean exit-1).
+- **R4** — joserfc CVE GHSA-w5r5-m38g-f9f9 accept-risk note in `docs/SECURITY.md`.
+
+Closes MEH-375.
+
 ## 2026-05-08 — MEH-500: backend Sentry SDK init (activates MEH-483 + MEH-493 shim)
 
 `feat(MEH-500)`: wires `sentry-sdk[fastapi]` so the `SentryRequestScopeMiddleware` shim from MEH-483/493 (`backend/app/middleware.py:21-24`, `:106-134`) flips from `_sentry_sdk = None` → live SDK and starts emitting events. Fail-open: when `BACKEND_SENTRY_DSN` is unset, the SDK isn't initialized and the middleware continues to no-op.
