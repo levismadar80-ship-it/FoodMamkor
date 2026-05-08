@@ -91,7 +91,7 @@ def update_profile(
     if old_avatar and old_avatar != user.avatar_url:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_avatar)
+        destroy_image(old_avatar, context="users_me.update_profile avatar")
 
     return user
 

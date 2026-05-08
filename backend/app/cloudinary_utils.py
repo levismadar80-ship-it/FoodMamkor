@@ -121,7 +121,11 @@ def extract_public_id(url: str | None, bypass_reserved: bool = False) -> str | N
     return public_id
 
 
-def destroy_image(url: str | None, bypass_reserved: bool = False) -> bool:
+def destroy_image(
+    url: str | None,
+    bypass_reserved: bool = False,
+    context: str = "",
+) -> bool:
     """Best-effort destroy of the Cloudinary asset behind `url`. Never raises.
 
     Returns True when there is nothing to do (non-Cloudinary URL, reserved
@@ -134,6 +138,11 @@ def destroy_image(url: str | None, bypass_reserved: bool = False) -> bool:
     `bypass_reserved=True` opts out of the `mehamakor/producers/*` reject
     list — used by the producer-delete cascade (MEH-510) where the asset
     is genuinely orphaned. Default False preserves existing behavior.
+
+    `context` (MEH-512) is an optional caller-identifier string included
+    in failure log lines so post-incident debugging can pinpoint which
+    cascade hook dropped a destroy. Empty default preserves the existing
+    log format minimally (the bracketed slot just appears empty).
     """
     public_id = extract_public_id(url, bypass_reserved=bypass_reserved)
     if public_id is None:
@@ -157,26 +166,36 @@ def destroy_image(url: str | None, bypass_reserved: bool = False) -> bool:
             resource_type="image",
         )
     except Exception as exc:
-        log.error("Cloudinary destroy failed for %s: %s", public_id, exc)
+        log.error("Cloudinary destroy failed [%s] for %s: %s", context, public_id, exc)
         return False
 
     outcome = result.get("result") if isinstance(result, dict) else None
     if outcome in ("ok", "not found"):
         log.info("Cloudinary destroy %s: %s", public_id, outcome)
         return True
-    log.error("Cloudinary destroy %s returned unexpected: %r", public_id, result)
+    log.error(
+        "Cloudinary destroy [%s] %s returned unexpected: %r",
+        context,
+        public_id,
+        result,
+    )
     return False
 
 
 def destroy_removed_images(
     old: list[str] | None,
     new: list[str] | None,
+    context: str = "",
 ) -> None:
     """Best-effort destroy every URL in `old` not present in `new`.
 
     Uses set diff so a duplicate URL in `old` is destroyed only once
     (idempotent at Cloudinary's side, but avoids redundant API calls).
+
+    `context` (MEH-512) is forwarded to each `destroy_image` call so
+    gallery-diff cascade failures carry the same caller identifier as
+    direct destroy_image cascades.
     """
     new_set = set(new or [])
     for url in set(old or []) - new_set:
-        destroy_image(url)
+        destroy_image(url, context=context)

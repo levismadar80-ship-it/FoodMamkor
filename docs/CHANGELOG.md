@@ -2,6 +2,25 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-512: expose destroy_image failures via structured logging at all cascade call sites (MEH-375 R5)
+
+`feat(MEH-512)`: closes the operability gap surfaced in PR #537 adversarial review (R5). The `destroy_image` helper has always logged failures at ERROR level via `app.upload`, but log lines lacked a caller identifier — post-incident debugging couldn't tell which cascade hook dropped a destroy. New `context: str = ""` keyword on `destroy_image` + `destroy_removed_images` (the gallery-diff wrapper) is included in failure log lines as a `[context]` tag. All 12 cascade call sites updated with descriptive context strings. Default empty string preserves existing log format minimally — the bracketed slot just appears empty for any caller that hasn't been updated.
+
+- **`backend/app/cloudinary_utils.py`** — `destroy_image(url, bypass_reserved=False, context="")` adds the new keyword and includes it in both error log lines (the SDK-exception path and the unexpected-result-string path). `destroy_removed_images(old, new, context="")` adds matching pass-through. **ERROR level preserved** — Cloudinary destroy failures stay at ERROR, not downgraded to WARNING.
+- **12 cascade call sites updated** with descriptive context strings:
+  - `auth.py:delete_account` (1 site, captured-URLs loop)
+  - `admin.py:admin_delete_producer` (3 sites: images / product_image / story_card)
+  - `admin.py:delete_listing` (2 sites: photo / images loop)
+  - `admin.py:admin_update_producer` (1 wrapper site)
+  - `users_me.py:update_profile` (1 site, avatar swap)
+  - `producer_me.py:update_my_producer` (1 wrapper site)
+  - `producer_me.py:delete_my_product` (1 site, product image)
+  - `home_products.py:update_home_product` (2 sites: photo / images wrapper)
+- **`tests/test_cloudinary_cleanup.py`** — new `TestDestroyImageContext` class with 4 tests covering: context appears in error log, default empty context preserves format, unexpected-result-string path also carries context, `destroy_removed_images` propagates context to inner `destroy_image` calls.
+- **Fail-open semantics unchanged** — exceptions still don't propagate; return value still `bool`.
+
+Closes MEH-512.
+
 ## 2026-05-08 — MEH-511: fix stale comment on story_card namespace in auth.delete_account (MEH-375 R2)
 
 `docs(MEH-511)`: comment-only update at `backend/app/routers/auth.py:1009-1014` (post-MEH-510 line numbers; pre-MEH-510 the line was `:893`). The previous "destroy_image rejects the prefix anyway" rationale is no longer accurate after MEH-510 added the `bypass_reserved=True` opt-out for the admin-delete cascade. The user-delete path still doesn't capture `story_card_url`, but the actual reason is a known orphan-leak gap (when `user.producer_id` is set, `delete_account`'s SQLA cascade deletes the producer but the Cloudinary story-card asset survives) — same bug class as MEH-510 R1, filed separately as MEH-513.
