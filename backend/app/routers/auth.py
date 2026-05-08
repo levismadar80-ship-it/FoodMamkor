@@ -1006,9 +1006,12 @@ def delete_account(
     #   C) every Product.image_url   (for that producer)
     #   D) every HomeProduct.photo   (user-owned, not producer-owned)
     #   E) every HomeProduct.images  (same rows as D)
-    # producer.story_card_url is intentionally NOT captured — that
-    # namespace (mehamakor/producers/*) reuses public_ids per producer
-    # via overwrite=True, and destroy_image rejects the prefix anyway.
+    # producer.story_card_url is NOT captured here — known orphan-leak gap
+    # when user has producer (cascade-deletes the producer via SQLA but
+    # story_card asset survives in Cloudinary, protected by the cleanup
+    # script reject list). Tracked separately in MEH-513 — this comment
+    # will be replaced when MEH-513 ships. See MEH-510 for the sibling
+    # fix on the admin path (admin_delete_producer + bypass_reserved=True).
     # Destroy runs AFTER the final db.commit so a constraint failure
     # leaves DB and Cloudinary in sync.
     captured_urls: list[str] = []
