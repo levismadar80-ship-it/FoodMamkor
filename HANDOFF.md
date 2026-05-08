@@ -3,6 +3,40 @@
 > Read this before starting any work.
 > Last updated: 2026-05-08 (MEH-506 claude-review silent no-op fix DRAFT PR open; MEH-500 backend Sentry SDK init MERGED PR #552 128baf9; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
+### Session 2026-05-08 — MEH-490 / MEH-494 / MEH-495 docs batch (DRAFT PR open)
+
+**Branch:** `feature/meh-490-494-495-docs-batch` off `origin/staging` (post-MEH-506 merge `5f1f614`, post-MEH-500 cleanup branch open as `feature/meh-500-cleanup-verify-endpoint` PR #555).
+
+**Risk tier:** LOW (docs + 1 bash script + 1 vercel.json + 1 symlink). End-to-end per the risk-tier protocol; no chunked review.
+
+**What's done:**
+- **MEH-490 — `AGENTS.md` symlink.** `ln -s CLAUDE.md AGENTS.md` at repo root. CLAUDE.md line 24 meta blockquote extended: `AGENTS.md mirrors this file (edit here only)`. Line cap stays at 80.
+- **MEH-494 — Vercel `ignoreCommand`.** New `vercel.json` (3 lines: `$schema` + `ignoreCommand`) and `scripts/vercel-skip-build.sh` (~40 lines, `set -euo pipefail`). Skip regex: `^(docs/|HANDOFF\.md$|CHANGELOG\.md$|README\.md$|\.github/|backend/)`. Empty `VERCEL_GIT_PREVIOUS_SHA` → exit 1 (always build first deploy). Smoke-tested locally against the MEH-500 cleanup branch (skip — only `backend/` + `docs/`) and a mixed-frontend staging diff (build).
+- **MEH-495 — `data-testid` codification.** New `docs/E2E-LOCATORS.md` with 7 sections (rule, why, naming, when-to-add, migration, worked example, anti-patterns). CLAUDE.md doc-map row at line 67 extended to point at the new file. No existing tests migrated — opportunistic per policy.
+
+**Verification:**
+- `wc -l CLAUDE.md` → 80 (cap respected).
+- `cat AGENTS.md` matches `cat CLAUDE.md`.
+- `bash scripts/vercel-skip-build.sh` smoke test against real SHAs returns expected exit codes.
+
+**Smadar action items:** none pre-merge. After merge, the next docs-only PR should produce no Vercel preview build — confirms MEH-494 is wired correctly.
+
+---
+
+### Session 2026-05-08 — MEH-500 verify-endpoint cleanup (DRAFT PR #555 open)
+
+**Branch:** `feature/meh-500-cleanup-verify-endpoint` off `origin/staging` (post-MEH-506 merge `5f1f614`).
+
+**Risk tier:** LOW (single endpoint deletion + 1-line CHANGELOG).
+
+**What's done:**
+- **`backend/app/routers/system.py`** — `GET /verify-sentry-meh500` removed (9 lines).
+- **`docs/CHANGELOG.md`** — 1-line entry confirming dashboard receipt.
+
+**MEH-500 DoD:** dashboard receipt confirmed by Smadar; this PR closes the cleanup task.
+
+---
+
 ### Session 2026-05-08 — MEH-506 claude-review silent no-op fix (DRAFT PR open)
 
 **Branch:** `feature/meh-506-fix-claude-review-silent` off `origin/staging` (post-MEH-500 merge `128baf9`).

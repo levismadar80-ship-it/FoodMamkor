@@ -2,6 +2,18 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-490 / MEH-494 / MEH-495: docs batch (forward-compat + Vercel skip + E2E locator rule)
+
+`docs(MEH-490+494+495)`: three low-risk infra/docs items shipped as one PR.
+
+- **MEH-490 — `AGENTS.md` symlink.** Repo root now has `AGENTS.md` as a symlink to `CLAUDE.md`. Forward-compat for Codex / Cursor / Gemini agents that look up the Linux Foundation `agents.md` standard. CLAUDE.md remains the single source of truth — the meta blockquote at line 24 calls out the mirror so future edits stay scoped to one file.
+- **MEH-494 — Vercel `ignoreCommand`.** New `vercel.json` + `scripts/vercel-skip-build.sh` skip preview builds on docs-only / backend-only commits (`docs/`, `HANDOFF.md`, `CHANGELOG.md`, `README.md`, `.github/`, `backend/`). First deploy (no `VERCEL_GIT_PREVIOUS_SHA`) and any frontend / shared change still build. Verified locally against the MEH-500 cleanup branch (skip) and a recent staging frontend touch (build).
+- **MEH-495 — `data-testid` locator codification.** New `docs/E2E-LOCATORS.md` documents the rule (mandatory for new E2E tests), naming convention (kebab-case, surface-prefixed), migration policy (organic, when touched), worked before/after example, and anti-patterns. CLAUDE.md doc-map row for testing now points at the file. No existing tests migrated in this PR — that happens opportunistically per the policy.
+
+CLAUDE.md stays at the 80-line cap — both new references folded into existing rows (line 24 meta, line 67 testing doc-map).
+
+Closes MEH-490, MEH-494, MEH-495.
+
 ## 2026-05-08 — MEH-375: Cloudinary orphan cleanup
 
 `feat(MEH-375)`: ship cascade destroy hooks + operator-facing batch cleanup script for Cloudinary orphan images. Closes the avatar-replace + producer/HomeProduct delete leak surfaced pre-launch. Staging validation: dry-run M=37 / N=2 / K=35 → `--apply` deleted 35/35 with 0 errors → post-apply verification K=0.
