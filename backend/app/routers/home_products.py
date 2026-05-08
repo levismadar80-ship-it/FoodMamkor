@@ -299,9 +299,11 @@ def update_home_product(
     # and value-changed (so no-op PATCHes don't destroy the same URL).
     if "photo" in payload and old_photo and old_photo != hp.photo:
         from app.cloudinary_utils import destroy_image
+
         destroy_image(old_photo)
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
+
         destroy_removed_images(old_images, hp.images or [])
 
     return _enrich_home_product(hp, db)

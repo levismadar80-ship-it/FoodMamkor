@@ -227,6 +227,7 @@ def admin_update_producer(
     # fail-open per-URL destroy.
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
+
         destroy_removed_images(old_images, producer.images or [])
 
     return producer
@@ -276,6 +277,7 @@ def admin_delete_producer(
 
     # Post-commit orphan cleanup, fail-open per destroy_image contract.
     from app.cloudinary_utils import destroy_image
+
     for url in old_image_urls:
         destroy_image(url)
     for url in old_product_urls:
@@ -452,6 +454,7 @@ def delete_listing(
     db.commit()
 
     from app.cloudinary_utils import destroy_image
+
     if old_photo:
         destroy_image(old_photo)
     for url in old_images:

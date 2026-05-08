@@ -633,7 +633,9 @@ def register_producer_oauth(
                 sub_field: oauth_sub,
             }
             if provider == "google":
-                kwargs["avatar_url"] = _upload_google_avatar_or_none(user_info.get("picture"))
+                kwargs["avatar_url"] = _upload_google_avatar_or_none(
+                    user_info.get("picture")
+                )
             user = User(**kwargs)
             db.add(user)
             db.commit()
@@ -1013,18 +1015,24 @@ def delete_account(
     if user.avatar_url:
         captured_urls.append(user.avatar_url)
     if producer_id is not None:
-        producer_for_capture = db.query(Producer).filter(Producer.id == producer_id).first()
+        producer_for_capture = (
+            db.query(Producer).filter(Producer.id == producer_id).first()
+        )
         if producer_for_capture is not None:
-            for url in (producer_for_capture.images or []):
+            for url in producer_for_capture.images or []:
                 if url:
                     captured_urls.append(url)
-            for prod in db.query(Product).filter(Product.producer_id == producer_for_capture.id).all():
+            for prod in (
+                db.query(Product)
+                .filter(Product.producer_id == producer_for_capture.id)
+                .all()
+            ):
                 if prod.image_url:
                     captured_urls.append(prod.image_url)
     for hp in db.query(HomeProduct).filter(HomeProduct.user_id == user.id).all():
         if hp.photo:
             captured_urls.append(hp.photo)
-        for url in (hp.images or []):
+        for url in hp.images or []:
             if url:
                 captured_urls.append(url)
 
@@ -1061,6 +1069,7 @@ def delete_account(
     # surfaces (rare, e.g. avatar reused as producer image) are
     # idempotent — Cloudinary returns "not found" on the second call.
     from app.cloudinary_utils import destroy_image
+
     for url in captured_urls:
         destroy_image(url)
 

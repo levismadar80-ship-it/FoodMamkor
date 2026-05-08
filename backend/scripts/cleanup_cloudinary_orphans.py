@@ -17,6 +17,7 @@ Chunk I lands in 5 sub-chunks:
     I.4 — orphan compute + dry-run summary
     I.5 — --apply: confirmation prompt + batch delete + per-ID logging
 """
+
 import argparse
 import logging
 import re
@@ -59,16 +60,16 @@ DEFAULT_MIN_AGE_HOURS = 24
 # braces so a misconfigured Cloudinary scan can never delete a live
 # referenced asset.
 SCALAR_URL_SOURCES = (
-    User.avatar_url,             # users.avatar_url        (varchar)
-    Producer.story_card_url,     # producers.story_card_url (varchar(500))
-    Product.image_url,           # products.image_url      (text)
-    HomeProduct.photo,           # home_products.photo     (text)
-    Event.image_url,             # events.image_url        (text)
-    Experience.image_url,        # experiences.image_url   (text, nullable)
+    User.avatar_url,  # users.avatar_url        (varchar)
+    Producer.story_card_url,  # producers.story_card_url (varchar(500))
+    Product.image_url,  # products.image_url      (text)
+    HomeProduct.photo,  # home_products.photo     (text)
+    Event.image_url,  # events.image_url        (text)
+    Experience.image_url,  # experiences.image_url   (text, nullable)
 )
 ARRAY_URL_SOURCES = (
-    Producer.images,             # producers.images        (text[])
-    HomeProduct.images,          # home_products.images    (text[])
+    Producer.images,  # producers.images        (text[])
+    HomeProduct.images,  # home_products.images    (text[])
 )
 
 
@@ -394,7 +395,7 @@ def _batch_delete_orphans(
     errors = 0
 
     for batch_start in range(0, len(orphans), batch_size):
-        batch = orphans[batch_start:batch_start + batch_size]
+        batch = orphans[batch_start : batch_start + batch_size]
         batch_pids = [public_id for public_id, _, _ in batch]
         try:
             result = cloudinary.api.delete_resources(
@@ -412,9 +413,7 @@ def _batch_delete_orphans(
             errors += len(batch_pids)
             continue
 
-        per_id_status = (
-            result.get("deleted", {}) if isinstance(result, dict) else {}
-        )
+        per_id_status = result.get("deleted", {}) if isinstance(result, dict) else {}
         for pid in batch_pids:
             status = per_id_status.get(pid, "missing-from-response")
             if status == "deleted":
@@ -468,9 +467,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             referenced = build_referenced_url_set(db)
         except Exception:
-            logger.exception(
-                "DB query failed; aborting before Cloudinary listing"
-            )
+            logger.exception("DB query failed; aborting before Cloudinary listing")
             return 1
     finally:
         db.close()
@@ -481,9 +478,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         candidates = list_cloudinary_assets(args.prefix, args.min_age_hours)
     except Exception:
-        logger.exception(
-            "Cloudinary listing failed; aborting before any delete call"
-        )
+        logger.exception("Cloudinary listing failed; aborting before any delete call")
         return 1
     logger.info("Cloudinary candidates after filters: %d", len(candidates))
 
@@ -502,9 +497,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.yes:
             _confirm_or_abort(len(orphans), total_bytes)
         logger.info("Beginning batch delete of %d orphans...", len(orphans))
-        deleted, not_found, errors = _batch_delete_orphans(
-            orphans, args.batch_size
-        )
+        deleted, not_found, errors = _batch_delete_orphans(orphans, args.batch_size)
         logger.info(
             "Delete summary: deleted=%d not_found=%d errors=%d",
             deleted,
@@ -519,8 +512,7 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print("=" * 60)
         print(
-            f"Apply complete: deleted={deleted} not_found={not_found} "
-            f"errors={errors}"
+            f"Apply complete: deleted={deleted} not_found={not_found} errors={errors}"
         )
         print(f"Status: {status} — exit code {exit_code}")
         print("=" * 60)

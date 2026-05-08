@@ -68,7 +68,7 @@ def _parse_public_id_from_upload_url(url: str) -> str | None:
     `/image/upload/...` tail. Returns the joined public_id or None when
     the URL has no parseable path after the marker."""
     idx = url.find(_UPLOAD_MARKER)
-    tail = url[idx + len(_UPLOAD_MARKER):].split("?", 1)[0].split("#", 1)[0]
+    tail = url[idx + len(_UPLOAD_MARKER) :].split("?", 1)[0].split("#", 1)[0]
     segments = tail.split("/") if tail else []
     # Drop leading transformation segments (chained transforms appear as
     # multiple slash-separated groups: `w_400,h_400/c_fill/`).

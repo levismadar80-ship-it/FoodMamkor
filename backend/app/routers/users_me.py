@@ -90,6 +90,7 @@ def update_profile(
     # Cloudinary in sync.
     if old_avatar and old_avatar != user.avatar_url:
         from app.cloudinary_utils import destroy_image
+
         destroy_image(old_avatar)
 
     return user
