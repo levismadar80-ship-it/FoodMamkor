@@ -3,7 +3,28 @@
 > Read this before starting any work.
 > Last updated: 2026-05-08 (MEH-506 claude-review silent no-op fix DRAFT PR open; MEH-500 backend Sentry SDK init MERGED PR #552 128baf9; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-08 — MEH-496 pre-commit hooks (DRAFT PR open)
+### Session 2026-05-08 — MEH-497 git-cliff CHANGELOG automation (DRAFT PR open)
+
+**Branch:** `feature/meh-497-changelog-automation` off `origin/staging` (post-MEH-496 merge `d1c16f6`).
+
+**Risk tier:** LOW-MEDIUM. End-to-end per risk-tier protocol.
+
+**What's done:**
+- **`.git-cliff.toml` (NEW).** Tera template producing `## DATE — SCOPE: title` format matching existing CHANGELOG style. Commit filter: conventional commits with `MEH-` scope only; all others skipped.
+- **`.github/workflows/changelog.yml` (NEW).** Triggers on `push: staging` with `paths-ignore: docs/CHANGELOG.md`. Anchors via `--since` on last `auto: update CHANGELOG [skip ci]` commit; first-run creates empty sentinel to establish anchor for next push. Splices new entries above `---` pre-automation marker via Python inline script. `orhun/git-cliff-action` pinned to SHA `b946ed27a675d653b308f29a7bbad813b85bf7aa`.
+- **`docs/CHANGELOG.md`** — pre-automation header + `---` markers inserted; MEH-497 manual entry added at top of pre-automation section.
+- **`README.md`** — 1-sentence commit convention note added to Branch strategy section.
+
+**First-run behavior (when this PR merges to staging):**
+1. Workflow triggers; anchor = MEH-497 merge timestamp; `--since anchor` → 0 commits; CHANGELOG unchanged.
+2. Empty sentinel commit created (`auto: update CHANGELOG [skip ci]`).
+3. Next staging push (next PR): anchor = sentinel timestamp; that commit is captured and entry generated. ✓
+
+**Smadar action items:** after next PR merges to staging, check that an `auto: update CHANGELOG [skip ci]` commit appears in staging with a new entry above the `---` marker.
+
+---
+
+### Session 2026-05-08 — MEH-496 pre-commit hooks (MERGED PR #563 d1c16f6)
 
 **Branch:** `feature/meh-496-pre-commit-hooks` off current `origin/staging` (post-#559 merge — has MEH-490/494/495 entry).
 

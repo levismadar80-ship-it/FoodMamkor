@@ -2,6 +2,18 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+---
+
+## Pre-automation history (manual entries — 2026-05-08 and earlier)
+
+---
+
+## 2026-05-08 — MEH-497: CHANGELOG automation (git-cliff)
+
+`chore(MEH-497)`: configure git-cliff to auto-generate `docs/CHANGELOG.md` entries on every staging push. New `.git-cliff.toml` (Tera template producing the existing `## DATE — SCOPE: title` format) + `.github/workflows/changelog.yml` (triggers on `push: staging`; anchors via `--since` on the last `[skip ci]` auto-commit; splices new entries above the `---` pre-automation marker using a Python inline script; creates a first-run sentinel commit so the second push has an anchor). `orhun/git-cliff-action` pinned to commit SHA `b946ed2`. Existing manual entries preserved below the marker. README updated with the MEH-XXX commit convention.
+
+Closes MEH-497.
+
 ## 2026-05-08 — MEH-510: cascade story_card destroy in admin_delete_producer with bypass_reserved opt-out (MEH-375 follow-up R1)
 
 `feat(MEH-510)`: closes the story-card orphan accumulation surfaced in PR #537 adversarial review (R1). On producer delete, `mehamakor/producers/<id>/story-card` Cloudinary assets were unreachable by both the cascade (helper rejected the prefix) and the cleanup script (script's reject list intentionally protects live story-cards). New `bypass_reserved=True` parameter on `extract_public_id` + `destroy_image` lets the producer-delete cascade explicitly opt out — default behavior unchanged for the cleanup script and the existing 8 MEH-375 cascade hooks.
