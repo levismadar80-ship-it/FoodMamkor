@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
+        exclude: ^backend/alembic/versions/
+      - id: ruff-format
+        files: ^backend/
+        exclude: ^backend/alembic/versions/
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint (frontend)
+        entry: bash -c 'cd frontend && npx eslint --max-warnings=0'
+        language: system
+        files: ^frontend/.*\.(js|jsx)$
+        pass_filenames: true
