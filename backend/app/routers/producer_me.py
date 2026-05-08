@@ -152,6 +152,12 @@ def update_my_producer(
     if "slug" in payload and payload["slug"]:
         payload["slug"] = _resolve_unique_slug(db, payload["slug"], producer.id)
 
+    # MEH-375: snapshot the gallery BEFORE mutation so we can diff old vs
+    # new and clean up dropped URLs AFTER db.commit succeeds. Destroying
+    # before commit would orphan-leak in the opposite direction (assets
+    # gone, DB still references them) if commit raises.
+    old_images = list(producer.images or [])
+
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
@@ -179,6 +185,16 @@ def update_my_producer(
 
     db.commit()
     db.refresh(producer)
+
+    # MEH-375: best-effort destroy of Cloudinary assets the producer
+    # dropped from the gallery, AFTER db.commit so a constraint failure
+    # / deadlock leaves DB and Cloudinary in sync. Helper does the set
+    # diff + dedup + per-URL fail-open destroy; failures log via
+    # app.upload and the cleanup script catches misses on its next run.
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+
+        destroy_removed_images(old_images, producer.images or [])
 
     # MEH-54: fire delivery area alerts for newly added cities
     if new_cities:
@@ -896,5 +912,16 @@ def delete_my_product(
     )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+
+    # MEH-375 (YF-2): capture image_url BEFORE db.delete; destroy after
+    # commit per the external-cleanup rule. Truthy guard skips the
+    # logger spam for products that never had an image.
+    old_image_url = product.image_url
+
     db.delete(product)
     db.commit()
+
+    if old_image_url:
+        from app.cloudinary_utils import destroy_image
+
+        destroy_image(old_image_url)

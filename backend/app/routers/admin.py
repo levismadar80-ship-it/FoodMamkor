@@ -16,6 +16,7 @@ from app.models import (
     HomeProduct,
     Producer,
     ProducerCategory,
+    Product,
     Recipe,
     User,
 )
@@ -205,6 +206,12 @@ def admin_update_producer(
     if "price_range" in payload:
         producer.starting_price_label = payload["price_range"]
 
+    # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
+    # destroy URLs the admin dropped AFTER db.commit succeeds. Order
+    # matters — destroying before commit would orphan-leak in reverse
+    # (assets gone, DB still references them) on a commit raise.
+    old_images = list(producer.images or [])
+
     for field, value in payload.items():
         setattr(producer, field, value)
 
@@ -215,6 +222,14 @@ def admin_update_producer(
 
     db.commit()
     db.refresh(producer)
+
+    # MEH-375: post-commit cleanup. Helper handles set diff + dedup +
+    # fail-open per-URL destroy.
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+
+        destroy_removed_images(old_images, producer.images or [])
+
     return producer
 
 
@@ -242,8 +257,32 @@ def admin_delete_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-375: capture every Cloudinary URL owned by this producer
+    # BEFORE db.delete — the cascade detaches the relationship and
+    # producer.images / Product rows are no longer reachable after
+    # commit. Destroy runs AFTER commit succeeds so a constraint /
+    # deadlock failure doesn't leave Cloudinary and DB out of sync.
+    # Product.image_url is captured explicitly because ondelete=CASCADE
+    # drops the rows but not the Cloudinary assets behind them.
+    # producer.story_card_url is intentionally NOT captured: that
+    # namespace (mehamakor/producers/*) reuses public_ids per producer
+    # via overwrite=True, and destroy_image rejects the prefix anyway.
+    old_image_urls = list(producer.images or [])
+    products = db.query(Product).filter(Product.producer_id == producer.id).all()
+    old_product_urls = [p.image_url for p in products if p.image_url]
+
     db.delete(producer)
     db.commit()
+
+    # Post-commit orphan cleanup, fail-open per destroy_image contract.
+    from app.cloudinary_utils import destroy_image
+
+    for url in old_image_urls:
+        destroy_image(url)
+    for url in old_product_urls:
+        destroy_image(url)
+
     return {"detail": "Producer deleted"}
 
 
@@ -402,8 +441,25 @@ def delete_listing(
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Listing not found")
+
+    # MEH-375: capture HomeProduct's two image surfaces (cover photo +
+    # images list) BEFORE db.delete; destroy AFTER commit per the
+    # external-cleanup rule (DB and Cloudinary must agree on rollback).
+    # Distinct from the soft-delete at /home-products/{id} (sets
+    # is_active=False), which preserves assets for reactivation.
+    old_photo = hp.photo
+    old_images = list(hp.images or [])
+
     db.delete(hp)
     db.commit()
+
+    from app.cloudinary_utils import destroy_image
+
+    if old_photo:
+        destroy_image(old_photo)
+    for url in old_images:
+        destroy_image(url)
+
     return {"detail": "Listing deleted"}
 
 

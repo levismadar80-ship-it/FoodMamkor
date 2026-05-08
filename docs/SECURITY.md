@@ -451,6 +451,35 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
   `requests`, `starlette`) → **0 vulns** (cleared via MEH-337 + transitive
   bumps; pip-audit reports `No known vulnerabilities found`).
 
+**Accepted-risk CVEs (post-baseline):**
+
+- **GHSA-w5r5-m38g-f9f9** — joserfc PBES2 unbounded `p2c` iteration DoS
+  (advisory disclosed 2026-02-28). Affected range: `joserfc <= 1.6.2`;
+  advisory does not yet list a fixed version. Mehamakor pin:
+  `joserfc==1.6.4` (post-disclosure, no upstream fix confirmed). **Marked
+  non-exploitable in this codebase** because the auth layer uses HS256
+  JWS exclusively — no JWE encryption surface, so PBES2 (a JWE
+  algorithm) is never invoked. Verification:
+
+  ```bash
+  # Zero matches across the backend:
+  git grep -nE "jwe\.decrypt|PBES2|encrypt_compact|JsonWebEncryption" backend/
+
+  # All joserfc imports are JWS-only surface:
+  git grep -nE "from joserfc|import joserfc" backend/
+  # backend/app/auth.py:9:  from joserfc import jwt as jose_jwt
+  # backend/app/auth.py:10: from joserfc.errors import JoseError
+  # backend/app/auth.py:11: from joserfc.jwk import OctKey
+  # backend/app/auth.py:12: from joserfc.jwt import JWTClaimsRegistry
+  ```
+
+  No `joserfc.jwe` import anywhere; `OctKey` is the symmetric-key class
+  for HS256 JWS, consistent with the JWT-secret invariant in section 1.
+  **Re-evaluate** when joserfc publishes a fixed version (then bump and
+  remove this note) or if the codebase ever introduces JWE decryption
+  (then the CVE becomes live and must be remediated before merge).
+  Source: MEH-375 PR #537 R4 adversarial review (2026-05-07).
+
 ## 🟡 בינוני — תקן החודש
 
 ### 9. XSS — ניקוי input מהמשתמש

@@ -75,8 +75,15 @@ class TestAvatarUpload:
     def test_cloudinary_upload_saves_real_url(self, client, db):
         user = make_user(db)
         fake_result = {"secure_url": "https://res.cloudinary.com/demo/image/upload/avatars/abc123.jpg"}
+        captured: dict = {}
+
+        def fake_upload(*args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return fake_result
+
         with patch("app.routers.upload.settings") as mock_settings, \
-             patch("cloudinary.uploader.upload", return_value=fake_result), \
+             patch("cloudinary.uploader.upload", side_effect=fake_upload), \
              patch("cloudinary.config"):
             mock_settings.cloudinary_cloud_name = "demo"
             mock_settings.cloudinary_api_key = "key"
@@ -86,3 +93,14 @@ class TestAvatarUpload:
         assert resp.json()["url"] == fake_result["secure_url"]
         db.refresh(user)
         assert user.avatar_url == fake_result["secure_url"]
+
+        # MEH-375 regression guard: orphan-avoidance contract for
+        # /upload/avatar. A re-upload by the same user MUST overwrite the
+        # same Cloudinary slot — public_id is derived from user.id, not a
+        # fresh UUID, and overwrite=True + invalidate=True are required
+        # so the new asset replaces the old one and CDN caches flush.
+        kwargs = captured["kwargs"]
+        assert kwargs["public_id"] == f"user_{user.id}"
+        assert kwargs["overwrite"] is True
+        assert kwargs["invalidate"] is True
+        assert kwargs["folder"] == "mehamakor/avatars"

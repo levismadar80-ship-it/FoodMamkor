@@ -361,6 +361,29 @@ Decision after PR #5 per `docs/CLAUDE-REVIEW.md` → "Calibration plan".
 
 ---
 
+### Session 2026-05-08 — MEH-375 Cloudinary Orphan Cleanup — Final
+
+**Branch:** `feature/meh-375-cloudinary-cleanup` (tip: 337c264 + this commit)
+**PR:** #537 (draft → ready-for-review after this commit)
+
+**Completed:**
+- Chunks A-H: `cloudinary_utils.py` helper + 8 cascade destroy hooks (28 tests)
+- Chunk Q1: promoted `RESERVED_PUBLIC_ID_PREFIXES` to public constant
+- Chunks I.1-I.5: `cleanup_cloudinary_orphans.py` script (113 tests) — argparse, `build_referenced_url_set` (8 DB sources), `list_cloudinary_assets` (paginated + filtered), `compute_orphans`, `print_dry_run_summary`, `_batch_delete_orphans`, `main()` wiring
+- Adversarial review: R3 shipped (DB error wrap), R4 shipped (joserfc CVE note), R1+R2+R5 deferred
+- Staging validation: dry-run (M=37, N=2, K=35) → `--apply` (35/35 deleted, 0 errors) → verification (K=0)
+
+**Deferred to follow-up:**
+- R1: Story-card orphan accumulation post-producer-delete (Sapir to open Linear ticket, priority Medium)
+- R2: Misleading comment update in `auth.py:893` + `admin.py:255-258` (folds into R1 ticket)
+- R5: `destroy_image` return value invisibility (operability nit)
+
+**Next steps:**
+- Final rebase onto staging
+- Flip PR #537 draft → ready-for-review
+- Merge to staging
+- Operator: first production dry-run after deploy
+
 ### Session 2026-05-07 — MEH-471 i18n Wave 1 (MERGED PR #532 f7ea62e)
 
 **Branch:** `feature/meh-471-i18n-wave-1-foundation` off `origin/staging`. Switched FROM harness-mandated `claude/i18n-wave-1-foundation-kGlAP` per CLAUDE.md workflow rule 3 (Smadar gave explicit permission in turn 4 of the session).
@@ -426,6 +449,63 @@ Branch-state claims must be cross-verified via `git ls-remote origin` (or fresh 
 - Producer columns (`producers.gluten_free` / `vegan` / `lactose_free`) preserved during 7-day overlap. Removal scheduled in a separate PR after staging deploy + analytics parity check.
 
 **Out of scope (MEH-293 PR #2):** `frontend/app/register/producer/page.js` (3 checkboxes removal), `frontend/app/settings/page.jsx` ProductsSection (3 checkboxes added to Add + Edit forms), `frontend/components/admin/ProducerForm.jsx` (3 checkboxes removal), `frontend/lib/badges.js` (read aggregated fields with legacy fallback), `MANUAL_TESTING.md`.
+
+---
+
+## Next session — MEH-375 Cloudinary cleanup (Chunks I → J2 → K)
+
+Branch: feature/meh-375-cloudinary-cleanup at c981434 (last
+functional commit, Chunk H). HEAD is this HANDOFF commit on top.
+12 functional commits + 2 docs commits ahead of staging. No PR yet.
+
+Done so far:
+  - Chunk A + J1 + J1.5: backend/app/cloudinary_utils.py
+    (extract_public_id + destroy_image + destroy_removed_images
+     + 27 unit tests + 1 xfail-strict signed URL)
+  - Chunk B + B.5: /upload/avatar fixed per-user slot,
+    kwargs assertion locked
+  - Chunk C + fix: producer.images + Product cascade,
+    post-commit pattern established (memory rule from Smadar)
+  - Chunk D: home_products PUT + admin delete_listing
+  - Chunk E: auth.py delete_account 5-surface cascade
+  - Chunk F-amend: PATCH /users/me avatar two-guard destroy
+  - Chunk G: oauth_verifiers callers refactored to
+    deferred-upload (orphan-storm-per-login closed)
+  - Chunk H: DELETE producer_me/products/{id} post-commit destroy
+
+Remaining:
+  I:  backend/scripts/cleanup_cloudinary_orphans.py — NEW FILE,
+      ~150-200 lines. Paginate cloudinary.api.resources over the 2
+      prefixes (mehamakor/ depth-1 + mehamakor/avatars/), build
+      referenced-set from 6 DB sources (users.avatar_url,
+      producers.images[], producers.story_card_url for
+      defense-in-depth, home_products.photo,
+      home_products.images[], products.image_url), compute orphan
+      diff, --dry-run default, --apply prompts confirmation,
+      --min-age-hours N default 24 (race-condition guard),
+      explicit reject of /placeholder + mehamakor/producers/*
+      prefix, batch via cloudinary.api.delete_resources in 100s,
+      summary output (total / referenced / orphan / bytes).
+
+  J2: tests/test_cloudinary_cleanup_script.py — paginator mocked,
+      DB session mocked, dry-run does NOT call delete,
+      --apply + "yes" calls delete_resources in batches of 100,
+      --min-age-hours filter respected, reject-list applied.
+
+  K:  CHANGELOG entry + HANDOFF final + manual verify checklist
+      (added during chunks E + G):
+        - delete_account integration test gap on populated
+          5-surface case
+        - oauth path (b) backfill + path (c) skip-upload contract
+          verification (instrument helper or add focused test)
+
+CI status to verify before resuming: confirm GitHub Actions green
+on the cumulative push (commits 86b8650 → c981434, plus this
+HANDOFF commit).
+
+Pre-existing claude/* branches on remote (NOT this PR's concern):
+  claude/add-branch-base-verification-sRqO7
+  claude/weekly-summary-2026-05-01
 
 ---
 
