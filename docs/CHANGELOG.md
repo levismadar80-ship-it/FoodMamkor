@@ -2,6 +2,15 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-511: fix stale comment on story_card namespace in auth.delete_account (MEH-375 R2)
+
+`docs(MEH-511)`: comment-only update at `backend/app/routers/auth.py:1009-1014` (post-MEH-510 line numbers; pre-MEH-510 the line was `:893`). The previous "destroy_image rejects the prefix anyway" rationale is no longer accurate after MEH-510 added the `bypass_reserved=True` opt-out for the admin-delete cascade. The user-delete path still doesn't capture `story_card_url`, but the actual reason is a known orphan-leak gap (when `user.producer_id` is set, `delete_account`'s SQLA cascade deletes the producer but the Cloudinary story-card asset survives) — same bug class as MEH-510 R1, filed separately as MEH-513.
+
+- **`backend/app/routers/auth.py`** — replace 3-line stale comment with accurate "known orphan-leak gap, tracked in MEH-513" wording. Reference MEH-510 (sibling admin-path fix) inline.
+- Zero code lines changed (comment-only diff).
+
+Closes MEH-511.
+
 ---
 
 ## Pre-automation history (manual entries — 2026-05-08 and earlier)
