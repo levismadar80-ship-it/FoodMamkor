@@ -26,6 +26,10 @@ CLAUDE.md stays at the 80-line cap — both new references folded into existing 
 
 Closes MEH-490, MEH-494, MEH-495.
 
+## 2026-05-08 — MEH-500 cleanup
+
+`chore(MEH-500)`: MEH-500 verify endpoint removed post-dashboard-receipt confirmation.
+
 ## 2026-05-08 — MEH-375: Cloudinary orphan cleanup
 
 `feat(MEH-375)`: ship cascade destroy hooks + operator-facing batch cleanup script for Cloudinary orphan images. Closes the avatar-replace + producer/HomeProduct delete leak surfaced pre-launch. Staging validation: dry-run M=37 / N=2 / K=35 → `--apply` deleted 35/35 with 0 errors → post-apply verification K=0.
