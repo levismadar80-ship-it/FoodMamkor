@@ -1,7 +1,31 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-08 (MEH-505 flip lint-backend to blocking + ruff format flag fix DRAFT PR open; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-08 (MEH-491 env-drift CI gate + 16-var .env.example backfill DRAFT PR open; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-08 — MEH-491 env-drift CI gate + 16-var `.env.example` backfill (DRAFT PR open)
+
+**Branch:** `feature/meh-491-env-example-drift-gate` off `origin/staging` (post-MEH-505 merge `8b1273e`).
+
+**Risk tier:** LOW-MEDIUM (new bash script + new CI job + 2 .env.example files extended). End-to-end per MEH-450.
+
+**What's done:**
+- **NEW `scripts/check_env_drift.sh`** (~110 lines bash) — grep-based scan of backend (`os.getenv` / `os.environ` / pydantic-settings field names from `config.py`) and frontend (`process.env.X`). Skips test files, `node_modules`, `.next`, and platform/runtime vars (`CI`, `NODE_ENV`, `NEXT_RUNTIME`, `VERCEL_*`, etc.). Compares to union of all `.env.example` files. BLOCK on code-but-not-documented; WARN on documented-but-unused.
+- **NEW `env-drift` job in `.github/workflows/pr-checks.yml`** (JOB 4) — NOT paths-filter gated; runs on every PR. Required posture, no `continue-on-error`.
+- **`backend/.env.example` +10 vars:** `DATABASE_URL_PRODUCTION`, `DATABASE_URL_STAGING`, `REFRESH_TOKEN_EXPIRE_DAYS`, `ANTHROPIC_MODEL`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `LOG_LEVEL`, `LOG_FORMAT`, `TRUSTED_PROXY`, `PORT`.
+- **`frontend/.env.example` +6 Sentry vars:** `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENV`, `SENTRY_DSN`, `SENTRY_ENV`, `SENTRY_ORG`, `SENTRY_PROJECT`. All wired by MEH-483; env.example never caught up.
+
+**Drift snapshot:** pre-fix → 48 vars used, 32 documented, 16 missing. Post-fix → 48/48/0 missing/0 unused.
+
+**Verification:**
+- `bash scripts/check_env_drift.sh` → exit 0, `✅ no missing vars`.
+- This PR's CI is the proof — new `env-drift` job runs required posture.
+
+**Smadar action items post-merge:**
+1. `Settings → Branches → staging` rule: add `Env drift (.env.example)` to required-status-checks list.
+2. Same for `Settings → Branches → main` rule. (GitHub auto-suggests after first run on protected branch.)
+
+---
 
 ### Session 2026-05-08 — MEH-505 flip `lint-backend` to blocking + `ruff format` flag fix (DRAFT PR open)
 
