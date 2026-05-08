@@ -1,7 +1,31 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-492 alembic check CI gate DRAFT PR open; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-08 (MEH-505 flip lint-backend to blocking + ruff format flag fix DRAFT PR open; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+
+### Session 2026-05-08 — MEH-505 flip `lint-backend` to blocking + `ruff format` flag fix (DRAFT PR open)
+
+**Branch:** `feature/meh-505-flip-lint-backend-blocking` off `origin/staging` (post-MEH-488 merge `2aacc3c`, 1 commit).
+
+**Risk tier:** LOW (3-line workflow change + 2 comment rewrites + 1 doc note rewrite). End-to-end per MEH-450.
+
+**What's done:**
+- **`.github/workflows/pr-checks.yml`** — `lint-backend` job: removed `continue-on-error: true` (default `false` restored = blocking posture). Block comment + workflow header comment rewritten to drop the calibration framing and document the MEH-488 → MEH-448 → MEH-505 sequence.
+- **`.github/workflows/pr-checks.yml`** — `ruff format --check` step: `--extend-exclude alembic/versions` → `--exclude alembic/versions`. The `extend-` family is `ruff check` only; `ruff format` rejects it with `unexpected argument`. Calibration's `continue-on-error: true` had been masking this as a format violation. Bug surfaced in MEH-448 CHANGELOG; fix folded here per MEH-505 DoD. Check step keeps `--extend-exclude` (correct flag for `ruff check`).
+- **`docs/DEPLOYMENT.md` §C** — note rewritten: was "intentionally NOT a required check (yet)"; is now "is a required check". Records the sequence.
+- **`docs/CHANGELOG.md`** — entry under today.
+
+**Local verification:**
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → All checks passed.
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 69 files already formatted.
+- This PR's own CI is the proof — `lint-backend` runs without `continue-on-error` and must pass green for merge.
+
+**Smadar action items post-merge:**
+1. `Settings → Branches → staging` rule: add `Backend lint (ruff)` to required-status-checks list.
+2. Same for `Settings → Branches → main` rule.
+GitHub only auto-suggests the check name after the first run on the protected branch — push the merge first, wait for CI, then add the check in both branch-protection rules.
+
+---
 
 ### Session 2026-05-07 — MEH-492 alembic check CI gate (DRAFT PR open)
 
