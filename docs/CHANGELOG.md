@@ -2,6 +2,44 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-491: env-drift CI gate + 16-var .env.example backfill
+
+`ci(MEH-491)`: catches the bug class where a developer adds an `os.getenv("X")` / `process.env.X` / pydantic-settings field but forgets to update `.env.example`. New deployments then boot with the var unset and the feature silently degrades — the gate fails the PR before that lands.
+
+### What ships
+
+- **NEW `scripts/check_env_drift.sh`** (~110 lines bash) — scans `backend/app/**`, `backend/scripts/**`, `backend/seed_data.py`, and `frontend/**` (excluding `node_modules`, `.next`, test files) for env var reads. Compares against the union of `.env.example` (root), `backend/.env.example`, `frontend/.env.example`. Sources scanned:
+  - `os.getenv("X")` / `os.environ["X"]` / `os.environ.get("X")` (literal-keyed only — dynamically-keyed access intentionally skipped).
+  - `pydantic-settings` Settings fields in `backend/app/config.py` — 4-space-indented lowercase identifiers map to UPPERCASE env vars per pydantic convention.
+  - `process.env.X` in `*.{js,jsx,ts,tsx,mjs,cjs}` (excluding test files).
+  - `SYSTEM_EXCLUDE` regex skips platform/runtime vars (`CI`, `NODE_ENV`, `NEXT_RUNTIME`, `VERCEL_*`, `SKIP_ENV_VALIDATION`, `TEST_URL`, `PATH`, `HOME`, `USER`, `PYTHONPATH`).
+- **NEW `env-drift` job in `.github/workflows/pr-checks.yml`** (JOB 4) — runs `bash scripts/check_env_drift.sh`. **NOT** paths-filter gated (env reads can land in any file — frontend config, backend router, observability setup; the drift surface is broader than `backend/` or `frontend/` alone). Fast (<10s expected). Required posture (no `continue-on-error`).
+- **`backend/.env.example` +10 vars** — `DATABASE_URL_PRODUCTION`, `DATABASE_URL_STAGING`, `REFRESH_TOKEN_EXPIRE_DAYS`, `ANTHROPIC_MODEL`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `LOG_LEVEL`, `LOG_FORMAT`, `TRUSTED_PROXY`, `PORT`. Each with placeholder + comment naming the source ticket / module.
+- **`frontend/.env.example` +6 vars** — `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENV`, `SENTRY_DSN`, `SENTRY_ENV`, `SENTRY_ORG`, `SENTRY_PROJECT`. All wired by MEH-483 frontend Sentry SDK (`sentry.{client,server,edge}.config.js` + `next.config.js`); env.example never caught up.
+
+### Drift snapshot (pre-fix → post-fix)
+
+```
+- vars used in code: 48
+- vars documented: 32 (pre-fix) → 48 (post-fix)
+- BLOCK list: 16 (pre-fix) → 0 (post-fix)
+- WARN list: 0 (pre-fix) → 0 (post-fix)
+```
+
+Reverse direction (documented but unread) is clean — every `.env.example` entry is referenced by code.
+
+### Verification
+
+- `bash scripts/check_env_drift.sh` → exits 0 with `✅ no missing vars`.
+- This PR's own CI is the proof — the new `env-drift` job runs against this PR with required posture.
+
+### Smadar action items post-merge
+
+`Settings → Branches → staging` and `Settings → Branches → main` rules: add `Env drift (.env.example)` to required-status-checks list. GitHub auto-suggests the check name after the first run on the protected branch.
+
+Closes MEH-491.
+
+
 ## 2026-05-08 — MEH-505: flip `lint-backend` to blocking + fix `ruff format` flag
 
 `ci(MEH-505)`: completes the MEH-488 calibration cycle. Two single-line workflow changes; no new behavior, just removes the calibration scaffold and corrects a flag bug.
