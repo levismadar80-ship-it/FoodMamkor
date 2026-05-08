@@ -1,9 +1,9 @@
 name: PR Checks
 
 # Runs on every PR targeting staging or main.
-# Three jobs: build, pytest (with coverage gate at 70%, MEH-489),
-# lint-backend (required, MEH-488/MEH-505).
-# build + pytest + lint-backend are required status checks
+# Four jobs: build, pytest (with coverage gate at 70%, MEH-489),
+# lint-backend (required, MEH-488/MEH-505), env-drift (MEH-491).
+# build + pytest + lint-backend + env-drift are required status checks
 # (configure in branch protection).
 # Adversarial review now lives in .github/workflows/claude-review.yml
 # (MEH-487 — anthropics/claude-code-action@v1, calibration mode).
@@ -270,3 +270,22 @@ jobs:
       - name: ruff format --check
         run: uv run ruff format --check . --exclude alembic/versions
         working-directory: backend
+
+  # ─────────────────────────────────────────────
+  # JOB 4: env-drift (MEH-491)
+  # Detects env vars read by code but not documented in any .env.example.
+  # NOT paths-filter gated — env reads can land in any file (frontend
+  # config, backend router, observability setup), so the drift surface
+  # is broader than backend/ or frontend/ alone.
+  # Fast (<10s expected — pure grep + comm). Required.
+  # ─────────────────────────────────────────────
+  env-drift:
+    name: Env drift (.env.example)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run drift check
+        run: bash scripts/check_env_drift.sh
