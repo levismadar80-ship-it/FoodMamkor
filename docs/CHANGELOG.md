@@ -24,6 +24,35 @@
 
 Closes MEH-375.
 
+## 2026-05-08 — MEH-506: fix claude-review silent no-op (post-comment tool directive)
+
+`fix(MEH-506)`: 5 consecutive `Adversarial review (calibration)` runs reported `conclusion: success` with 0 PR comments. Investigation traced the cause to a missing tool-call directive — not an action bug, not a prompt-not-reaching-model bug.
+
+### Root cause
+
+`anthropics/claude-code-action@v1` does NOT auto-post the model's output. Per the action's `docs/usage.md` + `docs/custom-automations.md`:
+
+- No parameter like `post_comment_always` / `comment_on_no_findings` exists.
+- No dedicated "review mode" that auto-posts.
+- "You must use the `prompt` input and rely on Claude's agent capabilities to decide how to post output."
+
+The model must explicitly call `mcp__github__add_issue_comment` (or equivalent) to make the review appear. Our previous prompt told the model to "post a comment, even when sections are empty" — but never named the tool, never provided the PR number, and was structured as a soft directive ("follow CLAUDE-REVIEW.md") rather than an imperative tool call. With no findings worth flagging + no explicit posting mechanism, the model exited cleanly without invoking the tool. `conclusion: success`, no comment.
+
+### Fix
+
+- **`.github/workflows/claude-review.yml`** — prompt now starts with `REPO: ${{ github.repository }}` + `PR NUMBER: ${{ github.event.pull_request.number }}` template variables (canonical v1.0 pattern from the action's migration docs). New `MUST call mcp__github__add_issue_comment(owner, repo, issue_number, body)` block as the explicit posting directive. "Skipping the tool call = silent no-op (MEH-506 root cause)" framing makes the failure mode explicit so the model treats the call as mandatory.
+- **`docs/CLAUDE-REVIEW.md`** — new `Posting the comment (MEH-506 fix)` subsection in the output format contract, with the same tool-call signature spelled out. Cross-references the workflow YAML for the context variables.
+
+### Cost/benefit
+
+The "always post a comment" invariant is preserved (calibration-window proof-of-life signal). The fix doesn't fight any action default — the action has no opinion on whether to post; that's the model's job, and the model now has explicit instructions.
+
+### Verification deferred to next PR
+
+Cannot verify locally (action runs in CI on PR open/synchronize). The next PR opened after this merge is the proof — a comment must appear under `Adversarial review (calibration)` even if all three sections read `None.`. If still silent → re-investigate (the model may need `claude_args: "--allowed-tools mcp__github__add_issue_comment"` made explicit).
+
+Closes MEH-506.
+
 ## 2026-05-08 — MEH-500: backend Sentry SDK init (activates MEH-483 + MEH-493 shim)
 
 `feat(MEH-500)`: wires `sentry-sdk[fastapi]` so the `SentryRequestScopeMiddleware` shim from MEH-483/493 (`backend/app/middleware.py:21-24`, `:106-134`) flips from `_sentry_sdk = None` → live SDK and starts emitting events. Fail-open: when `BACKEND_SENTRY_DSN` is unset, the SDK isn't initialized and the middleware continues to no-op.

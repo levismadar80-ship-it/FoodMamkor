@@ -84,6 +84,23 @@ sections must read `None.`** This gives us confirmation the action fired
 (vs silent no-op anxiety during calibration). After calibration flips to
 blocking, we may relax to "post only when findings exist."
 
+**Posting the comment (MEH-506 fix).** The action does NOT auto-post.
+You MUST call the GitHub MCP tool explicitly:
+
+```
+mcp__github__add_issue_comment(
+  owner=<from REPO context var>,
+  repo=<from REPO context var>,
+  issue_number=<from PR NUMBER context var>,
+  body=<the three-section review above>
+)
+```
+
+`REPO` and `PR NUMBER` are provided at the top of the workflow prompt
+(`.github/workflows/claude-review.yml`). Skipping the tool call = silent
+no-op — the original MEH-506 failure mode (5 PRs with `conclusion=success`
+and 0 PR comments).
+
 **Tone:** terse, file:line evidence, no ceremony. No headers beyond the
 three above. No greeting, no summary, no "great work" filler.
 
