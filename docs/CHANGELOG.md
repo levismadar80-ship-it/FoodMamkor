@@ -14,6 +14,12 @@
 
 Closes MEH-510.
 
+## 2026-05-08 — MEH-496: pre-commit hooks (ruff + eslint)
+
+`chore(MEH-496)`: add `.pre-commit-config.yaml` so backend ruff (`--fix`, `ruff-format`) and frontend eslint run locally before each commit, mirroring the CI lint gates. Hooks are installed per-clone via `pre-commit install` and skippable with `git commit --no-verify` (documented in README for emergency use on Windows where the eslint hook may time out). Fixed a path typo in the original spec — alembic versions live under `backend/alembic/versions/`, not `backend/app/alembic/versions/`. Smadar to test on Windows + Git Bash before flipping to ready-for-review.
+
+Closes MEH-496.
+
 ## 2026-05-08 — MEH-490 / MEH-494 / MEH-495: docs batch (forward-compat + Vercel skip + E2E locator rule)
 
 `docs(MEH-490+494+495)`: three low-risk infra/docs items shipped as one PR.

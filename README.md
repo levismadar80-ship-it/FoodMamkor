@@ -50,6 +50,23 @@ cp .env.example .env       # then fill in JWT_SECRET_KEY + ANTHROPIC_API_KEY
 docker-compose up --build  # frontend on :3000, backend on :8000
 ```
 
+## Pre-commit hooks (MEH-496)
+
+Install once per clone — runs `ruff` + `ruff-format` on backend changes and
+`eslint` on frontend changes before each commit, mirroring the CI lint gates.
+
+```bash
+# Mac/Linux:
+pip install pre-commit && pre-commit install
+
+# Windows + Git Bash:
+py -m pip install pre-commit
+py -m pre_commit install
+
+# Skip for emergency:
+git commit --no-verify
+```
+
 ## License
 
 Private. © 2026 מהמקור.
