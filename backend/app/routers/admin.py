@@ -258,19 +258,22 @@ def admin_delete_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
-    # MEH-375: capture every Cloudinary URL owned by this producer
-    # BEFORE db.delete — the cascade detaches the relationship and
-    # producer.images / Product rows are no longer reachable after
-    # commit. Destroy runs AFTER commit succeeds so a constraint /
-    # deadlock failure doesn't leave Cloudinary and DB out of sync.
-    # Product.image_url is captured explicitly because ondelete=CASCADE
-    # drops the rows but not the Cloudinary assets behind them.
-    # producer.story_card_url is intentionally NOT captured: that
-    # namespace (mehamakor/producers/*) reuses public_ids per producer
-    # via overwrite=True, and destroy_image rejects the prefix anyway.
+    # MEH-375 + MEH-510: capture every Cloudinary URL owned by this
+    # producer BEFORE db.delete — the cascade detaches the relationship
+    # and producer.images / Product.image_url / story_card_url become
+    # unreachable after commit. Destroy runs AFTER commit so a
+    # constraint / deadlock failure doesn't leave Cloudinary and DB
+    # out of sync.
+    #
+    # MEH-510: story_card_url IS captured here. The reserved namespace
+    # (mehamakor/producers/*) is protected by destroy_image's reject
+    # list to keep the cleanup script from sweeping live story-cards,
+    # but the producer-delete path is the one legitimate caller that
+    # should free the slot — pass `bypass_reserved=True` to opt out.
     old_image_urls = list(producer.images or [])
     products = db.query(Product).filter(Product.producer_id == producer.id).all()
     old_product_urls = [p.image_url for p in products if p.image_url]
+    old_story_card_url = producer.story_card_url
 
     db.delete(producer)
     db.commit()
@@ -282,6 +285,8 @@ def admin_delete_producer(
         destroy_image(url)
     for url in old_product_urls:
         destroy_image(url)
+    # MEH-510: bypass_reserved=True — the producer is gone, the slot is now an orphan.
+    destroy_image(old_story_card_url, bypass_reserved=True)
 
     return {"detail": "Producer deleted"}
 
