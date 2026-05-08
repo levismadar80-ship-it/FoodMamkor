@@ -2,8 +2,9 @@ name: PR Checks
 
 # Runs on every PR targeting staging or main.
 # Three jobs: build, pytest (with coverage gate at 70%, MEH-489),
-# lint-backend (calibration, MEH-488).
-# build + pytest are required status checks (configure in branch protection).
+# lint-backend (required, MEH-488/MEH-505).
+# build + pytest + lint-backend are required status checks
+# (configure in branch protection).
 # Adversarial review now lives in .github/workflows/claude-review.yml
 # (MEH-487 — anthropics/claude-code-action@v1, calibration mode).
 
@@ -224,15 +225,15 @@ jobs:
           SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
   # ─────────────────────────────────────────────
-  # JOB 3: lint-backend (MEH-488)
+  # JOB 3: lint-backend (MEH-488 / MEH-505)
   # ruff check + ruff format --check against backend/.
   # `alembic/versions` excluded (auto-generated revisions don't follow
-  # ruff's style). Calibration mode (`continue-on-error: true`) covers
-  # the dirty-baseline window — local pre-flight against staging found
-  # 18 check errors + 56 format files. After MEH-448 cleans the
-  # baseline, a 1-line follow-up PR flips this to false and adds
-  # "Backend lint (ruff)" to the required-checks list in
-  # `Settings → Branches → staging`/`main`.
+  # ruff's style). MEH-505 flipped this to blocking after MEH-448
+  # cleaned the baseline (18 check errors + 56 format files → 0).
+  # Add "Backend lint (ruff)" to the required-checks list in
+  # `Settings → Branches → staging`/`main` after this PR's CI runs
+  # once on the protected branch (GitHub auto-suggests the check name
+  # only post-first-run on the target).
   # ─────────────────────────────────────────────
   lint-backend:
     name: Backend lint (ruff)
@@ -240,7 +241,6 @@ jobs:
     if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    continue-on-error: true   # CALIBRATION — flip to false after MEH-448
 
     steps:
       - uses: actions/checkout@v6
@@ -263,6 +263,10 @@ jobs:
         run: uv run ruff check . --extend-exclude alembic/versions
         working-directory: backend
 
+      # `ruff format` only supports `--exclude` (not `--extend-exclude` —
+      # that's a `ruff check` only flag). Fixed in MEH-505 after the
+      # MEH-448 CHANGELOG surfaced the bug; calibration `continue-on-error`
+      # had been masking the unrecognized-flag failure as a format violation.
       - name: ruff format --check
-        run: uv run ruff format --check . --extend-exclude alembic/versions
+        run: uv run ruff format --check . --exclude alembic/versions
         working-directory: backend

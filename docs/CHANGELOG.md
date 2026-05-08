@@ -2,6 +2,28 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-505: flip `lint-backend` to blocking + fix `ruff format` flag
+
+`ci(MEH-505)`: completes the MEH-488 calibration cycle. Two single-line workflow changes; no new behavior, just removes the calibration scaffold and corrects a flag bug.
+
+- **`.github/workflows/pr-checks.yml` lint-backend job** — removed `continue-on-error: true` (blocking posture restored). Block comment + workflow header comment rewritten to reflect post-flip state. Calibration started with MEH-488 against the dirty baseline (18 check errors + 56 format files); MEH-448 cleaned to zero; this PR flips. The job now gates merges on any new violation.
+- **`ruff format --check` step flag fix** — `--extend-exclude alembic/versions` → `--exclude alembic/versions`. `ruff format` doesn't accept `--extend-exclude` (only `ruff check` does — the `extend-` family is `check`-only); the calibration window's `continue-on-error: true` had been masking the unrecognized-flag failure as a format violation. Bug surfaced in MEH-448 CHANGELOG; fix folded here per MEH-505 DoD. Check step keeps `--extend-exclude` (correct flag for `ruff check`).
+- **`docs/DEPLOYMENT.md` §C** — note rewritten: was "intentionally NOT a required check (yet)"; is now "is a required check". Records the MEH-488 → MEH-448 → MEH-505 sequence and the post-merge GitHub UI step (add `Backend lint (ruff)` to branch-protection required checks for both `staging` and `main`).
+
+### Verification (local)
+
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → **All checks passed!**
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → **69 files already formatted**
+- This PR's own CI is the proof — `lint-backend` runs without `continue-on-error` and must pass green for the merge to proceed.
+
+### Smadar action items post-merge
+
+1. `Settings → Branches → staging` rule: add `Backend lint (ruff)` to required-status-checks list. GitHub auto-suggests the check name after the first run on the protected branch (i.e., after this PR's CI completes once with the new flag).
+2. Same for `Settings → Branches → main` rule.
+
+Closes MEH-505.
+
+
 ## 2026-05-07 — MEH-492: alembic check CI gate (model-vs-migration drift) + 2 partial-index drift fixes
 
 `ci(MEH-492)`: catches the bug class where a column is added to a SQLAlchemy model without a paired Alembic revision — `pytest` passes (tests don't exercise the new column), `alembic upgrade head` passes (chain is intact), `EXPECTED_TABLES` still matches (count unchanged), but production boot fails reading/writing the missing column. `alembic check` (1.9+) compares `Base.metadata` against the post-`upgrade head` schema and surfaces the diff before merge.
