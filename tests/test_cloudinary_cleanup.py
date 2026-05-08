@@ -6,11 +6,16 @@ which `destroy_image` lazy-imports inside its try block. Because the
 import is real (cloudinary package is a project dependency), patching
 the attribute on the live module is enough.
 """
+
 import logging
 
 import pytest
 
-from app.cloudinary_utils import destroy_image, destroy_removed_images, extract_public_id
+from app.cloudinary_utils import (
+    destroy_image,
+    destroy_removed_images,
+    extract_public_id,
+)
 
 
 # ---------- extract_public_id ----------
@@ -63,7 +68,10 @@ class TestExtractPublicId:
         assert extract_public_id("/placeholder-image.png?avatar=abc123") is None
 
     def test_non_cloudinary_url_returns_none(self):
-        assert extract_public_id("https://lh3.googleusercontent.com/a/ACg8ocAbc123") is None
+        assert (
+            extract_public_id("https://lh3.googleusercontent.com/a/ACg8ocAbc123")
+            is None
+        )
         assert extract_public_id("https://example.com/foo.jpg") is None
 
     def test_none_empty_and_non_string_input_returns_none(self):
@@ -112,7 +120,9 @@ def cloudinary_configured(monkeypatch):
     actual destroy call is recorded or raises."""
     from app import cloudinary_utils
 
-    monkeypatch.setattr(cloudinary_utils.settings, "cloudinary_cloud_name", "test-cloud")
+    monkeypatch.setattr(
+        cloudinary_utils.settings, "cloudinary_cloud_name", "test-cloud"
+    )
     monkeypatch.setattr(cloudinary_utils.settings, "cloudinary_api_key", "key")
     monkeypatch.setattr(cloudinary_utils.settings, "cloudinary_api_secret", "secret")
 
@@ -135,23 +145,31 @@ def _install_destroy_recorder(monkeypatch, return_value=None, raises=None):
 
 
 class TestDestroyImage:
-    def test_non_cloudinary_url_returns_true_and_skips_call(self, monkeypatch, cloudinary_configured):
+    def test_non_cloudinary_url_returns_true_and_skips_call(
+        self, monkeypatch, cloudinary_configured
+    ):
         calls = _install_destroy_recorder(monkeypatch)
         assert destroy_image("https://lh3.googleusercontent.com/a/ACg8ocAbc") is True
         assert calls == []
 
-    def test_reserved_namespace_returns_true_and_skips_call(self, monkeypatch, cloudinary_configured):
+    def test_reserved_namespace_returns_true_and_skips_call(
+        self, monkeypatch, cloudinary_configured
+    ):
         calls = _install_destroy_recorder(monkeypatch)
         url = "https://res.cloudinary.com/mehamakor/image/upload/v1/mehamakor/producers/abc/story-card.jpg"
         assert destroy_image(url) is True
         assert calls == []
 
-    def test_placeholder_url_returns_true_and_skips_call(self, monkeypatch, cloudinary_configured):
+    def test_placeholder_url_returns_true_and_skips_call(
+        self, monkeypatch, cloudinary_configured
+    ):
         calls = _install_destroy_recorder(monkeypatch)
         assert destroy_image("/placeholder-image.png?avatar=abc") is True
         assert calls == []
 
-    def test_none_input_returns_true_and_skips_call(self, monkeypatch, cloudinary_configured):
+    def test_none_input_returns_true_and_skips_call(
+        self, monkeypatch, cloudinary_configured
+    ):
         calls = _install_destroy_recorder(monkeypatch)
         assert destroy_image(None) is True
         assert destroy_image("") is True
@@ -254,3 +272,46 @@ class TestDestroyRemovedImages:
         destroy_removed_images(["a", "a", "b"], [])
         assert set(calls) == {"a", "b"}
         assert len(calls) == 2
+
+
+# ---------- MEH-510: bypass_reserved opt-out ----------
+
+
+class TestBypassReserved:
+    """The producer-delete cascade is the one legitimate caller that needs
+    to delete a `mehamakor/producers/*` asset (the producer is gone, the
+    story-card slot is now an orphan). `bypass_reserved=True` opts out of
+    the default reject — default False keeps the cleanup script + 8 MEH-375
+    cascade hooks unchanged.
+    """
+
+    _STORY_CARD_URL = (
+        "https://res.cloudinary.com/mehamakor/image/upload/v1/"
+        "mehamakor/producers/abc-uuid/story-card.jpg"
+    )
+    _STORY_CARD_PUBLIC_ID = "mehamakor/producers/abc-uuid/story-card"
+
+    def test_extract_public_id_default_still_rejects_reserved_namespace(self):
+        # Regression guard — default behavior unchanged for the cleanup
+        # script and the existing 8 MEH-375 cascade hooks.
+        assert extract_public_id(self._STORY_CARD_URL) is None
+
+    def test_extract_public_id_bypass_reserved_returns_public_id(self):
+        assert (
+            extract_public_id(self._STORY_CARD_URL, bypass_reserved=True)
+            == self._STORY_CARD_PUBLIC_ID
+        )
+
+    def test_destroy_image_bypass_reserved_actually_calls_cloudinary(
+        self, monkeypatch, cloudinary_configured
+    ):
+        # The whole point of MEH-510: with bypass_reserved=True, destroy_image
+        # must reach cloudinary.uploader.destroy(public_id, ...) instead of
+        # short-circuiting on the reject list. Mirror of
+        # `test_reserved_namespace_returns_true_and_skips_call` at line 143
+        # (which proves default behavior still skips).
+        calls = _install_destroy_recorder(monkeypatch, return_value={"result": "ok"})
+        assert destroy_image(self._STORY_CARD_URL, bypass_reserved=True) is True
+        assert len(calls) == 1
+        assert calls[0]["args"] == (self._STORY_CARD_PUBLIC_ID,)
+        assert calls[0]["kwargs"] == {"invalidate": True, "resource_type": "image"}

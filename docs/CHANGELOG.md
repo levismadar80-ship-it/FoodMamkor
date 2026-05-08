@@ -2,6 +2,18 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-510: cascade story_card destroy in admin_delete_producer with bypass_reserved opt-out (MEH-375 follow-up R1)
+
+`feat(MEH-510)`: closes the story-card orphan accumulation surfaced in PR #537 adversarial review (R1). On producer delete, `mehamakor/producers/<id>/story-card` Cloudinary assets were unreachable by both the cascade (helper rejected the prefix) and the cleanup script (script's reject list intentionally protects live story-cards). New `bypass_reserved=True` parameter on `extract_public_id` + `destroy_image` lets the producer-delete cascade explicitly opt out — default behavior unchanged for the cleanup script and the existing 8 MEH-375 cascade hooks.
+
+- **`backend/app/cloudinary_utils.py`** — `extract_public_id(url, bypass_reserved=False)` and `destroy_image(url, bypass_reserved=False)` gain the new keyword. When `True`, the `RESERVED_PUBLIC_ID_PREFIXES` startswith check is skipped. Module docstring updated to document the opt-out.
+- **`backend/app/routers/admin.py:admin_delete_producer`** — captures `producer.story_card_url` before `db.delete`, calls `destroy_image(old_story_card_url, bypass_reserved=True)` after `db.commit()`. Misleading "story_card_url intentionally NOT captured" comment block (R2 fold-in for `admin.py:268-270`) replaced with accurate documentation. `auth.py:893` R2 sub-task remains deferred.
+- **`tests/test_cloudinary_cleanup.py`** — new `TestBypassReserved` class: 3 tests covering default-still-rejects regression guard, bypass returns the public_id, bypass actually invokes `cloudinary.uploader.destroy` (mock + assert).
+- **`tests/test_admin_producer_delete_cascade.py` (NEW)** — 2 tests: cascade hook called with `bypass_reserved=True` for a producer with `story_card_url`, and the no-story-card path (helper handles `None` internally; cascade stays branch-free).
+- **R5 deferred separately** (destroy_image return-value visibility — operability nit).
+
+Closes MEH-510.
+
 ## 2026-05-08 — MEH-375: Cloudinary orphan cleanup
 
 `feat(MEH-375)`: ship cascade destroy hooks + operator-facing batch cleanup script for Cloudinary orphan images. Closes the avatar-replace + producer/HomeProduct delete leak surfaced pre-launch. Staging validation: dry-run M=37 / N=2 / K=35 → `--apply` deleted 35/35 with 0 errors → post-apply verification K=0.

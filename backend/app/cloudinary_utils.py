@@ -17,10 +17,16 @@ no-op for `destroy_image`.
 
 The `mehamakor/producers/*` namespace is reserved for admin story-card
 uploads (admin.py:512), which use a fixed public_id + overwrite=True.
-Those assets are intentionally reused per producer and must NEVER be
-destroyed by the cleanup pathway — `extract_public_id` returns None for
-them as a defense-in-depth check (the cleanup script also rejects the
-prefix on its own).
+Those assets are intentionally reused per producer, so by default
+`extract_public_id` returns None for them — the cleanup script's reject
+list relies on this to protect live story-cards from being swept.
+
+The producer-delete cascade is the one path that *must* delete a
+reserved-namespace asset (the producer is gone; the story-card slot is
+now an orphan). Callers in that situation pass `bypass_reserved=True`
+to opt out of the reject check (MEH-510). Default behavior is unchanged
+for the cleanup script and the 8 MEH-375 cascade hooks that legitimately
+must NOT touch live story-cards.
 """
 
 import logging
@@ -91,34 +97,45 @@ def _parse_public_id_from_upload_url(url: str) -> str | None:
     return "/".join(segments) or None
 
 
-def extract_public_id(url: str | None) -> str | None:
+def extract_public_id(url: str | None, bypass_reserved: bool = False) -> str | None:
     """Parse a Cloudinary secure_url back into its public_id.
 
     Returns None for: empty input, non-Cloudinary URLs, local placeholders,
     URLs that look malformed (no `/image/upload/` marker, no path after it),
-    and the reserved `mehamakor/producers/*` story-card namespace.
+    and (when `bypass_reserved=False`) the reserved `mehamakor/producers/*`
+    story-card namespace.
+
+    `bypass_reserved=True` skips the reserved-namespace reject (MEH-510 —
+    producer-delete cascade). Default False preserves the cleanup script's
+    protection of live story-cards and the existing 8 MEH-375 cascade hooks.
     """
     if not _looks_like_cloudinary_upload(url):
         return None
     public_id = _parse_public_id_from_upload_url(url)  # type: ignore[arg-type]
     if not public_id:
         return None
-    if any(public_id.startswith(prefix) for prefix in RESERVED_PUBLIC_ID_PREFIXES):
+    if not bypass_reserved and any(
+        public_id.startswith(prefix) for prefix in RESERVED_PUBLIC_ID_PREFIXES
+    ):
         return None
     return public_id
 
 
-def destroy_image(url: str | None) -> bool:
+def destroy_image(url: str | None, bypass_reserved: bool = False) -> bool:
     """Best-effort destroy of the Cloudinary asset behind `url`. Never raises.
 
     Returns True when there is nothing to do (non-Cloudinary URL, reserved
-    namespace, Cloudinary not configured) or when Cloudinary acknowledges
-    the destroy as `ok` or `not found` (idempotent — the asset is already
-    gone). Returns False only on a real Cloudinary error, which is logged
-    at error level via the `app.upload` logger so the cleanup script can
-    pick the orphan up on its next run.
+    namespace under default behavior, Cloudinary not configured) or when
+    Cloudinary acknowledges the destroy as `ok` or `not found` (idempotent
+    — the asset is already gone). Returns False only on a real Cloudinary
+    error, which is logged at error level via the `app.upload` logger so
+    the cleanup script can pick the orphan up on its next run.
+
+    `bypass_reserved=True` opts out of the `mehamakor/producers/*` reject
+    list — used by the producer-delete cascade (MEH-510) where the asset
+    is genuinely orphaned. Default False preserves existing behavior.
     """
-    public_id = extract_public_id(url)
+    public_id = extract_public_id(url, bypass_reserved=bypass_reserved)
     if public_id is None:
         return True
     if not settings.cloudinary_cloud_name:
