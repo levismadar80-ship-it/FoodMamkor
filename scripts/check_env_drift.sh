@@ -30,7 +30,7 @@ cd "$ROOT"
 
 # Platform / runtime vars set by Vercel / Railway / GitHub Actions / Next.js
 # itself — not user-provided app config, so excluded from the gate.
-SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_URL|SKIP_ENV_VALIDATION|TEST_URL|PATH|HOME|USER|PYTHONPATH)$'
+SYSTEM_EXCLUDE_RE='^(CI|NODE_ENV|NEXT_RUNTIME|VERCEL_ENV|VERCEL_BYPASS_SECRET|VERCEL_URL|RAILWAY_GIT_COMMIT_SHA|SKIP_ENV_VALIDATION|TEST_URL|PATH|HOME|USER|PYTHONPATH)$'
 
 # ─── 1. Backend code vars ───────────────────────────────────────────────────
 # os.getenv("X") / os.environ["X"] / os.environ.get("X")

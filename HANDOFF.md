@@ -1,9 +1,41 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-08 (MEH-491 env-drift CI gate + 16-var .env.example backfill DRAFT PR open; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-08 (MEH-500 backend Sentry SDK init DRAFT PR open; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-08 — MEH-491 env-drift CI gate + 16-var `.env.example` backfill (DRAFT PR open)
+### Session 2026-05-08 — MEH-500 backend Sentry SDK init (DRAFT PR open)
+
+**Branch:** `feature/meh-500-backend-sentry-sdk-init` off `origin/staging` (post-MEH-491 merge `9f6baf4`).
+
+**Risk tier:** HIGH (multi-file: dep + boot path + new secret). Plan-gated per MEH-450.
+
+**What's done:**
+- **`backend/pyproject.toml:32`** — `sentry-sdk[fastapi]==2.18.0` added. `uv.lock` regenerated.
+- **NEW `backend/app/sentry.py`** — `init_sentry()` fail-open, reads env directly. `release` priority `APP_VERSION` > `RAILWAY_GIT_COMMIT_SHA` > `"unknown"`. `traces_sample_rate=0.1`. `FastApiIntegration` only.
+- **`backend/app/main.py`** — `init_sentry()` between `configure_logging()` and `app = FastAPI(...)`.
+- **`backend/.env.example`** — new `--- Sentry (MEH-500) ---` block: `BACKEND_SENTRY_DSN`, `APP_VERSION`.
+- **`scripts/check_env_drift.sh`** — `RAILWAY_GIT_COMMIT_SHA` added to `SYSTEM_EXCLUDE_RE`.
+- **NEW `tests/test_sentry_init.py`** — 6 unit tests, no DB.
+
+**Shim activation contract:** MEH-483 + MEH-493 already shipped `SentryRequestScopeMiddleware` with `try: import sentry_sdk` gate. Activates for free once `sentry_sdk` is importable AND `init()` runs. NOT touching `middleware.py`.
+
+**Verification:** ruff/format clean · env-drift exit 0 · 509 tests collect (503+6) · `init_sentry()` no-op smoke test logs INFO "Sentry disabled".
+
+**Verify-on-staging contract (per observability.md):**
+1. Add ONE-OFF endpoint raising `RuntimeError("[MEH-500] verify")`
+2. Hit on staging, expect Sentry event within 5min
+3. Confirm event payload: `request_id`, `route`, `method`, `environment=staging`, `release=<SHA>`, `request_info` context, (optional) `user.id`
+4. Remove endpoint via follow-up commit
+5. Repeat on production after staging burn-in
+
+**Smadar action items post-merge:**
+1. Set `BACKEND_SENTRY_DSN` in Railway staging + production (already provisioned per kickoff message).
+2. Verify on staging via the ONE-OFF endpoint protocol above.
+3. Verify on production after staging burn-in.
+
+---
+
+### Session 2026-05-08 — MEH-491 env-drift CI gate + 16-var `.env.example` backfill (MERGED PR #551 9f6baf4)
 
 **Branch:** `feature/meh-491-env-example-drift-gate` off `origin/staging` (post-MEH-505 merge `8b1273e`).
 

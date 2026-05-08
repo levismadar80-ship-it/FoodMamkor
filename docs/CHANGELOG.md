@@ -2,6 +2,56 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-08 — MEH-500: backend Sentry SDK init (activates MEH-483 + MEH-493 shim)
+
+`feat(MEH-500)`: wires `sentry-sdk[fastapi]` so the `SentryRequestScopeMiddleware` shim from MEH-483/493 (`backend/app/middleware.py:21-24`, `:106-134`) flips from `_sentry_sdk = None` → live SDK and starts emitting events. Fail-open: when `BACKEND_SENTRY_DSN` is unset, the SDK isn't initialized and the middleware continues to no-op.
+
+### Changes
+
+- **`backend/pyproject.toml:32`** — `sentry-sdk[fastapi]==2.18.0` added to `dependencies`. The `[fastapi]` extra pulls `FastApiIntegration` (auto route attribution + unhandled-exception capture). `uv.lock` regenerated; +1 package.
+- **NEW `backend/app/sentry.py`** (~60 lines) — `init_sentry()` reads env via `os.getenv` directly (decoupled from pydantic-settings init order). DSN unset/empty → log INFO `"Sentry disabled (no BACKEND_SENTRY_DSN set)"` and return early. Otherwise calls `sentry_sdk.init(dsn, environment, release, traces_sample_rate=0.1, integrations=[FastApiIntegration()])`. Wraps in `try/except` — any SDK init failure is logged and swallowed; never raises into app boot.
+  - **`environment`** = `ENV` env var (default `"development"`).
+  - **`release`** priority: `APP_VERSION` (explicit operator override) > `RAILWAY_GIT_COMMIT_SHA` (Railway-injected) > `"unknown"`.
+  - **`traces_sample_rate=0.1`** hardcoded — flip to env-driven later if cost requires tuning.
+  - **No `before_send` PII hook** — JWT claims don't carry email today, so MEH-493's `_redact_email` has no enrichment source. Add when User-row enrichment lands.
+- **`backend/app/main.py`** — `init_sentry()` called between `configure_logging()` and `app = FastAPI(...)`. Order matters: must run BEFORE FastAPI() instantiation so any exception during app construction is captured.
+- **`backend/.env.example`** — new `--- Sentry (MEH-500) ---` block documents `BACKEND_SENTRY_DSN` + `APP_VERSION` (with placeholder + comment naming the priority chain).
+- **`scripts/check_env_drift.sh:33`** — `RAILWAY_GIT_COMMIT_SHA` added to `SYSTEM_EXCLUDE_RE` (Railway platform-injected, mirrors `VERCEL_*` precedent).
+- **NEW `tests/test_sentry_init.py`** — 6 unit tests, no DB fixtures: no-op when DSN unset, no-op when DSN empty, init-with-expected-kwargs (DSN/environment/release/traces_sample_rate/FastApiIntegration shape), `APP_VERSION` overrides `RAILWAY_GIT_COMMIT_SHA`, release falls back to `"unknown"`, init swallows SDK exceptions.
+
+### Drift snapshot (env-drift gate)
+
+```
+post-MEH-500: 50 vars used / 50 documented / 0 BLOCK / 0 WARN
+```
+
+`BACKEND_SENTRY_DSN` + `APP_VERSION` documented in `backend/.env.example`. `RAILWAY_GIT_COMMIT_SHA` excluded as platform var.
+
+### Verification (CC-side)
+
+- `cd backend && uv lock` → +1 package (sentry-sdk 2.18.0)
+- `cd backend && uv sync --frozen` → installs cleanly
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → All checks passed
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files
+- `bash scripts/check_env_drift.sh` → exit 0
+- `pytest tests/ --collect-only` → 509 tests (503 baseline + 6 new)
+- `python -c "from app.sentry import init_sentry; init_sentry()"` → INFO `Sentry disabled (no BACKEND_SENTRY_DSN set)`, no exception
+
+### Verify-on-staging contract (per `.claude/rules/observability.md`)
+
+Dashboard receipt verification deferred to Smadar manual:
+
+1. Add ONE-OFF endpoint that raises `RuntimeError("[MEH-500] verify")`
+2. Hit it on staging, expect Sentry event within 5min
+3. Confirm event payload includes: `request_id`, `route`, `method`, `environment=staging`, `release=<SHA>`, `request_info` context (url/method/client), (optional) `user.id` if authenticated request
+4. Remove the one-off endpoint via follow-up commit
+5. Repeat verification on production after staging burn-in
+
+Bundle-side / env-var / SDK-load checks alone do not satisfy `observability.md`. Ticket marks Done only after dashboard receipt is confirmed.
+
+Closes MEH-500.
+
+
 ## 2026-05-08 — MEH-491: env-drift CI gate + 16-var .env.example backfill
 
 `ci(MEH-491)`: catches the bug class where a developer adds an `os.getenv("X")` / `process.env.X` / pydantic-settings field but forgets to update `.env.example`. New deployments then boot with the var unset and the feature silently degrades — the gate fails the PR before that lands.
