@@ -1074,7 +1074,7 @@ def delete_account(
     from app.cloudinary_utils import destroy_image
 
     for url in captured_urls:
-        destroy_image(url)
+        destroy_image(url, context="auth.delete_account")
 
     # Send confirmation email
     _send_deletion_email(user_email, user_name)
