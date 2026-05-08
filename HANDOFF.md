@@ -1,9 +1,27 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-08 (MEH-500 backend Sentry SDK init DRAFT PR open; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-08 (MEH-506 claude-review silent no-op fix DRAFT PR open; MEH-500 backend Sentry SDK init MERGED PR #552 128baf9; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-08 — MEH-500 backend Sentry SDK init (DRAFT PR open)
+### Session 2026-05-08 — MEH-506 claude-review silent no-op fix (DRAFT PR open)
+
+**Branch:** `feature/meh-506-fix-claude-review-silent` off `origin/staging` (post-MEH-500 merge `128baf9`).
+
+**Risk tier:** LOW (research + 2-file fix: workflow YAML + 1 doc subsection).
+
+**Root cause (investigation):** `anthropics/claude-code-action@v1` does NOT auto-post output. No `post_comment_always` parameter exists, no review mode. Model must explicitly call `mcp__github__add_issue_comment`. Our prompt said "post a comment" without naming the tool or providing the PR number. Result: 5 consecutive runs `conclusion=success` + 0 comments.
+
+**What's done:**
+- **`.github/workflows/claude-review.yml`** — prompt now starts with `REPO` + `PR NUMBER` template vars (canonical v1.0 migration pattern). New explicit `mcp__github__add_issue_comment(owner, repo, issue_number, body)` directive as imperative tool call.
+- **`docs/CLAUDE-REVIEW.md`** — new "Posting the comment (MEH-506 fix)" subsection spells out the tool signature.
+
+**Verification deferred:** action runs only on PR open/synchronize in CI. Next PR after merge is the proof — comment must appear even when all 3 sections are `None.`. If still silent → re-investigate (model may need `--allowed-tools mcp__github__add_issue_comment` explicit in `claude_args`).
+
+**Smadar action items:** none pre-merge. Post-merge: watch the next 1-2 PRs for the comment. If absent, fall back to filing a follow-up.
+
+---
+
+### Session 2026-05-08 — MEH-500 backend Sentry SDK init (MERGED PR #552 128baf9)
 
 **Branch:** `feature/meh-500-backend-sentry-sdk-init` off `origin/staging` (post-MEH-491 merge `9f6baf4`).
 
