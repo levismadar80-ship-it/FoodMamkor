@@ -3,34 +3,42 @@
 > Read this before starting any work.
 > Last updated: 2026-05-08 (MEH-506 claude-review silent no-op fix DRAFT PR open; MEH-500 backend Sentry SDK init MERGED PR #552 128baf9; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
-### Session 2026-05-08 — MEH-510 story-card cascade with bypass_reserved opt-out (PR open, ready-for-review)
+### Session 2026-05-08 — MEH-510 story-card cascade with bypass_reserved opt-out (MERGED PR #556)
 
 **Branch:** `feature/meh-510-story-card-cascade` off `origin/staging` `5f1f614`.
 
-**Risk tier:** LOW (helper API extension — new keyword with backward-compatible default — plus single-function cascade hook in `admin_delete_producer`).
+**Risk tier:** LOW. Merged at `363c936`.
 
-**Closes:** MEH-510 (R1 follow-up to MEH-375 PR #537 adversarial review).
+---
 
-**Skeptic Mode catch (1st pass):** the original ticket spec proposed `destroy_image(story_card_url)` without the bypass — that would have been a silent no-op (the helper's `extract_public_id` rejects `mehamakor/producers/*` and returns `None`, short-circuiting `destroy_image` before any Cloudinary call). Surfaced before any edits; ticket spec corrected to (β) `bypass_reserved` parameter approach.
+### Session 2026-05-08 — MEH-490 / MEH-494 / MEH-495 docs batch (DRAFT PR #557 open)
 
-**What shipped:**
+**Branch:** `feature/meh-490-494-495-docs-batch` off `origin/staging` (rebased onto 363c936 after MEH-510 landed).
 
-- `backend/app/cloudinary_utils.py` — new `bypass_reserved: bool = False` keyword on `extract_public_id` + `destroy_image`. When `True`, the `RESERVED_PUBLIC_ID_PREFIXES` startswith check is skipped. Module docstring updated.
-- `backend/app/routers/admin.py:admin_delete_producer` — captures `producer.story_card_url` before `db.delete`, calls `destroy_image(old_story_card_url, bypass_reserved=True)` after `db.commit()`. R2 fold-in: comment block at `admin.py:268-270` rewritten (the previous "intentionally NOT captured" comment contradicted the new behavior).
-- `tests/test_cloudinary_cleanup.py` — new `TestBypassReserved` class (3 tests). Default-behavior regression covered explicitly.
-- `tests/test_admin_producer_delete_cascade.py` (NEW) — 2 tests covering the cascade hook (with and without `story_card_url`).
+**Risk tier:** LOW (docs + 1 bash script + 1 vercel.json + 1 symlink). End-to-end per the risk-tier protocol; no chunked review.
 
-**Substituted-verified (sandbox, MEH-360 conftest blocker on real pytest):**
+**What's done:**
+- **MEH-490 — `AGENTS.md` symlink.** `ln -s CLAUDE.md AGENTS.md` at repo root. CLAUDE.md line 24 meta blockquote extended: `AGENTS.md mirrors this file (edit here only)`. Line cap stays at 80.
+- **MEH-494 — Vercel `ignoreCommand`.** New `vercel.json` + `scripts/vercel-skip-build.sh`. Skip regex: `^(docs/|HANDOFF\.md$|CHANGELOG\.md$|README\.md$|\.github/|backend/)`. Smoke-tested.
+- **MEH-495 — `data-testid` codification.** New `docs/E2E-LOCATORS.md` with 7 sections. CLAUDE.md doc-map row updated.
 
-- Helper: default rejects reserved namespace; `bypass_reserved=True` returns the public_id and reaches `cloudinary.uploader.destroy(...)`.
-- Cascade test pattern: monkey-patching `app.cloudinary_utils.destroy_image` propagates through `admin.py`'s lazy `from app.cloudinary_utils import destroy_image` (`admin.py:~286`) per Python's `from X import Y` re-binding semantics.
+**Smadar action items:** after merge, next docs-only PR should produce no Vercel preview build (MEH-494 verification).
 
-**Deferred (out of scope per ticket):**
+---
 
-- R2 sub-task `auth.py:893` comment update — separate ticket.
-- R5 sub-task `destroy_image` return-value invisibility — operability nit, separate ticket.
+### Session 2026-05-08 — MEH-500 verify-endpoint cleanup (PR #558 open — supersedes closed #555)
 
-**Next steps:** CI on the PR → if green, ready-for-review → merge.
+**Branch:** `feature/meh-500-cleanup-v2` off `origin/staging` (363c936, after MEH-510 landed).
+
+**Risk tier:** LOW (single endpoint deletion + 1-line CHANGELOG).
+
+**What's done:**
+- **`backend/app/routers/system.py`** — `GET /verify-sentry-meh500` removed (9 lines).
+- **`docs/CHANGELOG.md`** — 1-line entry confirming dashboard receipt.
+
+**MEH-500 DoD:** dashboard receipt confirmed by Smadar; this PR closes the cleanup task.
+
+---
 
 ### Session 2026-05-08 — MEH-506 claude-review silent no-op fix (DRAFT PR open)
 
