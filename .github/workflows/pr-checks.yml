@@ -1,7 +1,8 @@
 name: PR Checks
 
 # Runs on every PR targeting staging or main.
-# Two jobs: build, pytest (with coverage gate at 70%, MEH-489).
+# Three jobs: build, pytest (with coverage gate at 70%, MEH-489),
+# lint-backend (calibration, MEH-488).
 # build + pytest are required status checks (configure in branch protection).
 # Adversarial review now lives in .github/workflows/claude-review.yml
 # (MEH-487 — anthropics/claude-code-action@v1, calibration mode).
@@ -221,3 +222,47 @@ jobs:
           SMOKESHOW_GITHUB_CONTEXT: coverage
           SMOKESHOW_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+  # ─────────────────────────────────────────────
+  # JOB 3: lint-backend (MEH-488)
+  # ruff check + ruff format --check against backend/.
+  # `alembic/versions` excluded (auto-generated revisions don't follow
+  # ruff's style). Calibration mode (`continue-on-error: true`) covers
+  # the dirty-baseline window — local pre-flight against staging found
+  # 18 check errors + 56 format files. After MEH-448 cleans the
+  # baseline, a 1-line follow-up PR flips this to false and adds
+  # "Backend lint (ruff)" to the required-checks list in
+  # `Settings → Branches → staging`/`main`.
+  # ─────────────────────────────────────────────
+  lint-backend:
+    name: Backend lint (ruff)
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true   # CALIBRATION — flip to false after MEH-448
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies (ruff comes from dev group)
+        run: uv sync --frozen
+        working-directory: backend
+
+      # `--extend-exclude alembic/versions` is set on the CLI rather than in
+      # pyproject.toml because the lint-config protection hook
+      # (MEH-442 / MEH-466) blocks edits to [tool.ruff*] sections.
+      - name: ruff check
+        run: uv run ruff check . --extend-exclude alembic/versions
+        working-directory: backend
+
+      - name: ruff format --check
+        run: uv run ruff format --check . --extend-exclude alembic/versions
+        working-directory: backend
