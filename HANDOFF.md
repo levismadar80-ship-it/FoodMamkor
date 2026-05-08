@@ -361,6 +361,29 @@ Decision after PR #5 per `docs/CLAUDE-REVIEW.md` → "Calibration plan".
 
 ---
 
+### Session 2026-05-08 — MEH-375 Cloudinary Orphan Cleanup — Final
+
+**Branch:** `feature/meh-375-cloudinary-cleanup` (tip: 337c264 + this commit)
+**PR:** #537 (draft → ready-for-review after this commit)
+
+**Completed:**
+- Chunks A-H: `cloudinary_utils.py` helper + 8 cascade destroy hooks (28 tests)
+- Chunk Q1: promoted `RESERVED_PUBLIC_ID_PREFIXES` to public constant
+- Chunks I.1-I.5: `cleanup_cloudinary_orphans.py` script (113 tests) — argparse, `build_referenced_url_set` (8 DB sources), `list_cloudinary_assets` (paginated + filtered), `compute_orphans`, `print_dry_run_summary`, `_batch_delete_orphans`, `main()` wiring
+- Adversarial review: R3 shipped (DB error wrap), R4 shipped (joserfc CVE note), R1+R2+R5 deferred
+- Staging validation: dry-run (M=37, N=2, K=35) → `--apply` (35/35 deleted, 0 errors) → verification (K=0)
+
+**Deferred to follow-up:**
+- R1: Story-card orphan accumulation post-producer-delete (Sapir to open Linear ticket, priority Medium)
+- R2: Misleading comment update in `auth.py:893` + `admin.py:255-258` (folds into R1 ticket)
+- R5: `destroy_image` return value invisibility (operability nit)
+
+**Next steps:**
+- Final rebase onto staging
+- Flip PR #537 draft → ready-for-review
+- Merge to staging
+- Operator: first production dry-run after deploy
+
 ### Session 2026-05-07 — MEH-471 i18n Wave 1 (MERGED PR #532 f7ea62e)
 
 **Branch:** `feature/meh-471-i18n-wave-1-foundation` off `origin/staging`. Switched FROM harness-mandated `claude/i18n-wave-1-foundation-kGlAP` per CLAUDE.md workflow rule 3 (Smadar gave explicit permission in turn 4 of the session).
