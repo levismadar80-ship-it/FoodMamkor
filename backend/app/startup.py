@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
         for name, val in [
             ("ADMIN_EMAIL", settings.admin_email),
             ("RESEND_API_KEY", settings.resend_api_key),
-            ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
+            ("WHATSAPP_ACCESS_TOKEN", settings.whatsapp_access_token),
         ]
         if not val
     ]

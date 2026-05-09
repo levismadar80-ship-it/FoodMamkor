@@ -7,8 +7,8 @@ link back to /rate/{token}, where the buyer can leave 1–5 stars and a comment.
 
 This module owns the *batch dispatch* logic. It is intentionally pure with
 respect to I/O: a `sender` callable is injected so the same code path is used
-in production (Twilio) and in tests (a list-append spy). A scheduled job
-(cron / Celery beat / FastAPI BackgroundTasks) calls
+in production (Meta Cloud API; MEH-508) and in tests (a list-append spy). A
+scheduled job (cron / Celery beat / FastAPI BackgroundTasks) calls
 `dispatch_pending_rating_requests` periodically — typically every few minutes.
 """
 
@@ -41,16 +41,16 @@ def dispatch_pending_rating_requests(
         db: SQLAlchemy session.
         now: Override the current time (useful for tests).
         sender: Callable invoked with each eligible click. Defaults to the
-            Twilio sender. The dispatcher only flips `rating_sent=True` after
-            the sender returns successfully, so a raising sender leaves the
-            click eligible for the next run.
+            Meta Cloud API sender (MEH-508). The dispatcher only flips
+            `rating_sent=True` after the sender returns successfully, so a
+            raising sender leaves the click eligible for the next run.
 
     Returns:
         The number of rating requests successfully dispatched.
     """
     now = now or datetime.utcnow()
     cutoff = now - RATING_DELAY
-    send = sender or _twilio_sender
+    send = sender or _default_sender
 
     eligible = (
         db.query(HomeProductWhatsAppClick)
@@ -74,22 +74,26 @@ def dispatch_pending_rating_requests(
     return sent_count
 
 
-def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
-    """Default sender — fires a Twilio WhatsApp message if configured.
+def _default_sender(click: HomeProductWhatsAppClick) -> None:
+    """Default sender — fires a WhatsApp message via Meta Cloud API (MEH-508).
 
-    Silently no-ops when Twilio credentials are missing so local/dev
+    Silently no-ops when WhatsApp credentials are missing so local/dev
     environments don't crash. Production deployments must set
-    `twilio_account_sid`, `twilio_auth_token`, and `twilio_whatsapp_from`.
+    `whatsapp_phone_number_id` and `whatsapp_access_token`.
+
+    Behavioral preservation across the Twilio→Meta swap: the prior Twilio
+    sender raised on API error so the dispatcher left `rating_sent=False`
+    and the click stayed eligible for retry. send_text returns False
+    (instead of raising) on HTTP error, so we re-raise here when the
+    service is configured but the send returned False — matching the
+    Twilio-era retry semantics 1:1.
     """
     from app.config import settings
+    from app.services.whatsapp import send_text
 
-    if not (
-        settings.twilio_account_sid
-        and settings.twilio_auth_token
-        and settings.twilio_whatsapp_from
-    ):
+    if not (settings.whatsapp_phone_number_id and settings.whatsapp_access_token):
         logger.debug(
-            "[rating-dispatcher] SMS disabled", reason="Twilio credentials not set"
+            "[rating-dispatcher] SMS disabled", reason="WhatsApp credentials not set"
         )
         return
 
@@ -114,11 +118,7 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
         ref_url = f"https://mehamakor.co.il/ref/{buyer.referral_code}"
         body += f"\n\nאהבת? שתפי חברה והיא תקבל 10% הנחה בהזמנה הראשונה:\n{ref_url}"
 
-    from twilio.rest import Client
-
-    twilio = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    twilio.messages.create(
-        from_=f"whatsapp:{settings.twilio_whatsapp_from}",
-        to=f"whatsapp:{buyer.phone}",
-        body=body,
-    )
+    if not send_text(buyer.phone, body):
+        raise RuntimeError(
+            "[rating-dispatcher] WhatsApp send failed; click will retry next cycle"
+        )

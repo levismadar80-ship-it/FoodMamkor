@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
+from app.services.whatsapp import send_text
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -23,7 +24,6 @@ from app.models import (
     User,
 )
 import logging
-import os
 import secrets
 import string
 
@@ -664,26 +664,15 @@ def producer_analytics(
 
 
 def _send_whatsapp_otp(phone: str, code: str) -> bool:
-    """Send a 6-digit OTP via Twilio WhatsApp. Fail-open: returns False if
-    creds are missing — caller logs and still returns HTTP 200."""
-    sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    token = os.environ.get("TWILIO_AUTH_TOKEN")
-    from_wa = os.environ.get("TWILIO_WHATSAPP_FROM")
-    if not (sid and token and from_wa):
-        log.warning("MEH-51: Twilio creds missing — OTP not sent (fail-open)")
-        return False
-    try:
-        from twilio.rest import Client
+    """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508).
 
-        Client(sid, token).messages.create(
-            from_=from_wa,
-            to=f"whatsapp:{phone}",
-            body=f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות.",
-        )
-        return True
-    except Exception as e:
-        log.warning("MEH-51: Twilio send failed: %s", e)
-        return False
+    Fail-open: returns False if WHATSAPP_* config is missing or the Meta
+    Graph call errors — caller logs and still returns HTTP 200. send_text
+    handles config / HTTP fail-open internally; this function is now a
+    thin wrapper that owns only the OTP message body.
+    """
+    body = f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות."
+    return send_text(phone, body)
 
 
 @router.post("/verify-phone", status_code=200)
