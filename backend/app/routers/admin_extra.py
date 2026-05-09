@@ -394,10 +394,7 @@ def test_service(
     from app.config import settings as cfg
 
     if service == "whatsapp":
-        ok = bool(
-            cfg.whatsapp_phone_number_id
-            and cfg.whatsapp_access_token
-        )
+        ok = bool(cfg.whatsapp_phone_number_id and cfg.whatsapp_access_token)
         return {"ok": ok, "configured": ok, "service": "whatsapp"}
     if service == "cloudinary":
         ok = bool(
