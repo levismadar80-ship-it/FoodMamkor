@@ -43,7 +43,7 @@ def _slugify(text: str) -> str:
     s = text.strip().lower()
     s = re.sub(r"\s+", "-", s)
     # Strip characters that are not safe URL chars (keep hebrew letters)
-    s = re.sub(r"[^\w֐-׿\-]", "", s)
+    s = re.sub(r"[^\w\u0590-\u05FF\-]", "", s)
     s = re.sub(r"-+", "-", s).strip("-")
     return s[:100]
 
