@@ -5,7 +5,13 @@ Favorites, and Reports but left the Producer row in the public
 directory (with stale reviews, followers, and page views). GDPR /
 חוק הגנת הפרטיות violation — the user consented to display only
 while active.
+
+MEH-513 — DELETE /auth/me must also destroy the producer's story_card
+Cloudinary asset with bypass_reserved=True (the asset lives under
+mehamakor/producers/*, which is in RESERVED_PUBLIC_ID_PREFIXES; a plain
+destroy call would be silently rejected).
 """
+from app import cloudinary_utils
 from app.models.models import (
     Favorite,
     Producer,
@@ -74,3 +80,64 @@ def test_deleted_producer_not_in_public_listing(client, db):
     r = client.get("/producers")
     assert r.status_code == 200
     assert not any(p["name"] == name for p in r.json())
+
+
+_STORY_CARD_URL = (
+    "https://res.cloudinary.com/mehamakor/image/upload/v1/"
+    "mehamakor/producers/abc-uuid/story-card.jpg"
+)
+
+
+def test_delete_account_cascades_story_card_destroy(client, db, monkeypatch):
+    """MEH-513: story_card_url destroy must fire with bypass_reserved=True."""
+    user, producer = _make_producer_user(db)
+    producer.story_card_url = _STORY_CARD_URL
+    db.commit()
+
+    calls: list[dict] = []
+
+    def fake_destroy(url, bypass_reserved=False, context=""):
+        calls.append({"url": url, "bypass_reserved": bypass_reserved})
+        return True
+
+    monkeypatch.setattr(cloudinary_utils, "destroy_image", fake_destroy)
+
+    r = client.delete("/auth/me", headers=auth_header(user))
+    assert r.status_code == 200
+
+    story_card_calls = [c for c in calls if c["url"] == _STORY_CARD_URL]
+    assert len(story_card_calls) == 1, (
+        f"expected exactly one destroy call for story_card_url, got "
+        f"{len(story_card_calls)}; full call list: {calls}"
+    )
+    assert story_card_calls[0]["bypass_reserved"] is True, (
+        f"story-card destroy MUST pass bypass_reserved=True; got: "
+        f"{story_card_calls[0]}"
+    )
+
+
+def test_delete_account_with_no_story_card_still_calls_destroy(
+    client, db, monkeypatch
+):
+    """MEH-513: no story_card_url — destroy(None, bypass_reserved=True) fires."""
+    user, producer = _make_producer_user(db)
+    # story_card_url defaults to None — don't set it.
+
+    calls: list[dict] = []
+
+    def fake_destroy(url, bypass_reserved=False, context=""):
+        calls.append({"url": url, "bypass_reserved": bypass_reserved})
+        return True
+
+    monkeypatch.setattr(cloudinary_utils, "destroy_image", fake_destroy)
+
+    r = client.delete("/auth/me", headers=auth_header(user))
+    assert r.status_code == 200
+
+    none_with_bypass = [
+        c for c in calls if c["url"] is None and c["bypass_reserved"] is True
+    ]
+    assert len(none_with_bypass) == 1, (
+        f"expected exactly one bypass=True call with url=None for the "
+        f"story-card slot; full call list: {calls}"
+    )
