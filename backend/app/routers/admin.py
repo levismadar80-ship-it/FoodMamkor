@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import require_admin
 from app.config import settings
 from app.services.email import send_email
+from app.services.whatsapp import send_text
 from app.database import get_db
 from app.models import (
     DeliveryArea,
@@ -700,20 +701,10 @@ def _send_notification_email(to_email: str, subject: str, body: str):
 
 
 def _send_whatsapp(to: str, body: str):
-    """Send WhatsApp notification via Twilio."""
-    if not settings.twilio_account_sid or not settings.twilio_auth_token:
-        logger.debug(f"[WHATSAPP] Would send to {to}: {body}")
-        return
+    """Send WhatsApp admin notification via Meta Cloud API.
 
-    try:
-        from twilio.rest import Client
-
-        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-        client.messages.create(
-            body=body,
-            from_=f"whatsapp:{settings.twilio_whatsapp_from}",
-            to=f"whatsapp:{to}",
-        )
-        logger.info(f"[WHATSAPP] Sent to {to}")
-    except Exception as e:
-        logger.warning(f"[WHATSAPP] Failed to send to {to}: {e}")
+    MEH-508: send_text is fail-open (False on missing config or HTTP error,
+    no exception raised), so the previous try/except + configured-check
+    collapse to a single call. Service-level logger emits the warning.
+    """
+    send_text(to, body)

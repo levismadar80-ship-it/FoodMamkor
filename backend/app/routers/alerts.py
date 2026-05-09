@@ -24,6 +24,7 @@ from app.config import settings
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, FavoriteAlert, User
+from app.services.whatsapp import send_text
 
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 # AlertContent is re-exported here so existing
@@ -204,16 +205,8 @@ def fire_alerts(
 
 
 def _send_whatsapp_alert(to: str, body: str) -> None:
-    from app.config import settings
-
-    if not settings.twilio_account_sid or not settings.twilio_auth_token:
-        log.debug("[ALERT-WA] Would send to %s: %s", to, body)
-        return
-    from twilio.rest import Client
-
-    client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    client.messages.create(
-        body=body,
-        from_=f"whatsapp:{settings.twilio_whatsapp_from}",
-        to=f"whatsapp:{to}",
-    )
+    # MEH-508: WhatsApp via Meta Cloud API. send_text fail-opens on missing
+    # config / HTTP errors, so the local guard + try/except collapse here.
+    # fire_alerts() above still wraps this in its own try/except so a
+    # transient failure can't break the alert dispatch loop.
+    send_text(to, body)

@@ -393,13 +393,9 @@ def test_service(
     """Smoke-test integrations. Returns ok=true/false without raising."""
     from app.config import settings as cfg
 
-    if service == "twilio":
-        ok = bool(
-            cfg.twilio_account_sid
-            and cfg.twilio_auth_token
-            and cfg.twilio_whatsapp_from
-        )
-        return {"ok": ok, "configured": ok, "service": "twilio"}
+    if service == "whatsapp":
+        ok = bool(cfg.whatsapp_phone_number_id and cfg.whatsapp_access_token)
+        return {"ok": ok, "configured": ok, "service": "whatsapp"}
     if service == "cloudinary":
         ok = bool(
             cfg.cloudinary_cloud_name

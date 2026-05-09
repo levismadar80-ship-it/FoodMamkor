@@ -53,10 +53,14 @@ class Settings(BaseSettings):
     # Apple Sign In
     apple_client_id: str = ""
 
-    # Twilio WhatsApp
-    twilio_account_sid: str = ""
-    twilio_auth_token: str = ""
-    twilio_whatsapp_from: str = ""
+    # WhatsApp Cloud API (MEH-508 — direct Meta Graph, replaces Twilio).
+    # phone_number_id + access_token come from Meta WhatsApp Business
+    # Manager (MEH-507 Section C). business_id is reserved for future
+    # template-management calls; api_version pins the Graph endpoint.
+    whatsapp_phone_number_id: str = ""
+    whatsapp_access_token: str = ""
+    whatsapp_business_id: str = ""
+    whatsapp_api_version: str = "v21.0"
     admin_whatsapp_to: str = ""
 
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)

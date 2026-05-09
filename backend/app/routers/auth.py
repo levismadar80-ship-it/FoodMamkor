@@ -437,11 +437,12 @@ async def register_producer(
         )
 
     # MEH-287: pre-flight check — whether the background task has the
-    # config it needs to send. True = expected to send (Twilio may still
-    # fail async, logged as ERROR). False = known not-sent (missing env
-    # vars or no phone); frontend shows a dashboard-fallback banner.
+    # config it needs to send. True = expected to send (Meta Cloud API
+    # may still fail async, logged as ERROR). False = known not-sent
+    # (missing env vars or no phone); frontend shows a dashboard-fallback
+    # banner. MEH-508 swapped Twilio → Meta; predicate updated to match.
     whatsapp_expected = bool(
-        p_phone and settings.twilio_account_sid and settings.twilio_whatsapp_from
+        p_phone and settings.whatsapp_phone_number_id and settings.whatsapp_access_token
     )
     fp = generate_fingerprint()
     _set_refresh_cookie(response, user)
