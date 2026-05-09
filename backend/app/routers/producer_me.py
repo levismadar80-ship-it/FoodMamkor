@@ -194,7 +194,11 @@ def update_my_producer(
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
 
-        destroy_removed_images(old_images, producer.images or [])
+        destroy_removed_images(
+            old_images,
+            producer.images or [],
+            context="producer_me.update_my_producer images",
+        )
 
     # MEH-54: fire delivery area alerts for newly added cities
     if new_cities:
@@ -924,4 +928,4 @@ def delete_my_product(
     if old_image_url:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_image_url)
+        destroy_image(old_image_url, context="producer_me.delete_my_product image")

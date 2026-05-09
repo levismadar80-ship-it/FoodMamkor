@@ -3,6 +3,47 @@
 > Read this before starting any work.
 > Last updated: 2026-05-08 (MEH-506 claude-review silent no-op fix DRAFT PR open; MEH-500 backend Sentry SDK init MERGED PR #552 128baf9; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
+### Session 2026-05-08 — MEH-511 + MEH-512 cleanup follow-ups (PR open, ready-for-review)
+
+**Branch:** `feature/meh-511-512-cleanup-followups` off `origin/staging` `363c936` (post-MEH-510 merge).
+
+**Risk tier:** LOW (per MEH-450 — comment update + observability addition; no logic changes; fail-open semantics preserved).
+
+**Closes:** MEH-511 (R2 follow-up) + MEH-512 (R5 follow-up). Both are MEH-375 adversarial-review tail-ends.
+
+**Skeptic Mode catch (commit 1, MEH-511):** the original ticket spec proposed comment wording that claimed "users can't own producer story-cards directly" — but `auth.delete_account` DOES cascade-delete `user.producer` via SQLA, leaving the story-card asset orphaned. Same bug class as MEH-510 R1 on the user-delete path. Surfaced before any edits; user filed **MEH-513** (Medium priority) for the actual cascade fix using the now-available `bypass_reserved=True` infrastructure. MEH-511 ships an honest "known orphan-leak gap, tracked in MEH-513" comment instead of the misleading proposed framing.
+
+**Skeptic Mode finding (commit 2, MEH-512):** spec said `logger.warning`, current helper uses `log.error`. **Kept ERROR** — destroy failures ARE errors, not warnings. Spec wording was casual; matching established log level is correct.
+
+**Scope-expansion finding (commit 2, MEH-512):** spec listed 9 direct `destroy_image()` call sites, but the 3 gallery-diff hooks call `destroy_removed_images` (wrapper). Without extending the wrapper, those gallery-diff failures stay context-less — the busiest cascade path. **Extended `destroy_removed_images` with `context: str = ""` pass-through.** Total update sites: 12 (9 direct + 3 wrapper).
+
+**What shipped:**
+
+Commit 1 — `docs(MEH-511): fix stale comment on story_card namespace in auth.delete_account` (`6c7f8a7`):
+- `backend/app/routers/auth.py:1009-1014` — replace 3-line stale comment with accurate "known orphan-leak gap, tracked in MEH-513" wording. Reference MEH-510 (sibling admin-path fix) inline.
+- `docs/CHANGELOG.md` — MEH-511 entry.
+- Zero code lines changed.
+
+Commit 2 — `feat(MEH-512): expose destroy_image failures via structured logging`:
+- `backend/app/cloudinary_utils.py` — `context: str = ""` keyword added to both `destroy_image` and `destroy_removed_images`. Two error log lines (SDK-exception + unexpected-result-string) include `[context]` tag. ERROR level preserved.
+- 12 cascade call sites updated with descriptive context strings (5 router files: auth.py, admin.py, users_me.py, producer_me.py, home_products.py).
+- `tests/test_cloudinary_cleanup.py` — new `TestDestroyImageContext` class with 4 tests.
+- `docs/CHANGELOG.md` — MEH-512 entry.
+
+**Substituted-verified (sandbox, MEH-360 conftest blocker on real pytest):**
+
+- `destroy_image(url, context="auth.delete_account")` with simulated Cloudinary failure → `[auth.delete_account]` appears in ERROR log.
+- `destroy_image(url)` with default context → `[]` empty bracket in log; format preserved.
+- `destroy_removed_images([url], [], context="producer_me.update_my_producer images")` → context propagates to inner `destroy_image` and appears in log.
+
+**Deferred (out of scope per ticket):**
+
+- **MEH-513** (Medium priority, filed during this session by Smadar): user-delete cascade story-card capture in `auth.delete_account`. Same bug class as MEH-510 R1 but on the user path. Uses the now-available `bypass_reserved=True` infrastructure.
+
+**Next steps:** PR open off `staging`, CI green → merge. Then MEH-513 picks up the actual cascade-hook fix on the user-delete path.
+
+---
+
 ### Session 2026-05-08 — MEH-497 git-cliff CHANGELOG automation (MERGED PR #564 a0f0b70)
 
 **Branch:** `feature/meh-497-changelog-automation` off `origin/staging` (post-MEH-496 merge `d1c16f6`).

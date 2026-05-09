@@ -300,11 +300,15 @@ def update_home_product(
     if "photo" in payload and old_photo and old_photo != hp.photo:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_photo)
+        destroy_image(old_photo, context="home_products.update_home_product photo")
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
 
-        destroy_removed_images(old_images, hp.images or [])
+        destroy_removed_images(
+            old_images,
+            hp.images or [],
+            context="home_products.update_home_product images",
+        )
 
     return _enrich_home_product(hp, db)
 

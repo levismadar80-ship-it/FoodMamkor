@@ -228,7 +228,11 @@ def admin_update_producer(
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
 
-        destroy_removed_images(old_images, producer.images or [])
+        destroy_removed_images(
+            old_images,
+            producer.images or [],
+            context="admin.admin_update_producer images",
+        )
 
     return producer
 
@@ -282,11 +286,15 @@ def admin_delete_producer(
     from app.cloudinary_utils import destroy_image
 
     for url in old_image_urls:
-        destroy_image(url)
+        destroy_image(url, context="admin.admin_delete_producer images")
     for url in old_product_urls:
-        destroy_image(url)
+        destroy_image(url, context="admin.admin_delete_producer product_image")
     # MEH-510: bypass_reserved=True — the producer is gone, the slot is now an orphan.
-    destroy_image(old_story_card_url, bypass_reserved=True)
+    destroy_image(
+        old_story_card_url,
+        bypass_reserved=True,
+        context="admin.admin_delete_producer story_card",
+    )
 
     return {"detail": "Producer deleted"}
 
@@ -461,9 +469,9 @@ def delete_listing(
     from app.cloudinary_utils import destroy_image
 
     if old_photo:
-        destroy_image(old_photo)
+        destroy_image(old_photo, context="admin.delete_listing photo")
     for url in old_images:
-        destroy_image(url)
+        destroy_image(url, context="admin.delete_listing images")
 
     return {"detail": "Listing deleted"}
 

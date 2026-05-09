@@ -238,7 +238,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(None, None)
         destroy_removed_images([], [])
         assert calls == []
@@ -247,7 +247,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(["a", "b", "c"], [])
         # Order is unspecified (set iteration); compare as sets.
         assert set(calls) == {"a", "b", "c"}
@@ -257,7 +257,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(["a", "b", "c"], ["a", "c", "d"])
         assert calls == ["b"]
 
@@ -268,7 +268,7 @@ class TestDestroyRemovedImages:
         from app import cloudinary_utils
 
         calls: list[str | None] = []
-        monkeypatch.setattr(cloudinary_utils, "destroy_image", calls.append)
+        monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda url, **_: calls.append(url))
         destroy_removed_images(["a", "a", "b"], [])
         assert set(calls) == {"a", "b"}
         assert len(calls) == 2
@@ -315,3 +315,68 @@ class TestBypassReserved:
         assert len(calls) == 1
         assert calls[0]["args"] == (self._STORY_CARD_PUBLIC_ID,)
         assert calls[0]["kwargs"] == {"invalidate": True, "resource_type": "image"}
+
+
+# ---------- MEH-512: context= observability ----------
+
+
+class TestDestroyImageContext:
+    """The helper logs failures at ERROR level (existing behavior — preserved
+    by MEH-512). The new `context: str = ""` keyword tags those log lines so
+    a post-incident grep can pinpoint which cascade hook dropped a destroy.
+    Default empty string keeps existing log shape minimally — the bracketed
+    slot just appears empty.
+    """
+
+    _NORMAL_URL = "https://res.cloudinary.com/x/image/upload/v1/mehamakor/abc.jpg"
+
+    def test_destroy_failure_logs_with_context(
+        self, monkeypatch, cloudinary_configured, caplog
+    ):
+        # Cloudinary call raises → log.error path includes the context tag.
+        _install_destroy_recorder(monkeypatch, raises=RuntimeError("network down"))
+        with caplog.at_level(logging.ERROR, logger="app.upload"):
+            assert (
+                destroy_image(self._NORMAL_URL, context="auth.delete_account") is False
+            )
+        messages = [r.message for r in caplog.records]
+        assert any("[auth.delete_account]" in m for m in messages), messages
+
+    def test_destroy_failure_logs_with_default_empty_context(
+        self, monkeypatch, cloudinary_configured, caplog
+    ):
+        # Default context — log line still emitted, bracketed slot just empty.
+        _install_destroy_recorder(monkeypatch, raises=RuntimeError("network down"))
+        with caplog.at_level(logging.ERROR, logger="app.upload"):
+            assert destroy_image(self._NORMAL_URL) is False
+        messages = [r.message for r in caplog.records]
+        assert any("Cloudinary destroy failed" in m for m in messages), messages
+
+    def test_destroy_unexpected_result_logs_with_context(
+        self, monkeypatch, cloudinary_configured, caplog
+    ):
+        # Unexpected result string is also a failure path — must carry context.
+        _install_destroy_recorder(monkeypatch, return_value={"result": "blocked"})
+        with caplog.at_level(logging.ERROR, logger="app.upload"):
+            assert (
+                destroy_image(self._NORMAL_URL, context="admin.delete_listing photo")
+                is False
+            )
+        messages = [r.message for r in caplog.records]
+        assert any("[admin.delete_listing photo]" in m for m in messages), messages
+
+    def test_destroy_removed_images_propagates_context(
+        self, monkeypatch, cloudinary_configured, caplog
+    ):
+        # Wrapper passes context through to each inner destroy_image call.
+        _install_destroy_recorder(monkeypatch, raises=RuntimeError("api blip"))
+        with caplog.at_level(logging.ERROR, logger="app.upload"):
+            destroy_removed_images(
+                [self._NORMAL_URL],
+                [],
+                context="producer_me.update_my_producer images",
+            )
+        messages = [r.message for r in caplog.records]
+        assert any("[producer_me.update_my_producer images]" in m for m in messages), (
+            messages
+        )
