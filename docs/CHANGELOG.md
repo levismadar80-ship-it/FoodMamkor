@@ -2,6 +2,15 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
+
+`fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.
+
+- **`backend/app/routers/auth.py`** — `delete_account`: capture `old_story_card_url = producer_for_capture.story_card_url` inside the pre-commit URL-capture block; call `destroy_image(old_story_card_url, bypass_reserved=True, context="auth.delete_account story_card")` post-commit in a dedicated call separate from the `captured_urls` loop (which doesn't pass `bypass_reserved`). Replace MEH-511 placeholder comment with accurate "IS captured (MEH-513)" wording.
+- **`tests/test_account_deletion_cascade.py`** — 2 new tests: `test_delete_account_cascades_story_card_destroy` (verifies `destroy_image` fires with `bypass_reserved=True` for a producer with `story_card_url` set) and `test_delete_account_with_no_story_card_still_calls_destroy` (verifies `destroy(None, bypass_reserved=True)` fires when `story_card_url` is None — keeps cascade branch-free).
+
+Closes MEH-513.
+
 ## 2026-05-08 — MEH-512: expose destroy_image failures via structured logging at all cascade call sites (MEH-375 R5)
 
 `feat(MEH-512)`: closes the operability gap surfaced in PR #537 adversarial review (R5). The `destroy_image` helper has always logged failures at ERROR level via `app.upload`, but log lines lacked a caller identifier — post-incident debugging couldn't tell which cascade hook dropped a destroy. New `context: str = ""` keyword on `destroy_image` + `destroy_removed_images` (the gallery-diff wrapper) is included in failure log lines as a `[context]` tag. All 12 cascade call sites updated with descriptive context strings. Default empty string preserves existing log format minimally — the bracketed slot just appears empty for any caller that hasn't been updated.

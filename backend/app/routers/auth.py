@@ -1006,15 +1006,15 @@ def delete_account(
     #   C) every Product.image_url   (for that producer)
     #   D) every HomeProduct.photo   (user-owned, not producer-owned)
     #   E) every HomeProduct.images  (same rows as D)
-    # producer.story_card_url is NOT captured here — known orphan-leak gap
-    # when user has producer (cascade-deletes the producer via SQLA but
-    # story_card asset survives in Cloudinary, protected by the cleanup
-    # script reject list). Tracked separately in MEH-513 — this comment
-    # will be replaced when MEH-513 ships. See MEH-510 for the sibling
-    # fix on the admin path (admin_delete_producer + bypass_reserved=True).
+    # producer.story_card_url IS captured separately (MEH-513) and destroyed
+    # post-commit with bypass_reserved=True — required because
+    # mehamakor/producers/* is in RESERVED_PUBLIC_ID_PREFIXES and a plain
+    # destroy_image call would be silently rejected by the cleanup guard.
+    # The sibling fix on the admin path is admin_delete_producer (MEH-510).
     # Destroy runs AFTER the final db.commit so a constraint failure
     # leaves DB and Cloudinary in sync.
     captured_urls: list[str] = []
+    old_story_card_url: str | None = None
     if user.avatar_url:
         captured_urls.append(user.avatar_url)
     if producer_id is not None:
@@ -1022,6 +1022,7 @@ def delete_account(
             db.query(Producer).filter(Producer.id == producer_id).first()
         )
         if producer_for_capture is not None:
+            old_story_card_url = producer_for_capture.story_card_url
             for url in producer_for_capture.images or []:
                 if url:
                     captured_urls.append(url)
@@ -1075,6 +1076,14 @@ def delete_account(
 
     for url in captured_urls:
         destroy_image(url, context="auth.delete_account")
+    # MEH-513: story_card needs bypass_reserved=True — the producer is gone,
+    # the slot is now an orphan (the cleanup script reject list is for live
+    # story-cards; this is explicitly not one).
+    destroy_image(
+        old_story_card_url,
+        bypass_reserved=True,
+        context="auth.delete_account story_card",
+    )
 
     # Send confirmation email
     _send_deletion_email(user_email, user_name)
