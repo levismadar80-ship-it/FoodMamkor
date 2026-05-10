@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
@@ -1128,6 +1129,15 @@ class CategoryRequestCreate(BaseModel):
     requested_name: str = Field(..., min_length=1, max_length=100)
     examples: str | None = Field(None, max_length=300)
     producer_id: UUID | None = None
+
+    @field_validator("requested_name")
+    @classmethod
+    def _validate_letters(cls, v: str) -> str:
+        stripped = v.strip()
+        letter_count = len(re.sub(r"[^א-תa-zA-Z]", "", stripped))
+        if letter_count < 3:
+            raise ValueError("שם קטגוריה חייב להכיל לפחות 3 תווים")
+        return stripped
 
 
 class CategoryRequestOut(BaseModel):
