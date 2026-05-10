@@ -2,6 +2,14 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-517: fix React #418 hydration mismatch on homepage (useState lazy initializers)
+
+`fix(MEH-517)`: three `useState` lazy initializers in `frontend/lib/use-home-page.js` were reading `window.location.search` and `sessionStorage` during render — the server returns static defaults, the client reruns with URL params, causing React error #418. Moved all browser API reads into the existing initial-load `useEffect`, using local variables for the first `loadProducers` call (since state setters are async).
+
+- **`frontend/lib/use-home-page.js`** — `filters`, `visibleCount`, `chips` useState calls replaced with SSR-safe static defaults. All browser reads (`URLSearchParams(window.location.search)`, `sessionStorage.getItem("home_visible_count")`) moved into the mount `useEffect`, which also sets `initFilters`/`initChips` and uses them directly for the initial `loadProducers` call to avoid async state timing issues. Also resolved pre-existing ESLint warnings: removed unused `setGeoLoading`, switched to `.toSorted()`.
+
+Closes MEH-517.
+
 ## 2026-05-10 — MEH-518: rename admin Twilio test button → WhatsApp
 
 `chore(MEH-518)`: the admin settings page listed a "Twilio" connection test, but the backend route is `/admin/settings/test/whatsapp`. The UI key `"twilio"` therefore called a non-existent endpoint. Renamed the key to `"whatsapp"`, added explicit labels `{ key, label }` so the display reads "WhatsApp" (not CSS-capitalized "Whatsapp"), and resolved 27 pre-existing ESLint warnings in the file.
