@@ -2,6 +2,14 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-517: fix React #418 hydration mismatch on homepage (useState lazy initializers)
+
+`fix(MEH-517)`: three `useState` lazy initializers in `frontend/lib/use-home-page.js` were reading `window.location.search` and `sessionStorage` during render — the server returns static defaults, the client reruns with URL params, causing React error #418. Moved all browser API reads into the existing initial-load `useEffect`, using local variables for the first `loadProducers` call (since state setters are async).
+
+- **`frontend/lib/use-home-page.js`** — `filters`, `visibleCount`, `chips` useState calls replaced with SSR-safe static defaults. All browser reads (`URLSearchParams(window.location.search)`, `sessionStorage.getItem("home_visible_count")`) moved into the mount `useEffect`, which also sets `initFilters`/`initChips` and uses them directly for the initial `loadProducers` call to avoid async state timing issues. Also resolved pre-existing ESLint warnings: removed unused `setGeoLoading`, switched to `.toSorted()`.
+
+Closes MEH-517.
+
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
 `fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.
