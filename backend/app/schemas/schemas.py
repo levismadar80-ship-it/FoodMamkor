@@ -449,8 +449,8 @@ class ProducerListOut(BaseModel):
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
-    status: str
-    is_verified: bool
+    status: str = "pending"
+    is_verified: bool = False
     plan: str = "free"
     slug: str | None = None
     top_product_name: str | None = None
@@ -545,7 +545,7 @@ class ProducerDetailOut(ProducerListOut):
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
-    created_at: datetime
+    created_at: datetime | None = None
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
     # MEH-102: weekly opening hours. Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
