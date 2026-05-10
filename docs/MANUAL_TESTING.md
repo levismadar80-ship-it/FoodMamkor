@@ -1297,3 +1297,45 @@ Expected: `Orphans: 0`. If orphans remain, they were either uploaded after the `
 ### Known limitation
 
 Story-card assets under `mehamakor/producers/*` are excluded from cleanup by the reserved-prefix reject list (`RESERVED_PUBLIC_ID_PREFIXES` in `cloudinary_utils.py`). When a producer is deleted, their story-card asset remains in Cloudinary as an untouchable orphan (~few KB each). Tracked for follow-up (R1: story-card orphan accumulation post-producer-delete).
+
+---
+
+# Autonomous PR pipeline (MEH-551)
+
+תיעוד הסדר של pipeline autonomous PR — מה enabled, מה deferred, ומתי יופעל הבא.
+
+## Phase 0 + 1 — OAuth & MCP wiring (DONE)
+
+- ✅ `vercel` MCP — OAuth complete; CC can read deployment status, list previews, fetch build logs autonomously
+- ✅ `sentry` MCP — OAuth complete; CC can run pre/post-merge issue-diff via `search_issues` + `analyze_issue_with_seer`
+- Auth-token expiry: tokens last ~30 days. If MCP calls start failing silently, run `/mcp auth <server>` interactively (~30s)
+
+## Phase 2 — `/autofix-pr` slash command (DEFERRED)
+
+Built but not yet validated against a live CI failure. **Trigger to test:** when the next batch PR fails CI, run `/autofix-pr` instead of fixing manually. Until then `/autofix-pr` is unproven on this repo's failure modes.
+
+## Phase 3 — Cloud Auto-Fix (DEFERRED)
+
+Blocked by Phase 2. Cloud Auto-Fix wires `/autofix-pr` into a GitHub Action so failures fix themselves before Smadar even sees them. Don't enable until Phase 2 has at least 2 successful runs against real failures (not synthetic).
+
+## Pro plan caveat — token inflation
+
+Claude Code v2.1.100+ shows ~40% token inflation on Pro plans for slash commands that load multi-file context. **Use `/autofix-pr` selectively** — preferred for failure modes the 3 documented patterns can fix (package-lock drift, ESLint warnings, pre-commit filename bug). Don't auto-trigger on every CI failure or quota burns fast.
+
+## Brand voice enforcement (MEH-472 hybrid)
+
+Brand-voice grep canary lives inside `/batch` (created in MEH-344, `.claude/commands/batch.md`). Pipeline's autonomous loops route brand-sensitive copy through that grep before any commit:
+
+- Functional UI → gerund (`בטעינה`, `מתעדכן`)
+- CTAs → plural imperative (`הוסיפו`, `הצטרפו`) — never feminine `הוסיפי`/`הצטרפי`/`בואי`/`הזיני`
+- Producer term → `בית עסק` only, never `יצרן/ית`
+
+## Status summary
+
+| Phase | Status | Next action |
+|---|---|---|
+| 0 — Pre-flight | DONE | — |
+| 1 — MCP OAuth | DONE | — |
+| 2 — `/autofix-pr` validation | DEFERRED | Run on next real CI failure |
+| 3 — Cloud Auto-Fix wiring | DEFERRED | After Phase 2 succeeds 2x |
+| 4 — Documentation | THIS PR | — |
