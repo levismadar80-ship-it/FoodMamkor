@@ -41,9 +41,11 @@ def dispatch_pending_rating_requests(
         db: SQLAlchemy session.
         now: Override the current time (useful for tests).
         sender: Callable invoked with each eligible click. Defaults to the
-            Meta Cloud API sender (MEH-508). The dispatcher only flips
-            `rating_sent=True` after the sender returns successfully, so a
-            raising sender leaves the click eligible for the next run.
+            Cloud API sender. Per-click failures are caught and logged
+            (click_id + home_product_id); the dispatcher only flips
+            rating_sent=True for clicks where the sender returns successfully.
+            A raising sender leaves THAT click eligible for the next run;
+            other clicks in the same batch are unaffected.
 
     Returns:
         The number of rating requests successfully dispatched.
@@ -64,13 +66,31 @@ def dispatch_pending_rating_requests(
     )
 
     sent_count = 0
+    failed_count = 0
     for click in eligible:
-        send(click)
-        click.rating_sent = True
-        sent_count += 1
+        try:
+            send(click)
+            click.rating_sent = True
+            sent_count += 1
+        except Exception:
+            # MEH-515: per-click try/except — single failure must not
+            # abort the batch nor rollback flag-flips on already-sent siblings.
+            logger.exception(
+                "rating_dispatcher.send_failed",
+                click_id=str(click.id),
+                home_product_id=str(click.home_product_id),
+            )
+            failed_count += 1
+            continue
 
-    if sent_count:
+    if sent_count or failed_count:
         db.commit()
+        logger.info(
+            "rating_dispatcher.batch_complete",
+            sent=sent_count,
+            failed=failed_count,
+            total=len(eligible),
+        )
     return sent_count
 
 

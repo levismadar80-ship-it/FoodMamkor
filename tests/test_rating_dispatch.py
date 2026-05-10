@@ -147,3 +147,59 @@ class TestRatingDispatcher:
 
         assert sent == 1
         assert len(sent_to) == 1
+
+    def test_one_send_fails_batch_continues(self, db):
+        """MEH-515: single send failure must not abort batch or rollback sibling flag-flips."""
+        seller = make_user(db)
+        buyer = make_user(db)
+        listing = _make_listing(db, seller)
+        # Dispatcher orders by clicked_at ASC: c2 first, c1 second, c0 third
+        c0 = _make_click(db, buyer=buyer, listing=listing, hours_ago=30)
+        c1 = _make_click(db, buyer=buyer, listing=listing, hours_ago=31)
+        c2 = _make_click(db, buyer=buyer, listing=listing, hours_ago=32)
+
+        def raise_on_c1(click):
+            if click.id == c1.id:
+                raise RuntimeError("meta 5xx")
+
+        sent = dispatch_pending_rating_requests(db, sender=raise_on_c1)
+
+        assert sent == 2
+        db.refresh(c0)
+        db.refresh(c1)
+        db.refresh(c2)
+        assert c2.rating_sent is True
+        assert c1.rating_sent is False
+        assert c0.rating_sent is True
+
+    def test_all_sends_fail_batch_completes(self, db):
+        """MEH-515: all sends failing — no exception escapes, returns 0, logs each failure."""
+        import structlog.testing
+
+        seller = make_user(db)
+        buyer = make_user(db)
+        listing = _make_listing(db, seller)
+        c0 = _make_click(db, buyer=buyer, listing=listing, hours_ago=30)
+        c1 = _make_click(db, buyer=buyer, listing=listing, hours_ago=31)
+        c2 = _make_click(db, buyer=buyer, listing=listing, hours_ago=32)
+
+        def always_raises(click):
+            raise RuntimeError("meta down")
+
+        with structlog.testing.capture_logs() as log_entries:
+            sent = dispatch_pending_rating_requests(db, sender=always_raises)
+
+        assert sent == 0
+        db.refresh(c0)
+        db.refresh(c1)
+        db.refresh(c2)
+        assert c0.rating_sent is False
+        assert c1.rating_sent is False
+        assert c2.rating_sent is False
+
+        failure_logs = [
+            e for e in log_entries if e.get("event") == "rating_dispatcher.send_failed"
+        ]
+        assert len(failure_logs) == 3
+        logged_click_ids = {e["click_id"] for e in failure_logs}
+        assert logged_click_ids == {str(c0.id), str(c1.id), str(c2.id)}
