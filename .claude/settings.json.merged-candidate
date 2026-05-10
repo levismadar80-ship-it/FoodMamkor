@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v jq >/dev/null 2>&1; then cmd=$(jq -r '.tool_input.command // \"\"'); else cmd=$(cat); fi; case \"$cmd\" in *\"git commit\"*) echo \"⚠️ Reminder: update CLAUDE.md with the changes in this commit before committing. If you already did, proceed.\" >&2 ;; esac; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *frontend/app/*|*frontend/components/*|*.css) echo \"⚠️ Reminder: read docs/DESIGN.md before making UI changes. It contains the canonical spec for colors, fonts, hero layout, category grid, ProducerCard, Footer, etc.\" >&2 ;; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "if command -v jq >/dev/null 2>&1; then fp=$(jq -r '.tool_input.file_path // \"\"'); else fp=$(cat); fi; case \"$fp\" in *backend/*) echo \"⚠️ Reminder: read docs/DATA.md before making backend changes. It contains the DB schema and API contract.\" >&2 ;; esac; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "_comment": "Central component guard (MEH-128): warns when editing high-risk files. Warning-only, always exits 0. See docs/CENTRAL_COMPONENTS.md.",
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/pre-edit-guard.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "Bash safety guard — blocks dangerous DDL and destructive filesystem commands. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-bash-safety.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-422 skill-bypass guard — blocks subprocess invocations that bypass MEH-397 hooks (node tools/, python tools/, bash tools/, tools/clis/, tools/integrations/, tools/REGISTRY). Also blocks direct invocation of known-network skill scripts (audit_a11y.py, check_shabbat.py) when their skill's allowed_network_hosts is null/empty. Exit 2 = block. Fail-closed if jq missing or input malformed.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-skill-bypass.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "RTL physical-property guard — blocks physical left-*/right-*/ml-*/mr-* in non-allowlisted files. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-rtl.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-442 lint-config protection — blocks Edit/Write/MultiEdit on .eslintrc.*, eslint.config.*, backend/pyproject.toml (v1: full file), .claude/settings.json, and this hook itself. Self-protect prevents AI from disabling guardrails. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/protect-lint-config.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5000,
+            "_comment": "MEH-397 Layer 1: blocks Read on .env files. Exit 2 = block. Fail-closed if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-env-read.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5000,
+            "_comment": "MEH-397 Layer 1: blocks WebFetch outside the supply-chain allowlist (github, anthropic, npmjs, pypi, mehamakor, vercel, railway). Exit 2 = block. Fail-closed if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-webfetch-allowlist.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-445 lint feedback loop — after Edit/Write/MultiEdit on .js/.jsx/.ts/.tsx (eslint) or .py (ruff), runs lint on the just-edited file and returns errors to Claude as feedback. 3 strikes per file (state in .claude/hooks/.lint-attempts/, gitignored). Attempts 1-2: decision:approve + reason (continue with feedback). Attempt 3: decision:block + exit 2 (stop, human review). Skips .claude/* (self-protect) and missing tooling (silent exit 0). Replaces the prior inline PostToolUse ESLint hook (was no-op since MEH-443 moved config from .eslintrc.json to eslint.config.mjs).",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/lint-feedback.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "_comment": "Defensive frontend build hook. Mirrors the pytest hook pattern: skip gracefully if node_modules or frontend/ is missing, block ONLY on real build failures.",
+            "command": "bash -c '# Defensive frontend build hook\n# Guards:\n#   1. frontend/ missing        -> warn + exit 0\n#   2. node_modules missing      -> warn + exit 0 (npm install not run)\n#   3. build fails for real      -> emit decision:block JSON\n#   4. build passes              -> exit 0\nroot=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"\nif [ ! -d \"$root/frontend\" ]; then\n  echo \"Warning: frontend/ not found at $root, skipping build\"\n  exit 0\nfi\nif [ ! -d \"$root/frontend/node_modules\" ]; then\n  echo \"Warning: frontend/node_modules not found, skipping build (run npm install)\"\n  exit 0\nfi\ncd \"$root/frontend\"\nset -o pipefail\nif ! npm run build 2>&1 | tail -20; then\n  echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Frontend build failed — fix errors before completing this task\"}'\"'\"'\nfi\n'"
+          },
+          {
+            "type": "command",
+            "_comment": "Defensive ESLint no-undef hook. Catches the class of regression from PR #43 (referencing deleted variables). Distinguishes config errors (exit 2 = warn + skip) from lint errors (exit 1 = block). Skip gracefully if node_modules or config is missing.",
+            "command": "bash -c '# Defensive ESLint hook — catches undefined-variable bugs\n# Guards:\n#   1. frontend/ missing        -> exit 0\n#   2. node_modules missing      -> warn + exit 0\n#   3. .eslintrc.json missing    -> warn + exit 0\n#   4. ESLint config error (exit 2) -> warn + exit 0 (don'\"'\"'t block on bad config)\n#   5. Lint errors found (exit 1)   -> emit decision:block JSON\n#   6. No errors                    -> exit 0\nroot=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"\nif [ ! -d \"$root/frontend\" ]; then\n  exit 0\nfi\nif [ ! -d \"$root/frontend/node_modules\" ]; then\n  echo \"Warning: frontend/node_modules not found, skipping ESLint\"\n  exit 0\nfi\nif [ ! -f \"$root/frontend/.eslintrc.json\" ]; then\n  echo \"Warning: .eslintrc.json not found, skipping ESLint\"\n  exit 0\nfi\ncd \"$root/frontend\"\nresult=$(npx eslint . --max-warnings 0 2>&1)\nlint_exit=$?\nif [ $lint_exit -eq 2 ]; then\n  echo \"Warning: ESLint config error, skipping lint check:\"\n  echo \"$result\" | tail -10\n  exit 0\nelif [ $lint_exit -eq 1 ] || [ $lint_exit -gt 2 ]; then\n  echo \"$result\" | tail -30\n  echo '\"'\"'{\"decision\":\"block\",\"reason\":\"ESLint found errors — fix before completing this task\"}'\"'\"'\nfi\n'"
+          },
+          {
+            "type": "command",
+            "_comment": "Vitest component tests. Blocks on failure. Skips gracefully if vitest not installed or __tests__/ missing.",
+            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if [ ! -d \"$root/frontend/__tests__\" ]; then echo \"Warning: frontend/__tests__/ not found, skipping component tests\"; exit 0; fi; cd \"$root/frontend\" && npx vitest run --reporter=verbose 2>&1 | tail -30; test ${PIPESTATUS[0]} -eq 0 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Vitest component tests failed — fix errors before completing this task\"}'\"'\"''"
+          },
+          {
+            "type": "command",
+            "_comment": "Backend pytest. Blocks on real test failures. Graceful skip if pytest not installed or test file missing. Install pytest via: pip install pytest pytest-asyncio httpx -r backend/requirements.txt --break-system-packages",
+            "command": "bash -c 'root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; if ! python -m pytest --version >/dev/null 2>&1; then echo \"Warning: pytest not available — install via: pip install pytest pytest-asyncio httpx --break-system-packages\"; exit 0; fi; if [ ! -d \"$root/backend\" ]; then echo \"Warning: backend/ not found, skipping\"; exit 0; fi; if [ ! -f \"$root/backend/tests/test_api.py\" ]; then echo \"Warning: backend/tests/test_api.py not found, skipping backend tests\"; exit 0; fi; cd \"$root/backend\" && python -m pytest tests/test_api.py -q --tb=short 2>&1 | tail -20; test ${PIPESTATUS[0]} -eq 0 || echo '\"'\"'{\"decision\":\"block\",\"reason\":\"Backend tests failed — fix errors before completing this task\"}'\"'\"''"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "Session start context injection — loads branch, CHANGELOG head, HANDOFF tail. Always exits 0.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/session-start.sh\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm ci:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npx eslint:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(black:*)",
+      "Bash(uv add:*)",
+      "Bash(uv sync:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git fetch:*)",
+      "Bash(git show:*)",
+      "Bash(git blame:*)",
+      "Bash(git commit:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh run list:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(jq:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway status:*)",
+      "Bash(railway variables:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:anthropic.com)",
+      "WebFetch(domain:npmjs.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:mehamakor.online)",
+      "WebFetch(domain:staging.mehamakor.online)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:railway.app)",
+      "Bash(npm install)",
+      "Bash(git add*)",
+      "Bash(git checkout*)",
+      "Bash(git push origin feature/*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh issue list*)",
+      "Bash(alembic current)",
+      "Bash(alembic history)",
+      "Bash(alembic check)",
+      "Bash(uv run pytest:*)",
+      "Edit(frontend/messages/he.json)",
+      "Edit(frontend/messages/en.json)",
+      "Edit(frontend/components/**)",
+      "Edit(frontend/app/**)",
+      "Edit(frontend/lib/**)",
+      "Edit(frontend/__tests__/**)",
+      "Edit(frontend/e2e/**)",
+      "Edit(backend/tests/**)",
+      "Edit(backend/app/routers/**)",
+      "Edit(backend/app/services/**)",
+      "Edit(docs/audits/**)",
+      "Edit(docs/research/**)",
+      "Edit(CHANGELOG.md)",
+      "Edit(HANDOFF.md)",
+      "Write(docs/audits/**)",
+      "Write(docs/research/**)",
+      "Write(frontend/__tests__/**)",
+      "Write(frontend/e2e/**)",
+      "Write(backend/tests/**)",
+      "Write(frontend/messages/**)",
+      "Read(**)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin staging:*)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod 777:*)",
+      "Bash(railway up --service prod:*)",
+      "Bash(vercel --prod:*)",
+      "Bash(cat .env*)",
+      "Bash(echo .* > .env:*)",
+      "Bash(npm publish:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./frontend/.env)",
+      "Read(./frontend/.env.*)",
+      "Read(./backend/.env)",
+      "Read(./backend/.env.*)",
+      "Bash(git rebase*)",
+      "Bash(alembic upgrade*)",
+      "Bash(alembic downgrade*)",
+      "Bash(alembic stamp*)",
+      "Bash(alembic revision*)",
+      "Bash(railway up*)",
+      "Bash(railway redeploy*)",
+      "Bash(railway run*)",
+      "Bash(railway link*)",
+      "Bash(railway unlink*)",
+      "Bash(railway delete*)",
+      "Bash(railway add*)",
+      "Bash(railway service:*)",
+      "Bash(railway variables set*)",
+      "Bash(railway variables delete*)",
+      "Bash(vercel deploy*)",
+      "Bash(vercel --prod*)",
+      "Bash(vercel rollback*)",
+      "Bash(vercel promote*)",
+      "Bash(vercel domains*)",
+      "Bash(vercel env*)",
+      "Bash(vercel link*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh pr close*)",
+      "Bash(rm *)",
+      "Bash(del *)",
+      "Bash(psql*)",
+      "Bash(pg_dump*)",
+      "Bash(pg_restore*)",
+      "Bash(DROP TABLE*)",
+      "Bash(DROP DATABASE*)",
+      "Bash(DELETE FROM*)",
+      "Bash(TRUNCATE*)",
+      "Bash(pip install*)",
+      "Bash(npm uninstall*)",
+      "Bash(curl -X DELETE*)",
+      "Bash(curl -X POST*)",
+      "Edit(backend/alembic/versions/**)",
+      "Edit(backend/app/main.py)",
+      "Edit(backend/app/config.py)",
+      "Edit(.github/workflows/**)",
+      "Edit(.claude/settings.json)",
+      "Edit(.claude/hooks/**)",
+      "Edit(frontend/middleware.ts)",
+      "Edit(frontend/middleware.js)",
+      "Edit(frontend/next.config.js)",
+      "Edit(Dockerfile)",
+      "Edit(railway.json)",
+      "Edit(vercel.json)",
+      "Edit(.env)",
+      "Edit(.env.local)",
+      "Edit(.env.production)",
+      "Edit(package.json)",
+      "Edit(package-lock.json)",
+      "Edit(pyproject.toml)",
+      "Edit(uv.lock)",
+      "Write(backend/alembic/versions/**)",
+      "Write(.github/workflows/**)",
+      "Write(.claude/settings.json)",
+      "Write(.env*)"
+    ]
+  }
+}
