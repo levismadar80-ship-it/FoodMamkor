@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-553: followers page for producer dashboard
+
+`feat(MEH-553)`: adds `/producer/dashboard/followers` page. Auth-guarded (producer role only). Fetches `follower_count` from `/producers/me/analytics` + `slug` from `/producers/me` in parallel. Three states: loading → zero (EmptyState with share CTA) → count>0 (count display + "רשימה בקרוב" placeholder + same share CTA). No new backend endpoint — follower list deferred.
+
+Closes MEH-553.
+
 ## 2026-05-10 — MEH-529: add 3 categories — wine/beer, spices, chocolate
 
 `feat(MEH-529)`: added 3 categories to `backend/seed_data.py:CATEGORIES` (lines 25-27): יין, בירה ומשקאות 🍷 · תבלינים וצמחי תיבול 🌶️ · שוקולד וממתקים בוטיק 🍫. No schema change — seed data only. Unblocks Persona 6 (יקב זעיר) registration and two high-growth Israeli producer categories.
