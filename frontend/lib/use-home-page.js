@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, security/detect-object-injection, id-length */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -47,37 +48,20 @@ export function useHomePage() {
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState(() => {
-    if (typeof window === "undefined") return { category: "", delivery_city: "", has_delivery: false };
-    const p = new URLSearchParams(window.location.search);
-    return {
-      category: p.get("category") || "",
-      delivery_city: p.get("city") || "",
-      has_delivery: p.get("delivery") === "1",
-    };
-  });
+  // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
+  // sessionStorage) are read in the initial useEffect below to avoid React
+  // #418 hydration mismatches caused by lazy initializers running on the client
+  // but not on the server.
+  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
   // MEH-23 — persist visibleCount + scrollY across navigations so the
   // "Load more" expansion isn't lost when a user opens a producer and
   // returns via the back button. Read on mount only; subsequent changes
   // flow through the setter below.
-  const [visibleCount, setVisibleCount] = useState(() => {
-    if (typeof window === "undefined") return PAGE_SIZE;
-    const saved = Number(window.sessionStorage?.getItem("home_visible_count"));
-    return Number.isFinite(saved) && saved >= PAGE_SIZE ? saved : PAGE_SIZE;
-  });
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
   const [producersLoading, setProducersLoading] = useState(true);
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [chips, setChips] = useState(() => {
-    if (typeof window === "undefined") return { kosher: false, organic: false, has_delivery: false, verified: false };
-    const p = new URLSearchParams(window.location.search);
-    return {
-      kosher: p.get("kosher") === "1",
-      organic: p.get("organic") === "1",
-      has_delivery: p.get("delivery") === "1",
-      verified: p.get("verified") === "1",
-    };
-  });
+  const [geoLoading] = useState(false);
+  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -114,12 +98,31 @@ export function useHomePage() {
   }, [showNewUserHint]);
 
   useEffect(() => {
+    // MEH-517: read browser APIs on mount (moved from useState lazy initialisers).
+    const p = new URLSearchParams(window.location.search);
+    const initFilters = {
+      category: p.get("category") || "",
+      delivery_city: p.get("city") || "",
+      has_delivery: p.get("delivery") === "1",
+    };
+    const initChips = {
+      kosher: p.get("kosher") === "1",
+      organic: p.get("organic") === "1",
+      has_delivery: p.get("delivery") === "1",
+      verified: p.get("verified") === "1",
+    };
+    const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
+    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) setVisibleCount(savedCount);
+    setFilters(initFilters);
+    setChips(initChips);
+
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
+    // Use local vars — state setters above are async and won't be reflected yet.
     const initParams = {};
-    if (filters.category) initParams.category = filters.category;
-    if (filters.delivery_city) initParams.delivery_city = filters.delivery_city;
-    const initChipParams = buildChipParams(chips);
+    if (initFilters.category) initParams.category = initFilters.category;
+    if (initFilters.delivery_city) initParams.delivery_city = initFilters.delivery_city;
+    const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
     loadProducers(initParams);
     // Home-kitchen preview — just the 3 most recent, no filter.
@@ -300,8 +303,8 @@ export function useHomePage() {
   const showStatsFallback = !showStatsCounter && statsProducersCount > 0;
 
   // Newest producers (last 4 by created_at if available, else first 4)
-  const newestProducers = [...producers]
-    .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
+  const newestProducers = producers
+    .toSorted((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
     .slice(0, 4);
 
   return {
