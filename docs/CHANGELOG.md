@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-541: docs/COPY_BANK.md — copy decisions source-of-truth
+
+`docs(MEH-541)`: created `docs/COPY_BANK.md` — single source of truth for all copy decisions. Documents 6 sections: Hero & Header, Trust signals, Content sections, Producer-facing copy, Footer & CTAs, and a Decision log. Covers all copy merged to staging as of 2026-05-10. Entries are keyed to MEH issues and i18n keys. Pending decisions (MEH-520, MEH-522-527, MEH-534-540) noted with links.
+
+- **`docs/COPY_BANK.md`** — new file, 200+ lines, 6 sections.
+
 ## 2026-05-10 — MEH-208 / MEH-209: /about editorial paragraph 1 sub copy fix
 
 `fix(MEH-208/MEH-209)`: paragraph 1 sub-headline on `/about` ("אוכל אמיתי קרוב אלייך" section) had a weak, arrhythmic closer — "העסקים שתמיד היו — רק שעכשיו את רואה אותם." Replaced with "כל מה שקרוב אלייך, במקום אחד." — direct, rhythm-preserving, non-boastful. Both tickets prescribed the identical change; bundled into one PR. H2 and paragraphs 2+3 untouched.
