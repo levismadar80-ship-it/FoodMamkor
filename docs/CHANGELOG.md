@@ -8,6 +8,18 @@
 
 Closes MEH-529.
 
+## 2026-05-10 — MEH-289: producer-dashboard empty states (4/6 shipped)
+
+`feat(MEH-289)`: updated 4 of 6 producer-dashboard empty states to the 3-line structure (mה זה / למה זה חשוב / פעולה). Copy verbatim from MEH-289 spec. Two locations flagged as requiring new UI sections (followers + reviews StatCards only in current UI — scope expansion needed, not copy-only).
+
+- **`frontend/app/[locale]/producer/dashboard/group-buys/page.js`** — replaced generic "עדיין אין קבוצות רכש" div with EmptyState component; spec copy + CTA "צרי קבוצה ראשונה"
+- **`frontend/app/[locale]/producer/dashboard/events/new/page.js`** — added educational line above form + updated description placeholder with visibility context
+- **`frontend/app/[locale]/settings/page.jsx`** — replaced passive "טרם הוספת מוצרים לפרופיל." with EmptyState; spec copy + CTA "הוסיפי מוצר ראשון"
+- **`frontend/app/[locale]/neighbor/NeighborClient.jsx`** — producer branch (`user.role === "producer"`) now shows spec copy with "חזרי לדשבורד העסק" + "פרסם מוצר חד-פעמי" CTAs; consumer branch unchanged
+- **Followers (4) + Reviews (5)** — FLAGGED: no `/producer/dashboard/followers` or `/producer/dashboard/reviews` pages exist; both are StatCards only. Requires new UI section, out of spec "copy-only + no new routes" constraint.
+
+Closes MEH-289.
+
 ## 2026-05-10 — MEH-344: /batch slash command
 
 `feat(MEH-344)`: added `.claude/commands/batch.md` — a single-file execution playbook for running batches of Linear MEH-XXX tasks end-to-end. Per Boris Cherny + "Scaling Claude Code 2026" guidance, kept this as a slash command rather than a skill (rejected the 6-file `mehamakor-batch` skill option to avoid the long-list-of-bespoke-commands anti-pattern). 11 sections: pre-flight checks, per-task workflow (10 steps), 3 auto-fix patterns (package-lock drift, ESLint warnings, pre-commit filename bug — MEH-518), MEH-472 hybrid brand-voice guard with grep canary, STOP conditions (8), Hebrew RTL terminal warning, Linear `Closes MEH-XX` integration, MEH-498 3-Tier Verification reference (no duplication), post-merge autonomous verification via Vercel + Sentry MCPs, `autonomy-cache.json` GREEN/YELLOW/RED routing, and `.claude/settings.local.json` (gitignored, 30 deny patterns) explanation.
