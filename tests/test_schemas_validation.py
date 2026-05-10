@@ -1,7 +1,8 @@
-"""MEH-556 — Extend MEH-555 letter validation to 3 sibling fields.
+"""MEH-556 — Extend MEH-555 letter validation to 5 sibling fields.
 
 Tests for ProducerCreate.name, HomeProductCreate.title,
-ExperienceCreate.title — all must reject strings with fewer than
+ExperienceCreate.title, ProducerRegister.producer_name,
+ProductCreate.name — all must reject strings with fewer than
 3 Hebrew/Latin letter characters.
 
 Note: these are schema-layer tests that don't require HTTP endpoints,
@@ -31,7 +32,7 @@ def test_producer_name_junk_rejected(client):
 
 
 def test_producer_name_valid_accepted(client):
-    """'מאפיית רחל' has many letter chars → 201."""
+    """'מאפיית רחל' has many letter chars → 200."""
     r = client.post(
         "/auth/register/producer",
         json={
@@ -43,7 +44,7 @@ def test_producer_name_valid_accepted(client):
             "phone": "+972501234568",
         },
     )
-    assert r.status_code == 201
+    assert r.status_code == 200
 
 
 # ---------- HomeProductCreate.title ----------
@@ -131,3 +132,83 @@ def test_experience_title_valid_accepted(client):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code in (200, 201)
+
+
+# ---------- ProducerRegister.producer_name ----------
+
+
+def test_producer_register_name_junk_rejected(client):
+    """'???' has 0 letter chars → 422 from /auth/register/producer."""
+    r = client.post(
+        "/auth/register/producer",
+        json={
+            "email": "reg_junk@example.com",
+            "name": "Valid Name",
+            "password": "SecurePass12!",
+            "producer_name": "???",
+            "primary_contact_method": "whatsapp",
+            "phone": "+972501234569",
+        },
+    )
+    assert r.status_code == 422
+
+
+def test_producer_register_name_valid_accepted(client):
+    """'מאפיית רחל' has letter chars → 200."""
+    r = client.post(
+        "/auth/register/producer",
+        json={
+            "email": "reg_valid@example.com",
+            "name": "Valid Name",
+            "password": "SecurePass12!",
+            "producer_name": "מאפיית רחל",
+            "primary_contact_method": "whatsapp",
+            "phone": "+972501234570",
+        },
+    )
+    assert r.status_code == 200
+
+
+# ---------- ProductCreate.name ----------
+
+
+def test_product_name_junk_rejected(client):
+    """'???' has 0 letter chars → 422 from /producers/me/products."""
+    # Register any user — Pydantic validates body before auth runs.
+    reg = client.post(
+        "/auth/register",
+        json={"email": "prod_junk@example.com", "name": "Test User", "password": "SecurePass12!"},
+    )
+    assert reg.status_code == 200
+    token = reg.json()["access_token"]
+
+    r = client.post(
+        "/producers/me/products",
+        json={"name": "???", "price_min": "10.00"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 422
+
+
+def test_product_name_valid_accepted(client):
+    """'לחם שיפון' has letter chars → 201 from /producers/me/products."""
+    reg = client.post(
+        "/auth/register/producer",
+        json={
+            "email": "prod_valid@example.com",
+            "name": "Valid Name",
+            "password": "SecurePass12!",
+            "producer_name": "חוות הבדיקה",
+            "primary_contact_method": "whatsapp",
+            "phone": "+972501234571",
+        },
+    )
+    assert reg.status_code == 200
+    token = reg.json()["access_token"]
+
+    r = client.post(
+        "/producers/me/products",
+        json={"name": "לחם שיפון", "price_min": "10.00"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 201

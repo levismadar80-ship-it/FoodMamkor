@@ -2,9 +2,9 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
-## 2026-05-10 — MEH-556: Extend letter validation to 3 sibling fields
+## 2026-05-10 — MEH-556: Extend letter validation to 5 sibling fields
 
-`fix(MEH-556)`: extracts `_min_letters_validator` shared helper in `schemas.py` (single regex source of truth: `_LETTER_REGEX`). Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (same behavior, same field-specific error message). 6 new pytest cases in `tests/test_schemas_validation.py`.
+`fix(MEH-556)`: extracts `_min_letters_validator` shared helper in `schemas.py` (single regex source of truth: `_LETTER_REGEX`). Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`, `ProducerRegister.producer_name`, `ProductCreate.name`. Refactors `CategoryRequestCreate._validate_letters` to use helper (same behavior, same field-specific error message). 10 new pytest cases in `tests/test_schemas_validation.py` (2 per field).
 
 Closes MEH-556.
 

@@ -84,6 +84,11 @@ class ProducerRegister(BaseModel):
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
+    @field_validator("producer_name")
+    @classmethod
+    def _validate_producer_name_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
+
     @field_validator("description")
     @classmethod
     def _sanitize_description(cls, v):
@@ -190,6 +195,11 @@ class ProductCreate(BaseModel):
     is_gluten_free: bool = False
     is_vegan: bool = False
     is_lactose_free: bool = False
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
