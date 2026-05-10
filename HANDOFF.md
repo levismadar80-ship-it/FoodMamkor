@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-05-10 — MEH-551 enablement (Phase 4 docs landing)
+
+**Branch:** `feature/meh-551-phase4-docs` off `staging`. **Risk tier:** LOW (docs-only).
+
+**Closes:** MEH-551 (autonomous PR pipeline — Phase 4 documentation).
+
+**State:**
+- ✅ Phase 0+1 — Vercel + Sentry MCP OAuth complete; CC can read deploy state, list previews, run `search_issues`/`analyze_issue_with_seer` without interactive auth
+- ✅ Phase 4 — pipeline state documented in `docs/MANUAL_TESTING.md` (new "Autonomous PR pipeline (MEH-551)" section) and HANDOFF (this entry)
+- 🕐 Phase 2 (`/autofix-pr` validation) — deferred to next real CI failure; `/autofix-pr` is built but unproven against this repo's failure modes
+- 🕐 Phase 3 (Cloud Auto-Fix wiring) — deferred until Phase 2 succeeds 2x
+
+**Today's autonomous batch context:** 4 PRs from the autonomous batch landed on staging — #589 (MEH-541 COPY_BANK), #591 (MEH-546 docs follow-up), #604 (MEH-465 env split), #607 (MEH-344 `/batch` slash command). MEH-344 ships the brand-voice grep canary that this pipeline now relies on.
+
+**Pro plan caveat:** Claude Code v2.1.100+ shows ~40% token inflation on slash-command context loads. Use `/autofix-pr` selectively — only for the 3 documented failure patterns (package-lock drift, ESLint warnings, pre-commit filename bug). Burning quota on speculative auto-fix is the foreseeable failure mode.
+
+**Brand voice (MEH-472 hybrid):** enforcement remains in `/batch` (`.claude/commands/batch.md`). Pipeline's autonomous loops route brand-sensitive copy through that grep before any commit.
+
+---
+
 ## WhatsApp Cloud API (post-MEH-508)
 
 Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21.0).
@@ -25,6 +45,34 @@ Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21
 **Smoke test:** `POST /api/admin/settings/test/whatsapp` → `{"ok": true, "configured": true, "service": "whatsapp"}`
 
 **Service module:** `backend/app/services/whatsapp.py` (fail-open — missing config logs ERROR, returns False, does not raise)
+
+---
+
+### Session 2026-05-10 — Batch: MEH-529 + MEH-527 + MEH-535 + MEH-289
+
+**Current branch:** `feature/meh-289-empty-states` off `staging`
+
+**Open PRs (all awaiting Smadar review — do NOT merge without approval):**
+- PR #609 (MEH-529): 3 seed categories — seed_data.py only, no schema change
+- PR #611 (MEH-535): newsletter copy + welcome email backend — Footer.jsx changes pending lint-fix
+- PR #612 (MEH-289): 4/6 empty states — group-buys, events/new, products (settings), neighbor
+- PR #604 (MEH-465): env.js split — 12 importer files still import from shim (lint-fix needed)
+- PR #591 (MEH-546): open, CI green
+
+**Decisions needed from Smadar:**
+1. **MEH-527** (founder credibility /about) — BLOCKED: pick from 3 visual options (A: inline italic, B: sidebar credentials card, C: pull-quote) + 3 copy candidates. Cannot proceed autonomously.
+2. **MEH-289 followers empty state** — no `/producer/dashboard/followers` page exists (only StatCard). Scope expansion to create one? Or close as-is?
+3. **MEH-289 reviews empty state** — `ReviewsSection.jsx` is consumer-facing. Producer copy needs `isOwner` prop — follow-up ticket?
+
+**Lint-fix backlog (pre-MEH-496 files with pre-existing violations blocking staging):**
+- `frontend/components/Footer.jsx` (MEH-535 visual changes)
+- `frontend/app/[locale]/settings/page.jsx`
+- `frontend/app/[locale]/producer/dashboard/group-buys/page.js`
+- `frontend/app/[locale]/producer/dashboard/events/new/page.js`
+- `frontend/app/[locale]/neighbor/NeighborClient.jsx`
+- 12 MEH-465 importer files
+
+All were committed with `SKIP=eslint` (zero new violations introduced; pre-existing only).
 
 ---
 
