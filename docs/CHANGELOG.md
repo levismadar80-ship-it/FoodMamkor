@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-541: docs/COPY_BANK.md — copy decisions source-of-truth
+
+`docs(MEH-541)`: created `docs/COPY_BANK.md` — single source of truth for all copy decisions. Documents 6 sections: Hero & Header, Trust signals, Content sections, Producer-facing copy, Footer & CTAs, and a Decision log. Covers all copy merged to staging as of 2026-05-10. Entries are keyed to MEH issues and i18n keys. Pending decisions (MEH-520, MEH-522-527, MEH-534-540) noted with links.
+
+- **`docs/COPY_BANK.md`** — new file, 200+ lines, 6 sections.
+
 ## 2026-05-10 — MEH-517: fix React #418 hydration mismatch on homepage (useState lazy initializers)
 
 `fix(MEH-517)`: three `useState` lazy initializers in `frontend/lib/use-home-page.js` were reading `window.location.search` and `sessionStorage` during render — the server returns static defaults, the client reruns with URL params, causing React error #418. Moved all browser API reads into the existing initial-load `useEffect`, using local variables for the first `loadProducers` call (since state setters are async).
