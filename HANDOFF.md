@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-05-10 — MEH-551 enablement (Phase 4 docs landing)
+
+**Branch:** `feature/meh-551-phase4-docs` off `staging`. **Risk tier:** LOW (docs-only).
+
+**Closes:** MEH-551 (autonomous PR pipeline — Phase 4 documentation).
+
+**State:**
+- ✅ Phase 0+1 — Vercel + Sentry MCP OAuth complete; CC can read deploy state, list previews, run `search_issues`/`analyze_issue_with_seer` without interactive auth
+- ✅ Phase 4 — pipeline state documented in `docs/MANUAL_TESTING.md` (new "Autonomous PR pipeline (MEH-551)" section) and HANDOFF (this entry)
+- 🕐 Phase 2 (`/autofix-pr` validation) — deferred to next real CI failure; `/autofix-pr` is built but unproven against this repo's failure modes
+- 🕐 Phase 3 (Cloud Auto-Fix wiring) — deferred until Phase 2 succeeds 2x
+
+**Today's autonomous batch context:** 4 PRs from the autonomous batch landed on staging — #589 (MEH-541 COPY_BANK), #591 (MEH-546 docs follow-up), #604 (MEH-465 env split), #607 (MEH-344 `/batch` slash command). MEH-344 ships the brand-voice grep canary that this pipeline now relies on.
+
+**Pro plan caveat:** Claude Code v2.1.100+ shows ~40% token inflation on slash-command context loads. Use `/autofix-pr` selectively — only for the 3 documented failure patterns (package-lock drift, ESLint warnings, pre-commit filename bug). Burning quota on speculative auto-fix is the foreseeable failure mode.
+
+**Brand voice (MEH-472 hybrid):** enforcement remains in `/batch` (`.claude/commands/batch.md`). Pipeline's autonomous loops route brand-sensitive copy through that grep before any commit.
+
+---
+
 ## WhatsApp Cloud API (post-MEH-508)
 
 Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21.0).
