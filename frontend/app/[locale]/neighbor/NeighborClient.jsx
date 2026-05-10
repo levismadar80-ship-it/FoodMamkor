@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Plus, X, House } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -190,24 +191,54 @@ export default function NeighborClient() {
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl" aria-hidden="true">
               🏡
             </div>
-            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
-              {city
-                ? "אין מוצרים באזור הזה עדיין 🌱"
-                : "אין עדיין מוצרים ביתיים 🌱"}
-            </h2>
-            <p className="text-site-muted mb-6 max-w-md mx-auto">
-              {user
-                ? "היי את הראשונה לפרסם מוצר בית!"
-                : "התחברי כדי לפרסם מוצר משלך."}
-            </p>
-            {user && !showForm && (
-              <button
-                type="button"
-                onClick={() => setShowForm(true)}
-                className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-light transition font-medium"
-              >
-                פרסמי מוצר +
-              </button>
+            {user?.role === "producer" ? (
+              <>
+                <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+                  מהמטבח של השכן = מכירה חד-פעמית מהבית
+                </h2>
+                <p className="text-site-muted mb-6 max-w-md mx-auto">
+                  זה לא העסק שלך — זה פיצ׳ר נפרד לאנשים שמוכרים פעם-פעמיים מהמטבח (עוגה לחג, מרק שהכינו יותר מדי). העסק שלך מופיע ב-/producers.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link
+                    href="/producer/dashboard"
+                    className="inline-block bg-primary text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-primary-dark transition"
+                  >
+                    חזרי לדשבורד העסק
+                  </Link>
+                  {!showForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowForm(true)}
+                      className="inline-block border border-primary text-primary rounded-full px-6 py-3 text-sm font-medium hover:bg-light transition"
+                    >
+                      אני רוצה לפרסם מוצר חד-פעמי
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+                  {city
+                    ? "אין מוצרים באזור הזה עדיין 🌱"
+                    : "אין עדיין מוצרים ביתיים 🌱"}
+                </h2>
+                <p className="text-site-muted mb-6 max-w-md mx-auto">
+                  {user
+                    ? "היי את הראשונה לפרסם מוצר בית!"
+                    : "התחברי כדי לפרסם מוצר משלך."}
+                </p>
+                {user && !showForm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(true)}
+                    className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-light transition font-medium"
+                  >
+                    פרסמי מוצר +
+                  </button>
+                )}
+              </>
             )}
           </div>
         ) : (

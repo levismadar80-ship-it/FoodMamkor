@@ -73,6 +73,10 @@ export default function NewEventPage() {
         </div>
       )}
 
+      <p className="text-sm text-site-muted bg-light rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+        אירועים = סדנה, סיור, יום פתיחה, או כל מפגש עם לקוחות. יופיעו ב-/events ובעמוד שלך. מושלם להבאת לקוחות חדשות.
+      </p>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <Field id="title" label="שם האירוע" required>
           <input
@@ -93,7 +97,7 @@ export default function NewEventPage() {
             value={form.description}
             onChange={update("description")}
             className="input-base resize-none"
-            placeholder="ספרי מה יקרה, מה כלול, מה להביא..."
+            placeholder="אירועים נחשפים ללקוחות ב-/events ובעמוד שלך. ספרי: מה יקרה, מי מוזמנת, מה כלול במחיר, מה להביא."
           />
         </Field>
 

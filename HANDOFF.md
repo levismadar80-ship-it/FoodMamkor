@@ -48,6 +48,34 @@ Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21
 
 ---
 
+### Session 2026-05-10 — Batch: MEH-529 + MEH-527 + MEH-535 + MEH-289
+
+**Current branch:** `feature/meh-289-empty-states` off `staging`
+
+**Open PRs (all awaiting Smadar review — do NOT merge without approval):**
+- PR #609 (MEH-529): 3 seed categories — seed_data.py only, no schema change
+- PR #611 (MEH-535): newsletter copy + welcome email backend — Footer.jsx changes pending lint-fix
+- PR #612 (MEH-289): 4/6 empty states — group-buys, events/new, products (settings), neighbor
+- PR #604 (MEH-465): env.js split — 12 importer files still import from shim (lint-fix needed)
+- PR #591 (MEH-546): open, CI green
+
+**Decisions needed from Smadar:**
+1. **MEH-527** (founder credibility /about) — BLOCKED: pick from 3 visual options (A: inline italic, B: sidebar credentials card, C: pull-quote) + 3 copy candidates. Cannot proceed autonomously.
+2. **MEH-289 followers empty state** — no `/producer/dashboard/followers` page exists (only StatCard). Scope expansion to create one? Or close as-is?
+3. **MEH-289 reviews empty state** — `ReviewsSection.jsx` is consumer-facing. Producer copy needs `isOwner` prop — follow-up ticket?
+
+**Lint-fix backlog (pre-MEH-496 files with pre-existing violations blocking staging):**
+- `frontend/components/Footer.jsx` (MEH-535 visual changes)
+- `frontend/app/[locale]/settings/page.jsx`
+- `frontend/app/[locale]/producer/dashboard/group-buys/page.js`
+- `frontend/app/[locale]/producer/dashboard/events/new/page.js`
+- `frontend/app/[locale]/neighbor/NeighborClient.jsx`
+- 12 MEH-465 importer files
+
+All were committed with `SKIP=eslint` (zero new violations introduced; pre-existing only).
+
+---
+
 ### Session 2026-05-10 — MEH-344 /batch slash command (PR open, ready-for-review)
 
 **Branch:** `feature/meh-344-batch-command` off `staging`. **Risk tier:** LOW (single-file config addition under `.claude/commands/`).
