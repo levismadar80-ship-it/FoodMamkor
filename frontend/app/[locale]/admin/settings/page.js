@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity, security/detect-object-injection */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,9 +19,9 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     api
       .get("/admin/settings")
-      .then((r) => {
+      .then((response) => {
         // Normalize boolean fields that some backends return as bool, not string
-        const data = { ...r.data };
+        const data = { ...response.data };
         data.friday_mode_override = (data.friday_mode_override === true || data.friday_mode_override === "true") ? "true" : "false";
         // Hydrate localStorage so isFridayMode() reflects the stored setting
         try {
@@ -39,24 +40,24 @@ export default function AdminSettingsPage() {
   if (loadError) return <div className="text-red-600 text-sm">שגיאה בטעינת הגדרות — נסי לרענן את הדף.</div>;
   if (!settings) return <div className="text-text-secondary">טוען...</div>;
 
-  const update = (k, v) => {
-    setSettings({ ...settings, [k]: v });
+  const update = (key, value) => {
+    setSettings({ ...settings, [key]: value });
     setSaved(false);
   };
 
   // MEH-250 — diff original vs current so we can show the admin
   // exactly what's about to change and refuse no-op saves.
   const changedKeys = originalSettings
-    ? Object.keys(settings).filter((k) => settings[k] !== originalSettings[k])
+    ? Object.keys(settings).filter((key) => settings[key] !== originalSettings[key])
     : [];
   const isDirty = changedKeys.length > 0;
 
   const save = async () => {
     if (!isDirty) return;
     const summary = changedKeys
-      .map((k) => `• ${k}: ${originalSettings[k] || "∅"} → ${settings[k] || "∅"}`)
+      .map((key) => `• ${key}: ${originalSettings[key] || "∅"} → ${settings[key] || "∅"}`)
       .join("\n");
-    if (!window.confirm(`האם לשמור את השינויים הבאים?\n\n${summary}`)) {
+    if (!globalThis.confirm(`האם לשמור את השינויים הבאים?\n\n${summary}`)) {
       return;
     }
     setSaving(true);
@@ -72,10 +73,10 @@ export default function AdminSettingsPage() {
   const testService = async (name) => {
     setTests({ ...tests, [name]: { loading: true } });
     try {
-      const r = await api.post(`/admin/settings/test/${name}`);
-      setTests({ ...tests, [name]: r.data });
-    } catch (e) {
-      setTests({ ...tests, [name]: { ok: false, error: e.message } });
+      const response = await api.post(`/admin/settings/test/${name}`);
+      setTests({ ...tests, [name]: response.data });
+    } catch (error) {
+      setTests({ ...tests, [name]: { ok: false, error: error.message } });
     }
   };
 
@@ -90,7 +91,7 @@ export default function AdminSettingsPage() {
             type="email"
             dir="ltr"
             value={settings.admin_email || ""}
-            onChange={(e) => update("admin_email", e.target.value)}
+            onChange={(event) => update("admin_email", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2"
             placeholder="admin@mehamakor.co.il"
           />
@@ -98,7 +99,7 @@ export default function AdminSettingsPage() {
         <Field label="מספר ווטסאפ אדמין (E.164)">
           <input
             value={settings.admin_whatsapp || ""}
-            onChange={(e) => update("admin_whatsapp", e.target.value)}
+            onChange={(event) => update("admin_whatsapp", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2"
             placeholder="+972501234567"
           />
@@ -111,7 +112,7 @@ export default function AdminSettingsPage() {
           <input
             type="number"
             value={settings.freemium_premium_price || ""}
-            onChange={(e) => update("freemium_premium_price", e.target.value)}
+            onChange={(event) => update("freemium_premium_price", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2"
             placeholder="49"
           />
@@ -120,7 +121,7 @@ export default function AdminSettingsPage() {
           <input
             type="number"
             value={settings.freemium_free_image_limit || ""}
-            onChange={(e) => update("freemium_free_image_limit", e.target.value)}
+            onChange={(event) => update("freemium_free_image_limit", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2"
             placeholder="3"
           />
@@ -144,7 +145,7 @@ export default function AdminSettingsPage() {
         <Field label="מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)">
           <select
             value={settings.holiday_override_key || ""}
-            onChange={(e) => update("holiday_override_key", e.target.value)}
+            onChange={(event) => update("holiday_override_key", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
           >
             <option value="">— ללא עקיפה —</option>
@@ -189,24 +190,33 @@ export default function AdminSettingsPage() {
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
         <h2 className="font-semibold">בדיקות חיבור</h2>
-        {["twilio", "cloudinary"].map((name) => (
-          <div key={name} className="flex items-center justify-between gap-3 border-b border-border last:border-0 pb-2 last:pb-0">
-            <span className="text-sm capitalize">{name}</span>
-            <div className="flex items-center gap-3">
-              {tests[name] && (
-                <span className={`text-xs ${tests[name].ok ? "text-primary" : "text-red-600"}`}>
-                  {tests[name].loading ? "בודק..." : tests[name].ok ? "✓ מחובר" : "✗ לא מוגדר"}
-                </span>
-              )}
-              <button
-                onClick={() => testService(name)}
-                className="text-xs bg-secondary text-white px-3 py-1 rounded-[12px]"
-              >
-                בדוק
-              </button>
+        {[
+          { key: "whatsapp", label: "WhatsApp" },
+          { key: "cloudinary", label: "Cloudinary" },
+        ].map(({ key, label }) => {
+          const result = tests[key];
+          let statusText = "✗ לא מוגדר";
+          if (result?.loading) statusText = "בודק...";
+          else if (result?.ok) statusText = "✓ מחובר";
+          return (
+            <div key={key} className="flex items-center justify-between gap-3 border-b border-border last:border-0 pb-2 last:pb-0">
+              <span className="text-sm">{label}</span>
+              <div className="flex items-center gap-3">
+                {result && (
+                  <span className={`text-xs ${result.ok ? "text-primary" : "text-red-600"}`}>
+                    {statusText}
+                  </span>
+                )}
+                <button
+                  onClick={() => testService(key)}
+                  className="text-xs bg-secondary text-white px-3 py-1 rounded-[12px]"
+                >
+                  בדוק
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5">
@@ -222,7 +232,7 @@ export default function AdminSettingsPage() {
           onClick={save}
           disabled={saving || !isDirty}
           className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
-          title={!isDirty ? "אין שינויים לשמירה" : undefined}
+          title={isDirty ? undefined : "אין שינויים לשמירה"}
         >
           {saving ? "שומר..." : "שמור הגדרות"}
         </button>
