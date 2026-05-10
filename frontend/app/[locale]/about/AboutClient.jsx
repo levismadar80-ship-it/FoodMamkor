@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, max-lines-per-function */
 "use client";
 
 import Link from "next/link";
@@ -10,16 +11,16 @@ import ParallaxQuote from "@/components/ParallaxQuote";
 
 const TIPS = [
   {
-    q: "למה ביצים אורגניות שוות את המחיר?",
-    a: "תרנגולות אורגניות גדלות בחוץ, אוכלות מזון ללא חומרי הדברה ואנטיביוטיקה. הביצים שלהן מכילות יותר אומגה-3, ויטמין E ונוגדי חמצון. לא שוני דרמטי — אבל פחות חשיפה לכימיקלים, וחיים יותר אנושיים לתרנגולות.",
+    question: "למה ביצים אורגניות שוות את המחיר?",
+    answer: "תרנגולות אורגניות גדלות בחוץ, אוכלות מזון ללא חומרי הדברה ואנטיביוטיקה. הביצים שלהן מכילות יותר אומגה-3, ויטמין E ונוגדי חמצון. לא שוני דרמטי — אבל פחות חשיפה לכימיקלים, וחיים יותר אנושיים לתרנגולות.",
   },
   {
-    q: "מה זה grass-fed בישראל?",
-    a: "בסופר — רוב הבקר גדל בפיטום על תירס ותוספות. Grass-fed = פרות שחיו כל חייהן במרעה, אוכלות עשב טבעי. בישראל זה נדיר ויקר יותר — אבל הבשר בעל טעם עמוק יותר, שומן צהבהב אופייני, ויותר אומגה-3. מגדלים כמו גיליס מרמת הגולן ומרעה גולן הם דוגמאות קלאסיות.",
+    question: "מה זה grass-fed בישראל?",
+    answer: "בסופר — רוב הבקר גדל בפיטום על תירס ותוספות. Grass-fed = פרות שחיו כל חייהן במרעה, אוכלות עשב טבעי. בישראל זה נדיר ויקר יותר — אבל הבשר בעל טעם עמוק יותר, שומן צהבהב אופייני, ויותר אומגה-3. מגדלים כמו גיליס מרמת הגולן ומרעה גולן הם דוגמאות קלאסיות.",
   },
   {
-    q: "דבש מהסופר vs. דבש לא מחומם — מה ההבדל?",
-    a: "דבש סופר עובר פסטור — חימום שהורס אנזימים, נוגדי חמצון ואבקת פרחים. דבש לא מחומם שומר על הכל — טעם עשיר יותר, תכונות אנטי-בקטריאליות טבעיות. איך מזהים? עבה יותר, לא שקוף לגמרי, לפעמים מתגבש — וזה סימן טוב.",
+    question: "דבש מהסופר vs. דבש לא מחומם — מה ההבדל?",
+    answer: "דבש סופר עובר פסטור — חימום שהורס אנזימים, נוגדי חמצון ואבקת פרחים. דבש לא מחומם שומר על הכל — טעם עשיר יותר, תכונות אנטי-בקטריאליות טבעיות. איך מזהים? עבה יותר, לא שקוף לגמרי, לפעמים מתגבש — וזה סימן טוב.",
   },
 ];
 
@@ -38,8 +39,8 @@ export default function AboutPage() {
   const [openTip, setOpenTip] = useState(null);
   const [imgFailed, setImgFailed] = useState(false);
 
-  const handleContact = async (e) => {
-    e.preventDefault();
+  const handleContact = async (event) => {
+    event.preventDefault();
     setContactStatus("loading");
     setContactMsg("");
     try {
@@ -47,9 +48,9 @@ export default function AboutPage() {
       setContactStatus("success");
       setContactMsg("תודה! נחזור אליך בקרוב 🌿");
       setForm({ name: "", email: "", message: "" });
-    } catch (err) {
+    } catch (error) {
       setContactStatus("error");
-      setContactMsg(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setContactMsg(error.response?.data?.detail || "משהו השתבש, נסי שוב");
     }
   };
 
@@ -153,7 +154,7 @@ export default function AboutPage() {
               <p className="text-light/90 leading-relaxed font-body">
                 בלי לנסוע שעה. בלי לחפש שבועות.
                 <br />
-                העסקים שתמיד היו — רק שעכשיו את רואה אותם.
+                כל מה שקרוב אלייך, במקום אחד.
               </p>
             </div>
             <div className="text-center">
@@ -191,7 +192,7 @@ export default function AboutPage() {
                 aria-expanded={openTip === i}
                 aria-controls={`tip-panel-${i}`}
               >
-                <span>{tip.q}</span>
+                <span>{tip.question}</span>
                 {openTip === i ? (
                   <Minus size={18} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
                 ) : (
@@ -200,7 +201,7 @@ export default function AboutPage() {
               </button>
               {openTip === i && (
                 <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-site-text/85 leading-relaxed border-t border-border">
-                  {tip.a}
+                  {tip.answer}
                 </div>
               )}
             </div>
@@ -234,13 +235,13 @@ export default function AboutPage() {
             לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקות:
           </p>
           <ul className="space-y-4">
-            {criteria.map((c, i) => (
+            {criteria.map((criterion, i) => (
               <li
                 key={i}
                 className="flex items-start gap-3 bg-background rounded-[16px] p-4 border border-border"
               >
                 <span className="text-primary font-bold text-lg mt-0.5">✓</span>
-                <span className="text-lg">{c}</span>
+                <span className="text-lg">{criterion}</span>
               </li>
             ))}
           </ul>
@@ -290,7 +291,7 @@ export default function AboutPage() {
                 required
                 placeholder="השם המלא שלך"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
                 className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
               />
             </div>
@@ -304,7 +305,7 @@ export default function AboutPage() {
                 required
                 placeholder="you@example.com"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(event) => setForm({ ...form, email: event.target.value })}
                 className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
                 dir="ltr"
               />
@@ -319,7 +320,7 @@ export default function AboutPage() {
                 rows={4}
                 placeholder="ספרי לנו על מה את רוצה לדבר..."
                 value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                onChange={(event) => setForm({ ...form, message: event.target.value })}
                 className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-none"
               />
             </div>
