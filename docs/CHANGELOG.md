@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-535: newsletter copy upgrade + welcome email
+
+`feat(MEH-535)`: upgrades footer newsletter CTA from generic to specific value prop. Adds tagline ("סיפור של עסק חדש בכל שבוע, ישירות אל המייל שלך") and frequency promise ("פעם בשבוע. בלי spam. אפשר לבטל בכל רגע.") in `Footer.jsx`. CTA button changed from "→" to "להירשם ✨" (via i18n). Adds welcome email on successful subscribe (`_send_newsletter_welcome` helper in `marketing.py`) — RTL Hebrew HTML email, fail-open, unsubscribe link included. No API contract change, no schema change, rate limiter unchanged.
+
+Closes MEH-535.
+
 ## 2026-05-10 — MEH-344: /batch slash command
 
 `feat(MEH-344)`: added `.claude/commands/batch.md` — a single-file execution playbook for running batches of Linear MEH-XXX tasks end-to-end. Per Boris Cherny + "Scaling Claude Code 2026" guidance, kept this as a slash command rather than a skill (rejected the 6-file `mehamakor-batch` skill option to avoid the long-list-of-bespoke-commands anti-pattern). 11 sections: pre-flight checks, per-task workflow (10 steps), 3 auto-fix patterns (package-lock drift, ESLint warnings, pre-commit filename bug — MEH-518), MEH-472 hybrid brand-voice guard with grep canary, STOP conditions (8), Hebrew RTL terminal warning, Linear `Closes MEH-XX` integration, MEH-498 3-Tier Verification reference (no duplication), post-merge autonomous verification via Vercel + Sentry MCPs, `autonomy-cache.json` GREEN/YELLOW/RED routing, and `.claude/settings.local.json` (gitignored, 30 deny patterns) explanation.
