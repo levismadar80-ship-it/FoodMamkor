@@ -2,6 +2,14 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-344: /batch slash command
+
+`feat(MEH-344)`: added `.claude/commands/batch.md` — a single-file execution playbook for running batches of Linear MEH-XXX tasks end-to-end. Per Boris Cherny + "Scaling Claude Code 2026" guidance, kept this as a slash command rather than a skill (rejected the 6-file `mehamakor-batch` skill option to avoid the long-list-of-bespoke-commands anti-pattern). 11 sections: pre-flight checks, per-task workflow (10 steps), 3 auto-fix patterns (package-lock drift, ESLint warnings, pre-commit filename bug — MEH-518), MEH-472 hybrid brand-voice guard with grep canary, STOP conditions (8), Hebrew RTL terminal warning, Linear `Closes MEH-XX` integration, MEH-498 3-Tier Verification reference (no duplication), post-merge autonomous verification via Vercel + Sentry MCPs, `autonomy-cache.json` GREEN/YELLOW/RED routing, and `.claude/settings.local.json` (gitignored, 30 deny patterns) explanation.
+
+- **`.claude/commands/batch.md`** — new file. Covers full inner-loop batch execution; the file is the source-of-truth, not a wrapper around a separate skill.
+
+Closes MEH-344.
+
 ## 2026-05-10 — MEH-465: split frontend/lib/env.js into env.client.js + env.server.js
 
 `feat(MEH-465)`: splits the monolithic `frontend/lib/env.js` into two files with distinct scopes. `env.client.js` (safe to import from any component, NEXT_PUBLIC_* vars only) and `env.server.js` (`import "server-only"` guard — Next.js build error if a client bundle imports it, BACKEND_URL + SITE_URL server vars included). All 12 importers migrated to `env.client.js`. `env.js` kept as a 1-line re-export shim so `next.config.js` jiti validation still runs without touching the protected config file. `server-only` package added as direct dependency.
