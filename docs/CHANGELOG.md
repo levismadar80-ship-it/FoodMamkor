@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-529: add 3 categories — wine/beer, spices, chocolate
+
+`feat(MEH-529)`: added 3 categories to `backend/seed_data.py:CATEGORIES` (lines 25-27): יין, בירה ומשקאות 🍷 · תבלינים וצמחי תיבול 🌶️ · שוקולד וממתקים בוטיק 🍫. No schema change — seed data only. Unblocks Persona 6 (יקב זעיר) registration and two high-growth Israeli producer categories.
+
+Closes MEH-529.
+
 ## 2026-05-10 — MEH-344: /batch slash command
 
 `feat(MEH-344)`: added `.claude/commands/batch.md` — a single-file execution playbook for running batches of Linear MEH-XXX tasks end-to-end. Per Boris Cherny + "Scaling Claude Code 2026" guidance, kept this as a slash command rather than a skill (rejected the 6-file `mehamakor-batch` skill option to avoid the long-list-of-bespoke-commands anti-pattern). 11 sections: pre-flight checks, per-task workflow (10 steps), 3 auto-fix patterns (package-lock drift, ESLint warnings, pre-commit filename bug — MEH-518), MEH-472 hybrid brand-voice guard with grep canary, STOP conditions (8), Hebrew RTL terminal warning, Linear `Closes MEH-XX` integration, MEH-498 3-Tier Verification reference (no duplication), post-merge autonomous verification via Vercel + Sentry MCPs, `autonomy-cache.json` GREEN/YELLOW/RED routing, and `.claude/settings.local.json` (gitignored, 30 deny patterns) explanation.
