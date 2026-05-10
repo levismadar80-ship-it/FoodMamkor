@@ -1,7 +1,27 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-07 (MEH-293 PR #1 backend in review on `feature/meh-293-dietary-labels-on-products`; MEH-470 product edit flow — MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note — merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening — merged 778dce3; MEH-383 observability protocol — merged; MEH-294 Hebrew status labels — PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
+> Last updated: 2026-05-10 (סיכום שבועי אוטומטי — Routine C; PRs #529/531/533/537/539/541–571 מוזגו ל-staging)
+
+## 🗓 סיכום שבוע 2026-05-04
+
+### Current state (2026-05-10)
+- **CI ותשתית**: pipeline שודרגה מקצה לקצה — ruff (CI + pre-commit), pytest-cov שער 70%, drift-gates לאלמביק + `.env.example`, git-cliff לאוטומציה של CHANGELOG, Sentry SDK פעיל על staging.
+- **תכונות מוצר**: MEH-293 מושלם לגמרי (דגלים תזונתיים backend + frontend + מחיקת עמודות ישנות), מחיר דו-שדתי + עריכת מוצר inline (MEH-295/470).
+- **אבטחה וגיבוי**: R2 backups רצים, DATABASE_URL הופרד ל-PRODUCTION/STAGING, story_card cascade delete תוקן, phone PII masking בלוגים, fingerprint mismatch log פעיל.
+- **Cloudinary**: post-commit hooks + sweep script + cascade destroy — לא יווצרו אורפנות חדשות (MEH-375/510/513).
+- **WhatsApp**: עבר ל-Meta Cloud API ישיר, Graph v21.0 (MEH-508) — ללא תלות ב-Twilio Python SDK.
+
+### On the horizon
+1. **PR #539 (MEH-484)** — Playwright `--fail-on-flaky-tests`: ממתין לאישור ספיר; עלול להדליק E2E אדום (זה רצוי — מסמן flake אמיתי, לא לבטל).
+2. **PR #538 (MEH-486)** — ADR-007 Expand-Contract: docs-only, סיכון נמוך, ממתין לסקירה.
+3. **MEH-471 (i18n Wave 1)** — next-intl install + port 39 מפתחות + strangler-fig: הפריט הגדול ביותר ב-backlog (12–18 שעות, תלויה באישור).
+
+### Blockers
+- **PR #530** (Playwright SSR fix) — base branch מצביעה ל-SHA ישן של staging (לפני מחיקה ויצירה מחדש); דורשת בדיקת `git merge-base` לפני merge.
+- **MEH-408 Phase 4** (DR drill) — ממתינה לספיר: הגדרת Railway cron service + R2 lifecycle rule (ראי `DEPLOYMENT.md §10`).
+
+---
 
 ### Session 2026-05-07 — Product surface complete + MEH-293 PR #1 staged
 - MEH-294 closed (PR #515) — Hebrew status labels

@@ -2,6 +2,41 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## [שבוע 2026-05-04] — CI, אבטחה ותשתית: שבוע עמוס
+
+### ✨ נוסף
+- MEH-293 (PR #529/531/533): דגלים תזונתיים (טבעוני, ללא גלוטן, ללא לקטוז) עברו מפרופיל עסק לרמת מוצר — מיגרציה, EXISTS-filter, backfill, UI בהגדרות, ומחיקת עמודות ישנות.
+- MEH-295 + MEH-470: טופס מחיר דו-שדתי (min/max, ₪) + עריכה inline לכל שורה (Pencil button, PUT, Decimal-coerce, לשון נקבה).
+- MEH-375 + MEH-510 + MEH-513: ניקוי תמונות Cloudinary — post-commit hooks, sweep script, cascade destroy על מחיקת עסק ומחיקת חשבון.
+- MEH-408 שלבים 2–3: גיבויים ל-R2 (pg_dump → boto3 → Cloudflare), Dockerfile.cron multi-stage (321 MB → 250 MB), הפרדת DATABASE_URL_PRODUCTION / DATABASE_URL_STAGING.
+- MEH-500 + MEH-493 + MEH-483: Sentry SDK פעיל + SentryRequestScopeMiddleware + health endpoints (`/health/liveness`, `/health/readiness`) עם JSON-default logs.
+- MEH-489: pytest-cov + שער 70% + Smokeshow badge; MEH-492: gate drift מודל/מיגרציה; MEH-491: gate drift `.env.example`.
+- MEH-497: אוטומציה של CHANGELOG ב-git-cliff; MEH-496: pre-commit hooks (ruff + eslint).
+
+### 🐛 תוקן
+- MEH-513: מחיקת story_card_url ב-Cloudinary (`bypass_reserved=True`) בעת מחיקת חשבון.
+- MEH-457: רישום עסק מחיל כעת `validate_password` (HIBP + 12 תווים) — פגיעה מ-MEH-306 נסגרה.
+- MEH-506: תיקון claude-review silent no-op — directive מפורשת post-comment.
+- MEH-505: lint-backend הפך ל-blocking ב-CI; תיקון דגל `ruff format`.
+- MEH-461/466/467: תיקוני hooks — regex rm -rf, pyproject.toml section-aware, lint-feedback path.
+- MEH-302/303: ניקוי banner שלב 3 (prose diagnostic במקום CTA כפול) + masking טלפון בלוגים.
+
+### 🔧 שיפורים
+- MEH-460 (Pkgs 1–5): כל 28 מחלקות BaseModel עברו מ-routers ל-schemas.py — ADR-006 R1 נאכף במלואו.
+- MEH-508: WhatsApp עבר מ-Twilio Python SDK ל-Meta Cloud API ישיר (Graph v21.0).
+- MEH-448 + MEH-488: ניקוי מלא של violations ב-ruff + gate CI.
+- MEH-463 + MEH-454: הגירת env מלאה ל-`@t3-oss/env-nextjs` + Zod (11 קבצים).
+- MEH-499: Playwright מדלגת על PRs docs-only ב-CI.
+- MEH-472: i18n Wave 2 — sweep תרגום + תיקון מגדר Q7.
+- MEH-487: אינטגרציה של claude-code-action לסקירת PRs.
+
+### 📝 תיעוד
+- MEH-431: `docs/ARCHITECTURE.md` — מפת ריפו חד-עמודית.
+- MEH-432 + MEH-433: 4 ADRs ראשוניים + audit schema parity (11 ממצאי drift).
+- MEH-385 + MEH-428: subagent pr-reviewer + 4 variants של /adversarial-review.
+- MEH-383: פרוטוקול dashboard-receipt לאובזרבביליות.
+- MEH-490/494/495: AGENTS.md mirror + Vercel skip-docs + קידוד data-testid.
+
 ## 2026-05-07 — MEH-293 PR #1: dietary flags moved from producer to product (backend + migration)
 
 `feat(MEH-293)`: per-product dietary flags (`is_gluten_free` / `is_vegan` / `is_lactose_free`) replace the producer-level columns of the same name. Same anti-pattern fix as MEH-291 — a single business often sells both vegan and non-vegan items; storing the flag on the producer forced shoppers to filter on the worst-case denominator.
