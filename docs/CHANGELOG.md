@@ -10,6 +10,18 @@
 
 Closes MEH-344.
 
+## 2026-05-10 — MEH-465: split frontend/lib/env.js into env.client.js + env.server.js
+
+`feat(MEH-465)`: splits the monolithic `frontend/lib/env.js` into two files with distinct scopes. `env.client.js` (safe to import from any component, NEXT_PUBLIC_* vars only) and `env.server.js` (`import "server-only"` guard — Next.js build error if a client bundle imports it, BACKEND_URL + SITE_URL server vars included). All 12 importers migrated to `env.client.js`. `env.js` kept as a 1-line re-export shim so `next.config.js` jiti validation still runs without touching the protected config file. `server-only` package added as direct dependency.
+
+- **`frontend/lib/env.client.js`** — new file; NEXT_PUBLIC_* vars + SITE_URL/API_URL convenience exports
+- **`frontend/lib/env.server.js`** — new file; `import "server-only"` guard + BACKEND_URL/SITE_URL server vars
+- **`frontend/lib/env.js`** — converted to 1-line re-export shim pointing at env.client.js
+- **12 importer files** — `@/lib/env` → `@/lib/env.client` (sitemap.js, layout.js, login, map, producer, producers, register, settings, [slug], AppleAuthButton, GoogleAuthButton, ProducerOAuthButtons)
+- **`frontend/package.json`** — `server-only` added as direct dependency
+
+Closes MEH-465.
+
 ## 2026-05-10 — MEH-541: docs/COPY_BANK.md — copy decisions source-of-truth
 
 `docs(MEH-541)`: created `docs/COPY_BANK.md` — single source of truth for all copy decisions. Documents 6 sections: Hero & Header, Trust signals, Content sections, Producer-facing copy, Footer & CTAs, and a Decision log. Covers all copy merged to staging as of 2026-05-10. Entries are keyed to MEH issues and i18n keys. Pending decisions (MEH-520, MEH-522-527, MEH-534-540) noted with links.
@@ -54,6 +66,18 @@ Closes MEH-518.
 `fix(MEH-208/MEH-209)`: paragraph 1 sub-headline on `/about` ("אוכל אמיתי קרוב אלייך" section) had a weak, arrhythmic closer — "העסקים שתמיד היו — רק שעכשיו את רואה אותם." Replaced with "כל מה שקרוב אלייך, במקום אחד." — direct, rhythm-preserving, non-boastful. Both tickets prescribed the identical change; bundled into one PR. H2 and paragraphs 2+3 untouched.
 
 - **`frontend/app/[locale]/about/AboutClient.jsx:156`** — single line replacement; `<br />` structure preserved.
+
+## 2026-05-09 — MEH-508: WhatsApp Twilio → Meta Cloud API (Graph v21.0)
+
+`feat(MEH-508)`: replaced Twilio Python SDK with a direct Meta WhatsApp Cloud API integration. New `backend/app/services/whatsapp.py` module (`send_text` + `send_template`) wraps Graph v21.0 REST calls, with fail-open semantics matching the old Twilio path. `twilio.rest.Client` calls removed from 5 callers across `auth.py`, `admin.py`, `admin_outreach.py`, `alerts.py`. Lockfile regenerated to drop `twilio==9.10.5` and transitive `aiohttp-retry==2.9.1` (PR #573).
+
+- **`backend/app/services/whatsapp.py`** (NEW) — `send_text(to, body)` + `send_template(to, template, language, components)` over `httpx.Client`; fail-open on missing config; `mask_phone()` in all log lines.
+- **Env var migration:** `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_FROM` → `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_ACCESS_TOKEN` / `WHATSAPP_BUSINESS_ID` / `WHATSAPP_API_VERSION`.
+- **4 approved Meta utility templates:** `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_mode_response_he`.
+- **Admin smoke test endpoint:** `POST /api/admin/settings/test/whatsapp` → `{"ok": true, "configured": true, "service": "whatsapp"}`.
+- **`backend/app/services/auth_notifications.py`** — Twilio import removed; now delegates to `whatsapp.send_text`.
+
+Closes MEH-508.
 
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
