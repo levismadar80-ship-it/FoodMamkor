@@ -2736,7 +2736,7 @@ class TestPublicStats:
 
     def test_stats_counts_only_approved_producers(self, client, db):
         """Pending producers must not inflate the counter."""
-        make_producer(db, name="ממתין לאישור")  # default status is pending
+        make_producer(db, name="ממתין לאישור", status="pending")
         resp = client.get("/stats")
         body = resp.json()
         assert body["producers_count"] == 0
