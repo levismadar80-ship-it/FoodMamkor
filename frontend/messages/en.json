@@ -103,7 +103,8 @@
     "stats": {
       "verified_businesses": "verified businesses",
       "categories": "categories",
-      "countrywide": "across Israel"
+      "countrywide": "across Israel",
+      "fallback": "Starting now · across Israel 🌿"
     },
     "categories": {
       "heading": "Browse by category",
