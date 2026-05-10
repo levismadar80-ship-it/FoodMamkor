@@ -10,6 +10,17 @@
 
 Closes MEH-517.
 
+## 2026-05-10 — MEH-518: rename admin Twilio test button → WhatsApp
+
+`chore(MEH-518)`: the admin settings page listed a "Twilio" connection test, but the backend route is `/admin/settings/test/whatsapp`. The UI key `"twilio"` therefore called a non-existent endpoint. Renamed the key to `"whatsapp"`, added explicit labels `{ key, label }` so the display reads "WhatsApp" (not CSS-capitalized "Whatsapp"), and resolved 27 pre-existing ESLint warnings in the file.
+
+Also fixes a pre-commit ESLint hook bug (`.pre-commit-config.yaml`): `bash -c '...'` with `pass_filenames: true` was passing staged filenames as bash positional params `$0/$1`, not to ESLint — so ESLint ran on all files. Fixed with `"${@#frontend/}"` pattern to forward filenames with the `frontend/` prefix stripped.
+
+- **`frontend/app/[locale]/admin/settings/page.js`** — `["twilio", "cloudinary"].map(name =>...)` → `[{ key: "whatsapp", label: "WhatsApp" }, { key: "cloudinary", label: "Cloudinary" }].map(({ key, label }) =>...)`. All 27 pre-existing ESLint warnings resolved (identifier renames, `window.confirm` → `globalThis.confirm`, negated condition flip, nested ternary → if/else if, eslint-disable for structural rules).
+- **`.pre-commit-config.yaml`** — pre-commit ESLint hook entry fixed to forward staged filenames to ESLint correctly.
+
+Closes MEH-518.
+
 ## 2026-05-10 — MEH-515: rating_dispatcher per-click try/except — batch resilience
 
 `fix(MEH-515)`: `dispatch_pending_rating_requests` aborted the entire batch on a single `send()` failure and implicitly rolled back `rating_sent=True` flags on pre-failure siblings (no `db.commit()` reached). Fix: per-click `try/except Exception`, log failure with `click_id` + `home_product_id` via structlog kwargs, continue to next click. `db.commit()` now gates on `sent_count or failed_count`. Batch-completion log added. Docstring updated.
