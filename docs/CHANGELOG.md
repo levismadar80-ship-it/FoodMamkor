@@ -10,6 +10,12 @@
 
 Closes MEH-517.
 
+## 2026-05-10 — MEH-208 / MEH-209: /about editorial paragraph 1 sub copy fix
+
+`fix(MEH-208/MEH-209)`: paragraph 1 sub-headline on `/about` ("אוכל אמיתי קרוב אלייך" section) had a weak, arrhythmic closer — "העסקים שתמיד היו — רק שעכשיו את רואה אותם." Replaced with "כל מה שקרוב אלייך, במקום אחד." — direct, rhythm-preserving, non-boastful. Both tickets prescribed the identical change; bundled into one PR. H2 and paragraphs 2+3 untouched.
+
+- **`frontend/app/[locale]/about/AboutClient.jsx:156`** — single line replacement; `<br />` structure preserved.
+
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
 `fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.

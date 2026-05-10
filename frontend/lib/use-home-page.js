@@ -15,6 +15,8 @@ import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 
 const PAGE_SIZE = 8;
+// MEH-521: minimum approved count before showing numeric stats.
+const STATS_DISPLAY_THRESHOLD = 5;
 
 /**
  * Custom hook owning the homepage's state, effects, handlers, and
@@ -297,6 +299,8 @@ export function useHomePage() {
   const categoryCards = matchCategoryId(CATEGORY_CARDS, categories);
   const statsProducersCount = stats.producers_count || producers.length;
   const statsCategoriesCount = stats.categories_count || categories.length || 6;
+  const showStatsCounter = statsProducersCount >= STATS_DISPLAY_THRESHOLD;
+  const showStatsFallback = !showStatsCounter && statsProducersCount > 0;
 
   // Newest producers (last 4 by created_at if available, else first 4)
   const newestProducers = producers
@@ -333,6 +337,8 @@ export function useHomePage() {
     categoryCards,
     statsProducersCount,
     statsCategoriesCount,
+    showStatsCounter,
+    showStatsFallback,
     newestProducers,
     // handlers
     handleNearMe,
