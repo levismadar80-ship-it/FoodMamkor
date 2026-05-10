@@ -8,6 +8,13 @@
 
 - **`docs/COPY_BANK.md`** — new file, 200+ lines, 6 sections.
 
+## 2026-05-10 — MEH-515: rating_dispatcher per-click try/except — batch resilience
+
+`fix(MEH-515)`: `dispatch_pending_rating_requests` aborted the entire batch on a single `send()` failure and implicitly rolled back `rating_sent=True` flags on pre-failure siblings (no `db.commit()` reached). Fix: per-click `try/except Exception`, log failure with `click_id` + `home_product_id` via structlog kwargs, continue to next click. `db.commit()` now gates on `sent_count or failed_count`. Batch-completion log added. Docstring updated.
+
+- **`backend/app/services/rating_dispatcher.py`** — `sent_count/failed_count` loop with try/except, updated db.commit() guard, `rating_dispatcher.batch_complete` log, docstring rewrite.
+- **`tests/test_rating_dispatch.py`** — 2 new tests: `test_one_send_fails_batch_continues` and `test_all_sends_fail_batch_completes` (structlog.testing.capture_logs verifies 3 send_failed events with distinct click_ids).
+
 ## 2026-05-10 — MEH-321: fix GET /producers/me 500 after producer registration
 
 `fix(MEH-321)`: `GET /producers/me` returned 500 (ResponseValidationError) immediately after producer registration because `ProducerDetailOut.created_at` was declared `datetime` (non-optional, no default) while the DB column is `nullable=True`. In FastAPI ≥0.104.0, response model validation failures → 500, not 422. SQLAlchemy returns `None` for NULL columns; Pydantic v2 `from_attributes=True` validates `None` against `datetime` and fails. Two secondary fields (`status: str`, `is_verified: bool`) also lacked defaults despite nullable DB columns.
