@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-555: CategoryRequest validation — reject junk text
+
+`fix(MEH-555)`: adds `field_validator` to `CategoryRequestCreate.requested_name` that rejects strings with fewer than 3 Hebrew/Latin letter characters (`[א-תa-zA-Z]` regex). Returns `strip()`-ed value. Frontend `CategoryRequestModal.jsx` mirrors the guard: submit button disabled until `countLetters(name) >= 3`. Closes admin-queue junk-row vector (anonymous endpoint, 5/hour limit). Added 4 pytest cases in `tests/test_category_requests.py`. Bug Protocol entry added to `.claude/rules/workflow.md`.
+
+Closes MEH-555.
+
 ## 2026-05-10 — MEH-553: followers page for producer dashboard
 
 `feat(MEH-553)`: adds `/producer/dashboard/followers` page. Auth-guarded (producer role only). Fetches `follower_count` from `/producers/me/analytics` + `slug` from `/producers/me` in parallel. Three states: loading → zero (EmptyState with share CTA) → count>0 (count display + "רשימה בקרוב" placeholder + same share CTA). No new backend endpoint — follower list deferred.

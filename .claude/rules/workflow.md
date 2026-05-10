@@ -359,6 +359,15 @@ When a bug is found and fixed:
 Known Bug Patterns (cross-ref before touching):
 [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md).
 
+**Pattern — Free-text input without character-class validation (MEH-555, 10 May 2026):**
+Free-text `str` fields feeding admin queues or public displays accept
+punctuation-only strings (e.g. "???") unless explicitly validated.
+When adding a `String` field visible to admins or users, add a
+`field_validator` requiring ≥ 3 letter chars via `[א-תa-zA-Z]` regex.
+Count letters AFTER `strip()`, not before. Return the stripped value.
+Sibling gaps not yet fixed: `ProducerCreate.name`, `HomeProductCreate.title`,
+`ExperienceCreate.title` — track in follow-up tickets.
+
 ---
 
 ## Commit discipline
