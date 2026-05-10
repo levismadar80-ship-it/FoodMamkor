@@ -23,6 +23,7 @@ import api from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { env } from "@/lib/env";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function SettingsPage() {
   return (
@@ -1002,7 +1003,13 @@ function ProductsSection() {
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
       {products?.length === 0 && !adding && (
-        <p className="text-sm text-site-muted">טרם הוספת מוצרים לפרופיל.</p>
+        <EmptyState
+          emoji="🥕"
+          title="מוצר ראשון = בית עסק חי"
+          description="בלי מוצרים, הפרופיל שלך נראה ריק ולקוחות לא יודעות מה יש לך. הוסיפי 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות."
+          ctaLabel="+ הוסיפי מוצר ראשון"
+          ctaOnClick={() => { setAdding(true); setError(""); }}
+        />
       )}
 
       <div className="space-y-3 mb-4">
