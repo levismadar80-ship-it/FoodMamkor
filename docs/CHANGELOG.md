@@ -2,6 +2,13 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-321: fix GET /producers/me 500 after producer registration
+
+`fix(MEH-321)`: `GET /producers/me` returned 500 (ResponseValidationError) immediately after producer registration because `ProducerDetailOut.created_at` was declared `datetime` (non-optional, no default) while the DB column is `nullable=True`. In FastAPI ≥0.104.0, response model validation failures → 500, not 422. SQLAlchemy returns `None` for NULL columns; Pydantic v2 `from_attributes=True` validates `None` against `datetime` and fails. Two secondary fields (`status: str`, `is_verified: bool`) also lacked defaults despite nullable DB columns.
+
+- **`backend/app/schemas/schemas.py`** — `ProducerListOut.status: str` → `status: str = "pending"`, `is_verified: bool` → `is_verified: bool = False` (defensive defaults matching DB nullable columns). `ProducerDetailOut.created_at: datetime` → `created_at: datetime | None = None` (root cause fix — allows NULL from DB).
+- **`tests/test_api.py`** — 2 new regression tests in `TestGetProducersMeRouteOrder`: `test_get_me_after_registration` (full registration → GET /producers/me flow, monkeypatches email/notify calls) and `test_get_me_with_null_created_at_returns_200` (directly sets `created_at = NULL` via parameterized raw SQL, verifies 200 + null in response).
+
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
 `fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.

@@ -1675,6 +1675,47 @@ class TestGetProducersMeRouteOrder:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(producer.id)
 
+    def test_get_me_after_registration(self, client, db, monkeypatch):
+        """MEH-321 regression — GET /producers/me must return 200 immediately
+        after a brand-new producer registration (Pydantic schema mismatch fix)."""
+        import app.routers.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "_send_verify_email", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
+
+        reg = client.post("/auth/register/producer", json={
+            "email": "meh321@example.com",
+            "name": "בעלת עסק",
+            "password": "Zx7Yp9Mq2Lr4",
+            "producer_name": "חוות מה-321",
+            "phone": "0501234567",
+            "category_ids": [],
+            "primary_contact_method": "whatsapp",
+        })
+        assert reg.status_code == 200, reg.text
+        token = reg.json()["access_token"]
+
+        resp = client.get("/producers/me", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["name"] == "חוות מה-321"
+        assert body["status"] == "pending_whatsapp"
+
+    def test_get_me_with_null_created_at_returns_200(self, client, db):
+        """MEH-321: created_at is nullable=True in DB — NULL must not crash serialization."""
+        from sqlalchemy import text as sa_text
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+        db.execute(sa_text("UPDATE producers SET created_at = NULL WHERE id = :pid"), {"pid": str(producer.id)})
+        db.commit()
+
+        resp = client.get("/producers/me", headers=auth_header(user))
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["created_at"] is None
+
 
 class TestUploadGoogleAvatarOrNone:
     """MEH-299 — _upload_google_avatar_or_none helper unit tests.
