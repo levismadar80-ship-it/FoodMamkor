@@ -47,6 +47,18 @@ Closes MEH-518.
 
 - **`frontend/app/[locale]/about/AboutClient.jsx:156`** — single line replacement; `<br />` structure preserved.
 
+## 2026-05-09 — MEH-508: WhatsApp Twilio → Meta Cloud API (Graph v21.0)
+
+`feat(MEH-508)`: replaced Twilio Python SDK with a direct Meta WhatsApp Cloud API integration. New `backend/app/services/whatsapp.py` module (`send_text` + `send_template`) wraps Graph v21.0 REST calls, with fail-open semantics matching the old Twilio path. `twilio.rest.Client` calls removed from 5 callers across `auth.py`, `admin.py`, `admin_outreach.py`, `alerts.py`. Lockfile regenerated to drop `twilio==9.10.5` and transitive `aiohttp-retry==2.9.1` (PR #573).
+
+- **`backend/app/services/whatsapp.py`** (NEW) — `send_text(to, body)` + `send_template(to, template, language, components)` over `httpx.Client`; fail-open on missing config; `mask_phone()` in all log lines.
+- **Env var migration:** `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_FROM` → `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_ACCESS_TOKEN` / `WHATSAPP_BUSINESS_ID` / `WHATSAPP_API_VERSION`.
+- **4 approved Meta utility templates:** `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_mode_response_he`.
+- **Admin smoke test endpoint:** `POST /api/admin/settings/test/whatsapp` → `{"ok": true, "configured": true, "service": "whatsapp"}`.
+- **`backend/app/services/auth_notifications.py`** — Twilio import removed; now delegates to `whatsapp.send_text`.
+
+Closes MEH-508.
+
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
 `fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.

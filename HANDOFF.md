@@ -1,6 +1,32 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
+> Last updated: 2026-05-10
+
+---
+
+## WhatsApp Cloud API (post-MEH-508)
+
+Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21.0).
+
+| Field | Value |
+|---|---|
+| **Phone** | +972 55-255-3744 (Active, registered via Cloud API with 6-digit PIN) |
+| **Phone Number ID** | 1115345908323876 |
+| **WhatsApp Business Account ID** | 2030655854463347 |
+| **API version** | v21.0 |
+| **Access Token** | Never expires (System User "Mehamakor API" — saved in Smadar's password manager) |
+| **Approved templates (utility)** | `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_mode_response_he` |
+| **Backup admin** | Smadar Levi (email recovery: levismadar80@gmail.com verified) |
+| **Coexistence + Talia linked device** | Deferred to post-launch |
+
+**Env vars (Railway):** `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_BUSINESS_ID`, `WHATSAPP_API_VERSION=v21.0`
+
+**Smoke test:** `POST /api/admin/settings/test/whatsapp` → `{"ok": true, "configured": true, "service": "whatsapp"}`
+
+**Service module:** `backend/app/services/whatsapp.py` (fail-open — missing config logs ERROR, returns False, does not raise)
+
+---
 
 ### Session 2026-05-10 — MEH-541 docs/COPY_BANK.md (PR #589, ready-for-review)
 
