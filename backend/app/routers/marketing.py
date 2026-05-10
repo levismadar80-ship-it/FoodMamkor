@@ -71,7 +71,64 @@ def subscribe_newsletter(
     sub = NewsletterSubscriber(email=email)
     db.add(sub)
     db.commit()
+    _send_newsletter_welcome(email)
     return {"detail": "נרשמת! 🌱"}
+
+
+def _send_newsletter_welcome(email: str) -> None:
+    """Send a welcome email to new newsletter subscribers. Fail-open."""
+    unsubscribe_url = "https://mehamakor.co.il/newsletter/unsubscribe"
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="40" cellspacing="0"
+               style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              <p style="font-size:13px;color:#2e6853;margin:0 0 8px;font-weight:bold;">מהמקור 🌿</p>
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכה הבאה למהמקור</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 8px;font-weight:bold;">מה תקבלי?</p>
+              <ul style="color:#3a3a3a;font-size:15px;line-height:2;margin:0 0 24px;padding-right:20px;">
+                <li>פעם בשבוע — סיפור על בית עסק חדש</li>
+                <li>מתי ואיפה אפשר לפגוש (פעם בחודש)</li>
+                <li>בלי הצעות, בלי spam, בלי ניסיון למכור לך משהו</li>
+              </ul>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
+                הסיפור הראשון יגיע ביום שני. עד אז —<br>
+                <span style="font-weight:bold;">ספיר ✨</span>
+              </p>
+              <hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">
+              <p style="color:#888;font-size:12px;line-height:1.6;margin:0;">
+                מהמקור — בתי עסק מקומיים, כולם במקום אחד.<br>
+                <a href="{unsubscribe_url}" style="color:#888;text-decoration:underline;">לבטל הרשמה</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    plain = (
+        "ברוכה הבאה למהמקור!\n\n"
+        "תודה שהצטרפת.\n\n"
+        "מה תקבלי?\n"
+        "• פעם בשבוע — סיפור על בית עסק חדש\n"
+        "• מתי ואיפה אפשר לפגוש (פעם בחודש)\n"
+        "• בלי הצעות, בלי spam, בלי ניסיון למכור לך משהו\n\n"
+        "הסיפור הראשון יגיע ביום שני. עד אז —\n"
+        "ספיר ✨\n\n"
+        f"לבטל הרשמה: {unsubscribe_url}\n"
+        "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
+    )
+    send_email(email, "ברוכה הבאה למהמקור 🌿", plain, html=html_body)
 
 
 # ============================================================
