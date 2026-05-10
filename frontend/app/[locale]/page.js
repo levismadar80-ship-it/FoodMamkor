@@ -36,7 +36,7 @@ export default function HomePage() {
     fridayMode, step0Visible, userCity,
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, newestProducers,
+    statsProducersCount, statsCategoriesCount, showStatsCounter, showStatsFallback, newestProducers,
     handleNearMe, handleCitySelected, handleCategoryCardClick,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
@@ -55,24 +55,30 @@ export default function HomePage() {
       {fridayMode && <FridayDeliveryStrip city={userCity} />}
 
       {/* =========================
-          SOCIAL PROOF BAR
-          PREMIUM_DESIGN: numbers count up from 0 when scrolled into view.
+          SOCIAL PROOF BAR — MEH-521: never show "0"; threshold in use-home-page.
           ========================= */}
-      <section className="bg-primary text-white py-4 text-center">
-        <p className="font-body text-lg tracking-wide">
-          <span className="font-semibold tabular-nums">
-            <AnimatedCounter target={statsProducersCount} />
-          </span>{" "}
-          {t("home.stats.verified_businesses")}
-          &nbsp;·&nbsp;
-          <span className="font-semibold tabular-nums">
-            <AnimatedCounter target={statsCategoriesCount} />
-          </span>{" "}
-          {t("home.stats.categories")}
-          &nbsp;·&nbsp;
-          {t("home.stats.countrywide")}
-        </p>
-      </section>
+      {showStatsCounter && (
+        <section className="bg-primary text-white py-4 text-center">
+          <p className="font-body text-lg tracking-wide">
+            <span className="font-semibold tabular-nums">
+              <AnimatedCounter target={statsProducersCount} />
+            </span>{" "}
+            {t("home.stats.verified_businesses")}
+            &nbsp;·&nbsp;
+            <span className="font-semibold tabular-nums">
+              <AnimatedCounter target={statsCategoriesCount} />
+            </span>{" "}
+            {t("home.stats.categories")}
+            &nbsp;·&nbsp;
+            {t("home.stats.countrywide")}
+          </p>
+        </section>
+      )}
+      {showStatsFallback && (
+        <section className="bg-primary text-white py-4 text-center">
+          <p className="font-body text-lg tracking-wide">{t("home.stats.fallback")}</p>
+        </section>
+      )}
 
       {/* MEH-41: location banner — appears after 3s if no city saved */}
       <div className="mt-6">
