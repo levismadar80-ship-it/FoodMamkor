@@ -2,6 +2,18 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+### Session 2026-05-10 — MEH-344 /batch slash command (PR open, ready-for-review)
+
+**Branch:** `feature/meh-344-batch-command` off `staging`. **Risk tier:** LOW (single-file config addition under `.claude/commands/`).
+
+**Closes:** MEH-344 (4th slash command — `/batch`). Original 3 commands (`/commit-push-pr`, `/handoff`, `/start-meh`) deferred to follow-up.
+
+**Shipped:** `.claude/commands/batch.md` — 11-section execution playbook for batch Linear-task workflow. Pre-flight, 10-step per-task workflow, 3 auto-fix patterns, brand-voice grep canary (MEH-472 hybrid), STOP conditions, RTL terminal warning, Linear `Closes MEH-XX` integration, MEH-498 3-Tier Verification reference (Tier 2 only — no duplication), post-merge Vercel + Sentry MCP verification, `autonomy-cache.json` GREEN/YELLOW/RED routing, `.claude/settings.local.json` deny-pattern explanation.
+
+**Decision logged:** chose slash command over standalone skill (`mehamakor-batch` rejected). Industry sources cited in spec: Boris Cherny (slash commands for inner-loop workflows) + "Scaling Claude Code 2026" (long lists of bespoke commands = anti-pattern). One file is cheaper than a 6-file skill + 5-layer MEH-397 audit.
+
+**Next:** Smadar reviews PR + merges. Follow-up MEH-344-extension to add `/commit-push-pr`, `/handoff`, `/start-meh` (deferred from this PR — LOW-risk, separate single-file each).
+
 ### Session 2026-05-10 — MEH-541 docs/COPY_BANK.md (PR #589, ready-for-review)
 
 **Branch:** `feature/meh-541-copy-bank` off `staging`. **Risk tier:** LOW (docs-only).
