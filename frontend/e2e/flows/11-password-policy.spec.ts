@@ -37,6 +37,10 @@ function uniqueSignup(prefix: string) {
 }
 
 test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
+  // Cold Vercel preview can take >10s to hydrate the register form;
+  // override the global 10s actionTimeout so fill() actions don't race.
+  test.use({ actionTimeout: 20_000 });
+
   test("Signup: short password is blocked with the Hebrew length message", async ({
     page,
   }) => {
@@ -79,7 +83,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // round-trip. Playwright's default actionTimeout is 10s, plenty.
     await expect(
       page.getByText(/הסיסמה הזו דלפה ברשת/),
-    ).toBeVisible({ timeout: 5000 });
+    ).toBeVisible({ timeout: 10_000 });
 
     // Submit (if enabled) must surface the same failure on the form-level
     // error div via the 422-failures path.

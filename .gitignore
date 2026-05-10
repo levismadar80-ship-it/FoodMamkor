@@ -18,4 +18,7 @@ frontend/dist/
 # MEH-489: pytest-cov local artifacts
 .coverage
 coverage.xml
+# Playwright test artifacts (generated when run from repo root)
+test-results/
+playwright-report/
 htmlcov/
