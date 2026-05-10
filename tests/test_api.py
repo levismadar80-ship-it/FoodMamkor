@@ -2745,3 +2745,39 @@ class TestBOLA:
         # Must use authenticated user's producer_id, not the spoofed one
         assert body["producer_id"] == str(producer.id)
         assert body["producer_id"] != fake_id
+
+
+class TestPublicStats:
+    """GET /stats — public social-proof counter (MEH-521).
+
+    Contract:
+    - Anonymous (no auth).
+    - Returns producers_count (approved only) and categories_count.
+    - Returns 0 counts when no approved producers exist — never raises.
+    """
+
+    def test_stats_returns_200(self, client):
+        resp = client.get("/stats")
+        assert resp.status_code == 200
+
+    def test_stats_schema(self, client):
+        body = client.get("/stats").json()
+        assert "producers_count" in body
+        assert "categories_count" in body
+        assert isinstance(body["producers_count"], int)
+        assert isinstance(body["categories_count"], int)
+
+    def test_stats_returns_zero_when_no_approved_producers(self, client, db):
+        """MEH-521: endpoint must return 0 gracefully, not raise."""
+        # No producers created → approved count is 0
+        resp = client.get("/stats")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["producers_count"] == 0
+
+    def test_stats_counts_only_approved_producers(self, client, db):
+        """Pending producers must not inflate the counter."""
+        make_producer(db, name="ממתין לאישור", status="pending")
+        resp = client.get("/stats")
+        body = resp.json()
+        assert body["producers_count"] == 0
