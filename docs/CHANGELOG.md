@@ -2,6 +2,13 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-515: rating_dispatcher per-click try/except — batch resilience
+
+`fix(MEH-515)`: `dispatch_pending_rating_requests` aborted the entire batch on a single `send()` failure and implicitly rolled back `rating_sent=True` flags on pre-failure siblings (no `db.commit()` reached). Fix: per-click `try/except Exception`, log failure with `click_id` + `home_product_id` via structlog kwargs, continue to next click. `db.commit()` now gates on `sent_count or failed_count`. Batch-completion log added. Docstring updated.
+
+- **`backend/app/services/rating_dispatcher.py`** — `sent_count/failed_count` loop with try/except, updated db.commit() guard, `rating_dispatcher.batch_complete` log, docstring rewrite.
+- **`tests/test_rating_dispatch.py`** — 2 new tests: `test_one_send_fails_batch_continues` and `test_all_sends_fail_batch_completes` (structlog.testing.capture_logs verifies 3 send_failed events with distinct click_ids).
+
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
 `fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.
