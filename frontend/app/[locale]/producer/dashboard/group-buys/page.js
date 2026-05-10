@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import EmptyState from "@/components/ui/EmptyState";
 
 const STATUS_LABELS = {
   open: { label: "פתוחה", cls: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -267,11 +268,13 @@ export default function ProducerGroupBuysPage() {
       {items === null ? (
         <div className="text-center py-16 text-site-muted">טוענת...</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 text-site-muted">
-          <p className="text-4xl mb-3">🛒</p>
-          <p>עדיין אין קבוצות רכש</p>
-          <p className="text-sm mt-1">לחצי על &ldquo;+ קבוצת רכש חדשה&rdquo; כדי להתחיל</p>
-        </div>
+        <EmptyState
+          emoji="🛒"
+          title="קבוצות רכש = מחיר סיטונאי ללקוחות שלך"
+          description="את קובעת מינימום משתתפות ותאריך. אם לא מגיעים למינימום — אף אחת לא משלמת. מושלם לשחיטה של כבש שלם, ליום אריזת סלסלות, או להזמנת עגלים קבוצתית."
+          ctaLabel="+ צרי קבוצה ראשונה"
+          ctaOnClick={() => setShowForm(true)}
+        />
       ) : (
         <div className="space-y-4">
           {items.map((gb) => {
