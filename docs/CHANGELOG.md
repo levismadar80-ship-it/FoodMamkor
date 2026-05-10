@@ -13,6 +13,13 @@ Also fixes a pre-commit ESLint hook bug (`.pre-commit-config.yaml`): `bash -c '.
 
 Closes MEH-518.
 
+## 2026-05-10 — MEH-321: fix GET /producers/me 500 after producer registration
+
+`fix(MEH-321)`: `GET /producers/me` returned 500 (ResponseValidationError) immediately after producer registration because `ProducerDetailOut.created_at` was declared `datetime` (non-optional, no default) while the DB column is `nullable=True`. In FastAPI ≥0.104.0, response model validation failures → 500, not 422. SQLAlchemy returns `None` for NULL columns; Pydantic v2 `from_attributes=True` validates `None` against `datetime` and fails. Two secondary fields (`status: str`, `is_verified: bool`) also lacked defaults despite nullable DB columns.
+
+- **`backend/app/schemas/schemas.py`** — `ProducerListOut.status: str` → `status: str = "pending"`, `is_verified: bool` → `is_verified: bool = False` (defensive defaults matching DB nullable columns). `ProducerDetailOut.created_at: datetime` → `created_at: datetime | None = None` (root cause fix — allows NULL from DB).
+- **`tests/test_api.py`** — 2 new regression tests in `TestGetProducersMeRouteOrder`: `test_get_me_after_registration` (full registration → GET /producers/me flow, monkeypatches email/notify calls) and `test_get_me_with_null_created_at_returns_200` (directly sets `created_at = NULL` via parameterized raw SQL, verifies 200 + null in response).
+
 ## 2026-05-10 — MEH-208 / MEH-209: /about editorial paragraph 1 sub copy fix
 
 `fix(MEH-208/MEH-209)`: paragraph 1 sub-headline on `/about` ("אוכל אמיתי קרוב אלייך" section) had a weak, arrhythmic closer — "העסקים שתמיד היו — רק שעכשיו את רואה אותם." Replaced with "כל מה שקרוב אלייך, במקום אחד." — direct, rhythm-preserving, non-boastful. Both tickets prescribed the identical change; bundled into one PR. H2 and paragraphs 2+3 untouched.
