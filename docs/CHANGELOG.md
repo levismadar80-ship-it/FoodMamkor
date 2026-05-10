@@ -8,6 +8,12 @@
 
 Closes MEH-529.
 
+## 2026-05-10 — MEH-535: newsletter copy upgrade + welcome email
+
+`feat(MEH-535)`: upgrades footer newsletter CTA from generic to specific value prop. Adds tagline ("סיפור של עסק חדש בכל שבוע, ישירות אל המייל שלך") and frequency promise ("פעם בשבוע. בלי spam. אפשר לבטל בכל רגע.") in `Footer.jsx`. CTA button changed from "→" to "להירשם ✨" (via i18n). Adds welcome email on successful subscribe (`_send_newsletter_welcome` helper in `marketing.py`) — RTL Hebrew HTML email, fail-open, unsubscribe link included. No API contract change, no schema change, rate limiter unchanged.
+
+Closes MEH-535.
+
 ## 2026-05-10 — MEH-289: producer-dashboard empty states (4/6 shipped)
 
 `feat(MEH-289)`: updated 4 of 6 producer-dashboard empty states to the 3-line structure (mה זה / למה זה חשוב / פעולה). Copy verbatim from MEH-289 spec. Two locations flagged as requiring new UI sections (followers + reviews StatCards only in current UI — scope expansion needed, not copy-only).
