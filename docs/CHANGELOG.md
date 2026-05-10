@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-529: add 3 categories — wine/beer, spices, chocolate
+
+`feat(MEH-529)`: added 3 categories to `backend/seed_data.py:CATEGORIES` (lines 25-27): יין, בירה ומשקאות 🍷 · תבלינים וצמחי תיבול 🌶️ · שוקולד וממתקים בוטיק 🍫. No schema change — seed data only. Unblocks Persona 6 (יקב זעיר) registration and two high-growth Israeli producer categories.
+
+Closes MEH-529.
+
 ## 2026-05-10 — MEH-535: newsletter copy upgrade + welcome email
 
 `feat(MEH-535)`: upgrades footer newsletter CTA from generic to specific value prop. Adds tagline ("סיפור של עסק חדש בכל שבוע, ישירות אל המייל שלך") and frequency promise ("פעם בשבוע. בלי spam. אפשר לבטל בכל רגע.") in `Footer.jsx`. CTA button changed from "→" to "להירשם ✨" (via i18n). Adds welcome email on successful subscribe (`_send_newsletter_welcome` helper in `marketing.py`) — RTL Hebrew HTML email, fail-open, unsubscribe link included. No API contract change, no schema change, rate limiter unchanged.
