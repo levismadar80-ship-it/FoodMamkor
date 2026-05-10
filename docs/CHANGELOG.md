@@ -2,6 +2,18 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-465: split frontend/lib/env.js into env.client.js + env.server.js
+
+`feat(MEH-465)`: splits the monolithic `frontend/lib/env.js` into two files with distinct scopes. `env.client.js` (safe to import from any component, NEXT_PUBLIC_* vars only) and `env.server.js` (`import "server-only"` guard — Next.js build error if a client bundle imports it, BACKEND_URL + SITE_URL server vars included). All 12 importers migrated to `env.client.js`. `env.js` kept as a 1-line re-export shim so `next.config.js` jiti validation still runs without touching the protected config file. `server-only` package added as direct dependency.
+
+- **`frontend/lib/env.client.js`** — new file; NEXT_PUBLIC_* vars + SITE_URL/API_URL convenience exports
+- **`frontend/lib/env.server.js`** — new file; `import "server-only"` guard + BACKEND_URL/SITE_URL server vars
+- **`frontend/lib/env.js`** — converted to 1-line re-export shim pointing at env.client.js
+- **12 importer files** — `@/lib/env` → `@/lib/env.client` (sitemap.js, layout.js, login, map, producer, producers, register, settings, [slug], AppleAuthButton, GoogleAuthButton, ProducerOAuthButtons)
+- **`frontend/package.json`** — `server-only` added as direct dependency
+
+Closes MEH-465.
+
 ## 2026-05-10 — MEH-208 / MEH-209: /about editorial paragraph 1 sub copy fix
 
 `fix(MEH-208/MEH-209)`: paragraph 1 sub-headline on `/about` ("אוכל אמיתי קרוב אלייך" section) had a weak, arrhythmic closer — "העסקים שתמיד היו — רק שעכשיו את רואה אותם." Replaced with "כל מה שקרוב אלייך, במקום אחד." — direct, rhythm-preserving, non-boastful. Both tickets prescribed the identical change; bundled into one PR. H2 and paragraphs 2+3 untouched.
