@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-554: reviews empty state — propagate isOwner prop
+
+`feat(MEH-554)`: adds `isOwner` prop to `ReviewsSection.jsx` (default `false`). When `isOwner=true` and reviews are empty, renders producer-facing EmptyState: title "ביקורות ראשונות מגיעות אחרי כמה לקוחות", explains WhatsApp-triggered auto-review flow, CTA links to `/producer/dashboard/followers`. Consumer empty state unchanged. Computed in `ProducerDetail.jsx` as `user?.producer_id === producer.id`, propagated via `ProducerSections.jsx`.
+
+Closes MEH-554.
+
 ## 2026-05-10 — MEH-529: add 3 categories — wine/beer, spices, chocolate
 
 `feat(MEH-529)`: added 3 categories to `backend/seed_data.py:CATEGORIES` (lines 25-27): יין, בירה ומשקאות 🍷 · תבלינים וצמחי תיבול 🌶️ · שוקולד וממתקים בוטיק 🍫. No schema change — seed data only. Unblocks Persona 6 (יקב זעיר) registration and two high-growth Israeli producer categories.

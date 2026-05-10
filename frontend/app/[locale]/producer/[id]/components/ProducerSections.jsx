@@ -39,6 +39,7 @@ export default function ProducerSections({
   sectionRefs,
   reviewsContainerRef,
   reviewsVisible,
+  isOwner = false,
 }) {
   const [showAllEvents, setShowAllEvents] = useState(false);
 
@@ -256,6 +257,7 @@ export default function ProducerSections({
             producerId={producer.id}
             avgRating={producer.avg_rating ?? 0}
             reviewCount={producer.reviews_count ?? 0}
+            isOwner={isOwner}
           />
         )}
       </div>
