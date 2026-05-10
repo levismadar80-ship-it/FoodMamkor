@@ -22,3 +22,16 @@ coverage.xml
 test-results/
 playwright-report/
 htmlcov/
+
+# Local autonomy infrastructure
+.claude/settings.json.backup-pre-autonomy
+.claude/settings.local.json
+
+# IDE
+.idea/
+
+# Debug artifacts
+e2e-failure-tail.txt
+headers.txt
+runs-may6-7.json
+= [
