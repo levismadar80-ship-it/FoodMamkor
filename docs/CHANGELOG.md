@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-556: Extend letter validation to 3 sibling fields
+
+`fix(MEH-556)`: extracts `_min_letters_validator` shared helper in `schemas.py` (single regex source of truth: `_LETTER_REGEX`). Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (same behavior, same field-specific error message). 6 new pytest cases in `tests/test_schemas_validation.py`.
+
+Closes MEH-556.
+
 ## 2026-05-10 — MEH-555: CategoryRequest validation — reject junk text
 
 `fix(MEH-555)`: adds `field_validator` to `CategoryRequestCreate.requested_name` that rejects strings with fewer than 3 Hebrew/Latin letter characters (`[א-תa-zA-Z]` regex). Returns `strip()`-ed value. Frontend `CategoryRequestModal.jsx` mirrors the guard: submit button disabled until `countLetters(name) >= 3`. Closes admin-queue junk-row vector (anonymous endpoint, 5/hour limit). Added 4 pytest cases in `tests/test_category_requests.py`. Bug Protocol entry added to `.claude/rules/workflow.md`.

@@ -9,6 +9,20 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 
+# MEH-556: shared letter-count validator used by ProducerCreate.name,
+# HomeProductCreate.title, ExperienceCreate.title, and
+# CategoryRequestCreate.requested_name (refactored from MEH-555).
+_LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
+
+
+def _min_letters_validator(
+    value: str, message: str = "שדה זה חייב להכיל לפחות 3 תווים"
+) -> str:
+    stripped = value.strip()
+    if len(_LETTER_REGEX.sub("", stripped)) < 3:
+        raise ValueError(message)
+    return stripped
+
 
 # --- Auth ---
 class UserRegister(BaseModel):
@@ -246,6 +260,11 @@ class ProducerCreate(BaseModel):
     website: str | None = None
     category_ids: list[int] = []
     delivery_areas: list[DeliveryAreaCreate] = []
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
 
 
 class ProducerAdminCreate(BaseModel):
@@ -706,6 +725,11 @@ class HomeProductCreate(BaseModel):
     def _sanitize_title(cls, v):
         return sanitize_text(v, max_length=200)
 
+    @field_validator("title")
+    @classmethod
+    def _validate_title_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
+
     @field_validator("description")
     @classmethod
     def _sanitize_description(cls, v):
@@ -874,6 +898,11 @@ class ExperienceCreate(BaseModel):
     @classmethod
     def _sanitize_title(cls, v):
         return sanitize_text(v, max_length=300)
+
+    @field_validator("title")
+    @classmethod
+    def _validate_title_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
 
     @field_validator("description")
     @classmethod
@@ -1133,11 +1162,7 @@ class CategoryRequestCreate(BaseModel):
     @field_validator("requested_name")
     @classmethod
     def _validate_letters(cls, v: str) -> str:
-        stripped = v.strip()
-        letter_count = len(re.sub(r"[^א-תa-zA-Z]", "", stripped))
-        if letter_count < 3:
-            raise ValueError("שם קטגוריה חייב להכיל לפחות 3 תווים")
-        return stripped
+        return _min_letters_validator(v, "שם קטגוריה חייב להכיל לפחות 3 תווים")
 
 
 class CategoryRequestOut(BaseModel):
