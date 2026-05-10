@@ -56,9 +56,11 @@
       "nav_heading": "ניווט",
       "nav_discover": "גלה עסקים",
       "newsletter_heading": "אוכל טוב לא שומרים לעצמנו.",
+      "newsletter_tagline": "סיפור של עסק חדש בכל שבוע, ישירות אל המייל שלך",
+      "newsletter_frequency": "פעם בשבוע. בלי spam. אפשר לבטל בכל רגע.",
       "newsletter_label": "אימייל לניוזלטר",
       "newsletter_placeholder": "האימייל שלך, בבקשה",
-      "newsletter_submit": "שלחו",
+      "newsletter_submit": "להירשם ✨",
       "newsletter_success": "ברוכים הבאים למהמקור 🌱 נפגשות בתיבה"
     }
   },
