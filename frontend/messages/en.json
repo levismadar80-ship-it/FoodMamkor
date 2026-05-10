@@ -56,9 +56,11 @@
       "nav_heading": "Navigation",
       "nav_discover": "Discover businesses",
       "newsletter_heading": "Good food is meant to be shared.",
+      "newsletter_tagline": "A new producer story every week, straight to your inbox",
+      "newsletter_frequency": "Once a week. No spam. Unsubscribe anytime.",
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
-      "newsletter_submit": "Send",
+      "newsletter_submit": "Join ✨",
       "newsletter_success": "Welcome to Mehamakor 🌱 See you in your inbox"
     }
   },
