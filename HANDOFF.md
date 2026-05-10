@@ -1,6 +1,33 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
+> Last updated: 2026-05-10
+
+---
+
+## WhatsApp Cloud API (post-MEH-508)
+
+Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21.0).
+
+| Field | Value |
+|---|---|
+| **Phone** | +972 55-255-3744 (Active, registered via Cloud API with 6-digit PIN) |
+| **Phone Number ID** | 1115345908323876 |
+| **WhatsApp Business Account ID** | 2030655854463347 |
+| **API version** | v21.0 |
+| **Access Token** | Never expires (System User "Mehamakor API" — saved in Smadar's password manager) |
+| **Approved templates (utility)** | `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_mode_response_he` |
+| **Backup admin** | Smadar Levi (email recovery: levismadar80@gmail.com verified) |
+| **Coexistence + Talia linked device** | Deferred to post-launch |
+
+**Env vars (Railway):** `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_BUSINESS_ID`, `WHATSAPP_API_VERSION=v21.0`
+
+**Smoke test:** `POST /api/admin/settings/test/whatsapp` → `{"ok": true, "configured": true, "service": "whatsapp"}`
+
+**Service module:** `backend/app/services/whatsapp.py` (fail-open — missing config logs ERROR, returns False, does not raise)
+
+---
+
 > Last updated: 2026-05-08 (MEH-506 claude-review silent no-op fix DRAFT PR open; MEH-500 backend Sentry SDK init MERGED PR #552 128baf9; MEH-491 env-drift CI gate + 16-var .env.example backfill MERGED PR #551 9f6baf4; MEH-505 flip lint-backend to blocking + ruff format flag fix MERGED PR #550 8b1273e; MEH-488 ruff CI gate MERGED PR #544 2aacc3c; MEH-492 alembic check CI gate MERGED PR #549 4d649c3; MEH-493 Sentry context middleware MERGED PR #548 1dc05bf; MEH-506 filed (calibration gap probe — claude-review action runs success but doesn't post comment, 3 PRs confirmed); MEH-505 filed (blocked by MEH-488 — flip lint-backend); PR #547 closed (stale, content already in 6a5657e); MEH-448 MERGED PR #546 6a5657e; MEH-505 filed (blocked by MEH-488); PR #547 docs HANDOFF open; MEH-488 ruff CI gate + .editorconfig DRAFT PR #544 open; MEH-489 pytest-cov + 70% gate + Smokeshow MERGED PR #543 51123af; MEH-487 claude-code-action@v1 MERGED PR #542 b5bfb94; MEH-483 structlog + Request-ID + /health split MERGED PR #541 b23f2ed; follow-up MEH-500 backend Sentry SDK init filed; MEH-485 CI concurrency + paths-filter DRAFT PR open; MEH-472 PR-A i18n Wave 2 translation — pushed, PR open; MEH-479 destructive cleanup ready for merge PR #533 — closes MEH-293; MEH-471 i18n Wave 1 MERGED PR #532 f7ea62e; MEH-293 PR #2 frontend MERGED PR #531 1a9d897; MEH-293 PR #1 backend MERGED PR #529 27d74e8; MEH-470 product edit flow MERGED PR #528 434f891; MEH-295 fully closed PR #525 cdd975a; MEH-469 MCP availability note merged; MEH-295 backend MERGED PR #519; MEH-335 fingerprint hardening merged 778dce3; MEH-383 observability protocol merged; MEH-294 Hebrew status labels PR #515; MEH-303 merged 863e5be; MEH-302 merged 4c919c9; MEH-359 merged b17f0d7; MEH-385 pr-reviewer subagent open)
 
 ### Session 2026-05-08 — MEH-511 + MEH-512 cleanup follow-ups (PR open, ready-for-review)
