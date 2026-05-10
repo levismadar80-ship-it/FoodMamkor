@@ -2,6 +2,17 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-10 — MEH-518: rename admin Twilio test button → WhatsApp
+
+`chore(MEH-518)`: the admin settings page listed a "Twilio" connection test, but the backend route is `/admin/settings/test/whatsapp`. The UI key `"twilio"` therefore called a non-existent endpoint. Renamed the key to `"whatsapp"`, added explicit labels `{ key, label }` so the display reads "WhatsApp" (not CSS-capitalized "Whatsapp"), and resolved 27 pre-existing ESLint warnings in the file.
+
+Also fixes a pre-commit ESLint hook bug (`.pre-commit-config.yaml`): `bash -c '...'` with `pass_filenames: true` was passing staged filenames as bash positional params `$0/$1`, not to ESLint — so ESLint ran on all files. Fixed with `"${@#frontend/}"` pattern to forward filenames with the `frontend/` prefix stripped.
+
+- **`frontend/app/[locale]/admin/settings/page.js`** — `["twilio", "cloudinary"].map(name =>...)` → `[{ key: "whatsapp", label: "WhatsApp" }, { key: "cloudinary", label: "Cloudinary" }].map(({ key, label }) =>...)`. All 27 pre-existing ESLint warnings resolved (identifier renames, `window.confirm` → `globalThis.confirm`, negated condition flip, nested ternary → if/else if, eslint-disable for structural rules).
+- **`.pre-commit-config.yaml`** — pre-commit ESLint hook entry fixed to forward staged filenames to ESLint correctly.
+
+Closes MEH-518.
+
 ## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
 
 `fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.
