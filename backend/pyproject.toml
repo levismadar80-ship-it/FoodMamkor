@@ -14,7 +14,7 @@ dependencies = [
     "bleach==6.3.0",
     "python-multipart==0.0.26",
     "pydantic[email]==2.9.2",
-    "pydantic-settings==2.5.2",
+    "pydantic-settings==2.14.1",
     "cloudinary==1.40.0",
     "google-auth==2.34.0",
     "PyJWT[crypto]==2.12.0",
