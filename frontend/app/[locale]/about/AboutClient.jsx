@@ -128,9 +128,17 @@ export default function AboutPage() {
                 <p>
                   וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.
                 </p>
-                <p className="text-sm text-site-muted">
-                  מייסדת מהמקור, תוכניתנית בצבא ולומדת רפואה תזונתית.
-                </p>
+                <div className="border-s-2 border-primary/40 ps-4 mt-2 space-y-3">
+                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                    מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.
+                  </p>
+                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                    את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית.
+                  </p>
+                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                    את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
