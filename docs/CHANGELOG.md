@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-566: Backlog hygiene sweep
+
+`docs(MEH-566)`: new `docs/research/backlog-hygiene-sweep.md` (1864w, under 2000 cap) — triages all 144 currently-open Mehamakor Linear issues against `docs/BUG_SEVERITY.md`. Headline: **2 SEV-1 + 18 SEV-2 launch blockers across 144 open issues.** Both SEV-1 are the WhatsApp epic (MEH-504 + MEH-509, only `prod-blocker`-labeled issues). 18 SEV-2 cover audits 1–7, pre-launch parents (MEH-125, 195, 225), supply seeding (MEH-409, 413), visual identity (MEH-451, 123), and launch-affecting onboarding (MEH-528). 12-item recommended close batch is all `post-launch`-labeled or superseded-by-decision (MEH-239 → MEH-504, MEH-560/561 → MEH-557 verdicts); 6 items flagged "needs Smadar review" rather than close. Zero stale candidates — repo too young (90-day threshold not yet reachable; oldest `updatedAt` = 2026-04-21). Analysis only; no Linear writes performed.
+
+Closes MEH-566.
+
 ## 2026-05-14 — MEH-562: Static analysis Layer 2 — mypy + Knip + TS strict (warn-only)
 
 `feat(MEH-562)`: adds three non-blocking static-analysis jobs to CI. mypy strict on `app/auth.py` (12 errors — STOP-a triggered, schemas/ deferred; combined was 57 > 50 threshold). Knip on frontend (2 unused deps + 24 dead exports + 7 unused files). TS strict on e2e/*.ts (24 errors in `rtl.spec.ts` — JSDoc `left-*/right-*` comment terminates early, pre-existing). All jobs `continue-on-error: true`. Baseline documented in `docs/research/static-analysis-baseline.md`. tsconfig.e2e.json added; tsconfig.json added for Next.js strict compat; knip.json added; `mypy` + type stubs added to backend dev deps.
