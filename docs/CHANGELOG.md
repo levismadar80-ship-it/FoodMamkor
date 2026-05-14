@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-480: Nested CLAUDE.md stubs for routers/components/tests/e2e
+
+`docs(MEH-480)`: 4 new nested briefing stubs (30-60 lines each) at `backend/app/routers/CLAUDE.md`, `frontend/components/CLAUDE.md`, `tests/CLAUDE.md`, `frontend/e2e/CLAUDE.md`. Each names a canonical `file:line` pattern, the conventions for that dir (auth deps, imports, RTL, naming), and the local gotchas — linking to `.claude/rules/*` instead of duplicating them. Root `CLAUDE.md` untouched (≤80-line cap preserved). Pure docs-only — zero code changes.
+
+Closes MEH-480.
+
 ## 2026-05-14 — MEH-556: Extend letter validation to 3 sibling fields
 
 `fix(MEH-556)`: extracts `_min_letters_validator` shared helper + `_LETTER_REGEX` (single regex source of truth) into `schemas.py` top-level. Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (no behavior change). 6 new Pydantic-layer pytest cases in `tests/test_schemas_validation.py`.
