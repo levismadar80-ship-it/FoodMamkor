@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
+
+`copy(MEH-579)`: replaces the 10 founder-voice Q&A pairs in `/about/for-businesses` (MEH-571) with 8 customer-voice pairs (verbatim from the issue). Subject of every answer is now the reader ("את"), not Mehamakor ("אנחנו"/"אני"). Removes the over-claimed "Trust badge מאומת על ידי מהמקור" line (no vetting infrastructure exists yet) and the consumer-framed Q7 ("מי בודק שעסקים אחרים אצלכם אמינים?") that didn't match what a producer actually thinks about. Founder bio updated: ספיר מזכרון יעקב (not "מהמרכז"). Category D renamed שליטה ותחרות → שליטה ועמדה. JSON-LD `FAQPage` `mainEntity` array drops from 10 → 8 (auto-derived from the same `CATEGORIES` array). H1, metadata, and OG description all updated from "10 שאלות" → "8 שאלות". `docs/COPY_BANK.md` gains a "Customer-centric voice rule" section codifying the subject test + over-claim guard + anti-defensive framing as the lesson from this revert.
+
+Closes MEH-579.
+
 ## 2026-05-14 — MEH-565: Bug Severity Matrix + Decision Authority guide
 
 `docs(MEH-565)`: new `docs/BUG_SEVERITY.md` (996 words) — SEV-1..SEV-4 matrix with worked examples from Linear (MEH-265, MEH-314/317, MEH-256, MEH-321, MEH-353, MEH-575), Severity-vs-Priority orthogonality walkthrough using MEH-408 (P1 Urgent + SEV-4 pre-launch hardening), and CertifiClaude decision-authority section cross-referencing CLAUDE.md / `.claude/rules/workflow.md`. No code or other docs touched.
