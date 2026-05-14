@@ -1,7 +1,23 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-10
+> Last updated: 2026-05-14
+
+---
+
+## 2026-05-14 — MEH-574: dotclaude research sweep
+
+**Branch:** `feature/meh-574-dotclaude-sweep` off `staging`. **Risk tier:** LOW (docs-only).
+
+**Closes:** MEH-574.
+
+**Output:** `docs/audits/2026-05-dotclaude-sweep.md` — 763 words, comparison of `poshan0126/dotclaude` vs Mehamakor's `.claude/`. Verdicts: **1 ADOPT** (SessionStart `compact`-matcher hook), **2 DEFER** (token-cost audit, doc-drift PR check), rest SKIP (already covered by MEH-397/408/442 or workflow mismatch).
+
+**Key finding (high confidence):** Mehamakor's `.claude/settings.json` `SessionStart` block has no `matcher` field — runs only at session start, not after `/compact`. dotclaude's `context-recovery.sh` fires on `matcher: "compact"` and re-injects rules. After workflow rule 7's 40% `/compact` trigger, Mehamakor silently loses HANDOFF/branch-base context. Fix is ~5-line settings.json change to add a second `SessionStart` block re-invoking the existing `session-start.sh`.
+
+**Next steps (Smadar):** open Linear tickets for the 1 ADOPT + 2 DEFER candidates if accepted. Audit deliberately did not edit `.claude/` — proposal-only sweep.
+
+**Scope verification:** `git diff --name-only origin/staging...HEAD` shows only `docs/audits/2026-05-dotclaude-sweep.md`, `docs/CHANGELOG.md`, `HANDOFF.md`. No `.claude/` files touched.
 
 ---
 
