@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-526: /about criteria deep article (5 paragraphs)
+
+`feat(MEH-526)`: expands `/about` קריטריוני כניסה section in `frontend/app/[locale]/about/AboutClient.jsx` from a 5-bullet list to a deep article: 1 intro paragraph (sets stakes) + retained 5-bullet TL;DR (scannability) + 5 expanded paragraphs (60-80 words each, numbered H3 headers, explaining *what / why / how mehamakor verifies* for each criterion) + 1 closing paragraph. New `criteriaDetail` array holds the long-form copy. Tone: factual + slightly editorial, feminine voice, "בית עסק / בעלת עסק" throughout, no marketing-speak. No metadata changes — page-level `metadata` export in `page.js` already references "קריטריוני הכניסה" and is left untouched.
+
+Closes MEH-526.
+
 ## 2026-05-14 — MEH-527: /about founder credibility amplification
 
 `feat(MEH-527)`: expands Smadar's founder credibility line in `frontend/app/[locale]/about/AboutClient.jsx` from a single muted sentence to a 3-paragraph italic block with right-edge accent (RTL `border-s-2 border-primary/40`). Picked Option A (inline italic emphasis) + Candidate 1 (matter-of-fact) per issue's "safest" recommendation. Removed "בצבא" military reference per forbidden list. New copy: "מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית." + "את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית." + "את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל." No other /about sections touched.
