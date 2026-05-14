@@ -8,6 +8,12 @@
 
 Closes MEH-572.
 
+## 2026-05-14 — MEH-574: dotclaude sweep — research audit
+
+`docs(MEH-574)`: research sweep comparing `poshan0126/dotclaude` against Mehamakor's `.claude/`. Output: `docs/audits/2026-05-dotclaude-sweep.md` (763 words). 1 ADOPT (SessionStart `compact`-matcher hook to survive `/compact` context loss — Mehamakor's current SessionStart block has no matcher field, runs only at session start), 2 DEFER (token-cost audit script, doc-drift PR check prototype). Everything else SKIP — already covered by MEH-397/408/442/RTL guards or fights solo paste-relay workflow. No `.claude/` files touched.
+
+Closes MEH-574.
+
 ## 2026-05-10 — MEH-555: CategoryRequest validation — reject junk text
 
 `fix(MEH-555)`: adds `field_validator` to `CategoryRequestCreate.requested_name` that rejects strings with fewer than 3 Hebrew/Latin letter characters (`[א-תa-zA-Z]` regex). Returns `strip()`-ed value. Frontend `CategoryRequestModal.jsx` mirrors the guard: submit button disabled until `countLetters(name) >= 3`. Closes admin-queue junk-row vector (anonymous endpoint, 5/hour limit). Added 4 pytest cases in `tests/test_category_requests.py`. Bug Protocol entry added to `.claude/rules/workflow.md`.

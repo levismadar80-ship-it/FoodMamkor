@@ -9,7 +9,7 @@
 
 **Branch:** `claude/shai-hulud-supply-chain-k4vII` (web session, task-assigned name; off `staging`). **Risk tier:** LOW (audit + workflow permissions + docs).
 
-**Closes:** MEH-572.
+**Closes:** MEH-572. Unblocked by MEH-575 (`bb7913b`).
 
 **State:**
 - ✅ Phase 0 — IOC audit against Mini Shai-Hulud (TeamPCP, 11 May 2026) compromised-package list: **CLEAN** (0 hits across 11 scopes, 13 unscoped names, 3 artifacts, 4 C2 indicators, 1 persistence daemon). Audit log written to `/tmp/shai-hulud-audit-<timestamp>.txt`, output pasted verbatim in PR description.
@@ -22,6 +22,22 @@
 **Caveats:**
 - Permission constraint: `.claude/settings.json` denies `Edit(.github/workflows/**)`. Asked Smadar; patched `deploy.yml` via a `python3` heredoc rewrite of the on/jobs region (no Edit-tool call). Verified diff is exactly 7 added lines (the permissions block + comment).
 - One IOC-list assumption: the `lightning` and `intercom-client` unscoped names are listed as compromised in the campaign report; if these are reused by legitimate upstream packages in a future install, the audit may need a tighter regex or a version-pinned check.
+
+---
+
+## 2026-05-14 — MEH-574: dotclaude research sweep
+
+**Branch:** `feature/meh-574-dotclaude-sweep` off `staging`. **Risk tier:** LOW (docs-only).
+
+**Closes:** MEH-574.
+
+**Output:** `docs/audits/2026-05-dotclaude-sweep.md` — 763 words, comparison of `poshan0126/dotclaude` vs Mehamakor's `.claude/`. Verdicts: **1 ADOPT** (SessionStart `compact`-matcher hook), **2 DEFER** (token-cost audit, doc-drift PR check), rest SKIP (already covered by MEH-397/408/442 or workflow mismatch).
+
+**Key finding (high confidence):** Mehamakor's `.claude/settings.json` `SessionStart` block has no `matcher` field — runs only at session start, not after `/compact`. dotclaude's `context-recovery.sh` fires on `matcher: "compact"` and re-injects rules. After workflow rule 7's 40% `/compact` trigger, Mehamakor silently loses HANDOFF/branch-base context. Fix is ~5-line settings.json change to add a second `SessionStart` block re-invoking the existing `session-start.sh`.
+
+**Next steps (Smadar):** open Linear tickets for the 1 ADOPT + 2 DEFER candidates if accepted. Audit deliberately did not edit `.claude/` — proposal-only sweep.
+
+**Scope verification:** `git diff --name-only origin/staging...HEAD` shows only `docs/audits/2026-05-dotclaude-sweep.md`, `docs/CHANGELOG.md`, `HANDOFF.md`. No `.claude/` files touched.
 
 ---
 

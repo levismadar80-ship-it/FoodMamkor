@@ -185,6 +185,30 @@ and MEH-374 (62 commits)._
       code.claude.com. User reviews + approves the plan before any
       code is written; only execute after explicit `go`. Requires
       Claude Code web account + GitHub repo connected.
+    - **Pre-code: `/goal` command for LOW-RISK end-to-end execution
+      (Claude Code 2.1.139+, May 2026).** Define one mechanical completion
+      condition; Claude works across turns until it's met, an evaluator
+      model checks each turn, and the agent stops on its own. Cuts
+      ping-pong on LOW-RISK tasks (test fixes, copy, i18n, docs-only,
+      CI/workflow YAML, single-file deps).
+      - **Usage:** `/goal [verifiable end-state]`. Examples that work:
+        `/goal pytest tests/test_X.py green + draft PR opened`;
+        `/goal npm run build green + preview URL posted + Lighthouse ≥ 90`.
+      - **HIGH-RISK ban.** Never `/goal` on auth, schema, central
+        components, security, or prod-deploy work. The evaluator can't
+        judge architectural trade-offs — same family as MEH-373 subagent
+        approximation drift.
+      - **Goal must be mechanically verifiable.** ✅ `pytest green + PR
+        state` (mechanical) — ❌ `design looks good` (subjective, will be
+        judged wrong).
+      - **STOP conditions stay in force (Risk-tiering section above).**
+        Goal failure on: discovery exposes scope > defined; >2 failed
+        attempts on same problem; cumulative runtime > 30 min. Set runtime
+        cap inside the goal string when relevant.
+      - **Pilot before mass adoption.** Use on one LOW-RISK Linear issue
+        first (current pilot: MEH-571 FAQ page). If the evaluator marks
+        "done" but PR isn't actually green → revert to manual flow, do not
+        `/goal` again until the failure mode is documented here.
     - Caveat: `Monitor` needs the advertising MCP server connected;
       if unavailable, fall back to manual `curl` polling and note it
       in the session summary.
