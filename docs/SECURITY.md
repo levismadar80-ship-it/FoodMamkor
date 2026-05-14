@@ -812,6 +812,75 @@ obfuscation bypass)" for the full list).
 
 ---
 
+## TRAP 9 — Shai-Hulud baseline (May 2026)
+
+**Incident:** Mini Shai-Hulud (TeamPCP campaign, 11 May 2026) compromised
+~120 npm packages across multiple scopes plus a handful of unscoped names,
+dropping malicious post-install loaders (`router_init.js`,
+`router_runtime.js`) and a Python payload (`transformers.pyz`) that
+exfiltrated GitHub tokens to a C2 cluster (getsession.org,
+git-tanstack.com, 83.142.209.194, api.masscan.cloud) and installed a
+persistence daemon (`gh-token-monitor.plist` / `.service`).
+
+**Baseline audit (MEH-572, 14 May 2026) — RESULT: CLEAN.**
+
+| Surface | Check | Result |
+|---|---|---|
+| `frontend/package-lock.json` | 11 compromised scopes + 13 unscoped names | 0 hits |
+| `backend/uv.lock` | Same name list + `transformers.pyz` filename | 0 hits |
+| `frontend/package-lock.json` + `backend/uv.lock` | Malicious filenames (`router_init.js`, `router_runtime.js`, `transformers.pyz`) | 0 hits |
+| `.github/workflows/` + lockfiles | C2 indicators (getsession.org, git-tanstack.com, 83.142.209.194, api.masscan.cloud) | 0 hits |
+| repo-wide | `gh-token-monitor` persistence daemon | 0 hits |
+| `.github/workflows/*.yml` | `pull_request_target` (write-token + untrusted-fork trigger) | 0 hits |
+
+**Compromised scopes checked:** `@tanstack/`, `@uipath/`, `@mistralai/`,
+`@squawk/`, `@tallyui/`, `@beproduct/`, `@draftlab/`, `@draftauth/`,
+`@taskflow-corp/`, `@tolka/`, `@guardrails-ai/`.
+
+**Unscoped names checked:** `safe-action`, `ts-dna`, `cross-stitch`,
+`cmux-agent-mcp`, `agentwork-cli`, `git-branch-selector`, `wot-api`,
+`git-git-git`, `nextmove-mcp`, `ml-toolkit-ts`, `intercom-client`,
+`lightning`, `opensearch-project/opensearch`.
+
+### Remediation shipped (MEH-572)
+
+- **GITHUB_TOKEN scope narrowed.** `deploy.yml` gained a workflow-root
+  `permissions: contents: read` block. Railway deploys use a Railway-
+  scoped token, not GITHUB_TOKEN, so no job needs write scope. `e2e.yml`,
+  `pr-checks.yml`, `dependency-audit.yml`, `skills-audit.yml`,
+  `claude-review.yml`, `changelog.yml` were already correctly scoped at
+  audit time.
+- **No `pull_request_target` triggers.** Verified at audit; if a future
+  PR introduces one, that PR must also pin the checkout `ref` to
+  `github.event.pull_request.head.sha` and refuse to install fork
+  dependencies before they're reviewed.
+
+### Out of scope (separate follow-ups)
+
+- **SHA-pinning third-party actions** (`actions/checkout@v6`,
+  `dorny/paths-filter@v3`, etc.) — Dependabot handles upgrade cadence;
+  pin-to-SHA migration tracked separately.
+- **DNS-level C2 blocking** — solo-dev workstation, no enterprise proxy.
+  Mitigation is the audit baseline above plus lockfile drift detection
+  in `dependency-audit.yml`.
+
+### Re-running this audit
+
+```bash
+# IOC patterns kept current with public CISA / GitHub advisory feeds.
+# Re-run if any compromised-package advisory mentions a scope we use.
+grep -iE '@tanstack/|@uipath/|@mistralai/|@squawk/|@tallyui/|@beproduct/|@draftlab/|@draftauth/|@taskflow-corp/|@tolka/|@guardrails-ai/' frontend/package-lock.json
+grep -iE 'router_init\.js|router_runtime\.js|transformers\.pyz' frontend/package-lock.json backend/uv.lock
+grep -rn 'pull_request_target' .github/workflows/
+```
+
+Any hit on the first two greps → STOP, surface the package + version,
+rotate any token the affected job could touch, do not push the audit
+PR. Any hit on the third → STOP, review the workflow for `ref` pinning
+before merge.
+
+---
+
 ## בדיקת אבטחה — הרץ ל-Claude Code
 
 ```

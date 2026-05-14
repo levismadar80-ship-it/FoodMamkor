@@ -53,6 +53,13 @@ on:
     branches: [main, staging]
   workflow_dispatch:
 
+# MEH-572 — Shai-Hulud supply-chain hardening (May 2026). Default the
+# GITHUB_TOKEN scope to read-only for the whole workflow. Railway deploys
+# authenticate with a separate Railway-scoped token (RAILWAY_TOKEN) — no
+# job here needs write scope on the GitHub side, so we don't widen.
+permissions:
+  contents: read
+
 jobs:
   # ──────────────────────────────────────────────────────────────────
   # LINT — runs on every PR and every push to main/staging.
