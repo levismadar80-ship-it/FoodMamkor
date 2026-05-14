@@ -598,3 +598,5 @@ Tasks auto-expire after 7 days.
     MEH-579 PR #639 silently changed the page heading from
     "שאלות נפוצות לבעלות עסק" to "8 שאלות לפני שמצטרפות" and added
     an unauthorized subtitle. Both required a follow-up PR to revert.
+    Discovery step (grep before edit) is now mandatory for any copy
+    fix that mentions specific text positions.

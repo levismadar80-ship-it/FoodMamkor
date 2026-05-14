@@ -406,11 +406,12 @@ Test: write the question as the reader would ask a friend over coffee.
 If it sounds like a marketing department wrote it to address a corporate
 concern, reframe.
 
-## Over-claim guard (MEH-579, May 14 2026)
+## Over-claim guard + no-jargon rule (MEH-579, May 14 2026)
 
-Do not claim platform authority, scale, or features that don't yet exist.
-Pre-launch and early-stage platforms have very little authority — pretending
-otherwise undermines trust the moment the reader pokes at it.
+**Over-claim guard:** Do not claim platform authority, scale, or features
+that don't yet exist. Pre-launch and early-stage platforms have very
+little authority — pretending otherwise undermines trust the moment the
+reader pokes at it.
 
 | ❌ Over-claim | ✅ True today |
 |---|---|
@@ -424,3 +425,18 @@ followed up on this, would the evidence hold?" If no — rewrite or remove.
 This guard is especially important for "trust" and "social proof" claims,
 which are exactly where over-claim is most tempting and most damaging
 when discovered.
+
+**No-jargon rule:** No technical jargon in user-facing copy. The reader
+should never have to know what an industry term means.
+
+| ❌ Jargon | ✅ Plain Hebrew |
+|---|---|
+| "מתועדף ב-SEO" | "עולה בחיפושים" |
+| "אלגוריתם שמדרג אותך" | "מי שמדרג אותך" |
+| "פרופיל" (in business UI context) | "דף העסק שלך" |
+| "מודרציה" | "אישור ידני" |
+| "פלטפורמה" (when "אתר" works) | "אתר" |
+
+**No over-specific examples:** Concrete examples must work across
+producer types. "גבינות עזים תל אביב ב-9 בערב" locks out anyone not
+selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי בגוגל" instead.
