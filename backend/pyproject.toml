@@ -75,3 +75,41 @@ max-complexity = 10
 
 # Auto-generated migrations are long by design.
 "alembic/versions/**" = ["PLR0915", "PLR0912"]
+
+# ─────────────────────────────────────────────────────────────
+# MEH-562 — mypy strict on auth.py + schemas/ (warn-only baseline)
+# All three overrides are intentional: the libraries listed below
+# don't ship inline types yet. ignore_missing_imports keeps CI
+# non-blocking until stubs land or libraries adopt py.typed.
+# ─────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+# STOP-condition (a) triggered: auth.py + schemas/ = 57 errors > 50 threshold.
+# Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
+files = ["app/auth.py"]
+explicit_package_bases = true
+# Stubs not yet available for these FastAPI-stack libs:
+[[tool.mypy.overrides]]
+module = [
+    "fastapi",
+    "fastapi.*",
+    "sqlalchemy",
+    "sqlalchemy.*",
+    "joserfc",
+    "joserfc.*",
+    "structlog",
+    "structlog.*",
+    "cloudinary",
+    "cloudinary.*",
+    "anthropic",
+    "anthropic.*",
+    "slowapi",
+    "slowapi.*",
+    "resend",
+    "resend.*",
+    "asgi_correlation_id",
+    "asgi_correlation_id.*",
+]
+ignore_missing_imports = true
