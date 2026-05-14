@@ -5,6 +5,42 @@
 
 ---
 
+## Session summary 2026-05-14 — Wave 1 + Wave 2 (pre-launch quality stack)
+
+**Wave 1 merged:**
+- PR #644 — MEH-563: UptimeRobot synthetic monitoring runbook
+- PR #645 — MEH-557: Pre-launch quality stack research
+
+**Wave 1 closed without merge:**
+- PR #643 — MEH-568 Phase 0: App Store slate locked, Phase 1 deferred (post-launch + 30 days)
+
+**Wave 2 merged:**
+- PR #649 — MEH-562: Static analysis Layer 2 (mypy + Knip + tsc strict, warn-only, `|| true` patch)
+- PR #648 — MEH-566: Backlog hygiene sweep (2 SEV-1 + 18 SEV-2 launch blockers)
+- PR #650 — MEH-564: Pre-launch security scan runbook (ZAP + SecurityHeaders + Snyk, docs-only)
+
+**MEH-565** (Bug Severity Matrix + Decision Authority guide) — Done earlier today (PR #638).
+
+**MEH-566 close batch executed by Claude.ai via Linear MCP:**
+- 12 issues closed: MEH-239, MEH-178, MEH-340, MEH-348, MEH-347, MEH-545, MEH-560, MEH-561, MEH-310, MEH-543, MEH-544, MEH-536
+- 4 founder-thinking issues closed: MEH-411, MEH-412, MEH-415, MEH-416
+- 3 priority demoted to P3: MEH-122, MEH-296, MEH-232
+- 1 priority promoted to P1 (pending prod verification): MEH-549
+
+**Issues created today (2026-05-14):** MEH-557 through MEH-569 + MEH-581.
+
+**Deferrals:**
+- Post-launch + 14 days: MEH-581 (Hybrid CI annotation upgrade)
+- Post-launch + 30 days: MEH-567 (Codex), MEH-568 Phase 1 (App Store mining), MEH-569 (Adversarial audit)
+
+**MEH-549 verdict:** CI-ONLY (owner-verified real-browser check; production /map renders correctly). Demoted to P3. Wave 3 proceeds.
+
+**Wave 3 in flight (dispatched after CI-ONLY verdict):**
+- MEH-558 — Mutation testing pilot (mutmut SHIP-narrow per MEH-557): `feature/meh-558-mutation-testing-pilot`, agent running
+- MEH-559 — k6 load testing (SHIP-minimal, script + runbook; baseline TBD pre-merge by owner local run): `feature/meh-559-k6-load-testing`, agent running
+
+---
+
 ## 2026-05-14 — MEH-564: Pre-launch security scan runbook (docs-only)
 
 **Branch:** `feature/meh-564-pre-launch-security-scan-runbook` off `staging`. **Risk tier:** LOW (docs-only, no production code).
