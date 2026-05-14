@@ -5,6 +5,22 @@
 
 ---
 
+## 2026-05-14 — MEH-564: Pre-launch security scan runbook (docs-only)
+
+**Branch:** `feature/meh-564-pre-launch-security-scan-runbook` off `staging`. **Risk tier:** LOW (docs-only, no production code).
+
+**Closes:** MEH-564. Adds `docs/research/pre-launch-security-scan-runbook.md` (1468 words, under 1500 cap) — a runbook Smadar executes ~30 min before public launch covering three external scans: OWASP ZAP baseline (Docker, passive only — explicit no-active-scan rationale because POSTs would write to production DB and trip rate limiter), SecurityHeaders.com browser check (target grade A-, screenshot to `docs/research/security-headers-grade.png`), and Snyk Code free tier (skip-on-no-account fallback because pip-audit/npm-audit MEH-336 gate already covers deps). Triage protocol templates Linear ticket title + body for HIGH/CRITICAL (block-launch), MEDIUM (file, do not block), LOW/INFO (umbrella backlog ticket). Pre-marked false-positive patterns (CSP report-only, expected 401 on /admin, X-Powered-By absence). Confidence calibration block + out-of-scope (no active fuzzing, no authenticated scans, no pen-test).
+
+**Why runbook-only:** CC sandbox cannot run Docker, cannot reach `securityheaders.com` (not on WebFetch allowlist per `.claude/rules/skills.md` Layer 1), and Snyk requires login. Smadar explicitly chose Option 2 (ship runbook to repo so it's not forgotten pre-launch; execute manually on launch day). No Linear tickets created in this PR — triage protocol is a template only.
+
+**Cross-refs added:** `docs/SECURITY-CHECKLIST.md` top banner now points at the runbook as the launch-day external-scan gate (per-PR TRAPs unchanged).
+
+**Out of scope:** no actual scans run, no `next.config.js` / CSP / security code touched, ZAP NOT added to per-PR CI (10+ min runtime is wrong shape).
+
+**Next task:** Smadar executes the runbook ~30 min before launch and fills the inline result tables on a launch-day branch.
+
+---
+
 ## 2026-05-14 — MEH-566: Backlog hygiene sweep
 
 **Branch:** `feature/meh-566-backlog-hygiene-sweep` off `staging`. **Risk tier:** LOW (analysis-only doc; zero Linear writes).

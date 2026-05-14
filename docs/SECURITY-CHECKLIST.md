@@ -1,5 +1,7 @@
 # Security Checklist — מהמקור (MEH-258)
 
+> **Pre-launch external-scan gate (MEH-564):** the eight TRAPs below are the per-PR gate; the pre-launch external scan (OWASP ZAP baseline + SecurityHeaders.com + Snyk Code) is the launch-day gate. Runbook: [`docs/research/pre-launch-security-scan-runbook.md`](research/pre-launch-security-scan-runbook.md). Run ~30 min before public launch; HIGH/CRITICAL findings block launch, MEDIUM file as Linear, LOW go to backlog.
+>
 > **When to use this doc:**
 > Does your PR touch any of these? → check the relevant traps below.
 >
