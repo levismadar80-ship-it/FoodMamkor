@@ -5,6 +5,48 @@
 
 ---
 
+## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
+
+**Branch:** `feature/meh-579-faq-copy-fix` off `staging`. **Risk tier:** LOW (copy-only).
+
+**PR:** #639 — merged to staging — SHA `e38800c`.
+
+**Closes:** MEH-579. Follow-up to MEH-571 (FAQ page shipped but voice drifted to founder-centric).
+
+**Changes:**
+- `frontend/app/[locale]/about/for-businesses/page.js` — replaced 10 Q&A with 8 customer-centric Q&A (verbatim from issue spec). 4 categories: כסף וערך / זמן ומאמץ / אמון בפלטפורמה / שליטה ועמדה. JSON-LD FAQPage updated to 8 questions.
+- `docs/COPY_BANK.md` — appended "Customer-centric voice rule (MEH-579)" section (subject test table, over-claim guard, anti-defensive framing).
+- `docs/CHANGELOG.md` — entry added.
+
+**Key learning (MEH-571 → MEH-579 pilot):** `/goal` conditions must include an explicit Smadar mobile QA gate. MEH-571 merged without mobile QA and shipped founder-voice copy. MEH-579 added the gate; user said "MERGE" explicitly instead of confirming via Linear comment — overrides the `/goal` wait condition.
+
+**Next task:** none queued. Check Linear for next open issue.
+
+---
+
+## 2026-05-14 — MEH-571: /about/for-businesses FAQ page (initial ship)
+
+**Branch:** `feature/meh-571-faq-for-businesses` off `staging`. **Risk tier:** LOW (new page + footer link).
+
+**PR:** #635 — merged to staging — SHA `6dd1735`.
+
+**Closes:** MEH-571.
+
+**Changes:**
+- `frontend/app/[locale]/about/for-businesses/page.js` — new public FAQ page with FAQPage JSON-LD, native `<details>` accordion, 8 Q&A in 4 categories.
+- `frontend/components/Footer.jsx` — added FAQ for Businesses link.
+- `frontend/messages/he.json` + `frontend/messages/en.json` — added `nav.footer.faq_businesses` key.
+
+---
+
+## 2026-05-14 — MEH-576: add "compact" matcher to SessionStart hook
+
+**Branch:** `docs/workflow-add-goal-rule` off `staging`. **PR:** #632 — merged to staging — SHA `f749f98`.
+
+**Closes:** MEH-576 (`.claude/rules/workflow.md` — Rule 17 `/goal` command documentation).
+
+---
+
 ## 2026-05-14 — MEH-565: Bug Severity Matrix + Decision Authority guide
 
 **Branch:** `feature/meh-565-bug-severity-matrix` off `staging`. **Risk tier:** LOW (docs-only, single new file). Ships `docs/BUG_SEVERITY.md` (996 words): SEV-1..SEV-4 matrix with Linear-history examples, Severity-vs-Priority orthogonality (MEH-408 worked walkthrough), and a Decision Authority section that cross-references — does not duplicate — CLAUDE.md / `.claude/rules/workflow.md`. Phase A presented 5+ candidates and selected slate before drafting; Phase B+C ran end-to-end after approval; trimmed twice to land under the 1000-word hard cap. Closes MEH-565.
