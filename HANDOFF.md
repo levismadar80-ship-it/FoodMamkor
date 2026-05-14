@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-05-14 — MEH-562: Static analysis Layer 2 (draft PR)
+
+**Branch:** `feature/meh-562-static-analysis-layer-2` off `staging`. **Risk tier:** LOW (CI additions only, no production code).
+
+**Status:** Draft PR opened. All three CI jobs `continue-on-error: true`.
+
+**STOP condition (a) hit:** mypy on `app/auth.py` + `app/schemas/` = 57 errors > 50 threshold. Scoped to `app/auth.py` only (12 errors). schemas/ deferred.
+
+**Baselines:**
+- mypy: 12 errors (auth.py scope)
+- Knip: 2 unused deps + 24 dead exports + 7 unused files
+- TS strict: 24 errors in e2e/rtl.spec.ts (JSDoc comment issue)
+
+**Next task:** After PR merges, open follow-up tickets for:
+1. Fix `e2e/rtl.spec.ts` JSDoc comment (1-line, removes all 24 TS errors)
+2. Add `dict[str, Any]` types in `app/auth.py` (removes 5 type-arg errors)
+3. Scope mypy to include `app/schemas/` in a follow-up ticket
+4. Investigate `ProducerSchema` non-use at `lib/schemas.js:7` (Rule 19 concern)
+
+---
+
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
 
 Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.

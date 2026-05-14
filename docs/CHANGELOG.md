@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-562: Static analysis Layer 2 — mypy + Knip + TS strict (warn-only)
+
+`feat(MEH-562)`: adds three non-blocking static-analysis jobs to CI. mypy strict on `app/auth.py` (12 errors — STOP-a triggered, schemas/ deferred; combined was 57 > 50 threshold). Knip on frontend (2 unused deps + 24 dead exports + 7 unused files). TS strict on e2e/*.ts (24 errors in `rtl.spec.ts` — JSDoc `left-*/right-*` comment terminates early, pre-existing). All jobs `continue-on-error: true`. Baseline documented in `docs/research/static-analysis-baseline.md`. tsconfig.e2e.json added; tsconfig.json added for Next.js strict compat; knip.json added; `mypy` + type stubs added to backend dev deps.
+
+Closes MEH-562.
+
 ## 2026-05-14 — MEH-557: Pre-launch quality stack research
 
 `docs(MEH-557)`: new `docs/research/pre-launch-quality-stack.md` (1435w, under 1500 cap) — comparison of 4 quality tools against Mehamakor's FastAPI + Next.js + Hebrew RTL + Railway-free-tier constraints with existing test stack (pytest, Playwright E2E, Vitest, adversarial-review variants, pip-audit/npm-audit, Sentry) as baseline. TL;DR verdicts: **mutmut SHIP narrow** scoped to `backend/app/auth.py` only — auth is a documented SPOF (MEH-265, MEH-326) and mutation is the only thing that proves the existing auth tests catch bugs; **k6 SHIP minimal** as a 50-VU staging ramp the week before launch, with explicit footgun warning not to point k6 at production (Railway free-tier burn); **Playwright visual regression DEFER** — built-in snapshot tolerance is fragile against Hebrew RTL font-rendering flake, Percy/Chromatic post-launch with budget is the right path; **Hypothesis SKIP pre-launch** — validator surface (`mask_phone`, price, MEH-555 letter-count) is small enough that example coverage suffices, revisit if a SEV-2 lands on a validator edge case. Each tool section has setup-cost, runtime-cost, fit-to-stack notes, Hebrew RTL angle, Railway angle, key risks, official + third-party citation. Confidence calibration block names which verdicts are HIGH and which are MEDIUM confidence.
