@@ -5,6 +5,73 @@
 
 ---
 
+## Session summary 2026-05-14 — MEH-195 epic triage + MEH-201 ship
+
+**MEH-195 triage report** (read-only, no code/Linear edits):
+- Parent description references 10 essentials but only 5 sub-issues actually exist (MEH-197–201). MEH-197/198/199/200 already Done. MEH-201 was the only open sub.
+- 5 essentials listed in the parent body (resend verification, change-email for password users, session timeout warning, "logout all devices", active sessions list) were never created as sub-issues — most depend on infra (refresh tokens / session tracking) we don't have at MVP; recommend closing the epic and deferring those as standalone post-launch tickets.
+
+**MEH-201 shipped — CitySearch in /settings + cities.js comment fix**
+- PR opened off `feature/meh-201-settings-city-autocomplete` branch.
+- Net diff: +9 / −23 across `frontend/app/[locale]/settings/page.jsx` and `frontend/data/cities.js`.
+- **Phase 0 correction (important for future audits):** the settings page does NOT have separate consumer/producer city inputs. `ProfileTab` rendered two identical `<input>` blocks bound to the same `city` state, both with `id="profile-city"` (invalid HTML duplicate-id). Pre-existing bug, surfaced by Phase 0, fixed in this PR. cities.js comment now lists the real 12 wirings (verified by grep) and explicitly documents that `/register/producer` step 2 intentionally has no city field (3-field minimal form by design).
+- Build: green (next build, 91/91 pages, 15.6s).
+- Mobile QA + merge: deferred to user (workflow rule 23 — `/goal`-style UI work stops at draft PR + preview URL, no auto-merge).
+
+---
+
+## Session summary 2026-05-14 — Wave 1 + Wave 2 (pre-launch quality stack)
+
+**Wave 1 merged:**
+- PR #644 — MEH-563: UptimeRobot synthetic monitoring runbook
+- PR #645 — MEH-557: Pre-launch quality stack research
+
+**Wave 1 closed without merge:**
+- PR #643 — MEH-568 Phase 0: App Store slate locked, Phase 1 deferred (post-launch + 30 days)
+
+**Wave 2 merged:**
+- PR #649 — MEH-562: Static analysis Layer 2 (mypy + Knip + tsc strict, warn-only, `|| true` patch)
+- PR #648 — MEH-566: Backlog hygiene sweep (2 SEV-1 + 18 SEV-2 launch blockers)
+- PR #650 — MEH-564: Pre-launch security scan runbook (ZAP + SecurityHeaders + Snyk, docs-only)
+
+**MEH-565** (Bug Severity Matrix + Decision Authority guide) — Done earlier today (PR #638).
+
+**MEH-566 close batch executed by Claude.ai via Linear MCP:**
+- 12 issues closed: MEH-239, MEH-178, MEH-340, MEH-348, MEH-347, MEH-545, MEH-560, MEH-561, MEH-310, MEH-543, MEH-544, MEH-536
+- 4 founder-thinking issues closed: MEH-411, MEH-412, MEH-415, MEH-416
+- 3 priority demoted to P3: MEH-122, MEH-296, MEH-232
+- 1 priority promoted to P1 (pending prod verification): MEH-549
+
+**Issues created today (2026-05-14):** MEH-557 through MEH-569 + MEH-581.
+
+**Deferrals:**
+- Post-launch + 14 days: MEH-581 (Hybrid CI annotation upgrade)
+- Post-launch + 30 days: MEH-567 (Codex), MEH-568 Phase 1 (App Store mining), MEH-569 (Adversarial audit)
+
+**MEH-549 verdict:** CI-ONLY (owner-verified real-browser check; production /map renders correctly). Demoted to P3. Wave 3 proceeds.
+
+**Wave 3 in flight (dispatched after CI-ONLY verdict):**
+- MEH-558 — Mutation testing pilot (mutmut SHIP-narrow per MEH-557): `feature/meh-558-mutation-testing-pilot`, agent running
+- MEH-559 — k6 load testing (SHIP-minimal, script + runbook; baseline TBD pre-merge by owner local run): `feature/meh-559-k6-load-testing`, agent running
+
+---
+
+## 2026-05-14 — MEH-564: Pre-launch security scan runbook (docs-only)
+
+**Branch:** `feature/meh-564-pre-launch-security-scan-runbook` off `staging`. **Risk tier:** LOW (docs-only, no production code).
+
+**Closes:** MEH-564. Adds `docs/research/pre-launch-security-scan-runbook.md` (1468 words, under 1500 cap) — a runbook Smadar executes ~30 min before public launch covering three external scans: OWASP ZAP baseline (Docker, passive only — explicit no-active-scan rationale because POSTs would write to production DB and trip rate limiter), SecurityHeaders.com browser check (target grade A-, screenshot to `docs/research/security-headers-grade.png`), and Snyk Code free tier (skip-on-no-account fallback because pip-audit/npm-audit MEH-336 gate already covers deps). Triage protocol templates Linear ticket title + body for HIGH/CRITICAL (block-launch), MEDIUM (file, do not block), LOW/INFO (umbrella backlog ticket). Pre-marked false-positive patterns (CSP report-only, expected 401 on /admin, X-Powered-By absence). Confidence calibration block + out-of-scope (no active fuzzing, no authenticated scans, no pen-test).
+
+**Why runbook-only:** CC sandbox cannot run Docker, cannot reach `securityheaders.com` (not on WebFetch allowlist per `.claude/rules/skills.md` Layer 1), and Snyk requires login. Smadar explicitly chose Option 2 (ship runbook to repo so it's not forgotten pre-launch; execute manually on launch day). No Linear tickets created in this PR — triage protocol is a template only.
+
+**Cross-refs added:** `docs/SECURITY-CHECKLIST.md` top banner now points at the runbook as the launch-day external-scan gate (per-PR TRAPs unchanged).
+
+**Out of scope:** no actual scans run, no `next.config.js` / CSP / security code touched, ZAP NOT added to per-PR CI (10+ min runtime is wrong shape).
+
+**Next task:** Smadar executes the runbook ~30 min before launch and fills the inline result tables on a launch-day branch.
+
+---
+
 ## 2026-05-14 — MEH-566: Backlog hygiene sweep
 
 **Branch:** `feature/meh-566-backlog-hygiene-sweep` off `staging`. **Risk tier:** LOW (analysis-only doc; zero Linear writes).
