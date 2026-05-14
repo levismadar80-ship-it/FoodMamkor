@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-527: /about founder credibility amplification
+
+`feat(MEH-527)`: expands Smadar's founder credibility line in `frontend/app/[locale]/about/AboutClient.jsx` from a single muted sentence to a 3-paragraph italic block with right-edge accent (RTL `border-s-2 border-primary/40`). Picked Option A (inline italic emphasis) + Candidate 1 (matter-of-fact) per issue's "safest" recommendation. Removed "בצבא" military reference per forbidden list. New copy: "מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית." + "את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית." + "את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל." No other /about sections touched.
+
+Closes MEH-527.
+
 ## 2026-05-14 — MEH-576: add "compact" matcher to SessionStart hook
 
 `fix(MEH-576)`: adds a second `SessionStart` entry to `.claude/settings.json` with `"matcher": "compact"`, re-invoking the existing `session-start.sh`. Closes the silent context-loss gap identified in MEH-574 audit: after workflow rule 7's `/compact` at 40%, the hook previously never fired, dropping HANDOFF/branch-base context. Config-only change — no script modifications. JSON validated via `python3 -m json.tool`.
