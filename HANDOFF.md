@@ -15,6 +15,25 @@
 
 **Next task:** owner approves the 12-item close batch + 6-item review list, then a follow-up session executes the closes via Linear MCP. No code changes shipped or needed.
 
+## 2026-05-14 — MEH-562: Static analysis Layer 2 (merged)
+
+**Branch:** `feature/meh-562-static-analysis-layer-2` off `staging`. **Risk tier:** LOW (CI additions only, no production code).
+
+**Status:** Merged to staging (PR #649, SHA c65d52b). All three warn-only CI jobs green after `|| true` patch (commit d62c1f4).
+
+**STOP condition (a) hit:** mypy on `app/auth.py` + `app/schemas/` = 57 errors > 50 threshold. Scoped to `app/auth.py` only (12 errors). schemas/ deferred.
+
+**Baselines:**
+- mypy: 12 errors (auth.py scope)
+- Knip: 2 unused deps + 24 dead exports + 7 unused files
+- TS strict: 24 errors in e2e/rtl.spec.ts (JSDoc comment issue)
+
+**Next task:** Follow-up tickets to file:
+1. Fix `e2e/rtl.spec.ts` JSDoc comment (1-line, removes all 24 TS errors)
+2. Add `dict[str, Any]` types in `app/auth.py` (removes 5 type-arg errors)
+3. Scope mypy to include `app/schemas/` in a follow-up ticket
+4. Investigate `ProducerSchema` non-use at `lib/schemas.js:7` (Rule 19 concern)
+
 ---
 
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)

@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "lint": "eslint .",
     "test:e2e": "playwright test",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "knip": "knip"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -35,6 +36,8 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/leaflet": "^1.9.12",
+    "@types/node": "^25.7.0",
+    "@types/react": "19.2.14",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
     "eslint": "^9.39.4",
@@ -44,6 +47,7 @@
     "eslint-plugin-unicorn": "^64.0.0",
     "jiti": "^2.7.0",
     "jsdom": "^29.0.2",
+    "knip": "^6.13.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "vitest": "^4.1.4"
