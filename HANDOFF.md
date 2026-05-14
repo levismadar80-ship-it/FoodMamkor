@@ -5,6 +5,19 @@
 
 ---
 
+## Session summary 2026-05-14 — MEH-480 nested CLAUDE.md stubs
+
+**Shipped:** 4 nested briefing stubs added at
+`backend/app/routers/CLAUDE.md`, `frontend/components/CLAUDE.md`,
+`tests/CLAUDE.md`, `frontend/e2e/CLAUDE.md` — each 30-60 lines with
+canonical `file:line` pattern, dir-specific conventions, and gotchas.
+Root `CLAUDE.md` byte-identical. Docs-only PR per MEH-480 scope.
+
+**Out of scope (not started):** MEH-482, MEH-577 — explicit hold per
+session boundary; resume only with fresh user direction.
+
+---
+
 ## Session summary 2026-05-14 — MEH-195 epic triage + MEH-201 ship
 
 **MEH-195 triage report** (read-only, no code/Linear edits):
