@@ -5,6 +5,22 @@
 
 ---
 
+## 2026-05-14 — MEH-568 Phase 0: App Store mining shortlist (awaiting approval)
+
+**Branch:** `feature/meh-568-app-shortlist-approval` off `staging`. **Risk tier:** LOW (Phase 0 stub — no research output yet, just shortlist for Smadar approval).
+
+**Status:** Draft PR open with the 8-app shortlist in the PR description. **No** `docs/research/app-store-mining.md` written yet — Phase 1 (mining + report) starts only after Smadar approves the slate, per the issue's `<verification_step>` rule "Apps shortlist approved by Smadar before mining".
+
+**Shortlist proposed (8 apps):**
+- Israeli RTL (3): Wolt, 10bis, Yad2.
+- International food/local (5): LocalHarvest, GrownBy, Eat Local (UK), Farmish, Open Food Network.
+
+**Rationale tied to issue:** Verbatim from MEH-568 "Apps לסרוק (8 רשימה ראשונית — Sapir יכולה לערוך)". Three Israeli apps anchor the Hebrew RTL UX comparison; five international apps cover directory / cooperative / homesteader trust models. The 8-app size is the upper bound of the issue's 5–8 range, picked because each app's review pool is small and aggregate frequency analysis needs ≥50 reviews across the slate.
+
+**Next step:** Smadar approves or edits the slate in the PR thread. On approval, Phase 1 opens a new PR with `docs/research/app-store-mining.md` and the 50-review minimum.
+
+---
+
 ## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
 
 **Branch:** `feature/meh-579-faq-copy-fix` off `staging`. **Risk tier:** LOW (copy-only).
