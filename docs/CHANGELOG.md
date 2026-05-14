@@ -8,6 +8,12 @@
 
 Closes MEH-576.
 
+## 2026-05-14 — MEH-572: Shai-Hulud IOC audit baseline + Actions hardening
+
+`security(MEH-572)`: Mini Shai-Hulud (TeamPCP campaign, 11 May 2026) compromised ~120 npm packages plus several Python names with token-exfil post-install hooks. Ran a read-only IOC sweep across `frontend/package-lock.json` + `backend/uv.lock` + `.github/workflows/` against the published compromised-scope/unscoped-name/artifact/C2/persistence-daemon lists — **RESULT: CLEAN** (0 hits). Verified no workflow uses `pull_request_target`. Added workflow-root `permissions: contents: read` to `deploy.yml` (the only remaining workflow without one — `e2e.yml`/`pr-checks.yml`/`dependency-audit.yml`/`skills-audit.yml`/`claude-review.yml`/`changelog.yml` were already scoped). Railway deploys use a separate Railway-scoped token, so no GITHUB_TOKEN write scope is needed in `deploy.yml`. Baseline + IOC list + re-run greps documented as `TRAP 9 — Shai-Hulud baseline (May 2026)` in `docs/SECURITY.md`. No lockfile or app-code changes; no token rotation required (clean audit).
+
+Closes MEH-572.
+
 ## 2026-05-14 — MEH-574: dotclaude sweep — research audit
 
 `docs(MEH-574)`: research sweep comparing `poshan0126/dotclaude` against Mehamakor's `.claude/`. Output: `docs/audits/2026-05-dotclaude-sweep.md` (763 words). 1 ADOPT (SessionStart `compact`-matcher hook to survive `/compact` context loss — Mehamakor's current SessionStart block has no matcher field, runs only at session start), 2 DEFER (token-cost audit script, doc-drift PR check prototype). Everything else SKIP — already covered by MEH-397/408/442/RTL guards or fights solo paste-relay workflow. No `.claude/` files touched.
