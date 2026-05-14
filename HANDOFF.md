@@ -5,7 +5,6 @@
 
 ---
 
-<<<<<<< HEAD
 ## Session summary 2026-05-14 — Wave 1 + Wave 2 (pre-launch quality stack)
 
 **Wave 1 merged:**
