@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-556: Extend letter validation to 3 sibling fields
+
+`fix(MEH-556)`: extracts `_min_letters_validator` shared helper + `_LETTER_REGEX` (single regex source of truth) into `schemas.py` top-level. Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (no behavior change). 6 new Pydantic-layer pytest cases in `tests/test_schemas_validation.py`.
+
+Closes MEH-556.
+
 ## 2026-05-14 — MEH-201: CitySearch in /settings + cities.js comment fix
 
 `feat(MEH-201)`: wires `CitySearch` autocomplete into the profile city field at `frontend/app/[locale]/settings/page.jsx` (was a plain `<input type="text">`). Also removes a pre-existing duplicate-rendering bug surfaced during Phase 0 audit — `ProfileTab` rendered two identical city `<input>` blocks back-to-back, both bound to the same `city` state, both with `id="profile-city"` (invalid HTML). Net diff: +9 / −23. Updates stale comment in `frontend/data/cities.js` to reflect the real 12 wirings (verified by grep) and documents that `/register/producer` step 2 intentionally has no city field (3-field minimal form by design — city is captured later via dashboard/admin). Phase 0 misidentified the duplicate block as a consumer/producer split; corrected here so future audits don't replay the same wrong reading.
