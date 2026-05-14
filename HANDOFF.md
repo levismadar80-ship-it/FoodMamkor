@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-05-14 — MEH-563: UptimeRobot synthetic monitoring runbook
+
+**Branch:** `feature/meh-563-uptime-monitoring-docs` off `staging`. **Risk tier:** LOW (docs-only).
+
+**Closes:** MEH-563. Adds `docs/MONITORING.md` — setup runbook for the three free-tier UptimeRobot monitors (`/health`, `/producers?page_size=1`, `mehamakor.online/`), alert routing, status-page deferral decision, and 4 alert-class runbooks (cap 5 steps each per the issue constraint). Vendor-neutral framing (Better Stack / Checkly as alternatives). Cross-refs `docs/BUG_SEVERITY.md` for SEV labels and `.claude/rules/observability.md` (events that DID fire) vs this doc (events that did NOT fire).
+
+**Out of scope:** the actual UptimeRobot account setup — that is a manual UI step Smadar performs after merge, per the issue's note "Smadar will perform the actual UptimeRobot setup using the docs." Login-path probe deferred (POST `/auth/login` needs real credentials; out of free-tier scope).
+
+---
+
 ## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
 
 **Branch:** `feature/meh-579-faq-copy-fix` off `staging`. **Risk tier:** LOW (copy-only).

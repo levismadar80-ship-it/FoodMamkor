@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-563: UptimeRobot synthetic monitoring runbook
+
+`docs(MEH-563)`: new `docs/MONITORING.md` — Sentry-vs-synthetic table, UptimeRobot free-tier signup steps + current limits (50 monitors, 5-min minimum, email-only on free), three production monitors specified (`/health` simple, `/producers?page_size=1` keyword on `producers`, `mehamakor.online/`), alert-routing today + future (Slack/SMS deferred), status-page deferred 30 days, four alert-class runbooks (`backend-health` down / `backend-producers` down with health green / `frontend-home` down with backend green / SSL expiring) each ≤5 steps per the issue constraint. Vendor-neutral framing — Better Stack and Checkly listed as alternatives. Login-path probe explicitly deferred (POST `/auth/login` is wrong shape for synthetic probe; Checkly browser flow if needed later). HANDOFF.md updated. README.md badge deferred — see PR description.
+
+Closes MEH-563.
+
 ## 2026-05-14 — MEH-580: /about — replace 5 gating criteria with 4 inviting values
 
 `feat(MEH-580)`: supersedes the criteria section landed in PR #637 (MEH-526). Per Smadar's review, the 5-criteria checklist excluded legitimate aggregator producers from her outreach list (משק רתם פיין, אביגיל, רביב). Replaced with 4 values — שקיפות, קרבה, איכות, בטיחות — that invite rather than gate. Section heading: "קריטריוני כניסה" → "כך אנחנו בוחרות". Removed bullet TL;DR and numbered H3 headers; no checkmarks. New `values` array replaces both `criteria` and `criteriaDetail`. Pattern source: Farm to People, MadeWith Foods, Farmwell, USDA Farmers Market. Single file changed: `frontend/app/[locale]/about/AboutClient.jsx`. Other /about sections (founder credibility from MEH-527, hero, tips, testimonials, CTA, contact form) untouched.
