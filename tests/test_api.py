@@ -1696,7 +1696,24 @@ class TestGetProducersMeRouteOrder:
         assert reg.status_code == 200, reg.text
         token = reg.json()["access_token"]
 
-        resp = client.get("/producers/me", headers={"Authorization": f"Bearer {token}"})
+        # MEH-575: register_producer sets the fingerprint cookie via
+        # _set_fingerprint_cookie (auth.py:449), but TestClient drops Secure
+        # cookies on http://testserver — so the jar is empty on the next call
+        # and get_current_user 401s with "fingerprint mismatch — has_cookie=False".
+        # Extract the cookie from Set-Cookie headers and pass it explicitly.
+        fp_cookie = next(
+            (h.split(";", 1)[0].split("=", 1)[1]
+             for h in reg.headers.get_list("set-cookie")
+             if h.startswith("__Secure-Fgp=")),
+            None,
+        )
+        assert fp_cookie, "register response missing __Secure-Fgp cookie"
+
+        resp = client.get(
+            "/producers/me",
+            headers={"Authorization": f"Bearer {token}"},
+            cookies={"__Secure-Fgp": fp_cookie},
+        )
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["name"] == "חוות מה-321"
