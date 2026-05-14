@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-565: Bug Severity Matrix + Decision Authority guide
+
+`docs(MEH-565)`: new `docs/BUG_SEVERITY.md` (996 words) — SEV-1..SEV-4 matrix with worked examples from Linear (MEH-265, MEH-314/317, MEH-256, MEH-321, MEH-353, MEH-575), Severity-vs-Priority orthogonality walkthrough using MEH-408 (P1 Urgent + SEV-4 pre-launch hardening), and CertifiClaude decision-authority section cross-referencing CLAUDE.md / `.claude/rules/workflow.md`. No code or other docs touched.
+
+Closes MEH-565.
+
 ## 2026-05-14 — MEH-576: add "compact" matcher to SessionStart hook
 
 `fix(MEH-576)`: adds a second `SessionStart` entry to `.claude/settings.json` with `"matcher": "compact"`, re-invoking the existing `session-start.sh`. Closes the silent context-loss gap identified in MEH-574 audit: after workflow rule 7's `/compact` at 40%, the hook previously never fired, dropping HANDOFF/branch-base context. Config-only change — no script modifications. JSON validated via `python3 -m json.tool`.
