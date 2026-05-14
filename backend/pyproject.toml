@@ -32,6 +32,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mutmut>=2.5.0",
     "pip-audit>=2.10.0",
     "pytest>=8.0",
     "pytest-cov>=7.0",
@@ -42,6 +43,37 @@ dev = [
 [tool.uv]
 # This is a web application, not an installable package.
 package = false
+
+# ─────────────────────────────────────────────────────────────
+# MEH-558 — mutmut mutation testing pilot (SHIP-narrow)
+# Scope: auth.py + producer_me.py only. NOT full repo, NOT in CI.
+# Run: cd backend && uv run mutmut run
+# Results: docs/research/mutation-testing-pilot.md
+# Threshold for future CI gate: see pilot doc.
+# ─────────────────────────────────────────────────────────────
+[tool.mutmut]
+# Linear spec MEH-558 listed auth.py + producer_me.py. Scoped down to auth.py
+# only per spec STOP-(b) "if runtime >30 min, scope down to auth.py only and
+# document". producer_me.py is 920 lines and its happy-path coverage lives in
+# tests/test_api.py (~81s) — full mutmut would exceed budget by ~5×.
+# producer_me.py pilot deferred to a follow-up ticket.
+paths_to_mutate = [
+    "app/auth.py",
+]
+# tests_dir is a list of pytest test selectors (paths) appended after `-x -q`.
+# mutmut runs from `backend/mutants/` cwd. The repo-root `tests/` lives
+# two levels up; pytest accepts the relative path because `--rootdir=.`
+# (set by mutmut) doesn't constrain test selection. The auth-targeted
+# subset (~64 tests, ~32s baseline) is much faster than full test_api.py.
+tests_dir = [
+    "../../tests/test_auth.py",
+    "../../tests/test_password_policy.py",
+    "../../tests/test_forgot_password.py",
+    "../../tests/test_verify_email.py",
+    "../../tests/test_oauth_unconfigured.py",
+    "../../tests/test_auth_email_notify.py",
+]
+# Mutmut v3 mutates operators/conditionals/numbers/strings by default.
 
 # ─────────────────────────────────────────────────────────────
 # MEH-444 / MEH-441 Wave 3/3 — AI Guardrails (PL rules from Pylint)

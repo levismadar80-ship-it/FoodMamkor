@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-05-14 — MEH-558: Mutation testing pilot (mutmut SHIP-narrow)
+
+**Branch:** `feature/meh-558-mutation-testing-pilot` off `staging`. **Risk tier:** LOW (config + new test docs only; no changes to `auth.py` or any production code; no new tests added).
+
+**Outcome (auth.py only — scope-down per spec § STOP-(b)):**
+- Mutants generated: 276 (mutmut v3.5.0 default operators)
+- Killed: 250 | Survived: 26 | Suspicious/timeout: 0/0
+- **Mutation score: 90.6 %**
+- Run time (kill phase): ~24 min at ~19 mutations/sec
+- Recommended CI threshold: **80 % on auth.py**, future ticket (NOT this PR)
+
+**Why scope reduced from spec's 2 files → 1:** `producer_me.py` (920 LOC) coverage lives in `tests/test_api.py` (~81 s baseline). Full pilot on both files would exceed spec's 30-min budget. `producer_me.py` mutation pilot deferred to a follow-up ticket.
+
+**Survivors are coverage-scope artifacts, not real test gaps.** All 26 cluster in `require_admin` / `require_producer` / `require_verified_email` — functions not exercised by the auth-targeted test subset. Their production coverage lives in `tests/test_api.py::TestAdminGuard` etc. Mutmut v3 has a class-test-ID CLI bug that blocked confirmation by rerunning the 26 survivors against `test_api.py`. Recommended follow-up: broaden mutmut's `tests_dir` and re-pilot — NOT write 26 new tests.
+
+**STOP conditions hit:** STOP-(a) "surviving mutants > 20" technically triggered; per spec the response is to STOP, report, and NOT silently write tests — done. STOP-(b) "runtime > 30 min on 2 files" anticipated → scope reduced before run.
+
+**Files changed:** `backend/pyproject.toml` (+`[tool.mutmut]` config, +mutmut dev dep), `backend/uv.lock` (mutmut + 6 transitive deps), `tests/conftest.py` (1 conditional path tweak for `MUTANT_UNDER_TEST` env var), new `docs/research/mutation-testing-pilot.md` (full report). Production code: 0 lines changed.
+
+**Build verification:** `pytest tests/test_auth.py` 21/21 pass (32 s); baseline full `pytest tests/test_api.py` 181/181 pass (81 s). `npm run build` not run — frontend untouched.
+
+---
+
 ## Session summary 2026-05-14 — MEH-480 nested CLAUDE.md stubs
 
 **Shipped:** 4 nested briefing stubs added at

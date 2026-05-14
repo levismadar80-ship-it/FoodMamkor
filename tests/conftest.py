@@ -16,7 +16,19 @@ os.environ["DATABASE_URL"] = os.environ.get(
 
 # Make `backend/` importable as the package root.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "backend"))
+_BACKEND = os.path.join(ROOT, "backend")
+# MEH-558: when running under mutmut, the mutated `app/auth.py` lives in
+# `backend/mutants/app/auth.py` and mutmut inserts `backend/mutants/` at
+# sys.path[0] before pytest collection. We need the real `backend/` on
+# the path too (so `app.database`, `app.main`, etc. resolve), but it
+# must come AFTER the mutmut entry — otherwise the unmutated auth.py
+# wins and the trampoline never fires. Use append, not insert, when
+# mutmut is active; otherwise keep the historical insert-at-0 behaviour.
+if "MUTANT_UNDER_TEST" in os.environ:
+    if _BACKEND not in sys.path:
+        sys.path.append(_BACKEND)
+else:
+    sys.path.insert(0, _BACKEND)
 
 import pytest
 from fastapi.testclient import TestClient
