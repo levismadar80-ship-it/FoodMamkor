@@ -5,9 +5,56 @@
 
 ---
 
+## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
+
+Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
+
+| PR | Issue | Outcome |
+|---|---|---|
+| #644 | MEH-563 — UptimeRobot synthetic monitoring docs | **Merged** to staging (squash, SHA `b7a0c57`) |
+| #645 | MEH-557 — Pre-launch quality stack research | **Merging next** (this branch) |
+| #643 | MEH-568 — App Store mining Phase 0 / slate approval | **Closed, not merged.** Slate locked verbatim; Phase 1 deferred to post-launch + 30 days. Trigger: launch ships + 30 days of own user data so we can triangulate App Store reviews against actual Mehamakor user pain points instead of guessing. Beta testing (5 users pre-launch) covers same discovery class at higher fidelity. |
+
+**MEH-568 slate locked (8 apps):**
+- Israeli RTL: Wolt, 10bis, Yad2.
+- International food/local: LocalHarvest, GrownBy, Eat Local (UK), Farmish, Open Food Network.
+
+**Cross-wave caveat:** all three PR descriptions reference `docs/BUG_SEVERITY.md` as if it is stable on `staging` — it is (shipped in PR #638 earlier today).
+
+---
+
+## 2026-05-14 — MEH-557: Pre-launch quality stack research
+
+**Branch:** `feature/meh-557-quality-stack-research` off `staging`. **Risk tier:** LOW (research doc only, no code, no install).
+
+**Closes:** MEH-557. Adds `docs/research/pre-launch-quality-stack.md` (1435 words, under the 1500 cap) — side-by-side comparison of mutation testing (mutmut + Stryker.js), load testing (k6 + Artillery), Playwright visual regression, and Hypothesis property-based testing. Verdicts: **mutmut SHIP narrow** (auth.py scope, week-1 action), **k6 SHIP minimal** (50-VU staging-only ramp, week-before-launch), **visual regression DEFER** (Hebrew RTL font-rendering flake disqualifies built-in Playwright snapshots without Percy/Chromatic budget), **Hypothesis SKIP pre-launch** (validator surface too small to justify ROI right now).
+
+**Confidence calibration block** included in the doc — mutmut/auth = high, k6 = medium, visual = high on defer, Hypothesis = medium on skip. Source URLs use canonical product pages (mutmut, Stryker, k6, Playwright, Hypothesis) + canonical author/blog URLs for third-party citations; verifier should sanity-check that each URL returns 200 before merging, per the issue's `<verification_step>` #4.
+
+**Out of scope:** no tool installed, no `package.json` / `pyproject.toml` edited, no CI workflow touched. Recommendations are inputs for separate Tier-1 implementation tickets.
+
+---
+
+## 2026-05-14 — MEH-568 Phase 0: App Store mining shortlist (closed, Phase 1 deferred)
+
+**Branch:** `feature/meh-568-app-shortlist-approval` off `staging`. **Risk tier:** LOW (Phase 0 stub — HANDOFF entry only, no research output yet).
+
+**PR:** #643 closed (not merged). Slate accepted as the Phase 0 artifact; full content of PR description plus 8-app slate captured in the wave summary above.
+
+**Phase 1 trigger** (when to reopen):
+1. Launch has shipped (gates on MEH-125 Pre-launch checklist completion).
+2. ≥30 days of post-launch own-user data exists (triangulation source).
+3. Owner time available for the screenshot-collection workflow per the issue's `<scope>` rule "NO scraping bot — manual review collection via App Store screenshots/text."
+
+Phase 1 cannot run from Claude Code sandbox without owner-provided screenshots: `apps.apple.com` / `play.google.com` are not in the WebFetch allowlist (`.claude/rules/skills.md` Layer 1), and the issue explicitly requires manually collected review text. Future Phase 1 PR opens on a new branch; this branch is dead.
+
+---
+
 ## 2026-05-14 — MEH-563: UptimeRobot synthetic monitoring runbook
 
 **Branch:** `feature/meh-563-uptime-monitoring-docs` off `staging`. **Risk tier:** LOW (docs-only).
+
+**PR:** #644 — merged to staging (squash, SHA `b7a0c57`).
 
 **Closes:** MEH-563. Adds `docs/MONITORING.md` — setup runbook for the three free-tier UptimeRobot monitors (`/health`, `/producers?page_size=1`, `mehamakor.online/`), alert routing, status-page deferral decision, and 4 alert-class runbooks (cap 5 steps each per the issue constraint). Vendor-neutral framing (Better Stack / Checkly as alternatives). Cross-refs `docs/BUG_SEVERITY.md` for SEV labels and `.claude/rules/observability.md` (events that DID fire) vs this doc (events that did NOT fire).
 
