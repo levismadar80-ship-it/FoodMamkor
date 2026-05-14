@@ -1,13 +1,22 @@
 /**
  * Israeli cities + major neighborhood list for search autocomplete.
  *
- * Used by the shared CitySearch component (see components/CitySearch.jsx)
- * which is wired into every city/neighborhood field across the site:
- *   - /map filter
- *   - /events filter + /producer/dashboard/events/new
- *   - /register/producer city field
- *   - HomeProductForm city + neighborhood fields
- *   - /settings city field
+ * Used by the shared CitySearch component (see components/CitySearch.jsx).
+ * Real consumer list (12 wirings, verified MEH-201, 14 May 2026):
+ *   - /map MapClient (desktop + mobile filters)
+ *   - /map CityPickerModal
+ *   - /neighbor filter
+ *   - /group-buys filter
+ *   - /experiences filter + /experiences/new form
+ *   - /events filter + /producer/dashboard/events/new form
+ *   - HomeProductForm (city + neighborhood)
+ *   - LocationModal
+ *   - /settings (profile city — single field in ProfileTab)
+ *
+ * Intentionally NOT wired:
+ *   - /register/producer step 2 — by design a 3-field minimal form
+ *     (producer_name, phone, category_ids); city is filled later from
+ *     the dashboard or admin approval, not at signup.
  *
  * The backend also contributes its own cities at runtime via GET /cities
  * (union of producer.city + delivery_areas.city), which CitySearch merges
