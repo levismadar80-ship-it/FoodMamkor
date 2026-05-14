@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-556: Extend letter validation to 3 sibling fields
+
+`fix(MEH-556)`: extracts `_min_letters_validator` shared helper + `_LETTER_REGEX` (single regex source of truth) into `schemas.py` top-level. Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (no behavior change). 6 new Pydantic-layer pytest cases in `tests/test_schemas_validation.py`.
+
+Closes MEH-556.
+
 ## 2026-05-14 — MEH-566: Backlog hygiene sweep
 
 `docs(MEH-566)`: new `docs/research/backlog-hygiene-sweep.md` (1864w, under 2000 cap) — triages all 144 currently-open Mehamakor Linear issues against `docs/BUG_SEVERITY.md`. Headline: **2 SEV-1 + 18 SEV-2 launch blockers across 144 open issues.** Both SEV-1 are the WhatsApp epic (MEH-504 + MEH-509, only `prod-blocker`-labeled issues). 18 SEV-2 cover audits 1–7, pre-launch parents (MEH-125, 195, 225), supply seeding (MEH-409, 413), visual identity (MEH-451, 123), and launch-affecting onboarding (MEH-528). 12-item recommended close batch is all `post-launch`-labeled or superseded-by-decision (MEH-239 → MEH-504, MEH-560/561 → MEH-557 verdicts); 6 items flagged "needs Smadar review" rather than close. Zero stale candidates — repo too young (90-day threshold not yet reachable; oldest `updatedAt` = 2026-04-21). Analysis only; no Linear writes performed.
