@@ -146,7 +146,7 @@ export default function FaqForBusinessesPage() {
               fontWeight: 900,
             }}
           >
-            8 שאלות לפני שמצטרפות
+            שאלות נפוצות לבעלות עסק
           </h1>
         </header>
 

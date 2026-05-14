@@ -589,3 +589,12 @@ Tasks auto-expire after 7 days.
 
     Anti-pattern: `/goal` ends with "PR merged" + any human-confirmation
     condition. The conditions race, merge wins, QA is bypassed.
+
+24. **Scope-creep prevention for copy changes (MEH-579 lesson).**
+    When the prompt scope is "replace Q&A content", Claude Code MUST
+    NOT modify page headings, subtitles, taglines, or any text element
+    not explicitly named in `<acceptance_criteria>`. If a heading change
+    seems "obviously needed" — STOP and ask before touching it.
+    MEH-579 PR #639 silently changed the page heading from
+    "שאלות נפוצות לבעלות עסק" to "8 שאלות לפני שמצטרפות" and added
+    an unauthorized subtitle. Both required a follow-up PR to revert.
