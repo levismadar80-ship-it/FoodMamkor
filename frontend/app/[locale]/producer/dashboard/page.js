@@ -7,6 +7,19 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import { PENDING_WHATSAPP_COMPANION_COPY } from "@/lib/producer-status";
+import InfoTooltip from "@/components/InfoTooltip";
+
+const AVAILABILITY_TOOLTIP = (
+  <>
+    פתוח להזמנות = ברירת מחדל.
+    <br />
+    זמינה היום = מלאי טרי עכשיו.
+    <br />
+    עמוסה השבוע = מופיעה אבל מסומנת.
+    <br />
+    בהפסקה = מוסתרת עד תאריך שתבחרי.
+  </>
+);
 
 function VanityLinkCard({ slug }) {
   const url = `https://mehamakor.online/p/${slug}`;
@@ -216,6 +229,7 @@ export default function ProducerDashboardPage() {
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-site-muted mb-1">
           מצב זמינות
+          <InfoTooltip content={AVAILABILITY_TOOLTIP} label="מה ההבדל בין המצבים?" position="bottom" />
         </p>
         <p className="text-site-muted text-sm mb-4">
           בחרי את הסטטוס שיוצג ללקוחות בכרטיסייה ובעמוד העסק.
@@ -393,12 +407,18 @@ function AnalyticsSection({ analytics, profile }) {
           <p className="text-xs text-site-muted mt-1">7 הימים האחרונים</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">המרה %</p>
+          <p className="text-xs text-site-muted mb-1">
+            המרה %
+            <InfoTooltip content="אחוז הצפיות שהפכו ללחיצה על ווטסאפ ב-30 הימים האחרונים. ככל שיותר גבוה — הפרופיל משכנע יותר." />
+          </p>
           <p className="font-headline text-3xl font-bold text-primary">{conversion_rate}%</p>
           <p className="text-xs text-site-muted mt-1">צפייה → ווטסאפ (30 יום)</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">דירוג בעיר</p>
+          <p className="text-xs text-site-muted mb-1">
+            דירוג בעיר
+            <InfoTooltip content="המיקום שלך בעיר לפי צפיות ב-30 הימים האחרונים. מתעדכן אוטומטית." />
+          </p>
           <p className="font-headline text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
           <p className="text-xs text-site-muted mt-1">לפי צפיות (30 יום)</p>
         </div>
@@ -409,7 +429,10 @@ function AnalyticsSection({ analytics, profile }) {
         <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🌟</span>
           <div>
-            <p className="font-semibold text-primary text-sm">את מועמדת לבעלת עסק השבוע 🌟 צרי קשר עם הצוות</p>
+            <p className="font-semibold text-primary text-sm">
+              את מועמדת לבעלת עסק השבוע 🌟 צרי קשר עם הצוות
+              <InfoTooltip content="הצוות בוחר מדי שבוע בעלת עסק עם דירוג ראשון בעיר וחוזק פרופיל גבוה. אם את מועמדת — יופיע כאן הודעה." />
+            </p>
             <p className="text-xs text-site-muted">דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!</p>
           </div>
         </div>
@@ -426,11 +449,13 @@ function AnalyticsSection({ analytics, profile }) {
           label="צפיות בפרופיל"
           icon="👁️"
           windows={profile_views}
+          tooltip="כמה פעמים לקוחות נכנסו לעמוד העסק שלך. נספרת צפייה אחת ללקוחה ביום."
         />
         <WindowedMetricCard
           label="הופעות בחיפוש"
           icon="🔎"
           windows={search_appearances}
+          tooltip="כמה פעמים העסק שלך הופיע ברשימת תוצאות חיפוש, גם אם הלקוחה לא לחצה."
         />
         <WindowedMetricCard
           label="לחיצות ווטסאפ"
@@ -469,7 +494,10 @@ function AnalyticsSection({ analytics, profile }) {
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-border rounded-[16px] p-5">
-          <h2 className="font-headline text-lg font-bold mb-3">צפיות ב-30 הימים האחרונים</h2>
+          <h2 className="font-headline text-lg font-bold mb-3">
+            צפיות ב-30 הימים האחרונים
+            <InfoTooltip content="גרף יומי של צפיות בפרופיל. כל נקודה = יום בודד. השווה לימי שיווק שלך באינסטגרם או בקבוצות." />
+          </h2>
           <ViewsLineChart data={views_by_day} />
         </div>
         <div className="bg-white border border-border rounded-[16px] p-5">
@@ -481,14 +509,17 @@ function AnalyticsSection({ analytics, profile }) {
   );
 }
 
-function WindowedMetricCard({ label, icon, windows }) {
+function WindowedMetricCard({ label, icon, windows, tooltip }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-2xl" aria-hidden="true">{icon}</span>
         <span className="text-xs text-site-muted">7 ימים / 30 ימים / סה״כ</span>
       </div>
-      <p className="text-sm text-site-muted mb-2">{label}</p>
+      <p className="text-sm text-site-muted mb-2">
+        {label}
+        {tooltip && <InfoTooltip content={tooltip} />}
+      </p>
       <div className="flex items-baseline gap-3">
         <span className="font-headline text-4xl font-bold text-primary">
           {windows?.last_7d ?? 0}
@@ -644,7 +675,10 @@ function ProfileStrengthCard({ profile, analytics }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-headline text-base font-bold">חוזק פרופיל</h2>
+        <h2 className="font-headline text-base font-bold">
+          חוזק פרופיל
+          <InfoTooltip content="ציון לפי 6 קריטריונים: תמונה, תיאור, מוצר פעיל, אזור משלוח, ביקורת ראשונה, טלפון מאומת. מעל 80% — לקוחות סומכות יותר." position="bottom" />
+        </h2>
         <span className="text-primary font-bold text-lg">{pct}%</span>
       </div>
       <p className="text-xs text-site-muted mb-3">{_strengthLabel(pct)}</p>
@@ -706,7 +740,10 @@ function CustomQuestionsCard({ profile, onSave }) {
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline text-base font-bold mb-1">שאלות שמופיעות בדף שלך</h2>
+      <h2 className="font-headline text-base font-bold mb-1">
+        שאלות שמופיעות בדף שלך
+        <InfoTooltip content="השאלות שיופיעו ללקוחה לפני שתשלח לך הודעת ווטסאפ — חוסך לך הסברים חוזרים. עד 5 שאלות." position="bottom" />
+      </h2>
       <p className="text-xs text-site-muted mb-4">
         אם תשאירי ריק, נציג שאלות ברירת מחדל לפי הקטגוריה שלך
       </p>
