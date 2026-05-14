@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-565: Bug Severity Matrix + Decision Authority guide
+
+`docs(MEH-565)`: new `docs/BUG_SEVERITY.md` (996 words) — SEV-1..SEV-4 matrix with worked examples from Linear (MEH-265, MEH-314/317, MEH-256, MEH-321, MEH-353, MEH-575), Severity-vs-Priority orthogonality walkthrough using MEH-408 (P1 Urgent + SEV-4 pre-launch hardening), and CertifiClaude decision-authority section cross-referencing CLAUDE.md / `.claude/rules/workflow.md`. No code or other docs touched.
+
+Closes MEH-565.
+
 ## 2026-05-14 — MEH-526: /about criteria deep article (5 paragraphs)
 
 `feat(MEH-526)`: expands `/about` קריטריוני כניסה section in `frontend/app/[locale]/about/AboutClient.jsx` from a 5-bullet list to a deep article: 1 intro paragraph (sets stakes) + retained 5-bullet TL;DR (scannability) + 5 expanded paragraphs (60-80 words each, numbered H3 headers, explaining *what / why / how mehamakor verifies* for each criterion) + 1 closing paragraph. New `criteriaDetail` array holds the long-form copy. Tone: factual + slightly editorial, feminine voice, "בית עסק / בעלת עסק" throughout, no marketing-speak. No metadata changes — page-level `metadata` export in `page.js` already references "קריטריוני הכניסה" and is left untouched.

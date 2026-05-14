@@ -5,6 +5,12 @@
 
 ---
 
+## 2026-05-14 — MEH-565: Bug Severity Matrix + Decision Authority guide
+
+**Branch:** `feature/meh-565-bug-severity-matrix` off `staging`. **Risk tier:** LOW (docs-only, single new file). Ships `docs/BUG_SEVERITY.md` (996 words): SEV-1..SEV-4 matrix with Linear-history examples, Severity-vs-Priority orthogonality (MEH-408 worked walkthrough), and a Decision Authority section that cross-references — does not duplicate — CLAUDE.md / `.claude/rules/workflow.md`. Phase A presented 5+ candidates and selected slate before drafting; Phase B+C ran end-to-end after approval; trimmed twice to land under the 1000-word hard cap. Closes MEH-565.
+
+---
+
 ## 2026-05-14 — MEH-572: Shai-Hulud IOC audit + GitHub Actions hardening
 
 **Branch:** `claude/shai-hulud-supply-chain-k4vII` (web session, task-assigned name; off `staging`). **Risk tier:** LOW (audit + workflow permissions + docs).
