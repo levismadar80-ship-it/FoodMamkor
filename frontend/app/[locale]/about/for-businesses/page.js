@@ -148,12 +148,6 @@ export default function FaqForBusinessesPage() {
           >
             8 שאלות לפני שמצטרפות
           </h1>
-          <p
-            className="text-base sm:text-lg leading-relaxed"
-            style={{ color: "#3a3a3a" }}
-          >
-            התשובות הישירות לשאלות שבעלות עסק שואלות אותנו הכי הרבה — כסף, זמן, אמון ושליטה. בלי spin.
-          </p>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">

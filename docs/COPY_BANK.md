@@ -362,3 +362,65 @@ every business" — what's actually true today.
 **Anti-defensive framing:** Avoid answering questions customers don't ask.
 "מה אם תיסגרו?" → reframe as "הלקוחות שיגיעו דרככם — שלכם או שלי?" The
 answer is identical, but the question matches what's actually in her head.
+
+---
+
+## Customer-centric voice rule (MEH-579, May 14 2026)
+
+Feminine grammar is necessary but not sufficient. Every line of user-facing
+UI copy must also pass the **subject test**: who is the grammatical subject?
+
+| ❌ Founder-voice | ✅ Customer-voice |
+|---|---|
+| "אנחנו לא לוקחות עמלה" (subject: we) | "את לא משלמת לנו" (subject: you) |
+| "אני בודקת תעודות" (subject: I) | "תהיי בסביבה של עסקים שעברו שיחה" (subject: you) |
+| "הרשמה לוקחת 10 דקות" (subject: process) | "תוך 10 דקות יש לך דף חי" (subject: you) |
+
+The rule: if the answer to a customer's question puts Mehamakor (we/I) as
+the grammatical subject, rewrite to put the customer (את) as the subject.
+The customer reads to learn what *she* gets, not what we do.
+
+**Applies to:** FAQ pages, /about marketing copy, /register flow, error
+messages, empty states, onboarding — anywhere a user reads about what
+Mehamakor offers her.
+
+**Does NOT apply to:** legal/privacy pages (must say "אנחנו אוספים"),
+backoffice/admin tools (technical), or first-person founder bio on /about
+(intentional "I" voice).
+
+## Anti-defensive framing (MEH-579, May 14 2026)
+
+Avoid answering questions customers don't ask. Defensive framing tells the
+reader something is at risk by raising the worry yourself.
+
+Anti-pattern: "מה אם תיסגרו?" — this raises platform-shutdown anxiety
+even if the customer hadn't thought about it. The answer sounds like a
+promise that betrays its own fragility.
+
+Better framing: "הלקוחות שיגיעו דרככם — שלכם או שלי?" — same answer,
+but the question matches what's actually in her head: ownership of customer
+relationships. The shutdown scenario is covered inside the answer, not
+broadcast in the question.
+
+Test: write the question as the reader would ask a friend over coffee.
+If it sounds like a marketing department wrote it to address a corporate
+concern, reframe.
+
+## Over-claim guard (MEH-579, May 14 2026)
+
+Do not claim platform authority, scale, or features that don't yet exist.
+Pre-launch and early-stage platforms have very little authority — pretending
+otherwise undermines trust the moment the reader pokes at it.
+
+| ❌ Over-claim | ✅ True today |
+|---|---|
+| "Verified by Mehamakor trust badge" | "שיחה אישית עם כל בית עסק לפני הרישום" |
+| "אלפי לקוחות כבר מצאו אותך" | (omit — say nothing about customer base yet) |
+| "Used by hundreds of businesses" | "אנחנו בpre-launch — את מהראשונות" |
+
+Test before publishing any claim: "If a journalist or skeptical reader
+followed up on this, would the evidence hold?" If no — rewrite or remove.
+
+This guard is especially important for "trust" and "social proof" claims,
+which are exactly where over-claim is most tempting and most damaging
+when discovered.
