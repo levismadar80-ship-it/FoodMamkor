@@ -8,6 +8,24 @@
 
 Closes MEH-558.
 
+## 2026-05-14 — MEH-480: Nested CLAUDE.md stubs for routers/components/tests/e2e
+
+`docs(MEH-480)`: 4 new nested briefing stubs (30-60 lines each) at `backend/app/routers/CLAUDE.md`, `frontend/components/CLAUDE.md`, `tests/CLAUDE.md`, `frontend/e2e/CLAUDE.md`. Each names a canonical `file:line` pattern, the conventions for that dir (auth deps, imports, RTL, naming), and the local gotchas — linking to `.claude/rules/*` instead of duplicating them. Root `CLAUDE.md` untouched (≤80-line cap preserved). Pure docs-only — zero code changes.
+
+Closes MEH-480.
+
+## 2026-05-14 — MEH-556: Extend letter validation to 3 sibling fields
+
+`fix(MEH-556)`: extracts `_min_letters_validator` shared helper + `_LETTER_REGEX` (single regex source of truth) into `schemas.py` top-level. Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (no behavior change). 6 new Pydantic-layer pytest cases in `tests/test_schemas_validation.py`.
+
+Closes MEH-556.
+
+## 2026-05-14 — MEH-201: CitySearch in /settings + cities.js comment fix
+
+`feat(MEH-201)`: wires `CitySearch` autocomplete into the profile city field at `frontend/app/[locale]/settings/page.jsx` (was a plain `<input type="text">`). Also removes a pre-existing duplicate-rendering bug surfaced during Phase 0 audit — `ProfileTab` rendered two identical city `<input>` blocks back-to-back, both bound to the same `city` state, both with `id="profile-city"` (invalid HTML). Net diff: +9 / −23. Updates stale comment in `frontend/data/cities.js` to reflect the real 12 wirings (verified by grep) and documents that `/register/producer` step 2 intentionally has no city field (3-field minimal form by design — city is captured later via dashboard/admin). Phase 0 misidentified the duplicate block as a consumer/producer split; corrected here so future audits don't replay the same wrong reading.
+
+Closes MEH-201.
+
 ## 2026-05-14 — MEH-564: Pre-launch security scan runbook
 
 `docs(MEH-564)`: new `docs/research/pre-launch-security-scan-runbook.md` (1468 words, under 1500 cap) — runbook for Smadar to execute ~30 min before public launch covering three external scans against `https://mehamakor.online`: OWASP ZAP baseline via Docker (passive only — explicit rationale against active scan because POST attacks would write to production DB and trip the rate limiter mid-run), SecurityHeaders.com browser check (target grade A-, screenshot artifact), and Snyk Code free tier (skip-on-no-account fallback documented because `pip-audit` MEH-330 + `npm-audit` MEH-336 gate already cover the dependency CVE class on every PR). Each scan has copy-paste command, fillable results template (severity / URL / fix / CONFIRMED-via-curl-vs-FLAGGED confidence column), and pre-marked false-positive patterns (CSP report-only, expected 401 on /admin, X-Powered-By absence, http→https redirect cookie probe). Triage protocol templates Linear ticket title + body for HIGH/CRITICAL (block-launch), MEDIUM (file, do not block), LOW/INFO (single umbrella backlog ticket). Confidence calibration block names HIGH/MEDIUM confidence per scan plus the 30-min budget assumption (Docker pre-installed, ZAP image pre-pulled). Out-of-scope section signposts active fuzzing, authenticated scans, OAuth state-param verification, container scanning, pen-test as future expansion. `docs/SECURITY-CHECKLIST.md` gets a top banner pointing at the runbook as the launch-day external-scan gate (per-PR TRAPs 1–8 unchanged). No code touched, no Linear tickets created (triage protocol is a template only), ZAP NOT added to per-PR CI.
