@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-482: Sentinel markers §15 in code-execution.md
+
+`docs(MEH-482)`: appends §15 "Sentinel markers" to `.claude/rules/code-execution.md` codifying three grep-able inline-comment conventions: `# MEH-XXX:` (history anchor), `# DO NOT:` (anti-pattern anchor), `# REUSES: <file:line>` (pattern provenance). Each pattern has one in-repo exemplar. Forward-only convention — no retrofit pass, no hook enforcement. Baseline of existing sentinel usage: 117 hits across `backend/` + `frontend/`. Pure docs-only — zero code changes.
+
+Closes MEH-482.
+
 ## 2026-05-14 — MEH-558: Mutation testing pilot (mutmut SHIP-narrow)
 
 `feat(MEH-558)`: pilot mutmut on `backend/app/auth.py` — 276 mutants generated, 250 killed, 26 survived, **90.6 % mutation score** in ~24 min. Spec listed `auth.py` + `producer_me.py`; scoped down to `auth.py` only per STOP-(b) "runtime > 30 min" (producer_me is 920 LOC; full pilot would exceed budget) — `producer_me.py` mutation pilot deferred to a follow-up ticket. All 26 survivors cluster in `require_admin` / `require_producer` / `require_verified_email`, three role-guard functions not exercised by the pilot's auth-targeted test subset (their production coverage lives in `tests/test_api.py::TestAdminGuard` etc.) — coverage-scope artifacts, not real test gaps. Per spec STOP-(a), NOT writing 26 new tests; follow-up tickets recommended to broaden mutmut's `tests_dir` and re-pilot. Mutmut v3.5.0 has a class-test-ID CLI bug that blocked direct verification by adding `test_api.py` to the pilot — documented in `docs/research/mutation-testing-pilot.md` as known limitation. Recommended CI threshold: **80 % on auth.py** as a future quality gate (10-point headroom over current baseline). Wired-into-CI deferred per spec. `mutmut>=2.5.0` added to backend `[dependency-groups] dev`; `[tool.mutmut]` config added to `backend/pyproject.toml`; `tests/conftest.py` got a one-conditional tweak (`sys.path.append` instead of `insert(0, ...)` when `MUTANT_UNDER_TEST` env var is set, so mutated `auth.py` from `backend/mutants/app/` resolves before un-mutated original). Production code: 0 lines changed.

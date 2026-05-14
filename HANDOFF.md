@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-05-14 — MEH-482: Sentinel markers §15 (night batch task 1/2)
+
+**Branch:** `feature/meh-482-sentinel-markers` off `staging`. **Risk tier:** LOW (docs-only, single rule file).
+
+Appended §15 "Sentinel markers" to `.claude/rules/code-execution.md` — codifies three inline-comment conventions (`# MEH-XXX:`, `# DO NOT:`, `# REUSES: <file:line>`) with one in-repo exemplar each. File grew 71 → 111 lines (=+40, at the spec cap). Existing sentinel baseline: 117 hits across `backend/` + `frontend/`. Pre-paired with MEH-577 in the same overnight batch.
+
+---
+
 ## 2026-05-14 — MEH-558: Mutation testing pilot (mutmut SHIP-narrow)
 
 **Branch:** `feature/meh-558-mutation-testing-pilot` off `staging`. **Risk tier:** LOW (config + new test docs only; no changes to `auth.py` or any production code; no new tests added).

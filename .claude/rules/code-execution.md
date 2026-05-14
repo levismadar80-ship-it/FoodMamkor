@@ -68,3 +68,44 @@ treat new lint signals as feedback, not a build gate.
   real imports only
 - **After:** file:line evidence per claim → build + tests → preview
   URL → HANDOFF update
+
+---
+
+## §15 — Sentinel markers (grep-able anchors)
+
+Three inline-comment conventions that make `grep` precise. CC's primary
+navigation is grep (Cherny, Anthropic, March 2026), not a vector index.
+
+**1. `# MEH-XXX:` — history anchor.** Near any non-trivial decision, drop
+`# MEH-XXX:` (or `// MEH-XXX:` for JS/JSX). Marks the Linear issue that
+introduced or last touched the line. Exemplars: `backend/app/rate_limit.py:31`
+(MEH-256 real-client-IP), `frontend/components/Header.jsx:11` (MEH-29
+sticky). Every PR adding non-trivial logic drops at least one anchor.
+
+**2. `# DO NOT:` — anti-pattern anchor.** Format:
+`# DO NOT <action> — <reason / MEH-XXX>`. For code that LOOKS editable
+but is structurally locked. Example:
+
+```python
+# DO NOT add column changes here — Alembic only since MEH-267
+# (root cause of MEH-265 incident).
+```
+
+The anti-knowledge is more valuable than the positive code next to it.
+Prose sibling: `.claude/rules/backend.md` "Never add PostGIS".
+
+**3. `# REUSES: <file:line>` — pattern provenance.** When copying a pattern
+from another file: `# REUSES: backend/app/routers/producers.py:142 —
+slowapi limit + Hebrew error`. `<examples>` blocks in prompts are
+ephemeral; REUSES anchors are permanent — they give the next CC session
+the provenance for free.
+
+**Discovery recipe:**
+
+```
+grep -rE "# (MEH-[0-9]+|DO NOT|REUSES):" backend/ frontend/
+```
+
+Forward-only — existing files retrofit only when otherwise edited. No
+hook enforcement here; if drift becomes a problem, open a follow-up for
+`.claude/hooks/check-sentinel-format.sh`.
