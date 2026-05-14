@@ -545,3 +545,58 @@ Code session = quota usage. Use on-demand, never always-on.
 - 5+ concurrent loops in same session
 
 Tasks auto-expire after 7 days.
+
+---
+
+22. **Copy approval gate before Linear issue creation (MEH-579 lesson, May 14 2026).**
+    Before creating a Linear issue that contains user-facing copy — FAQ
+    pages, marketing copy, page text, error messages, form labels, email
+    templates — the copy MUST be approved verbatim by Smadar in
+    conversation first. Workflow:
+    1. Draft the copy in chat (or upload reference document)
+    2. Get explicit approval on each string ("approved", "go", "כן")
+    3. ONLY THEN open the Linear issue with the locked copy in the description
+
+    Anti-pattern: opening an issue with copy that "looks reasonable" and
+    sending to Claude Code without approval. Result: PR ships, copy is
+    wrong, follow-up fix issue needed (MEH-571 → MEH-579 cascade —
+    documented case where unapproved FAQ copy required full rewrite).
+
+    The rule `Description = source of truth` (rule 4) requires the
+    description to be correct from the start, not after a feedback loop.
+
+23. **`/goal` merge gate for UI work (MEH-571 + MEH-579 lessons, May 14 2026).**
+    `/goal` strings touching frontend files MUST stop at **Draft PR opened
+    + preview URL posted**, NOT at **PR merged**.
+
+    Reason: the `Closes MEH-XX` annotation in PR body triggers auto-merge
+    of the Linear issue to Done on PR merge. Any "Smadar confirms mobile
+    QA" condition in the `/goal` string races against this auto-merge,
+    and the auto-merge wins because it's mechanical and immediate.
+
+    The flow that works:
+    1. `/goal` ends at: "Draft PR opened + preview URL posted to Linear comment"
+    2. Smadar opens preview URL on mobile, runs QA
+    3. Smadar comments on Linear: "mobile QA ✅"
+    4. Smadar (or separate Claude Code prompt) marks PR ready-for-review and merges
+    5. `Closes MEH-XX` then correctly closes Linear after human approval
+
+    Applies to: any `/goal` touching `frontend/app/**`, `frontend/components/**`,
+    `frontend/pages/**`, or any other UI-visible code.
+
+    Does NOT apply to: backend-only, docs-only, tests-only, CI-only — those
+    can merge on green CI without human QA.
+
+    Anti-pattern: `/goal` ends with "PR merged" + any human-confirmation
+    condition. The conditions race, merge wins, QA is bypassed.
+
+24. **Scope-creep prevention for copy changes (MEH-579 lesson).**
+    When the prompt scope is "replace Q&A content", Claude Code MUST
+    NOT modify page headings, subtitles, taglines, or any text element
+    not explicitly named in `<acceptance_criteria>`. If a heading change
+    seems "obviously needed" — STOP and ask before touching it.
+    MEH-579 PR #639 silently changed the page heading from
+    "שאלות נפוצות לבעלות עסק" to "8 שאלות לפני שמצטרפות" and added
+    an unauthorized subtitle. Both required a follow-up PR to revert.
+    Discovery step (grep before edit) is now mandatory for any copy
+    fix that mentions specific text positions.
