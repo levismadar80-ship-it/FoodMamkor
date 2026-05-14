@@ -328,3 +328,37 @@
 - ❌ `שגיאה התרחשה` — use `משהו השתבש, נסו שוב`
 - ❌ Mixed gender (זכר) — brand voice is consistently נקבה (feminine)
 - ❌ `מוצרים` for food business pages — use `פריטים` or category-specific terms
+
+---
+
+## Customer-centric voice rule (MEH-579, May 14, 2026)
+
+Feminine grammar is necessary but not sufficient. Every line of user-facing
+UI copy must also pass the **subject test**: who is the grammatical subject?
+
+| ❌ Founder-voice | ✅ Customer-voice |
+|---|---|
+| "אנחנו לא לוקחות עמלה" (subject: we) | "את לא משלמת לנו" (subject: you) |
+| "אני בודקת תעודות" (subject: I) | "תהיי בסביבה של עסקים שעברו שיחה" (subject: you) |
+| "הרשמה לוקחת 10 דקות" (subject: process) | "תוך 10 דקות יש לך דף חי" (subject: you) |
+
+The rule: if the answer to a customer's question puts Mehamakor (we/I) as
+the grammatical subject, rewrite to put the customer (את) as the subject.
+The customer reads to learn what *she* gets, not what we do.
+
+**Applies to:** FAQ pages, /about marketing copy, /register flow, error
+messages, empty states, onboarding — anywhere a user reads about what
+Mehamakor offers her.
+
+**Does NOT apply to:** legal/privacy pages (must say "אנחנו אוספים"),
+backoffice/admin tools (technical), or first-person founder bio on /about
+(intentional "I" voice).
+
+**Over-claim guard (also learned MEH-579):** Do not claim platform
+authority that doesn't yet exist. ❌ "Verified by Mehamakor trust badge"
+when there's no vetting infrastructure. ✅ "Pre-launch conversation with
+every business" — what's actually true today.
+
+**Anti-defensive framing:** Avoid answering questions customers don't ask.
+"מה אם תיסגרו?" → reframe as "הלקוחות שיגיעו דרככם — שלכם או שלי?" The
+answer is identical, but the question matches what's actually in her head.
