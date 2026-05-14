@@ -7,17 +7,19 @@
 
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
 
-Three draft PRs opened in parallel from `claude/parallel-issues-meh-450-yjtow` session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
+Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
 
-| PR | Issue | Branch | What |
-|---|---|---|---|
-| #644 | MEH-563 | `feature/meh-563-uptime-monitoring-docs` | `docs/MONITORING.md` (1172w) — UptimeRobot synthetic monitoring runbook |
-| (next) | MEH-557 | `feature/meh-557-quality-stack-research` | `docs/research/pre-launch-quality-stack.md` (1435w) — mutation/load/visual/property-based verdicts |
-| #643 | MEH-568 | `feature/meh-568-app-shortlist-approval` | Phase 0 stub — 8-app shortlist in PR body, awaiting Smadar approval |
+| PR | Issue | Outcome |
+|---|---|---|
+| #644 | MEH-563 — UptimeRobot synthetic monitoring docs | **Merged** to staging (squash, SHA `b7a0c57`) |
+| #645 | MEH-557 — Pre-launch quality stack research | **Merging next** (this branch) |
+| #643 | MEH-568 — App Store mining Phase 0 / slate approval | **Closed, not merged.** Slate locked verbatim; Phase 1 deferred to post-launch + 30 days. Trigger: launch ships + 30 days of own user data so we can triangulate App Store reviews against actual Mehamakor user pain points instead of guessing. Beta testing (5 users pre-launch) covers same discovery class at higher fidelity. |
 
-**Recommended review order:** MEH-568 first (5 min — just approve/edit the slate so Phase 1 can be queued); MEH-563 second (15 min — confirm three monitor URLs match prod hosts before Smadar performs UptimeRobot signup); MEH-557 last (15 min — strategic decisions, the only PR that asks for an opinion rather than approval).
+**MEH-568 slate locked (8 apps):**
+- Israeli RTL: Wolt, 10bis, Yad2.
+- International food/local: LocalHarvest, GrownBy, Eat Local (UK), Farmish, Open Food Network.
 
-**Cross-wave caveat:** all three PR descriptions reference `docs/BUG_SEVERITY.md` as if it is stable on `staging`, which it is (shipped in PR #638 earlier today). If a later PR in this wave is merged out of order, no rebase is needed — the three branches touch disjoint files (single new doc each; HANDOFF + CHANGELOG entries are append-only and unlikely to conflict).
+**Cross-wave caveat:** all three PR descriptions reference `docs/BUG_SEVERITY.md` as if it is stable on `staging` — it is (shipped in PR #638 earlier today).
 
 ---
 
@@ -33,13 +35,18 @@ Three draft PRs opened in parallel from `claude/parallel-issues-meh-450-yjtow` s
 
 ---
 
-## 2026-05-14 — MEH-568 Phase 0: App Store mining shortlist (awaiting approval)
+## 2026-05-14 — MEH-568 Phase 0: App Store mining shortlist (closed, Phase 1 deferred)
 
 **Branch:** `feature/meh-568-app-shortlist-approval` off `staging`. **Risk tier:** LOW (Phase 0 stub — HANDOFF entry only, no research output yet).
 
-**PR:** #643 (draft).
+**PR:** #643 closed (not merged). Slate accepted as the Phase 0 artifact; full content of PR description plus 8-app slate captured in the wave summary above.
 
-**Status:** 8-app shortlist (3 Israeli RTL — Wolt, 10bis, Yad2; 5 international — LocalHarvest, GrownBy, Eat Local UK, Farmish, Open Food Network) proposed in PR description. Phase 1 (`docs/research/app-store-mining.md` + 50-review minimum + pain-point table) starts only after Smadar approves the slate in the PR thread, per the issue's `<verification_step>` rule "Apps shortlist approved by Smadar before mining starts."
+**Phase 1 trigger** (when to reopen):
+1. Launch has shipped (gates on MEH-125 Pre-launch checklist completion).
+2. ≥30 days of post-launch own-user data exists (triangulation source).
+3. Owner time available for the screenshot-collection workflow per the issue's `<scope>` rule "NO scraping bot — manual review collection via App Store screenshots/text."
+
+Phase 1 cannot run from Claude Code sandbox without owner-provided screenshots: `apps.apple.com` / `play.google.com` are not in the WebFetch allowlist (`.claude/rules/skills.md` Layer 1), and the issue explicitly requires manually collected review text. Future Phase 1 PR opens on a new branch; this branch is dead.
 
 ---
 
@@ -47,7 +54,7 @@ Three draft PRs opened in parallel from `claude/parallel-issues-meh-450-yjtow` s
 
 **Branch:** `feature/meh-563-uptime-monitoring-docs` off `staging`. **Risk tier:** LOW (docs-only).
 
-**PR:** #644 (draft).
+**PR:** #644 — merged to staging (squash, SHA `b7a0c57`).
 
 **Closes:** MEH-563. Adds `docs/MONITORING.md` — setup runbook for the three free-tier UptimeRobot monitors (`/health`, `/producers?page_size=1`, `mehamakor.online/`), alert routing, status-page deferral decision, and 4 alert-class runbooks (cap 5 steps each per the issue constraint). Vendor-neutral framing (Better Stack / Checkly as alternatives). Cross-refs `docs/BUG_SEVERITY.md` for SEV labels and `.claude/rules/observability.md` (events that DID fire) vs this doc (events that did NOT fire).
 
