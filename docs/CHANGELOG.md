@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-572: Shai-Hulud IOC audit baseline + Actions hardening
+
+`security(MEH-572)`: Mini Shai-Hulud (TeamPCP campaign, 11 May 2026) compromised ~120 npm packages plus several Python names with token-exfil post-install hooks. Ran a read-only IOC sweep across `frontend/package-lock.json` + `backend/uv.lock` + `.github/workflows/` against the published compromised-scope/unscoped-name/artifact/C2/persistence-daemon lists — **RESULT: CLEAN** (0 hits). Verified no workflow uses `pull_request_target`. Added workflow-root `permissions: contents: read` to `deploy.yml` (the only remaining workflow without one — `e2e.yml`/`pr-checks.yml`/`dependency-audit.yml`/`skills-audit.yml`/`claude-review.yml`/`changelog.yml` were already scoped). Railway deploys use a separate Railway-scoped token, so no GITHUB_TOKEN write scope is needed in `deploy.yml`. Baseline + IOC list + re-run greps documented as `TRAP 9 — Shai-Hulud baseline (May 2026)` in `docs/SECURITY.md`. No lockfile or app-code changes; no token rotation required (clean audit).
+
+Closes MEH-572.
+
 ## 2026-05-10 — MEH-555: CategoryRequest validation — reject junk text
 
 `fix(MEH-555)`: adds `field_validator` to `CategoryRequestCreate.requested_name` that rejects strings with fewer than 3 Hebrew/Latin letter characters (`[א-תa-zA-Z]` regex). Returns `strip()`-ed value. Frontend `CategoryRequestModal.jsx` mirrors the guard: submit button disabled until `countLetters(name) >= 3`. Closes admin-queue junk-row vector (anonymous endpoint, 5/hour limit). Added 4 pytest cases in `tests/test_category_requests.py`. Bug Protocol entry added to `.claude/rules/workflow.md`.

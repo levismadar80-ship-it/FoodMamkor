@@ -1,7 +1,27 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-10
+> Last updated: 2026-05-14
+
+---
+
+## 2026-05-14 — MEH-572: Shai-Hulud IOC audit + GitHub Actions hardening
+
+**Branch:** `claude/shai-hulud-supply-chain-k4vII` (web session, task-assigned name; off `staging`). **Risk tier:** LOW (audit + workflow permissions + docs).
+
+**Closes:** MEH-572.
+
+**State:**
+- ✅ Phase 0 — IOC audit against Mini Shai-Hulud (TeamPCP, 11 May 2026) compromised-package list: **CLEAN** (0 hits across 11 scopes, 13 unscoped names, 3 artifacts, 4 C2 indicators, 1 persistence daemon). Audit log written to `/tmp/shai-hulud-audit-<timestamp>.txt`, output pasted verbatim in PR description.
+- ✅ Phase 1 — `deploy.yml` gained workflow-root `permissions: contents: read`. Railway uses a separate `RAILWAY_TOKEN`, so no job needs GitHub-side write. All other workflows (`e2e.yml`, `pr-checks.yml`, `dependency-audit.yml`, `skills-audit.yml`, `claude-review.yml`, `changelog.yml`) were already correctly scoped.
+- ✅ Phase 2 — `docs/SECURITY.md` gained `TRAP 9 — Shai-Hulud baseline (May 2026)`: IOC matrix, remediation list, re-run greps.
+- No token rotation needed (clean audit). No lockfile mutations. No app-code touched.
+
+**Out of scope (not done):** SHA-pinning third-party actions; DNS-level C2 blocking; new CI jobs; Dependabot config changes; actionlint installation.
+
+**Caveats:**
+- Permission constraint: `.claude/settings.json` denies `Edit(.github/workflows/**)`. Asked Smadar; patched `deploy.yml` via a `python3` heredoc rewrite of the on/jobs region (no Edit-tool call). Verified diff is exactly 7 added lines (the permissions block + comment).
+- One IOC-list assumption: the `lightning` and `intercom-client` unscoped names are listed as compromised in the campaign report; if these are reused by legitimate upstream packages in a future install, the audit may need a tighter regex or a version-pinned check.
 
 ---
 
