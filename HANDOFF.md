@@ -5,6 +5,21 @@
 
 ---
 
+## Session summary 2026-05-14 — MEH-195 epic triage + MEH-201 ship
+
+**MEH-195 triage report** (read-only, no code/Linear edits):
+- Parent description references 10 essentials but only 5 sub-issues actually exist (MEH-197–201). MEH-197/198/199/200 already Done. MEH-201 was the only open sub.
+- 5 essentials listed in the parent body (resend verification, change-email for password users, session timeout warning, "logout all devices", active sessions list) were never created as sub-issues — most depend on infra (refresh tokens / session tracking) we don't have at MVP; recommend closing the epic and deferring those as standalone post-launch tickets.
+
+**MEH-201 shipped — CitySearch in /settings + cities.js comment fix**
+- PR opened off `feature/meh-201-settings-city-autocomplete` branch.
+- Net diff: +9 / −23 across `frontend/app/[locale]/settings/page.jsx` and `frontend/data/cities.js`.
+- **Phase 0 correction (important for future audits):** the settings page does NOT have separate consumer/producer city inputs. `ProfileTab` rendered two identical `<input>` blocks bound to the same `city` state, both with `id="profile-city"` (invalid HTML duplicate-id). Pre-existing bug, surfaced by Phase 0, fixed in this PR. cities.js comment now lists the real 12 wirings (verified by grep) and explicitly documents that `/register/producer` step 2 intentionally has no city field (3-field minimal form by design).
+- Build: green (next build, 91/91 pages, 15.6s).
+- Mobile QA + merge: deferred to user (workflow rule 23 — `/goal`-style UI work stops at draft PR + preview URL, no auto-merge).
+
+---
+
 ## Session summary 2026-05-14 — Wave 1 + Wave 2 (pre-launch quality stack)
 
 **Wave 1 merged:**
