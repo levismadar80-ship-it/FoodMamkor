@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-580: /about — replace 5 gating criteria with 4 inviting values
+
+`feat(MEH-580)`: supersedes the criteria section landed in PR #637 (MEH-526). Per Smadar's review, the 5-criteria checklist excluded legitimate aggregator producers from her outreach list (משק רתם פיין, אביגיל, רביב). Replaced with 4 values — שקיפות, קרבה, איכות, בטיחות — that invite rather than gate. Section heading: "קריטריוני כניסה" → "כך אנחנו בוחרות". Removed bullet TL;DR and numbered H3 headers; no checkmarks. New `values` array replaces both `criteria` and `criteriaDetail`. Pattern source: Farm to People, MadeWith Foods, Farmwell, USDA Farmers Market. Single file changed: `frontend/app/[locale]/about/AboutClient.jsx`. Other /about sections (founder credibility from MEH-527, hero, tips, testimonials, CTA, contact form) untouched.
+
+Closes MEH-580.
+
 ## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
 
 `copy(MEH-579)`: replaces the 10 founder-voice Q&A pairs in `/about/for-businesses` (MEH-571) with 8 customer-voice pairs (verbatim from the issue). Subject of every answer is now the reader ("את"), not Mehamakor ("אנחנו"/"אני"). Removes the over-claimed "Trust badge מאומת על ידי מהמקור" line (no vetting infrastructure exists yet) and the consumer-framed Q7 ("מי בודק שעסקים אחרים אצלכם אמינים?") that didn't match what a producer actually thinks about. Founder bio updated: ספיר מזכרון יעקב (not "מהמרכז"). Category D renamed שליטה ותחרות → שליטה ועמדה. JSON-LD `FAQPage` `mainEntity` array drops from 10 → 8 (auto-derived from the same `CATEGORIES` array). H1, metadata, and OG description all updated from "10 שאלות" → "8 שאלות". `docs/COPY_BANK.md` gains a "Customer-centric voice rule" section codifying the subject test + over-claim guard + anti-defensive framing as the lesson from this revert.
