@@ -5,6 +5,56 @@
 
 ---
 
+## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
+
+Three draft PRs opened in parallel from `claude/parallel-issues-meh-450-yjtow` session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
+
+| PR | Issue | Branch | What |
+|---|---|---|---|
+| #644 | MEH-563 | `feature/meh-563-uptime-monitoring-docs` | `docs/MONITORING.md` (1172w) — UptimeRobot synthetic monitoring runbook |
+| (next) | MEH-557 | `feature/meh-557-quality-stack-research` | `docs/research/pre-launch-quality-stack.md` (1435w) — mutation/load/visual/property-based verdicts |
+| #643 | MEH-568 | `feature/meh-568-app-shortlist-approval` | Phase 0 stub — 8-app shortlist in PR body, awaiting Smadar approval |
+
+**Recommended review order:** MEH-568 first (5 min — just approve/edit the slate so Phase 1 can be queued); MEH-563 second (15 min — confirm three monitor URLs match prod hosts before Smadar performs UptimeRobot signup); MEH-557 last (15 min — strategic decisions, the only PR that asks for an opinion rather than approval).
+
+**Cross-wave caveat:** all three PR descriptions reference `docs/BUG_SEVERITY.md` as if it is stable on `staging`, which it is (shipped in PR #638 earlier today). If a later PR in this wave is merged out of order, no rebase is needed — the three branches touch disjoint files (single new doc each; HANDOFF + CHANGELOG entries are append-only and unlikely to conflict).
+
+---
+
+## 2026-05-14 — MEH-557: Pre-launch quality stack research
+
+**Branch:** `feature/meh-557-quality-stack-research` off `staging`. **Risk tier:** LOW (research doc only, no code, no install).
+
+**Closes:** MEH-557. Adds `docs/research/pre-launch-quality-stack.md` (1435 words, under the 1500 cap) — side-by-side comparison of mutation testing (mutmut + Stryker.js), load testing (k6 + Artillery), Playwright visual regression, and Hypothesis property-based testing. Verdicts: **mutmut SHIP narrow** (auth.py scope, week-1 action), **k6 SHIP minimal** (50-VU staging-only ramp, week-before-launch), **visual regression DEFER** (Hebrew RTL font-rendering flake disqualifies built-in Playwright snapshots without Percy/Chromatic budget), **Hypothesis SKIP pre-launch** (validator surface too small to justify ROI right now).
+
+**Confidence calibration block** included in the doc — mutmut/auth = high, k6 = medium, visual = high on defer, Hypothesis = medium on skip. Source URLs use canonical product pages (mutmut, Stryker, k6, Playwright, Hypothesis) + canonical author/blog URLs for third-party citations; verifier should sanity-check that each URL returns 200 before merging, per the issue's `<verification_step>` #4.
+
+**Out of scope:** no tool installed, no `package.json` / `pyproject.toml` edited, no CI workflow touched. Recommendations are inputs for separate Tier-1 implementation tickets.
+
+---
+
+## 2026-05-14 — MEH-568 Phase 0: App Store mining shortlist (awaiting approval)
+
+**Branch:** `feature/meh-568-app-shortlist-approval` off `staging`. **Risk tier:** LOW (Phase 0 stub — HANDOFF entry only, no research output yet).
+
+**PR:** #643 (draft).
+
+**Status:** 8-app shortlist (3 Israeli RTL — Wolt, 10bis, Yad2; 5 international — LocalHarvest, GrownBy, Eat Local UK, Farmish, Open Food Network) proposed in PR description. Phase 1 (`docs/research/app-store-mining.md` + 50-review minimum + pain-point table) starts only after Smadar approves the slate in the PR thread, per the issue's `<verification_step>` rule "Apps shortlist approved by Smadar before mining starts."
+
+---
+
+## 2026-05-14 — MEH-563: UptimeRobot synthetic monitoring runbook
+
+**Branch:** `feature/meh-563-uptime-monitoring-docs` off `staging`. **Risk tier:** LOW (docs-only).
+
+**PR:** #644 (draft).
+
+**Closes:** MEH-563. Adds `docs/MONITORING.md` — setup runbook for the three free-tier UptimeRobot monitors (`/health`, `/producers?page_size=1`, `mehamakor.online/`), alert routing, status-page deferral decision, and 4 alert-class runbooks (cap 5 steps each per the issue constraint). Vendor-neutral framing (Better Stack / Checkly as alternatives). Cross-refs `docs/BUG_SEVERITY.md` for SEV labels and `.claude/rules/observability.md` (events that DID fire) vs this doc (events that did NOT fire).
+
+**Out of scope:** the actual UptimeRobot account setup — that is a manual UI step Smadar performs after merge, per the issue's note "Smadar will perform the actual UptimeRobot setup using the docs." Login-path probe deferred (POST `/auth/login` needs real credentials; out of free-tier scope).
+
+---
+
 ## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
 
 **Branch:** `feature/meh-579-faq-copy-fix` off `staging`. **Risk tier:** LOW (copy-only).

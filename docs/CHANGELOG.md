@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-557: Pre-launch quality stack research
+
+`docs(MEH-557)`: new `docs/research/pre-launch-quality-stack.md` (1435w, under 1500 cap) — comparison of 4 quality tools against Mehamakor's FastAPI + Next.js + Hebrew RTL + Railway-free-tier constraints with existing test stack (pytest, Playwright E2E, Vitest, adversarial-review variants, pip-audit/npm-audit, Sentry) as baseline. TL;DR verdicts: **mutmut SHIP narrow** scoped to `backend/app/auth.py` only — auth is a documented SPOF (MEH-265, MEH-326) and mutation is the only thing that proves the existing auth tests catch bugs; **k6 SHIP minimal** as a 50-VU staging ramp the week before launch, with explicit footgun warning not to point k6 at production (Railway free-tier burn); **Playwright visual regression DEFER** — built-in snapshot tolerance is fragile against Hebrew RTL font-rendering flake, Percy/Chromatic post-launch with budget is the right path; **Hypothesis SKIP pre-launch** — validator surface (`mask_phone`, price, MEH-555 letter-count) is small enough that example coverage suffices, revisit if a SEV-2 lands on a validator edge case. Each tool section has setup-cost, runtime-cost, fit-to-stack notes, Hebrew RTL angle, Railway angle, key risks, official + third-party citation. Confidence calibration block names which verdicts are HIGH and which are MEDIUM confidence.
+
+Closes MEH-557.
+
 ## 2026-05-14 — MEH-580: /about — replace 5 gating criteria with 4 inviting values
 
 `feat(MEH-580)`: supersedes the criteria section landed in PR #637 (MEH-526). Per Smadar's review, the 5-criteria checklist excluded legitimate aggregator producers from her outreach list (משק רתם פיין, אביגיל, רביב). Replaced with 4 values — שקיפות, קרבה, איכות, בטיחות — that invite rather than gate. Section heading: "קריטריוני כניסה" → "כך אנחנו בוחרות". Removed bullet TL;DR and numbered H3 headers; no checkmarks. New `values` array replaces both `criteria` and `criteriaDetail`. Pattern source: Farm to People, MadeWith Foods, Farmwell, USDA Farmers Market. Single file changed: `frontend/app/[locale]/about/AboutClient.jsx`. Other /about sections (founder credibility from MEH-527, hero, tips, testimonials, CTA, contact form) untouched.
