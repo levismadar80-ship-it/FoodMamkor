@@ -62,6 +62,7 @@ export default function Footer() {
     { href: "/neighbor", label: t("nav.footer.neighbor_kitchen") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },
+    { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
   ];
 
   return (
