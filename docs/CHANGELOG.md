@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-576: add "compact" matcher to SessionStart hook
+
+`fix(MEH-576)`: adds a second `SessionStart` entry to `.claude/settings.json` with `"matcher": "compact"`, re-invoking the existing `session-start.sh`. Closes the silent context-loss gap identified in MEH-574 audit: after workflow rule 7's `/compact` at 40%, the hook previously never fired, dropping HANDOFF/branch-base context. Config-only change — no script modifications. JSON validated via `python3 -m json.tool`.
+
+Closes MEH-576.
+
 ## 2026-05-14 — MEH-574: dotclaude sweep — research audit
 
 `docs(MEH-574)`: research sweep comparing `poshan0126/dotclaude` against Mehamakor's `.claude/`. Output: `docs/audits/2026-05-dotclaude-sweep.md` (763 words). 1 ADOPT (SessionStart `compact`-matcher hook to survive `/compact` context loss — Mehamakor's current SessionStart block has no matcher field, runs only at session start), 2 DEFER (token-cost audit script, doc-drift PR check prototype). Everything else SKIP — already covered by MEH-397/408/442/RTL guards or fights solo paste-relay workflow. No `.claude/` files touched.
