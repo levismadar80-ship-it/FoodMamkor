@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-05-14 — MEH-566: Backlog hygiene sweep
+
+**Branch:** `feature/meh-566-backlog-hygiene-sweep` off `staging`. **Risk tier:** LOW (analysis-only doc; zero Linear writes).
+
+**Closes:** MEH-566. Adds `docs/research/backlog-hygiene-sweep.md` (~1864 words, under 2000 cap) — triages all 144 currently-open Mehamakor issues (131 Backlog + 12 In Progress + 1 Todo + 0 In Review) against `docs/BUG_SEVERITY.md`. Headline: **2 SEV-1 + 18 SEV-2 launch blockers**. Both SEV-1 are the WhatsApp epic (MEH-504 + MEH-509, only issues carrying `prod-blocker` label). 12-item recommended close batch is `post-launch`-labeled or superseded-by-decision items, plus 6 "needs Smadar review" items kept open. Zero stale candidates (repo too young — oldest `updatedAt` is 2026-04-21).
+
+**Key learning:** the BUG_SEVERITY matrix is bug-centric; most open issues are features/research/design. Applied "if missing at launch, does it break a main user flow?" as the proxy. Audits-not-yet-run (MEH-227–233, 229 security) classified SEV-2 because their findings could promote to SEV-1.
+
+**Next task:** owner approves the 12-item close batch + 6-item review list, then a follow-up session executes the closes via Linear MCP. No code changes shipped or needed.
+
+---
+
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
 
 Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.

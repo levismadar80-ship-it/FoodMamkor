@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-566: Backlog hygiene sweep
+
+`docs(MEH-566)`: new `docs/research/backlog-hygiene-sweep.md` (1864w, under 2000 cap) — triages all 144 currently-open Mehamakor Linear issues against `docs/BUG_SEVERITY.md`. Headline: **2 SEV-1 + 18 SEV-2 launch blockers across 144 open issues.** Both SEV-1 are the WhatsApp epic (MEH-504 + MEH-509, only `prod-blocker`-labeled issues). 18 SEV-2 cover audits 1–7, pre-launch parents (MEH-125, 195, 225), supply seeding (MEH-409, 413), visual identity (MEH-451, 123), and launch-affecting onboarding (MEH-528). 12-item recommended close batch is all `post-launch`-labeled or superseded-by-decision (MEH-239 → MEH-504, MEH-560/561 → MEH-557 verdicts); 6 items flagged "needs Smadar review" rather than close. Zero stale candidates — repo too young (90-day threshold not yet reachable; oldest `updatedAt` = 2026-04-21). Analysis only; no Linear writes performed.
+
+Closes MEH-566.
+
 ## 2026-05-14 — MEH-557: Pre-launch quality stack research
 
 `docs(MEH-557)`: new `docs/research/pre-launch-quality-stack.md` (1435w, under 1500 cap) — comparison of 4 quality tools against Mehamakor's FastAPI + Next.js + Hebrew RTL + Railway-free-tier constraints with existing test stack (pytest, Playwright E2E, Vitest, adversarial-review variants, pip-audit/npm-audit, Sentry) as baseline. TL;DR verdicts: **mutmut SHIP narrow** scoped to `backend/app/auth.py` only — auth is a documented SPOF (MEH-265, MEH-326) and mutation is the only thing that proves the existing auth tests catch bugs; **k6 SHIP minimal** as a 50-VU staging ramp the week before launch, with explicit footgun warning not to point k6 at production (Railway free-tier burn); **Playwright visual regression DEFER** — built-in snapshot tolerance is fragile against Hebrew RTL font-rendering flake, Percy/Chromatic post-launch with budget is the right path; **Hypothesis SKIP pre-launch** — validator surface (`mask_phone`, price, MEH-555 letter-count) is small enough that example coverage suffices, revisit if a SEV-2 lands on a validator edge case. Each tool section has setup-cost, runtime-cost, fit-to-stack notes, Hebrew RTL angle, Railway angle, key risks, official + third-party citation. Confidence calibration block names which verdicts are HIGH and which are MEDIUM confidence.
