@@ -5,11 +5,21 @@
 
 ---
 
-## 2026-05-14 — MEH-562: Static analysis Layer 2 (draft PR)
+## 2026-05-14 — MEH-566: Backlog hygiene sweep
+
+**Branch:** `feature/meh-566-backlog-hygiene-sweep` off `staging`. **Risk tier:** LOW (analysis-only doc; zero Linear writes).
+
+**Closes:** MEH-566. Adds `docs/research/backlog-hygiene-sweep.md` (~1864 words, under 2000 cap) — triages all 144 currently-open Mehamakor issues (131 Backlog + 12 In Progress + 1 Todo + 0 In Review) against `docs/BUG_SEVERITY.md`. Headline: **2 SEV-1 + 18 SEV-2 launch blockers**. Both SEV-1 are the WhatsApp epic (MEH-504 + MEH-509, only issues carrying `prod-blocker` label). 12-item recommended close batch is `post-launch`-labeled or superseded-by-decision items, plus 6 "needs Smadar review" items kept open. Zero stale candidates (repo too young — oldest `updatedAt` is 2026-04-21).
+
+**Key learning:** the BUG_SEVERITY matrix is bug-centric; most open issues are features/research/design. Applied "if missing at launch, does it break a main user flow?" as the proxy. Audits-not-yet-run (MEH-227–233, 229 security) classified SEV-2 because their findings could promote to SEV-1.
+
+**Next task:** owner approves the 12-item close batch + 6-item review list, then a follow-up session executes the closes via Linear MCP. No code changes shipped or needed.
+
+## 2026-05-14 — MEH-562: Static analysis Layer 2 (merged)
 
 **Branch:** `feature/meh-562-static-analysis-layer-2` off `staging`. **Risk tier:** LOW (CI additions only, no production code).
 
-**Status:** Draft PR opened. All three CI jobs `continue-on-error: true`.
+**Status:** Merged to staging (PR #649, SHA c65d52b). All three warn-only CI jobs green after `|| true` patch (commit d62c1f4).
 
 **STOP condition (a) hit:** mypy on `app/auth.py` + `app/schemas/` = 57 errors > 50 threshold. Scoped to `app/auth.py` only (12 errors). schemas/ deferred.
 
@@ -18,7 +28,7 @@
 - Knip: 2 unused deps + 24 dead exports + 7 unused files
 - TS strict: 24 errors in e2e/rtl.spec.ts (JSDoc comment issue)
 
-**Next task:** After PR merges, open follow-up tickets for:
+**Next task:** Follow-up tickets to file:
 1. Fix `e2e/rtl.spec.ts` JSDoc comment (1-line, removes all 24 TS errors)
 2. Add `dict[str, Any]` types in `app/auth.py` (removes 5 type-arg errors)
 3. Scope mypy to include `app/schemas/` in a follow-up ticket
