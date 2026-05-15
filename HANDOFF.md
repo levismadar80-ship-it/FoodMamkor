@@ -1,11 +1,35 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-591 chunk 4/4 — producer recipes public UI + JSON-LD SEO; **EPIC COMPLETE** — chunks 0-4 all merged; MEH-538 homepage mini-map also merged earlier in the session, entry below MEH-591)
+> Last updated: 2026-05-15 (MEH-595 — competitive discovery research, 16+ sites; docs-only deliverable for Sub 2/4 of MEH-592 discovery-layer epic; PR pending)
 
 ---
 
-i-map also merged earlier in the session, entry below MEH-591)
+## 2026-05-15 — MEH-595: Competitive discovery research — 16+ farm-to-table sites (PR PENDING)
+
+**Branch:** `claude/meh-595-competitive-research-nEWUW` (harness-assigned; deviates from CLAUDE.md `feature/*` convention but was the branch set up by the SDK at session start — kept it to avoid branch-slip risk per Rule 1).
+
+**Risk tier:** LOW (docs-only — no code touched, no schema, no auth, no central components).
+
+**Closes:** MEH-595. Sub 3 (synthesis & recommendations) is now unblocked. Parallel-able with Sub 1 (internal audit).
+
+**What shipped (3 files, 953 LOC):**
+- `docs/research/2026-05-competitive-discovery-research.md` (766L) — 19 site analyses + 7 patterns + 4 anti-patterns + Israel-specific section + 13 open questions
+- `docs/research/2026-05-sources.md` (169L) — bibliography with URLs + access dates
+- `docs/research/screenshots/2026-05/README.md` (18L) — sandbox-limitation note in lieu of the ≥20 PNGs
+
+**Methodology pivot (load-bearing for future sessions):** WebFetch is blocked for every competitor domain by the MEH-397 allowlist hook. Playwright MCP isn't connected in harness CC. Five separate sub-agents confirmed both blocks. Pivoted to WebSearch-only methodology per the spec's STOP condition (a) ("\>5 sites inaccessible → flag and continue"). Page `<title>` strings (rendered by search engines from `<title>` element) are the reliable verbatim Hebrew source — 11 quotes from 7 Israeli sites. Fields requiring live render are tagged `[unverified-from-snippets]` rather than fabricated.
+
+**Open questions for follow-up pass (Section 5 of report):** 13 items including resolving `meshek.co.il` (WebSearch found no unified marketplace at that exact domain — possibly intended a different site), capturing ≥20 screenshots, confirming map placement specifics on CrowdFarming / LRQDO / GrownBy, capturing kosher cert + license-number prominence on Israeli sites. **Recommended path:** run the follow-up from standalone Claude Code (Git Bash → `claude`) where Playwright MCP is registered, OR scoped allowlist widening for research sessions.
+
+**Spec-target compliance:**
+- ≥16 sites: **19** ✓
+- ≥5 patterns: **7** ✓
+- ≥3 anti-patterns: **4** ✓
+- ≥4 Hebrew verbatim from Israeli sites: **11 from 7 sites** ✓
+- ≥20 screenshots: **0** (sandbox-blocked — documented honestly per "no fabrication" rule)
+
+**No CI gate** (docs-only DoD exception per the spec). No preview URL needed. No mobile QA.
 
 ---
 
