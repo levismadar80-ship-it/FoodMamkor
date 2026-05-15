@@ -142,15 +142,16 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           SECRET_KEY: ci-test-secret-not-for-production
 
-      - name: Verify alembic schema (32 tables + baseline revision)
+      - name: Verify alembic schema (34 tables + baseline revision)
         env:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          # MEH-587: head bumped from 80bbf0a24874 → d7e3c9a82f5b (drop recipes
-          # + recipe_ingredients). EXPECTED_TABLES 34 → 32 reflects the drop.
-          EXPECTED_REV="d7e3c9a82f5b"
-          EXPECTED_TABLES=32
+          # MEH-588: head bumped from d7e3c9a82f5b → f4c8a91e2b07 (add
+          # producer_recipes + producer_recipe_products). EXPECTED_TABLES
+          # 32 → 34 reflects the new tables.
+          EXPECTED_REV="f4c8a91e2b07"
+          EXPECTED_TABLES=34
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT version_num FROM alembic_version;")
