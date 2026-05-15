@@ -71,6 +71,42 @@ treat new lint signals as feedback, not a build gate.
 
 ---
 
+## §14 — File-header contract
+
+Forward-only convention for new files with non-trivial logic (>50 LOC,
+central-component, or security-sensitive). Existing files retrofit only
+when otherwise edited. 6 fields, omit lines that don't apply:
+
+```
+"""
+Module:   <filename, no path/ext — pure label>
+Purpose:  <1-2 sentence outcome, not implementation>
+Touches:  <DB tables / Cloudinary / Resend / Twilio / Anthropic — side
+          effects invisible from imports>
+Does NOT: <inverse responsibility — point at the sibling file>
+Related:  <file:line refs, not whole-file refs>
+History:  <MEH-XX (creation); MEH-YY (revision); MEH-ZZ (incident)>
+"""
+```
+
+**Does NOT** is the highest-value field — anti-knowledge ("not here,
+see `producer_me.py`") saves more grep cycles than positive description.
+**History** updates in the same PR that meaningfully revises the file
+(cross-link: workflow rule 11).
+
+Canonical exemplars, one per language style:
+
+1. `backend/app/rate_limit.py:1-46` — Python `"""..."""` with full
+   MEH-256 incident trail (Railway `X-Real-IP` discovery), Touches
+   (slowapi limiter), Related (`config.py`).
+2. `frontend/components/Footer.jsx:1-40` — JSDoc `/** ... */`:
+   top→bottom structure, scope guarantees (`POST /newsletter`
+   untouched), about-decision (WCAG contrast vs brand-token).
+
+New files mirror whichever style matches the language.
+
+---
+
 ## §15 — Sentinel markers (grep-able anchors)
 
 Three inline-comment conventions that make `grep` precise. CC's primary
