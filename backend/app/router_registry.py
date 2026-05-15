@@ -21,7 +21,6 @@ from app.routers import (
     marketing,
     producer_me,
     producers,
-    recipes,
     referrals,
     reports,
     reviews,
@@ -48,7 +47,6 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(favorites.router)
     app.include_router(admin.router)
     app.include_router(admin_extra.router)
-    app.include_router(recipes.router)
     app.include_router(home_products.router)
     app.include_router(reports.router)
     app.include_router(upload.router)

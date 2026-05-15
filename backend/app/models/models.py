@@ -470,44 +470,10 @@ class ProducerFollower(Base):
     producer = relationship("Producer")
 
 
-class Recipe(Base):
-    __tablename__ = "recipes"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    title = Column(String(300), nullable=False)
-    description = Column(Text)
-    steps = Column(JSON)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    submitted_by = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    status = Column(String(20), default="pending")  # pending | approved | rejected
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    category = relationship("Category")
-    author = relationship("User")
-    ingredients = relationship(
-        "RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan"
-    )
-
-
-class RecipeIngredient(Base):
-    __tablename__ = "recipe_ingredients"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    recipe_id = Column(
-        UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False
-    )
-    ingredient_name = Column(String(200), nullable=False)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    notes = Column(Text)
-
-    recipe = relationship("Recipe", back_populates="ingredients")
-    producer = relationship("Producer")
+# MEH-587: Recipe + RecipeIngredient removed (chunk 0/4) ahead of the
+# producer-recipes feature. Tables verified empty on staging AND
+# production before drop. See backend/alembic/versions/
+# 20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
 # --- New models for MVP v1 ---

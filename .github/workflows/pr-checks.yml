@@ -142,13 +142,18 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           SECRET_KEY: ci-test-secret-not-for-production
 
-      - name: Verify alembic schema (34 tables + baseline revision)
+      - name: Verify alembic schema (32 tables + baseline revision)
         env:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
+          # MEH-530: head chain 80bbf0a24874 (MEH-479) → d7e3c9a82f5b (MEH-587
+          # drop recipes; tables 34 → 32) → e8a3c4b5d791 (this PR, add
+          # producer_license_number). Conflict on this line resolved per
+          # Rule 25 / MEH-585 by taking MEH-587 EXPECTED_TABLES=32 and chaining
+          # our head on top.
           EXPECTED_REV="e8a3c4b5d791"
-          EXPECTED_TABLES=34
+          EXPECTED_TABLES=32
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT version_num FROM alembic_version;")

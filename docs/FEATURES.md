@@ -217,7 +217,7 @@ Priority: **after v1 launch + 10 real producers onboarded.** See
 | 📋 | v2 | Push notifications (Twilio + FCM) | Foundation already in place via `producer_followers` |
 | 📋 | v2 | React Native app | — |
 | 📋 | v2 | Bilingual (EN/HE toggle, i18next) | — |
-| 📋 | v2 | Recipes section | User submissions → admin approval |
+| ❌ | — | ~~Recipes section (user submissions → admin approval)~~ | Removed in MEH-587 (chunk 0/4); namespace cleared for producer-recipes feature (chunks 1-4) |
 | 📋 | v2 | "אחרים שמרו" social proof on producer cards | — |
 | 📋 | v2 | Volunteer ambassadors (`role: ambassador`) | — |
 | 📋 | v2 | CSA — weekly veg-box subscriptions | — |
