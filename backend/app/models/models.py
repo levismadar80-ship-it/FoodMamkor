@@ -1084,6 +1084,18 @@ class ProducerRecipe(Base):
     """
 
     __tablename__ = "producer_recipes"
+    # MEH-588: mirror the partial index declared in Alembic revision
+    # f4c8a91e2b07 so `alembic check` (Base.metadata vs DB schema) does
+    # not flag ORM/migration drift. Plain `producer_id` index is covered
+    # by the column-level `index=True` below.
+    __table_args__ = (
+        Index(
+            "ix_producer_recipes_published_moderation",
+            "published",
+            "moderation_status",
+            postgresql_where=text("published = true"),
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     producer_id = Column(
