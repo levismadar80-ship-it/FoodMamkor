@@ -15,6 +15,47 @@ Instrumented 8 admin sites with `<InfoTooltip />` from `frontend/components/Info
 
 ---
 
+## 2026-05-15 — MEH-585: Pre-push staging-sync rule (workflow rule 25)
+
+**Branch:** `feature/meh-585-pre-push-staging-sync` off `staging`. **Risk tier:** LOW (docs-only, single rule-file append).
+
+Closes the gap surfaced by my own 2026-05-15 morning report: PR #662 (MEH-222) hit an avoidable CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660 (MEH-481) merged between branch creation and push. New Rule 25 mandates `git fetch origin && git merge origin/staging` before every feature-branch `git push`, with cross-link to the `resolve-conflicts` skill as recovery fallback. Append-only logs land via Accept-Both. Forward-only — no retrofit of open feature branches. File grew 602 → 633 (+31 lines).
+
+---
+
+## 2026-05-15 — MEH-334: FRONTEND_URL/ENV boot guard (night batch task 2/2)
+
+**Branch:** `feature/meh-334-frontend-url-boot-guard` off `staging`. **Risk tier:** LOW (defense-in-depth additive WARNING; no behavior change at runtime; boot continues unconditionally).
+
+Spec called out `backend/app/main.py` but actual startup hook lives in `backend/app/startup.py` (`lifespan()` ctx manager imported into `main.py:7`). Helper `_check_frontend_url_consistency(env, frontend_url)` returns a list of mismatch reasons; lifespan loops over and logs each as a `WARNING` next to the existing optional-env-vars warning block (lines 73-86). 6 unit tests in new `tests/test_startup_guard.py` — pure-Python, no FastAPI/DB.
+
+---
+
+## 2026-05-15 — MEH-222: Avatar clickable affordance (night batch task 1/2)
+
+**Branch:** `feature/meh-222-avatar-ux` off `staging`. **Risk tier:** LOW (single-file UX fix on `/settings` ProfileTab; no upload logic touched).
+
+Replaced bare "שנה" overlay text with Phosphor `Camera` icon (size 24, weight light), made the overlay always visible on mobile (`opacity-30`) so the tap target is discoverable, kept desktop hover-only (`md:opacity-0 md:group-hover:opacity-100`), and added a native `title="לחצי לשינוי התמונה"` tooltip on the `<label>`. The existing caption "לחצי על התמונה לשינוי" stays. No physical-RTL classes introduced.
+
+---
+
+## Architecture invariants
+
+Permanent rules that survive any single session. Violations cause P0
+incidents — add entries here only after a post-mortem.
+
+- **env split (MEH-464 / MEH-465).** `frontend/lib/env.client.js` may
+  only access `NEXT_PUBLIC_*` env vars at module level — that's the
+  CLIENT-SAFE INVARIANT block at the top of the file. Server-only vars
+  (`BACKEND_URL`, server-side `SITE_URL`) live in
+  `frontend/lib/env.server.js`, which is `import "server-only"`-guarded
+  so Next.js refuses to ship it in a client bundle. `frontend/lib/env.js`
+  is a back-compat shim — do not add helpers there. Incident history:
+  PR #499, hotfix #2 (both 2026-05-06). Regression test:
+  `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)".
+
+---
+
 ## 2026-05-15 — MEH-481: File-header contract §14 (paired with MEH-482)
 
 **Branch:** `feature/meh-481-file-header-contract` off `staging`. **Risk tier:** LOW (docs-only, single rule file).

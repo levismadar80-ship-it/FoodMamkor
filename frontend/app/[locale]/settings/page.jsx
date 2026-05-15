@@ -17,6 +17,7 @@ import {
   Trash,
   Pencil,
   X,
+  Camera,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -242,6 +243,7 @@ function ProfileTab() {
       <div className="flex items-center gap-4 mb-6">
         <label
           htmlFor="avatar-upload"
+          title="לחצי לשינוי התמונה"
           className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
           aria-label="שינוי תמונת פרופיל"
         >
@@ -253,8 +255,9 @@ function ProfileTab() {
               {initial}
             </div>
           )}
-          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-            <span className="text-white text-xs font-medium">שנה</span>
+          {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover. */}
+          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            <Camera size={24} weight="light" className="text-white" aria-hidden="true" />
           </div>
           {uploading && (
             <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">

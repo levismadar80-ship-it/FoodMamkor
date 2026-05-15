@@ -8,6 +8,30 @@
 
 Closes MEH-224. Reuses InfoTooltip from MEH-292 (PR #656).
 
+## 2026-05-15 — MEH-585: Pre-push staging-sync rule in workflow.md
+
+`docs(MEH-585)`: appends Rule 25 "Pre-push staging sync" to `.claude/rules/workflow.md` — mandates `git fetch origin && git merge origin/staging` before every `git push` on a feature branch. Prevention layer; pairs with the `.claude/skills/resolve-conflicts/` recovery layer. Empirical motivation: 2026-05-15 night batch where PR #662 (MEH-222) hit an avoidable CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660 (MEH-481) merged between branch creation and push. Append-only logs (CHANGELOG.md + HANDOFF.md) follow Accept-Both / Haacked rule. `git merge` is the default; rebase acceptable but merge preserves SHAs for adversarial review. Forward-only — no retrofit of open feature branches. File grew 602 → 633 lines (+31, single-rule append).
+
+Closes MEH-585.
+
+## 2026-05-15 — MEH-334: Boot-time guard for FRONTEND_URL/ENV drift
+
+`feat(MEH-334)`: defense-in-depth boot guard in `backend/app/startup.py` — new `_check_frontend_url_consistency(env, frontend_url)` helper returns a list of mismatch reasons; the existing `lifespan()` logs each as a `WARNING` next to the existing optional-env-vars warning block. Three drift cases covered: `env=staging` without a `staging.` prefix, `env=production` pointing at staging/localhost, `env=development` pointing at `mehamakor.online`. **WARNING-only by design** — boot continues even on drift so rollback strategies still work. Recurrence prevention for MEH-332 (FRONTEND_URL was bulk-copied from production into staging Railway env vars and went undetected for ~3 weeks). New `tests/test_startup_guard.py` — 6 pure-Python parametrized cases (no FastAPI lifespan, no DB). Net: +24 lines `startup.py`, +47 lines new test file.
+
+Closes MEH-334.
+
+## 2026-05-15 — MEH-222: Avatar clickable affordance on /settings
+
+`fix(MEH-222)`: avatar overlay on `/settings` ProfileTab now shows a Phosphor `Camera` icon instead of the bare Hebrew word "שנה", and the overlay is **always visible on mobile** (`opacity-30`) — only desktop hides it until hover (`md:opacity-0 md:group-hover:opacity-100`). Native browser tooltip added via `title="לחצי לשינוי התמונה"` for hover affordance. No change to upload logic, `aria-label`, or click flow. Pure UX/affordance fix — no schema, no API change.
+
+Closes MEH-222.
+
+## 2026-05-15 — MEH-464: Codify CLIENT-SAFE INVARIANT in env.client.js
+
+`docs(MEH-464)`: codification layer on top of MEH-465's env split — adds the CLIENT-SAFE INVARIANT comment block (verbatim from MEH-464 spec, with PR #499 + hotfix #2 incident citations) to the top of `frontend/lib/env.client.js`; stub comment in `frontend/lib/env.js` flagging it as a back-compat re-export only; structural-guard note in `frontend/lib/env.server.js` calling out the intentional zero-consumers ready-for-use state. New regression test `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)" imports the real `env.client.js` in vitest's default jsdom env and asserts module evaluation does not throw + `SITE_URL`/`API_URL` are non-empty strings — any future re-introduction of a non-`NEXT_PUBLIC_*` module-level access would throw at import time. HANDOFF.md gains a permanent "Architecture invariants" section pinning the env split rule. Zero refactor, zero schema or import-path changes.
+
+Closes MEH-464.
+
 ## 2026-05-15 — MEH-481: File-header contract §14 in code-execution.md
 
 `docs(MEH-481)`: codifies a 6-field file-header docstring template (Module / Purpose / Touches / Does NOT / Related / History) as a new §14 in `.claude/rules/code-execution.md`. Forward-only — new files with non-trivial logic (>50 LOC, central-component, or security-sensitive) only; no retrofit. Two canonical exemplars cited: `backend/app/rate_limit.py:1-46` (Python `"""..."""` module docstring with full MEH-256 incident trail) and `frontend/components/Footer.jsx:1-40` (JSDoc `/** ... */` block: structure + scope guarantees + about-decision). §14 slot was deliberately reserved when MEH-482 added §15 — file previously jumped §13 → §15. Cross-link to workflow rule 11 keeps the `History` field maintained as files are revised. Source: Ustynov 2026 "semantic density optimization" — high-value tokens (`file:line`, `MEH-XX`, scope guarantees) compound the value of a single Read. Net: +36 lines, single-file edit, zero code touched.

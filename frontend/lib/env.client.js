@@ -1,3 +1,22 @@
+/**
+ * CLIENT-SAFE INVARIANT
+ *
+ * All module-level helpers exported from this file MUST only access
+ * NEXT_PUBLIC_* env vars. Server-only vars (no NEXT_PUBLIC_ prefix)
+ * may only be accessed inside function bodies that run server-side.
+ *
+ * Violating this causes T3 env's runtime guard to throw during client
+ * bundle evaluation, crashing pages before render.
+ *
+ * Incident history:
+ * - PR #499 (2026-05-06): env.SITE_URL in SITE_URL helper crashed /register
+ * - hotfix #2 (2026-05-06): env.BACKEND_URL in API_URL helper crashed /register
+ *
+ * If you need a server-side env var in a helper, EITHER:
+ * (a) inline the access in the consuming server component, OR
+ * (b) move the helper to frontend/lib/env.server.js (server-only file)
+ */
+// MEH-464: invariant codified after PR #499 + hotfix #2 P0 cascade.
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
