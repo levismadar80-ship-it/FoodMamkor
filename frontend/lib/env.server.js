@@ -5,6 +5,11 @@ import { z } from "zod";
 // Server components only. The `import "server-only"` above causes a
 // Next.js build error if any client bundle imports this file — that is
 // the structural guard (MEH-465). Use env.client.js from client components.
+//
+// MEH-464: zero consumers today is intentional — this file is the
+// ready-for-use destination for future server-only helpers, NOT dead
+// code. The CLIENT-SAFE INVARIANT in env.client.js points new
+// server-only helpers here so they cannot leak into a client bundle.
 export const env = createEnv({
   server: {
     BACKEND_URL: z.string().url().optional(),

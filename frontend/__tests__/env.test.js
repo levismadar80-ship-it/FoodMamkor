@@ -41,3 +41,27 @@ describe("env validation", () => {
     ).toThrow();
   });
 });
+
+// MEH-464: regression test for the CLIENT-SAFE INVARIANT documented at the
+// top of frontend/lib/env.client.js. vitest defaults to environment: "jsdom"
+// (see vitest.config.js) so this import evaluates in a client-shaped context.
+// If a future edit reintroduces a non-NEXT_PUBLIC_* module-level access in
+// env.client.js, T3 env's runtime guard throws here at import time,
+// reproducing PR #499 / hotfix #2 before the bug ever reaches staging.
+describe("env.client.js — CLIENT-SAFE INVARIANT (MEH-464)", () => {
+  it("evaluates without throwing when imported in a client-shaped context", async () => {
+    await expect(import("../lib/env.client.js")).resolves.toBeDefined();
+  });
+
+  it("exports SITE_URL as a non-empty string (fallback or NEXT_PUBLIC_SITE_URL)", async () => {
+    const { SITE_URL } = await import("../lib/env.client.js");
+    expect(typeof SITE_URL).toBe("string");
+    expect(SITE_URL.length).toBeGreaterThan(0);
+  });
+
+  it("exports API_URL as a non-empty string (fallback or NEXT_PUBLIC_API_URL)", async () => {
+    const { API_URL } = await import("../lib/env.client.js");
+    expect(typeof API_URL).toBe("string");
+    expect(API_URL.length).toBeGreaterThan(0);
+  });
+});
