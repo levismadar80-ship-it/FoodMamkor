@@ -362,7 +362,7 @@ async def import_producers_excel(
     return import_rows(db, rows, dry_run=dry_run)
 
 
-@router.get("/producers/pending", response_model=list[ProducerDetailOut])
+@router.get("/producers/pending", response_model=list[ProducerAdminOut])
 def pending_producers(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
