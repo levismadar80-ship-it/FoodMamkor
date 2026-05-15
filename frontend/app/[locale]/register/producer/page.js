@@ -13,6 +13,10 @@ import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
+import {
+  hasLicenseFormatWarning,
+  requiresProducerLicense,
+} from "@/lib/license-required-categories";
 
 const DRAFT_KEY = "producer_registration_draft";
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
@@ -23,6 +27,10 @@ const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
   category_ids: [],
+  // MEH-530: optional at the form level. Backend 422s when any selected
+  // category requires a license and this is empty — helper at
+  // backend/app/services/license_validation.py.
+  producer_license_number: "",
 };
 
 export default function RegisterProducerPage() {
@@ -70,6 +78,12 @@ function RegisterProducerPageBody() {
   // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
   const [descriptionPlaceholder] = useState(() => getSeasonalPlaceholder());
   const [descriptionDisabled, setDescriptionDisabled] = useState(false);
+  // MEH-530: optional path expanded-toggle. Required path renders the field
+  // directly (no toggle). Whether the path is required is derived live from
+  // the selected category IDs against the categories list fetched at mount.
+  const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
+  const licenseRequired = requiresProducerLicense(categories, form.category_ids);
+  const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -199,6 +213,9 @@ function RegisterProducerPageBody() {
         description: form.description,
         phone: form.phone,
         category_ids: form.category_ids,
+        // MEH-530: empty string normalises server-side to "missing" via
+        // license_validation._normalize_license — safe to send unconditionally.
+        producer_license_number: form.producer_license_number,
         primary_contact_method: "whatsapp",
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
@@ -458,6 +475,73 @@ function RegisterProducerPageBody() {
             />
 
             {/* MEH-293: dietary labels moved to per-product (frontend/app/settings/page.jsx ProductsSection). */}
+
+            {/* MEH-530: conditional license field. Backend enforces the
+                requirement via ensure_license_for_categories — this block
+                is the matching UX. Required path renders inline with the
+                "(חובה)" suffix; optional path is collapsed behind a toggle
+                so the field doesn't add visual weight to producers who
+                don't need it (vegetables, eggs, etc.). Format warning is
+                inline + non-blocking per MEH-530 product decision (Sapir
+                manual-approval flow). */}
+            {licenseRequired ? (
+              <div>
+                <label
+                  htmlFor="producer-license-required"
+                  className="block text-sm font-medium text-site-text mb-1 text-right"
+                >
+                  מספר רישיון יצרן (חובה)
+                </label>
+                <p className="text-xs text-site-muted mb-2 text-right">
+                  ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות
+                </p>
+                <input
+                  id="producer-license-required"
+                  value={form.producer_license_number}
+                  onChange={set("producer_license_number")}
+                  maxLength={20}
+                  inputMode="numeric"
+                  className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+                  dir="ltr"
+                />
+                {licenseWarning && (
+                  <p className="text-xs text-amber-600 mt-1 text-right">
+                    מספר רישיון יצרן הוא 7-10 ספרות
+                  </p>
+                )}
+              </div>
+            ) : licenseOptionalExpanded ? (
+              <div>
+                <label
+                  htmlFor="producer-license-optional"
+                  className="block text-sm font-medium text-site-text mb-1 text-right"
+                >
+                  מספר רישיון יצרן
+                </label>
+                <input
+                  id="producer-license-optional"
+                  value={form.producer_license_number}
+                  onChange={set("producer_license_number")}
+                  maxLength={20}
+                  inputMode="numeric"
+                  className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+                  dir="ltr"
+                />
+                {licenseWarning && (
+                  <p className="text-xs text-amber-600 mt-1 text-right">
+                    מספר רישיון יצרן הוא 7-10 ספרות
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setLicenseOptionalExpanded(true)}
+                className="text-xs text-primary underline hover:text-primary-light text-right"
+              >
+                יש לי רישיון יצרן ↓
+              </button>
+            )}
 
             {/* Legal consent — Israeli Consumer Protection Law + food license declaration */}
             <label className="flex items-start gap-2 text-sm cursor-pointer">

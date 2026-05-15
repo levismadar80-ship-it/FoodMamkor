@@ -1,9 +1,57 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-588 chunk 1/4 — producer recipes DB schema + ORM landed; chunks 2-4 next)
+> Last updated: 2026-05-15 (MEH-530 ready-for-merge — branch pushed, CI green, rebased onto MEH-588 chunk 1/4 which merged mid-session; MEH-588 entry preserved below per Accept-Both)
 
 ---
+
+## 2026-05-15 — MEH-530: Producer license number — conditional required + admin-only exposure (DRAFT PR pending)
+
+**Branch:** `feature/meh-530-producer-license-number` off `staging` (rebased onto MEH-587's `d7e3c9a82f5b` after a Rule 25 staging-sync — MEH-587 + #668 landed during the work window).
+
+**Risk tier:** HIGH — schema change (column add) + four router input surfaces touched + four response_model swaps. Chunked review observed (Phase 0 plan → Phase 1 migration → Phase 2 backend → Phase 3 frontend → Phase 4 docs+PR).
+
+**Closes:** MEH-530.
+
+**What shipped (Phases 1–3 across 3 commits; Phase 4 docs land with this PR):**
+
+Commit 1 — `feat(MEH-530): Alembic migration for producer_license_number`:
+- `backend/alembic/versions/20260515_1831_e8a3c4b5d791_meh_530_add_producer_license_number.py` — adds `producer_license_number VARCHAR(20) NULL`. Originally parented to `80bbf0a24874`; **re-parented to `d7e3c9a82f5b` in commit 3** after staging moved.
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` bumped to `e8a3c4b5d791` (table count stays 32 post-MEH-587).
+
+Commit 2 — `feat(MEH-530): backend conditional license validation + admin-only exposure`:
+- NEW `backend/app/constants.py` — `LICENSE_REQUIRED_CATEGORIES` (7 Hebrew names) + `PRODUCER_LICENSE_REGEX` (frontend-only mirror) + `PRODUCER_LICENSE_MAX_LENGTH=20`.
+- NEW `backend/app/services/license_validation.py` — `_normalize_license` (None / "" / whitespace-only → None) + `categories_require_license(db, ids)` (single SELECT) + `ensure_license_for_categories(db, ids, license)` (raises 422 `"מספר רישיון יצרן חובה לקטגוריה זו"`).
+- `backend/app/models/models.py` — `producer_license_number = Column(String(20), nullable=True)`.
+- `backend/app/schemas/schemas.py` — field added to `ProducerRegister`, `ProducerCreate`, `ProducerAdminCreate`, `ProducerUpdate` (all `max_length=20`, no regex); `ProducerListOut.has_producer_license: bool` (default False); NEW `ProducerAdminOut(ProducerDetailOut)` exposes the raw value.
+- `backend/app/services/producer_queries.py` — `attach_badge_fields` computes `has_producer_license`; `create_producer_with_relations` persists the column.
+- `backend/app/routers/auth.py` + `backend/app/routers/producers.py` — helper call before Producer construction + field persisted.
+- `backend/app/routers/admin.py` — helper call in POST + **effective-state guard** in PUT + response_model swap to `ProducerAdminOut` on POST and PUT.
+- `backend/app/routers/producer_me.py` — same effective-state guard in PUT + `producer_license_number` added to `_PRODUCER_WRITABLE_FIELDS` + response_model swap on GET + PUT.
+- NEW `tests/test_producer_license.py` — 8 cases: register happy path (200), admin happy path (201 + value), register missing-license-for-bakery 422, register empty-string-license 422, register non-required-category 201, register mixed-categories 422, admin PATCH effective-state 422, admin legacy non-regex 201 (manual-approval flow guard).
+
+Commit 3 — `feat(MEH-530): conditional license UI + admin form + alembic rebase`:
+- NEW `frontend/lib/license-required-categories.js` — 7-name mirror + `requiresProducerLicense(allCategories, selectedIds)` + `hasLicenseFormatWarning(value)`.
+- `frontend/app/[locale]/register/producer/page.js` — imports + `licenseOptionalExpanded` state + `licenseRequired` / `licenseWarning` derived values + EMPTY_FORM grows `producer_license_number: ""` + submit body includes the field + conditional UI block placed after CategorySelector.
+- `frontend/components/admin/ProducerForm.jsx` — module-scope `ProducerLicenseField` sub-component + EMPTY field + initial-state map + insertion in "קטגוריות ותגיות" Section + edit-flow auto-expand on persisted value.
+- Admin pending endpoint swap: `backend/app/routers/admin.py:365` `/admin/producers/pending` → `ProducerAdminOut` (per scope-decision in chat).
+- Alembic re-parent: `down_revision: 'd7e3c9a82f5b'` (was `'80bbf0a24874'`).
+
+Commit 4 (this PR) — Rule 25 staging-sync merge commit `f164831` + Phase 4 doc updates (CHANGELOG, HANDOFF, MANUAL_TESTING).
+
+**Locked decisions baked in this session:**
+1. Backend deliberately doesn't enforce the `^\d{7,10}$` regex — manual-approval flow must accept "PENDING-1234". Test 8 is the regression guard.
+2. Public `/producers/{id}` + `/producers/by-slug/{slug}` stay on `ProducerDetailOut` (license is admin/owner-only).
+3. Admin list `GET /admin/producers` stays on `ProducerDetailOut`; only `/admin/producers/pending` flips to `ProducerAdminOut`.
+4. Owner can edit own license (Persona 8 self-renewal every 5 years).
+5. Empty string at input layer normalises to "missing" via `_normalize_license` — locked by test 4.
+
+**What's pending:**
+- Smadar mobile + desktop QA on Vercel preview (sandbox can't reach `*.vercel.app` — MEH-360).
+- 4-case manual verification: bakery+license / bakery-no-license → 422 / veggies-no-license-needed / admin form for existing producer shows persisted number.
+- CI: pytest + npm run build (job runs on push; merge blocked until green per Rule 21).
+
+**Migration chain:** `80bbf0a24874` (MEH-479) → `d7e3c9a82f5b` (MEH-587) → `f4c8a91e2b07` (MEH-588) → **`e8a3c4b5d791` (MEH-530)** = current head. 34 tables (MEH-588 added producer_recipes + producer_recipe_products mid-session).
 
 ## 2026-05-15 — MEH-588: Producer recipes DB schema + ORM (chunk 1/4)
 

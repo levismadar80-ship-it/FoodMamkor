@@ -36,12 +36,13 @@ from app.schemas.schemas import (
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
-    ProducerDetailOut,
+    ProducerAdminOut,
     ProducerUpdate,
     ProductCreate,
     ProductOut,
     ProductUpdate,
 )
+from app.services.license_validation import ensure_license_for_categories
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
@@ -50,7 +51,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/producers/me", tags=["producer-management"])
 
 
-@router.get("", response_model=ProducerDetailOut)
+@router.get("", response_model=ProducerAdminOut)
 def get_my_producer(
     user: User = Depends(require_producer), db: Session = Depends(get_db)
 ):
@@ -104,7 +105,7 @@ def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
         counter += 1
 
 
-@router.put("", response_model=ProducerDetailOut)
+@router.put("", response_model=ProducerAdminOut)
 @limiter.limit("30/hour")
 def update_my_producer(
     request: Request,
@@ -140,6 +141,8 @@ def update_my_producer(
         "has_delivery",
         "pickup_points",
         "kosher",
+        # MEH-530: owner can edit her own license # via /producer/me PUT.
+        "producer_license_number",
         "is_available_today",
         "images",
         "custom_questions",
@@ -147,6 +150,20 @@ def update_my_producer(
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
+
+    # MEH-530: effective-state guard, same shape as admin.py PUT. Helper
+    # short-circuits when no license-required category is touched.
+    effective_category_ids = (
+        category_ids
+        if category_ids is not None
+        else [c.id for c in producer.categories]
+    )
+    effective_license = (
+        payload.get("producer_license_number")
+        if "producer_license_number" in payload
+        else producer.producer_license_number
+    )
+    ensure_license_for_categories(db, effective_category_ids, effective_license)
 
     # Validate and deduplicate slug if explicitly provided.
     if "slug" in payload and payload["slug"]:
