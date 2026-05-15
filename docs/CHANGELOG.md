@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-585: Pre-push staging-sync rule in workflow.md
+
+`docs(MEH-585)`: appends Rule 25 "Pre-push staging sync" to `.claude/rules/workflow.md` — mandates `git fetch origin && git merge origin/staging` before every `git push` on a feature branch. Prevention layer; pairs with the `.claude/skills/resolve-conflicts/` recovery layer. Empirical motivation: 2026-05-15 night batch where PR #662 (MEH-222) hit an avoidable CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660 (MEH-481) merged between branch creation and push. Append-only logs (CHANGELOG.md + HANDOFF.md) follow Accept-Both / Haacked rule. `git merge` is the default; rebase acceptable but merge preserves SHAs for adversarial review. Forward-only — no retrofit of open feature branches. File grew 602 → 633 lines (+31, single-rule append).
+
+Closes MEH-585.
+
 ## 2026-05-15 — MEH-334: Boot-time guard for FRONTEND_URL/ENV drift
 
 `feat(MEH-334)`: defense-in-depth boot guard in `backend/app/startup.py` — new `_check_frontend_url_consistency(env, frontend_url)` helper returns a list of mismatch reasons; the existing `lifespan()` logs each as a `WARNING` next to the existing optional-env-vars warning block. Three drift cases covered: `env=staging` without a `staging.` prefix, `env=production` pointing at staging/localhost, `env=development` pointing at `mehamakor.online`. **WARNING-only by design** — boot continues even on drift so rollback strategies still work. Recurrence prevention for MEH-332 (FRONTEND_URL was bulk-copied from production into staging Railway env vars and went undetected for ~3 weeks). New `tests/test_startup_guard.py` — 6 pure-Python parametrized cases (no FastAPI lifespan, no DB). Net: +24 lines `startup.py`, +47 lines new test file.

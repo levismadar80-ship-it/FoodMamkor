@@ -600,3 +600,34 @@ Tasks auto-expire after 7 days.
     an unauthorized subtitle. Both required a follow-up PR to revert.
     Discovery step (grep before edit) is now mandatory for any copy
     fix that mentions specific text positions.
+
+25. **Pre-push staging sync (MEH-585, 15 May 2026).**
+    Before every `git push -u origin <feature-branch>`, sync the branch
+    against the current tip of `staging` to absorb any append-only log
+    edits (CHANGELOG.md, HANDOFF.md) that landed during the work window.
+    Prevention layer — pairs with the `resolve-conflicts` skill
+    (recovery). Rule 1's session-start fetch covers boot; this covers
+    the moment between feature work completion and `push`.
+
+    Canonical command sequence:
+
+    ```bash
+    git fetch origin
+    git merge origin/staging   # produces a merge commit OR fast-forwards
+    # resolve conflicts via .claude/skills/resolve-conflicts/ if non-trivial
+    git push -u origin <feature-branch>
+    ```
+
+    CHANGELOG.md + HANDOFF.md follow **Accept-Both** (Haacked rule for
+    append-only logs) — both entries land in chronological order, no
+    information lost. The resolve-conflicts skill encodes this.
+
+    `git rebase origin/staging` is acceptable but **merge is the default**
+    — preserves the original feature SHAs for adversarial review and the
+    merge commit makes the sync point explicit in `git log`. Never force-push.
+
+    _Source: 2026-05-15 night batch — PR #662 (MEH-222) hit an avoidable
+    CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660
+    (MEH-481) merged between branch creation and push. Three merges in a
+    one-hour window made the 4th branch stale. Forward-only convention;
+    no retrofit of open feature branches._

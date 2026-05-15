@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-05-15 — MEH-585: Pre-push staging-sync rule (workflow rule 25)
+
+**Branch:** `feature/meh-585-pre-push-staging-sync` off `staging`. **Risk tier:** LOW (docs-only, single rule-file append).
+
+Closes the gap surfaced by my own 2026-05-15 morning report: PR #662 (MEH-222) hit an avoidable CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660 (MEH-481) merged between branch creation and push. New Rule 25 mandates `git fetch origin && git merge origin/staging` before every feature-branch `git push`, with cross-link to the `resolve-conflicts` skill as recovery fallback. Append-only logs land via Accept-Both. Forward-only — no retrofit of open feature branches. File grew 602 → 633 (+31 lines).
+
+---
+
 ## 2026-05-15 — MEH-334: FRONTEND_URL/ENV boot guard (night batch task 2/2)
 
 **Branch:** `feature/meh-334-frontend-url-boot-guard` off `staging`. **Risk tier:** LOW (defense-in-depth additive WARNING; no behavior change at runtime; boot continues unconditionally).
