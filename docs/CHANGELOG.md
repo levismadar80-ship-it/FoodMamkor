@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-334: Boot-time guard for FRONTEND_URL/ENV drift
+
+`feat(MEH-334)`: defense-in-depth boot guard in `backend/app/startup.py` — new `_check_frontend_url_consistency(env, frontend_url)` helper returns a list of mismatch reasons; the existing `lifespan()` logs each as a `WARNING` next to the existing optional-env-vars warning block. Three drift cases covered: `env=staging` without a `staging.` prefix, `env=production` pointing at staging/localhost, `env=development` pointing at `mehamakor.online`. **WARNING-only by design** — boot continues even on drift so rollback strategies still work. Recurrence prevention for MEH-332 (FRONTEND_URL was bulk-copied from production into staging Railway env vars and went undetected for ~3 weeks). New `tests/test_startup_guard.py` — 6 pure-Python parametrized cases (no FastAPI lifespan, no DB). Net: +24 lines `startup.py`, +47 lines new test file.
+
+Closes MEH-334.
+
 ## 2026-05-15 — MEH-222: Avatar clickable affordance on /settings
 
 `fix(MEH-222)`: avatar overlay on `/settings` ProfileTab now shows a Phosphor `Camera` icon instead of the bare Hebrew word "שנה", and the overlay is **always visible on mobile** (`opacity-30`) — only desktop hides it until hover (`md:opacity-0 md:group-hover:opacity-100`). Native browser tooltip added via `title="לחצי לשינוי התמונה"` for hover affordance. No change to upload logic, `aria-label`, or click flow. Pure UX/affordance fix — no schema, no API change.

@@ -27,6 +27,29 @@ def _redacted_db_url() -> str:
 # migrations managed by Alembic — see backend/alembic/
 
 
+def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
+    """MEH-334: defense-in-depth boot guard for FRONTEND_URL drift.
+
+    Returns the list of mismatch reasons (empty == OK). Caller logs WARNING
+    per reason — never raises so boot continues even if drift is present
+    (rollback strategies depend on this).
+
+    Recurrence prevention for MEH-332: FRONTEND_URL was bulk-copied from
+    production into staging Railway env vars and went undetected for ~3
+    weeks because every staging email link pointed to the production host.
+    """
+    e = (env or "").lower()
+    url = (frontend_url or "").lower()
+    issues: list[str] = []
+    if e == "staging" and "staging." not in url:
+        issues.append("env=staging but frontend_url missing 'staging.' prefix")
+    if e == "production" and ("staging" in url or "localhost" in url):
+        issues.append("env=production but frontend_url points at staging/localhost")
+    if e == "development" and "mehamakor.online" in url:
+        issues.append("env=development but frontend_url points at mehamakor.online")
+    return issues
+
+
 def _run_db_init_sync() -> None:
     log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
@@ -83,6 +106,14 @@ async def lifespan(app: FastAPI):
         log.warning(
             "⚠️ Optional env vars not set — some features disabled: %s",
             ", ".join(_missing),
+        )
+
+    # MEH-334: FRONTEND_URL/ENV drift guard (recurrence prevention for MEH-332).
+    for issue in _check_frontend_url_consistency(settings.env, settings.frontend_url):
+        log.warning(
+            "FRONTEND_URL drift: %s — emails/links will point to wrong host (frontend_url=%s)",
+            issue,
+            settings.frontend_url,
         )
 
     app.state.db_init_status = "initializing"

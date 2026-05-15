@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-05-15 — MEH-334: FRONTEND_URL/ENV boot guard (night batch task 2/2)
+
+**Branch:** `feature/meh-334-frontend-url-boot-guard` off `staging`. **Risk tier:** LOW (defense-in-depth additive WARNING; no behavior change at runtime; boot continues unconditionally).
+
+Spec called out `backend/app/main.py` but actual startup hook lives in `backend/app/startup.py` (`lifespan()` ctx manager imported into `main.py:7`). Helper `_check_frontend_url_consistency(env, frontend_url)` returns a list of mismatch reasons; lifespan loops over and logs each as a `WARNING` next to the existing optional-env-vars warning block (lines 73-86). 6 unit tests in new `tests/test_startup_guard.py` — pure-Python, no FastAPI/DB.
+
+---
+
 ## 2026-05-15 — MEH-222: Avatar clickable affordance (night batch task 1/2)
 
 **Branch:** `feature/meh-222-avatar-ux` off `staging`. **Risk tier:** LOW (single-file UX fix on `/settings` ProfileTab; no upload logic touched).
