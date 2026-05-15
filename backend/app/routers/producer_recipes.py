@@ -76,11 +76,7 @@ def _validate_product_ids(
         return []
     # Deduplicate while preserving caller intent.
     unique_ids = list(dict.fromkeys(product_ids))
-    products = (
-        db.query(Product)
-        .filter(Product.id.in_(unique_ids))
-        .all()
-    )
+    products = db.query(Product).filter(Product.id.in_(unique_ids)).all()
     found_ids = {p.id for p in products}
     missing = [pid for pid in unique_ids if pid not in found_ids]
     if missing:
@@ -114,12 +110,12 @@ def create_my_recipe(
     db: Session = Depends(get_db),
 ):
     """Submit a new recipe. Mirrors experiences.py:201-272:
-      1. Hand off to Claude Haiku via validate_producer_recipe
-      2. REJECTED → HTTP 400 (blocked, nothing persisted)
-      3. APPROVED / FLAGGED → persist as moderation_status='pending',
-         admin reviews next
-      4. The Claude verdict is stored in moderation_notes so admins
-         see Claude's signal in the queue
+    1. Hand off to Claude Haiku via validate_producer_recipe
+    2. REJECTED → HTTP 400 (blocked, nothing persisted)
+    3. APPROVED / FLAGGED → persist as moderation_status='pending',
+       admin reviews next
+    4. The Claude verdict is stored in moderation_notes so admins
+       see Claude's signal in the queue
     """
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
@@ -248,9 +244,7 @@ def update_my_recipe(
         if field == "product_ids":
             # None means "no change"; an explicit empty list clears links.
             if value is not None:
-                recipe.products = _validate_product_ids(
-                    db, user.producer_id, value
-                )
+                recipe.products = _validate_product_ids(db, user.producer_id, value)
             continue
         if field in _CONTENT_FIELDS and value != getattr(recipe, field):
             content_changed = True
@@ -275,8 +269,7 @@ def update_my_recipe(
                 status_code=400,
                 detail={
                     "error": "recipe_rejected",
-                    "reason": verdict.get("reason")
-                    or "התוכן לא מתאים לפלטפורמה",
+                    "reason": verdict.get("reason") or "התוכן לא מתאים לפלטפורמה",
                 },
             )
         recipe.moderation_notes = verdict.get("reason")
@@ -301,11 +294,7 @@ def delete_my_recipe(
 ):
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
-    recipe = (
-        db.query(ProducerRecipe)
-        .filter(ProducerRecipe.id == recipe_id)
-        .first()
-    )
+    recipe = db.query(ProducerRecipe).filter(ProducerRecipe.id == recipe_id).first()
     if not recipe or recipe.producer_id != user.producer_id:
         raise HTTPException(status_code=404, detail="Recipe not found")
     db.delete(recipe)

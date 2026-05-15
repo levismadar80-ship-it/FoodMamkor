@@ -150,9 +150,7 @@ def validate_producer_recipe(payload: dict[str, Any]) -> dict:
 
     client = _get_client()
     if client is None:
-        logger.info(
-            "[recipe-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED"
-        )
+        logger.info("[recipe-moderation] ANTHROPIC_API_KEY not set → auto-APPROVED")
         return {"status": "APPROVED", "reason": None, "suggestion": None}
 
     try:
