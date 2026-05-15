@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-530 draft PR pending — branch `feature/meh-530-producer-license-number` pushed, awaiting Smadar mobile QA on Vercel preview)
+> Last updated: 2026-05-15 (MEH-530 ready-for-merge — branch pushed, CI green, rebased onto MEH-588 chunk 1/4 which merged mid-session; MEH-588 entry preserved below per Accept-Both)
 
 ---
 
@@ -51,7 +51,30 @@ Commit 4 (this PR) — Rule 25 staging-sync merge commit `f164831` + Phase 4 doc
 - 4-case manual verification: bakery+license / bakery-no-license → 422 / veggies-no-license-needed / admin form for existing producer shows persisted number.
 - CI: pytest + npm run build (job runs on push; merge blocked until green per Rule 21).
 
-**Migration chain:** `80bbf0a24874` (MEH-479) → `d7e3c9a82f5b` (MEH-587) → **`e8a3c4b5d791` (MEH-530)** = current head. 32 tables.
+**Migration chain:** `80bbf0a24874` (MEH-479) → `d7e3c9a82f5b` (MEH-587) → `f4c8a91e2b07` (MEH-588) → **`e8a3c4b5d791` (MEH-530)** = current head. 34 tables (MEH-588 added producer_recipes + producer_recipe_products mid-session).
+
+## 2026-05-15 — MEH-588: Producer recipes DB schema + ORM (chunk 1/4)
+
+**Branch:** `feature/meh-588-producer-recipes-schema` off `staging` (head `d7e3c9a82f5b` = MEH-587 chunk 0).
+
+**Risk tier:** HIGH — schema change (two new tables on production DB). Forward-only; downgrade restores empty namespace (acceptable because chunks 2-4 haven't shipped, no data yet).
+
+**Closes:** MEH-588. **Unblocks:** MEH-589 chunk 2 (Pydantic schemas + producer-self CRUD router), MEH-590 chunk 3 (public read endpoints + chat-widget integration), MEH-591 chunk 4 (frontend recipe form + producer-page render).
+
+**What shipped (6 files):**
+
+- `backend/alembic/versions/20260515_1900_f4c8a91e2b07_meh_588_producer_recipes_schema.py` — revision `f4c8a91e2b07` revises `d7e3c9a82f5b`. Creates `producer_recipes` (15 cols + named CHECK on `moderation_status` + 2 indexes including partial `(published, moderation_status) WHERE published = TRUE`) and `producer_recipe_products` (composite PK M2M + reverse index on `product_id`). All FKs cascade on delete; all FK / PK / CHECK constraints explicitly named for clean downgrade.
+- `backend/app/models/models.py` — `Table` added to sqlalchemy imports; new `ProducerRecipe` class + module-scope `producer_recipe_products = Table(...)` association at end of file; `Producer.producer_recipes` relationship (cascade all/delete-orphan); `Product.recipes` relationship via `secondary="producer_recipe_products"`.
+- `backend/app/models/__init__.py` — `ProducerRecipe` + `producer_recipe_products` added to imports and `__all__`.
+- `.github/workflows/pr-checks.yml` — `EXPECTED_REV` d7e3c9a82f5b → **f4c8a91e2b07**, `EXPECTED_TABLES` 32 → **34**, header comment + step-name updated.
+- `docs/CHANGELOG.md` — entry at top.
+- `HANDOFF.md` — this entry.
+
+**Lift / restore cycle on `.claude/settings.json`:** chunk lifted the `Edit/Write(backend/alembic/versions/**)` + `Edit/Write(.github/workflows/**)` deny rules at branch start (commit `3088a62` pushed by Smadar — same MEH-587 pattern). Restored in the final commit before merge via the standard `git revert` flow so `staging` lands back at full deny.
+
+**Known sandbox gap:** backend test deps (`fastapi`, `sqlalchemy`, `alembic`) not installed in the CC remote container — `pytest tests/test_api.py` and `alembic upgrade head` could not be run locally this session. CI runs them on PR open; merge gated on CI green per Rule 21.
+
+**Next:** start MEH-589 chunk 2 — Pydantic `ProducerRecipeCreate` / `ProducerRecipeUpdate` / `ProducerRecipeOut` in `backend/app/schemas/schemas.py` + producer-self CRUD router at `backend/app/routers/producer_recipes.py` (GET list / POST create / PATCH / DELETE) gated by `Depends(get_current_user)` + IDOR ownership check (`recipe.producer.owner_id == current_user.id` OR admin) per the security invariants. Will branch from updated `staging` after MEH-588 squash-merges.
 
 ---
 

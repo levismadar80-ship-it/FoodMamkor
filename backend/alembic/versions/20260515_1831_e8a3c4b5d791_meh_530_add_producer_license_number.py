@@ -1,7 +1,7 @@
 """meh_530_add_producer_license_number
 
 Revision ID: e8a3c4b5d791
-Revises: d7e3c9a82f5b
+Revises: f4c8a91e2b07
 Create Date: 2026-05-15 18:31:47.023944+00:00
 
 MEH-530: adds `producers.producer_license_number` (VARCHAR(20), nullable).
@@ -25,10 +25,11 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'e8a3c4b5d791'
-# MEH-530: rebased onto MEH-587's drop-zombie-recipes revision when staging
-# moved during the work window (Rule 25). Original parent was 80bbf0a24874
-# (MEH-479 drop_dietary_flags_from_producers).
-down_revision: Union[str, None] = 'd7e3c9a82f5b'
+# MEH-530: rebased onto MEH-588's producer-recipes-schema revision when staging
+# moved a second time (Rule 25). Chain: 80bbf0a24874 (MEH-479) →
+# d7e3c9a82f5b (MEH-587 drop recipes) → f4c8a91e2b07 (MEH-588 add
+# producer_recipes + producer_recipe_products) → THIS.
+down_revision: Union[str, None] = 'f4c8a91e2b07'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
