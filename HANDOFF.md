@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-05-14 — MEH-478: list_branches cross-verification rule in CLAUDE.md
+
+**Branch:** `feature/meh-478-sandbox-visibility-rule` off `staging`. **Risk tier:** LOW (docs-only, narrow scope).
+
+Adds one-paragraph rule to CLAUDE.md "Known Bug Patterns / Gotchas" section: `mcp__github__list_branches` is trustworthy for positive claims (branch X exists at SHA Y) but NOT for negative ones (branch Y doesn't exist) — pagination defaults or filter state can hide entries without an error. Required cross-verification: `git ls-remote origin | grep <branch>` before acting on missing-branch findings. Same applies to `list_pull_requests` / `list_issues`. Source: 2026-05-07 MEH-293 PR #1 follow-up where list_branches returned 12 branches without `staging`; ls-remote confirmed it existed; false-positive recovery path narrowly avoided.
+
+**Cap caveat:** CLAUDE.md grew 80 → 82 lines (2 over its own ≤80 hard cap). Scope explicitly forbade `.claude/rules/*` edits, leaving CLAUDE.md as the only target — followup: migrate the long-form rule body to `.claude/rules/sandbox-visibility.md` and shrink CLAUDE.md back under cap.
+
+---
+
 ## 2026-05-14 — MEH-482: Sentinel markers §15 (night batch task 1/2)
 
 **Branch:** `feature/meh-482-sentinel-markers` off `staging`. **Risk tier:** LOW (docs-only, single rule file).
