@@ -1,7 +1,17 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-14
+> Last updated: 2026-05-15
+
+---
+
+## 2026-05-15 — MEH-481: File-header contract §14 (paired with MEH-482)
+
+**Branch:** `feature/meh-481-file-header-contract` off `staging`. **Risk tier:** LOW (docs-only, single rule file).
+
+Filled the §14 slot deliberately reserved when MEH-482 added §15 — file previously jumped §13 → §15. New §14 codifies a 6-field file-header docstring template (Module / Purpose / Touches / Does NOT / Related / History) with two canonical exemplars (`backend/app/rate_limit.py:1-46` Python module docstring; `frontend/components/Footer.jsx:1-40` JSDoc block). Forward-only — new non-trivial files only, no retrofit. File grew 112 → 147 lines (+36, slightly over the 30-line target but tighter than §15's +40). Cross-link to workflow rule 11 keeps the `History` field maintained on subsequent edits. MEH-481 + MEH-482 together complete the "semantic density" pair: §14 = what to write in the docstring; §15 = inline anchors for things grep needs to find later.
+
+**STOP conditions:** none tripped. STOP-(a) check passed (grep `§14` returned 0 before edit). Backend pytest deferred to CI — sandbox lacks `psycopg2`/`structlog`/`joserfc`. Frontend `npm run build` green locally.
 
 ---
 
