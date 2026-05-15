@@ -1,7 +1,49 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-591 chunk 4/4 — producer recipes public UI + JSON-LD SEO; **EPIC COMPLETE** — chunks 0-4 all merged or in this PR)
+> Last updated: 2026-05-15 (MEH-591 chunk 4/4 — producer recipes public UI + JSON-LD SEO; **EPIC COMPLETE** — chunks 0-4 all merged; MEH-538 homepage mini-map also merged earlier in the session, entry below MEH-591)
+
+---
+
+i-map also merged earlier in the session, entry below MEH-591)
+
+---
+
+## 2026-05-15 — MEH-538: Homepage mini-map preview for discovery prominence (MERGED PR #672 43315f0)
+
+**Branch:** `feature/meh-538-homepage-mini-map` off `staging` (rebased twice — MEH-589 chunk 2/4 and MEH-590 chunk 3/4 both landed during the work window; both auto-merged cleanly, zero overlap with this frontend-only work).
+
+**Risk tier:** MEDIUM — homepage is the first screen visitors see, design touch on a section visible to every visitor. Chunked review observed (Phase 0 discovery → Phase 1+2 code → Phase 3 build + push → Phase 4 PR + QA → merge).
+
+**Closes:** MEH-538.
+
+**What shipped (2 files, +267 LOC):**
+
+- NEW `frontend/components/HomepageMiniMap.jsx` (~210L) — lazy-loaded preview component:
+  - `IntersectionObserver` with `rootMargin: "200px"` gates **both** Leaflet mount and `GET /producers` fetch
+  - Tel Aviv center (32.0853, 34.7818) at zoom 8 — population center for full-country preview
+  - `react-leaflet@^4.2.1` + `leaflet@^1.9.4` (both already in deps, no new packages)
+  - Marker color via `styleForProducer()` from `frontend/lib/map-categories.js:52` (single source of truth shared with `/map`)
+  - Custom 24px `L.divIcon` (smaller than `/map`'s 28px), no clustering / my-location / hover / verified-premium badges
+  - `DisableNonClickZoom` helper disables only scroll-wheel / touch-pinch / double-click zoom; dragging stays enabled
+  - `CanvasClickToFullMap` routes background clicks to `/map` via `next/navigation`; marker clicks open tooltip (name + first-category)
+  - Loading skeleton mirrors `/map` page's pulse pattern; empty state ("בקרוב מאוד — בתי עסק ראשונים מצטרפים השבוע 🌿") fires when zero plottable markers (`lat && lng` both present)
+- `frontend/app/[locale]/page.js` — `dynamic(() => import("@/components/HomepageMiniMap"), { ssr: false })` import + JSX insertion between `<HolidayBanner>` (line 98) and `<HomeCategoryGrid>` (line 100)
+
+**Locked decisions baked in this session (4 Q-answers from chat):**
+1. **Q1 — Tel Aviv center** (not Jerusalem). Population center for homepage preview vs `/map`'s geographic center for interactive exploration. Both at zoom 8 show Israel; visual centering differs.
+2. **Q2 — Lightweight new component** (not reusing `MapComponent.jsx` wholesale). Avoids inheriting clustering / bounds / my-location callbacks that aren't wanted on a preview.
+3. **Q3 — Lazy fetch inside the component** (not reusing `useHomePage`'s already-fetched array). Duplicate `/producers` call accepted as the cost of a strict lazy-load contract; cache layer (React Query / SWR) tracked as future ticket if profiling flags it.
+4. **Q4 — 0 plottable threshold** (not 0 producers). Producers without coords contribute nothing to the map, so empty state is keyed on plottable count.
+
+**Anti-scope-creep observed:** no search inside mini-map, no filters, no layers / heatmap / animation, no "while I'm here" refactor of `MapComponent.jsx` or the unrelated `MiniMap.jsx` (single-producer detail map — name collision avoided).
+
+**What's pending (verifications):**
+- Mobile (375px iPhone Safari) Lighthouse audit — sandbox can't reach `*.vercel.app` (MEH-360); deferred to Smadar on the live preview URL
+- Real-device check that scroll doesn't trap on the map (`scrollWheelZoom` is the relevant guard)
+- Empty-state visual verification on a freshly-seeded staging environment (or temporary filter-to-zero)
+
+**Migration chain (unchanged this PR):** `80bbf0a24874` → `d7e3c9a82f5b` → `f4c8a91e2b07` → `e8a3c4b5d791` (MEH-530). 34 tables. MEH-538 is pure frontend; no schema touch.
 
 ---
 
