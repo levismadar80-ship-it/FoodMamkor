@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-05-15 — MEH-222: Avatar clickable affordance (night batch task 1/2)
+
+**Branch:** `feature/meh-222-avatar-ux` off `staging`. **Risk tier:** LOW (single-file UX fix on `/settings` ProfileTab; no upload logic touched).
+
+Replaced bare "שנה" overlay text with Phosphor `Camera` icon (size 24, weight light), made the overlay always visible on mobile (`opacity-30`) so the tap target is discoverable, kept desktop hover-only (`md:opacity-0 md:group-hover:opacity-100`), and added a native `title="לחצי לשינוי התמונה"` tooltip on the `<label>`. The existing caption "לחצי על התמונה לשינוי" stays. No physical-RTL classes introduced.
+
+---
+
 ## Architecture invariants
 
 Permanent rules that survive any single session. Violations cause P0
