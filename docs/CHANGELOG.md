@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-222: Avatar clickable affordance on /settings
+
+`fix(MEH-222)`: avatar overlay on `/settings` ProfileTab now shows a Phosphor `Camera` icon instead of the bare Hebrew word "שנה", and the overlay is **always visible on mobile** (`opacity-30`) — only desktop hides it until hover (`md:opacity-0 md:group-hover:opacity-100`). Native browser tooltip added via `title="לחצי לשינוי התמונה"` for hover affordance. No change to upload logic, `aria-label`, or click flow. Pure UX/affordance fix — no schema, no API change.
+
+Closes MEH-222.
+
 ## 2026-05-15 — MEH-464: Codify CLIENT-SAFE INVARIANT in env.client.js
 
 `docs(MEH-464)`: codification layer on top of MEH-465's env split — adds the CLIENT-SAFE INVARIANT comment block (verbatim from MEH-464 spec, with PR #499 + hotfix #2 incident citations) to the top of `frontend/lib/env.client.js`; stub comment in `frontend/lib/env.js` flagging it as a back-compat re-export only; structural-guard note in `frontend/lib/env.server.js` calling out the intentional zero-consumers ready-for-use state. New regression test `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)" imports the real `env.client.js` in vitest's default jsdom env and asserts module evaluation does not throw + `SITE_URL`/`API_URL` are non-empty strings — any future re-introduction of a non-`NEXT_PUBLIC_*` module-level access would throw at import time. HANDOFF.md gains a permanent "Architecture invariants" section pinning the env split rule. Zero refactor, zero schema or import-path changes.
