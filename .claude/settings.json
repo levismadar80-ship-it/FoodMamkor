@@ -302,10 +302,8 @@
       "Bash(npm uninstall*)",
       "Bash(curl -X DELETE*)",
       "Bash(curl -X POST*)",
-      "Edit(backend/alembic/versions/**)",
       "Edit(backend/app/main.py)",
       "Edit(backend/app/config.py)",
-      "Edit(.github/workflows/**)",
       "Edit(.claude/settings.json)",
       "Edit(.claude/hooks/**)",
       "Edit(frontend/middleware.ts)",
@@ -321,8 +319,6 @@
       "Edit(package-lock.json)",
       "Edit(pyproject.toml)",
       "Edit(uv.lock)",
-      "Write(backend/alembic/versions/**)",
-      "Write(.github/workflows/**)",
       "Write(.claude/settings.json)",
       "Write(.env*)"
     ]
