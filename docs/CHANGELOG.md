@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-222: Avatar clickable affordance on /settings
+
+`fix(MEH-222)`: avatar overlay on `/settings` ProfileTab now shows a Phosphor `Camera` icon instead of the bare Hebrew word "שנה", and the overlay is **always visible on mobile** (`opacity-30`) — only desktop hides it until hover (`md:opacity-0 md:group-hover:opacity-100`). Native browser tooltip added via `title="לחצי לשינוי התמונה"` for hover affordance. No change to upload logic, `aria-label`, or click flow. Pure UX/affordance fix — no schema, no API change.
+
+Closes MEH-222.
+
 ## 2026-05-14 — MEH-478: list_branches cross-verification rule in CLAUDE.md
 
 `docs(MEH-478)`: adds one-paragraph rule to CLAUDE.md "Known Bug Patterns / Gotchas" section codifying the 2026-05-07 lesson — `mcp__github__list_branches` is reliable for positive existence claims (branch X exists at SHA Y) but NOT for negative claims (branch Y doesn't exist; pagination defaults or filter state can hide entries without an error). Required cross-verification: `git ls-remote origin | grep <branch>` before acting on missing-branch findings. Same rule applies to `list_pull_requests` / `list_issues` for missing entries. Source incident: MEH-293 PR #1 follow-up — list_branches returned 12 branches without `staging`; ls-remote confirmed it existed; false-positive recovery path narrowly avoided. CLAUDE.md grew 80 → 82 lines (cap technically exceeded by 2 lines — unavoidable given scope explicitly forbade `.claude/rules/*` edits; long-form rule body should later migrate to `.claude/rules/sandbox-visibility.md` as a follow-up).
