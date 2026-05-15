@@ -27,6 +27,7 @@ from app.schemas.schemas import (
     ProducerListOut,
 )
 from app.services.analytics import ViewContext, hash_ip, track_producer_view
+from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import build_producers_query
 from app.services.producer_queries import (
     attach_badge_fields,
@@ -299,6 +300,10 @@ def create_producer(
     get 401. The public "become a producer" signup flow lives at
     POST /auth/register/producer (see routers/auth.py) and is unaffected.
     """
+    # MEH-530: 422s when a license-required category is selected without
+    # a `producer_license_number`. Format check is intentionally absent
+    # (frontend warning only — manual-approval flow stays open).
+    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
     return create_producer_with_relations(db, data)
 
 

@@ -75,6 +75,12 @@ class ProducerRegister(BaseModel):
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
     category_ids: list[int] = []
+    # MEH-530: optional at Pydantic level. Router calls
+    # ensure_license_for_categories which 422s if license is missing for
+    # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
+    # DB column — boundary defense only (no regex; format warning lives on
+    # the frontend per MEH-530 product decision).
+    producer_license_number: str | None = Field(default=None, max_length=20)
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -254,6 +260,8 @@ class ProducerCreate(BaseModel):
     instagram: str | None = None
     website: str | None = None
     category_ids: list[int] = []
+    # MEH-530: see ProducerRegister for the validation rationale.
+    producer_license_number: str | None = Field(default=None, max_length=20)
     delivery_areas: list[DeliveryAreaCreate] = []
 
     @field_validator("name")
@@ -288,6 +296,9 @@ class ProducerAdminCreate(BaseModel):
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
+    # MEH-530: admin form can persist the full license value verbatim
+    # (manual-approval flow), still bounded by the 20-char DB column.
+    producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
     is_verified: bool = True
     # MEH-18
@@ -375,6 +386,10 @@ class ProducerUpdate(BaseModel):
     has_delivery: bool | None = None
     pickup_points: bool | None = None
     kosher: str | None = None
+    # MEH-530: optional patch field. Router calls ensure_license_for_categories
+    # whenever category_ids OR producer_license_number is in the body — see
+    # routers/producer_me.py + routers/admin.py.
+    producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
     is_verified: bool | None = None
     # MEH-18
@@ -526,6 +541,10 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
+    # (`producer_queries.py`) from `producer.producer_license_number is not
+    # None and stripped`. The raw number is admin-only via ProducerAdminOut.
+    has_producer_license: bool = False
 
     @model_validator(mode="after")
     def _compute_trust_tier(self):
@@ -569,6 +588,16 @@ class ProducerDetailOut(ProducerListOut):
     custom_questions: list[str] | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-530: admin-only response shape. Extends ProducerDetailOut with the
+# raw `producer_license_number` value. Public `/producers/{id}` and
+# `/producers/by-slug/{slug}` routes keep returning ProducerDetailOut and
+# only see `has_producer_license: bool` — the number stays private. Used
+# by /admin/producers/* and producer_me self endpoints so admins and
+# owners can see the value they themselves submitted.
+class ProducerAdminOut(ProducerDetailOut):
+    producer_license_number: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
