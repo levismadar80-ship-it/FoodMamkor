@@ -19,9 +19,11 @@ from app.models.models import (
     ProducerCategory,
     ProducerFollower,
     ProducerPageView,
+    ProducerRecipe,
     ProducerReview,
     ProducerWhatsAppClick,
     Product,
+    producer_recipe_products,
     Report,
     SearchQuery,
     StaticPage,
@@ -56,4 +58,7 @@ __all__ = [
     "PhoneOtpToken",
     "KashrutBadgeRequest",
     "SearchQuery",
+    # MEH-588 — producer recipes (chunk 1/4)
+    "ProducerRecipe",
+    "producer_recipe_products",
 ]
