@@ -651,41 +651,8 @@ class FavoriteOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# --- Recipe ---
-class RecipeIngredientCreate(BaseModel):
-    ingredient_name: str
-    producer_id: UUID | None = None
-    notes: str | None = None
-
-
-class RecipeIngredientOut(BaseModel):
-    id: UUID
-    ingredient_name: str
-    producer_id: UUID | None = None
-    notes: str | None = None
-
-    model_config = {"from_attributes": True}
-
-
-class RecipeCreate(BaseModel):
-    title: str
-    description: str | None = None
-    steps: list[str] = []
-    category_id: int | None = None
-    ingredients: list[RecipeIngredientCreate] = []
-
-
-class RecipeOut(BaseModel):
-    id: UUID
-    title: str
-    description: str | None = None
-    steps: list[str] = []
-    category_id: int | None = None
-    status: str
-    created_at: datetime
-    ingredients: list[RecipeIngredientOut] = []
-
-    model_config = {"from_attributes": True}
+# MEH-587: Recipe* schemas removed (chunk 0/4) — see
+# backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
 # --- Home Product (מהמטבח של השכן) ---

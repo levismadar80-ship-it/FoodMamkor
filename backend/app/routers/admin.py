@@ -18,7 +18,6 @@ from app.models import (
     Producer,
     ProducerCategory,
     Product,
-    Recipe,
     User,
 )
 from app.schemas.schemas import (
@@ -548,34 +547,8 @@ def remove_flagged_listing(
     return {"detail": "Listing removed"}
 
 
-# --- Recipes ---
-@router.get("/recipes/pending")
-def pending_recipes(user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    return db.query(Recipe).filter(Recipe.status == "pending").all()
-
-
-@router.post("/recipes/{recipe_id}/approve")
-def approve_recipe(
-    recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    recipe.status = "approved"
-    db.commit()
-    return {"detail": "Recipe approved"}
-
-
-@router.post("/recipes/{recipe_id}/reject")
-def reject_recipe(
-    recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    recipe.status = "rejected"
-    db.commit()
-    return {"detail": "Recipe rejected"}
+# MEH-587: admin Recipe endpoints removed (chunk 0/4) — see
+# backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
 # --- MEH-53: Instagram story card ---
