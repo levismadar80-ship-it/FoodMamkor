@@ -1,7 +1,46 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-590 chunk 3/4 — producer recipes dashboard UI; awaiting mobile QA on preview; chunk 4 = public producer-page section)
+> Last updated: 2026-05-15 (MEH-591 chunk 4/4 — producer recipes public UI + JSON-LD SEO; **EPIC COMPLETE** — chunks 0-4 all merged or in this PR)
+
+---
+
+## 2026-05-15 — MEH-591: Producer recipes public UI + SEO (chunk 4/4 — FINAL)
+
+**Branch:** `feature/meh-591-producer-recipes-public-ui` off `staging` (head `68acb56` = MEH-590 chunk 3).
+
+**Risk tier:** HIGH (UI + public-facing SEO). End-to-end authority granted; PR opens as draft and stops for Smadar's MERGE confirmation before squash.
+
+**Closes:** MEH-591. **Epic complete:** MEH-587 (cleanup) + MEH-588 (schema) + MEH-589 (endpoints) + MEH-590 (dashboard UI) + MEH-591 (public UI + SEO) all landed in one session.
+
+**What shipped (9 files, well under the ≤11 cap):**
+
+- `frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx` — NEW. Server component, parallel fetch of producer + recipe, `generateMetadata` for SEO, renders `<RecipeJsonLd>` + `<RecipeDetail>`. 404 covers unknown-slug + not-published.
+- `frontend/components/public/RecipeCard.jsx` — NEW. 2-col mobile / 3-col desktop grid item.
+- `frontend/components/public/RecipeDetail.jsx` — NEW. Breadcrumb → hero → title → time strip → description → ingredients `<ul>` → instructions `<ol>` → related products (silent when empty) → back link.
+- `frontend/components/public/RecipeJsonLd.jsx` — NEW. `<script type="application/ld+json">` + exported `buildRecipeSchema()` for testability. Splits ingredients/instructions by newline; emits ISO 8601 `prepTime`/`cookTime`; author is Organization.
+- `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` — added recipes section between Products and DeliveryBlock. Client-side fetch via `GET /producers/{slug}/recipes`; section hidden entirely when empty. Anchor `id="recipes"`.
+- `frontend/__tests__/RecipeJsonLd.test.jsx` — NEW. 9 vitest cases (basic identity, ingredient split, HowToStep wrap, ISO duration short + long form, zero-minutes omit, recipeYield string, Organization author, undefined-strip).
+- `frontend/__tests__/RecipeCard.test.jsx` — NEW. 4 cases (title + href slug interpolation, total-min math, missing-time hidden, placeholder fallback).
+- `docs/CHANGELOG.md`, `HANDOFF.md` — entries.
+
+**Spec deviations (all aligned with project pattern):**
+- Spec scoped `producers/[slug]/...` route — actual routing is `[locale]/[slug]/...`. Used correct path.
+- No `frontend/lib/api/recipes.js` (no `lib/api/` subdir).
+- No `messages/he.json` / `en.json` (Hebrew hardcoded — MEH-366 i18n migration mid-flight).
+- Related products render inline (no public `/products/[id]` route exists).
+- Branch + PR + Closes use **MEH-591** (real Linear ticket). Spec referenced MEH-592 internally — same offset bug as chunks 1-3.
+
+**JSON-LD validation:** The 9 vitest cases lock in shape + ISO duration formatting + undefined-strip. Live `validator.schema.org` check deferred to Smadar's manual step on a real published recipe URL.
+
+**Sandbox limitation:** no `node_modules` in CC remote container — `npm run build` + `vitest run` deferred to CI. RTL physical-class probe clean across all 5 new files.
+
+**Session summary — entire producer-recipes epic shipped today:**
+1. **MEH-587** (chunk 0) — zombie cleanup, dropped `recipes` + `recipe_ingredients`. PR #667.
+2. **MEH-588** (chunk 1) — `producer_recipes` + `producer_recipe_products` schema, ORM, alembic gate. PR #669.
+3. **MEH-589** (chunk 2) — 12 endpoints, Claude Haiku pre-moderation service, 24 pytest cases. PR #671.
+4. **MEH-590** (chunk 3) — producer dashboard `/producer/dashboard/recipes` route + form + status badge. PR #673.
+5. **MEH-591** (chunk 4) — public producer-page section + recipe detail page + schema.org JSON-LD. **(this PR, draft)**
 
 ---
 
