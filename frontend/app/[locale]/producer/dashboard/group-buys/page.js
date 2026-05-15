@@ -6,6 +6,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const STATUS_LABELS = {
   open: { label: "פתוחה", cls: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -129,7 +130,10 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">מינימום משתתפות *</label>
+          <label className="block text-sm font-medium mb-1">
+            מינימום משתתפות *
+            <InfoTooltip content="מספר ההזמנות הדרוש כדי שהקבוצה תיסגר. אם לא מגיעים למינימום עד המועד האחרון — אף אחת לא משלמת ואת לא חייבת לבצע." />
+          </label>
           <input
             type="number"
             min={2}
