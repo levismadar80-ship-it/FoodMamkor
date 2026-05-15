@@ -5,6 +5,23 @@
 
 ---
 
+## Architecture invariants
+
+Permanent rules that survive any single session. Violations cause P0
+incidents — add entries here only after a post-mortem.
+
+- **env split (MEH-464 / MEH-465).** `frontend/lib/env.client.js` may
+  only access `NEXT_PUBLIC_*` env vars at module level — that's the
+  CLIENT-SAFE INVARIANT block at the top of the file. Server-only vars
+  (`BACKEND_URL`, server-side `SITE_URL`) live in
+  `frontend/lib/env.server.js`, which is `import "server-only"`-guarded
+  so Next.js refuses to ship it in a client bundle. `frontend/lib/env.js`
+  is a back-compat shim — do not add helpers there. Incident history:
+  PR #499, hotfix #2 (both 2026-05-06). Regression test:
+  `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)".
+
+---
+
 ## 2026-05-15 — MEH-481: File-header contract §14 (paired with MEH-482)
 
 **Branch:** `feature/meh-481-file-header-contract` off `staging`. **Risk tier:** LOW (docs-only, single rule file).

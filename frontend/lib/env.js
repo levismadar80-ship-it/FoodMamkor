@@ -2,4 +2,9 @@
 // (client-safe, NEXT_PUBLIC_* only) and env.server.js (server-only vars +
 // import "server-only" guard). next.config.js (protected file) still points
 // here via jiti — importing env.client.js triggers its createEnv validation.
+//
+// MEH-464: this file is a back-compat re-export only. Do NOT add helpers
+// here. Client-safe helpers go in env.client.js (subject to the CLIENT-SAFE
+// INVARIANT documented there); server-only helpers go in env.server.js.
+// Source of truth for the invariant lives at the top of env.client.js.
 export { env, SITE_URL, API_URL } from "./env.client.js";

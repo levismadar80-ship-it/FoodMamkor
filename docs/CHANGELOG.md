@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-464: Codify CLIENT-SAFE INVARIANT in env.client.js
+
+`docs(MEH-464)`: codification layer on top of MEH-465's env split — adds the CLIENT-SAFE INVARIANT comment block (verbatim from MEH-464 spec, with PR #499 + hotfix #2 incident citations) to the top of `frontend/lib/env.client.js`; stub comment in `frontend/lib/env.js` flagging it as a back-compat re-export only; structural-guard note in `frontend/lib/env.server.js` calling out the intentional zero-consumers ready-for-use state. New regression test `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)" imports the real `env.client.js` in vitest's default jsdom env and asserts module evaluation does not throw + `SITE_URL`/`API_URL` are non-empty strings — any future re-introduction of a non-`NEXT_PUBLIC_*` module-level access would throw at import time. HANDOFF.md gains a permanent "Architecture invariants" section pinning the env split rule. Zero refactor, zero schema or import-path changes.
+
+Closes MEH-464.
+
 ## 2026-05-15 — MEH-481: File-header contract §14 in code-execution.md
 
 `docs(MEH-481)`: codifies a 6-field file-header docstring template (Module / Purpose / Touches / Does NOT / Related / History) as a new §14 in `.claude/rules/code-execution.md`. Forward-only — new files with non-trivial logic (>50 LOC, central-component, or security-sensitive) only; no retrofit. Two canonical exemplars cited: `backend/app/rate_limit.py:1-46` (Python `"""..."""` module docstring with full MEH-256 incident trail) and `frontend/components/Footer.jsx:1-40` (JSDoc `/** ... */` block: structure + scope guarantees + about-decision). §14 slot was deliberately reserved when MEH-482 added §15 — file previously jumped §13 → §15. Cross-link to workflow rule 11 keeps the `History` field maintained as files are revised. Source: Ustynov 2026 "semantic density optimization" — high-value tokens (`file:line`, `MEH-XX`, scope guarantees) compound the value of a single Read. Net: +36 lines, single-file edit, zero code touched.
