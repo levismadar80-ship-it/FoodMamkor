@@ -5,7 +5,20 @@ import Link from "next/link";
 import { Cow, Leaf, Package, Seal, Truck } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
+import InfoTooltip from "@/components/InfoTooltip";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
+
+const STATUS_TOOLTIP_CONTENT = (
+  <>
+    pending = ממתין לאישור ראשוני
+    <br />
+    approved = מאושר ומוצג באתר
+    <br />
+    rejected = נדחה, מוסתר
+    <br />
+    suspended = הושעה זמנית
+  </>
+);
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -155,7 +168,10 @@ function TableHead() {
         <th className="text-end px-4 py-3 font-medium text-text-secondary">עיר</th>
         <th className="text-end px-4 py-3 font-medium text-text-secondary">קטגוריות</th>
         <th className="text-end px-4 py-3 font-medium text-text-secondary">תגיות</th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">סטטוס</th>
+        <th className="text-end px-4 py-3 font-medium text-text-secondary">
+          סטטוס
+          <InfoTooltip content={STATUS_TOOLTIP_CONTENT} label="מידע על ערכי סטטוס עסק" position="bottom" />
+        </th>
         <th className="text-end px-4 py-3 font-medium text-text-secondary">פעולות</th>
       </tr>
     </thead>

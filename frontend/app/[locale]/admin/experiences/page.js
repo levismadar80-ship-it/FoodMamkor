@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MapPin } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const TABS = [
   { value: "pending", label: "ממתינות" },
@@ -165,7 +166,14 @@ export default function AdminExperiencesPage() {
                 <th className="text-end p-3 font-medium">מארחת</th>
                 <th className="text-end p-3 font-medium">תאריך</th>
                 <th className="text-end p-3 font-medium">עיר</th>
-                <th className="text-end p-3 font-medium">Claude</th>
+                <th className="text-end p-3 font-medium">
+                  Claude
+                  <InfoTooltip
+                    content="Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך."
+                    label="מידע על מודרציית Claude"
+                    position="bottom"
+                  />
+                </th>
                 <th className="text-end p-3 font-medium">פעולות</th>
               </tr>
             </thead>

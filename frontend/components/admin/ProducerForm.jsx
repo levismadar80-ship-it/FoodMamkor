@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 
@@ -551,7 +552,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </Field>
       </Section>
 
-      <Section title="זמינות">
+      <Section title={<>זמינות <InfoTooltip content="סמני שבעל עסק בחופשה. מוצג badge 'בחופשה' בדף העסק, ולחצן WhatsApp מוסתר עד לתאריך החזרה." label="מידע על מצב חופשה" position="bottom" /></>}>
         <div className="flex flex-wrap gap-2 mb-3">
           {[
             { value: "accepting_orders", label: "פתוח להזמנות" },

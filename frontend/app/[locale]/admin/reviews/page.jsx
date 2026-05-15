@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Star, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import InfoTooltip from "@/components/InfoTooltip";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -73,7 +74,14 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ביקורות</h1>
+        <h1 className="text-2xl font-bold">
+          ביקורות
+          <InfoTooltip
+            content="Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך."
+            label="מידע על מודרציית ביקורות"
+            position="bottom"
+          />
+        </h1>
         <span className="text-sm text-text-secondary">
           {filtered.length} מתוך {reviews.length}
         </span>

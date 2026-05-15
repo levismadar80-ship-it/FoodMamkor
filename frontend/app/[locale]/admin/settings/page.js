@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState(null);
@@ -129,7 +130,14 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">חלון חג</h2>
+        <h2 className="font-semibold">
+          חלון חג
+          <InfoTooltip
+            content="הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג."
+            label="מידע על חלון חג"
+            position="bottom"
+          />
+        </h2>
         <p className="text-xs text-text-secondary">הפעלי ידנית כדי לבדוק את הבאנר בדשבורד ובעמוד הבית לפני החג.</p>
         <div className="flex items-center justify-between">
           <span className="text-sm">חלון חג פעיל</span>
@@ -160,7 +168,14 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">מצב שוק שישי</h2>
+        <h2 className="font-semibold">
+          מצב שוק שישי
+          <InfoTooltip
+            content="הפעילי בבוקר יום שישי. מקדימה באתר עסקים שמוכרים בשווקים. לאחר השבת - כבה אוטומטית."
+            label="מידע על מצב שוק שישי"
+            position="bottom"
+          />
+        </h2>
         <p className="text-xs text-text-secondary">
           הפעלי ידנית כדי לבדוק את מצב שוק שישי (סרגל יצרניות, כותרת hero, badge 🛒)
           מחוץ לחלון הזמן הרגיל (ד׳ 18:00 — ו׳ 14:00).
