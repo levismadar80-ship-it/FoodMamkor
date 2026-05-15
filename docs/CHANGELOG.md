@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-224: 8 admin tooltips instrumented (reuses MEH-292 component)
+
+`feat(MEH-224)`: instruments 8 admin sites with the existing `<InfoTooltip />` shipped in MEH-292 (PR #656) — no new component, no `/admin/help` page. Verbatim Hebrew copy from MEH-224 description. Sites: (1) "חלון חג" + (2) "מצב שוק שישי" in `/admin/settings`; (3) "זמינות" Section in `components/admin/ProducerForm.jsx` (admin-only single-producer form, used by `/admin/producers/new` + `/admin/producers/[id]/edit`); (4) Claude column header in `/admin/experiences`; (5) page heading "ביקורות" in `/admin/reviews` — moderation text verbatim per spec even though this table has no per-row moderation column; (6) "סטטוס" column header in `AdminProducersTable.jsx` — multi-line ReactNode covering pending/approved/rejected/suspended; (7) "אישור תעודות כשרות" heading in `/admin/kashrut`; (8) "קבוצות רכש" card label in `/admin` dashboard — wrapped in a `stopPropagation` span at the call site to prevent click-toggle from also triggering the enclosing `<Link>` navigation (InfoTooltip itself untouched). 5 deviations from the original scope were surfaced in Phase 0 and individually approved before instrumentation (locale prefix, settings sub-route for holiday/friday, ProducerForm.jsx vs non-existent `[id]/page.js`, "חלון חג" UI label vs "מצב חג" issue heading, reviews heading anchor). Net: 7 source files + CHANGELOG + HANDOFF = 9 files. Zero changes to `InfoTooltip.jsx`. No backend touch.
+
+Closes MEH-224. Reuses InfoTooltip from MEH-292 (PR #656).
+
 ## 2026-05-15 — MEH-585: Pre-push staging-sync rule in workflow.md
 
 `docs(MEH-585)`: appends Rule 25 "Pre-push staging sync" to `.claude/rules/workflow.md` — mandates `git fetch origin && git merge origin/staging` before every `git push` on a feature branch. Prevention layer; pairs with the `.claude/skills/resolve-conflicts/` recovery layer. Empirical motivation: 2026-05-15 night batch where PR #662 (MEH-222) hit an avoidable CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660 (MEH-481) merged between branch creation and push. Append-only logs (CHANGELOG.md + HANDOFF.md) follow Accept-Both / Haacked rule. `git merge` is the default; rebase acceptable but merge preserves SHAs for adversarial review. Forward-only — no retrofit of open feature branches. File grew 602 → 633 lines (+31, single-rule append).
