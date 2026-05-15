@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import ProducerCard from "@/components/ProducerCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
 import AnimatedCounter from "@/components/AnimatedCounter";
@@ -21,6 +22,14 @@ import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
+
+// MEH-538: lazy-load Leaflet + the mini-map preview so it doesn't block
+// initial render (SSR-disabled because Leaflet touches `window`). The
+// component itself uses IntersectionObserver to defer its `/producers`
+// fetch until the user scrolls near the section.
+const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
+  ssr: false,
+});
 
 // PREMIUM_DESIGN: parallax divider images between sections.
 const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
@@ -96,6 +105,12 @@ export default function HomePage() {
       <div className="mt-4">
         <HolidayBanner />
       </div>
+
+      {/* MEH-538: mini-map preview slots in between Hero/search and the
+          Categories grid for discovery prominence. Lazy-mounted via the
+          dynamic() above + IntersectionObserver inside the component so
+          initial render isn't blocked. */}
+      <HomepageMiniMap />
 
       <HomeCategoryGrid
         categoryCards={categoryCards}
