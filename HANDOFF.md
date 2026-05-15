@@ -1,7 +1,38 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-589 chunk 2/4 — producer recipes endpoints + Claude Haiku moderation; MEH-530 license-number landed in parallel; chunks 3-4 = UI)
+> Last updated: 2026-05-15 (MEH-590 chunk 3/4 — producer recipes dashboard UI; awaiting mobile QA on preview; chunk 4 = public producer-page section)
+
+---
+
+## 2026-05-15 — MEH-590: Producer recipes dashboard UI (chunk 3/4)
+
+**Branch:** `feature/meh-590-producer-recipes-ui` off `staging` (head `7837d9b` = MEH-589 chunk 2).
+
+**Risk tier:** HIGH (workflow rule 22+23) — UI work + Hebrew copy + producer-facing flow. End-to-end authority explicitly granted; PR opens as draft and stops before merge for Smadar's mobile QA on the Vercel preview.
+
+**Closes:** MEH-590. **Unblocks:** MEH-591 chunk 4 (public producer-page recipe section + chat-widget integration).
+
+**What shipped (8 files, well under the ≤12 cap):**
+
+- `frontend/app/[locale]/producer/dashboard/recipes/page.js` — NEW. List + inline create-form toggle. Mirrors `group-buys/page.js:193-335`.
+- `frontend/app/[locale]/producer/dashboard/recipes/[id]/edit/page.js` — NEW. Loads via `GET /producers/me/recipes/{id}` (404 if not own); reuses `<RecipeForm mode="edit">`.
+- `frontend/components/RecipeForm.jsx` — NEW. Shared form for create + edit. Single-image upload via `POST /upload/image` (mirrors `HomeProductForm.jsx:127-145`). Multi-select checkbox list of own products (`GET /producers/me/products`). REJECTED → inline reason banner, retry-enabled.
+- `frontend/components/RecipeStatusBadge.jsx` — NEW. 4-state pill (pending/approved/rejected/needs_revision) + fallback for unknown.
+- `frontend/app/[locale]/producer/dashboard/page.js` — added "מתכונים" tab card to the quick-links grid (after group-buys).
+- `frontend/__tests__/RecipeStatusBadge.test.jsx` — NEW. 6 vitest cases (4 known states + unknown fallback + missing prop).
+- `docs/CHANGELOG.md`, `HANDOFF.md` — entries.
+
+**Spec deviations (all aligned with existing project pattern, surfaced in PR body):**
+- No `frontend/lib/api/recipes.js` — project has no `lib/api/` subdir; API calls inline per dashboard convention.
+- Components under `frontend/components/` (no `producer/` subdir exists).
+- No `messages/he.json` / `en.json` updates — dashboard pages hardcode Hebrew per MEH-366 mid-flight i18n migration.
+- No separate `RecipeList.jsx` — group-buys style inline list.
+- Branch name uses **MEH-590** (real Linear ticket); spec referenced MEH-591 internally — same offset bug as chunks 1/2.
+
+**Sandbox limitation:** no `node_modules` in CC remote container — local `npm run build` and `vitest run` deferred to CI. Local RTL grep confirmed zero physical positional classes (no `ml-/mr-/pl-/pr-/left-/right-` in new files).
+
+**Next:** STOP for mobile QA on the Vercel preview URL per rule 23. Smadar reviews on her phone, confirms in Linear, then either auto-merges or sends fixes. MEH-591 chunk 4 (public UI) comes after this lands.
 
 ---
 

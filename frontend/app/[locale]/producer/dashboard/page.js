@@ -337,6 +337,14 @@ export default function ProducerDashboardPage() {
           <p className="font-headline text-lg font-bold mb-1">קבוצות הרכש שלי</p>
           <p className="text-sm text-site-muted">נהלי קבוצות רכש ופתחי חדשות</p>
         </Link>
+        {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
+        <Link
+          href="/producer/dashboard/recipes"
+          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+        >
+          <p className="font-headline text-lg font-bold mb-1">מתכונים</p>
+          <p className="text-sm text-site-muted">פרסום וניהול מתכונים שמקדמים את המוצרים שלך</p>
+        </Link>
       </div>
 
       {/* AI bio */}
