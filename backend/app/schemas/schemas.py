@@ -1029,6 +1029,124 @@ class ExperienceDetailOut(ExperienceListOut):
     model_config = {"from_attributes": True}
 
 
+# --- MEH-589 Producer recipes (chunk 2/4) ---
+# REUSES: schemas.py:840-1000 — ExperienceCreate / Update / Out trio
+# pattern (sanitize_text validators + Optional-everything Update + Out
+# with moderation fields). Recipe lifecycle is identical to experiences:
+# pre-Claude check on submit, admin queue, three terminal admin actions.
+class ProducerRecipeBase(BaseModel):
+    title: str = Field(..., min_length=3, max_length=200)
+    description: str | None = None
+    ingredients: str = Field(..., min_length=10)
+    instructions: str = Field(..., min_length=10)
+    prep_time_min: int | None = Field(None, ge=0, le=1440)
+    cook_time_min: int | None = Field(None, ge=0, le=1440)
+    servings: int | None = Field(None, ge=1, le=100)
+    image_url: str | None = None
+    # M2M to the producer's own products. The router enforces the
+    # invariant that every product_id belongs to the calling producer
+    # (cross-producer linking returns 422).
+    product_ids: list[UUID] = Field(default_factory=list, max_length=10)
+
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("title")
+    @classmethod
+    def _validate_title_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000) if v else v
+
+    @field_validator("ingredients")
+    @classmethod
+    def _sanitize_ingredients(cls, v):
+        return sanitize_text(v, max_length=5000)
+
+    @field_validator("instructions")
+    @classmethod
+    def _sanitize_instructions(cls, v):
+        return sanitize_text(v, max_length=10000)
+
+
+class ProducerRecipeCreate(ProducerRecipeBase):
+    pass
+
+
+class ProducerRecipeUpdate(BaseModel):
+    """PATCH body — every field Optional so partial updates work
+    (REUSES: ExperienceUpdate pattern schemas.py:885-922)."""
+
+    title: str | None = Field(None, min_length=3, max_length=200)
+    description: str | None = None
+    ingredients: str | None = Field(None, min_length=10)
+    instructions: str | None = Field(None, min_length=10)
+    prep_time_min: int | None = Field(None, ge=0, le=1440)
+    cook_time_min: int | None = Field(None, ge=0, le=1440)
+    servings: int | None = Field(None, ge=1, le=100)
+    image_url: str | None = None
+    product_ids: list[UUID] | None = Field(None, max_length=10)
+
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200) if v else v
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000) if v else v
+
+    @field_validator("ingredients")
+    @classmethod
+    def _sanitize_ingredients(cls, v):
+        return sanitize_text(v, max_length=5000) if v else v
+
+    @field_validator("instructions")
+    @classmethod
+    def _sanitize_instructions(cls, v):
+        return sanitize_text(v, max_length=10000) if v else v
+
+
+class ProducerRecipeOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    title: str
+    description: str | None = None
+    ingredients: str
+    instructions: str
+    prep_time_min: int | None = None
+    cook_time_min: int | None = None
+    servings: int | None = None
+    image_url: str | None = None
+    # Server-managed lifecycle fields.
+    moderation_status: str
+    moderation_notes: str | None = None
+    published: bool
+    created_at: datetime
+    updated_at: datetime
+    # Filled by the router from the M2M; not a column on the recipe table.
+    product_ids: list[UUID] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
+
+
+class ProducerRecipeModerationAction(BaseModel):
+    """Admin action payload for /admin/recipes/{id}/{action}.
+
+    REUSES: schemas.py:925-928 ExperienceModerationAction shape — single
+    optional `feedback` field. The action verb (approve / request-changes
+    / reject) lives in the URL path, not the body.
+    """
+
+    feedback: str | None = Field(None, max_length=2000)
+
+
 # --- MEH-22 Outreach leads ---
 class OutreachLeadOut(BaseModel):
     id: UUID

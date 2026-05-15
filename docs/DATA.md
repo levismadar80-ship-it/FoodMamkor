@@ -40,7 +40,14 @@
 | 18 | `admin_settings` | Key-value admin config | `AdminSetting` |
 | 19 | `static_pages` | Editable slug-based content (about, terms) | `StaticPage` |
 | 20 | `search_queries` | Analytics log of every smart-search query (MEH-99) | _(raw SQL, no ORM model)_ |
+| 21 | `producer_recipes` | Producer-owned recipes promoting their products (admin-moderated) | `ProducerRecipe` |
+| 22 | `producer_recipe_products` | Many-to-many recipe ↔ product link (same-producer enforced in router) | _(association `Table`)_ |
 
+> **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
+> added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
+> moderation). Producer-owned recipes go through Claude Haiku pre-check
+> then admin approval. Chunks 3-4 add the UI.
+>
 > **MEH-587 (2026-05-15):** `recipes` and `recipe_ingredients` removed
 > (chunk 0/4) ahead of the producer-recipes feature. See
 > `backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py`
@@ -242,6 +249,40 @@ experiences (
 | Pricing | `price` int (shekels) | `price_per_person` numeric(10,2) |
 | Admin UI | `/admin/producers` (implicit) | `/admin/experiences` (dedicated) |
 | Why separate | Simple producer calendar | Full trust-and-safety flow |
+
+### Producer recipes (producer-owned, **admin-moderated** — MEH-588/589)
+
+```sql
+producer_recipes (
+  id uuid PK,
+  producer_id FK → producers.id ON DELETE CASCADE (indexed),
+  title text NOT NULL, description text,
+  ingredients text NOT NULL,         -- Hebrew markdown
+  instructions text NOT NULL,        -- Hebrew markdown
+  prep_time_min int, cook_time_min int, servings int,
+  image_url text,                    -- Cloudinary
+
+  -- Moderation (Claude Haiku pre-check, then human admin)
+  moderation_status text NOT NULL DEFAULT 'pending'
+    CHECK IN ('pending','approved','rejected','needs_revision'),
+  moderation_notes text,             -- Claude verdict reason OR admin feedback
+  published bool NOT NULL DEFAULT false,
+
+  created_at, updated_at
+  -- Partial index on (published, moderation_status) WHERE published=true
+  -- supports the public producer-page read path.
+)
+
+-- M2M: a recipe can promote 1..N of the SAME producer's products.
+-- Cross-producer linking blocked at router level (FINDER#6 defense from
+-- MEH-588 adversarial review).
+producer_recipe_products (
+  recipe_id  FK → producer_recipes.id  ON DELETE CASCADE,
+  product_id FK → products.id          ON DELETE CASCADE,
+  PRIMARY KEY (recipe_id, product_id)
+  -- Reverse index on product_id for "which recipes mention X".
+)
+```
 
 ### Analytics (feature/producer-analytics, April 2026)
 
@@ -506,6 +547,28 @@ GET  /admin/experiences?status=…                       admin
 POST /admin/experiences/{id}/approve                   admin — emails host "approved"
 POST /admin/experiences/{id}/request-changes           admin — feedback required
 POST /admin/experiences/{id}/reject                    admin — feedback optional
+```
+
+### Producer recipes (`app/routers/producer_recipes.py`, `admin_recipes.py` — MEH-589)
+
+```
+# Producer self (require_producer)
+POST   /producers/me/recipes                producer  — 10/hr — Claude pre-check, REJECTED→400
+GET    /producers/me/recipes                producer  — list all statuses
+GET    /producers/me/recipes/{id}           producer  — 404 if not own
+PATCH  /producers/me/recipes/{id}           producer  — 10/hr — content change re-moderates
+DELETE /producers/me/recipes/{id}           producer  — owner only
+
+# Public (no auth — slug + published+approved filter)
+GET    /producers/{slug}/recipes            public    — published+approved only
+GET    /producers/{slug}/recipes/{id}       public    — 404 if not published+approved
+
+# Admin (require_admin)
+GET    /admin/recipes?moderation_status=…   admin     — filter or all
+GET    /admin/recipes/pending               admin     — queue (oldest first)
+POST   /admin/recipes/{id}/approve          admin     — sets published=true
+POST   /admin/recipes/{id}/request-changes  admin     — feedback required → needs_revision
+POST   /admin/recipes/{id}/reject           admin     — feedback optional → rejected
 ```
 
 ### Reviews (`app/routers/reviews.py`)
