@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const BADGE_LABELS = {
   rabanut: "כשר מרבנות",
@@ -76,7 +77,14 @@ export default function AdminKashrutPage() {
   return (
     <div dir="rtl">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold font-headline text-site-text mb-1">אישור תעודות כשרות</h1>
+        <h1 className="text-2xl font-bold font-headline text-site-text mb-1">
+          אישור תעודות כשרות
+          <InfoTooltip
+            content="בעל עסק ביקש תעודת כשרות. בדקי את התעודה המצורפת ואשרי/דחי."
+            label="מידע על בקשת תעודת כשרות"
+            position="bottom"
+          />
+        </h1>
         <p className="text-sm text-site-muted">
           בתי עסק מבקשות תעודות כשרות דרך הדשבורד שלהן. בדקי את קישור התעודה לפני אישור.
         </p>
