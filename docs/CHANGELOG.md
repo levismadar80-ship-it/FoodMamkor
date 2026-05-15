@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-14 — MEH-482: Sentinel markers §15 in code-execution.md
+
+`docs(MEH-482)`: appends §15 "Sentinel markers" to `.claude/rules/code-execution.md` codifying three grep-able inline-comment conventions: `# MEH-XXX:` (history anchor), `# DO NOT:` (anti-pattern anchor), `# REUSES: <file:line>` (pattern provenance). Each pattern has one in-repo exemplar. Forward-only convention — no retrofit pass, no hook enforcement. Baseline of existing sentinel usage: 117 hits across `backend/` + `frontend/`. Pure docs-only — zero code changes.
+
+Closes MEH-482.
+
 ## 2026-05-14 — MEH-292: Shared InfoTooltip component + 10 producer-dashboard instrumentation sites
 
 `feat(MEH-292)`: new `frontend/components/InfoTooltip.jsx` — mobile-first tap-to-toggle info tooltip with self-contained `ⓘ` trigger, `Escape`-to-close, outside-pointerdown-to-close, `aria-describedby`/`aria-expanded` wiring, focus/blur opening, and RTL-aware logical positioning (`start`/`end` or `top`/`bottom` with centered direction-neutral idiom). Differentiated from existing `components/ui/Tooltip.jsx` (which wraps children + is hover-first + has no Escape) — both coexist. 10 producer-dashboard instrumentation sites: availability radio card (the deferred MEH-291 "מה ההבדל?" — multi-line ReactNode content), conversion %, rank-in-city, business-of-the-week eligibility badge (copy revised against actual `eligibleForWeekly` code path — no fabricated 80% numeric threshold), profile views card, search appearances card, 30-day views chart heading, profile strength card, custom WhatsApp questions heading, and group-buys minimum-participants input label. `WindowedMetricCard` gains optional `tooltip` prop so labels stay strings. 7 Vitest tests cover trigger render, custom label, click toggle + aria wiring, Escape close, outside-pointerdown close, ReactNode multi-line content, and focus-open. No backend touch.
