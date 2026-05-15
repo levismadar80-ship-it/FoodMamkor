@@ -212,14 +212,12 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ---
 
-## Recipe ingredient cascade (MEH-311)
+## ~~Recipe ingredient cascade (MEH-311)~~
 
-- [ ] FK violation regression — sanity check ידני בstaging:
-  1. בקונסולת DB ב-Railway: צרי `RecipeIngredient` שמצביע על producer קיים — `INSERT INTO recipe_ingredients (id, recipe_id, ingredient_name, producer_id) VALUES (gen_random_uuid(), '<existing-recipe-id>', 'בדיקה', '<producer-id>');`
-  2. דרך אדמין UI או DB: `DELETE FROM producers WHERE id = '<producer-id>';`
-  3. **תוצאה מצופה:** Producer נמחק. RecipeIngredient נשאר. `SELECT producer_id FROM recipe_ingredients WHERE id = '<ingredient-id>';` → `NULL`.
-  4. **בלי הfix:** היה נכשל בFK violation. אם זה עובד — הfix תקין.
-- [ ] DELETE /auth/me regression — producer-user מוחקת חשבון דרך setting → "מחיקת חשבון" כשיש לה RecipeIngredient שמצביע אליה: ה-deletion מצליח (היה נכשל בFK violation לפני הfix).
+> **MEH-587 (2026-05-15):** section removed — `recipes` and
+> `recipe_ingredients` dropped (chunk 0/4). The cascade contract this
+> section tested no longer has a surface to exercise. See CHANGELOG +
+> migration `d7e3c9a82f5b`.
 
 ---
 

@@ -29,19 +29,22 @@
 | 7 | `favorites` | User bookmarks on a producer | `Favorite` |
 | 8 | `producer_followers` | Notification subscriptions per producer | `ProducerFollower` |
 | 9 | `producer_reviews` | Public star+text reviews (one per user per producer) | `ProducerReview` |
-| 10 | `recipes` | Community-submitted recipes (v2 feature, table exists) | `Recipe` |
-| 11 | `recipe_ingredients` | Ingredient rows tied to recipes | `RecipeIngredient` |
-| 12 | `home_products` | "מהמטבח של השכן" — community food listings | `HomeProduct` |
-| 13 | `home_product_whatsapp_clicks` | Track when a buyer taps WhatsApp (for 24h rating prompt) | `HomeProductWhatsAppClick` |
-| 14 | `home_product_ratings` | 1-5 star rating per click | `HomeProductRating` |
-| 15 | `reports` | User-submitted reports on a producer | `Report` |
-| 16 | `events` | Producer-hosted farm events (no moderation) | `Event` |
-| 17 | `experiences` | Community-hosted workshops (**admin-moderated**) | `Experience` |
-| 18 | `newsletter_subscribers` | Footer newsletter signups | `NewsletterSubscriber` |
-| 19 | `contact_messages` | /about contact form submissions | `ContactMessage` |
-| 20 | `admin_settings` | Key-value admin config | `AdminSetting` |
-| 21 | `static_pages` | Editable slug-based content (about, terms) | `StaticPage` |
-| 22 | `search_queries` | Analytics log of every smart-search query (MEH-99) | _(raw SQL, no ORM model)_ |
+| 10 | `home_products` | "מהמטבח של השכן" — community food listings | `HomeProduct` |
+| 11 | `home_product_whatsapp_clicks` | Track when a buyer taps WhatsApp (for 24h rating prompt) | `HomeProductWhatsAppClick` |
+| 12 | `home_product_ratings` | 1-5 star rating per click | `HomeProductRating` |
+| 13 | `reports` | User-submitted reports on a producer | `Report` |
+| 14 | `events` | Producer-hosted farm events (no moderation) | `Event` |
+| 15 | `experiences` | Community-hosted workshops (**admin-moderated**) | `Experience` |
+| 16 | `newsletter_subscribers` | Footer newsletter signups | `NewsletterSubscriber` |
+| 17 | `contact_messages` | /about contact form submissions | `ContactMessage` |
+| 18 | `admin_settings` | Key-value admin config | `AdminSetting` |
+| 19 | `static_pages` | Editable slug-based content (about, terms) | `StaticPage` |
+| 20 | `search_queries` | Analytics log of every smart-search query (MEH-99) | _(raw SQL, no ORM model)_ |
+
+> **MEH-587 (2026-05-15):** `recipes` and `recipe_ingredients` removed
+> (chunk 0/4) ahead of the producer-recipes feature. See
+> `backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py`
+> and CHANGELOG.
 
 Auto-created on boot via `Base.metadata.create_all(engine)` +
 `_migrate_columns()` in `backend/app/main.py`. The initial seed DDL
@@ -292,17 +295,6 @@ newsletter_subscribers (id, email unique, created_at)
 contact_messages       (id, name, email, message text, created_at)
 admin_settings         (key text PK, value text)
 static_pages           (slug text PK, title, body, updated_at)
-
--- v2 feature — tables exist but no public UI
-recipes (
-  id, title, description, steps json, category_id FK,
-  submitted_by FK, status: pending|approved|rejected,
-  created_at
-)
-recipe_ingredients (
-  id, recipe_id FK, ingredient_name,
-  producer_id FK nullable, notes
-)
 ```
 
 ---
@@ -483,11 +475,6 @@ GET    /admin/home-products/hidden             admin
 POST   /admin/home-products/{id}/restore       admin
 DELETE /admin/home-products/{id}               admin
 
-# Recipes (v2)
-GET    /admin/recipes/pending                  admin
-POST   /admin/recipes/{id}/approve             admin
-POST   /admin/recipes/{id}/reject              admin
-
 # Users
 GET    /admin/users                            admin — search
 PUT    /admin/users/{id}/role                  admin
@@ -534,14 +521,6 @@ DELETE /reviews/{id}             auth  — owner or admin
 ```
 POST /producers/{id}/report      auth  — 3 reports auto-flag for admin
 GET  /admin/reports              admin
-```
-
-### Recipes (v2 — `app/routers/recipes.py`)
-
-```
-GET  /recipes                    public — filter: category
-GET  /recipes/{recipe_id}        public
-POST /recipes                    auth   — writes status=pending
 ```
 
 ### Marketing (`app/routers/marketing.py`)

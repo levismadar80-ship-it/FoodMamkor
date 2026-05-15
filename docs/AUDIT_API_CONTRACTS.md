@@ -1,5 +1,8 @@
 # Audit 5/7 — API Contract Mismatches (Frontend ↔ Backend)
 
+> **Note:** recipes feature removed in MEH-587 (15.5.2026). See CHANGELOG.
+
+
 > Completed: April 2026  
 > Branch: `claude/audit-api-contracts-qm2Rd`  
 > Method: grep-based extraction + manual cross-reference  
