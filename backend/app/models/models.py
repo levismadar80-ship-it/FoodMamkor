@@ -86,6 +86,14 @@ class Producer(Base):
     has_delivery = Column(Boolean, default=False)
     pickup_points = Column(Boolean, default=False)
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
+    # MEH-530: manufacturer license number (משרד הבריאות). Nullable at the
+    # DB level so existing producer rows stay valid; required-vs-optional
+    # is enforced at the application layer (router-level helper
+    # app/services/license_validation.py — depends on selected categories).
+    # Exposed publicly only as the derived boolean `has_producer_license`
+    # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
+    # via ProducerAdminOut.
+    producer_license_number = Column(String(20), nullable=True)
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     is_available_today = Column(Boolean, default=False)  # producer self-marks daily
     # MEH-12: durable availability status (vs. the per-day is_available_today above).

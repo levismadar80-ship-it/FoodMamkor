@@ -50,6 +50,7 @@ from app.services.oauth_verifiers import (
     verify_apple_token as _verify_apple_token,
     verify_google_token as _verify_google_token,
 )
+from app.services.license_validation import ensure_license_for_categories
 from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product, User
@@ -354,6 +355,12 @@ async def register_producer(
             detail="חובה להזין אימייל ליצירת קשר עבור אמצעי הקשר הנבחר",
         )
 
+    # MEH-530: 422s with Hebrew copy if any selected category requires a
+    # license and the body didn't supply one.
+    ensure_license_for_categories(
+        db, data.category_ids, data.producer_license_number
+    )
+
     producer = Producer(
         name=data.producer_name,
         description=data.description,
@@ -365,6 +372,8 @@ async def register_producer(
         website=data.website,
         primary_contact_method=method,
         contact_email=data.contact_email,
+        # MEH-530: persisted as-is post-guard. None when not supplied.
+        producer_license_number=data.producer_license_number,
         # MEH-293/MEH-479: dietary tagging is per-product via /settings.
         status="pending_whatsapp",
     )

@@ -70,6 +70,12 @@ def attach_badge_fields(producer):
         )
         products = []
         producer.products_count = 0
+    # MEH-530: public-facing boolean signal — true when the producer has
+    # supplied any non-blank license value. The raw number is never
+    # populated onto ProducerListOut/ProducerDetailOut; admin/owner routes
+    # use ProducerAdminOut which serialises the column directly.
+    raw_license = getattr(producer, "producer_license_number", None)
+    producer.has_producer_license = bool(raw_license and raw_license.strip())
     producer.has_gluten_free_products = any(
         getattr(p, "is_gluten_free", False) for p in products
     )
@@ -153,6 +159,10 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         phone=data.phone,
         instagram=data.instagram,
         website=data.website,
+        # MEH-530: persisted as-is — None when not supplied. Conditional
+        # required-vs-optional is gated by the router-level helper before
+        # this function is called.
+        producer_license_number=data.producer_license_number,
         status="pending",
     )
     db.add(producer)

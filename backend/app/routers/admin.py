@@ -23,11 +23,13 @@ from app.models import (
 )
 from app.schemas.schemas import (
     ProducerAdminCreate,
+    ProducerAdminOut,
     ProducerDetailOut,
     ProducerUpdate,
     RemoveListingBody,
     StoryCardUploadRequest,
 )
+from app.services.license_validation import ensure_license_for_categories
 from app.slug_utils import RESERVED_SLUGS
 
 logger = logging.getLogger(__name__)
@@ -119,7 +121,7 @@ def list_producers(
     return q.order_by(Producer.created_at.desc()).all()
 
 
-@router.post("/producers", response_model=ProducerDetailOut, status_code=201)
+@router.post("/producers", response_model=ProducerAdminOut, status_code=201)
 def admin_create_producer(
     data: ProducerAdminCreate,
     user: User = Depends(require_admin),
@@ -133,6 +135,12 @@ def admin_create_producer(
             status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
         )
     slug = _ensure_unique_slug(db, slug)
+
+    # MEH-530: same conditional-required guard as the public endpoints —
+    # admin form can still persist non-regex license values verbatim
+    # (manual-approval flow), but missing-license-for-required-category
+    # is still a 422.
+    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
 
     producer = Producer(
         name=data.name,
@@ -158,6 +166,7 @@ def admin_create_producer(
         has_delivery=data.has_delivery,
         pickup_points=data.pickup_points,
         kosher=data.kosher,
+        producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
         is_verified=data.is_verified,
         images=data.images or [],
@@ -179,7 +188,7 @@ def admin_create_producer(
     return producer
 
 
-@router.put("/producers/{producer_id}", response_model=ProducerDetailOut)
+@router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
     data: ProducerUpdate,
@@ -193,6 +202,25 @@ def admin_update_producer(
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
+
+    # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
+    # the update. If category_ids is being changed → use the new list,
+    # otherwise read existing producer-category join rows. Same for license:
+    # if the field is in the payload (even explicitly None to clear) → use
+    # that, otherwise keep the current column. Helper short-circuits to OK
+    # when no required-category is touched, so this is cheap on non-license
+    # admin edits.
+    effective_category_ids = (
+        category_ids
+        if category_ids is not None
+        else [c.id for c in producer.categories]
+    )
+    effective_license = (
+        payload.get("producer_license_number")
+        if "producer_license_number" in payload
+        else producer.producer_license_number
+    )
+    ensure_license_for_categories(db, effective_category_ids, effective_license)
 
     # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:
