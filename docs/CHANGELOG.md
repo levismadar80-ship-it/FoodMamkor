@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-481: File-header contract §14 in code-execution.md
+
+`docs(MEH-481)`: codifies a 6-field file-header docstring template (Module / Purpose / Touches / Does NOT / Related / History) as a new §14 in `.claude/rules/code-execution.md`. Forward-only — new files with non-trivial logic (>50 LOC, central-component, or security-sensitive) only; no retrofit. Two canonical exemplars cited: `backend/app/rate_limit.py:1-46` (Python `"""..."""` module docstring with full MEH-256 incident trail) and `frontend/components/Footer.jsx:1-40` (JSDoc `/** ... */` block: structure + scope guarantees + about-decision). §14 slot was deliberately reserved when MEH-482 added §15 — file previously jumped §13 → §15. Cross-link to workflow rule 11 keeps the `History` field maintained as files are revised. Source: Ustynov 2026 "semantic density optimization" — high-value tokens (`file:line`, `MEH-XX`, scope guarantees) compound the value of a single Read. Net: +36 lines, single-file edit, zero code touched.
+
+Closes MEH-481.
+
 ## 2026-05-14 — MEH-482: Sentinel markers §15 in code-execution.md
 
 `docs(MEH-482)`: appends §15 "Sentinel markers" to `.claude/rules/code-execution.md` codifying three grep-able inline-comment conventions: `# MEH-XXX:` (history anchor), `# DO NOT:` (anti-pattern anchor), `# REUSES: <file:line>` (pattern provenance). Each pattern has one in-repo exemplar. Forward-only convention — no retrofit pass, no hook enforcement. Baseline of existing sentinel usage: 117 hits across `backend/` + `frontend/`. Pure docs-only — zero code changes.
