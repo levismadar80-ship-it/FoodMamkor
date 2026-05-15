@@ -717,7 +717,10 @@ Patterns and gaps observed across the 8 Israeli sites in this study, relevant to
 
 **Implication for mehamakor:** group-buys (MEH already has this) are a category-validated Israeli primitive. Don't deprioritize them — they're a distinctly Israeli pattern that fits the magazine/community thesis.
 
-### 4.7 — Israeli pain points unaddressed by competitors (= mehamakor opportunity)
+### 4.7 — `meshek.co.il` removed from scope
+**Note:** `meshek.co.il` was named in the original MEH-595 spec but WebSearch surfaced no unified marketplace at that exact domain — only individual family-farm sites (meshek-p.co.il, meshekbechor.co.il, meshekmuslowfarm.com), an unrelated renewable-energy company (mske.co.il), and the agritourism site `hai-meshek.org.il`. **Removed from the Israeli competitive set for this study.** If the correct domain is identified later (most likely candidates: `meshek-p.co.il`, `hai-meshek.org.il`, or a different "meshek-*" site), open a new MEH ticket or add it to Sub 4 cleanup. The Section 4 Israel-specific analysis above stands on 7 sites instead of 8 — the patterns and anti-patterns are unchanged.
+
+### 4.8 — Israeli pain points unaddressed by competitors (= mehamakor opportunity)
 Synthesizing the above:
 
 1. **No competitor in the Israeli set has a producer map.** mehamakor's mini-map is the single biggest discovery differentiator.
