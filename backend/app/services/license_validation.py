@@ -11,6 +11,7 @@ Related:  app/constants.py:LICENSE_REQUIRED_CATEGORIES,
           frontend/lib/license-required-categories.js (mirror).
 History:  MEH-530 (creation, 2026-05-15).
 """
+
 from collections.abc import Iterable
 
 from fastapi import HTTPException
@@ -34,9 +35,7 @@ def _normalize_license(value: str | None) -> str | None:
     return stripped or None
 
 
-def categories_require_license(
-    db: Session, category_ids: Iterable[int]
-) -> bool:
+def categories_require_license(db: Session, category_ids: Iterable[int]) -> bool:
     """Return True if any of the given category IDs maps to a name in
     LICENSE_REQUIRED_CATEGORIES. Empty input → False (no categories selected
     means nothing is required yet — Pydantic still applies on the field itself).
@@ -45,8 +44,7 @@ def categories_require_license(
     if not ids:
         return False
     names = {
-        row.name
-        for row in db.query(Category.name).filter(Category.id.in_(ids)).all()
+        row.name for row in db.query(Category.name).filter(Category.id.in_(ids)).all()
     }
     return bool(names.intersection(LICENSE_REQUIRED_CATEGORIES))
 

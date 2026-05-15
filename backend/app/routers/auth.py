@@ -357,9 +357,7 @@ async def register_producer(
 
     # MEH-530: 422s with Hebrew copy if any selected category requires a
     # license and the body didn't supply one.
-    ensure_license_for_categories(
-        db, data.category_ids, data.producer_license_number
-    )
+    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
 
     producer = Producer(
         name=data.producer_name,
