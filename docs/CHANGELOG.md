@@ -8,6 +8,18 @@
 
 Closes MEH-464.
 
+## 2026-05-15 — MEH-481: File-header contract §14 in code-execution.md
+
+`docs(MEH-481)`: codifies a 6-field file-header docstring template (Module / Purpose / Touches / Does NOT / Related / History) as a new §14 in `.claude/rules/code-execution.md`. Forward-only — new files with non-trivial logic (>50 LOC, central-component, or security-sensitive) only; no retrofit. Two canonical exemplars cited: `backend/app/rate_limit.py:1-46` (Python `"""..."""` module docstring with full MEH-256 incident trail) and `frontend/components/Footer.jsx:1-40` (JSDoc `/** ... */` block: structure + scope guarantees + about-decision). §14 slot was deliberately reserved when MEH-482 added §15 — file previously jumped §13 → §15. Cross-link to workflow rule 11 keeps the `History` field maintained as files are revised. Source: Ustynov 2026 "semantic density optimization" — high-value tokens (`file:line`, `MEH-XX`, scope guarantees) compound the value of a single Read. Net: +36 lines, single-file edit, zero code touched.
+
+Closes MEH-481.
+
+## 2026-05-14 — MEH-478: list_branches cross-verification rule in CLAUDE.md
+
+`docs(MEH-478)`: adds one-paragraph rule to CLAUDE.md "Known Bug Patterns / Gotchas" section codifying the 2026-05-07 lesson — `mcp__github__list_branches` is reliable for positive existence claims (branch X exists at SHA Y) but NOT for negative claims (branch Y doesn't exist; pagination defaults or filter state can hide entries without an error). Required cross-verification: `git ls-remote origin | grep <branch>` before acting on missing-branch findings. Same rule applies to `list_pull_requests` / `list_issues` for missing entries. Source incident: MEH-293 PR #1 follow-up — list_branches returned 12 branches without `staging`; ls-remote confirmed it existed; false-positive recovery path narrowly avoided. CLAUDE.md grew 80 → 82 lines (cap technically exceeded by 2 lines — unavoidable given scope explicitly forbade `.claude/rules/*` edits; long-form rule body should later migrate to `.claude/rules/sandbox-visibility.md` as a follow-up).
+
+Closes MEH-478.
+
 ## 2026-05-14 — MEH-482: Sentinel markers §15 in code-execution.md
 
 `docs(MEH-482)`: appends §15 "Sentinel markers" to `.claude/rules/code-execution.md` codifying three grep-able inline-comment conventions: `# MEH-XXX:` (history anchor), `# DO NOT:` (anti-pattern anchor), `# REUSES: <file:line>` (pattern provenance). Each pattern has one in-repo exemplar. Forward-only convention — no retrofit pass, no hook enforcement. Baseline of existing sentinel usage: 117 hits across `backend/` + `frontend/`. Pure docs-only — zero code changes.
