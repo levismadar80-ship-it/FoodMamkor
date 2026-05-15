@@ -2,6 +2,12 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## 2026-05-15 — MEH-464: Codify CLIENT-SAFE INVARIANT in env.client.js
+
+`docs(MEH-464)`: codification layer on top of MEH-465's env split — adds the CLIENT-SAFE INVARIANT comment block (verbatim from MEH-464 spec, with PR #499 + hotfix #2 incident citations) to the top of `frontend/lib/env.client.js`; stub comment in `frontend/lib/env.js` flagging it as a back-compat re-export only; structural-guard note in `frontend/lib/env.server.js` calling out the intentional zero-consumers ready-for-use state. New regression test `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)" imports the real `env.client.js` in vitest's default jsdom env and asserts module evaluation does not throw + `SITE_URL`/`API_URL` are non-empty strings — any future re-introduction of a non-`NEXT_PUBLIC_*` module-level access would throw at import time. HANDOFF.md gains a permanent "Architecture invariants" section pinning the env split rule. Zero refactor, zero schema or import-path changes.
+
+Closes MEH-464.
+
 ## 2026-05-14 — MEH-482: Sentinel markers §15 in code-execution.md
 
 `docs(MEH-482)`: appends §15 "Sentinel markers" to `.claude/rules/code-execution.md` codifying three grep-able inline-comment conventions: `# MEH-XXX:` (history anchor), `# DO NOT:` (anti-pattern anchor), `# REUSES: <file:line>` (pattern provenance). Each pattern has one in-repo exemplar. Forward-only convention — no retrofit pass, no hook enforcement. Baseline of existing sentinel usage: 117 hits across `backend/` + `frontend/`. Pure docs-only — zero code changes.
