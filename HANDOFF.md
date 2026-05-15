@@ -1,7 +1,40 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-588 chunk 1/4 — producer recipes DB schema + ORM landed; chunks 2-4 next)
+> Last updated: 2026-05-15 (MEH-589 chunk 2/4 — producer recipes endpoints + Claude Haiku moderation; chunks 3-4 = UI)
+
+---
+
+## 2026-05-15 — MEH-589: Producer recipes endpoints + moderation (chunk 2/4)
+
+**Branch:** `feature/meh-589-producer-recipes-endpoints` off `staging` (head `790dfc8` = MEH-588 chunk 1).
+
+**Risk tier:** HIGH — auth boundary (producer-only role check + IDOR ownership), admin permissions (3 terminal moderation actions), Claude pre-check fail-open. Mitigated by reusing the `experiences.py` + `admin_experiences.py` + `experience_moderation.py` patterns line-for-line (no invented logic).
+
+**Closes:** MEH-589. **Unblocks:** MEH-590 chunk 3 (frontend recipe form on producer dashboard + producer-page render), MEH-591 chunk 4 (chat widget integration + public producer-page recipe section).
+
+**What shipped (9 files):**
+
+- `backend/app/schemas/schemas.py` — 5 new Pydantic classes (`ProducerRecipeBase` + `Create` + `Update` + `Out` + `ProducerRecipeModerationAction`). `Update` is all-Optional per project pattern. Validators reuse `sanitize_text` + `_min_letters_validator`.
+- `backend/app/services/producer_recipe_moderation.py` — NEW. `validate_producer_recipe(payload) → {status, reason, suggestion}` mirroring `experience_moderation.py:1-213`. Haiku model pin (`claude-haiku-4-5-20251001`). Fail-open returns APPROVED on missing API key / network / parse / unknown status. Explicit `http_client=httpx.Client()` per locked decision.
+- `backend/app/routers/producer_recipes.py` — NEW. 7 endpoints: 5 producer-self (POST/GET-list/GET-one/PATCH/DELETE) + 2 public (slug-scoped list + detail). Rate limit 10/hr on POST + PATCH. PATCH content-change branching keys off `title/description/ingredients/instructions`. `_validate_product_ids()` enforces same-producer invariant (cross-producer M2M → 422).
+- `backend/app/routers/admin_recipes.py` — NEW. 5 endpoints: list with optional status filter, pending queue, approve / request-changes / reject. Mirrors `admin_experiences.py:1-148` shape.
+- `backend/app/router_registry.py` — registers both new routers after `admin_experiences`.
+- `tests/test_producer_recipes.py` — NEW. 24 tests across 5 classes: TestProducerCreate (8), TestProducerListGet (2), TestProducerUpdate (3), TestProducerDelete (2), TestPublicRead (6), TestAdminModeration (6). Claude monkey-patched via `_mock_moderation` REUSES test_experiences.py:83-100.
+- `docs/DATA.md` — table 21+22 added; new "Producer recipes" SQL block + 12-endpoint reference block.
+- `docs/CHANGELOG.md`, `HANDOFF.md` — entries.
+
+**Notable decisions (all surfaced + confirmed before coding):**
+- Spec offset typo: branch / PR / Closes use MEH-589 (the real Linear ticket); spec text referenced MEH-590 internally — same offset bug as chunk 1.
+- Admin endpoints in separate `admin_recipes.py` (project pattern) instead of bundled in `admin.py` (spec literal). 3 separate endpoints instead of single `/moderate` with action enum.
+- Update fields all-Optional (project pattern) instead of spec literal `pass`.
+- Haiku 4.5 over Opus — matches `experience_moderation.py`.
+- `docs/DATA.md` updated in this PR per workflow rule 11.
+- Producer endpoints use only `require_producer` (no inline `require_verified_email`) — matches `producer_me.py`. Producers go through admin approval, email-verified gate is for community submissions.
+
+**Sandbox limitation:** `fastapi`, `sqlalchemy`, `alembic`, `anthropic` still not installed in CC remote container — local `pytest tests/test_producer_recipes.py` and `alembic check` deferred to CI. Local `ruff check` passed on all 6 touched Python files.
+
+**Next:** MEH-590 chunk 3 — frontend recipe-form on producer dashboard + recipe section on public producer page. Will branch off updated staging after MEH-589 squash-merges.
 
 ---
 
