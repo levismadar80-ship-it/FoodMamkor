@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-05-15 — MEH-224: Admin tooltips (reuses MEH-292 InfoTooltip)
+
+**Branch:** `feature/meh-224-admin-tooltips` off `staging @ 5adfd56`. **Risk tier:** LOW-to-MEDIUM (8 single-file inserts + 1 shared admin component, no schema/auth touch, reuses existing InfoTooltip — no new component built).
+
+Instrumented 8 admin sites with `<InfoTooltip />` from `frontend/components/InfoTooltip.jsx` (shipped in PR #656 / MEH-292): holiday window + friday market mode (admin/settings), producer "זמינות" section (admin/ProducerForm — shared between new + edit), Claude moderation column (admin/experiences), reviews page heading (admin/reviews), status column (AdminProducersTable), kashrut heading (admin/kashrut), purchase-groups card (admin/page.js). Hebrew copy verbatim from MEH-224 description "## ההסברים" section. 5 deviations from the original scope surfaced in Phase 0 and approved before instrumentation: locale prefix `frontend/app/[locale]/admin/` (vs spec's `frontend/app/admin/`); holiday/friday actually live in `/admin/settings/page.js` (not main dashboard); vacation badge anchor is `components/admin/ProducerForm.jsx` (no `[id]/page.js` exists, only `[id]/edit/page.js` which renders ProducerForm); UI label is "חלון חג" (issue heading was "מצב חג" — tooltip content remains verbatim, just attached to the actual rendered label); reviews page anchor is `<h1>ביקורות</h1>` because the reviews table has no per-row moderation column. Site 8 (purchase groups card) needed a `stopPropagation` wrapper at the call site because the card is inside a `<Link>` and InfoTooltip's button click would otherwise navigate; InfoTooltip itself remains untouched.
+
+**STOP conditions:** none tripped. RTL grep on additions returned 0 physical-property hits. `npm run build` green. pytest deferred to CI (no Python touched).
+
+---
+
 ## 2026-05-15 — MEH-481: File-header contract §14 (paired with MEH-482)
 
 **Branch:** `feature/meh-481-file-header-contract` off `staging`. **Risk tier:** LOW (docs-only, single rule file).
