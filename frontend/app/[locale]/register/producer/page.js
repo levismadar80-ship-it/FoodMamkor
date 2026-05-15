@@ -12,12 +12,16 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
+import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
 
 const DRAFT_KEY = "producer_registration_draft";
+// MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
+const DESCRIPTION_PENDING_KEY = "description_pending";
+const DESCRIPTION_DEFAULT_TEXT = "בית עסק מקומי. עוד פרטים בקרוב.";
 
 const EMPTY_FORM = {
   email: "", name: "", password: "",
-  producer_name: "", phone: "",
+  producer_name: "", description: "", phone: "",
   category_ids: [],
 };
 
@@ -61,6 +65,11 @@ function RegisterProducerPageBody() {
   // MEH-287: true when server confirms Twilio config is present (WhatsApp
   // expected to arrive). False → show dashboard-fallback banner on step 3.
   const [whatsappSent, setWhatsappSent] = useState(true);
+  // MEH-532: seasonal placeholder is locked to the value at first render
+  // so it doesn't flicker if the user crosses a season boundary mid-session.
+  // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
+  const [descriptionPlaceholder] = useState(() => getSeasonalPlaceholder());
+  const [descriptionDisabled, setDescriptionDisabled] = useState(false);
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -184,6 +193,10 @@ function RegisterProducerPageBody() {
     try {
       const body = {
         producer_name: form.producer_name,
+        // MEH-532: description is optional on the backend (sanitize_text
+        // strips/empty-string normalises); we still send what we have so the
+        // story shows up on the producer page immediately after approval.
+        description: form.description,
         phone: form.phone,
         category_ids: form.category_ids,
         primary_contact_method: "whatsapp",
@@ -370,6 +383,51 @@ function RegisterProducerPageBody() {
               className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
               dir="rtl"
             />
+
+            {/* MEH-532: description is moved to the prominent slot directly
+                below the business name. Submit is never blocked on it —
+                the "אני אכתוב אחר כך" link fills a default and disables the
+                textarea so motivated sellers add a real story while everyone
+                else still ships. localStorage flag surfaces a future
+                dashboard reminder. */}
+            <div>
+              <label
+                htmlFor="producer-description"
+                className="block text-sm font-medium text-site-text mb-1 text-right"
+              >
+                ספרי על העסק שלך
+              </label>
+              <p className="text-xs text-site-muted mb-2 text-right">
+                סיפור של 100-300 מילים — איך התחלת? מה מיוחד אצלך? מה הקרוב ביותר ללב שלך?
+              </p>
+              <textarea
+                id="producer-description"
+                value={form.description}
+                onChange={set("description")}
+                disabled={descriptionDisabled}
+                placeholder={descriptionPlaceholder}
+                rows={6}
+                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-light disabled:text-site-muted disabled:cursor-not-allowed"
+                dir="rtl"
+              />
+              {!descriptionDisabled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAndSave((prev) => ({ ...prev, description: DESCRIPTION_DEFAULT_TEXT }));
+                    setDescriptionDisabled(true);
+                    try {
+                      localStorage.setItem(DESCRIPTION_PENDING_KEY, "true");
+                    } catch {
+                      // private browsing / storage disabled — flag is best-effort
+                    }
+                  }}
+                  className="text-xs text-primary underline mt-1 hover:text-primary-light"
+                >
+                  אני אכתוב אחר כך
+                </button>
+              )}
+            </div>
 
             <div>
               <input

@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-05-15 — MEH-532: Description prominence + seasonal Hebrew placeholder
+
+**Branch:** `feature/meh-532-description-prominence` off `staging`. **Risk tier:** LOW (frontend-only; single page edit + 1 new lib + 1 new test).
+
+Phase 0 found that the spec's "move description field" language was slightly off — the backend `ProducerRegister.description` field at `backend/app/schemas/schemas.py:67` (with `sanitize_text` validator, 2000-char cap) was already accepted by the route at `backend/app/routers/auth.py:359`, but the frontend `EMPTY_FORM` never carried a `description` key and the submit body never sent one. So the effective task was "wire it up + place it prominently", which still matches the spec's intent and stays inside the declared scope (one page file + one new lib file + one new test).
+
+Placement: directly below the business-name input in Step 2, above the phone field — the prominence slot the spec called for. The Hebrew label + helper text + seasonal placeholder all match the spec verbatim (Spring/Summer/Fall/Winter first-person stories per `Date.getMonth()` windows 2-4, 5-7, 8-10, else). Placeholder is locked at first render via `useState(() => getSeasonalPlaceholder())` so it can't flicker if a session straddles a season boundary. "אני אכתוב אחר כך" link below the textarea fills the default text "בית עסק מקומי. עוד פרטים בקרוב.", disables the textarea via local `descriptionDisabled` state, and writes `localStorage.description_pending=true` (best-effort, wrapped in try/catch like the existing `DRAFT_KEY` writes) — the dashboard reminder that consumes this flag is explicit follow-up scope per the Linear issue, no UI consumer added in this PR. Submit is never blocked on description content; the default text satisfies the backend sanitiser unchanged.
+
+textarea sizing uses `min-h-[9rem] md:min-h-[12rem]` (≈6 lines mobile / 8 desktop) rather than `rows`-via-media-query — Tailwind cannot responsively change the HTML `rows` attribute, so `rows={6}` is the baseline and `min-h` provides the responsive growth. RTL: only logical properties (`ps-3 pe-3 text-right`); no physical-direction classes introduced.
+
+**Files:**
+- NEW `frontend/lib/producer-description-placeholders.js` (28 lines) — 4 Hebrew season constants + `getSeasonalPlaceholder(now=new Date())`
+- NEW `frontend/__tests__/producer-description-placeholders.test.js` (36 lines) — 3 cases (April→SPRING, January→WINTER, all 4 constants are Hebrew strings >50 chars)
+- EDIT `frontend/app/[locale]/register/producer/page.js` (+59 / −1) — `EMPTY_FORM` adds `description`; new module-level `DESCRIPTION_PENDING_KEY`/`DESCRIPTION_DEFAULT_TEXT`; two new useState hooks (placeholder lock + disabled flag); description block inserted between business-name and phone; submit body adds `description: form.description`.
+
+**STOP conditions:** STOP-(a) Phase 0 deviation surfaced (backend field exists but frontend never wired it) — judged within scope since the spec's path list explicitly names `frontend/app/register/producer/page.js (Step 2 layout + description field)`. STOP-(b)/(c)/(d) not tripped.
+
+**Verification:** placeholder tests 3/3 pass (`vitest run __tests__/producer-description-placeholders.test.js`). Full `npm run build` green (`✓ Compiled successfully in 10.9s`). Full vitest suite: 333 passed + 38 pre-existing failures (Header, AdminNullGuards, ProducerCard, etc.) — counts match the baseline on `origin/staging` without my changes; no regression introduced. Mobile QA deferred to preview URL (sandbox can't open Vercel previews per MEH-360).
+
+---
+
 ## 2026-05-15 — MEH-585: Pre-push staging-sync rule (workflow rule 25)
 
 **Branch:** `feature/meh-585-pre-push-staging-sync` off `staging`. **Risk tier:** LOW (docs-only, single rule-file append).
