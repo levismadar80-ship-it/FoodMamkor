@@ -1,13 +1,13 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch + homepage kitchen section; PR pending)
+> Last updated: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch + homepage kitchen section; PR pending; sits on top of PR #682 launch-blocker batch)
 
 ---
 
 ## 2026-05-16 — MEH-598: Hide /neighbor pre-launch (brand LOCK) (PR PENDING)
 
-**Branch:** `feature/meh-598-hide-neighbor-prelaunch` off `staging` (post-PR #681 `0f19a08`).
+**Branch:** `feature/meh-598-hide-neighbor-prelaunch` off `staging` (originally branched from `0f19a08` post-PR #681; merged in `3cb6503` mid-work to absorb PR #682 launch-blocker bundle per Rule 25).
 
 **Risk tier:** LOW (copy + nav removal + redirect — no schema, no auth, no central components).
 
@@ -60,21 +60,48 @@ During Phase 0 grep sweep, 6 additional LOCK leak surfaces discovered beyond `/n
 
 **Next:** Vercel preview URL on mobile + grep DOM for `/neighbor` link absence. Merge to staging after mobile QA.
 
+**Mid-work sync (Rule 25):** Branched off `0f19a08` (post-PR #681). PR #682 (MEH-605/606/609 copy bundle) merged into staging at `3cb6503` while this work was in flight. Resolved via `git merge origin/staging` — clean auto-merge on all i18n + docs (PR #682 only touched `home.cta.body` / `home.categories.subheading` / `home.how_it_works.step03_text` — orthogonal to this PR's removed keys `nav.neighbor` + `nav.footer.neighbor_kitchen` + `home.kitchen.*`). Append-only conflict on `HANDOFF.md` resolved per resolve-conflicts skill (Accept-Both).
+
 ---
 
 ## 🎯 Next sprint (recommended)
 
-The discovery-layer redesign epic (MEH-592) is closed. The next implementation work is the **3 launch-blockers** from Sub 3 synthesis:
+The discovery-layer redesign epic (MEH-592) is closed. **Launch-blocker progress: 2 of 3 shipped** (MEH-605 + MEH-606 + MEH-609 landed via PR #682 on 2026-05-16). Remaining work in priority order:
 
-- **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan
-- **MEH-605** — Final CTA copy reframe (off "דירקטורי" — 3 Hebrew options A/B/C waiting for Sapir's pick)
-- **MEH-606** — Categories subhead reframe (off "מהחקלאי" saturation — 3 Hebrew options A/B/C waiting for Sapir's pick)
+- **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan (last launch-blocker)
+- **MEH-607** — Counter + skeleton bundle (fast-follow, week 1-2)
+- **MEH-608** — Step 2 subhead lie fix (fast-follow, week 1-2)
 
-**Recommended next session: MEH-605 + MEH-606 bundle** — both are i18n string changes in `frontend/messages/he.json`, can ship as a single copy-only PR, fastest path to land 2 of 3 launch-blockers. Sapir picks options A/B/C in chat → Claude implements + opens single PR.
+**Recommended next session: MEH-604** — closes the launch-blocker batch. See synthesis Section 5.1 for the performance plan (skeleton + 200ms post-FCP defer via `requestIdleCallback` + tile-server preconnect).
 
 **Synthesis pointer:** [`docs/synthesis/2026-05-discovery-redesign-synthesis.md`](docs/synthesis/2026-05-discovery-redesign-synthesis.md) (14 findings, priority matrix, Hebrew copy options).
 
-**Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F2-cta-reframe.txt and F3-categories-subhead.txt contain the ASCII layouts + all 3 Hebrew options each.
+**Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F1-map-above-fold.txt for the MEH-604 layout.
+
+**Brand Hub v1.1 (16 May 2026)** — new copy rules now reflected in `docs/DESIGN.md`. Source of truth: [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) sections 8-9, [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+
+---
+
+## 2026-05-16 — MEH-605 / MEH-606 / MEH-609: Discovery copy bundle (PR #682 MERGED)
+
+**Branch:** `feature/meh-605-606-609-copy-bundle` off `staging` (deleted post-merge).
+
+**Risk tier:** LOW (copy-only — 3 i18n strings in `frontend/messages/he.json`; no JSX, no schema, no central components, no auth, no migrations).
+
+**Closes:** MEH-605 + MEH-606 + MEH-609 — all auto-closed in Linear via the `Closes` annotation on PR #682. **MEH-592 epic launch-blockers: 2 of 3 shipped** — only MEH-604 (above-fold map) remains.
+
+**What shipped (1 file changed, 3 strings updated):**
+- `home.cta.body` (MEH-605, Finding F2) — drops "דירקטורי" marketplace word; replaced with magazine-tier framing naming mehamakor as the home of small businesses + surfacing curation (LOCK #1) + producer-page format
+- `home.categories.subheading` (MEH-606, Finding F3, Option A) — drops saturated "ישר מבית העסק — בלי מתווכים" formula (5/7 Israeli competitors per Anti-pattern 1); replaced with "כל קטגוריה — בית עסק אחר, סיפור אחר."
+- `home.how_it_works.step03_text` (MEH-609, Finding F6) — drops double-negative "בלי מתווכים, בלי הנחות על האיכות"; replaced with positive outcome + founder-accountability framing
+
+**Override rationale (MEH-605 + MEH-609 deviated from A/B/C menus in their Linear issues):** All menu options contained partial category listings ("חקלאית או מגדלת" / "מה שהיא מגדלת") that exclude bakeries, dairies, wineries, chocolatiers — together ~75% of base. New brand rule (Brand Hub v1.1, sections 8-9): partial category lists in audience targeting are prohibited. New copy follows "show, don't tell" — implicit inclusion + curation signal + product-format reference, without the word "מגזין" in any UI string.
+
+**Brand Hub update — v1.1 (16 May 2026):** The override rationale is now codified in the brand hub and mirrored into `docs/DESIGN.md` (new "כללי מיקרו-קופי" section, two rules: audience targeting no partial category lists; "מגזין" internal use only). Brand hub source of truth: [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) sections 8-9, [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+
+**Verification:** all 6 pre-merge greps returned 0 hits (`דירקטורי`, `בלי מתווכים`, `בלי הנחות על האיכות`, `חקלאית או מגדלת`, `מגדלת או חקלאית` reverse-order, `מגזין` show-don't-tell sanity); `npm run build` green (93/93 pages, 22.2s compile); CI green across build / lint / E2E / API contract / mypy / Knip / tsc / paths-filter / Vercel deployment; **Vercel preview QA at 375px approved by Smadar pre-merge** — CTA card body wraps cleanly with the new 3-sentence copy, CTA button stays above the fold (follow-up ticket only if it drops below in production). `/adversarial-review` skipped per Sapir's explicit call — pre-PR adversarial caught the "מגדלת" exclusion bug during planning chat (counts per workflow rule 5a).
+
+**Next:** **MEH-604** is the last remaining launch-blocker. After that, the fast-follow batch (MEH-607 counter/skeleton bundle, MEH-608 step 2 fix) is on deck.
 
 ---
 
