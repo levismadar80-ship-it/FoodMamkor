@@ -121,6 +121,42 @@
         "invalid_link": "קישור האימות לא תקין",
         "invalid_or_expired": "קישור האימות לא תקין או פג תוקף"
       }
+    },
+    "login": {
+      "loading": "טוען...",
+      "title": "כניסה למהמקור",
+      "welcome": "ברוכה הבאה",
+      "value_save": "❤️ שמרי עסקים",
+      "value_rate": "⭐ דרגי",
+      "value_publish": "🏠 פרסמי מטבח ביתי",
+      "email_label": "אימייל",
+      "email_invalid": "האימייל לא תקין",
+      "valid": "✓ תקין",
+      "password_label": "סיסמה",
+      "password_required": "הזיני סיסמה",
+      "password_show": "הציגי סיסמה",
+      "password_hide": "הסתירי סיסמה",
+      "forgot_password": "שכחת סיסמה?",
+      "submit": "כניסה",
+      "submitting": "מתחברת...",
+      "reset_success": "הסיסמה עודכנה בהצלחה — אפשר להתחבר",
+      "or": "או",
+      "no_account": "אין לך חשבון?",
+      "register_cta": "הצטרפי →",
+      "generic_error": "משהו השתבש, נסי שוב"
+    },
+    "oauth": {
+      "google_error": "שגיאה בהתחברות עם Google",
+      "apple_error": "שגיאה בהתחברות עם Apple",
+      "apple_continue": "המשך עם Apple",
+      "apple_continue_f": "המשיכי עם Apple",
+      "producer_quick_signup": "הרשמה מהירה",
+      "producer_only_email_name": "נקבל רק את השם והמייל שלך",
+      "or": "או",
+      "producer_already_account": "יש לך כבר חשבון במהמקור — היכנסי כדי לנהל אותו",
+      "rate_limited": "יותר מדי נסיונות, נסי בעוד דקה",
+      "connection_failed": "לא הצלחנו להתחבר, נסי שוב",
+      "generic_error": "שגיאה בהתחברות"
     }
   },
   "account": {
