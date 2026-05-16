@@ -2,15 +2,17 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Warning } from "@phosphor-icons/react";
 
 // Phosphor icon size used in this toolbar.
 const ICON_SIZE_SM = 16;
 
 function SearchInput({ value, onChange, onSearch }) {
+  const t = useTranslations("admin");
   return (
     <input
-      placeholder="חיפוש לפי שם או עיר..."
+      placeholder={t("producers.toolbar.search_placeholder")}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && onSearch()}
@@ -20,22 +22,24 @@ function SearchInput({ value, onChange, onSearch }) {
 }
 
 function StatusSelect({ value, onChange }) {
+  const t = useTranslations("admin");
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="border border-border rounded-[12px] px-3 py-2 bg-white"
     >
-      <option value="all">כל הסטטוסים</option>
-      <option value="approved">פעילים</option>
-      <option value="pending">ממתינים</option>
-      <option value="inactive">מושהים</option>
-      <option value="rejected">נדחו</option>
+      <option value="all">{t("producers.toolbar.all_statuses")}</option>
+      <option value="approved">{t("producers.toolbar.active")}</option>
+      <option value="pending">{t("producers.toolbar.pending")}</option>
+      <option value="inactive">{t("producers.toolbar.suspended")}</option>
+      <option value="rejected">{t("producers.toolbar.rejected")}</option>
     </select>
   );
 }
 
 function IncompleteToggle({ active, count, onToggle }) {
+  const t = useTranslations("admin");
   const cls = active
     ? "bg-yellow-100 border-yellow-400 text-yellow-800"
     : "bg-white border-border text-text-secondary hover:border-yellow-400";
@@ -43,9 +47,9 @@ function IncompleteToggle({ active, count, onToggle }) {
     <button
       onClick={() => onToggle((v) => !v)}
       className={`px-4 py-2 rounded-[12px] text-sm border whitespace-nowrap transition ${cls}`}
-      title="הצג רק עסקים שחסרים להם פרטים נדרשים"
+      title={t("producers.toolbar.incomplete_title")}
     >
-      <Warning size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {active ? "הצג הכל" : "פרטים חסרים"}
+      <Warning size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {active ? t("producers.toolbar.show_all") : t("producers.toolbar.incomplete_label")}
       {count > 0 && (
         <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
           {count}
@@ -56,23 +60,24 @@ function IncompleteToggle({ active, count, onToggle }) {
 }
 
 function ToolbarActions({ onExport, onTriggerImport, importing }) {
+  const t = useTranslations("admin");
   return (
     <>
       <button onClick={onExport} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
-        📤 ייצוא
+        {t("producers.toolbar.export")}
       </button>
       <button
         onClick={onTriggerImport}
         disabled={importing}
         className="bg-white border border-primary text-primary px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
       >
-        📥 ייבא מ-Excel
+        {t("producers.toolbar.import_excel")}
       </button>
       <Link
         href="/admin/producers/new"
         className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm whitespace-nowrap text-center"
       >
-        + בית עסק חדש
+        {t("producers.toolbar.new_producer")}
       </Link>
     </>
   );
@@ -108,6 +113,7 @@ export default function AdminProducersToolbar({
   incompleteOnly, setIncompleteOnly, incompleteCount,
   importing, onSearch, onExport, onImportFile,
 }) {
+  const t = useTranslations("admin");
   const fileInputRef = useRef(null);
   const triggerImport = () => fileInputRef.current?.click();
   return (
@@ -115,7 +121,7 @@ export default function AdminProducersToolbar({
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
       <StatusSelect value={producerStatus} onChange={setProducerStatus} />
       <button onClick={() => onSearch()} className="bg-secondary text-white px-4 py-2 rounded-[12px] text-sm">
-        חפש
+        {t("common.search")}
       </button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
       <ToolbarActions onExport={onExport} onTriggerImport={triggerImport} importing={importing} />
