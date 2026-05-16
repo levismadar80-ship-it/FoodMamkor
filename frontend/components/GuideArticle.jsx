@@ -1,7 +1,7 @@
 /**
  * Module:   GuideArticle
  * Purpose:  Shared shell for MEH-539 onboarding guide pages under
- *           /about/for-producers/guides/{slug}. Renders a structured
+ *           /about/for-businesses/guides/{slug}. Renders a structured
  *           `blocks` array as Hebrew RTL prose with the brand's
  *           Frank-Ruhl-headlines / DM-Sans-body typography pair.
  * Touches:  none (server-rendered presentation only).
@@ -144,7 +144,7 @@ export default function GuideArticle({
   subtitle,
   readMinutes,
   blocks,
-  backHref = "/about/for-producers/guides",
+  backHref = "/about/for-businesses/guides",
 }) {
   return (
     <main

@@ -1,6 +1,6 @@
 /**
  * Module:   guide-product-photography
- * Purpose:  /about/for-producers/guides/product-photography — Guide 2 of 3
+ * Purpose:  /about/for-businesses/guides/product-photography — Guide 2 of 3
  *           linked from the MEH-539 Day-5 onboarding email. Content
  *           approved 16-May-2026 (Drive folder
  *           19yWq0iuNgxr59JHRGUV5KPGTh0LpMzKE — guide-02-product-photography.md).
@@ -30,7 +30,7 @@ export const metadata = {
     locale: "he_IL",
   },
   alternates: {
-    canonical: "/about/for-producers/guides/product-photography",
+    canonical: "/about/for-businesses/guides/product-photography",
   },
 };
 

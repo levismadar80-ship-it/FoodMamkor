@@ -76,7 +76,7 @@ _EMAIL_2_BODY = """\
 
 רוצים דוגמאות לפני ואחרי?
 📖 מדריך מלא — איך לכתוב סיפור טוב על העסק שלך:
-{frontend_url}/about/for-producers/guides/business-story
+{frontend_url}/about/for-businesses/guides/business-story
 
 החודש הראשון הוא הכי חשוב. אני פה אם משהו תקוע.
 
@@ -114,7 +114,7 @@ _EMAIL_3_BODY = """\
 
 רוצים לראות דוגמאות של תמונות שעובדות ושלא?
 📖 מדריך מלא — איך לצלם את המוצרים שלכם נכון:
-{frontend_url}/about/for-producers/guides/product-photography
+{frontend_url}/about/for-businesses/guides/product-photography
 
 ספיר שנפ
 מייסדת | מהמקור
@@ -154,7 +154,7 @@ _EMAIL_4_BODY = """\
 
 רוצים דוגמאות של הודעות טובות ופחות טובות?
 📖 מדריך מלא — איך להגיב להודעות שמגיעות אליכם:
-{frontend_url}/about/for-producers/guides/customer-messages
+{frontend_url}/about/for-businesses/guides/customer-messages
 
 ספיר שנפ
 מייסדת | מהמקור

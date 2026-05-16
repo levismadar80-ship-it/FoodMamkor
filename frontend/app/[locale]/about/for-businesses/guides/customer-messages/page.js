@@ -1,6 +1,6 @@
 /**
  * Module:   guide-customer-messages
- * Purpose:  /about/for-producers/guides/customer-messages — Guide 3 of 3
+ * Purpose:  /about/for-businesses/guides/customer-messages — Guide 3 of 3
  *           linked from the MEH-539 Day-10 onboarding email. Content
  *           approved 16-May-2026 (Drive folder
  *           19yWq0iuNgxr59JHRGUV5KPGTh0LpMzKE — guide-03-customer-messages.md).
@@ -30,7 +30,7 @@ export const metadata = {
     locale: "he_IL",
   },
   alternates: {
-    canonical: "/about/for-producers/guides/customer-messages",
+    canonical: "/about/for-businesses/guides/customer-messages",
   },
 };
 
@@ -215,7 +215,7 @@ const BLOCKS = [
   { type: "p", text: "**3. מחירון מלא (לאחר סינון):**" },
   {
     type: "blockquote",
-    text: "מצרפת את המחירון. משלוח לאזור [שלכם] — [X] ש\"ח. אספקה תוך [Z] ימים. תגידי לי מה לבחור ואני אכין.",
+    text: "מצרפת את המחירון 📋 משלוח לאזור [שלכם] — [X] ש\"ח. אספקה תוך [Z] ימים. תגידי לי מה לבחור ואני אכין.",
   },
 
   { type: "p", text: "**4. אישור הזמנה (התאימו לפי המסלול שלכם):**" },

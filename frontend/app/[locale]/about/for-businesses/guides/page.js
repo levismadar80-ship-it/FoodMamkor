@@ -2,7 +2,7 @@
  * Module:   guides-index
  * Purpose:  Index page for the 3 onboarding guides linked from the
  *           Day-2 / Day-5 / Day-10 follow-up emails (MEH-539). Each
- *           card links to /about/for-producers/guides/{slug}.
+ *           card links to /about/for-businesses/guides/{slug}.
  * Touches:  none.
  * Does NOT: render guide bodies (each guide has its own page.js).
  * Related:  backend/app/services/onboarding_followup.py (the email
@@ -24,7 +24,7 @@ export const metadata = {
     siteName: BRAND_NAME,
     locale: "he_IL",
   },
-  alternates: { canonical: "/about/for-producers/guides" },
+  alternates: { canonical: "/about/for-businesses/guides" },
 };
 
 const PRIMARY = "#2e6853";
@@ -101,7 +101,7 @@ export default function GuidesIndexPage() {
           {GUIDES.map((g) => (
             <li key={g.slug}>
               <Link
-                href={`/about/for-producers/guides/${g.slug}`}
+                href={`/about/for-businesses/guides/${g.slug}`}
                 className="block rounded-lg border bg-white p-5 sm:p-6 transition-colors hover:shadow-sm focus-visible:outline-none focus-visible:ring-2"
                 style={{ borderColor: CARD_BORDER }}
               >

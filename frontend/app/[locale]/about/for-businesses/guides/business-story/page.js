@@ -1,6 +1,6 @@
 /**
  * Module:   guide-business-story
- * Purpose:  /about/for-producers/guides/business-story — Guide 1 of 3
+ * Purpose:  /about/for-businesses/guides/business-story — Guide 1 of 3
  *           linked from the MEH-539 Day-2 onboarding email. Content
  *           approved 16-May-2026 (Drive folder
  *           19yWq0iuNgxr59JHRGUV5KPGTh0LpMzKE — guide-01-business-story.md).
@@ -29,7 +29,7 @@ export const metadata = {
     siteName: BRAND_NAME,
     locale: "he_IL",
   },
-  alternates: { canonical: "/about/for-producers/guides/business-story" },
+  alternates: { canonical: "/about/for-businesses/guides/business-story" },
 };
 
 const BLOCKS = [
