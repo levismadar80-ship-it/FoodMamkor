@@ -2,6 +2,10 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 > Last updated: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
+> Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
+> Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-354 — `/retro` slash command; **PR #697 MERGED** at `4a24a37`)
 > Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
@@ -9,6 +13,127 @@
 > Previously: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+
+### MEH-623 — i18n-scanner `--diff` + `--self-test` flags (PR pending, off staging)
+
+Branch: `feature/meh-623-i18n-scan-diff-flag` off `4a24a37` (staging tip). Polish of `.claude/scripts/i18n-scan.py` (MEH-477 follow-up) per `docs/i18n-migration-plan.md` §9.2.
+
+**Files changed:**
+- `.claude/scripts/i18n-scan.py` — added `import sys`, new `_run_scan()` helper (shared by all 3 modes), new `run_diff()` + `run_self_test()` functions, 2 new argparse flags, mutex check. Scanner core (regex, file walk, `_extract_hebrew_strings`) **untouched** per scope guard.
+- `.claude/scripts/test/i18n-scan-fixtures/t1-literal.tsx` — string-literal HE fixture (1 finding expected)
+- `.claude/scripts/test/i18n-scan-fixtures/t2-template.tsx` — template-literal HE fixture (1 finding expected)
+- `.claude/scripts/test/i18n-scan-fixtures/t3-eol-comment.tsx` — EOL-comment HE fixture (1 finding expected, ±5% tolerance on the documented FP class)
+- `.claude/scripts/test/i18n-scan-fixtures/baseline-fixture.json` — JSON form of the 3 fixture findings; usable as a `--diff` test target
+
+**Verification results (Phase 2):**
+- Step 1: `--scope frontend --format json > /tmp/current.json` → 3107 records (current full frontend count; baseline drift since MEH-477's 1,721 reflects Waves 1 + 2 merges + ~30 other PRs)
+- Step 2: `--diff /tmp/current.json` → `Previous: 3107 → Current: 3107 (Δ 0)` exit 0
+- Step 3: `--self-test` → `T1 ✓ T2 ✓ T3 ✓` "All self-tests passed." exit 0
+- Sanity: regression (Δ +3) → exit 1; improvement (Δ -2) → exit 0; mutex → exit 2
+
+**Decisions made this session:**
+- Baseline JSON shape contract: existing `--format json` array (no top-level metadata). `len(array)` = total. Documented in `run_diff` docstring + `--diff` help text + module docstring's Exit codes section.
+- T3 ±5% tolerance: for `expected=1`, tolerance rounds to 0 (must be exact 1). The flag is meaningful at higher counts (e.g. the full-codebase scan where 3107 ± 5% ≈ 155). For T3 specifically, exact match is what we want today; the `tol_pct` parameter is reserved for future fixtures with larger expected counts.
+- Mutex via `parser.error` (exit 2) rather than `argparse.MutuallyExclusiveGroup` — clearer error string ("--diff and --self-test are mutually exclusive") and matches existing manual-check style.
+
+**Next:** PR opens immediately, CI green expected (paths-filter likely skips all frontend/backend jobs since diff is `.claude/scripts/*` only).
+
+### MEH-366 — i18n migration plan (PR #518 ready for review, off staging)
+
+Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` (~580 lines; commit `d38088c`). Plan-only PR — no code, no package.json, no agent edits. Plan body scoped per MEH-366 acceptance criteria; 7 open questions resolved by Smadar in-session.
+
+**Sub-tickets opened (6/7):**
+- **MEH-471** — i18n Wave 1 — foundation: next-intl install + LanguageProvider strangler-fig migration + scanner template-literal fix (12–18h, parent MEH-366)
+- **MEH-472** — i18n Wave 2 — Header / Footer / Hero / home-page + retire homegrown LanguageProvider (6–10h, parent MEH-366; applies Q7)
+- **MEH-473** — i18n Wave 3 — producer detail / card + map widgets + ICU plural lint check (12–18h, parent MEH-366; ICU plural CI gate is a build deliverable, not just risk mitigation)
+- **MEH-474** — i18n Wave 4 — auth + profile + dashboards (CVE check required) (14–20h, parent MEH-366)
+- **MEH-475** — i18n Wave 5 — long tail + admin + language toggle UI (10–14h, parent MEH-366; lifts `Disallow:/en/`)
+- **MEH-476** — i18n Wave 6 — SEO surfaces: sitemap.js per-locale extension + hreflang + OG metadata (4–6h, parent MEH-366)
+
+**Sub-ticket NOT opened — Linear quota hit:**
+- **(pending)** — 🔧 i18n-scanner scalability — chunked-scope or replace with deterministic Python script (4–6h, **parent MEH-345 NOT MEH-366**, sibling to MEH-367). Creation refused with `Usage limit exceeded - free issue limit for this workspace`. Spec is in `docs/i18n-migration-plan.md` §9.2 verbatim. Reopen once Linear quota is lifted.
+
+**Smadar's decisions on MEH-366 §8 open questions (record):**
+- Q1 — locale prefix: path prefix `/en/`, `localePrefix='as-needed'` (HE has no prefix)
+- Q2 — EN copy quality bar: ship LLM-translated EN; `Disallow:/en/` in robots.txt until Wave 5; spot-check per Wave; human translator polish post-MEH-366
+- Q3 — categories: DB stable slugs + UI translates via `category.<slug>` keys
+- Q4 — date formatting: next-intl/format Gregorian default (Hebrew calendar v2)
+- Q5 — homegrown migration: strangler-fig (Wave 2 deletes after ≥7-day burn-in)
+- Q6 — brand name: `BRAND_NAME` constant in `lib/constants.js`, NOT a translation key
+- Q7 — gender: normalize loading states to feminine canonical (`common.loading`, `common.saving`, `common.sending`); CLAUDE.md voice rule applies; net ~7 fewer keys
+
+**Decisions made this session:**
+- Wave 6 kept separate (not absorbed into Wave 5) — different review profile (sitemap/metadata vs translation polish); cleaner per-PR scope
+- Scanner scalability bug split as separate ticket (parent MEH-345) per Rule 3 (one PR = one logical change); template-literal regex fix bundled into Wave 1
+- Plan body cites the in-session deterministic Python scan (1,721 / 142) as reference baseline; until the scanner-scalability ticket ships, Wave PRs cite the Python scan via PR description
+
+**Next actions:**
+1. Smadar bumps Linear plan / opens the 7th ticket manually OR CC opens it once quota lifts
+2. Open MEH-471 (Wave 1) when ready to start execution; estimate 12–18h
+
+---
+
+---
+
+## 2026-05-16 — MEH-622: SessionEnd hook — HANDOFF.md ledger auto-append (PR PENDING; manual wiring required post-merge)
+
+**Branch:** `feature/meh-622-session-end-hook` off `staging@89e436e`.
+**Risk tier:** **🟢 LOW per MEH-450** — script-content-in-PR-description (no committed code under `.claude/hooks/**` or `.claude/settings.json`), 2 files committed (`HANDOFF.md` + `docs/CHANGELOG.md`), never blocks (always exit 0), fail-open on missing `jq` / missing `HANDOFF.md` / detached HEAD / empty SHA. DoD exception: mobile QA N/A (no UI, no commit-time code execution).
+**Closes:** MEH-622 (derived from MEH-502 audit REC 1).
+
+**Scope split (Path A2):** Per the project's deny-list invariants (`Edit(.claude/hooks/**)` + `Edit(.claude/settings.json)` are both denied to Claude Code), this PR commits **only** the `HANDOFF.md` top pointer + this dated section + the new `## Session ledger` table at file bottom, plus the `docs/CHANGELOG.md` entry. The hook script content and the `.claude/settings.json` `SessionEnd` block live **in the PR description** for manual install by Smadar post-merge. Solo-human-controlled — no automated wiring of `.claude/`.
+
+**Captured per event (5 columns + dedup comment):** `Ended (UTC)` (ISO8601 minute-precision), `Branch` (`git rev-parse --abbrev-ref HEAD`), `SHA` (`git log -1 --format=%h`), `Closes` (up to 2 refs matching `Closes MEH-\d+` or `#\d+` from HEAD commit body, joined with ` / `), `Reason` (`clear` / `logout` / `prompt_input_exit` / `other`). HTML comment `<!-- session=<session_id> -->` is invisible in rendered Markdown but greppable in source — used for idempotency (running twice in the same session yields 1 row, not 2).
+
+**Schema source:** WebSearch synthesis 2026-05-16. Direct WebFetch attempts blocked: `code.claude.com/docs/en/hooks` (MEH-397 allowlist), `docs.anthropic.com/en/docs/claude-code/hooks-guide` (HTTP 403 — same pattern MEH-621 hit). Sources cross-referenced (5): [anthropics/claude-code#6306](https://github.com/anthropics/claude-code/issues/6306) (SessionEnd doc request), [#6428](https://github.com/anthropics/claude-code/issues/6428) (enumerates `reason ∈ {clear, logout}`), [#17885](https://github.com/anthropics/claude-code/issues/17885) (`/exit` gap), [#35892](https://github.com/anthropics/claude-code/issues/35892) (same `/exit` gap confirmed), [code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks) (canonical reference). Direct HOOK_INPUT fields used: `session_id`, `reason`. `transcript_path`, `cwd`, `hook_event_name` are present but not consumed (deterministic git-based facts are stronger signals).
+
+**Known limitation flagged honestly:** SessionEnd does NOT fire on the `/exit` slash command (upstream bug — see #17885 / #35892). Fires on ctrl-d, `/clear`, logout, window close, prompt_input_exit. Documented in the ledger preamble.
+
+**Idempotency mechanism:** `grep -qF "session=${SESSION_ID}" HANDOFF.md` before append. Same `session_id` → exit 0 (no write). Different `session_id` → append new row.
+
+**Sandbox verification (6 tests, all pass before push):**
+1. First invocation → ledger heading auto-created, 1 row appended.
+2. Re-run identical input → 0 line delta (idempotent, no duplicate).
+3. New `session_id` → 2nd row appended (different `reason` honored).
+4. Delete `## Session ledger` heading → hook re-creates table on next fire.
+5. `git diff HANDOFF.md` → only EOF additions, no narrative line touched (scope guard).
+6. `PATH=/nonexistent` (simulate missing `jq`) → exit 0, 0 line delta, stderr warning emitted.
+
+**Manual wiring step required post-merge** (full instructions in PR description):
+1. `cp /tmp/session-end.sh .claude/hooks/session-end.sh && chmod +x .claude/hooks/session-end.sh`
+2. Open `.claude/settings.json` and paste the `SessionEnd` JSON block from the PR description into the `hooks` object.
+3. Trigger any session end (ctrl-d or `/clear`); verify a new row lands in HANDOFF.md `## Session ledger` table.
+4. Comment on PR / Linear when wiring confirmed.
+
+---
+
+## 2026-05-16 — MEH-621: SubagentStop trace hook (PR PENDING; manual wiring required post-merge)
+
+**Branch:** `feature/meh-621-subagent-trace-hook` off `staging@4a24a37`.
+**Risk tier:** **🟢 LOW per MEH-450** — script-content-in-PR-description (no committed code), 3 files committed (`.gitignore` + `CHANGELOG` + `HANDOFF`), never blocks (always exit 0), fail-open on missing jq, log file is gitignored. DoD exception: mobile QA N/A (no UI, no commit-time code execution).
+**Closes:** MEH-621 (derived from MEH-502 audit REC 3).
+
+**Scope split (Path A2):** Per the project's deny-list invariants (`Edit(.claude/hooks/**)` + `Edit(.claude/settings.json)` are both denied to Claude Code), this PR commits **only** `.gitignore` + this CHANGELOG line + this HANDOFF note. The hook script content and the `.claude/settings.json` `SubagentStop` block live **in the PR description** for manual install by Smadar. Solo-human-controlled — no automated wiring of `.claude/`.
+
+**Manual wiring step required post-merge** (full instructions in PR description):
+1. `cp /tmp/subagent-trace.sh .claude/hooks/subagent-trace.sh && chmod +x .claude/hooks/subagent-trace.sh`
+2. Open `.claude/settings.json` and paste the `SubagentStop` JSON block from the PR description into the `hooks` object.
+3. Trigger any Agent subagent (e.g. `Explore`) and verify a new ndjson line lands in `docs/audits/subagent-trace.log`.
+4. Comment on PR / Linear when wiring confirmed.
+
+**Captured per event:** `ts` (UTC ISO8601), `agent_type`, `agent_id`, `session_id`, `stop_hook_active`, `tools_called` (comma-separated distinct tool names parsed from `agent_transcript_path` jsonl), `duration_ms` (last − first `.timestamp` from same jsonl; `null` on parse failure).
+
+**Schema source:** WebSearch 2026-05-16 across [code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks), [docs.anthropic.com hooks-guide](https://docs.anthropic.com/en/docs/claude-code/hooks-guide) (403 on direct WebFetch), [docs.claude.com hooks-guide](https://docs.claude.com/en/docs/claude-code/hooks-guide) (blocked by MEH-397 allowlist), [anthropics/claude-code#7881](https://github.com/anthropics/claude-code/issues/7881), [anthropics/claude-code#19170](https://github.com/anthropics/claude-code/issues/19170). Cross-referenced `docs/agent-permissions-investigation.md:486-510` (MEH-425 PreToolUse trial — same `agent_id`/`agent_type` names).
+
+**Spec deviation flagged honestly:** MEH-621 acceptance_criteria implied `tools_called` + `duration_ms` are direct HOOK_INPUT fields; per anthropics/claude-code#7881 + #19170 they are not — only `agent_id` / `agent_type` / `agent_transcript_path` / `last_assistant_message` / `stop_hook_active` are direct. Hook derives the two requested fields from the subagent transcript jsonl, with `"?"` / `null` fallback on parse failure. If real post-merge events surface schema drift, patch quickly.
+
+---
+
+## 2026-05-16 — MEH-354: `/retro` slash command (PR PENDING)
+
+**Branch:** `feature/meh-354-retro-command` off `staging@375a60f`.
+**Risk tier:** **🟢 LOW per MEH-450** — docs/config only, 4 files. DoD exception: mobile QA N/A (no UI).
+**Closes:** MEH-354. New custom command `/retro` closes the end-of-session loop after Rule 13's HANDOFF.md update. **NOT a free-form journal** — encodes a 5-step protocol (EXTRACT → CLASSIFY → OUTPUT → WAIT → EMPTY CASE) that binds every finding to a source-of-truth file via numbered `str_replace` blocks. Three extraction buckets: **Corrections** (Smadar explicitly corrected behavior), **Preferences** (stated stylistic / process preferences for future sessions), **Self-critique** (Claude noticed its own miss). CLASSIFY routes each finding to exactly one target: `CLAUDE.md` / `.claude/rules/workflow.md` / `.claude/rules/rtl.md` / `templates/01-07` / `DROP`. OUTPUT block format: `### Finding N — <bucket>: <summary>` + `**Target:**` + `**old_str:**` (verbatim from target file, unique) + `**new_str:**` (full replacement) + `**Rationale:**` (≤2 sentences). WAIT prints *"Retro extracted N findings… Waiting for `go <N>` / `skip <N>` / `edit <N>`"* and stops — retro proposes per finding, **never applies edits autonomously**. EMPTY CASE prints *"No retro findings — clean session."* and exits — no placeholder findings. **4 files touched:** (1) NEW `.claude/commands/retro.md` (~80 lines, mirrors `session-save.md` YAML frontmatter style). (2) `.claude/rules/workflow.md` — Rule 13 closing-step append (6 lines) + Custom commands list bullet between `/session-resume` and `/adversarial-review`. (3) `docs/CHANGELOG.md` — Unreleased / 2026-05-16 entry. (4) `HANDOFF.md` — this section + top pointer. **No code, no schema, no UI, no central component.** Per spec, the `Closes MEH-354` annotation in the PR body will auto-close the Linear issue on merge.
 
 ---
 
@@ -2052,7 +2177,6 @@ MEH-302; resolves MEH-287 follow-up F6.
 Frontmatter coverage now complete across all 6 path-scoped rules files
 (rtl, db, code-execution, prompting + frontend, backend). MEH-342
 follow-up — closes MEH-359.
-
 ### MEH-385 — pr-reviewer subagent (PR open, off staging)
 
 Branch: `feature/meh-385-pr-reviewer-subagent` (NOT the harness-assigned
@@ -6142,3 +6266,12 @@ d76f234 feat(MEH-527): amplify founder credibility on /about (#636)
 ### Next task
 No explicit next task assigned. Suggested: check MEH backlog for next /about or content task,
 or continue MEH-519 epic (About page work).
+
+---
+
+## Session ledger
+
+> Auto-appended by `.claude/hooks/session-end.sh` (MEH-622, derived from MEH-502 audit REC 1). Deterministic facts only — no narrative, no LLM. One row per session (deduped by `session_id` HTML comment). Known gap: row not added when session ends via `/exit` slash command — upstream bug, [anthropics/claude-code#17885](https://github.com/anthropics/claude-code/issues/17885) + [#35892](https://github.com/anthropics/claude-code/issues/35892). First real row lands once Smadar completes manual wiring post-merge (see MEH-622 PR description for the 5-step install). Seed table below is intentionally empty.
+
+| Ended (UTC)       | Branch                              | SHA       | Closes      | Reason |
+|-------------------|-------------------------------------|-----------|-------------|--------|

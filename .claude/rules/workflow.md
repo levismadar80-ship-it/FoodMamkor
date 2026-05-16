@@ -150,6 +150,14 @@ and MEH-374 (62 commits)._
     HANDOFF.md. If `/compact` fires mid-session → update HANDOFF.md
     immediately before continuing work. A session with no HANDOFF.md
     update = incomplete, same as a session with no CHANGELOG update.
+    **After updating HANDOFF.md, run `/retro`** to extract behavior
+    corrections / preferences / self-critique from the session and
+    route each finding to the right source-of-truth file as a
+    `str_replace` block (per
+    [.claude/commands/retro.md](../commands/retro.md)). The retro
+    proposes per finding; Smadar approves with `go <N>` before any
+    edit lands. Empty-case (no findings) is a valid outcome — do not
+    invent placeholders.
 14. **Context reset protocol.** When context usage hits **≥60%** or at
     a natural task boundary (PR merged, feature shipped): run
     `/session-save` to write `session-state.md` (current branch, open
@@ -349,6 +357,12 @@ Session lifecycle helpers in `.claude/commands/`, invoked via
   decisions) so the session survives `/clear`.
 - `/session-resume` — read back `session-state.md` and restore the
   plan after `/clear`.
+- `/retro` — end-of-session behavior retro:
+  EXTRACT → CLASSIFY → OUTPUT (`str_replace` blocks) → WAIT →
+  EMPTY CASE. Routes findings to `CLAUDE.md` /
+  `.claude/rules/workflow.md` / `.claude/rules/rtl.md` /
+  `templates/01-07` / DROP. Run after Rule 13's HANDOFF.md update;
+  proposes per finding, never applies edits autonomously.
 - `/adversarial-review` — FINDER → ADVERSARY → REFEREE review of all
   changed files; required before every merge (rule 5a).
 
