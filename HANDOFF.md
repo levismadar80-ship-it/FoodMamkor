@@ -1,8 +1,67 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-608 — Step 2 subhead drift fix; **PR #683 MERGED**; filed MEH-616 follow-up)
+> Last updated: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch + homepage kitchen section; PR pending; sits on top of PR #682 launch-blocker batch)
+> Previously: 2026-05-16 (MEH-608 — Step 2 subhead drift fix; **PR #683 MERGED**; filed MEH-616 follow-up)
 
+---
+
+## 2026-05-16 — MEH-598: Hide /neighbor pre-launch (brand LOCK) (PR PENDING)
+
+**Branch:** `feature/meh-598-hide-neighbor-prelaunch` off `staging` (originally branched from `0f19a08` post-PR #681; merged in `3cb6503` mid-work to absorb PR #682 launch-blocker bundle per Rule 25).
+
+**Risk tier:** LOW (copy + nav removal + redirect — no schema, no auth, no central components).
+
+**Closes:** MEH-598. Sibling LOCK work continues in MEH-599 (E1-E6 scope expansion deferred there — see PR description).
+
+**What shipped (9 files):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/components/Header.jsx` | Removed `/neighbor` nav entry (line 132) |
+| 2 | `frontend/components/Footer.jsx` | Removed `/neighbor` nav entry (line 62) |
+| 3 | `frontend/components/BottomNav.jsx` | Removed `/neighbor` tab + unused `CookingPot` import |
+| 4 | `frontend/app/[locale]/neighbor/page.js` | Replaced 23L (LOCK-violating metadata + `<NeighborClient>` render) with 7L `redirect("/")` server component + MEH-598 sentinel anchor |
+| 5 | `frontend/messages/he.json` | Removed `nav.neighbor`, `nav.footer.neighbor_kitchen`, and entire `home.kitchen.*` namespace (heading + see_more) |
+| 6 | `frontend/messages/en.json` | Same removals (parallel English keys) |
+| 7 | `frontend/app/[locale]/page.js` | Removed `HomeKitchenPreview` import + the `<HomeKitchenPreview .../>` render at line 178 (atomic) |
+| 8 | `docs/MANUAL_TESTING.md` | Added MEH-598 section (8 test cases — nav absence + redirect + DOM grep + console clean) |
+| 9 | `docs/HANDOFF.md` | This entry + CHANGELOG entry |
+
+**Preserved per spec (dead code revival via MEH-543 trigger):**
+- `frontend/app/[locale]/neighbor/NeighborClient.jsx` — full file untouched (the LOCK-violating UI inside is intentional preservation)
+- `frontend/app/[locale]/home/HomeStaticBlocks.jsx:141-167` — `HomeKitchenPreview` function definition untouched (no longer imported anywhere, becomes auto-dead but preserved)
+- All backend `HomeProduct` schema + services + routers preserved
+- The 2 code-internal `/neighbor` comments at `Header.jsx:28 + 139` preserved (algorithm docs, not user-facing — per Smadar's "comments document internals, allowed" rule)
+
+**Scope expansion to MEH-599 (deferred LOCK leaks E1-E6):**
+During Phase 0 grep sweep, 6 additional LOCK leak surfaces discovered beyond `/neighbor` route. Each needs UX decisions, not mechanical edits — too wide for MEH-598. Deferred to **MEH-599** (description updated + audit comment added):
+- **E1+E2** — `frontend/components/ChatWidget.jsx:47, 75` (chat Q&A about "מהמטבח של השכן")
+- **E3** — `frontend/components/HomeProductCard.jsx:55` (rendered label — note: becomes auto-dead after MEH-598 if no other live consumer)
+- **E4** — `frontend/app/[locale]/producer/dashboard/page.js:498` (producer dashboard subsection)
+- **E5** — `backend/app/routers/chat.py:97, 106, 107, 112, 114` (5 hits — AI chat FAQ data; **most critical LOCK leak**)
+- **E6** — `frontend/__tests__/HomeProductCard.test.jsx:95-96` (follows E3)
+
+**3 Sapir-decisions for this PR:**
+- Q1 — Header.jsx comments at lines 28+139: **A (leave them)** — LOCK applies to marketing surface, not code internals
+- Q2 — i18n keys: **REMOVE** both `nav.*` keys + the `home.kitchen.*` namespace from he.json + en.json (LOCK-bound user-facing content even if not currently rendered)
+- Q3 — Scope expansion at the kitchen discovery: **δ (defer E1-E6 to MEH-599)** — keep MEH-598 as "hide /neighbor route + nav" logical unit; ship 9 files now; MEH-599 + future tickets handle the rest
+
+**Final LOCK sweep verification:**
+- `grep "/neighbor" frontend/components/ frontend/app/`: 3 hits — all expected (redirect string + 2 Header comments) ✅
+- `grep "neighbor" frontend/messages/`: 0 hits ✅
+- `grep "מהמטבח של השכן" frontend/messages/`: 0 hits ✅
+- `grep "HomeKitchenPreview" frontend/`: 1 hit (the preserved dead function definition) ✅
+- Full `grep "מהמטבח של השכן" frontend/ backend/`: 23 hits remaining, all in Categories B (preserved dead code in `NeighborClient.jsx`) / C (code-internal comments) / D (deferred to MEH-599) — no remaining leak in nav, public-facing JSX, or i18n keys
+
+**Skeptic flags:**
+- (1) i18n locale redirect — `redirect("/")` from a `[locale]` server component should re-locale via next-intl middleware. **Cannot verify in sandbox** (MEH-360 — sandbox can't reach `*.vercel.app`). Mobile QA on Vercel preview will verify `/neighbor` → `/he` behavior.
+- (2) `HomeKitchenPreview` function definition is now dead code on disk (no live consumer). Preserved per spec for MEH-543 revival. ESLint may surface a warning; if so, treat as feedback (per MEH-443 — warn mode, not error).
+- (3) Build + pytest environment — fresh-clone container needed `npm install` before build could run. `pip install` blocked by harness; pytest cannot run in this sandbox. **Verification deferred to CI / your local machine.**
+
+**Next:** Vercel preview URL on mobile + grep DOM for `/neighbor` link absence. Merge to staging after mobile QA.
+
+**Mid-work sync (Rule 25):** Branched off `0f19a08` (post-PR #681). PR #682 (MEH-605/606/609 copy bundle) merged into staging at `3cb6503` while this work was in flight. Resolved via `git merge origin/staging` — clean auto-merge on all i18n + docs (PR #682 only touched `home.cta.body` / `home.categories.subheading` / `home.how_it_works.step03_text` — orthogonal to this PR's removed keys `nav.neighbor` + `nav.footer.neighbor_kitchen` + `home.kitchen.*`). Append-only conflict on `HANDOFF.md` resolved per resolve-conflicts skill (Accept-Both).
 ---
 
 ## 🎯 Next sprint (recommended)

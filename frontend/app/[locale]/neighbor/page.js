@@ -1,22 +1,7 @@
-import NeighborClient from "./NeighborClient";
-import { BRAND_NAME } from "@/lib/constants";
-
-export const metadata = {
-  title: "מהמטבח של השכן",
-  description:
-    "מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח. לחם מחמצת, מותססים, מאפים, סבונים ועוד. סנני לפי עיר וגלי מה יש אצלך ברובע.",
-  openGraph: {
-    title: "מהמטבח של השכן | מהמקור",
-    description:
-      "מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח.",
-    type: "website",
-    siteName: BRAND_NAME,
-    locale: "he_IL",
-    images: ["/og-image.jpg"],
-  },
-  alternates: { canonical: "/neighbor" },
-};
+// MEH-598: hide /neighbor pre-launch per brand LOCK (May 2026).
+// Files preserved (NeighborClient.jsx) for post-launch revival via MEH-543.
+import { redirect } from "next/navigation";
 
 export default function NeighborPage() {
-  return <NeighborClient />;
+  redirect("/");
 }
