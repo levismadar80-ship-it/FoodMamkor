@@ -2,6 +2,7 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 > Last updated: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch + homepage kitchen section; PR pending; sits on top of PR #682 launch-blocker batch)
+> Previously: 2026-05-16 (MEH-608 — Step 2 subhead drift fix; **PR #683 MERGED**; filed MEH-616 follow-up)
 
 ---
 
@@ -61,16 +62,15 @@ During Phase 0 grep sweep, 6 additional LOCK leak surfaces discovered beyond `/n
 **Next:** Vercel preview URL on mobile + grep DOM for `/neighbor` link absence. Merge to staging after mobile QA.
 
 **Mid-work sync (Rule 25):** Branched off `0f19a08` (post-PR #681). PR #682 (MEH-605/606/609 copy bundle) merged into staging at `3cb6503` while this work was in flight. Resolved via `git merge origin/staging` — clean auto-merge on all i18n + docs (PR #682 only touched `home.cta.body` / `home.categories.subheading` / `home.how_it_works.step03_text` — orthogonal to this PR's removed keys `nav.neighbor` + `nav.footer.neighbor_kitchen` + `home.kitchen.*`). Append-only conflict on `HANDOFF.md` resolved per resolve-conflicts skill (Accept-Both).
-
 ---
 
 ## 🎯 Next sprint (recommended)
 
-The discovery-layer redesign epic (MEH-592) is closed. **Launch-blocker progress: 2 of 3 shipped** (MEH-605 + MEH-606 + MEH-609 landed via PR #682 on 2026-05-16). Remaining work in priority order:
+The discovery-layer redesign epic (MEH-592) is closed. **Launch-blocker progress: 2 of 3 shipped** (MEH-605 + MEH-606 + MEH-609 via PR #682 on 2026-05-16). **Fast-follow progress: 1 shipped** (MEH-608 via PR #683 on 2026-05-16). Remaining work in priority order:
 
 - **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan (last launch-blocker)
-- **MEH-607** — Counter + skeleton bundle (fast-follow, week 1-2)
-- **MEH-608** — Step 2 subhead lie fix (fast-follow, week 1-2)
+- **MEH-607** — Counter + skeleton bundle (fast-follow, week 1-2) — Linear says `Backlog`; confirm status before starting (Sapir may have done it in a parallel session)
+- **MEH-616** — Reconcile ESLint pre-commit hook with MEH-443 warnings-as-feedback policy (P3 Medium, opened as a follow-up from MEH-608 — see "Post-launch tech debt" below)
 
 **Recommended next session: MEH-604** — closes the launch-blocker batch. See synthesis Section 5.1 for the performance plan (skeleton + 200ms post-FCP defer via `requestIdleCallback` + tile-server preconnect).
 
@@ -79,6 +79,33 @@ The discovery-layer redesign epic (MEH-592) is closed. **Launch-blocker progress
 **Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F1-map-above-fold.txt for the MEH-604 layout.
 
 **Brand Hub v1.1 (16 May 2026)** — new copy rules now reflected in `docs/DESIGN.md`. Source of truth: [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) sections 8-9, [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+
+---
+
+## 🛠️ Post-launch tech debt (informal)
+
+Items observed during normal session work that aren't worth a Linear ticket yet — promote to Linear if they keep biting. Stage-6 cleanup candidates.
+
+- **`RegisterProducerPageBody` refactor** — `frontend/app/[locale]/register/producer/page.js` carries a 548-line function with complexity 35, 25 ESLint warnings (function length, magic numbers, nested ternaries). Pre-existing floor; not in the launch-blocker path. Surfaced 2026-05-16 by MEH-608 via the pre-commit hook (see MEH-616). Refactor smells like a chunked plan, not a single PR — bundle with other registration/onboarding cleanups when promoted.
+
+---
+
+## 2026-05-16 — MEH-608: /register/producer Step 2 subhead — drift fix (PR #683 MERGED)
+
+**Branch:** `feature/meh-608-register-step2-subhead` off `staging` (deleted post-merge).
+
+**Risk tier:** LOW (copy-only — 1 inline JSX string at `frontend/app/[locale]/register/producer/page.js:393`; no logic, no design, no schema, no central components).
+
+**Closes:** MEH-608 — auto-closed in Linear via the `Closes` annotation on PR #683. **MEH-592 epic fast-follow batch:** 1 shipped (MEH-607 counter/skeleton remains; verify status — see "Next sprint" note above).
+
+**What shipped (1 file, 1 line):**
+- `RegisterProducerPageBody` Step 2 subhead — drops literal "3 שדות בלבד"; replaces with count-free "כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור." Step 2 actually renders 6 fields (producer_name, description per MEH-532, phone, categories, license per MEH-530, legal-consent), not 3. Drift fix per synthesis Finding F11.
+
+**Hook bypass disclosed:** Pre-commit ESLint blocked on 25 pre-existing warnings in `RegisterProducerPageBody` — none introduced by this 1-line edit. Committed with `--no-verify` per Sapir's authorization in chat. Documented in commit `f3eb7cd` message + PR #683 description for auditability. CI lint job for the same file PASSED (uses different config). Filed **MEH-616** (P3 Medium) for hook config / MEH-443 policy reconciliation.
+
+**Verification:** `grep "3 שדות בלבד" frontend/` → 0 hits; `npm run build` green pre-merge (93/93 pages, 18.5s); CI green across build / lint / E2E / API contract / mypy / Knip / tsc / paths-filter / Vercel deployment. Vercel preview QA skipped per Sapir — copy edit on a multi-step form's Step 2 subhead, no runtime risk; mobile QA reduced to a 30-second post-merge check.
+
+**Next:** **MEH-604** is the last remaining launch-blocker. MEH-607 fast-follow status to verify before pickup.
 
 ---
 
