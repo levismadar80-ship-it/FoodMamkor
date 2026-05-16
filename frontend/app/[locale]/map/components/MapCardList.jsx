@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
@@ -29,6 +30,7 @@ export default function MapCardList({
   onCardClick,
   onResetAll,
 }) {
+  const t = useTranslations();
   return (
     <div className="space-y-3">
       {visibleProducers.map((p) => (
@@ -50,14 +52,14 @@ export default function MapCardList({
       {visibleProducers.length === 0 && (
         <div className="text-center py-12">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
-          <h3 className="font-headline text-lg font-bold text-site-text mb-2">לא נמצאו עסקים</h3>
-          <p className="text-site-muted text-sm mb-3">נסי להזיז את המפה או לשנות מסננים.</p>
+          <h3 className="font-headline text-lg font-bold text-site-text mb-2">{t("map.card_list.empty.heading")}</h3>
+          <p className="text-site-muted text-sm mb-3">{t("map.card_list.empty.body")}</p>
           <button
             type="button"
             onClick={onResetAll}
             className="text-sm text-primary font-medium hover:underline"
           >
-            אפסי סינון
+            {t("map.card_list.empty.reset_filters")}
           </button>
         </div>
       )}

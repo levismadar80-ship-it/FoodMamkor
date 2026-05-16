@@ -4,6 +4,41 @@
 
 ## Unreleased
 
+### 2026-05-16 — MEH-473: i18n Wave 3 — producer detail / card + map widgets + ICU plural lint check (PR pending)
+
+`feat(MEH-473)`: Wave 3 of the i18n migration scoped in MEH-366 — translates the highest-business-value bilingual surface (producer detail + producer card + map widgets), ships the ICU plural CI lint check as R-2 mitigation, applies Q7 carry-over to 2 sites, and adds Q4 date formatting via `next-intl/format`. **HIGH-RISK Wave per MEH-450** — touches 3 central components (`MapClient.jsx`, `ProducerCard.jsx`, `ProducerDetail.jsx` via D1). 4-step Vibe Coding Guardrails applied to all 3 centrals.
+
+**Scope correction (Phase 0, 2026-05-16):** original ticket estimate ~30 files / ~400 strings was inflated. Phase 0 grep inventory revealed **22 files / ~104 strings**. Dropped phantom `components/forms/*` + `ReviewForm` (don't exist); deferred `experiences/*` to Wave 4/5 (out of Wave 3 main scope); added 2 `map/state/` hooks (user-visible toasts that would otherwise leak HE on `/map` post-Wave). Residual delta: **3107 → 3003 (Δ -104)**, within ±100 of the revised 2,950 target.
+
+**Files changed (22):**
+- **Producer (8 modified, 1 untouched):** `ProducerDetail.jsx` (central, D1), `ProducerCard.jsx` (central), `components/{ActionRow, ContactSidebar, ProducerHeader, ProducerSections, StickyContactBar}.jsx`. `producer/[id]/page.js` had 0 HE — untouched. `producers/page.jsx` was Wave-6 metadata only — untouched.
+- **Map (8 modified):** `MapClient.jsx` (central), `components/{CityPickerModal, DesktopMiniPopup, FilterChipsBar, MapCardList, MapPane, MobileSheetSelectedCard}.jsx`, `page.js` (server-component, `getTranslations` from `next-intl/server`).
+- **Map state hooks (2 added in Phase 0):** `state/useProducersFeed.js`, `state/useMapSync.js` — user-visible toasts.
+- **ICU lint infra (new):** `.claude/scripts/check-icu-parity.py` (213 LOC, Python stdlib only — argparse/json/re), `.claude/scripts/test/i18n-icu-fixtures/{bad-plural-he,bad-plural-en}.json`. Self-test exits 1 on bad fixtures (`[HE-MISSING] case_a` + `[PARITY] case_b`), exits 0 on real `frontend/messages/*.json`. CI workflow YAML in `/tmp/i18n-icu-parity.yml` for manual install (MEH-621 pattern — `.github/workflows/` permission-denied).
+- **Messages JSON:** `frontend/messages/he.json` + `en.json` (94 → 229 leaf keys, parity clean). 4 ICU plural keys shipped: `map.client.business_count`, `producer.detail.header.review_count`, `producer.detail.header.favorites_count`, `producer.card.favorites_count_short`, plus `producer.detail.sections.events.show_all_count`. Hebrew dual form (`two`) correctly rendered in all.
+- **Scope deviation:** `frontend/__tests__/ProducerCard.test.jsx` — added `vi.mock("next-intl", () => ({...}))` per MEH-471 Header.test.jsx precedent. Without it, ProducerCard's new `useTranslations()` calls would throw at test render. Same minimal-mock pattern Wave 1 established.
+
+**Key decisions:**
+- **Q7 carry-over (2 sites only):** `ProducerDetail.jsx:54` + `MapPane.jsx:24` → new domain keys `producer.detail.loading_fresh` + `map.client.loading_map` (per P1 default) rather than `common.loading` reuse. `common.loading` doesn't exist in messages (only `common.cta.*` + new `common.aria.close`). Q7 grep gate: ZERO hits.
+- **Q4 date formatting (Phase 0 grep):** 1 site — `ProducerSections.jsx:113` `toLocaleDateString("he-IL", {...})` → `useFormatter().dateTime(...)`. Hardcoded `he-IL` locale removed; format inherits from next-intl provider.
+- **D1 (Phase 0):** `ProducerDetail.jsx` not in `.claude/central-components.json`. Trusted ticket spec, applied 4-step protocol anyway. **Follow-up ticket required** post-merge to add the file.
+- **D2 path corrections (Phase 0):** dropped phantom `components/forms/*` + `ReviewForm`. Deferred `experiences/*` (NewExperienceClient mentioned in Q7 carry-over but full surface is Wave 4/5). Added `map/state/{useProducersFeed, useMapSync}.js` not in ticket but contain user-visible toasts.
+- **D3 residual target:** revised from 1,844 to 2,950 ± 100. Landed at 3003 — within band but +53 above target. Acceptable per ±100 threshold.
+- **MapPane `<MapLoadingState>` extraction (chunk B):** `next/dynamic`'s `loading` callback runs outside any render context. Extracted to a real component so `useTranslations()` can run.
+- **`map/page.js` server-component:** used `getTranslations` from `next-intl/server` for sr-only nav; metadata block (`title`, `description`, OG) deferred to Wave 6.
+
+**Verification (Vercel preview + mobile QA deferred to Smadar):**
+- ✅ ICU lint self-test: exit 1 with 2 expected failures (`[HE-MISSING] case_a_missing_two` + `[PARITY] case_b_he_flat_en_plural`)
+- ✅ ICU lint real check on `frontend/messages/*.json`: exit 0
+- ✅ Messages parity: 229 HE keys = 229 EN keys, zero drift
+- ✅ Q7 carry-over grep gate (`טוענת` in 2 target files): ZERO hits
+- ✅ Step 1 Guardrails consumer grep for 3 centrals: clean, no unexpected consumers
+- ⊘ `npm run build` — sandbox can't run (eslint-config-next not installed per MEH-360); deferred to Vercel preview
+- ⊘ Mobile preview on `/map` + producer detail — deferred to Smadar
+- ⊘ `/adversarial-review` (coverage variant) — pending CI
+
+**Risk tier:** HIGH per MEH-450 — 3 central components + new CI gate + central-component test mock added. Closes MEH-473.
+
 ### 2026-05-16 — MEH-622: SessionEnd hook — HANDOFF.md ledger auto-append (PR pending; manual wiring required post-merge)
 
 `tooling(MEH-622)`: ships **the contents** of a new SessionEnd hook

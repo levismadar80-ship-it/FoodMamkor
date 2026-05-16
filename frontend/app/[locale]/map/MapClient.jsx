@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Crosshair, MapPinLine, Rows } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
@@ -30,6 +31,8 @@ import { useProducersFeed } from "./state/useProducersFeed";
  * docs/REFACTOR_PLAN.md §File 1 ("Implementation note").
  */
 export default function MapPage() {
+  // MEH-473: i18n Wave 3.
+  const t = useTranslations();
   // Self-contained hook (zero cross-hook inputs after 11a).
   const hints = useFirstVisitHints();
 
@@ -90,7 +93,7 @@ export default function MapPage() {
   const handleGpsClick = useCallback(() => {
     if (gpsLoading) return;
     if (!navigator.geolocation) {
-      showToast("הדפדפן שלך לא תומך ב-GPS", "error");
+      showToast(t("map.client.errors.no_gps"), "error");
       return;
     }
     setGpsLoading(true);
@@ -104,11 +107,11 @@ export default function MapPage() {
       (err) => {
         setGpsLoading(false);
         const msgs = {
-          1: "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
-          2: "המיקום שלך לא זמין. נסי מאוחר יותר.",
-          3: "לקח יותר מדי זמן. נסי שוב.",
+          1: t("map.client.errors.permission_denied"),
+          2: t("map.client.errors.position_unavailable"),
+          3: t("map.client.errors.timeout"),
         };
-        showToast(msgs[err.code] ?? "לא הצלחנו לקבל את המיקום שלך", "error");
+        showToast(msgs[err.code] ?? t("map.client.errors.gps_unknown"), "error");
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
@@ -219,33 +222,33 @@ export default function MapPage() {
         {/* List pane (RTL → first child = right) */}
         <div className="overflow-y-auto border-l border-border flex flex-col">
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
-            <h1 className="font-headline text-xl font-bold text-site-text">מפת בתי עסק</h1>
+            <h1 className="font-headline text-xl font-bold text-site-text">{t("map.client.title")}</h1>
             <div className="flex gap-1">
-              <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label="תצוגה 50/50" className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-site-muted hover:bg-light"}`}>
+              <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label={t("map.client.aria.split_50_50")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-site-muted hover:bg-light"}`}>
                 <Rows size={18} weight="bold" />
               </button>
-              <button type="button" onClick={() => hints.setSplitRatio("25fr 75fr")} aria-label="תצוגה 25/75" className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("25") ? "bg-primary text-white" : "text-site-muted hover:bg-light"}`}>
+              <button type="button" onClick={() => hints.setSplitRatio("25fr 75fr")} aria-label={t("map.client.aria.split_25_75")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("25") ? "bg-primary text-white" : "text-site-muted hover:bg-light"}`}>
                 <MapPinLine size={18} weight="bold" />
               </button>
             </div>
           </div>
           <div className="px-4 pb-3 shrink-0">
             <div className="mb-3">
-              <CitySearch id="map-city-search-desktop" label="סנן לפי עיר" value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder="חפשי עיר..." />
+              <CitySearch id="map-city-search-desktop" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
             </div>
             {filterChipsBar}
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-site-muted">{filters.visibleProducers.length} בתי עסק</p>
+              <p className="text-xs text-site-muted">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="text-xs text-site-muted bg-transparent border border-border rounded-md px-2 py-1 focus:border-primary focus:outline-none"
               >
-                <option value="default">קרוב אליי</option>
-                <option value="rating">הכי מדורגות</option>
-                <option value="newest">חדש בשוק</option>
+                <option value="default">{t("map.client.sort.nearest")}</option>
+                <option value="rating">{t("map.client.sort.top_rated")}</option>
+                <option value="newest">{t("map.client.sort.newest")}</option>
               </select>
             </div>
             {cardList}
@@ -268,9 +271,9 @@ export default function MapPage() {
         <div className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex-1">
-              <CitySearch id="map-city-search-mobile" label="סנן לפי עיר" value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder="חפשי עיר..." />
+              <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
             </div>
-            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation()} className="cursor-pointer shrink-0 w-10 h-10 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-light transition" aria-label="קרוב אלי">
+            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation()} className="cursor-pointer shrink-0 w-10 h-10 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-light transition" aria-label={t("map.client.aria.my_location")}>
               <Crosshair size={18} weight="duotone" className="text-primary" />
             </button>
           </div>

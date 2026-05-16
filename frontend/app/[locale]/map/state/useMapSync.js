@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -65,6 +66,7 @@ export function useMapSync({
   setShowMapHint,
   setSheetSnap,
 }) {
+  const t = useTranslations();
   const mapApiRef = useRef(null);
   // Direct ref to the Leaflet map instance. Both desktop + mobile MapComponents
   // set this via the `mapRef` prop, but the VISIBLE map always wins because the
@@ -209,7 +211,7 @@ export function useMapSync({
     if (!geoValidation.success) {
       // Zod v4: issues (not errors). Fall back to a generic Hebrew message
       // if the shape ever changes again.
-      const msg = geoValidation.error.issues?.[0]?.message || "חיפוש לא תקין";
+      const msg = geoValidation.error.issues?.[0]?.message || t("map.errors.invalid_search");
       showToast(msg, "info");
       return;
     }

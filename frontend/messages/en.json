@@ -162,6 +162,9 @@
     "cta": {
       "show_on_map": "Show on Map",
       "more_info": "More Info"
+    },
+    "aria": {
+      "close": "Close"
     }
   },
   "category": {
@@ -176,6 +179,193 @@
   "seo": {
     "home": {
       "description": "Local food businesses, all in one place. Find real, fresh, and healthy food near you."
+    }
+  },
+  "producer": {
+    "detail": {
+      "loading_fresh": "Loading fresh businesses...",
+      "not_found": "We couldn't find this business — yet 🌱",
+      "breadcrumb_home": "Home",
+      "aria": {
+        "back": "Back to previous page",
+        "tab_nav": "Quick profile navigation"
+      },
+      "back_label": "← Back",
+      "tabs": {
+        "about": "About",
+        "products": "Products",
+        "delivery": "Delivery",
+        "reviews_label": "Reviews"
+      },
+      "sections": {
+        "about": "About",
+        "similar": {
+          "heading": "Similar businesses",
+          "in_area": "{category} · in your area"
+        },
+        "events": {
+          "heading": "Upcoming events",
+          "free": "Free",
+          "register": "Register for event →",
+          "show_all_count": "{count, plural, one {Show the event} other {Show all # events}}"
+        },
+        "products": {
+          "heading": "Products"
+        },
+        "recipes": {
+          "cta": "Our recipes"
+        },
+        "delivery": {
+          "heading": "Delivery areas",
+          "col": {
+            "city": "City",
+            "min_order": "Minimum order",
+            "day": "Delivery day"
+          }
+        }
+      },
+      "header": {
+        "review_count": "{count, plural, =0 {No reviews} one {1 review} other {# reviews}}",
+        "premium": "Premium",
+        "favorites_count": "{count, plural, one {1 saved this business} other {# saved this business}}",
+        "behind": "Behind the business: {name}",
+        "attr": {
+          "grass_fed": "Grass-fed",
+          "organic": "Certified organic",
+          "delivery": "Delivery",
+          "kosher": "Kosher"
+        },
+        "slow_response": "⏳ Longer response times this week",
+        "vacation": "🌙 This business is on break right now",
+        "vacation_return": "{label} — you can leave a message"
+      },
+      "action_row": {
+        "aria": {
+          "show_on_map": "Open the business location on the map"
+        },
+        "show_on_map": "Show on map",
+        "referral_msg": "I discovered Mehamakor — amazing local food businesses 🌿\nJoin with my link and get 10% off: https://mehamakor.co.il/ref/{code}",
+        "referral_cta": "Share and get 10% 🌿"
+      },
+      "contact_sidebar": {
+        "join_whatsapp_group": "Join WhatsApp group"
+      },
+      "sticky_bar": {
+        "vacation_msg": "Send a message — they will respond soon"
+      }
+    },
+    "card": {
+      "contact": {
+        "phone": "Phone",
+        "website": "Website",
+        "email": "Email"
+      },
+      "favorites": {
+        "saved_login_prompt": "Saved — log in to see all your favorites",
+        "login_cta": "Log in",
+        "error": "Something went wrong, please try again",
+        "remove": "Remove from favorites",
+        "add": "Add to favorites"
+      },
+      "aria": {
+        "image_missing": "{name} — image missing",
+        "primary_contact": "Primary contact channel: {method}"
+      },
+      "badges": {
+        "delivery_only": "🚚 Delivery only",
+        "available_today": "🛒 Coming today"
+      },
+      "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
+    }
+  },
+  "map": {
+    "client": {
+      "loading_map": "Loading map...",
+      "title": "Map of businesses",
+      "errors": {
+        "no_gps": "Your browser doesn't support GPS",
+        "permission_denied": "Location permission denied. Enable it in browser settings.",
+        "position_unavailable": "Your location is unavailable. Try again later.",
+        "timeout": "Timed out. Try again.",
+        "gps_unknown": "Couldn't get your location"
+      },
+      "aria": {
+        "split_50_50": "50/50 view",
+        "split_25_75": "25/75 view",
+        "my_location": "Near me"
+      },
+      "city_search": {
+        "label": "Filter by city",
+        "placeholder": "Search city..."
+      },
+      "business_count": "{count, plural, =0 {No businesses} one {1 business} other {# businesses}}",
+      "sort": {
+        "nearest": "Nearest",
+        "top_rated": "Top rated",
+        "newest": "Newest"
+      }
+    },
+    "errors": {
+      "load_failed": "Couldn't load businesses — please try again",
+      "invalid_search": "Invalid search"
+    },
+    "city_picker": {
+      "heading": "Where to deliver?",
+      "subheading": "Choose a city to filter by delivery",
+      "popular": {
+        "tel_aviv": "Tel Aviv",
+        "jerusalem": "Jerusalem",
+        "haifa": "Haifa",
+        "beersheba": "Beersheba"
+      },
+      "other": {
+        "label": "Other city",
+        "placeholder": "Type city name..."
+      },
+      "skip": "Skip"
+    },
+    "popup": {
+      "whatsapp_greeting": "Hi! I found you on Mehamakor — {name}"
+    },
+    "filter": {
+      "aria": {
+        "remove": "Remove filter {label}"
+      },
+      "clear_all": "× Clear all"
+    },
+    "card_list": {
+      "empty": {
+        "heading": "No businesses found",
+        "body": "Try moving the map or changing filters.",
+        "reset_filters": "Reset filters"
+      }
+    },
+    "pane": {
+      "hint": "Tap a business marker to see details · scroll the list at right for all businesses",
+      "search_this_area": "Search this area",
+      "empty": {
+        "heading": "No businesses in this area yet",
+        "body": "Know someone who could join?",
+        "cta": "Add a business +"
+      },
+      "aria": {
+        "center_on_me": "Center map on my location",
+        "categories": "Categories"
+      },
+      "show_all": "Show all"
+    },
+    "sheet": {
+      "badge": {
+        "verified": "✓ Verified",
+        "organic": "🌿 Organic",
+        "kosher": "✡️ Kosher"
+      }
+    },
+    "page": {
+      "aria": {
+        "business_list": "List of businesses on the map"
+      },
+      "heading_ssr": "Businesses on the map"
     }
   }
 }
