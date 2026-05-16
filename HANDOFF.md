@@ -1,13 +1,22 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
+> Last updated: 2026-05-16 (MEH-502 — hooks gap analysis vs Agent SDK events; PR pending; docs-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; **PR #694 MERGED** at `156afd2`)
 > Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
 > Previously: 2026-05-16 (MEH-620 — Hero subheading update per MEH-522; **PR #690 MERGED** at `284698c`)
 > Previously: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+
+---
+
+## 2026-05-16 — MEH-502: hooks gap analysis vs Agent SDK events (PR PENDING)
+
+**Branch:** `feature/meh-502-hooks-gap-analysis` off `staging@156afd2`.
+**Risk tier:** **🟢 LOW per MEH-450** — docs-only audit, 1 new file (`docs/audits/2026-05-16-hooks-gap-analysis.md`) + CHANGELOG + HANDOFF append. DoD exception: mobile QA N/A.
+**Closes:** MEH-502. Inventories 17 wired hooks across 4 SDK events (PreToolUse / PostToolUse / Stop / SessionStart) with `settings.json:line-range` evidence; flags 4 unused events; emits 3 recommendations: ADOPT `SubagentStop` logging (MEH-373/425 visibility), SKIP `UserPromptSubmit` nudge (rule 4 already covers), DEFER `SessionEnd` HANDOFF.md ledger (revisit post-MEH-456). No drift found — `check-branch-base.sh` is intentionally opt-in per MEH-427. **Follow-ups (separate tickets after merge, NOT in this PR):** implementation MEH for SubagentStop logging.
 
 ---
 
