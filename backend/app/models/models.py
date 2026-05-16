@@ -139,6 +139,14 @@ class Producer(Base):
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
     # never added it to the DB, baseline didn't pick it up).
     rejection_reason = Column(Text, nullable=True)
+    # MEH-539: timestamps for the 4 onboarding follow-up emails (Day 2 / 5 /
+    # 10 / 30). NULL = not yet sent — non-null is the durable "delivered to
+    # Resend" record. Scheduler (APScheduler, daily) reads created_at +
+    # these flags to decide who's due. See migration b504e4be4225.
+    email_followup_2_sent_at = Column(DateTime(timezone=True), nullable=True)
+    email_followup_3_sent_at = Column(DateTime(timezone=True), nullable=True)
+    email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
+    email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     categories = relationship(
         "Category", secondary="producer_categories", back_populates="producers"
@@ -186,6 +194,11 @@ class Producer(Base):
                 "(availability_state)::text <> 'accepting_orders'::text"
             ),
         ),
+        # MEH-539: btree index on created_at supports the daily follow-up
+        # scheduler query `WHERE created_at BETWEEN today-N AND today-N+1`.
+        # Added in migration b504e4be4225 alongside the 4 email_followup_*
+        # columns above.
+        Index("idx_producers_created_at", "created_at"),
     )
 
 
