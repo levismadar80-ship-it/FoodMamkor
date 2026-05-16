@@ -207,7 +207,7 @@
           "heading": "אירועים קרובים",
           "free": "חינם",
           "register": "הרשמה לאירוע →",
-          "show_all_count": "{count, plural, one {הצג את כל האירוע} two {הצג את שני האירועים} other {הצג את כל # האירועים}}"
+          "show_all_count": "{count, plural, one {הציגי את האירוע} two {הציגי את שני האירועים} other {הציגי את כל # האירועים}}"
         },
         "products": {
           "heading": "מוצרים"
@@ -227,7 +227,7 @@
       "header": {
         "review_count": "{count, plural, =0 {אין ביקורות} one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}",
         "premium": "פרמיום",
-        "favorites_count": "{count, plural, one {שמרו אחד את העסק הזה} two {שניים שמרו את העסק הזה} other {# שמרו את העסק הזה}}",
+        "favorites_count": "{count, plural, one {אחת שמרה את העסק הזה} two {שניים שמרו את העסק הזה} other {# שמרו את העסק הזה}}",
         "behind": "מאחורי העסק: {name}",
         "attr": {
           "grass_fed": "מרעה חופשי",
@@ -275,7 +275,7 @@
         "delivery_only": "🚚 משלוחים בלבד",
         "available_today": "🛒 מגיעה היום"
       },
-      "favorites_count_short": "{count, plural, one {אחד שמר} two {שניים שמרו} other {# שמרו}}"
+      "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
     }
   },
   "map": {

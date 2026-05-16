@@ -48,6 +48,11 @@ Branch: `feature/meh-473-i18n-wave-3-producer-map`. Off `89e436e` (staging post-
 - `producers/page.jsx` metadata (Wave 6 territory anyway)
 - `lib/badges.js` i18n (current state: ProducerCard renders translated badge strings via `<BadgeRow>` which still reads HE labels from `lib/badges.js`. MobileSheetSelectedCard's 3 inline-duplicate badges are translated; badges.js itself awaits separate ticket.)
 - Smadar to install `/tmp/i18n-icu-parity.yml` into `.github/workflows/` post-merge
+- **Q6 HYBRID decision (Smadar 2026-05-16) — needs codification:**
+  - **UI metadata / headers / navigation / brand display / siteName** → `"מהמקור"` (Hebrew brand, per Wave 1 BRAND_NAME constant)
+  - **User-generated prose that exits to third parties** (WhatsApp greetings, referral messages, shared URLs) → `"Mehamakor"` (transliteration)
+  - Update Brand Hub doc + MEH-476 Wave 6 description (SEO metadata stays HE brand; OG og:title etc. use `siteName: BRAND_NAME`)
+  - Codify in `docs/DESIGN.md` micro-copy table for future Waves' translators
 
 ### MEH-623 — i18n-scanner `--diff` + `--self-test` flags — **PR #699 MERGED** (`89e436e`)
 
