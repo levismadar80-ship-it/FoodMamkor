@@ -1,0 +1,76 @@
+F2 — Final CTA copy reframe (the "דירקטורי" defection)
+========================================================
+
+LOCATION: home.cta.body in frontend/messages/he.json
+COMPONENT: <HomeCTA /> at page.js:197 (last section)
+
+CURRENT (verbatim from messages/he.json):
++----------------------------------------------------+
+|              יש לך עסק? בואי אליו                  |
+|                                                    |
+|   אם את בעלת עסק, חקלאית או מגדלת —                 |
+|   הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.       |
+|                                                    |
+|              [  הצטרפי עכשיו  ]                    |
++----------------------------------------------------+
+              ^^^^^^^^^^
+              "directory" — defects from magazine thesis
+
+PROPOSED (Option A — community-tier, RECOMMENDED):
++----------------------------------------------------+
+|              יש לך עסק? בואי אליו                  |
+|                                                    |
+|   אם את בעלת עסק, חקלאית או מגדלת —                 |
+|   מקומך כאן. מהמקור הוא הבית של                     |
+|   בתי העסק הקטנים בישראל.                           |
+|                                                    |
+|              [  הצטרפי עכשיו  ]                    |
++----------------------------------------------------+
+        ^^^^^^^^^^                ^^^^^^^^^^^^^^^^
+        community word            scale signal preserved
+                                  WITHOUT "directory" label
+
+PROPOSED (Option B — magazine-tier, alternative):
++----------------------------------------------------+
+|              יש לך עסק? בואי אליו                  |
+|                                                    |
+|   אם את בעלת עסק, חקלאית או מגדלת —                 |
+|   נשמח לספר את הסיפור שלך.                         |
+|   מהמקור הוא מגזין לאוכל אמיתי                     |
+|   שמכוון את הקוראות לבתי העסק                       |
+|   שמאחוריו.                                        |
+|                                                    |
+|              [  הצטרפי עכשיו  ]                    |
++----------------------------------------------------+
+       ^^^^^^^^^^^^^^^^^^^^
+       magazine word + story framing
+       (the "magazine, not marketplace" thesis at the CTA)
+
+PROPOSED (Option C — direct, least poetic):
++----------------------------------------------------+
+|              יש לך עסק? בואי אליו                  |
+|                                                    |
+|   אם את בעלת עסק, חקלאית או מגדלת — בואי.           |
+|   אנחנו מאמינות שכל בית עסק קטן בישראל             |
+|   ראוי לחנות משלו ולסיפור משלו.                     |
+|                                                    |
+|              [  הצטרפי עכשיו  ]                    |
++----------------------------------------------------+
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       values claim + feminine voice ("אנחנו מאמינות")
+       (no scale signal — earns it elsewhere)
+
+EVIDENCE THAT "directory" IS A DEFECTION:
+- Sub 2 Section 4.8 #3: no Israeli farm site in the study
+  has a magazine layer. gan-hasade.com's "חווה לחקלאות
+  בת קיימא" is the only values-first tagline in the set.
+- Sub 2 Anti-pattern 1: saturated category formulas like
+  "מהחקלאי לצרכן" plateau the entire Israeli space.
+- Sub 1 §3.2 C1: same page calls businesses "מומלצים"
+  (curated/editorial) and "directory" (catalog) within
+  one scroll — internal inconsistency.
+
+WHAT THIS IS NOT:
+- Not a wholesale rewrite of the CTA section.
+- Not a redesign of the button.
+- Just the body line (one i18n string).
