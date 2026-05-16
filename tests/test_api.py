@@ -248,11 +248,16 @@ class TestAuth:
         "primary_contact_method": "whatsapp",
     }
 
-    def test_register_producer_succeeds_returns_token(self, client, db):
-        """Valid payload → 200 + JWT; user+producer rows created."""
+    def test_register_producer_new_email_returns_ack(self, client, db):
+        """MEH-328 Chunk B: non-upgrade signup → 200 + generic ack (no
+        access_token), user + producer rows created. Renamed from
+        test_register_producer_succeeds_returns_token under MEH-328."""
         resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
         assert resp.status_code == 200
-        assert resp.json()["access_token"]
+        body = resp.json()
+        assert body == {"detail": _REGISTER_ACK_DETAIL}
+        assert "access_token" not in body
+        assert "whatsapp_sent" not in body
         from app.models.models import User, Producer
         user = db.query(User).filter(User.email == "producer@test.com").first()
         assert user is not None
@@ -262,19 +267,32 @@ class TestAuth:
         assert producer is not None
         assert producer.status == "pending_whatsapp"
 
-    def test_register_producer_duplicate_email_returns_409(self, client, db):
-        """Existing email → 409 (not 400) with actionable Hebrew message."""
+    def test_register_producer_duplicate_email_returns_identical_ack(self, client, db):
+        """MEH-328 Chunk B: existing email must NOT 409 (legacy leaked
+        existence). Returns the same RegisterAck as the new-email path,
+        no new user row, no new producer row."""
         make_user(db, email="producer@test.com")
+        from app.models.models import User, Producer
+        users_before = db.query(User).filter(User.email == "producer@test.com").count()
+        producers_before = db.query(Producer).count()
         resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
-        assert resp.status_code == 409
-        assert "התחברי לחשבון שלך" in resp.json()["detail"]
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert (
+            db.query(User).filter(User.email == "producer@test.com").count()
+            == users_before
+            == 1
+        )
+        assert db.query(Producer).count() == producers_before
 
     def test_register_producer_email_failure_still_succeeds(self, client, db, monkeypatch):
-        """Email delivery failure must never block the 200 response (fire-and-forget)."""
+        """Email delivery failure must never block the 200 response
+        (fire-and-forget). Same invariant as before MEH-328 — only the
+        body shape changes from token to ack."""
         from unittest.mock import patch
         from app import config
         # Activate resend so send_email attempts a real send, then simulate Resend
-        # being down.  The exception is caught INSIDE send_email's try/except so
+        # being down. The exception is caught INSIDE send_email's try/except so
         # the background task completes without raising — registration must still
         # return 200.
         monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
@@ -285,7 +303,180 @@ class TestAuth:
                 "producer_name": "חוות שרה 2",
             })
         assert resp.status_code == 200
-        assert resp.json()["access_token"]
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+
+    def test_register_producer_existing_password_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B: collision against a password-user surfaces
+        via send_duplicate_attempt_email(provider="password"). Body uses
+        the EXISTING user's name, not the attacker-supplied one."""
+        make_user(db, email="producer_pw@test.com", name="Dana")
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_PRODUCER_REG, "email": "producer_pw@test.com"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("to") == "producer_pw@test.com"
+        assert captured.get("name") == "Dana"
+        assert captured.get("provider") == "password"
+
+    def test_register_producer_existing_google_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B: collision against a google-only user surfaces
+        via send_duplicate_attempt_email(provider="google")."""
+        from app.models.models import User
+        u = User(
+            email="producer_g@test.com",
+            name="Galya",
+            google_id="google-sub-producer",
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(u)
+        db.commit()
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_PRODUCER_REG, "email": "producer_g@test.com"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("provider") == "google"
+        assert captured.get("name") == "Galya"
+
+    def test_register_producer_no_longer_returns_token_on_signup(self, client):
+        """MEH-328 Chunk B: non-upgrade signup body has no token / no
+        whatsapp_sent / no refresh-token cookie / no __Secure-Fgp cookie."""
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "email": "noauto_producer@test.com",
+                "producer_name": "חוות חדשה",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "access_token" not in body
+        assert "token_type" not in body
+        assert "whatsapp_sent" not in body
+        cookies = resp.headers.get_list("set-cookie")
+        assert not any(c.startswith("refresh_token=") for c in cookies)
+        assert not any(c.startswith("__Secure-Fgp=") for c in cookies)
+
+    def test_register_producer_three_branches_identical_response_bytes(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B: an attacker comparing raw response bytes
+        across (new / password-collision / google-collision) cannot
+        distinguish branches. Stub the email senders so background tasks
+        don't influence the response."""
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth.notify_admin_new_producer", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth.notify_producer_registered", lambda *a, **kw: None
+        )
+        make_user(db, email="prod_ident_pw@test.com")
+        from app.models.models import User
+        db.add(
+            User(
+                email="prod_ident_g@test.com",
+                name="GUser",
+                google_id="google-sub-prod-ident",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+
+        def post(email, producer_name):
+            return client.post(
+                "/auth/register/producer",
+                json={
+                    **self.VALID_PRODUCER_REG,
+                    "email": email,
+                    "producer_name": producer_name,
+                },
+            )
+
+        r_new = post("prod_ident_new@test.com", "חוות חדשה")
+        r_pw = post("prod_ident_pw@test.com", "חוות פסבורד")
+        r_g = post("prod_ident_g@test.com", "חוות גוגל")
+        for r in (r_new, r_pw, r_g):
+            assert r.status_code == 200
+        assert r_new.content == r_pw.content == r_g.content
+        assert (
+            r_new.headers.get_list("set-cookie")
+            == r_pw.headers.get_list("set-cookie")
+            == r_g.headers.get_list("set-cookie")
+            == []
+        )
+
+    def test_register_producer_collision_creates_no_producer_row(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B core invariant: the collision branch must NOT
+        create a Producer / ProducerCategory / DeliveryArea row. Mirror
+        of the side-effect-symmetry acceptance criterion."""
+        from app.models.models import (
+            DeliveryArea,
+            Producer,
+            ProducerCategory,
+            User,
+        )
+        make_user(db, email="prod_collision@test.com")
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        producers_before = db.query(Producer).count()
+        cats_before = db.query(ProducerCategory).count()
+        areas_before = db.query(DeliveryArea).count()
+        users_before = db.query(User).count()
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "email": "prod_collision@test.com",
+                "producer_name": "חוות שלא נוצרת",
+                "delivery_areas": [
+                    {"city": "תל אביב", "min_order": 100, "delivery_day": "ראשון"}
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert db.query(Producer).count() == producers_before
+        assert db.query(ProducerCategory).count() == cats_before
+        assert db.query(DeliveryArea).count() == areas_before
+        assert db.query(User).count() == users_before
 
     # --- MEH-143: role-upgrade (existing consumer adds a producer) ---
 

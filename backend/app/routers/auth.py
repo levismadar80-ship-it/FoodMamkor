@@ -343,7 +343,12 @@ async def register(
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
 
 
-@router.post("/register/producer", response_model=ProducerRegistrationResponse)
+# MEH-328 Chunk B: response_model intentionally omitted. The non-upgrade
+# path returns RegisterAck (OWASP anti-enumeration); the upgrade path
+# returns ProducerRegistrationResponse (token + whatsapp_sent). FastAPI's
+# decorator-level response_model is single-shape and would strip fields
+# from one of the two — we let Pydantic serialise each return as-is.
+@router.post("/register/producer")
 @limiter.limit("3/hour")  # SECURITY FIX #2
 async def register_producer(
     request: Request,
@@ -354,37 +359,15 @@ async def register_producer(
     current_user: "User | None" = Depends(get_current_user_optional),
 ):
     # MEH-143: two paths — upgrade (logged-in) vs new registration (anonymous).
+    # MEH-328 Chunk B: the non-upgrade path is now OWASP anti-enumeration —
+    # identical RegisterAck across new-email / password-collision / oauth-
+    # collision. Upgrade path is unchanged (authenticated, no enumeration risk).
     upgrade_path = current_user is not None
 
-    if upgrade_path:
-        # Upgrading an existing account — ignore any email/name/password in body.
-        user = current_user
-        # Check both: producer_id (current link) and is_producer (durable flag).
-        # is_producer stays True even if an admin manually clears producer_id,
-        # preventing silent re-registration without an explicit admin reset.
-        if user.producer_id or user.is_producer:
-            raise HTTPException(status_code=409, detail="כבר יש לך עסק רשום בחשבון זה")
-    else:
-        # New registration — email, name, password are required.
-        if not data.email or not data.name or not data.password:
-            raise HTTPException(
-                status_code=422,
-                detail="אימייל, שם וסיסמה הם שדות חובה",
-            )
-        if db.query(User).filter(User.email == data.email).first():
-            raise HTTPException(
-                status_code=409,
-                detail="האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך.",
-            )
-
-        # MEH-457 — close the MEH-306 sibling gap. Same fail-open contract
-        # as /auth/register: HIBP timeouts/5xx do not block; only deny-list
-        # / confirmed breach matches block. No current_hash — fresh signup.
-        result = await validate_password(data.password)
-        if not result.ok:
-            raise HTTPException(status_code=422, detail={"failures": result.failures})
-
     # MEH-17: validate primary contact method has its required field filled.
+    # These are 422 input-validation guards on body content alone — they
+    # cannot leak email existence (an attacker probing the endpoint sees
+    # the same 422 regardless of whether the email is registered).
     method = (data.primary_contact_method or "whatsapp").strip().lower()
     if method not in {"whatsapp", "phone", "website", "email"}:
         raise HTTPException(status_code=422, detail="אמצעי קשר לא נתמך")
@@ -405,60 +388,146 @@ async def register_producer(
         )
 
     # MEH-530: 422s with Hebrew copy if any selected category requires a
-    # license and the body didn't supply one.
+    # license and the body didn't supply one. Same input-validation
+    # classification as the contact-method checks above.
     ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
 
-    producer = Producer(
-        name=data.producer_name,
-        description=data.description,
-        city=data.city,
-        lat=data.lat,
-        lng=data.lng,
-        phone=data.phone,
-        instagram=data.instagram,
-        website=data.website,
-        primary_contact_method=method,
-        contact_email=data.contact_email,
-        # MEH-530: persisted as-is post-guard. None when not supplied.
-        producer_license_number=data.producer_license_number,
-        # MEH-293/MEH-479: dietary tagging is per-product via /settings.
-        status="pending_whatsapp",
-    )
-    db.add(producer)
-    db.flush()
-
-    for cid in data.category_ids:
-        cat = db.query(Category).filter(Category.id == cid).first()
-        if cat:
-            db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
-
-    for da in data.delivery_areas:
-        db.add(
-            DeliveryArea(
-                producer_id=producer.id,
-                city=da.city,
-                min_order=da.min_order,
-                delivery_day=da.delivery_day,
-            )
-        )
-
-    verify_token = secrets.token_urlsafe(32)
-    verify_expires = datetime.utcnow() + timedelta(hours=24)
-
     if upgrade_path:
+        # ---- UPGRADE PATH (UNCHANGED in MEH-328) -----------------------
+        # Authenticated user upgrading to producer. No enumeration vector —
+        # the caller already proved control of the account. Still returns
+        # a token + whatsapp_sent so the dashboard flow keeps working.
+        user = current_user
+        # Check both: producer_id (current link) and is_producer (durable flag).
+        # is_producer stays True even if an admin manually clears producer_id,
+        # preventing silent re-registration without an explicit admin reset.
+        if user.producer_id or user.is_producer:
+            raise HTTPException(status_code=409, detail="כבר יש לך עסק רשום בחשבון זה")
+
+        producer = Producer(
+            name=data.producer_name,
+            description=data.description,
+            city=data.city,
+            lat=data.lat,
+            lng=data.lng,
+            phone=data.phone,
+            instagram=data.instagram,
+            website=data.website,
+            primary_contact_method=method,
+            contact_email=data.contact_email,
+            producer_license_number=data.producer_license_number,
+            status="pending_whatsapp",
+        )
+        db.add(producer)
+        db.flush()
+        for cid in data.category_ids:
+            cat = db.query(Category).filter(Category.id == cid).first()
+            if cat:
+                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+        for da in data.delivery_areas:
+            db.add(
+                DeliveryArea(
+                    producer_id=producer.id,
+                    city=da.city,
+                    min_order=da.min_order,
+                    delivery_day=da.delivery_day,
+                )
+            )
         # Link producer to existing user, upgrade role + flag.
         user.producer_id = producer.id
         user.role = "producer"
         user.is_producer = True
         db.commit()
         db.refresh(user)
-    else:
+
+        # Capture producer primitives NOW — expire_on_commit=True means ORM
+        # attributes are expired after commit, and FastAPI closes the session
+        # before background tasks run.
+        p_name = producer.name
+        p_city = producer.city
+        p_phone = producer.phone
+        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+        # No verify/welcome email — the user already has a verified consumer
+        # account; she's just adding producer capability.
+
+        whatsapp_expected = bool(
+            p_phone
+            and settings.whatsapp_phone_number_id
+            and settings.whatsapp_access_token
+        )
+        fp = generate_fingerprint()
+        _set_refresh_cookie(response, user)
+        _set_fingerprint_cookie(response, fp)
+        return ProducerRegistrationResponse(
+            access_token=create_access_token(
+                user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+            ),
+            whatsapp_sent=whatsapp_expected,
+        )
+
+    # ---- NON-UPGRADE PATH (MEH-328 OWASP anti-enumeration) -------------
+    # 422 cases below are body-shape validation, not enumeration:
+    if not data.email or not data.name or not data.password:
+        raise HTTPException(
+            status_code=422,
+            detail="אימייל, שם וסיסמה הם שדות חובה",
+        )
+
+    # MEH-328: timing-equalised. Both branches run validate_password
+    # (HIBP) + hash_password (bcrypt) before the existence lookup so
+    # response time doesn't fork on collision.
+    result = await validate_password(data.password)
+    if not result.ok:
+        raise HTTPException(status_code=422, detail={"failures": result.failures})
+    # MEH-457: bcrypt blocks ~50-200ms; off-loop required because the
+    # handler is async (validate_password awaits HIBP). MEH-328: also
+    # computed unconditionally — discarded on the collision branches.
+    pwd_hash = await asyncio.to_thread(hash_password, data.password)
+
+    existing_user = db.query(User).filter(User.email == data.email).first()
+    if existing_user is None:
+        # New email — create producer + user. Producer-side rows (Producer,
+        # ProducerCategory, DeliveryArea) and producer-specific notifications
+        # ONLY fire here, so the collision branches stay side-effect-symmetric
+        # (no orphan producer row, no spurious "new producer signed up" admin
+        # notification).
+        producer = Producer(
+            name=data.producer_name,
+            description=data.description,
+            city=data.city,
+            lat=data.lat,
+            lng=data.lng,
+            phone=data.phone,
+            instagram=data.instagram,
+            website=data.website,
+            primary_contact_method=method,
+            contact_email=data.contact_email,
+            producer_license_number=data.producer_license_number,
+            status="pending_whatsapp",
+        )
+        db.add(producer)
+        db.flush()
+        for cid in data.category_ids:
+            cat = db.query(Category).filter(Category.id == cid).first()
+            if cat:
+                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+        for da in data.delivery_areas:
+            db.add(
+                DeliveryArea(
+                    producer_id=producer.id,
+                    city=da.city,
+                    min_order=da.min_order,
+                    delivery_day=da.delivery_day,
+                )
+            )
+
+        verify_token = secrets.token_urlsafe(32)
+        verify_expires = datetime.utcnow() + timedelta(hours=24)
         user = User(
             email=data.email,
             name=data.name,
-            # MEH-457: bcrypt blocks ~50-200ms; off-loop required because the
-            # handler is now async (validate_password awaits HIBP).
-            password_hash=await asyncio.to_thread(hash_password, data.password),
+            password_hash=pwd_hash,
             # MEH-457 (closes MEH-305 sibling gap): stamp the iat anchor so
             # JWTs issued before a future password change can be invalidated.
             password_changed_at=datetime.now(timezone.utc),
@@ -475,40 +544,42 @@ async def register_producer(
         db.commit()
         db.refresh(user)
 
-    # Capture producer primitives NOW — expire_on_commit=True means ORM
-    # attributes are expired after commit, and FastAPI closes the session
-    # before background tasks run.
-    p_name = producer.name
-    p_city = producer.city
-    p_phone = producer.phone
-
-    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
-    background_tasks.add_task(notify_producer_registered, p_name, p_phone)
-    if not upgrade_path:
+        p_name = producer.name
+        p_city = producer.city
+        p_phone = producer.phone
+        background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+        background_tasks.add_task(notify_producer_registered, p_name, p_phone)
         background_tasks.add_task(
             _send_verify_email, user.email, user.name, verify_token
         )
         background_tasks.add_task(
             _send_welcome_email, user.email, user.name, "producer"
         )
+    else:
+        # MEH-328: collision branch — never reveal which auth method the
+        # existing account uses. Email out-of-band so the legitimate owner
+        # knows where to log in. No DB writes, no cookies, no token.
+        if existing_user.password_hash:
+            provider = "password"
+        elif existing_user.google_id:
+            provider = "google"
+        elif existing_user.apple_id:
+            provider = "apple"
+        else:
+            logger.warning(
+                "[REGISTER-PRODUCER-COLLISION] user_id=%s has no auth method",
+                existing_user.id,
+            )
+            provider = None
+        if provider is not None:
+            background_tasks.add_task(
+                _send_duplicate_attempt_email,
+                existing_user.email,
+                existing_user.name,
+                provider,
+            )
 
-    # MEH-287: pre-flight check — whether the background task has the
-    # config it needs to send. True = expected to send (Meta Cloud API
-    # may still fail async, logged as ERROR). False = known not-sent
-    # (missing env vars or no phone); frontend shows a dashboard-fallback
-    # banner. MEH-508 swapped Twilio → Meta; predicate updated to match.
-    whatsapp_expected = bool(
-        p_phone and settings.whatsapp_phone_number_id and settings.whatsapp_access_token
-    )
-    fp = generate_fingerprint()
-    _set_refresh_cookie(response, user)
-    _set_fingerprint_cookie(response, fp)
-    return ProducerRegistrationResponse(
-        access_token=create_access_token(
-            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
-        ),
-        whatsapp_sent=whatsapp_expected,
-    )
+    return RegisterAck(detail=_REGISTER_ACK_DETAIL)
 
 
 @router.get("/email-exists")
