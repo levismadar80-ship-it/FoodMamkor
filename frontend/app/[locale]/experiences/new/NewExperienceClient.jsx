@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
@@ -24,19 +25,20 @@ import CitySearch from "@/components/CitySearch";
  * from /admin/experiences before it shows up in the public list.
  */
 
-const CATEGORIES = [
-  "בישול",
-  "תזונה",
-  "סיור אוכל",
-  "חקלאות",
-  "טעימות",
-  "סדנה",
-  "אחר",
+// API filter values are Hebrew strings (server enum). Localize labels via t().
+const CATEGORY_KEYS = [
+  { value: "בישול", labelKey: "cooking" },
+  { value: "תזונה", labelKey: "nutrition" },
+  { value: "סיור אוכל", labelKey: "food_tour" },
+  { value: "חקלאות", labelKey: "agriculture" },
+  { value: "טעימות", labelKey: "tasting" },
+  { value: "סדנה", labelKey: "workshop" },
+  { value: "אחר", labelKey: "other" },
 ];
 
-const LOCATION_TYPES = [
-  { value: "home", label: "בבית פרטי" },
-  { value: "public", label: "מקום ציבורי" },
+const LOCATION_TYPE_KEYS = [
+  { value: "home", labelKey: "location_home" },
+  { value: "public", labelKey: "location_public" },
 ];
 
 const EMPTY = {
@@ -58,6 +60,8 @@ const EMPTY = {
 };
 
 export default function NewExperienceClient() {
+  const t = useTranslations("experiences.new");
+  const tCat = useTranslations("experiences.categories");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState(EMPTY);
@@ -138,19 +142,19 @@ export default function NewExperienceClient() {
     setServerError("");
 
     if (form.title.trim().length < 4) {
-      setServerError("הכותרת קצרה מדי");
+      setServerError(t("error_title_short"));
       return;
     }
     if (form.description.trim().length < 20) {
-      setServerError("התיאור חייב להיות לפחות 20 תווים");
+      setServerError(t("error_description_short"));
       return;
     }
     if (!form.event_date) {
-      setServerError("חובה לבחור תאריך");
+      setServerError(t("error_date_required"));
       return;
     }
     if (verdict?.status === "REJECTED") {
-      setServerError(verdict.reason || "התוכן לא מתאים לפלטפורמה");
+      setServerError(verdict.reason || t("rejected_fallback"));
       return;
     }
 
@@ -183,7 +187,7 @@ export default function NewExperienceClient() {
     setSubmitting(true);
     try {
       const r = await api.post("/experiences", payload);
-      showToast("החוויה נשלחה לאישור 🌿");
+      showToast(t("toast_submitted"));
       router.push(`/experiences/${r.data.id}?pending=1`);
     } catch (err) {
       const detail = err.response?.data?.detail;
@@ -192,7 +196,7 @@ export default function NewExperienceClient() {
       } else if (typeof detail === "string") {
         setServerError(detail);
       } else {
-        setServerError("שגיאה בשליחת החוויה. נסי שוב.");
+        setServerError(t("error_generic"));
       }
     } finally {
       setSubmitting(false);
@@ -202,7 +206,7 @@ export default function NewExperienceClient() {
   if (authLoading || !user) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-site-muted">
-        טוענת...
+        {t("auth_loading")}
       </div>
     );
   }
@@ -211,18 +215,18 @@ export default function NewExperienceClient() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <Breadcrumb
         items={[
-          { href: "/", label: "בית" },
-          { href: "/experiences", label: "חוויות" },
-          { label: "הגשה" },
+          { href: "/", label: t("breadcrumb_home") },
+          { href: "/experiences", label: t("breadcrumb_experiences") },
+          { label: t("breadcrumb_submit") },
         ]}
         className="mb-4"
       />
 
       <h1 className="font-headline text-3xl md:text-4xl font-bold text-site-text mb-2">
-        הגישי חוויה חדשה
+        {t("title")}
       </h1>
       <p className="text-site-muted mb-8">
-        כל ההגשות עוברות אישור צוות מהמקור. ננסה לחזור תוך 24–48 שעות 🌿
+        {t("subtitle")}
       </p>
 
       <form
@@ -235,23 +239,23 @@ export default function NewExperienceClient() {
           </div>
         )}
 
-        <Field label="כותרת החוויה *">
+        <Field label={t("field_title")}>
           <input
             type="text"
             value={form.title}
             onChange={setField("title")}
-            placeholder="לדוגמה: סדנת אפיית לחם מחמצת"
+            placeholder={t("field_title_placeholder")}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
             required
           />
         </Field>
 
-        <Field label="תיאור מפורט *">
+        <Field label={t("field_description")}>
           <textarea
             value={form.description}
             onChange={setField("description")}
             rows={5}
-            placeholder="ספרי על החוויה — מה תלמדו, מה יהיה, למי זה מתאים..."
+            placeholder={t("field_description_placeholder")}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
             required
           />
@@ -259,7 +263,7 @@ export default function NewExperienceClient() {
 
         {/* Live moderation feedback */}
         {checking && (
-          <p className="text-xs text-site-muted">🤖 בודקת תוכן...</p>
+          <p className="text-xs text-site-muted">{t("checking_content")}</p>
         )}
         {verdict?.status === "FLAGGED" && (
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-[12px] p-3 text-sm">
@@ -273,26 +277,26 @@ export default function NewExperienceClient() {
         )}
         {verdict?.status === "REJECTED" && (
           <div className="bg-red-50 border border-red-300 text-red-800 rounded-[12px] p-3 text-sm">
-            ❌ {verdict.reason || "התוכן לא מתאים לפלטפורמה"}
+            ❌ {verdict.reason || t("rejected_fallback")}
           </div>
         )}
 
-        <Field label="קטגוריה">
+        <Field label={t("field_category")}>
           <select
             value={form.category}
             onChange={setField("category")}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
           >
-            <option value="">ללא</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            <option value="">{t("category_none")}</option>
+            {CATEGORY_KEYS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {tCat(c.labelKey)}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="תמונה (URL — Cloudinary מומלץ)">
+        <Field label={t("field_image")}>
           <input
             type="url"
             dir="ltr"
@@ -304,7 +308,7 @@ export default function NewExperienceClient() {
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="תאריך *">
+          <Field label={t("field_date")}>
             <input
               type="date"
               value={form.event_date}
@@ -313,7 +317,7 @@ export default function NewExperienceClient() {
               required
             />
           </Field>
-          <Field label="שעת התחלה">
+          <Field label={t("field_time")}>
             <input
               type="time"
               value={form.event_time}
@@ -323,21 +327,21 @@ export default function NewExperienceClient() {
           </Field>
         </div>
 
-        <Field label="משך (דקות)">
+        <Field label={t("field_duration")}>
           <input
             type="number"
             min="15"
             max="1440"
             value={form.duration_minutes}
             onChange={setField("duration_minutes")}
-            placeholder="180"
+            placeholder={t("field_duration_placeholder")}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
           />
         </Field>
 
-        <Field label="סוג מיקום *">
+        <Field label={t("field_location_type")}>
           <div className="flex flex-wrap gap-2">
-            {LOCATION_TYPES.map((lt) => (
+            {LOCATION_TYPE_KEYS.map((lt) => (
               <button
                 key={lt.value}
                 type="button"
@@ -350,62 +354,62 @@ export default function NewExperienceClient() {
                     : "bg-white text-site-text border border-border hover:bg-light"
                 }`}
               >
-                {lt.label}
+                {t(lt.labelKey)}
               </button>
             ))}
           </div>
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="עיר *">
+          <Field label={t("field_city")}>
             <CitySearch
               id="new-experience-city"
               value={form.city}
               onChange={setCityField}
-              placeholder="חפשי עיר..."
+              placeholder={t("field_city_placeholder")}
             />
           </Field>
-          <Field label="כתובת (פרטית — רק את והצוות רואים)">
+          <Field label={t("field_address")}>
             <input
               type="text"
               value={form.address}
               onChange={setField("address")}
-              placeholder="רחוב, מספר"
+              placeholder={t("field_address_placeholder")}
               className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
             />
           </Field>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="מחיר לאדם (₪) — השאירי ריק לחינם">
+          <Field label={t("field_price")}>
             <input
               type="number"
               min="0"
               step="1"
               value={form.price_per_person}
               onChange={setField("price_per_person")}
-              placeholder="150"
+              placeholder={t("field_price_placeholder")}
               className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
             />
           </Field>
-          <Field label="מספר משתתפים מקסימלי">
+          <Field label={t("field_max_participants")}>
             <input
               type="number"
               min="1"
               value={form.max_participants}
               onChange={setField("max_participants")}
-              placeholder="10"
+              placeholder={t("field_max_participants_placeholder")}
               className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
             />
           </Field>
         </div>
 
-        <Field label="מה להביא / דרישות מוקדמות">
+        <Field label={t("field_requirements")}>
           <textarea
             value={form.requirements}
             onChange={setField("requirements")}
             rows={3}
-            placeholder="סינר, נעליים סגורות, יכולת עמידה של שעתיים..."
+            placeholder={t("field_requirements_placeholder")}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
           />
         </Field>
@@ -418,14 +422,14 @@ export default function NewExperienceClient() {
               onChange={setField("is_recurring")}
               className="w-4 h-4"
             />
-            <span className="text-sm">החוויה חוזרת (שבועי / חודשי)</span>
+            <span className="text-sm">{t("is_recurring")}</span>
           </label>
           {form.is_recurring && (
             <input
               type="text"
               value={form.recurring_schedule}
               onChange={setField("recurring_schedule")}
-              placeholder="לדוגמה: כל יום שישי 9:00–12:00"
+              placeholder={t("recurring_placeholder")}
               className="mt-2 w-full border border-border rounded-[12px] px-3 py-2 bg-white text-sm"
             />
           )}
@@ -433,7 +437,7 @@ export default function NewExperienceClient() {
 
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <Link href="/experiences" className="text-sm text-site-muted hover:text-primary">
-            ביטול
+            {t("cancel")}
           </Link>
           <button
             type="submit"
@@ -441,10 +445,10 @@ export default function NewExperienceClient() {
             className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting
-              ? "שולחת..."
+              ? t("submitting")
               : verdict?.status === "REJECTED"
-              ? "לא ניתן לפרסם"
-              : "שלחי לאישור 🌿"}
+              ? t("cannot_publish")
+              : t("submit_cta")}
           </button>
         </div>
       </form>

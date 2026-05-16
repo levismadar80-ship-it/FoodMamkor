@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-const HEBREW_DAY_NAMES = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 function dateKey(date) {
   const y = date.getFullYear();
@@ -121,9 +121,9 @@ export default function CalendarView({ items, linkPrefix }) {
         role="row"
         className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-site-muted"
       >
-        {HEBREW_DAY_NAMES.map((name) => (
-          <div key={name} className="py-2" role="columnheader">
-            {name}
+        {DAY_KEYS.map((key) => (
+          <div key={key} className="py-2" role="columnheader">
+            {t(`days.${key}`)}
           </div>
         ))}
       </div>
