@@ -2,7 +2,8 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 > Last updated: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
-> Previously: 2026-05-16 (MEH-354 — `/retro` slash command; PR pending; docs-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-354 — `/retro` slash command; **PR #697 MERGED** at `4a24a37`)
 > Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
@@ -69,6 +70,28 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 2. Open MEH-471 (Wave 1) when ready to start execution; estimate 12–18h
 
 ---
+
+---
+
+## 2026-05-16 — MEH-621: SubagentStop trace hook (PR PENDING; manual wiring required post-merge)
+
+**Branch:** `feature/meh-621-subagent-trace-hook` off `staging@4a24a37`.
+**Risk tier:** **🟢 LOW per MEH-450** — script-content-in-PR-description (no committed code), 3 files committed (`.gitignore` + `CHANGELOG` + `HANDOFF`), never blocks (always exit 0), fail-open on missing jq, log file is gitignored. DoD exception: mobile QA N/A (no UI, no commit-time code execution).
+**Closes:** MEH-621 (derived from MEH-502 audit REC 3).
+
+**Scope split (Path A2):** Per the project's deny-list invariants (`Edit(.claude/hooks/**)` + `Edit(.claude/settings.json)` are both denied to Claude Code), this PR commits **only** `.gitignore` + this CHANGELOG line + this HANDOFF note. The hook script content and the `.claude/settings.json` `SubagentStop` block live **in the PR description** for manual install by Smadar. Solo-human-controlled — no automated wiring of `.claude/`.
+
+**Manual wiring step required post-merge** (full instructions in PR description):
+1. `cp /tmp/subagent-trace.sh .claude/hooks/subagent-trace.sh && chmod +x .claude/hooks/subagent-trace.sh`
+2. Open `.claude/settings.json` and paste the `SubagentStop` JSON block from the PR description into the `hooks` object.
+3. Trigger any Agent subagent (e.g. `Explore`) and verify a new ndjson line lands in `docs/audits/subagent-trace.log`.
+4. Comment on PR / Linear when wiring confirmed.
+
+**Captured per event:** `ts` (UTC ISO8601), `agent_type`, `agent_id`, `session_id`, `stop_hook_active`, `tools_called` (comma-separated distinct tool names parsed from `agent_transcript_path` jsonl), `duration_ms` (last − first `.timestamp` from same jsonl; `null` on parse failure).
+
+**Schema source:** WebSearch 2026-05-16 across [code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks), [docs.anthropic.com hooks-guide](https://docs.anthropic.com/en/docs/claude-code/hooks-guide) (403 on direct WebFetch), [docs.claude.com hooks-guide](https://docs.claude.com/en/docs/claude-code/hooks-guide) (blocked by MEH-397 allowlist), [anthropics/claude-code#7881](https://github.com/anthropics/claude-code/issues/7881), [anthropics/claude-code#19170](https://github.com/anthropics/claude-code/issues/19170). Cross-referenced `docs/agent-permissions-investigation.md:486-510` (MEH-425 PreToolUse trial — same `agent_id`/`agent_type` names).
+
+**Spec deviation flagged honestly:** MEH-621 acceptance_criteria implied `tools_called` + `duration_ms` are direct HOOK_INPUT fields; per anthropics/claude-code#7881 + #19170 they are not — only `agent_id` / `agent_type` / `agent_transcript_path` / `last_assistant_message` / `stop_hook_active` are direct. Hook derives the two requested fields from the subagent transcript jsonl, with `"?"` / `null` fallback on parse failure. If real post-merge events surface schema drift, patch quickly.
 
 ---
 

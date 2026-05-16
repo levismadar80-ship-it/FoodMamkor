@@ -18,6 +18,52 @@
 
 Closes MEH-623.
 
+### 2026-05-16 — MEH-621: SubagentStop trace hook — script + wiring snippet (PR pending; manual wiring required post-merge)
+
+`tooling(MEH-621)`: ships **the contents** of a new SubagentStop hook
+`.claude/hooks/subagent-trace.sh` (~55 LOC) plus a `.gitignore` entry
+for the local `docs/audits/subagent-trace.log` file. **Derived from
+MEH-502 audit REC 3.** Per the project's deny-list invariants
+(`Edit(.claude/hooks/**)` + `Edit(.claude/settings.json)` are both
+denied to Claude Code), the script content and the
+`.claude/settings.json` wiring snippet live **in the PR description**
+for Smadar to install manually post-merge — this PR commits only the
+`.gitignore` entry, this CHANGELOG line, and the HANDOFF note (3
+files, ~50 lines total). **Captured per event:** `ts` (UTC ISO8601),
+`agent_type`, `agent_id`, `session_id`, `stop_hook_active`,
+`tools_called` (comma-separated distinct tool names parsed from
+`agent_transcript_path` jsonl), `duration_ms` (last − first
+`.timestamp` from same jsonl; `null` on parse failure).
+**Spec deviation flagged honestly:** MEH-621 acceptance_criteria
+implied `tools_called` + `duration_ms` are direct HOOK_INPUT fields;
+per [anthropics/claude-code#7881](https://github.com/anthropics/claude-code/issues/7881)
++ [#19170](https://github.com/anthropics/claude-code/issues/19170)
+they are not — only `agent_id` / `agent_type` /
+`agent_transcript_path` / `last_assistant_message` /
+`stop_hook_active` are direct. Hook derives the two requested fields
+from the subagent transcript jsonl, with `"?"` / `null` fallback on
+parse failure (parse never throws — `2>/dev/null` + `tonumber?` //
+`null`). **Schema sourced via WebSearch 2026-05-16** (direct WebFetch
+to `docs.anthropic.com/en/docs/claude-code/hooks-guide` returned HTTP
+403; `docs.claude.com/en/docs/claude-code/hooks-guide` blocked by
+MEH-397 WebFetch allowlist) cross-referenced against
+`docs/agent-permissions-investigation.md:486-510` (MEH-425 PreToolUse
+trial — same `agent_id`/`agent_type` field names). **5 sources**
+cited in PR description + hook comment block. **Risk tier:** LOW per
+MEH-450 — never blocks (always exit 0), fail-open on missing jq,
+writes only to a gitignored log file under `docs/audits/`, no logic
+in committed code (only docs + gitignore). **DoD exception:** mobile
+QA N/A (no UI, no commit-time code execution). **Manual wiring step
+post-merge:** (1) `cp /tmp/subagent-trace.sh
+.claude/hooks/subagent-trace.sh && chmod +x …`; (2) paste the
+`SubagentStop` JSON block from the PR description into
+`.claude/settings.json` `hooks` object; (3) trigger any Agent
+subagent (e.g. `Explore`) and verify a new ndjson line lands in
+`docs/audits/subagent-trace.log`; (4) close the loop in Linear /
+PR comment.
+
+Closes MEH-621, derived from MEH-502 audit REC 3.
+
 ### 2026-05-16 — MEH-354: `/retro` slash command — end-of-session behavior retro (PR pending)
 
 `docs(MEH-354)`: new custom command `/retro` that closes the
