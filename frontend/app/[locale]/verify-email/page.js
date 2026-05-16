@@ -3,9 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 
 function VerifyEmailContent() {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [verifyState, setVerifyState] = useState("loading"); // loading | success | error
@@ -14,7 +16,7 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (!token) {
       setVerifyState("error");
-      setErrorMsg("קישור האימות לא תקין");
+      setErrorMsg(t("auth.verifyEmail.errors.invalid_link"));
       return;
     }
     api
@@ -30,10 +32,10 @@ function VerifyEmailContent() {
       .catch((err) => {
         setVerifyState("error");
         setErrorMsg(
-          err.response?.data?.detail || "קישור האימות לא תקין או פג תוקף"
+          err.response?.data?.detail || t("auth.verifyEmail.errors.invalid_or_expired")
         );
       });
-  }, [token]);
+  }, [token, t]);
 
   if (verifyState === "loading") {
     return (
@@ -42,8 +44,8 @@ function VerifyEmailContent() {
           <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">
             ✉️
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">מאמתת...</h1>
-          <p className="text-site-muted text-sm">אנא המתיני</p>
+          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.verifyEmail.loading_title")}</h1>
+          <p className="text-site-muted text-sm">{t("auth.verifyEmail.loading_subtitle")}</p>
         </div>
       </div>
     );
@@ -56,13 +58,13 @@ function VerifyEmailContent() {
           <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center text-3xl">
             ✅
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">האימייל אומת בהצלחה!</h1>
-          <p className="text-site-muted text-sm mb-6">מעבירה אותך לאתר...</p>
+          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.verifyEmail.success_title")}</h1>
+          <p className="text-site-muted text-sm mb-6">{t("auth.verifyEmail.success_subtitle")}</p>
           <Link
             href="/"
             className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center"
           >
-            המשיכי לאתר
+            {t("auth.verifyEmail.success_cta")}
           </Link>
         </div>
       </div>
@@ -75,13 +77,13 @@ function VerifyEmailContent() {
         <div className="w-16 h-16 rounded-full bg-red-50 mx-auto mb-4 flex items-center justify-center text-3xl">
           ❌
         </div>
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-2">האימות נכשל</h1>
+        <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.verifyEmail.error_title")}</h1>
         <p className="text-site-muted text-sm mb-6">{errorMsg}</p>
         <Link
           href="/"
           className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center"
         >
-          חזרי לאתר
+          {t("auth.verifyEmail.error_cta")}
         </Link>
       </div>
     </div>
@@ -89,11 +91,12 @@ function VerifyEmailContent() {
 }
 
 export default function VerifyEmailPage() {
+  const t = useTranslations();
   return (
     <Suspense
       fallback={
         <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <p className="text-site-muted">טוענת...</p>
+          <p className="text-site-muted">{t("auth.verifyEmail.fallback_loading")}</p>
         </div>
       }
     >

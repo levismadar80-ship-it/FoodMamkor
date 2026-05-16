@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -20,7 +22,7 @@ export default function ForgotPasswordPage() {
       await api.post("/auth/forgot-password", { email });
       setSubmitted(true);
     } catch {
-      setError("שגיאה בשליחה, נסי שוב מאוחר יותר");
+      setError(t("auth.passwordRecovery.forgot.errors.send_failed"));
     } finally {
       setLoading(false);
     }
@@ -32,14 +34,14 @@ export default function ForgotPasswordPage() {
         <div className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-1">איפוס סיסמה</h1>
-        <p className="text-site-muted text-sm mb-6">נשלח לך קישור לאיפוס סיסמה לאימייל</p>
+        <h1 className="font-headline text-2xl font-bold text-site-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
+        <p className="text-site-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
 
         {submitted ? (
           <div className="bg-light border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
-            <p className="font-medium mb-1">✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס</p>
+            <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
             <p className="text-site-muted text-xs mt-2">
-              לא קיבלת? צרי קשר:{" "}
+              {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
               <a href="mailto:levismadar80@gmail.com" className="text-primary hover:underline">
                 levismadar80@gmail.com
               </a>
@@ -51,7 +53,7 @@ export default function ForgotPasswordPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="האימייל שלך"
+              placeholder={t("auth.passwordRecovery.forgot.email_placeholder")}
               required
               dir="ltr"
               className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary"
@@ -64,11 +66,11 @@ export default function ForgotPasswordPage() {
               disabled={loading || !email}
               className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
             >
-              {loading ? "שולח..." : "שלחי קישור לאיפוס"}
+              {loading ? t("auth.passwordRecovery.forgot.submit_sending") : t("auth.passwordRecovery.forgot.submit")}
             </button>
             <p className="text-center text-sm text-site-muted">
               <Link href="/login" className="text-primary hover:underline">
-                חזרה להתחברות
+                {t("auth.passwordRecovery.forgot.back_to_login")}
               </Link>
             </p>
           </form>
