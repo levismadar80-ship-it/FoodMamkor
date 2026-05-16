@@ -14,7 +14,6 @@ import {
   HomeFounderQuote,
   HomeHowItWorks,
   HomeRecentlyViewed,
-  HomeKitchenPreview,
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
@@ -174,8 +173,6 @@ export default function HomePage() {
       />
 
       <HomeHowItWorks />
-
-      <HomeKitchenPreview products={homeProducts} onWhatsAppClick={handleWhatsAppClick} />
 
       {/* =========================
           PARALLAX DIVIDER 2 (PREMIUM_DESIGN)
