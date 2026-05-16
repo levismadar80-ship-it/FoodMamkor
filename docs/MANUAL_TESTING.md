@@ -3,6 +3,32 @@
 
 ---
 
+## HomepageMiniMap above the fold (MEH-604)
+
+Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
+
+- [ ] Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
+- [ ] Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
+- [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
+
+---
+
+## Hide /neighbor pre-launch (MEH-598)
+
+Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen section removed from public surface. Page files preserved per MEH-543 revival path. AI chat + producer dashboard + `HomeProductCard` label LOCK leaks deferred to MEH-599 (see PR description for E1-E6 mapping).
+
+- [ ] Header nav (desktop ≥768px) — visit `/`, `/about`, `/map`, `/events` → top nav shows 3 items: גלה / מפה / אודות. "מהשכן" link **absent**.
+- [ ] Footer nav — scroll to footer on any page → 5 items: גלה / מפה / אירועים / אודות / FAQ לבתי עסק. "מהמטבח של השכן" link **absent**.
+- [ ] BottomNav (mobile <768px) — visit `/` on mobile → 3 tabs visible: בית / מפה / פרופיל. "מהשכן" tab **absent** (was 4 tabs, now 3).
+- [ ] Direct route redirect — visit `https://staging.mehamakor.online/neighbor` (or `/he/neighbor`) → redirects to `/` (locale-prefixed root via next-intl middleware).
+- [ ] Direct route on mobile — same as above on mobile browser → no broken intermediate render, clean redirect.
+- [ ] Homepage section absence — visit `/` → between `<HomeHowItWorks>` (איך זה עובד) and the parallax divider, the "מהמטבח של השכן" home-products marquee is **absent**. Page flows directly from "איך זה עובד" → parallax → events preview.
+- [ ] DOM grep — load any page → DevTools → Search for "/neighbor" in DOM → returns 0 (excluding code comments not rendered).
+- [ ] No console errors — DevTools console on `/`, `/neighbor` redirect target, mobile + desktop → no `Missing message: home.kitchen.heading` or similar i18n warnings.
+
+---
+
 ## Producer license number (MEH-530)
 
 Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.

@@ -106,6 +106,39 @@ ask for `font-heebo`.
 
 ---
 
+## כללי מיקרו-קופי (Brand Hub v1.1)
+
+Mirrored from the brand hub. Source of truth: `02-מדריך-מותג.md` v1.1
+(16 May 2026) — see [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view)
+and [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+When the brand hub and this file disagree, the brand hub wins.
+
+### Audience targeting in CTAs — no partial category lists
+
+When a CTA names mehamakor's audience, **do not enumerate a subset of
+categories**. Formulations like "בעלת עסק, חקלאית או מגדלת" or "מה שהיא
+מגדלת" exclude bakeries, dairies, wineries, chocolatiers, and other
+non-growing producers — together ~75% of the base. Prefer generic
+business framings ("בעלת עסק" / "בית עסק" / "עסק שמייצר אוכל אמיתי")
+and outcome verbs ("מה שהיא מציעה" / "מה שהיא מייצרת"). Reviewed copy
+from Linear issues, mockups, or prior sessions is not exempt — audit
+every audience descriptor against this rule before opening a PR.
+
+### "מגזין" — internal use only (show, don't tell)
+
+"מגזין" describes mehamakor's editorial thesis internally but **must
+not appear in UI copy**. Surface the magazine-tier voice through *what*
+the copy says — curation signal, producer-page format, founder
+accountability, story-led framing — rather than *labeling* the product
+as a magazine. If you reach for "מגזין" in a button, headline, or body,
+restructure the line around the underlying signal instead.
+
+_Precedent: PR #682 (MEH-605/606/609, 2026-05-16) — both rules drove
+the Sapir-override of the A/B/C copy menus in those Linear issues. See
+[docs/CHANGELOG.md](./CHANGELOG.md) and [HANDOFF.md](../HANDOFF.md)._
+
+---
+
 ## Hero Section — בדיוק כמו gardensweet.com
 
 ```

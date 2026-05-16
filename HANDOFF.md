@@ -1,23 +1,284 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-597 — Linear backlog cleanup; Sub 4/4 of MEH-592 epic; **PR #680 MERGED — MEH-592 epic COMPLETE**)
+> Last updated: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; PR pending; HIGH-RISK chunked review; last MEH-592 epic launch-blocker)
+> Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+> Previously: 2026-05-16 — **End of day** (4 PRs merged: #682 + #683 + #684; filed MEH-616; brand hub v1.1 live)
 
+---
+
+## 2026-05-16 — MEH-604: HomepageMiniMap above the fold + perf defer (PR PENDING)
+
+**Branch:** `feature/meh-604-minimap-above-fold` off `staging@e5aaacb` (post-PR #685 merge).
+
+**Risk tier:** **HIGH-RISK** — `page.js` + `layout.js` are central components per `.claude/central-components.json` (spirit-of-rule; JSON paths predate the `[locale]` segment migration). Chunked review applied (5 chunks, build-green between each, no scope creep, no per-chunk surprises).
+
+**Closes:** MEH-604. **MEH-592 epic launch-blockers: 3 of 3 shipped** (this is the last one).
+
+**What shipped (4 files):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/app/[locale]/layout.js` | +4 / -0 — 3 `<link rel="preconnect">` for OSM tile shards (a/b/c) |
+| 2 | NEW `frontend/components/HomepageMiniMapSkeleton.jsx` | +46 / -0 — Leaflet-free SSR-able skeleton matching live-map dimensions |
+| 3 | `frontend/components/HomepageMiniMap.jsx` | +28 / -34 — IntersectionObserver → setTimeout(200) + chained rIC; dropped useRef + LAZY_LOAD_ROOT_MARGIN; updated file-header History |
+| 4 | `frontend/app/[locale]/page.js` | +13 / -10 — moved `<HomepageMiniMap />` from section #7 to section #2 (right after Hero); added skeleton import + `dynamic({ loading })` |
+
+**Chunk-by-chunk record:**
+- **Chunk 1** — `layout.js` preconnect (commit `c485634`, build 15.2s ✅).
+- **Chunk 2** — `dynamic({ loading })` + skeleton. **STOP fired on first attempt**: inline export from `HomepageMiniMap.jsx` pulled `import L from "leaflet"` into SSR → `ReferenceError: window is not defined`. Fix: extract to NEW Leaflet-free file `HomepageMiniMapSkeleton.jsx`. Build green after fix (14.7s ✅). Skeptic-flag #4 from the plan called this exact failure mode.
+- **Chunk 3** — rIC defer (Option A: `setTimeout(200)` + chained rIC). Build 14.7s ✅. Inline comments document rejected Options B and C.
+- **Chunk 4** — section reorder. Build 16.0s ✅. Diff scope-bound to the 3 product files + 1 new skeleton file.
+- **Chunk 5** — docs (this entry + CHANGELOG + MANUAL_TESTING 4 test cases) + commit + push + draft PR.
+
+**rIC strategy (Option A, locked in):**
+```js
+setTimeout(() => {
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => setShouldLoad(true));
+  } else {
+    setShouldLoad(true);
+  }
+}, POST_FCP_DEFER_MS); // 200
+```
+Floor enforced by `setTimeout(200)`; idle-aware landing via `rIC`; Safari < 16 fallback to direct set. Inverse-strategy alternatives (rIC with `timeout: 200`, or `setTimeout` only) rejected inline with reasons.
+
+**Lighthouse expectations (synthesis §5.1):**
+
+| Metric | Target | Why |
+|---|---|---|
+| Performance | ≥85 mobile | Defer + preconnect keep Leaflet OUT of LCP window |
+| LCP | Unchanged (hero photo) | rIC defer prevents Leaflet from competing |
+| CLS | ≤0.05 | SSR skeleton reserves height on first paint |
+| INP | -100 to -200ms on first tile | OSM preconnect saves DNS + TLS handshake |
+
+Pre/post capture deferred to Smadar (sandbox blocks `*.vercel.app` per MEH-360; no Chromium runtime here). Acceptance bar: **Performance ≥ 85 mobile** — if drops below, revert chunk 4 (move map back to section #7), ship chunks 1-3 only.
+
+**Skeptic flags (from plan):**
+1. **Bundle size:** Next.js 14 non-interactive build doesn't emit per-page kB. Code-inference estimate ±1KB gzipped (well under 20KB threshold). Verify post-merge with `next build --debug` or bundle analyzer.
+2. **SSR loading verification:** confirmed via build pass that `HomepageMiniMapSkeleton` SSRs cleanly. Inline export pulled Leaflet into SSR; separate file fixes it.
+3. **useHomePage duplicate `/producers` fetch:** acknowledged out-of-scope; was an accepted trade-off in MEH-538. Now that map is above-the-fold, the duplicate fetch is harder to justify — separate perf ticket.
+4. **Mobile QA cannot run in sandbox** (MEH-360). Vercel preview link will be posted; Smadar verifies section order + skeleton flash + no CLS jank + tile-preconnect in DOM (4 MANUAL_TESTING cases).
+
+**Out of scope (will NOT touch):**
+- `useHomePage.js` duplicate `/producers` fetch — separate optimization ticket
+- `/map` route — unchanged
+- HomepageMiniMap internals (markers, tooltips, click-to-/map, category icons)
+- Hero image optimization
+- Lighthouse baseline capture (Smadar runs it locally)
+
+**Queued P3 follow-up (NOT bundled into MEH-604, file after merge):**
+- Update `.claude/central-components.json` paths for the i18n migration. Current JSON entries `frontend/app/page.js` and `frontend/app/layout.js` predate MEH-366 (`[locale]` segment move). Every future session hits the same "literal vs spirit" path-ambiguity question. Cheap config update.
+
+**Next:** push branch, open draft PR with `Closes MEH-604`, post Vercel preview URL. Smadar runs Lighthouse before/after + 4 MANUAL_TESTING cases on mobile. Merge after green.
+
+---
+
+## 2026-05-16 — MEH-599: Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms (PR #685 MERGED)
+
+**Branch:** `feature/meh-599-fix-terms-lock` off `staging@d8200525` (post-PR #684 merge).
+
+**Risk tier:** LOW (copy + section deletion + section renumber, no schema, no auth, no central components).
+
+**Closes:** MEH-599. **Sibling LOCK leaks E1-E6** (chat widget, backend chat FAQ, producer dashboard, HomeProductCard label, test) discovered in MEH-598 audit remain deferred to a future ticket (not in MEH-599 scope per its issue description).
+
+**What shipped (3 files, +13/-26 lines):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/app/[locale]/terms/page.js` | L4 meta desc swap (`יצרני אוכל בריא` → `בתי עסק שמייצרים אוכל בריא`); §1 body — drop `ויצרניות עצמאיות` clause; §2 body — drop em-dash `מהמטבח של השכן` carveout; §5 entire section deleted; §6-12 renumbered → §5-11 |
+| 2 | `frontend/app/[locale]/privacy/page.js` | L14 — `בתי עסק ליצרני אוכל בריא` → `בתי עסק שמייצרים אוכל בריא` (grammar-fix over literal mapping) |
+| 3 | `frontend/app/[locale]/layout.js` | L40 keywords[] — `יצרנים ישראלים` → `בעלי עסק ישראלים` |
+
+**4 Sapir-decisions (all A):**
+- Q1 — terms meta desc literal swap (`יצרני` → `בתי עסק`) would have produced ungrammatical construct state `בתי עסק אוכל בריא` → **A**: insert `שמייצרים` to preserve meaning + grammar.
+- Q2 — `יצרניות` (feminine plural) absent from mapping table. Literal extension `בעלות עסק` next to existing `בתי עסק` would be redundant → **A**: drop the `ויצרניות עצמאיות` clause entirely, keep `בתי עסק` only.
+- Q3 — §2 em-dash clause `— בית עסק מאומת או משתמשת פרטית בסקציית "מהמטבח של השכן" —` specifically named the carveout being removed → **A**: drop the clause entirely; obligation now applies uniformly to `כל מוכרת המופיעה בפלטפורמה`.
+- Q4 — privacy L14 had TWO categories (`בתי עסק` AND `יצרני אוכל בריא`); literal swap would have produced `בתי עסק לבתי עסק` → **A**: collapse to one category `בתי עסק שמייצרים אוכל בריא`.
+
+**Mapping applied (per MEH-599 spec):** `יצרן`→`בית עסק`, `יצרני`→`בתי עסק`, `יצרנית`→`בעלת עסק`, `יצרנים`→`בעלי עסק`. The feminine-plural `יצרניות` is **not** in the spec table — handled by Q2 deletion rather than unilaterally extending the mapping.
+
+**Verification (in-scope greps):**
+- `grep -rE "יצרנ" frontend/app/[locale]/terms/ frontend/app/[locale]/privacy/ frontend/app/[locale]/layout.js` → **0 hits** ✅
+- `grep "מהמטבח של השכן" frontend/app/[locale]/terms/ frontend/app/[locale]/privacy/` → **0 hits** ✅
+- Terms section numbering sequential **1→11** ✅
+- `npm run build` → **green** (93/93 pages, 12.0s, 0 errors) ✅
+- `pytest tests/test_api.py` — **deferred to CI** (sandbox blocks `pip install`; backend untouched, no risk)
+
+**Skeptic flags:**
+1. The `יצרנ*` regex doesn't catch standalone `יצרניות` if a future copy edit reintroduces it — only `יצרני`/`יצרנים`/`יצרן`/`יצרנית`/`יצרניות` are direct hits. Mitigation: post-launch i18n sweep ticket (out of scope here).
+2. Section renumbering changes `#home-kitchen` removal — any external link / inline anchor pointing to `terms#home-kitchen` will 404 in-page. Best-effort check: `grep -rn "terms#" frontend/ docs/` → expected 0; will verify pre-push.
+3. Mobile QA cannot run in sandbox (MEH-360 — `*.vercel.app` egress blocked); Vercel preview link will be posted for your manual check. Per Rule 23 + Rule 9, will NOT auto-merge UI change.
+
+**Out of scope (forward tickets):**
+- E1-E6 deferred LOCK leaks from MEH-598 audit — separate future ticket
+- `messages/he.json` `neighbor_kitchen` / `heading` — already removed in PR #684
+- `יצרנ*` hits in `group-buys/page.js`, `register/page.js`, `admin/settings/page.js`, `FridayDeliveryStrip.jsx` — i18n sweep ticket, not MEH-599 scope
+
+**Next:** push branch, open draft PR with `Closes MEH-599`, post Vercel preview URL for mobile QA. Await your `merge` after QA.
+
+---
+
+## 2026-05-16 — End of day status
+
+**5 issues closed today (4 PRs merged):**
+- MEH-605 + MEH-606 + MEH-609 (PR #682 — discovery copy bundle: CTA / categories / HIW step 3)
+- MEH-608 (PR #683 — `/register/producer` Step 2 subhead drift fix)
+- MEH-598 (PR #684 — `/neighbor` LOCK hide + homepage kitchen section removal)
+
+**Filed today:**
+- **MEH-616** — Reconcile ESLint pre-commit hook with MEH-443 warnings-as-feedback policy (P3 Medium); follow-up from the `--no-verify` bypass on MEH-608. See "Post-launch tech debt" + the dedicated dated section below.
+- **MEH-599 scope expanded** with E1-E6 from the `/neighbor` LOCK discovery during PR #684 — chat widget Q&A (E1+E2), HomeProductCard label (E3), producer dashboard subsection (E4), backend chat router FAQ (E5 — most critical LOCK leak), HomeProductCard test (E6). All LOCK-bound, deferred from MEH-598 to keep its scope tight. (Note: previously referenced as "MEH-NEW-2" in PR #684's body; the real issue is MEH-599.)
+
+**Brand Hub v1.1 live in Drive (16 May 2026):**
+- [`02-מדריך-מותג.md` v1.1](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) — added §8 audience-targeting rule (no partial category lists) + §9 CTA example
+- [`07-language-rules-anti-patterns.md` v1.1](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view) — added "מגזין internal only" rule + "partial category list" rule
+- Both rules mirrored into `docs/DESIGN.md` "כללי מיקרו-קופי" section in the bookkeeping commit for PR #682.
+
+**Adversarial reviews caught (pre-PR + during-PR):**
+- "מגדלת" exclusion bug in MEH-605/609 menu options — would have excluded ~75% of producer base (bakeries/dairies/wineries/chocolatiers) from the launch CTA. Caught in planning chat before any commit.
+- "מגזין" Tell-vs-Show drift — visitors don't share the brand thesis; magazine-tier voice must be surfaced through *what* copy says, not by labeling. Codified into Brand Hub v1.1 + DESIGN.md.
+- 6 LOCK leak surfaces beyond `/neighbor` route (E1-E6) — caught during PR #684 Phase 0 grep sweep; deferred to MEH-599 to preserve PR #684's scope discipline.
+
+**Three deferred items rolling into next session:**
+- **MEH-599 (LOCK leaks E1-E6)** — backlog'd description scope expanded today; UX decisions needed for E4 (producer dashboard subsection) and E5 (backend chat router FAQ — 5 hits, the most critical LOCK leak).
+- **pytest for PR #684** — deferred to CI; not run locally (sandbox blocks `pip install`). Backend untouched in PR #684, risk zero, but worth confirming green on CI dashboard.
+- **Mobile QA for PR #684** — closed this turn (Smadar verified on Vercel preview at 375px before authorizing merge: `/neighbor` redirect, BottomNav 3-item flag at grid-cols-4, homepage section flow without kitchen).
+
+**Next session priorities (in order):**
+- **MEH-599** — `/terms` LOCK violations + meta + E1-E6 surfaces (description scope-expanded today; Urgent)
+- **MEH-604** — Mini-map above-the-fold + performance plan (last remaining synthesis launch-blocker)
+- **MEH-607** — Stats counter copy reframe + skeleton (P2 fast-follow; Linear status `Backlog` confirmed today)
+
+**Open tech debt (post-launch):**
+- `RegisterProducerPageBody` refactor (`frontend/app/[locale]/register/producer/page.js` — 548L function, complexity 35, 25 ESLint warnings)
+- **MEH-616** — ESLint pre-commit hook policy reconciliation (P3 Medium)
+
+---
+
+## 2026-05-16 — MEH-598: Hide /neighbor pre-launch (brand LOCK) (PR #684 MERGED)
+
+**Branch:** `feature/meh-598-hide-neighbor-prelaunch` off `staging` (originally branched from `0f19a08` post-PR #681; merged in `3cb6503` mid-work to absorb PR #682 launch-blocker bundle per Rule 25).
+
+**Risk tier:** LOW (copy + nav removal + redirect — no schema, no auth, no central components).
+
+**Closes:** MEH-598. Sibling LOCK work continues in MEH-599 (E1-E6 scope expansion deferred there — see PR description).
+
+**What shipped (9 files):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/components/Header.jsx` | Removed `/neighbor` nav entry (line 132) |
+| 2 | `frontend/components/Footer.jsx` | Removed `/neighbor` nav entry (line 62) |
+| 3 | `frontend/components/BottomNav.jsx` | Removed `/neighbor` tab + unused `CookingPot` import |
+| 4 | `frontend/app/[locale]/neighbor/page.js` | Replaced 23L (LOCK-violating metadata + `<NeighborClient>` render) with 7L `redirect("/")` server component + MEH-598 sentinel anchor |
+| 5 | `frontend/messages/he.json` | Removed `nav.neighbor`, `nav.footer.neighbor_kitchen`, and entire `home.kitchen.*` namespace (heading + see_more) |
+| 6 | `frontend/messages/en.json` | Same removals (parallel English keys) |
+| 7 | `frontend/app/[locale]/page.js` | Removed `HomeKitchenPreview` import + the `<HomeKitchenPreview .../>` render at line 178 (atomic) |
+| 8 | `docs/MANUAL_TESTING.md` | Added MEH-598 section (8 test cases — nav absence + redirect + DOM grep + console clean) |
+| 9 | `docs/HANDOFF.md` | This entry + CHANGELOG entry |
+
+**Preserved per spec (dead code revival via MEH-543 trigger):**
+- `frontend/app/[locale]/neighbor/NeighborClient.jsx` — full file untouched (the LOCK-violating UI inside is intentional preservation)
+- `frontend/app/[locale]/home/HomeStaticBlocks.jsx:141-167` — `HomeKitchenPreview` function definition untouched (no longer imported anywhere, becomes auto-dead but preserved)
+- All backend `HomeProduct` schema + services + routers preserved
+- The 2 code-internal `/neighbor` comments at `Header.jsx:28 + 139` preserved (algorithm docs, not user-facing — per Smadar's "comments document internals, allowed" rule)
+
+**Scope expansion to MEH-599 (deferred LOCK leaks E1-E6):**
+During Phase 0 grep sweep, 6 additional LOCK leak surfaces discovered beyond `/neighbor` route. Each needs UX decisions, not mechanical edits — too wide for MEH-598. Deferred to **MEH-599** (description updated + audit comment added):
+- **E1+E2** — `frontend/components/ChatWidget.jsx:47, 75` (chat Q&A about "מהמטבח של השכן")
+- **E3** — `frontend/components/HomeProductCard.jsx:55` (rendered label — note: becomes auto-dead after MEH-598 if no other live consumer)
+- **E4** — `frontend/app/[locale]/producer/dashboard/page.js:498` (producer dashboard subsection)
+- **E5** — `backend/app/routers/chat.py:97, 106, 107, 112, 114` (5 hits — AI chat FAQ data; **most critical LOCK leak**)
+- **E6** — `frontend/__tests__/HomeProductCard.test.jsx:95-96` (follows E3)
+
+**3 Sapir-decisions for this PR:**
+- Q1 — Header.jsx comments at lines 28+139: **A (leave them)** — LOCK applies to marketing surface, not code internals
+- Q2 — i18n keys: **REMOVE** both `nav.*` keys + the `home.kitchen.*` namespace from he.json + en.json (LOCK-bound user-facing content even if not currently rendered)
+- Q3 — Scope expansion at the kitchen discovery: **δ (defer E1-E6 to MEH-599)** — keep MEH-598 as "hide /neighbor route + nav" logical unit; ship 9 files now; MEH-599 + future tickets handle the rest
+
+**Final LOCK sweep verification:**
+- `grep "/neighbor" frontend/components/ frontend/app/`: 3 hits — all expected (redirect string + 2 Header comments) ✅
+- `grep "neighbor" frontend/messages/`: 0 hits ✅
+- `grep "מהמטבח של השכן" frontend/messages/`: 0 hits ✅
+- `grep "HomeKitchenPreview" frontend/`: 1 hit (the preserved dead function definition) ✅
+- Full `grep "מהמטבח של השכן" frontend/ backend/`: 23 hits remaining, all in Categories B (preserved dead code in `NeighborClient.jsx`) / C (code-internal comments) / D (deferred to MEH-599) — no remaining leak in nav, public-facing JSX, or i18n keys
+
+**Skeptic flags:**
+- (1) i18n locale redirect — `redirect("/")` from a `[locale]` server component should re-locale via next-intl middleware. **Cannot verify in sandbox** (MEH-360 — sandbox can't reach `*.vercel.app`). Mobile QA on Vercel preview will verify `/neighbor` → `/he` behavior.
+- (2) `HomeKitchenPreview` function definition is now dead code on disk (no live consumer). Preserved per spec for MEH-543 revival. ESLint may surface a warning; if so, treat as feedback (per MEH-443 — warn mode, not error).
+- (3) Build + pytest environment — fresh-clone container needed `npm install` before build could run. `pip install` blocked by harness; pytest cannot run in this sandbox. **Verification deferred to CI / your local machine.**
+
+**Next:** Vercel preview URL on mobile + grep DOM for `/neighbor` link absence. Merge to staging after mobile QA.
+
+**Mid-work sync (Rule 25):** Branched off `0f19a08` (post-PR #681). PR #682 (MEH-605/606/609 copy bundle) merged into staging at `3cb6503` while this work was in flight. Resolved via `git merge origin/staging` — clean auto-merge on all i18n + docs (PR #682 only touched `home.cta.body` / `home.categories.subheading` / `home.how_it_works.step03_text` — orthogonal to this PR's removed keys `nav.neighbor` + `nav.footer.neighbor_kitchen` + `home.kitchen.*`). Append-only conflict on `HANDOFF.md` resolved per resolve-conflicts skill (Accept-Both).
 ---
 
 ## 🎯 Next sprint (recommended)
 
-The discovery-layer redesign epic (MEH-592) is closed. The next implementation work is the **3 launch-blockers** from Sub 3 synthesis:
+The discovery-layer redesign epic (MEH-592) is closed. **Launch-blocker progress: 2 of 3 shipped** (MEH-605 + MEH-606 + MEH-609 via PR #682 on 2026-05-16). **Fast-follow progress: 1 shipped** (MEH-608 via PR #683 on 2026-05-16). Remaining work in priority order:
 
-- **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan
-- **MEH-605** — Final CTA copy reframe (off "דירקטורי" — 3 Hebrew options A/B/C waiting for Sapir's pick)
-- **MEH-606** — Categories subhead reframe (off "מהחקלאי" saturation — 3 Hebrew options A/B/C waiting for Sapir's pick)
+- **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan (last launch-blocker)
+- **MEH-607** — Counter + skeleton bundle (fast-follow, week 1-2) — Linear says `Backlog`; confirm status before starting (Sapir may have done it in a parallel session)
+- **MEH-616** — Reconcile ESLint pre-commit hook with MEH-443 warnings-as-feedback policy (P3 Medium, opened as a follow-up from MEH-608 — see "Post-launch tech debt" below)
 
-**Recommended next session: MEH-605 + MEH-606 bundle** — both are i18n string changes in `frontend/messages/he.json`, can ship as a single copy-only PR, fastest path to land 2 of 3 launch-blockers. Sapir picks options A/B/C in chat → Claude implements + opens single PR.
+**Recommended next session: MEH-604** — closes the launch-blocker batch. See synthesis Section 5.1 for the performance plan (skeleton + 200ms post-FCP defer via `requestIdleCallback` + tile-server preconnect).
 
 **Synthesis pointer:** [`docs/synthesis/2026-05-discovery-redesign-synthesis.md`](docs/synthesis/2026-05-discovery-redesign-synthesis.md) (14 findings, priority matrix, Hebrew copy options).
 
-**Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F2-cta-reframe.txt and F3-categories-subhead.txt contain the ASCII layouts + all 3 Hebrew options each.
+**Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F1-map-above-fold.txt for the MEH-604 layout.
+
+**Brand Hub v1.1 (16 May 2026)** — new copy rules now reflected in `docs/DESIGN.md`. Source of truth: [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) sections 8-9, [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+
+---
+
+## 🛠️ Post-launch tech debt (informal)
+
+Items observed during normal session work that aren't worth a Linear ticket yet — promote to Linear if they keep biting. Stage-6 cleanup candidates.
+
+- **`RegisterProducerPageBody` refactor** — `frontend/app/[locale]/register/producer/page.js` carries a 548-line function with complexity 35, 25 ESLint warnings (function length, magic numbers, nested ternaries). Pre-existing floor; not in the launch-blocker path. Surfaced 2026-05-16 by MEH-608 via the pre-commit hook (see MEH-616). Refactor smells like a chunked plan, not a single PR — bundle with other registration/onboarding cleanups when promoted.
+
+---
+
+## 2026-05-16 — MEH-608: /register/producer Step 2 subhead — drift fix (PR #683 MERGED)
+
+**Branch:** `feature/meh-608-register-step2-subhead` off `staging` (deleted post-merge).
+
+**Risk tier:** LOW (copy-only — 1 inline JSX string at `frontend/app/[locale]/register/producer/page.js:393`; no logic, no design, no schema, no central components).
+
+**Closes:** MEH-608 — auto-closed in Linear via the `Closes` annotation on PR #683. **MEH-592 epic fast-follow batch:** 1 shipped (MEH-607 counter/skeleton remains; verify status — see "Next sprint" note above).
+
+**What shipped (1 file, 1 line):**
+- `RegisterProducerPageBody` Step 2 subhead — drops literal "3 שדות בלבד"; replaces with count-free "כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור." Step 2 actually renders 6 fields (producer_name, description per MEH-532, phone, categories, license per MEH-530, legal-consent), not 3. Drift fix per synthesis Finding F11.
+
+**Hook bypass disclosed:** Pre-commit ESLint blocked on 25 pre-existing warnings in `RegisterProducerPageBody` — none introduced by this 1-line edit. Committed with `--no-verify` per Sapir's authorization in chat. Documented in commit `f3eb7cd` message + PR #683 description for auditability. CI lint job for the same file PASSED (uses different config). Filed **MEH-616** (P3 Medium) for hook config / MEH-443 policy reconciliation.
+
+**Verification:** `grep "3 שדות בלבד" frontend/` → 0 hits; `npm run build` green pre-merge (93/93 pages, 18.5s); CI green across build / lint / E2E / API contract / mypy / Knip / tsc / paths-filter / Vercel deployment. Vercel preview QA skipped per Sapir — copy edit on a multi-step form's Step 2 subhead, no runtime risk; mobile QA reduced to a 30-second post-merge check.
+
+**Next:** **MEH-604** is the last remaining launch-blocker. MEH-607 fast-follow status to verify before pickup.
+
+---
+
+## 2026-05-16 — MEH-605 / MEH-606 / MEH-609: Discovery copy bundle (PR #682 MERGED)
+
+**Branch:** `feature/meh-605-606-609-copy-bundle` off `staging` (deleted post-merge).
+
+**Risk tier:** LOW (copy-only — 3 i18n strings in `frontend/messages/he.json`; no JSX, no schema, no central components, no auth, no migrations).
+
+**Closes:** MEH-605 + MEH-606 + MEH-609 — all auto-closed in Linear via the `Closes` annotation on PR #682. **MEH-592 epic launch-blockers: 2 of 3 shipped** — only MEH-604 (above-fold map) remains.
+
+**What shipped (1 file changed, 3 strings updated):**
+- `home.cta.body` (MEH-605, Finding F2) — drops "דירקטורי" marketplace word; replaced with magazine-tier framing naming mehamakor as the home of small businesses + surfacing curation (LOCK #1) + producer-page format
+- `home.categories.subheading` (MEH-606, Finding F3, Option A) — drops saturated "ישר מבית העסק — בלי מתווכים" formula (5/7 Israeli competitors per Anti-pattern 1); replaced with "כל קטגוריה — בית עסק אחר, סיפור אחר."
+- `home.how_it_works.step03_text` (MEH-609, Finding F6) — drops double-negative "בלי מתווכים, בלי הנחות על האיכות"; replaced with positive outcome + founder-accountability framing
+
+**Override rationale (MEH-605 + MEH-609 deviated from A/B/C menus in their Linear issues):** All menu options contained partial category listings ("חקלאית או מגדלת" / "מה שהיא מגדלת") that exclude bakeries, dairies, wineries, chocolatiers — together ~75% of base. New brand rule (Brand Hub v1.1, sections 8-9): partial category lists in audience targeting are prohibited. New copy follows "show, don't tell" — implicit inclusion + curation signal + product-format reference, without the word "מגזין" in any UI string.
+
+**Brand Hub update — v1.1 (16 May 2026):** The override rationale is now codified in the brand hub and mirrored into `docs/DESIGN.md` (new "כללי מיקרו-קופי" section, two rules: audience targeting no partial category lists; "מגזין" internal use only). Brand hub source of truth: [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) sections 8-9, [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+
+**Verification:** all 6 pre-merge greps returned 0 hits (`דירקטורי`, `בלי מתווכים`, `בלי הנחות על האיכות`, `חקלאית או מגדלת`, `מגדלת או חקלאית` reverse-order, `מגזין` show-don't-tell sanity); `npm run build` green (93/93 pages, 22.2s compile); CI green across build / lint / E2E / API contract / mypy / Knip / tsc / paths-filter / Vercel deployment; **Vercel preview QA at 375px approved by Smadar pre-merge** — CTA card body wraps cleanly with the new 3-sentence copy, CTA button stays above the fold (follow-up ticket only if it drops below in production). `/adversarial-review` skipped per Sapir's explicit call — pre-PR adversarial caught the "מגדלת" exclusion bug during planning chat (counts per workflow rule 5a).
+
+**Next:** **MEH-604** is the last remaining launch-blocker. After that, the fast-follow batch (MEH-607 counter/skeleton bundle, MEH-608 step 2 fix) is on deck.
 
 ---
 
