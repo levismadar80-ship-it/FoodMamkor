@@ -4,6 +4,44 @@
 
 ## Unreleased
 
+### 2026-05-16 — MEH-354: `/retro` slash command — end-of-session behavior retro (PR pending)
+
+`docs(MEH-354)`: new custom command `/retro` that closes the
+end-of-session loop after Rule 13's HANDOFF.md update. **NOT a free-form
+journal** — the command encodes a 5-step protocol that binds every
+finding to a source-of-truth file: STEP 1 EXTRACT (three buckets:
+**Corrections** / **Preferences** / **Self-critique**), STEP 2 CLASSIFY
+(route to exactly one of `CLAUDE.md`, `.claude/rules/workflow.md`,
+`.claude/rules/rtl.md`, `templates/01-07`, or `DROP`), STEP 3 OUTPUT
+(each finding emitted as a numbered `str_replace` block —
+`old_str`/`new_str`/`Rationale`, directly applicable by the `Edit`
+tool, no free-form prose), STEP 4 WAIT (print
+*"Retro extracted N findings… Waiting for `go <N>` / `skip <N>` /
+`edit <N>`"* and stop — proposes per finding, never applies edits
+autonomously), STEP 5 EMPTY CASE (no findings → print
+*"No retro findings — clean session."* and exit, no placeholders).
+**4 files (+~80 / -3 lines):** (1) NEW `.claude/commands/retro.md` —
+YAML frontmatter + the 5-step protocol; mirrors `session-save.md`
+style. (2) `.claude/rules/workflow.md` — Rule 13 gets a 6-line
+append pointing to `/retro` as the closing step after HANDOFF.md
+update; Custom commands list gets a `/retro` bullet between
+`/session-resume` and `/adversarial-review` (alphabetical-by-lifecycle
+order: start → save → resume → retro → adversarial). (3) `docs/CHANGELOG.md`
+— this entry. (4) `HANDOFF.md` — top pointer + new dated section.
+**Risk tier:** **LOW per MEH-450** — docs/config only, no logic, no
+schema, no UI, no central component. **DoD exception:** mobile QA N/A
+(docs-only). **Verification:** `ls .claude/commands/retro.md` → 1 hit;
+`grep -c "^## STEP" .claude/commands/retro.md` → 5 (one heading per
+step); `grep "/retro" .claude/rules/workflow.md` → 3 hits (Rule 13
+append + Custom commands bullet + `str_replace` reference);
+`grep -n "EXTRACT\|CLASSIFY\|OUTPUT" .claude/commands/retro.md` → ≥6
+hits across protocol steps. **Out of scope:** wiring `/retro` into a
+hook (it stays a manual slash invocation); auto-applying findings
+(Smadar approves per `N`); persisting retro output to a file
+(retro lives in chat only).
+
+Closes MEH-354.
+
 ### 2026-05-16 — MEH-501: ADR-008 defer AutoDream activation (PR pending)
 
 `docs`: ADR-008 — defer AutoDream activation (MEH-501). New ADR at `docs/decisions/ADR-008-autodream-defer.md` records the Defer decision for the community-described, unannounced Claude Code `AutoDream` feature flag. Risk: aggressive pruning of `CLAUDE.md` / `HANDOFF.md` would erode the source-of-truth principle anchored in MEH-267 (root cause of the MEH-265 production-login incident). 5 cumulative revisit conditions: (1) official announcement on `docs.claude.com`, (2) stable window after MEH-456 and before launch, (3) full `~/.claude/` + `CLAUDE.md` + `HANDOFF.md` backup, (4) manual trigger only (`/dream`), (5) diff review of every memory change. Anti-pattern explicitly rejected: enabling `Auto-dream: on` in `/memory`. **3 doc surfaces touched (+ this CHANGELOG):** ADR-008 (new), `CLAUDE.md` line 48 (one-clause inline append to the existing "AI fail-open / locked decisions" bullet — 0 net new lines, preserves 80-line cap pressure), `HANDOFF.md` (top pointer + new dated section). **Soft scope override (Smadar-approved):** MEH-501 spec asked for the CLAUDE.md rule under a section called "טעויות שאסור לחזור עליהן" that no longer exists (post-≤80-line refactor). Equivalent placement under `## Key locked decisions` approved before edit — same idiom as the existing `No claude/* branches.` and `Schema via Alembic only` inline rules. **ADR-007 status note:** `docs/decisions/ADR-007*.md` does not exist on staging tip (`dee98a4`); MEH-486 branch is upstream-only. ADR-008 derived from `_TEMPLATE.md` skeleton directly (functionally equivalent — ADR-007 would itself have been generated from the same template). MEH-501 → MEH-486 dependency decoupled. **Risk tier:** LOW per MEH-450 — docs-only, no logic, no schema, no UI. **DoD exception:** mobile QA N/A.
