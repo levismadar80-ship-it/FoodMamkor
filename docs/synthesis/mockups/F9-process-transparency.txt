@@ -1,0 +1,92 @@
+F9 — Trust ladder / process page (post-launch, Q3 2026 — MEH-534 exists)
+===========================================================================
+
+LOCATION: NEW page at /about/process — OR — new section in /about
+COMPONENT: New, or extension of <AboutClient />
+
+RATIONALE: The "✅ מאומת" verified badge is a claim. The criteria
+behind it are evidence. Sub 2 §4.8 #3 found no Israeli competitor
+publishes entry criteria. Open lane for mehamakor — and the
+magazine thesis says transparency, not opacity.
+
+PROPOSED (as new section on /about):
+
++----------------------------------------------------+
+|     איך בית עסק מתקבל למהמקור?                       |
+|     ----------------------------                    |
+|                                                    |
+|     הסיפור מאחורי "✅ מאומת"                          |
+|                                                    |
+|     +---+ 1. בעלת העסק יוצרת קשר                    |
+|     | 1 |    שולחת תמונות, מספרת על העסק,            |
+|     +---+    מסבירה מאיפה היא מגדלת.                |
+|                                                    |
+|     +---+ 2. אנחנו בודקות                          |
+|     | 2 |    - מי בעלת העסק (תעודת זהות, רישיון)     |
+|     +---+    - מאיפה הוא מגיע (כתובת אמיתית, מפה)     |
+|              - מה הוא מציע (לפחות 3 קטגוריות,        |
+|                תיאור של 100+ מילים)                  |
+|              - איך הוא נשמע (טלפון אמיתי, WhatsApp   |
+|                שעובד, פניות נענות תוך 48 שעות)        |
+|                                                    |
+|     +---+ 3. בית העסק נכנס למהמקור                  |
+|     | 3 |    מקבלת badge "✅ מאומת" וכניסה לדירקטורי   |
+|     +---+    + תמיכה ראשונית של 2 שבועות.            |
+|                                                    |
+|     +---+ 4. אם משהו לא בסדר —                      |
+|     | 4 |    יש כפתור "דווחי על הבית עסק הזה"        |
+|     +---+    בכל עמוד. אנחנו עונות תוך 24 שעות.      |
+|                                                    |
+|                                                    |
+|     מה אנחנו לא בודקות:                              |
+|     - מחירים (זה ביניכן)                            |
+|     - איכות סוף-המוצר (ביקורות עושות את העבודה הזו)   |
+|     - זמינות מלאי (זה עניין של בית העסק)              |
+|                                                    |
+|     ---                                            |
+|     לכל שאלה: hi@mehamakor.online                  |
++----------------------------------------------------+
+
+HEBREW COPY DIRECTIONS:
+- Heading uses question form ("איך?") — invites reading.
+- "מה אנחנו לא בודקות" is as important as "מה כן" —
+  the "won't do" framing is honest and Sapir-voice.
+- All verbs feminine plural ("בודקות", "עונות") per
+  CLAUDE.md rule.
+- No marketing words ("הראשונים", "המובילים").
+- "תמיכה ראשונית של 2 שבועות" is honest — it's actually
+  what mehamakor does (per producer onboarding flow).
+
+EVIDENCE:
+- Sub 1 §3.1 H3: trust-ladder-with-named-criteria
+  hypothesis.
+- Sub 2 §4.8 #3: no Israeli competitor publishes
+  criteria. OFN's "see how producer was paid" is
+  the gold standard for the values family.
+- CrowdFarming's manifesto + "80% to farmer" claim is
+  the international benchmark for transparency
+  framing — note Sub 2 Pattern 4 (anti-middleman).
+- MEH-534 already in backlog with this proposal —
+  update with Sub 2 citations per Sub 3 Linear action.
+
+WHY POST-LAUNCH (Q3 2026):
+- Impact 4 / Effort 5 — content-heavy.
+- Pre-launch: the "✅ מאומת" badge does enough work
+  on its own (12 producers, all hand-vetted by Sapir).
+- Post-launch: as the directory grows + producer
+  applications scale, the published criteria become
+  the safeguard against trust dilution.
+
+RTL NOTES:
+- Numbered list with logical properties (ms-/me-),
+  not physical ml-/mr-.
+- The "1, 2, 3, 4" numbers can use Hebrew or Latin
+  digits — both work; pick consistency with the rest
+  of /about (currently Latin digits per Sub 1 §1.6).
+
+WHAT THIS IS NOT:
+- Not a redesign of /about.
+- Not a Terms of Service replacement (legal docs stay
+  separate).
+- Not a producer-facing page (this is for visitors
+  deciding whether to trust the directory).

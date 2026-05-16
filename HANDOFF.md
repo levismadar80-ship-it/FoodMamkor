@@ -1,7 +1,47 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-595 — competitive discovery research, 16+ sites; docs-only deliverable for Sub 2/4 of MEH-592 discovery-layer epic; PR pending)
+> Last updated: 2026-05-15 (MEH-596 — discovery redesign synthesis; Sub 3/4 of MEH-592 epic; PR pending)
+
+---
+
+## 2026-05-15 — MEH-596: Discovery redesign synthesis + priority matrix (PR PENDING)
+
+**Branch:** `feature/meh-596-discovery-synthesis` off `staging`.
+
+**Risk tier:** LOW (docs-only — no code touched, no schema, no auth, no central components).
+
+**Closes:** MEH-596. Sub 4 (Linear cleanup) is now unblocked.
+
+**What shipped (9 files, ~30KB):**
+- `docs/synthesis/2026-05-discovery-redesign-synthesis.md` — main deliverable, 5 sections per spec
+- `docs/synthesis/mockups/F1-map-above-fold.txt` — ASCII layout for above-fold map
+- `docs/synthesis/mockups/F2-cta-reframe.txt` — 3 Hebrew CTA copy options
+- `docs/synthesis/mockups/F3-categories-subhead.txt` — 3 Hebrew categories subhead options
+- `docs/synthesis/mockups/F4-counter-reframe.txt` — 3 Hebrew counter copy options + skeleton mockup
+- `docs/synthesis/mockups/F7-founder-strip.txt` — post-launch homepage founder amplification
+- `docs/synthesis/mockups/F8-producer-stories-carousel.txt` — post-launch editorial carousel
+- `docs/synthesis/mockups/F9-process-transparency.txt` — post-launch /about/process page
+- `HANDOFF.md` — this entry
+
+**Synthesis at a glance:** 14 findings total → 4 🔴 Critical → **3 launch-blockers (F1 map above the fold, F2 CTA "דירקטורי" reframe, F3 categories subhead reframe)**. The single most important finding is that no Israeli farm-to-table competitor in Sub 2's study has a producer map AND uses feminine voice AND has a magazine layer — the combination is empirically distinct stake-out ground, so the synthesis recommends leaning hard into it pre-launch via the 3 launch-blockers and deferring the 11 remaining items to fast-follow / post-launch.
+
+**3 Sapir-decisions locked in Phase 0 (recorded in synthesis Section 5.5):**
+- Q1 — Stats counter: HYBRID (keep counter from MEH-521, reframe copy to magazine voice — "גליון מאי — 12 בתי עסק"). Purist removal rejected.
+- Q2 — Map positioning: HYBRID (keep mini-map MEH-538, fix positioning to above-the-fold). Purist full-map replacement rejected.
+- Q3 — Issue/Volume eyebrow (Sub 1 H1): deferred — Sub 4 opens NEW MEH for magazine peer research (Kinfolk/Cereal/Apartamento) to validate before implementation.
+
+**13 Linear actions for Sub 4 to execute** (synthesis Section 4 + Section 3 priority matrix):
+- 3 NEW MEH (launch-blocker): F1, F2, F3 (F2+F3 can bundle)
+- 3 NEW MEH (fast-follow week 1-2): F4+F10 bundle, F11, F6
+- 1 NEW MEH (post-launch Q3 2026): F7 founder strip
+- 2 UPDATE existing: MEH-542 (F8 carousel — priority bump + Sub 2 citations), MEH-534 (F9 process page — priority bump + Sub 2 citations)
+- 3 NEW MEH (post-launch Q4 2026): F12 filter persistence, F13 MiniMap rename, F14 pagination consolidation
+- 1 NEW MEH (deferred): magazine peer research per Q3 decision
+
+**Confidence:** medium-high. Strong on Israeli-specific findings (Sub 2 had 7-site direct evidence + 5 manual screenshots). Weaker on exact map-placement specifics on global peers (Sub 2 tagged many `[unverified-from-snippets]`).
+
+**No CI gate** (docs-only DoD exception per the spec). No preview URL needed. No mobile QA.
 
 ---
 
