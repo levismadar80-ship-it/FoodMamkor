@@ -4,6 +4,7 @@ React's output encoding is the primary XSS defense; this strips HTML
 tags at the input layer so stored content stays safe even if a future
 component renders it via dangerouslySetInnerHTML.
 """
+
 import bleach
 
 

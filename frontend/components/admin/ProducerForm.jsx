@@ -5,8 +5,78 @@ import { useRouter } from "next/navigation";
 import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import InfoTooltip from "@/components/InfoTooltip";
+import {
+  hasLicenseFormatWarning,
+  requiresProducerLicense,
+} from "@/lib/license-required-categories";
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
+
+/**
+ * MEH-530: license-number input with the same required/optional branching
+ * the public register form uses. Defined at module scope (rather than
+ * inside ProducerForm) so it doesn't get recreated on every render.
+ *
+ * Required path → renders directly with "(חובה)" suffix.
+ * Optional path → collapsed behind a "יש לי רישיון יצרן ↓" toggle.
+ *
+ * Format check is inline + non-blocking — backend deliberately doesn't
+ * enforce the regex (manual-approval flow per MEH-530 spec).
+ */
+function ProducerLicenseField({ form, categories, update, inputClass }) {
+  const [optionalExpanded, setOptionalExpanded] = useState(false);
+  const required = requiresProducerLicense(categories, form.category_ids);
+  const warning = hasLicenseFormatWarning(form.producer_license_number);
+
+  // Auto-expand the optional path if a value is already present (edit flow)
+  // so the admin sees what's persisted rather than a blank toggle.
+  const showField = required || optionalExpanded || !!form.producer_license_number;
+
+  if (!showField) {
+    return (
+      <div className="pt-4 border-t border-border mt-4">
+        <button
+          type="button"
+          onClick={() => setOptionalExpanded(true)}
+          className="text-xs text-primary underline hover:text-primary-light"
+        >
+          יש לי רישיון יצרן ↓
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-4 border-t border-border mt-4">
+      <label
+        htmlFor="admin-producer-license"
+        className="block text-sm text-text-secondary mb-1"
+      >
+        מספר רישיון יצרן{required ? " (חובה)" : ""}
+      </label>
+      {required && (
+        <p className="text-xs text-site-muted mb-2">
+          ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות
+        </p>
+      )}
+      <input
+        id="admin-producer-license"
+        value={form.producer_license_number}
+        onChange={(e) => update("producer_license_number", e.target.value)}
+        maxLength={20}
+        inputMode="numeric"
+        className={inputClass}
+        dir="ltr"
+      />
+      {warning && (
+        <p className="text-xs text-amber-600 mt-1">
+          מספר רישיון יצרן הוא 7-10 ספרות
+        </p>
+      )}
+    </div>
+  );
+}
 
 const EMPTY = {
   name: "",
@@ -34,12 +104,13 @@ const EMPTY = {
   kosher: "",
   grass_fed: false,
   organic_certified: false,
-  gluten_free: false,
-  vegan: false,
-  lactose_free: false,
+  // MEH-293: dietary flags (gluten_free / vegan / lactose_free) moved to per-product.
   is_verified: true,
   // MEH-18
   is_recommended: false,
+  // MEH-530: admin form persists raw value; backend enforces conditional-
+  // required guard on category-license pairing.
+  producer_license_number: "",
   admin_notes: "",
   images: [],
   // MEH-213 — location mode
@@ -78,6 +149,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           initial.delivery_areas?.map((d) => d.city).join(", ") ?? "",
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
+        // MEH-530: admin GET /admin/producers/{id} returns ProducerAdminOut
+        // which exposes the raw producer_license_number; null becomes "".
+        producer_license_number: initial.producer_license_number ?? "",
         contact_name: initial.contact_name ?? "",
         whatsapp_group: initial.whatsapp_group ?? "",
         // MEH-17
@@ -352,33 +426,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             <Cow size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> גראס פד
           </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.gluten_free}
-              onChange={(e) => update("gluten_free", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            🌾 ללא גלוטן
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.vegan}
-              onChange={(e) => update("vegan", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            🥦 טבעוני
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.lactose_free}
-              onChange={(e) => update("lactose_free", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            🥛 ללא לקטוז
-          </label>
+          {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -411,6 +459,16 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             </select>
           </Field>
         </div>
+
+        {/* MEH-530: producer-license field — required when any selected
+            category needs it, optional+collapsed otherwise. Format warning
+            is inline + non-blocking (manual-approval flow per spec). */}
+        <ProducerLicenseField
+          form={form}
+          categories={categories}
+          update={update}
+          inputClass={inputClass}
+        />
       </Section>
 
       {/* MEH-213 — location type */}
@@ -579,7 +637,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </Field>
       </Section>
 
-      <Section title="זמינות">
+      <Section title={<>זמינות <InfoTooltip content="סמני שבעל עסק בחופשה. מוצג badge 'בחופשה' בדף העסק, ולחצן WhatsApp מוסתר עד לתאריך החזרה." label="מידע על מצב חופשה" position="bottom" /></>}>
         <div className="flex flex-wrap gap-2 mb-3">
           {[
             { value: "accepting_orders", label: "פתוח להזמנות" },

@@ -5,6 +5,7 @@ import { CalendarBlank, House, Leaf, MagnifyingGlass, MapPin, Warning } from "@p
 import StarRating from "./StarRating";
 import WhatsAppButton from "./WhatsAppButton";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BRAND_NAME } from "@/lib/constants";
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -152,7 +153,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Directory-only disclaimer — required by Israeli consumer
             protection law on every home-listing card. */}
         <p className="mt-3 text-[11px] text-site-muted leading-snug border-t border-border pt-2">
-          <span className="font-semibold text-site-text">מהמקור</span> היא
+          <span className="font-semibold text-site-text">{BRAND_NAME}</span> היא
           פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר
           בלבד.
         </p>

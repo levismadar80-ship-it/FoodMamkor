@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
@@ -7,6 +8,15 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
+
+_LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
+
+
+def _min_letters_validator(value: str, min_count: int = 3) -> str:
+    stripped = value.strip()
+    if len(_LETTER_REGEX.sub("", stripped)) < min_count:
+        raise ValueError("שדה זה חייב להכיל לפחות 3 תווים")
+    return stripped
 
 
 # --- Auth ---
@@ -65,9 +75,13 @@ class ProducerRegister(BaseModel):
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
     category_ids: list[int] = []
-    gluten_free: bool = False
-    vegan: bool = False
-    lactose_free: bool = False
+    # MEH-530: optional at Pydantic level. Router calls
+    # ensure_license_for_categories which 422s if license is missing for
+    # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
+    # DB column — boundary defense only (no regex; format warning lives on
+    # the frontend per MEH-530 product decision).
+    producer_license_number: str | None = Field(default=None, max_length=20)
+    # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
 
@@ -246,11 +260,19 @@ class ProducerCreate(BaseModel):
     instagram: str | None = None
     website: str | None = None
     category_ids: list[int] = []
+    # MEH-530: see ProducerRegister for the validation rationale.
+    producer_license_number: str | None = Field(default=None, max_length=20)
     delivery_areas: list[DeliveryAreaCreate] = []
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
 
 
 class ProducerAdminCreate(BaseModel):
     """Used by admin form — pre-approved, supports all extended fields."""
+
     name: str
     contact_name: str | None = None
     description: str | None = None
@@ -270,12 +292,13 @@ class ProducerAdminCreate(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
-    gluten_free: bool = False
-    vegan: bool = False
-    lactose_free: bool = False
+    # MEH-293/MEH-479: dietary flags moved to products.is_X.
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
+    # MEH-530: admin form can persist the full license value verbatim
+    # (manual-approval flow), still bounded by the 20-char DB column.
+    producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
     is_verified: bool = True
     # MEH-18
@@ -331,10 +354,10 @@ class ProducerImportResult(BaseModel):
 # Tuple form is the runtime allowlist used by the field validator below and by
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
 AVAILABILITY_STATES = (
-    "accepting_orders",   # default — "פתוח להזמנות"
-    "available_today",    # superset — זמין + פתוח
-    "full_this_week",     # "עמוסה השבוע"
-    "on_vacation",        # "בהפסקה" (requires vacation_until)
+    "accepting_orders",  # default — "פתוח להזמנות"
+    "available_today",  # superset — זמין + פתוח
+    "full_this_week",  # "עמוסה השבוע"
+    "on_vacation",  # "בהפסקה" (requires vacation_until)
 )
 
 
@@ -359,12 +382,14 @@ class ProducerUpdate(BaseModel):
     price_range: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
-    gluten_free: bool | None = None
-    vegan: bool | None = None
-    lactose_free: bool | None = None
+    # MEH-293/MEH-479: dietary flags moved to products.is_X.
     has_delivery: bool | None = None
     pickup_points: bool | None = None
     kosher: str | None = None
+    # MEH-530: optional patch field. Router calls ensure_license_for_categories
+    # whenever category_ids OR producer_license_number is in the body — see
+    # routers/producer_me.py + routers/admin.py.
+    producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
     is_verified: bool | None = None
     # MEH-18
@@ -373,7 +398,9 @@ class ProducerUpdate(BaseModel):
     images: list[str] | None = None
     status: str | None = None
     category_ids: list[int] | None = None
-    delivery_area_cities: list[str] | None = None  # admin form: simple list of city names
+    delivery_area_cities: list[str] | None = (
+        None  # admin form: simple list of city names
+    )
     # MEH-213 — location mode
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
@@ -403,7 +430,9 @@ class ProducerUpdate(BaseModel):
     def _validate_availability_status(cls, v):
         allowed = {"available", "full", "vacation"}
         if v is not None and v not in allowed:
-            raise ValueError(f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+            raise ValueError(
+                f"availability_status חייב להיות אחד מ: {', '.join(sorted(allowed))}"
+            )
         return v
 
     @field_validator("availability_state")
@@ -450,8 +479,8 @@ class ProducerListOut(BaseModel):
     city: str | None = None
     lat: float | None = None
     lng: float | None = None
-    status: str
-    is_verified: bool
+    status: str = "pending"
+    is_verified: bool = False
     plan: str = "free"
     slug: str | None = None
     top_product_name: str | None = None
@@ -459,15 +488,12 @@ class ProducerListOut(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
-    gluten_free: bool = False
-    vegan: bool = False
-    lactose_free: bool = False
-    # MEH-293: aggregated from products.is_X — `True` when at least one
-    # product on this producer carries the dietary flag. Computed at
-    # serialization time by attach_badge_fields (no extra query —
-    # producer.products is already selectinload'ed by producer_listing).
-    # Legacy producer-level columns above are preserved during the 7-day
-    # overlap; frontend reads `has_X_products || X` for badge display.
+    # MEH-293/MEH-479: dietary flags live on products.is_X. The aggregated
+    # has_X_products fields below are computed at serialization time by
+    # attach_badge_fields — `True` when at least one product on this
+    # producer carries the dietary flag (no extra query — producer.products
+    # is already selectinload'ed by producer_listing). Frontend lib/badges.js
+    # reads these fields directly (no legacy fallback post MEH-479).
     has_gluten_free_products: bool = False
     has_vegan_products: bool = False
     has_lactose_free_products: bool = False
@@ -515,10 +541,15 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
+    # (`producer_queries.py`) from `producer.producer_license_number is not
+    # None and stripped`. The raw number is admin-only via ProducerAdminOut.
+    has_producer_license: bool = False
 
     @model_validator(mode="after")
     def _compute_trust_tier(self):
         from app.services.trust_tier import compute_trust_tier
+
         self.trust_tier = compute_trust_tier(self)
         # MEH-155: if vacation_until has passed, treat as available in the API response.
         # MEH-291: extend the same auto-clear to the new availability_state so
@@ -548,7 +579,7 @@ class ProducerDetailOut(ProducerListOut):
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
-    created_at: datetime
+    created_at: datetime | None = None
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
     # MEH-102: weekly opening hours. Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
@@ -557,6 +588,16 @@ class ProducerDetailOut(ProducerListOut):
     custom_questions: list[str] | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-530: admin-only response shape. Extends ProducerDetailOut with the
+# raw `producer_license_number` value. Public `/producers/{id}` and
+# `/producers/by-slug/{slug}` routes keep returning ProducerDetailOut and
+# only see `has_producer_license: bool` — the number stays private. Used
+# by /admin/producers/* and producer_me self endpoints so admins and
+# owners can see the value they themselves submitted.
+class ProducerAdminOut(ProducerDetailOut):
+    producer_license_number: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -639,41 +680,8 @@ class FavoriteOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# --- Recipe ---
-class RecipeIngredientCreate(BaseModel):
-    ingredient_name: str
-    producer_id: UUID | None = None
-    notes: str | None = None
-
-
-class RecipeIngredientOut(BaseModel):
-    id: UUID
-    ingredient_name: str
-    producer_id: UUID | None = None
-    notes: str | None = None
-
-    model_config = {"from_attributes": True}
-
-
-class RecipeCreate(BaseModel):
-    title: str
-    description: str | None = None
-    steps: list[str] = []
-    category_id: int | None = None
-    ingredients: list[RecipeIngredientCreate] = []
-
-
-class RecipeOut(BaseModel):
-    id: UUID
-    title: str
-    description: str | None = None
-    steps: list[str] = []
-    category_id: int | None = None
-    status: str
-    created_at: datetime
-    ingredients: list[RecipeIngredientOut] = []
-
-    model_config = {"from_attributes": True}
+# MEH-587: Recipe* schemas removed (chunk 0/4) — see
+# backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
 # --- Home Product (מהמטבח של השכן) ---
@@ -707,6 +715,11 @@ class HomeProductCreate(BaseModel):
     @classmethod
     def _sanitize_title(cls, v):
         return sanitize_text(v, max_length=200)
+
+    @field_validator("title")
+    @classmethod
+    def _validate_title_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
 
     @field_validator("description")
     @classmethod
@@ -813,6 +826,7 @@ class HomeProductOut(BaseModel):
 
 class HomeProductModerationRequest(BaseModel):
     """Payload for the in-form validation call — no auth, no DB write."""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: str | None = None
     category: str | None = None
@@ -876,6 +890,11 @@ class ExperienceCreate(BaseModel):
     def _sanitize_title(cls, v):
         return sanitize_text(v, max_length=300)
 
+    @field_validator("title")
+    @classmethod
+    def _validate_title_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
+
     @field_validator("description")
     @classmethod
     def _sanitize_description(cls, v):
@@ -934,11 +953,13 @@ class ExperienceUpdate(BaseModel):
 
 class ExperienceModerationAction(BaseModel):
     """Admin action payload for reject / request-changes."""
+
     feedback: str | None = Field(None, max_length=2000)
 
 
 class ExperienceValidateRequest(BaseModel):
     """Real-time form validation. No auth, no persistence."""
+
     title: str = Field(..., min_length=1, max_length=300)
     description: str | None = None
     category: str | None = None
@@ -966,6 +987,7 @@ class ExperienceListOut(BaseModel):
     The full street address is private and only returned by the
     detail endpoint to the owner or an admin.
     """
+
     id: UUID
     title: str
     description: str
@@ -993,6 +1015,7 @@ class ExperienceDetailOut(ExperienceListOut):
     """Detail view. Includes `address`, `requirements`, and the
     full moderation context — only returned to the owner or an admin
     when the experience is non-approved."""
+
     address: str | None = None
     requirements: str | None = None
     lat: float | None = None
@@ -1004,6 +1027,124 @@ class ExperienceDetailOut(ExperienceListOut):
     rejection_reason: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-589 Producer recipes (chunk 2/4) ---
+# REUSES: schemas.py:840-1000 — ExperienceCreate / Update / Out trio
+# pattern (sanitize_text validators + Optional-everything Update + Out
+# with moderation fields). Recipe lifecycle is identical to experiences:
+# pre-Claude check on submit, admin queue, three terminal admin actions.
+class ProducerRecipeBase(BaseModel):
+    title: str = Field(..., min_length=3, max_length=200)
+    description: str | None = None
+    ingredients: str = Field(..., min_length=10)
+    instructions: str = Field(..., min_length=10)
+    prep_time_min: int | None = Field(None, ge=0, le=1440)
+    cook_time_min: int | None = Field(None, ge=0, le=1440)
+    servings: int | None = Field(None, ge=1, le=100)
+    image_url: str | None = None
+    # M2M to the producer's own products. The router enforces the
+    # invariant that every product_id belongs to the calling producer
+    # (cross-producer linking returns 422).
+    product_ids: list[UUID] = Field(default_factory=list, max_length=10)
+
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200)
+
+    @field_validator("title")
+    @classmethod
+    def _validate_title_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000) if v else v
+
+    @field_validator("ingredients")
+    @classmethod
+    def _sanitize_ingredients(cls, v):
+        return sanitize_text(v, max_length=5000)
+
+    @field_validator("instructions")
+    @classmethod
+    def _sanitize_instructions(cls, v):
+        return sanitize_text(v, max_length=10000)
+
+
+class ProducerRecipeCreate(ProducerRecipeBase):
+    pass
+
+
+class ProducerRecipeUpdate(BaseModel):
+    """PATCH body — every field Optional so partial updates work
+    (REUSES: ExperienceUpdate pattern schemas.py:885-922)."""
+
+    title: str | None = Field(None, min_length=3, max_length=200)
+    description: str | None = None
+    ingredients: str | None = Field(None, min_length=10)
+    instructions: str | None = Field(None, min_length=10)
+    prep_time_min: int | None = Field(None, ge=0, le=1440)
+    cook_time_min: int | None = Field(None, ge=0, le=1440)
+    servings: int | None = Field(None, ge=1, le=100)
+    image_url: str | None = None
+    product_ids: list[UUID] | None = Field(None, max_length=10)
+
+    @field_validator("title")
+    @classmethod
+    def _sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200) if v else v
+
+    @field_validator("description")
+    @classmethod
+    def _sanitize_description(cls, v):
+        return sanitize_text(v, max_length=2000) if v else v
+
+    @field_validator("ingredients")
+    @classmethod
+    def _sanitize_ingredients(cls, v):
+        return sanitize_text(v, max_length=5000) if v else v
+
+    @field_validator("instructions")
+    @classmethod
+    def _sanitize_instructions(cls, v):
+        return sanitize_text(v, max_length=10000) if v else v
+
+
+class ProducerRecipeOut(BaseModel):
+    id: UUID
+    producer_id: UUID
+    title: str
+    description: str | None = None
+    ingredients: str
+    instructions: str
+    prep_time_min: int | None = None
+    cook_time_min: int | None = None
+    servings: int | None = None
+    image_url: str | None = None
+    # Server-managed lifecycle fields.
+    moderation_status: str
+    moderation_notes: str | None = None
+    published: bool
+    created_at: datetime
+    updated_at: datetime
+    # Filled by the router from the M2M; not a column on the recipe table.
+    product_ids: list[UUID] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
+
+
+class ProducerRecipeModerationAction(BaseModel):
+    """Admin action payload for /admin/recipes/{id}/{action}.
+
+    REUSES: schemas.py:925-928 ExperienceModerationAction shape — single
+    optional `feedback` field. The action verb (approve / request-changes
+    / reject) lives in the URL path, not the body.
+    """
+
+    feedback: str | None = Field(None, max_length=2000)
 
 
 # --- MEH-22 Outreach leads ---
@@ -1039,6 +1180,7 @@ class OutreachLeadCreate(BaseModel):
 class OutreachLeadUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted. Status is
     enum-validated at the route layer."""
+
     name: str | None = None
     phone: str | None = None
     instagram: str | None = None
@@ -1053,6 +1195,7 @@ class OutreachPrefillResponse(BaseModel):
     """Public response from /register/producer/prefill/{token} —
     intentionally narrow: only what the registration form needs to
     pre-fill. Notes + status are NOT exposed."""
+
     name: str
     phone: str | None = None
     instagram: str | None = None
@@ -1096,6 +1239,7 @@ class GroupBuyOut(BaseModel):
 
 class GroupBuyDetail(GroupBuyOut):
     """Full detail — includes whether the current user has committed."""
+
     user_committed: bool = False
     user_commit: GroupBuyCommitOut | None = None
 
@@ -1123,6 +1267,11 @@ class CategoryRequestCreate(BaseModel):
     requested_name: str = Field(..., min_length=1, max_length=100)
     examples: str | None = Field(None, max_length=300)
     producer_id: UUID | None = None
+
+    @field_validator("requested_name")
+    @classmethod
+    def _validate_letters(cls, v: str) -> str:
+        return _min_letters_validator(v)
 
 
 class CategoryRequestOut(BaseModel):
@@ -1291,6 +1440,7 @@ class ReviewsPage(BaseModel):
 # the public CategoryOut in the Category section above; admin_extra.py
 # now imports it from there instead of redefining.
 
+
 # Admin: Moderation
 class RemoveListingBody(BaseModel):
     reason: str | None = None
@@ -1347,6 +1497,7 @@ class StaticPageUpdate(BaseModel):
 # validate_password) stay in the change_password handler, not the schema.
 class ProfileUpdate(BaseModel):
     """PATCH body — any subset of fields may be omitted."""
+
     name: str | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
     avatar_url: str | None = None
@@ -1374,12 +1525,19 @@ class PasswordChange(BaseModel):
 # this file already (see Producer section above, MEH-291).
 class AvailabilityStatusUpdate(BaseModel):
     status: str = Field(..., description="available | full | vacation")
-    vacation_until: date | None = Field(None, description="Optional return date (vacation only)")
+    vacation_until: date | None = Field(
+        None, description="Optional return date (vacation only)"
+    )
 
 
 class AvailabilityStateUpdate(BaseModel):
-    state: str = Field(..., description="accepting_orders | available_today | full_this_week | on_vacation")
-    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
+    state: str = Field(
+        ...,
+        description="accepting_orders | available_today | full_this_week | on_vacation",
+    )
+    vacation_until: date | None = Field(
+        None, description="Required when state='on_vacation'"
+    )
 
 
 class BioGenerateIn(BaseModel):

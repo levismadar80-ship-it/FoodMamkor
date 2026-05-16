@@ -8,6 +8,7 @@ Q1 of the plan was answered (b) — no Claude web search. Leads are added
 manually by the admin. The Claude-search route was scoped out; if added
 later it would be a single new POST endpoint here.
 """
+
 import secrets
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -207,11 +208,7 @@ def get_prefill(token: str, db: Session = Depends(get_db)):
     if not token or len(token) < 16:
         raise HTTPException(status_code=404, detail="אסימון לא נמצא")
 
-    lead = (
-        db.query(OutreachLead)
-        .filter(OutreachLead.prefill_token == token)
-        .first()
-    )
+    lead = db.query(OutreachLead).filter(OutreachLead.prefill_token == token).first()
     if not lead:
         raise HTTPException(status_code=404, detail="אסימון לא נמצא")
     if (

@@ -140,7 +140,10 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
-   | `TWILIO_*` | Use **Twilio test credentials** so staging WhatsApp messages don't go out for real. |
+   | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
+   | `WHATSAPP_ACCESS_TOKEN` | Never-expiring System User token from Meta Business Suite. Store in Railway variables, never in `.env` files. |
+   | `WHATSAPP_BUSINESS_ID` | WhatsApp Business Account ID (WABA). |
+   | `WHATSAPP_API_VERSION` | `v21.0` (hardcoded fallback; override only to pin a different Graph version). |
    | `GOOGLE_CLIENT_ID` / `APPLE_CLIENT_ID` | Same client IDs, but add `staging.mehamakor.online` to the OAuth app's authorized origins/redirect URIs in the Google + Apple consoles first. |
 
 6. Production environment — verify the GitHub source is pinned to `main`.
@@ -236,9 +239,26 @@ this codebase. Open:
 > GitHub uses to identify required checks. If the workflow YAML changes a job name,
 > the branch protection rule must be updated to match.
 
-> **`Adversarial review` is intentionally NOT a required check.** It only runs
-> when `.github/scripts/adversarial-review.sh` exists (see workflow). The check
-> is informational until that script is added.
+> **`Adversarial review (calibration)` is intentionally NOT a required check.**
+> Wired via `.github/workflows/claude-review.yml`
+> (`anthropics/claude-code-action@v1`, MEH-487). Runs with
+> `continue-on-error: true` during the calibration window so findings are
+> informational. After the calibration tally crosses >70% useful (see
+> [docs/CLAUDE-REVIEW.md](./CLAUDE-REVIEW.md) → "Calibration plan"), a
+> follow-up PR flips it to blocking and adds the job name to the required
+> checks list above.
+
+> **`Backend lint (ruff)` is a required check (MEH-488 / MEH-448 /
+> MEH-505).** Wired via `.github/workflows/pr-checks.yml` `lint-backend`
+> job. MEH-488 added the gate in calibration mode against the dirty
+> baseline (18 ruff `check` violations + 56 format files). MEH-448
+> cleaned the baseline to zero. MEH-505 flipped `continue-on-error: true
+> → false` (blocking posture) AND fixed the format-step flag from
+> `--extend-exclude` to `--exclude` (only `ruff check` accepts the
+> `extend-` form). After the MEH-505 PR merges, add `Backend lint
+> (ruff)` to the required-checks lists for both `staging` and `main`
+> via `Settings → Branches`. GitHub only auto-suggests the check name
+> after the first run on the protected branch.
 
 > **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
 > (npm audit)` are required checks (MEH-336, 2026-05-01).** Both jobs run
@@ -652,13 +672,23 @@ on each job.
   `staging` runs only the staging job. The other job is skipped — no
   wasted runner minutes, and the Actions log shows exactly which
   environment ran.
-- **Per-environment concurrency.** The concurrency group is
-  `deploy-${{ github.ref_name }}` with `cancel-in-progress: true`. If two
-  pushes land on the same branch within seconds, only the latest one
-  fires the CLI. Crucially, a push to `main` and a push to `staging` do
-  **not** cancel each other — they're in different concurrency groups —
-  so promoting `staging → main` doesn't lose the staging deploy that
-  triggered moments earlier.
+- **Per-job concurrency (MEH-485).** `deploy.yml` no longer has a
+  workflow-level `concurrency:` block. Each of the 5 jobs declares
+  its own concurrency group:
+  - `production` → `${{ github.workflow }}-production-${{ github.ref }}`,
+    `cancel-in-progress: false` — back-to-back `main` pushes serialize,
+    they do **not** abort an in-flight Railway deploy (data integrity).
+  - `staging` → same shape, scoped to `staging` ref, also
+    `cancel-in-progress: false`.
+  - `lint`, `api-contract-static`, `api-contract-probe-staging` →
+    `${{ github.workflow }}-<job>-${{ github.head_ref || github.ref }}`
+    with `cancel-in-progress: true` (CI checks; fresh run wins on
+    force-push or back-to-back pushes).
+  Production and staging are still in different groups, so promoting
+  `staging → main` doesn't lose the in-flight staging deploy. The
+  practical change vs. the pre-MEH-485 single workflow-level block:
+  back-to-back same-branch deploys now queue serially instead of
+  cancelling the in-flight one.
 - **Manual trigger.** The `workflow_dispatch` trigger means you can also
   fire either redeploy from the Actions tab without pushing a commit —
   useful if Railway crashed and you need to nudge it without writing

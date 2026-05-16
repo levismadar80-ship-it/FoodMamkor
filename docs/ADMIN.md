@@ -41,11 +41,25 @@ pytest tests/test_api.py        # 24/24 passing
 npx playwright test             # E2E
 ```
 
-## Freemium
-| תוכנית | מחיר | תמונות | מוצרים | סטטיסטיקות |
-|--------|------|--------|---------|-------------|
-| חינם | ₪0 | עד 3 | לא | לא |
-| פרמיום | TBD | ללא הגבלה | כן | כן |
+## Pricing / Monetization
+
+ה-monetization model של מהמקור מתועד ב-source of truth יחיד:
+`Drive/01-Strategy/02-pricing-model.md` (v2.0)
+
+**מצב נוכחי (16/5/26):**
+- ✅ חינמי לכולם — בעלי עסק וצרכנות
+- 🔴 **אין החלטת monetization.** 4 options פתוחים, אף אחד לא נבחר.
+- ⏱️ Trigger להפעלת discussion = signal-based (לא time-based). פרטים ב-`02-pricing-model.md`.
+
+**🔒 LOCKs (לא משתנים):**
+- אין transaction fees לעולם
+- אין commissions
+- חינמי לבעלי עסק לתמיד
+- חינמי לצרכנים לתמיד
+- אין מכירת data
+- אין פרסום שטחי
+
+⚠️ לא לעדכן את הקובץ הזה ישירות עם פרטי pricing. שינויי monetization → עדכון `Drive/01-Strategy/02-pricing-model.md` קודם, אחר כך כל הפניה.
 
 ## אנליטיקס על /admin (feature/producer-analytics — April 2026)
 

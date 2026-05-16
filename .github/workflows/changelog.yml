@@ -1,0 +1,90 @@
+name: Update CHANGELOG
+
+on:
+  push:
+    branches: [staging]
+    paths-ignore:
+      - 'docs/CHANGELOG.md'
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find anchor timestamp
+        id: anchor
+        run: |
+          TS=$(git log --grep="auto: update CHANGELOG \[skip ci\]" -1 --format="%aI" 2>/dev/null || true)
+          if [ -z "$TS" ]; then
+            TS=$(git log -1 --format="%aI" HEAD)
+          fi
+          echo "since=$TS" >> "$GITHUB_OUTPUT"
+
+      # Direct binary install (MEH-497) — orhun/git-cliff-action's Docker
+      # build was failing on ubuntu-latest. Pinned to v2.8.0 musl-linked
+      # binary; no Docker dependency, no runtime deps on the runner.
+      - name: Install git-cliff
+        run: |
+          curl -sSfL \
+            https://github.com/orhun/git-cliff/releases/download/v2.8.0/git-cliff-v2.8.0-x86_64-unknown-linux-musl.tar.gz \
+            | tar xz --strip-components=1 -C /usr/local/bin
+
+      - name: Generate CHANGELOG entries
+        id: cliff
+        run: |
+          CONTENT=$(git cliff --config .git-cliff.toml \
+                      --since "${{ steps.anchor.outputs.since }}" 2>/dev/null || true)
+          echo "content<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CONTENT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Splice entries into CHANGELOG.md
+        run: |
+          python3 - << 'PYEOF'
+          import sys, os
+          content = os.environ.get('CLIFF_CONTENT', '').strip()
+          if not content:
+              print("No new entries — skipping")
+              sys.exit(0)
+          with open('docs/CHANGELOG.md') as f:
+              lines = f.readlines()
+          try:
+              # Insert before the first '---' separator (the pre-automation marker)
+              idx = next(i for i, l in enumerate(lines) if l.startswith('---'))
+          except StopIteration:
+              # Fallback: insert before the first '## ' entry
+              idx = next((i for i, l in enumerate(lines) if l.startswith('## ')), len(lines))
+          lines.insert(idx, content + '\n\n')
+          with open('docs/CHANGELOG.md', 'w') as f:
+              f.writelines(lines)
+          print(f"Inserted {len(content.splitlines())} lines at position {idx}")
+          PYEOF
+        env:
+          CLIFF_CONTENT: ${{ steps.cliff.outputs.content }}
+
+      - name: Commit if changed (or create first-run sentinel)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/CHANGELOG.md
+          if git diff --staged --quiet; then
+            # No content change — create sentinel on first run so next run has an anchor
+            PREV=$(git log --grep="auto: update CHANGELOG \[skip ci\]" -1 --format="%H" 2>/dev/null || true)
+            if [ -z "$PREV" ]; then
+              echo "First run — creating anchor sentinel"
+              git commit --allow-empty -m "auto: update CHANGELOG [skip ci]"
+              git push
+            else
+              echo "No new entries and anchor already exists — skipping"
+            fi
+          else
+            git commit -m "auto: update CHANGELOG [skip ci]"
+            git push
+          fi

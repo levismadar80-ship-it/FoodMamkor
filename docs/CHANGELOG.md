@@ -2,6 +2,996 @@
 
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
+## Unreleased
+
+### 2026-05-16 — MEH-502: hooks gap analysis vs Agent SDK events (PR pending)
+
+`docs`: hooks gap analysis vs Agent SDK events (MEH-502). New read-only audit at `docs/audits/2026-05-16-hooks-gap-analysis.md` (~200 lines, 5 sections) maps the 17 wired Claude Code hooks in `.claude/settings.json` against the 8 official Agent SDK events. **Findings:** 4 events used (PreToolUse: 10 entries, PostToolUse: 1, Stop: 4, SessionStart: 2 incl. `matcher: "compact"`); 4 events unused (SessionEnd, UserPromptSubmit, SubagentStop, Notification). No drift or orphan scripts — `.claude/hooks/check-branch-base.sh` is intentionally opt-in per its own header (MEH-427). Section 1 carries `settings.json:line-range` evidence for every wired entry. **3 recommendations** with adopt/skip/defer: (1) DEFER — `SessionEnd` HANDOFF.md ledger (deterministic only; revisit post-MEH-456); (2) SKIP — `UserPromptSubmit` pre-go nudge (workflow rule 4 already covers, MEH-342 was caught by rule not hook); (3) ADOPT — `SubagentStop` → `docs/audits/subagent-trace.log` (closes the MEH-373/425 visibility gap where `tools:` frontmatter is advisory-only; logging is audit-only, does not change L1 deny + L2 hook enforcement). **Risk tier:** LOW per MEH-450 — docs-only single file, no code, no schema, no UI. **Verification:** report has 5 sections; Section 1 has file:line refs for all 17 entries; Section 4 has exactly 3 recommendations with verdicts; `npm run build` green. **DoD exception:** mobile QA N/A. **Out of scope:** implementing any of the adopted recommendations (follow-up MEH tickets to be opened by Smadar after merge); CI hook coverage (MEH-487); git pre-commit hooks (MEH-496); sub-agent permission model (MEH-425 Phase 2).
+
+Closes MEH-502.
+
+### 2026-05-16 — MEH-501: ADR-008 defer AutoDream activation (PR pending)
+
+`docs`: ADR-008 — defer AutoDream activation (MEH-501). New ADR at `docs/decisions/ADR-008-autodream-defer.md` records the Defer decision for the community-described, unannounced Claude Code `AutoDream` feature flag. Risk: aggressive pruning of `CLAUDE.md` / `HANDOFF.md` would erode the source-of-truth principle anchored in MEH-267 (root cause of the MEH-265 production-login incident). 5 cumulative revisit conditions: (1) official announcement on `docs.claude.com`, (2) stable window after MEH-456 and before launch, (3) full `~/.claude/` + `CLAUDE.md` + `HANDOFF.md` backup, (4) manual trigger only (`/dream`), (5) diff review of every memory change. Anti-pattern explicitly rejected: enabling `Auto-dream: on` in `/memory`. **3 doc surfaces touched (+ this CHANGELOG):** ADR-008 (new), `CLAUDE.md` line 48 (one-clause inline append to the existing "AI fail-open / locked decisions" bullet — 0 net new lines, preserves 80-line cap pressure), `HANDOFF.md` (top pointer + new dated section). **Soft scope override (Smadar-approved):** MEH-501 spec asked for the CLAUDE.md rule under a section called "טעויות שאסור לחזור עליהן" that no longer exists (post-≤80-line refactor). Equivalent placement under `## Key locked decisions` approved before edit — same idiom as the existing `No claude/* branches.` and `Schema via Alembic only` inline rules. **ADR-007 status note:** `docs/decisions/ADR-007*.md` does not exist on staging tip (`dee98a4`); MEH-486 branch is upstream-only. ADR-008 derived from `_TEMPLATE.md` skeleton directly (functionally equivalent — ADR-007 would itself have been generated from the same template). MEH-501 → MEH-486 dependency decoupled. **Risk tier:** LOW per MEH-450 — docs-only, no logic, no schema, no UI. **DoD exception:** mobile QA N/A.
+
+Closes MEH-501.
+
+### 2026-05-16 — MEH-618: ADMIN.md monetization → Drive pointer (PR pending)
+
+`docs`: ADMIN.md monetization section now points to Drive source of truth v2.0 (MEH-618). Replaces the inline `## Freemium` price-tier table (חינם ₪0 / פרמיום TBD) with a pointer block that states explicitly (a) currently free for all, (b) no monetization decision yet, (c) 4 open options exist (not enumerated — Drive holds them), (d) all updates go to Drive first. 6 LOCKs preserved verbatim (no transaction fees, no commissions, free for businesses, free for consumers, no data sales, no display ads). Single-file content swap + new section heading `## Pricing / Monetization`. **Risk tier:** LOW per MEH-450 — docs-only, no logic, no schema, no UI. **Verification:** `grep -E "₪49|₪99|49 NIS|99 NIS|Freemium" docs/ADMIN.md` → 0 hits; `grep "01-Strategy/02-pricing-model" docs/ADMIN.md` → 2 hits; `grep -E "אין החלטת monetization" docs/ADMIN.md` → 1 hit. **DoD exception:** mobile QA N/A (docs-only).
+
+Closes MEH-618.
+
+### 2026-05-16 — MEH-531: add "רישיון יצרן" badge to producer cards (PR pending)
+
+`feat(MEH-531)`: adds the 12th badge to the system (`MEH-18` Phase B fold + license). Trust signal for Ministry of Health producer license (Persona 8 differentiation). **2 files (+53 / -2 lines):** (1) `frontend/lib/badges.js` — new `license` entry in `BADGE_CONFIG` (label "רישיון יצרן", tooltip "בית העסק מחזיק ברישיון יצרן ממשרד הבריאות.", color `primary`); `BADGE_PRIORITY` array inserts `"license"` between `"recommended"` and `"new"` per Smadar's 16-May locked priority position (license verification = official signature, less subjective than editorial recommended, more critical than time-based new); `earnsBadge()` switch gets `case "license": return !!producer.has_producer_license;`; header comment block updated with the new entry + new priority chain. (2) `frontend/__tests__/badges.test.js` — 3 new `allBadges` tests (license true → earned; license false → not earned; license null/undefined/missing-key → not earned) + 1 new `topBadges` priority-position test asserting license appears between recommended and new in both `limit=2` (truncates new) and `limit=3` (keeps all three) variants; `BADGE_PRIORITY` test + mega priority-order test extended with `"license"`. 33/33 tests pass (was 29; +4 new it blocks). **Risk tier:** LOW per MEH-450 — frontend-only logic + tests, no schema, no central component, no CSS, no RTL physical classes (grep clean). **Phase 0 backend verification (CRITICAL — done before any frontend work):** `grep -rn "has_producer_license" backend/app/schemas/` → field at `backend/app/schemas/schemas.py:547` inside `ProducerListOut` (class spans `:474-:570`; `ProducerDetailOut(ProducerListOut)` opens at `:573`). Inline comment at `:544-:546` confirms public-facing intent ("MEH-530: public-facing boolean signal... The raw number is admin-only via ProducerAdminOut"). PR #670 "admin-only exposure" wording referred to the raw number, not the boolean flag — flag IS public via the listing endpoint. **ProducerCard auto-pickup verified:** `frontend/components/ProducerCard.jsx:337` renders `<BadgeRow producer={producer} limit={2} />`; `BadgeRow.jsx:18` calls `topBadges(producer, 2)` which filters `BADGE_PRIORITY` — new badge auto-picked up via priority insert with zero JSX edits. **Verification:** `npm run build` green (12.2s, 101/101 pages, 0 errors); `npx vitest run badges` → 33 passed; `git diff --stat` → 2 files; RTL grep clean (logic-only file, no positional classes touched). **Out of scope (per spec):** ProducerCard JSX changes (auto-pickup); other badges' tooltips; English translation of license tooltip; emoji in label (auto ✓ icon handled by badge component); BADGE_CONFIG structural refactor.
+
+Closes MEH-531.
+
+### 2026-05-16 — MEH-620: Hero subheading update per MEH-522 winner (PR pending)
+
+`feat(MEH-620)`: Hero subheading — "ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך." Implements the variant κ winner from MEH-522 ideation. **2 files (+2 / -2 lines):** (1) `frontend/messages/he.json` — `home.hero.subtitle` swapped from "בתי עסק מקומיים, כולם במקום אחד." to "ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך." (8 Hebrew words, mid-range per Map & Fire 600-company study; uses "כבר" work-already-done signal per The Infatuation pattern). (2) `frontend/messages/en.json` — parallel: "Straight from the source. Businesses we've already vetted for you." H1 (`home.hero.title`), `friday_subtitle`, and meta description (`brand_tagline` line 52, `description` line 178) untouched per scope guard. **Risk tier:** LOW per MEH-450 — single i18n string change, no logic, no schema, no central component. **Verification:** `grep -rn "ישר מהמקור אלייך" frontend/messages/` → 1 hit (he.json:91 subtitle); `grep -rn "עסקים שכבר בדקנו בשבילך" frontend/messages/` → 1 hit (he.json:91); `npm run build` green (11.4s, 101/101 pages, 0 errors). **Out of scope:** meta description copy (separate string, separate ticket if Sapir wants it aligned).
+
+Closes MEH-620, refs MEH-522.
+
+### 2026-05-16 — MEH-619: undo affordances on producer-register form shortcuts (PR pending)
+
+`fix(MEH-619)`: closes two undo gaps on `/register/producer` where clicking either of the page's two shortcut links left the user stuck. Single-file frontend fix — `frontend/app/[locale]/register/producer/page.js` only, no shared component extraction, no new dependencies. **Bug 1 (destructive, MEH-532 origin):** clicking "אני אכתוב אחר כך" overwrote `form.description` with `DESCRIPTION_DEFAULT_TEXT`, persisted that overwrite to `localStorage[DRAFT_KEY]`, locked the textarea, and removed the link with no way back. Fix: capture the pre-click `form.description` into a new `useRef` (`descriptionBeforeDisableRef`) at the moment of overwrite, then render a paired "ערוך תיאור" link when `descriptionDisabled === true` that restores the snapshot via `setAndSave`, re-enables the textarea, and clears the dead `DESCRIPTION_PENDING_KEY` flag from localStorage. **Bug 2 (non-destructive but irreversible, MEH-530 origin):** clicking "יש לי רישיון יצרן ↓" expanded the optional license field with no shrink-back affordance. Fix: a "✕" close button (`aria-label="סגור"`) absolute-positioned at `top-0 end-0` inside the expanded `<div className="relative">` collapses `licenseOptionalExpanded` back to `false` AND clears `form.producer_license_number` so a half-typed value doesn't submit silently. **Scope guardrails honoured:** the `licenseRequired === true` path at `page.js:487` (mandatory-by-category) is untouched and remains non-collapsible by design; no other file modified; no Hebrew copy added beyond the two strings named in the spec. **RTL clean:** only logical Tailwind properties used (`end-0`, `ps-*`, `pe-*`, `ms-*`). **Build:** `next build` green in 13.4s, 93/93 pages prerendered including `/register/producer` (both `he` + `en` SSG). **Verification:** `grep -n "setDescriptionDisabled(false)" page.js` → 1 hit (the new undo handler); `grep -n "setLicenseOptionalExpanded(false)" page.js` → 1 hit (the new close handler); the original `(true)` setters at lines 443 + 589 remain so the shortcuts still work as before. **Out of scope (per spec):** wiring `DESCRIPTION_PENDING_KEY` to a real reader (still a write-only future-dashboard flag — Sapir's call in a separate ticket); persisting `licenseOptionalExpanded` across page reloads (intentional — refresh-to-collapse is the cleaner default behaviour).
+
+Closes MEH-619.
+
+### 2026-05-16 — MEH-607: Stats counter reframe (F4) + skeleton (F10) (PR pending)
+
+`feat(MEH-607)`: bundles F4 copy reframe + F10 CLS-fixing skeleton per discovery-synthesis fast-follow week 1. **4 files (+49 / -13 lines):** (1) `frontend/messages/he.json` — drops `home.stats.verified_businesses` ("בתי עסק מאומתים"); adds `home.stats.issue_prefix` ("גליון {month} —") + `home.stats.businesses` ("בתי עסק"). Final rendered string per synthesis §5.2 Option A: *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. "מאומתים" dropped because verification is now carried by the per-business "מאומת ע״י מהמקור" badge (Sapir Q3-confirm). (2) `frontend/messages/en.json` — parallel: `issue_prefix` "{month} issue —" + `businesses` "businesses". (3) `frontend/lib/use-home-page.js` — `stats` initial state flipped from `{producers_count:0, categories_count:0}` to `null`; new derived `statsLoaded` flag exported (drives the F10 skeleton branch in page.js); null-safe accessors with optional chaining; error path now sets `{}` so skeleton dismisses gracefully (empty result hides section, matches pre-PR behavior). (4) `frontend/app/[locale]/page.js` — new `monthName` const computed once per render via `Intl.DateTimeFormat('he-IL', { month: 'long' }).format(new Date())` (Sapir Q2 dynamic; homepage is `"use client"` so no SSR mismatch around midnight UTC); new `!statsLoaded` skeleton branch with same `bg-primary text-white py-4 text-center` dimensions + `bg-white/20 animate-pulse` pill (reserves height, zero CLS between skeleton→counter); F4 reframe in render block. **Risk tier:** GREEN end-to-end (Sapir override of borderline-spirit-of-rule on `page.js` central-component touch — change is state-shape, not section orchestration; MEH-604 was section orchestration which earned chunked review). **Verification:** `grep -rn "stats.verified_businesses" frontend/` → 0 stale callers; `npm run build` green (15.7s, 93/93 pages, 0 errors); diff scope exactly 4 files. **Bundle size:** estimated near-zero (one useState flip + small JSX branch + 2 i18n string edits). **Skeptic flags:** (1) Intl Hebrew month name verified locally returns "מאי" — Vercel Edge runtime parity unverified, mobile QA must check; (2) RTL wrap on 375px — ~12 chars longer than current, Sapir explicitly rejected pre-optimization; (3) empty-DB state still has small CLS (skeleton dismisses to nothing), Sapir Q4 accepted this is launch-week-only. **Out of scope:** `AnimatedCounter` internals, `STATS_DISPLAY_THRESHOLD` (MEH-521 stays), `/stats` backend.
+
+Closes MEH-607.
+
+### 2026-05-16 — MEH-604: HomepageMiniMap above the fold + perf defer (PR pending)
+
+`feat(MEH-604)`: ships F1 of the discovery synthesis (last launch-blocker per `docs/synthesis/2026-05-discovery-redesign-synthesis.md` §5.1). **4 files changed (+86 / -38 lines):** (1) `frontend/app/[locale]/layout.js` — added 3 `<link rel="preconnect">` lines for OSM tile shards (`a/b/c.tile.openstreetmap.org`) so the first tile fetch saves ~100-200ms on DNS+TLS handshake; shipped as separate commit `c485634` (chunk 1/5). (2) NEW `frontend/components/HomepageMiniMapSkeleton.jsx` — Leaflet-free SSR-able skeleton matching the live map's `h-[320px] md:h-[420px]` dimensions + header chrome + `bg-light animate-pulse` placeholder, wired as the `dynamic({ loading })` fallback in page.js so the above-the-fold slot reserves height on first paint **before** JS hydrates → CLS = 0 for this section. Lives in a separate file (not exported from HomepageMiniMap.jsx) because inline export drags `import L from "leaflet"` into SSR and breaks prerender with `ReferenceError: window is not defined` — caught by chunk 2 build, fix is the file extraction. (3) `frontend/components/HomepageMiniMap.jsx` — replaced `IntersectionObserver` (meaningless above-the-fold; fires immediately) with `setTimeout(POST_FCP_DEFER_MS=200)` → chained `requestIdleCallback`, so Leaflet bundle eval lands **after** the LCP measurement window AND outside any long task (good for INP). Fallback to direct `setShouldLoad(true)` if rIC is unavailable (Safari < 16). Dropped now-unused `useRef`, `containerRef`, and `LAZY_LOAD_ROOT_MARGIN` constant. **Rejected alternatives, documented inline:** Option B (`rIC` with `timeout: 200`) — fires within 200ms max, pulls Leaflet back INTO the LCP window — inverse of the goal; Option C (`setTimeout` only, no rIC) — ignores main-thread busy state, can land Leaflet on a long task → bad INP. (4) `frontend/app/[locale]/page.js` — moved `<HomepageMiniMap />` from section #7 (after `<HolidayBanner>`) to section #2 (immediately after `<HomeHero />`, before `<FridayDeliveryStrip>`) per the F1 mockup at `docs/synthesis/mockups/F1-map-above-fold.txt`. Country-shape of producer distribution is visible within ~2s of FCP. **HIGH-RISK chunked review** (5 chunks, build-green between each) because `page.js` + `layout.js` are central components per `.claude/central-components.json` (spirit-of-rule — JSON paths predate the MEH-366 `[locale]` segment migration; file a P3 follow-up to update the JSON). Mapping decisions all documented file:line. Bundle size estimate ±1KB gzipped (well under 20KB regression bar). **Lighthouse expectation** per synthesis §5.1: Performance ≥85 mobile, LCP stays on hero photo (unchanged), CLS ≤0.05 (improved by skeleton). Pre/post Lighthouse capture deferred to Smadar (sandbox can't reach Vercel — MEH-360). `npm run build` green between every chunk; final 16.0s, 93/93 pages, 0 errors. **Out of scope:** `useHomePage` duplicate `/producers` fetch (separate perf ticket — `HomepageMiniMap` continues to call `/producers` independently); `/map` route; HomepageMiniMap internals (markers, tooltips, click-to-/map). **Filed follow-up:** P3 — update `.claude/central-components.json` paths for i18n migration (cheap config, every future session will hit the same path-ambiguity question).
+
+Closes MEH-604. **MEH-592 epic launch-blockers: 3 of 3 shipped** (MEH-605 + MEH-606 + MEH-609 via PR #682; MEH-598 via PR #684; MEH-604 via this PR).
+
+### 2026-05-16 — MEH-599: Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms (PR pending)
+
+`copy(MEH-599)`: brand-LOCK micro-copy sweep across the legal/meta surface that PR #684 (MEH-598) intentionally deferred. **3 files changed (+13/-26 lines):** (1) `frontend/app/[locale]/terms/page.js` — meta description swapped (`"יצרני אוכל בריא"` → `"בתי עסק שמייצרים אוכל בריא"`, grammar-fix over literal mapping); §1 body line dropped `"ויצרניות עצמאיות"` clause (Sapir-decision Q2-A — "בתי עסק ובעלות עסק" would be redundant); §2 body em-dash clause `"— בית עסק מאומת או משתמשת פרטית בסקציית 'מהמטבח של השכן' —"` dropped entirely (Q3-A — the qualifier specifically named the home-kitchen carveout being removed); §5 `home-kitchen` section deleted (12 lines, the LOCK-forbidden "מהמטבח של השכן" section); §6-12 renumbered to §5-11 sequentially. (2) `frontend/app/[locale]/privacy/page.js` — §1 body line `"בתי עסק ליצרני אוכל בריא"` → `"בתי עסק שמייצרים אוכל בריא"` (Q4-A grammar-fix — the literal swap "בתי עסק לבתי עסק" would have been broken). (3) `frontend/app/[locale]/layout.js` — global meta `keywords[]` entry `"יצרנים ישראלים"` → `"בעלי עסק ישראלים"` (literal mapping per CLAUDE.md "no יצרן/ית in UI" rule). **Mapping applied (per the issue):** `יצרן`→`בית עסק`, `יצרני`→`בתי עסק`, `יצרנית`→`בעלת עסק`, `יצרנים`→`בעלי עסק`; the feminine plural `יצרניות` (not in the spec table) was handled by deletion + sentence rewrite per Sapir-decision Q2-A rather than extending the mapping unilaterally. **Verification:** in-scope `grep -rE "יצרנ" frontend/app/[locale]/terms/ frontend/app/[locale]/privacy/ frontend/app/[locale]/layout.js` → 0 hits; in-scope `grep "מהמטבח של השכן" frontend/app/[locale]/terms/` → 0 hits; section numbering sequential 1→11 confirmed via grep. **Out of scope (deferred):** the 14 remaining `"מהמטבח של השכן"` hits in `ChatWidget.jsx` (E1+E2), `HomeProductCard.jsx` (E3), `producer/dashboard/page.js` (E4), `backend/app/routers/chat.py` (E5 — AI FAQ, most critical), `__tests__/HomeProductCard.test.jsx` (E6), `messages/he.json` (`neighbor_kitchen`/`heading`), `HomeStaticBlocks.jsx` comment, and `NeighborClient.jsx` (preserved per MEH-543 revival path) — all stay for a future ticket; the 4 unrelated `יצרנ*` hits in `group-buys/page.js`, `register/page.js`, `admin/settings/page.js`, `FridayDeliveryStrip.jsx` are an i18n-sweep concern, not MEH-599 scope. `npm run build` green pre-PR (93/93 pages, 12.0s, 0 errors). Risk tier: LOW (copy + section deletion + renumber, no logic, no schema, no auth, no central components). 4 Sapir-decisions all option A. Vercel preview QA pending — UI change → `/goal`-style merge gate per Rule 23 — will NOT auto-merge.
+
+Closes MEH-599.
+
+### 2026-05-16 — MEH-608: /register/producer Step 2 subhead — drift fix (PR #683)
+
+`copy(MEH-608)`: 1-line fix at `frontend/app/[locale]/register/producer/page.js:393` per synthesis Finding F11. Replaces the literal "3 שדות בלבד" subhead — written before MEH-530 (license) and MEH-532 (description) added fields to Step 2 — with count-free phrasing: "כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור." Step 2 actually renders 6 fields (producer_name, description, phone, categories, license, legal-consent), not 3 — the old subhead was lying to the visitor and would drift again any time fields are added or removed. **Hook bypass disclosed:** pre-commit ESLint blocked on 25 pre-existing warnings in `RegisterProducerPageBody` (function length 548, complexity 35, magic numbers, nested ternaries) — none introduced by this 1-line edit; committed with `--no-verify` per Sapir's authorization in chat. Documented in commit message + PR description for auditability. Follow-up filed: **MEH-616** (P3 Medium) for hook config / MEH-443 policy reconciliation. CI lint job for the same file PASSED (uses a different config), confirming the policy mismatch sits at the local-hook layer. Build green pre-merge (93/93 pages, 18.5s); CI green across build / lint / E2E / API contract / mypy / Knip / tsc / paths-filter / Vercel deployment. Vercel preview QA skipped per Sapir — copy-only edit on a multi-step form's Step 2 subhead, mobile QA reduced to a 30-second post-merge check, no runtime risk.
+
+Closes MEH-608. Filed MEH-616 (hook policy reconciliation follow-up).
+
+### 2026-05-16 — MEH-605 / MEH-606 / MEH-609: Discovery copy bundle (PR #682)
+
+`feat`: bundles three i18n string fixes in `frontend/messages/he.json` per the discovery-redesign synthesis (Findings F2, F3, F6) — removes 3 marketplace-tier copy defections from the homepage in a single PR. **MEH-605** drops "דירקטורי" from `home.cta.body` (final CTA) and replaces with magazine-tier framing that names mehamakor as the home of small businesses + surfaces curation (LOCK #1) + references the producer-page format. **MEH-606** drops the saturated "ישר מבית העסק — בלי מתווכים" formula from `home.categories.subheading` (5/7 Israeli competitors use a variant per Sub 2 Anti-pattern 1); replaced with Option A from the issue menu: "כל קטגוריה — בית עסק אחר, סיפור אחר." **MEH-609** drops double-negative conversion language ("בלי מתווכים, בלי הנחות על האיכות") from `home.how_it_works.step03_text`; replaced with positive outcome + founder-accountability framing. **MEH-605 and MEH-609 are Sapir-overrides** of the A/B/C menus in their Linear issues — every menu option contained partial category listings ("חקלאית או מגדלת" / "מה שהיא מגדלת") that exclude bakeries, dairies, wineries, chocolatiers (~75% of base). Per **Brand Hub v1.1 (16 May 2026)** (`02-מדריך-מותג.md` sections 8-9, `07-language-rules.md`), partial category lists in audience targeting are now prohibited; the new "show, don't tell" rule prefers implicit inclusion + curation signal + product-format reference, and reserves "מגזין" for internal use only (never in UI copy). Both new rules mirrored into `docs/DESIGN.md` (new "כללי מיקרו-קופי" section) so future copy work catches the constraint without a brand-hub round trip. 1 file changed in product code, 3 strings updated; all 6 pre-merge verification greps green (forward + reverse-order audience checks + "מגזין" sanity); `npm run build` green (93/93 pages, 22.2s); CI green across build/lint/E2E/API contract/mypy/Knip/tsc; Vercel preview QA at 375px approved by Smadar pre-merge (CTA card body wraps cleanly, button above the fold). `/adversarial-review` skipped per Sapir — pre-PR adversarial caught "מגדלת" exclusion bug in planning chat (counts per workflow rule 5a).
+
+Closes MEH-605, MEH-606, MEH-609. **MEH-592 epic launch-blockers: 2 of 3 shipped** (MEH-604 above-fold map remains).
+
+### 2026-05-16 — MEH-539 Phase 2D: /about/for-businesses/guides routes (3 guides + index)
+
+`feat(MEH-539)`: 4 new public Next.js App Router pages under `/about/for-businesses/guides/` — the link targets embedded in the Phase 2C onboarding emails (Day-2 / Day-5 / Day-10). **Files added:** `frontend/components/GuideArticle.jsx` (shared shell: header eyebrow + read-time + Frank-Ruhl-Libre H1, structured-blocks renderer for `h2`/`h3`/`p`/`ul`/`ol`/`blockquote`/`callout`/`hr`, signoff footer + back-link to the index — uses **only** logical Tailwind properties `ms-*`/`me-*`/`border-s-*`/`ps-*` so RTL inheritance from `app/[locale]/layout.js:114` is honoured); `frontend/app/[locale]/about/for-businesses/guides/page.js` (index — 3 cards, brand-token colours `#2e6853` / `#2E4A2E` / `#F5F0E8`, footer Instagram link to `@meha_makor` mirroring the for-businesses precedent); `frontend/app/[locale]/about/for-businesses/guides/business-story/page.js` (Guide 1, 4-min read, 837 words approved 16-May); `frontend/app/[locale]/about/for-businesses/guides/product-photography/page.js` (Guide 2, 5-min read, 920 words); `frontend/app/[locale]/about/for-businesses/guides/customer-messages/page.js` (Guide 3, 6-min read, 1,085 words, includes the 5 WhatsApp-template blockquotes with multi-line support via `InlineBold` `\n → <br>` enhancement). **Pattern (b) — hardcoded JSX** chosen because `grep -rln "react-markdown\|remark\|next-mdx\|@mdx-js" frontend/` returned zero matches — no markdown pipeline exists; adding one is scope-creep. Each page exports an App Router `metadata` object (title / description / OG / `alternates.canonical`) per the sibling pattern at `frontend/app/[locale]/about/for-businesses/page.js:4-17`. **No new npm dependencies.** **No backend changes** beyond the email-body URL update bundled into this commit. **URL match:** `backend/app/services/onboarding_followup.py:78,117,157` references these exact paths — verified the slugs match (`business-story` / `product-photography` / `customer-messages`). **Content cleanup applied** per Phase 2D prompt: stripped Drive MCP's backslash escapes (`\*`, `\[`, `\-`), stripped header block (`# Guide N — ...`, Path:, Linked from:, Status:), stripped trailing implementation notes, replaced mojibake `ð¿`/`ð¥`/`ð§`/`ð¾` with 🌿/🥖/🧀/🌾 per user-approved emoji set, and restored 📋 between "המחירון" and "משלוח" in Guide 3 Template 3 (initially dropped because none of the 5 user-approved emojis fit; user re-approved 📋 in the Phase 2D follow-up). `dir="rtl"` is inherited from `<html dir>` at `app/[locale]/layout.js:114`; no per-article `dir` override needed. **Build:** `next build` green — all 4 routes prerendered as SSG for both `he` and `en` locales (8 static HTML files). No frontend tests added (no existing test pattern for `/about/*` pages — sibling `for-businesses/page.js` ships untested too).
+
+`fix(MEH-539)`: align the guide subtree with the `for-businesses/` URL convention (brand voice consistency — CLAUDE.md "בית עסק / בעלת עסק"). The first Phase 2D push (commit `4fda2b3`) landed the guides under a different parent that matched the Drive content + Phase 2C email bodies verbatim but conflicted with the site's existing producer-facing surface. This follow-up renames the subtree via `git mv` (4 file renames preserved across history), updates internal canonical URLs + `<Link>` hrefs + the default `backHref` in `GuideArticle.jsx`, updates the 3 guide links inside `backend/app/services/onboarding_followup.py`'s Email 2/3/4 bodies, and reruns the Phase 2C pytest module (4 passing). Drive .md files (3 guides + emails 2/3/4) to be updated by Sapir manually post-commit. CI EXPECTED_REV unaffected (frontend-only rename + backend string update, no migration).
+
+### 2026-05-16 — MEH-539 Phase 2C: onboarding follow-up email scheduler (4 emails + Email 5 dual variant)
+
+`feat(MEH-539)`: APScheduler in-process daily job at 10:00 UTC (= 13:00 Israel) sends the 4 Phase-1-approved follow-up emails (Day 2 / 5 / 10 / 30 after producer registration) — see Phase 2C of MEH-615. **Files added:** `backend/app/services/onboarding_followup.py` (Hebrew bodies embedded verbatim from Drive folder `19yWq0iuNgxr59JHRGUV5KPGTh0LpMzKE`, 5 message templates: Email 2 / 3 / 4 / 5A / 5B), `tests/test_onboarding_followup.py` (4 tests — 2-day-old producer fires step 2, idempotency on re-run via `email_followup_2_sent_at IS NULL` predicate, Email-5 variant-A subject for licensed+approved, variant-B for the three "anything else" sub-cases). **Files edited:** `backend/pyproject.toml` (+ `apscheduler~=3.10`, resolves to 3.11.2 in `uv.lock`), `backend/app/startup.py` (BackgroundScheduler started + stored on `app.state.followup_scheduler`, `_run_followup_job` helper opens a fresh `SessionLocal` per tick — request-scoped sessions don't reach scheduler threads). **License predicate for Email 5** (per Phase 2A.5 + the user's Phase 2C override): variant A iff `producer.status == 'approved' AND producer.producer_license_number IS NOT NULL` (whitespace-only is normalised to "not supplied" using the same convention as `backend/app/services/license_validation.py:30`); otherwise variant B. The `license_status` reference in the Drive `email-05a/b.md` files is obsolete (Phase 2A.5 confirmed no such column exists) and tracked as a post-Phase-2 Drive-doc cleanup, not a code blocker. **Per-producer fail-isolation:** the scheduler iterates candidates and wraps each send + commit in `try/except Exception, log.warning, continue` so one bad row never crashes the daily run; `send_email` itself is already fail-open at `backend/app/services/email.py:54`. **Anchor preserved:** `_send_welcome_email` (`backend/app/services/auth_emails.py:134`) and `notify_producer_registered` (`backend/app/services/auth_notifications.py:25`) untouched per MEH-287. **Sequencing:** depends on Phase 2B migration `b504e4be4225` (4 columns + `idx_producers_created_at` on `producers`) which is still un-applied — `alembic upgrade head` is deliberately held until Phase 2D's deploy bundle so 2B+2C+2D ship together. **Tests deviate from prompt step 5:** placed at `tests/test_onboarding_followup.py` (repo root) not `backend/tests/test_onboarding_followup.py` because the repo convention puts tests at root (see `tests/CLAUDE.md` + `backend/pyproject.toml:67-75` mutmut `tests_dir`). **Pytest:** 4 passed, 2 warnings, 1.83s.
+
+## 2026-05-15 — MEH-596: Discovery redesign synthesis + priority matrix (Sub 3/4 of MEH-592 epic)
+
+`docs(MEH-596)`: lands the synthesis deliverable for the discovery-layer redesign epic — turns Sub 1 (internal audit, merged in #676) + Sub 2 (competitive research, merged in #677 + screenshots in #678) into actionable decisions. **Main file** `docs/synthesis/2026-05-discovery-redesign-synthesis.md` (5 sections per spec): Executive summary (1-page bottom-line, top-3 launch-blockers, top-2 post-launch defers, confidence calibration) → Findings (14 distinct findings, every claim cited to Sub 1 line or Sub 2 section/anti-pattern, each tagged 🔴 Critical / 🟡 Important / 🟢 Polish + thesis-alignment check) → Priority matrix (Impact × Effort × Launch-blocker × Recommended action table, 14 rows sorted by action order) → Recommendations (per 🔴 Critical and Launch-blocker: 2-3 sentence recommendation + ASCII mockup link + trade-offs + Sub 1/Sub 2 citation + S/M/L effort + Linear action; per 🟡 Important: 1-paragraph + Linear action; per 🟢 Polish: 1-sentence) → Performance + Hebrew + RTL + "What we won't do" (10-item explicit deferral list — purist counter removal, purist full-map replacement, /about refactor, logo redesign, producer detail redesign, /map page changes, new research, final mockups, Linear mutations from this PR; all named, all sourced to either Sapir-decision Q1-Q3 or scope guard). **Counts hit every spec target:** 14 findings (≥10), 4 🔴 Critical (within 3-5 band), 3 launch-blockers (within ≤5 ceiling — F1 map above the fold, F2 CTA "דירקטורי" reframe, F3 categories subhead reframe), 7 ASCII mockup directions in `docs/synthesis/mockups/` (target ≥5: F1, F2, F3, F4, F7, F8, F9 — F2/F3/F4 each provide 3 Hebrew copy options for Sapir to pick from), 3 Hebrew copy directions ready for use (target ≥3 — F2 CTA, F3 categories, F4 counter, each with 3 options). **3 Sapir-decisions locked in Phase 0** (recorded in Section 5.5 deferral list): Q1 stats counter HYBRID (keep MEH-521, reframe copy magazine-tier — "גליון מאי — 12 בתי עסק" doubles as editorial-cadence signal); Q2 map positioning HYBRID (keep MEH-538 mini-map, fix to above-the-fold — purist full-bleed map rejected; performance plan in Section 5.1: skeleton + 200ms post-FCP defer via requestIdleCallback + tile-server preconnect); Q3 Sub 1 H1 "Issue/Volume eyebrow" hypothesis deferred — Sub 2 didn't cover magazine peers (Kinfolk/Cereal/Apartamento), Sub 4 opens NEW MEH for 1-2 hour magazine-peer research before any implementation. **13 Linear actions** mapped for Sub 4 (Section 4 + final mapping table): 3 NEW MEH launch-blocker (F1, F2, F3 — F2+F3 can bundle as single copy-PR), 3 NEW MEH fast-follow week 1-2 (F4+F10 bundle for counter reframe + skeleton, F11 Step 2 subhead lie fix, F6 HIW step 3 reframe), 1 NEW MEH post-launch Q3 (F7 founder strip), 2 UPDATE existing (MEH-542 producer stories carousel priority bump + Sub 2 citations, MEH-534 trust ladder process page priority bump + Sub 2 citations), 3 NEW MEH post-launch Q4 (F12 cross-surface filter persistence, F13 MiniMap rename, F14 pagination consolidation), 1 NEW MEH deferred (magazine peer research per Q3 decision). **Mockup files** each include ASCII layout + Hebrew copy options + evidence-citation block + RTL notes + explicit "what this is not" guardrails — F7/F8/F9 mockups note feminine voice rule (CLAUDE.md hebrew-tailwind-preset) and logical-property requirement (ms-/me- not ml-/mr-). **Sapir voice throughout**: warm, direct, no marketing speak, no "leading"/"first" claims; "what we won't do" is treated as equal-weight content to "what we will do" per spec. **Confidence**: medium-high — strong on Israeli-specific findings (7-site direct evidence from Sub 2 + 5 manual screenshots), weaker on exact map-placement specifics on global peers (Sub 2's `[unverified-from-snippets]` tag on CrowdFarming/GrownBy/LRQDO exact placement). **No CI gate** (docs-only DoD exception per the spec). No code touched, no schema, no auth, no central components. HANDOFF.md updated with synthesis pointer + 13-action Linear summary.
+
+Closes MEH-596. Sub 4 (Linear cleanup) is now unblocked. Epic MEH-592 progress: Sub 1 ✅ (#676) + Sub 2 ✅ (#677, screenshots #678) + Sub 3 ✅ (this PR) → Sub 4 ready to execute.
+
+## 2026-05-15 — MEH-595: Competitive discovery research — 16+ farm-to-table sites (Sub 2/4 of MEH-592 epic)
+
+`docs(MEH-595)`: lands the competitive-research deliverable for the discovery-layer redesign epic. Three new files under `docs/research/`: **`2026-05-competitive-discovery-research.md`** (766L, the main analysis), **`2026-05-sources.md`** (169L, source bibliography with access dates), **`screenshots/2026-05/README.md`** (sandbox-limitation note in lieu of the ≥20 PNGs the spec asked for). Covers all 19 sites the spec named — 8 global (CrowdFarming, GrownBy, La Ruche Qui Dit Oui, Farm to People, Open Food Network, PEEL, Foodshed, Farmish) + 8 Israeli (israelfarmers.co.il, noyhasade.co.il, sadeyarok.co.il, hasade.co.il, etzhasade.com, gan-hasade.com, farmdirect.co.il, meshek.co.il) + 3 UX pattern owners (Airbnb, Booking, Etsy). **Sandbox limitation surfaced up-front (Section 0):** WebFetch is blocked for every competitor domain by the MEH-397 allowlist hook (`.claude/hooks/check-webfetch-allowlist.sh` permits only 7 first-party hosts), and Playwright MCP isn't connected in harness CC — so screenshots and live page-render verification both fail-closed. Per the spec's STOP condition (a) ("\>5 sites inaccessible → flag and continue"), the report pivoted to WebSearch-only methodology, citing page `<title>` strings (reliable — rendered from the HTML `<title>` element) plus meta descriptions and third-party profiles (EIB, Food Tank, Times of Israel, Wikipedia, Etsy seller handbook, Baymard, Medium UX writeups). Every claim is sourced with a URL + access date; fields that need live render (homepage section order, exact map placement, listing card structure, conversion click counts) are tagged `[unverified-from-snippets]` rather than fabricated. **Hits/exceeds every spec target except screenshots:** 19 site analyses (≥16 required), 7 patterns documented (≥5 required: hard-number trust strip, map/location-search-first, producer-as-protagonist, anti-middleman framing, two-mode discovery, editorial layer, badge-propagation), 4 anti-patterns (≥3 required: *"ישר מהחקלאי"* tagline saturation, geography in prose, single-brand sites masquerading as marketplaces, hidden producer onboarding), 11 verbatim Hebrew page-title quotes from 7 Israeli sites (≥4 required across ≥4 sites). **`meshek.co.il` flagged honestly** — WebSearch returned no unified marketplace at that exact domain; the spec may have intended a different site (meshek-p.co.il? hai-meshek.org.il?). Section 4 (Israel-specific) is the load-bearing input for Sub 3: five empirically unaddressed gaps in the Israeli competitive set (no producer map, no feminine-voice Hebrew, no magazine/editorial layer, no true producer directory beyond israelfarmers.co.il, no sharper anti-middleman framing than *"מהחקלאי לצרכן"*) — together these form mehamakor's empirically distinct stake-out ground. Section 5 lists 13 open questions for a follow-up pass with browser access (resolve `meshek.co.il`, confirm map placements on CrowdFarming/LRQDO/GrownBy, capture kosher cert + license-number prominence on Israeli sites, capture all 19 screenshots). **DoD exception applied (docs-only):** no `npm run build`, no `pytest`, no preview URL — research deliverable, no code touched. No CI risk. No central-component touch. No schema, no auth, no security surface.
+
+Closes MEH-595. Sub 3 (synthesis & recommendations) is now unblocked. Parallel-able with Sub 1 (internal audit).
+
+## 2026-05-16 — MEH-598: Hide /neighbor pre-launch (brand LOCK)
+
+`feat(MEH-598)`: removes `/neighbor` (the "מהמטבח של השכן" home-cooks section) from the public surface before launch — feature is deferred per MEH-543 (post-launch + 30 days + 50 producers trigger). **Scope expanded from the spec's 4 files → 9 files** during Phase 0 grep sweep: discovered that the LOCK-forbidden string `"מהמטבח של השכן"` also lived in `home.kitchen.heading` (he.json:138) + powered the active `<HomeKitchenPreview>` section on the homepage (`page.js:178` — section #16 in the MEH-596 homepage audit). Hiding `/neighbor` while leaving the homepage section live would have defeated the spec's brand-LOCK goal — the most visible LOCK violation would have remained above the fold. **9 files changed:** (1) `Header.jsx` — nav entry `/neighbor` removed; (2) `Footer.jsx` — same; (3) `BottomNav.jsx` — tab removed + unused `CookingPot` import dropped (mobile tabs go 4→3); (4) `frontend/app/[locale]/neighbor/page.js` — replaced 23L of LOCK-violating metadata + `<NeighborClient>` render with a 7L server component using `redirect("/")` from `next/navigation` + `MEH-598` sentinel anchor comment per code-execution §15; (5+6) `frontend/messages/he.json` + `en.json` — removed both `nav.neighbor` + `nav.footer.neighbor_kitchen` keys AND the entire `home.kitchen.*` namespace (heading + see_more) — LOCK-bound user-facing content even when not currently rendered (per Smadar's rule: "i18n strings store user-facing content, LOCK-bound; code comments document internals, allowed"); (7) `frontend/app/[locale]/page.js` — removed `HomeKitchenPreview` from import + removed the `<HomeKitchenPreview .../>` render at line 178 (atomic 2-change edit per exec §8); (8) `docs/MANUAL_TESTING.md` — added MEH-598 test section (8 cases: header/footer/bottom-nav absence + direct-route redirect + homepage section absence + DOM grep + console clean); (9) `HANDOFF.md` — full entry. **Preserved per spec (dead code revival via MEH-543):** `NeighborClient.jsx` full file (`/neighbor` UI inside) + `HomeStaticBlocks.jsx:141-167` `HomeKitchenPreview` function definition (no longer imported anywhere — auto-dead but kept intact for revival path) + the 2 code-internal `/neighbor` comments in `Header.jsx:28,139` (algorithm docs, not user-facing). **6 LOCK leak surfaces deferred to MEH-599** (Sapir-decision δ — scope guarding):  E1+E2 `ChatWidget.jsx:47,75` (chat Q&A about "מהמטבח של השכן"); E3 `HomeProductCard.jsx:55` (rendered label — becomes auto-dead after this PR since only consumers were `<HomeKitchenPreview>` + `<NeighborClient>`, both now dead); E4 `producer/dashboard/page.js:498` (producer dashboard subsection — needs UX decision); **E5** `backend/app/routers/chat.py:97,106,107,112,114` (5 hits — AI chat FAQ data; **most critical LOCK leak: AI actively explains "מהמטבח של השכן" to visitors when asked**); E6 `__tests__/HomeProductCard.test.jsx:95-96` (follows E3). MEH-599 description + audit comment updated to track the deferral with full file:line evidence. **Verification:** all 4 target greps clean — `/neighbor` in components/app returns only the redirect string + 2 preserved Header comments; `neighbor` in messages = 0 hits; `מהמטבח של השכן` in messages = 0 hits; `HomeKitchenPreview` = 1 hit (the preserved dead function definition only). Full `grep "מהמטבח של השכן" frontend/ backend/` shows 23 hits remaining — all in Category B (preserved dead code) or Category C (code-internal comments) or Category D (deferred to MEH-599). `npm run build` green (11.2s, 0 errors, 1 pre-existing middleware→proxy deprecation warning unrelated to this PR); the `/[locale]/neighbor` SSG route built successfully for both `/he/neighbor` and `/en/neighbor` (the redirect server component compiles + prerenders as static HTML). **pytest deferred to CI** — fresh sandbox container blocks `pip install`, so backend tests cannot run here; build verifies the frontend path which is the only surface this PR touches functionally. **Skeptic flags:** (1) i18n locale redirect behavior — `redirect("/")` from `[locale]/neighbor/page.js` should re-locale via next-intl middleware to `/he` (or current locale); cannot verify in sandbox (MEH-360); mobile QA on Vercel preview required. (2) `HomeKitchenPreview` function definition is now dead code on disk per spec — ESLint may warn (treat as feedback per MEH-443 warn-mode). 3 Sapir-decisions: Q1 keep Header.jsx algorithm comments (A); Q2 remove i18n LOCK keys (full removal, both files); Q3 defer E1-E6 to MEH-599 (δ — preserves one-PR-one-logical-change discipline).
+
+Closes MEH-598. Cross-ref: MEH-543 (revival trigger), MEH-599 (sibling LOCK ticket — `/terms` + meta + the 6 E* surfaces deferred here).
+
+## 2026-05-15 — MEH-538: Homepage mini-map preview for discovery prominence
+
+`feat(MEH-538)`: lazy-loaded mini-map preview slots into the homepage between the Hero/search section and the Categories grid, surfacing map-based discovery without forcing the visitor onto `/map` first. **IntersectionObserver with `rootMargin: "200px"` gates BOTH the Leaflet bundle and the `GET /producers` call** — nothing network/CPU-heavy runs until the user scrolls within ~200px of the section. **Tel Aviv center (32.0853, 34.7818) at zoom 8** — population center for full-country preview; deliberately different from `/map`'s Jerusalem center (31.7683, 35.2137) which suits interactive geographic exploration after the user has already committed to the map. **Marker color via `styleForProducer()`** (`frontend/lib/map-categories.js:52`) — single source of truth shared with `/map`, so category-color drift between homepage preview and full map is impossible by construction. Strict scope: no clustering, no my-location, no hover, no bounds tracking, no verified/premium badge decorations, no search, no filters — those all live in `MapComponent.jsx` for the `/map` page. Interaction: `scrollWheelZoom` + `touchZoom` + `doubleClickZoom` disabled so mobile scroll isn't trapped; dragging stays enabled; **marker click → opens per-producer tooltip** (name + first-category) with Leaflet stopping bubbling; **canvas click → navigates to `/map`** via `next/navigation` router. Empty state ("בקרוב מאוד — בתי עסק ראשונים מצטרפים השבוע 🌿") fires when zero producers have valid `lat && lng` (Q4 in chat: "plottable" = both coords present). Loading skeleton mirrors `/map` page's pulse pattern. **No new dependencies** — `react-leaflet@^4.2.1` + `leaflet@^1.9.4` were already in `frontend/package.json`. Homepage integration uses `dynamic(() => import("@/components/HomepageMiniMap"), { ssr: false })` because Leaflet touches `window` at import time. Two files changed: NEW `frontend/components/HomepageMiniMap.jsx` (~210L with full §14 file header) + `frontend/app/[locale]/page.js` (+15L: import + insertion). RTL clean — logical properties only; lat/lng coords explicitly commented as geographic-not-directional. Build green across three compiles (pre-merge, post-MEH-589 sync, post-MEH-590 sync). Desktop QA approved by Smadar (markers render at Tel Aviv center, CTA "פתחי מפה מלאה ←" works, design flows naturally between `HolidayBanner` and `HomeCategoryGrid`); mobile Lighthouse deferred to Smadar on the live preview (MEH-360 — sandbox can't reach `*.vercel.app`).
+
+Closes MEH-538.
+
+## 2026-05-15 — MEH-591: Producer recipes public UI + SEO (chunk 4/4 — FINAL)
+
+`feat(MEH-591)`: closes the producer-recipes epic. The public producer page now surfaces approved+published recipes in a 2-col-mobile / 3-col-desktop grid, and each recipe gets its own server-rendered detail page at `/[locale]/[slug]/recipes/[recipe_id]` with full schema.org/Recipe JSON-LD for Google rich-snippet eligibility. **Section on the producer page** — added to `ProducerSections.jsx` between Products and DeliveryBlock; fetched client-side via the public read endpoint from chunk 2 (`GET /producers/{slug}/recipes`, backend already filters to `published=true AND moderation_status='approved'`), and the section is **hidden entirely when the producer has no recipes** (silent empty per spec — no awkward "no recipes yet" message on producer pages that haven't shipped any). Anchor `id="recipes"` lines up with the breadcrumb on the detail page so the back link drops the user back in context. **`RecipeCard`** (new in `frontend/components/public/`) — image (Cloudinary or 🍞 placeholder), title with line-clamp, total-minutes + servings strip; whole card is one `<Link>` to the detail route. **Public recipe detail page** (`frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx`) — server component, fetches producer + recipe in parallel via `Promise.all`, hydrates related products by filtering `producer.products` on `recipe.product_ids` (the same-producer invariant is enforced at the backend in chunk 2, so this is a pure intersection). `generateMetadata` builds the SEO meta tags from the spec: `title = "{recipe.title} | {producer.name} | מהמקור"`, `description = recipe.description[0..159]`, plus `openGraph` with the image. 404 covers both unknown-slug AND not-yet-published recipe — backend filter does the heavy lifting so this single check doesn't leak the existence of a pending recipe. **`RecipeDetail`** (new) renders breadcrumb (`{producer name} > מתכונים > {title}` per spec verbatim) → hero image → title → prep/cook/servings strip → description (whitespace-pre-line) → ingredients as `<ul>` (split by newline) → instructions as `<ol>` numbered list (split by newline, preserves multi-line steps via `whitespace-pre-line`) → related products grid (hidden when empty — spec says silent) → "← חזרה לדף בית העסק" link. Related-products card uses the same flat list shape as ProductCard since the producer page doesn't have a public `/products/[id]` route — clicking a related product just shows its name + price range inside the recipe page (deviation flagged below). **`RecipeJsonLd`** + `buildRecipeSchema()` (new) — pure helper builds the schema dict; `RecipeJsonLd` renders the `<script type="application/ld+json">`. Splits ingredients into `recipeIngredient: string[]` and instructions into `recipeInstructions: { @type: "HowToStep", text }[]` (Google preferred shape). Converts minutes to ISO 8601 durations (`PT30M`, `PT1H30M`) with the same `≤1440` bound as the Pydantic schema. Strips `undefined` keys for clean serialization. **Tests** — `RecipeJsonLd.test.jsx` (9 vitest cases: @type/@context, ingredient split, HowToStep wrap, ISO duration short + long form, omit-when-zero, recipeYield string, Organization author, undefined-strip) + `RecipeCard.test.jsx` (4 cases: title + href slug interpolation, total-min math, missing-time hidden, placeholder when image_url null). **RTL clean** — zero physical positional classes across the 5 new files; ProducerSections diff uses only logical utilities. **Spec deviations (all aligned with project pattern):** (1) component dir is `frontend/components/public/` (new, matches spec literally); (2) no `frontend/lib/api/recipes.js` (project has no `lib/api/` subdir — server-side `fetch()` for the page, client-side `api.get()` for the section, both inline); (3) no `messages/he.json` / `en.json` updates (Hebrew hardcoded — i18n MEH-366 migration mid-flight, ProducerSections + dashboard chunks both hardcode); (4) the spec scoped a `producers/[slug]/...` route, but actual public routing is `[locale]/[slug]/...` (producer slug at the locale root, `/producers/...` is a different route family) — used the correct path; (5) related-product cards do NOT link to a public product page because none exists today — they render inline with name + price, matching the product surfaces elsewhere on the producer page; (6) branch + PR + Closes use **MEH-591** (real Linear ticket), spec text said MEH-592 — same offset bug as chunks 1/2/3. 9 files total (well under ≤11 cap).
+
+**Epic complete.** Chunks 0-4 shipped this session: MEH-587 (cleanup) → MEH-588 (schema) → MEH-589 (endpoints + Claude moderation) → MEH-590 (dashboard UI) → MEH-591 (public UI + SEO).
+
+Closes MEH-591. Producer recipes feature complete (chunks 1-4 done).
+
+## 2026-05-15 — MEH-590: Producer recipes dashboard UI (chunk 3/4)
+
+`feat(MEH-590)`: lands the producer-facing UI for the recipes feature on top of the backend from MEH-588 + MEH-589. New dashboard route at `/producer/dashboard/recipes` with an inline create-form toggle mirroring `group-buys/page.js:193-335` exactly — list of producer's recipes (calls `GET /producers/me/recipes`, returns all moderation states), "פרסום מתכון חדש" toggle button that expands the form inline, per-recipe row with title + truncated description + `<RecipeStatusBadge>` pill + inline admin feedback banner when `moderation_status` is `needs_revision` or `rejected` + edit/delete actions. Separate edit page at `/producer/dashboard/recipes/[id]/edit` fetches the recipe via `GET /producers/me/recipes/{id}` (404 if not own) and reuses the same `<RecipeForm>` with `mode="edit"`. **`RecipeForm`** (new shared component) is a controlled-form mirror of the `HomeProductForm` shape: title (3-200), description (optional), ingredients (≥10, 6-row textarea), instructions (≥10, 8-row textarea), prep/cook/servings integer fields with the same ge/le bounds as the Pydantic schema, single-image upload via `POST /upload/image` (matches `HomeProductForm.jsx:127-145`), and a multi-select checkbox list of the producer's own products fetched from `GET /producers/me/products`. Submit handler routes to `POST /producers/me/recipes` (create) or `PATCH /producers/me/recipes/{id}` (edit), surfaces the Claude-REJECTED reason inline (`detail.error === "recipe_rejected"`) without unmounting the form so the producer can edit + retry, and calls `onSaved` with the new recipe row. **`RecipeStatusBadge`** (new) maps the four `moderation_status` values to the pill style from the spec: pending=gray ("ממתין לאישור") / approved=green ("אושר ופורסם") / rejected=red ("נדחה") / needs_revision=orange ("צריך תיקון"). Fallback to the raw string for unknown states so a future backend state never silently renders blank. **Dashboard tab card** added to `producer/dashboard/page.js` quick-links grid right after the group-buys card — "מתכונים" headline + "פרסום וניהול מתכונים שמקדמים את המוצרים שלך" subtitle. **vitest tests** in `__tests__/RecipeStatusBadge.test.jsx` lock the 4 Hebrew strings + the unknown-status fallback + the missing-prop case — 6 cases. **All Hebrew verbatim per spec** ("פרסום מתכון חדש", "שמירת מתכון", four status labels, four form labels). **RTL clean**: zero physical positional classes — only `text-right` + `dir="rtl"` (analog of `group-buys/page.js:68`) + logical `ms-2`. No frontend hook is required to allow physical CSS. **Spec deviations** (all aligned with project pattern, not invented):
+- `frontend/lib/api/recipes.js` skipped — project has no `lib/api/` subdir; API calls are inline `api.post/get/patch/delete` per the dashboard convention.
+- `frontend/components/producer/Recipe*.jsx` location adjusted to `frontend/components/Recipe*.jsx` — there is no `components/producer/` subdir; components live directly under `components/` per `components/CLAUDE.md`.
+- `frontend/messages/he.json` + `en.json` skipped — dashboard pages currently hardcode Hebrew (i18n migration MEH-366 is mid-flight; new dashboard code follows the existing hardcoded pattern, not the partial next-intl one).
+- `RecipeList.jsx` skipped — `group-buys` puts list rendering inline; splitting it adds a wrapper for no readability win.
+
+8 files total (well under the ≤12 cap). No backend touch, no central-component edit, no schema migration. CI gate: `npm run build` + `pytest tests/test_api.py` (sanity, no regression on backend).
+
+Closes MEH-590. Depends on MEH-589 (merged). Part of producer recipes epic (chunk 4 to follow).
+
+## 2026-05-15 — MEH-589: Producer recipes endpoints + moderation (chunk 2/4)
+
+`feat(MEH-589)`: lands the backend surface for producer-owned recipes on top of the schema from MEH-588 (chunk 1). 12 endpoints across two new routers + a new Claude Haiku moderation service. **Producer-self CRUD** at `/producers/me/recipes/*` (POST/GET-list/GET-one/PATCH/DELETE) gated by `Depends(require_producer)` with `user.producer_id` resolution, rate-limited 10/hr on POST + PATCH, returns 404 (not 403) on cross-producer access to avoid leaking existence. **Public read** at `/producers/{slug}/recipes` + `/producers/{slug}/recipes/{id}` resolves slug → approved producer and filters `published=true AND moderation_status='approved'` (matches the partial index from MEH-588). **Admin moderation** at `/admin/recipes/*` mirrors the `admin_experiences.py` pattern exactly — three terminal actions (`/approve` → published=true, `/request-changes` → feedback required + needs_revision, `/reject` → terminal) plus a pending queue and a status-filtered list. **Claude Haiku pre-check** in new `backend/app/services/producer_recipe_moderation.py` mirrors `experience_moderation.py` end-to-end (same APPROVED/FLAGGED/REJECTED enum, same fail-open semantics, same JSON-only contract); fail-open returns APPROVED on missing API key / network / parse error so infra hiccups never block a submission (admin still reviews). **PATCH content-change detection** re-runs moderation + resets `published=false` + `moderation_status='pending'` ONLY when `title/description/ingredients/instructions` actually change — metadata-only edits (image_url, prep/cook/servings, product_ids) bypass moderation. **Cross-producer M2M block**: `_validate_product_ids()` returns 422 if any `product_ids` belong to a different producer — defense for FINDER#6 from the MEH-588 adversarial review. **4 new Pydantic classes** (`ProducerRecipeBase` / `Create` / `Update` / `Out` + `ProducerRecipeModerationAction`) added to `backend/app/schemas/schemas.py` with `sanitize_text` validators on textual fields; `Update` follows the project's all-Optional pattern from `ExperienceUpdate`. **Tests** in new `tests/test_producer_recipes.py` — 24 test cases covering: auth/role guards, the Claude verdict matrix (APPROVED / FLAGGED / REJECTED → 400), M2M happy path, cross-producer 422 defense, missing product_id 422, list-only-mine isolation, IDOR 404, metadata-vs-content PATCH branching, owner+admin delete, public read filter (published+approved only), admin pending queue, admin approve→published / request-changes→feedback-required / reject→terminal. Claude calls are monkey-patched at both the service module and the router-local import (REUSES `test_experiences.py:83-100`). `router_registry.py` registers both new routers right after `admin_experiences`. `docs/DATA.md` updated with the 12 endpoints + the table SQL block. 9 files total (matches authorized cap).
+
+Closes MEH-589. Depends on MEH-588 (merged). Part of producer recipes epic (chunks 3-4 to follow).
+
+## 2026-05-15 — MEH-530: Producer license number — conditional required + admin-only exposure
+
+`feat(MEH-530)`: adds `producers.producer_license_number` (VARCHAR(20), nullable) and a layered validation stack so the field is **required at signup time when the producer selects at least one license-bearing category** (לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות) and **optional-collapsed-toggle otherwise**. Three layers: (1) Alembic `e8a3c4b5d791` adds the nullable column, rebased onto MEH-587's `d7e3c9a82f5b` after a Rule 25 staging-sync. (2) Backend conditional guard at `backend/app/services/license_validation.py::ensure_license_for_categories` runs on all four input surfaces — `POST /auth/register/producer`, `POST /producers`, admin `POST /admin/producers`, and admin/owner `PUT` (admin PUT + owner PUT both use an *effective-state* check that combines payload categories with persisted categories + payload license with persisted license, so a PATCH that swaps from a non-license category to a license category without supplying a license still 422s). Helper raises `HTTPException(422, "מספר רישיון יצרן חובה לקטגוריה זו")`. (3) Pydantic enforces only `max_length=20` (DB boundary mirror) — deliberately **no regex** at the schema layer so the manual-approval flow can persist non-numeric values like "PENDING-1234". Exposure is privacy-first: public `ProducerListOut` / `ProducerDetailOut` get only the derived `has_producer_license: bool`; admin queue `GET /admin/producers/pending`, admin PUT/POST `/admin/producers`, and owner-self `GET`/`PUT /producers/me` flip to the new `ProducerAdminOut` (extends `ProducerDetailOut` with the raw `producer_license_number: str | None`). Admin list `GET /admin/producers` deliberately stays on `ProducerDetailOut` — singular detail is enough; long list stays slim. Owner can edit own license via `producer_me.PUT`'s writable-field whitelist (license is renewed every 5 years, self-service avoids admin queue churn). Frontend: new `frontend/lib/license-required-categories.js` mirrors the 7 Hebrew category names + a `requiresProducerLicense()` helper + `hasLicenseFormatWarning()` (regex `^\d{7,10}$`, inline warning text "מספר רישיון יצרן הוא 7-10 ספרות", never blocks submit). `/register/producer` Step 2 grows a conditional license block placed **after** CategorySelector so the required-vs-optional branching reacts live to the selection. Required path renders inline with the "(חובה)" suffix + helper "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות"; optional path is collapsed behind a "יש לי רישיון יצרן ↓" toggle. Admin `components/admin/ProducerForm.jsx` gets a parallel module-scope `ProducerLicenseField` sub-component in the "קטגוריות ותגיות" Section, with edit-flow auto-expand when a value is already persisted. 8 pytest cases in `tests/test_producer_license.py` lock in the happy path, missing-license 422, empty-string-normalises-to-missing, mixed-categories 422, non-required-category 201, admin happy path, admin PATCH effective-state 422, and the legacy-non-regex 201 (this last one is the regression guard against any future overzealous backend tightening that would break Sapir's manual-approval flow). RTL clean — all positional classes use logical properties. `npm run build` ✅, ruff ✅, app boots after staging-sync ✅. Manual mobile + desktop QA pending on the Vercel preview.
+
+Closes MEH-530.
+
+## 2026-05-15 — MEH-588: Producer recipes DB schema + ORM (chunk 1/4)
+
+`feat(MEH-588)`: lands the schema foundation for the producer-recipes feature. Two new tables created via Alembic revision `f4c8a91e2b07` (revises `d7e3c9a82f5b` = MEH-587): (1) `producer_recipes` — parent table, 15 columns including `producer_id` FK → `producers(id)` `ON DELETE CASCADE`, `moderation_status TEXT NOT NULL DEFAULT 'pending'` with a named CHECK constraint over the four-state machine (`pending` / `approved` / `rejected` / `needs_revision`), `published BOOLEAN NOT NULL DEFAULT false`, plus `created_at` / `updated_at` with `server_default=now()` for safety on direct-SQL inserts; (2) `producer_recipe_products` — M2M link table with composite PK `(recipe_id, product_id)`, both FKs cascade on delete. Two indexes on the parent (plain on `producer_id`, partial on `(published, moderation_status) WHERE published = TRUE` for the public read path) plus reverse-lookup index on `product_id` in the link table. ORM lands in `backend/app/models/models.py`: new `ProducerRecipe` class + module-scope `producer_recipe_products = Table(...)` association, `Producer.producer_recipes` relationship (`cascade="all, delete-orphan"`), `Product.recipes` relationship via `secondary="producer_recipe_products"`; `Table` added to the sqlalchemy imports. Both new names re-exported from `backend/app/models/__init__.py`. CI gate bumped: `EXPECTED_REV` d7e3c9a82f5b → **f4c8a91e2b07**, `EXPECTED_TABLES` 32 → **34** in `.github/workflows/pr-checks.yml`. Many-to-many over one-to-many chosen because one recipe can promote several of the same producer's products (SideChef / Progressive Grocer pattern referenced in the spec). No endpoints, no schemas, no UI — chunks 2-4 follow.
+
+Closes MEH-588. Part of producer recipes epic (chunks 2-4 to follow).
+
+## 2026-05-15 — MEH-587: Remove zombie user-submitted recipes feature (chunk 0/4)
+
+`chore(MEH-587)`: drops `recipes` and `recipe_ingredients` tables and clears every code reference ahead of the producer-recipes feature (chunks 1-4). The user-submitted-recipes flow had shipped to the schema only — no frontend, no production traffic. DB verification on 2026-05-15 confirmed both tables empty on staging AND production (0 rows each). Alembic migration `d7e3c9a82f5b` performs the drop (child `recipe_ingredients` first, then parent `recipes`); downgrade recreates both in their **post-MEH-311 / post-MEH-313** state with explicit FK constraint names (`recipes_submitted_by_fkey`, `recipe_ingredients_producer_id_fkey`) so a chained downgrade through MEH-313 → MEH-311 → baseline still resolves the FKs those revisions modify. Code teardown spans 5 files: `backend/app/routers/recipes.py` deleted; `Recipe` / `RecipeIngredient` removed from `models/models.py` + `models/__init__.py`; `RecipeCreate` / `RecipeOut` / `RecipeIngredientCreate` / `RecipeIngredientOut` removed from `schemas/schemas.py`; 3 admin endpoints (`GET /admin/recipes/pending`, `POST /admin/recipes/{id}/approve`, `POST /admin/recipes/{id}/reject`) removed from `routers/admin.py`; `recipes` import + `app.include_router(recipes.router)` removed from `router_registry.py`. Tests `test_recipe_cascade.py` and `test_recipe_ingredient_cascade.py` deleted (the cascade contracts they tested have no surface left to exercise). CI gate bumped: `EXPECTED_REV` 80bbf0a24874 → d7e3c9a82f5b, `EXPECTED_TABLES` 34 → 32 in `.github/workflows/pr-checks.yml`. Living docs (DATA.md, FEATURES.md, MANUAL_TESTING.md) updated with the removal; audit-history docs (AUDIT-API-CONTRACT.md, AUDIT_API_CONTRACTS.md) get a single-line header note pointing here per "leave audits as historical records" decision. MEH-587 sentinel anchors left at each scrubbed code site so a future grep for "Recipe" returns provenance instead of nothing. No frontend changes (no frontend ever existed for this feature).
+
+Closes MEH-587. Clears namespace for producer recipes feature (chunks 1-4).
+
+## 2026-05-15 — MEH-532: Description prominence + seasonal Hebrew placeholder
+
+`feat(MEH-532)`: `description` field is now wired into the producer-registration form (`frontend/app/[locale]/register/producer/page.js`) and rendered in the prominent slot directly below the business name — surfaces the field that the backend `ProducerRegister` schema already supported but the frontend never sent. Hebrew label "ספרי על העסק שלך" + helper text "סיפור של 100-300 מילים — איך התחלת? מה מיוחד אצלך? מה הקרוב ביותר ללב שלך?". New `frontend/lib/producer-description-placeholders.js` exports four season-specific first-person Hebrew stories (Spring=Mar-May tomato grower, Summer=Jun-Aug heirloom tomatoes, Fall=Sep-Nov beekeeper, Winter=Dec-Feb sourdough baker) and a `getSeasonalPlaceholder(now=new Date())` rotator keyed on `Date.getMonth()`; the chosen placeholder is locked at first render via `useState(() => ...)` so it doesn't flicker across a season boundary. "אני אכתוב אחר כך" link below the textarea fills a default ("בית עסק מקומי. עוד פרטים בקרוב."), disables the field, and writes `description_pending=true` to `localStorage` for a future dashboard reminder (no UI consumer yet). Submit is never blocked on description content — addresses the MEH-238 drop-off lesson on multi-step forms. textarea uses `min-h-[9rem] md:min-h-[12rem]` (≈6 lines mobile / 8 desktop) since Tailwind cannot responsively change the HTML `rows` attribute. New regression test `frontend/__tests__/producer-description-placeholders.test.js` — 3 cases (April→SPRING, January→WINTER, all four constants are Hebrew strings >50 chars). No backend, schema, or other-form-field changes.
+
+Closes MEH-532.
+
+## 2026-05-15 — MEH-224: 8 admin tooltips instrumented (reuses MEH-292 component)
+
+`feat(MEH-224)`: instruments 8 admin sites with the existing `<InfoTooltip />` shipped in MEH-292 (PR #656) — no new component, no `/admin/help` page. Verbatim Hebrew copy from MEH-224 description. Sites: (1) "חלון חג" + (2) "מצב שוק שישי" in `/admin/settings`; (3) "זמינות" Section in `components/admin/ProducerForm.jsx` (admin-only single-producer form, used by `/admin/producers/new` + `/admin/producers/[id]/edit`); (4) Claude column header in `/admin/experiences`; (5) page heading "ביקורות" in `/admin/reviews` — moderation text verbatim per spec even though this table has no per-row moderation column; (6) "סטטוס" column header in `AdminProducersTable.jsx` — multi-line ReactNode covering pending/approved/rejected/suspended; (7) "אישור תעודות כשרות" heading in `/admin/kashrut`; (8) "קבוצות רכש" card label in `/admin` dashboard — wrapped in a `stopPropagation` span at the call site to prevent click-toggle from also triggering the enclosing `<Link>` navigation (InfoTooltip itself untouched). 5 deviations from the original scope were surfaced in Phase 0 and individually approved before instrumentation (locale prefix, settings sub-route for holiday/friday, ProducerForm.jsx vs non-existent `[id]/page.js`, "חלון חג" UI label vs "מצב חג" issue heading, reviews heading anchor). Net: 7 source files + CHANGELOG + HANDOFF = 9 files. Zero changes to `InfoTooltip.jsx`. No backend touch.
+
+Closes MEH-224. Reuses InfoTooltip from MEH-292 (PR #656).
+
+## 2026-05-15 — MEH-585: Pre-push staging-sync rule in workflow.md
+
+`docs(MEH-585)`: appends Rule 25 "Pre-push staging sync" to `.claude/rules/workflow.md` — mandates `git fetch origin && git merge origin/staging` before every `git push` on a feature branch. Prevention layer; pairs with the `.claude/skills/resolve-conflicts/` recovery layer. Empirical motivation: 2026-05-15 night batch where PR #662 (MEH-222) hit an avoidable CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660 (MEH-481) merged between branch creation and push. Append-only logs (CHANGELOG.md + HANDOFF.md) follow Accept-Both / Haacked rule. `git merge` is the default; rebase acceptable but merge preserves SHAs for adversarial review. Forward-only — no retrofit of open feature branches. File grew 602 → 633 lines (+31, single-rule append).
+
+Closes MEH-585.
+
+## 2026-05-15 — MEH-334: Boot-time guard for FRONTEND_URL/ENV drift
+
+`feat(MEH-334)`: defense-in-depth boot guard in `backend/app/startup.py` — new `_check_frontend_url_consistency(env, frontend_url)` helper returns a list of mismatch reasons; the existing `lifespan()` logs each as a `WARNING` next to the existing optional-env-vars warning block. Three drift cases covered: `env=staging` without a `staging.` prefix, `env=production` pointing at staging/localhost, `env=development` pointing at `mehamakor.online`. **WARNING-only by design** — boot continues even on drift so rollback strategies still work. Recurrence prevention for MEH-332 (FRONTEND_URL was bulk-copied from production into staging Railway env vars and went undetected for ~3 weeks). New `tests/test_startup_guard.py` — 6 pure-Python parametrized cases (no FastAPI lifespan, no DB). Net: +24 lines `startup.py`, +47 lines new test file.
+
+Closes MEH-334.
+
+## 2026-05-15 — MEH-222: Avatar clickable affordance on /settings
+
+`fix(MEH-222)`: avatar overlay on `/settings` ProfileTab now shows a Phosphor `Camera` icon instead of the bare Hebrew word "שנה", and the overlay is **always visible on mobile** (`opacity-30`) — only desktop hides it until hover (`md:opacity-0 md:group-hover:opacity-100`). Native browser tooltip added via `title="לחצי לשינוי התמונה"` for hover affordance. No change to upload logic, `aria-label`, or click flow. Pure UX/affordance fix — no schema, no API change.
+
+Closes MEH-222.
+
+## 2026-05-15 — MEH-464: Codify CLIENT-SAFE INVARIANT in env.client.js
+
+`docs(MEH-464)`: codification layer on top of MEH-465's env split — adds the CLIENT-SAFE INVARIANT comment block (verbatim from MEH-464 spec, with PR #499 + hotfix #2 incident citations) to the top of `frontend/lib/env.client.js`; stub comment in `frontend/lib/env.js` flagging it as a back-compat re-export only; structural-guard note in `frontend/lib/env.server.js` calling out the intentional zero-consumers ready-for-use state. New regression test `frontend/__tests__/env.test.js` "CLIENT-SAFE INVARIANT (MEH-464)" imports the real `env.client.js` in vitest's default jsdom env and asserts module evaluation does not throw + `SITE_URL`/`API_URL` are non-empty strings — any future re-introduction of a non-`NEXT_PUBLIC_*` module-level access would throw at import time. HANDOFF.md gains a permanent "Architecture invariants" section pinning the env split rule. Zero refactor, zero schema or import-path changes.
+
+Closes MEH-464.
+
+## 2026-05-15 — MEH-481: File-header contract §14 in code-execution.md
+
+`docs(MEH-481)`: codifies a 6-field file-header docstring template (Module / Purpose / Touches / Does NOT / Related / History) as a new §14 in `.claude/rules/code-execution.md`. Forward-only — new files with non-trivial logic (>50 LOC, central-component, or security-sensitive) only; no retrofit. Two canonical exemplars cited: `backend/app/rate_limit.py:1-46` (Python `"""..."""` module docstring with full MEH-256 incident trail) and `frontend/components/Footer.jsx:1-40` (JSDoc `/** ... */` block: structure + scope guarantees + about-decision). §14 slot was deliberately reserved when MEH-482 added §15 — file previously jumped §13 → §15. Cross-link to workflow rule 11 keeps the `History` field maintained as files are revised. Source: Ustynov 2026 "semantic density optimization" — high-value tokens (`file:line`, `MEH-XX`, scope guarantees) compound the value of a single Read. Net: +36 lines, single-file edit, zero code touched.
+
+Closes MEH-481.
+
+## 2026-05-14 — MEH-478: list_branches cross-verification rule in CLAUDE.md
+
+`docs(MEH-478)`: adds one-paragraph rule to CLAUDE.md "Known Bug Patterns / Gotchas" section codifying the 2026-05-07 lesson — `mcp__github__list_branches` is reliable for positive existence claims (branch X exists at SHA Y) but NOT for negative claims (branch Y doesn't exist; pagination defaults or filter state can hide entries without an error). Required cross-verification: `git ls-remote origin | grep <branch>` before acting on missing-branch findings. Same rule applies to `list_pull_requests` / `list_issues` for missing entries. Source incident: MEH-293 PR #1 follow-up — list_branches returned 12 branches without `staging`; ls-remote confirmed it existed; false-positive recovery path narrowly avoided. CLAUDE.md grew 80 → 82 lines (cap technically exceeded by 2 lines — unavoidable given scope explicitly forbade `.claude/rules/*` edits; long-form rule body should later migrate to `.claude/rules/sandbox-visibility.md` as a follow-up).
+
+Closes MEH-478.
+
+## 2026-05-14 — MEH-482: Sentinel markers §15 in code-execution.md
+
+`docs(MEH-482)`: appends §15 "Sentinel markers" to `.claude/rules/code-execution.md` codifying three grep-able inline-comment conventions: `# MEH-XXX:` (history anchor), `# DO NOT:` (anti-pattern anchor), `# REUSES: <file:line>` (pattern provenance). Each pattern has one in-repo exemplar. Forward-only convention — no retrofit pass, no hook enforcement. Baseline of existing sentinel usage: 117 hits across `backend/` + `frontend/`. Pure docs-only — zero code changes.
+
+Closes MEH-482.
+
+## 2026-05-14 — MEH-292: Shared InfoTooltip component + 10 producer-dashboard instrumentation sites
+
+`feat(MEH-292)`: new `frontend/components/InfoTooltip.jsx` — mobile-first tap-to-toggle info tooltip with self-contained `ⓘ` trigger, `Escape`-to-close, outside-pointerdown-to-close, `aria-describedby`/`aria-expanded` wiring, focus/blur opening, and RTL-aware logical positioning (`start`/`end` or `top`/`bottom` with centered direction-neutral idiom). Differentiated from existing `components/ui/Tooltip.jsx` (which wraps children + is hover-first + has no Escape) — both coexist. 10 producer-dashboard instrumentation sites: availability radio card (the deferred MEH-291 "מה ההבדל?" — multi-line ReactNode content), conversion %, rank-in-city, business-of-the-week eligibility badge (copy revised against actual `eligibleForWeekly` code path — no fabricated 80% numeric threshold), profile views card, search appearances card, 30-day views chart heading, profile strength card, custom WhatsApp questions heading, and group-buys minimum-participants input label. `WindowedMetricCard` gains optional `tooltip` prop so labels stay strings. 7 Vitest tests cover trigger render, custom label, click toggle + aria wiring, Escape close, outside-pointerdown close, ReactNode multi-line content, and focus-open. No backend touch.
+
+Closes MEH-292.
+
+## 2026-05-14 — MEH-558: Mutation testing pilot (mutmut SHIP-narrow)
+
+`feat(MEH-558)`: pilot mutmut on `backend/app/auth.py` — 276 mutants generated, 250 killed, 26 survived, **90.6 % mutation score** in ~24 min. Spec listed `auth.py` + `producer_me.py`; scoped down to `auth.py` only per STOP-(b) "runtime > 30 min" (producer_me is 920 LOC; full pilot would exceed budget) — `producer_me.py` mutation pilot deferred to a follow-up ticket. All 26 survivors cluster in `require_admin` / `require_producer` / `require_verified_email`, three role-guard functions not exercised by the pilot's auth-targeted test subset (their production coverage lives in `tests/test_api.py::TestAdminGuard` etc.) — coverage-scope artifacts, not real test gaps. Per spec STOP-(a), NOT writing 26 new tests; follow-up tickets recommended to broaden mutmut's `tests_dir` and re-pilot. Mutmut v3.5.0 has a class-test-ID CLI bug that blocked direct verification by adding `test_api.py` to the pilot — documented in `docs/research/mutation-testing-pilot.md` as known limitation. Recommended CI threshold: **80 % on auth.py** as a future quality gate (10-point headroom over current baseline). Wired-into-CI deferred per spec. `mutmut>=2.5.0` added to backend `[dependency-groups] dev`; `[tool.mutmut]` config added to `backend/pyproject.toml`; `tests/conftest.py` got a one-conditional tweak (`sys.path.append` instead of `insert(0, ...)` when `MUTANT_UNDER_TEST` env var is set, so mutated `auth.py` from `backend/mutants/app/` resolves before un-mutated original). Production code: 0 lines changed.
+
+Closes MEH-558.
+
+## 2026-05-14 — MEH-480: Nested CLAUDE.md stubs for routers/components/tests/e2e
+
+`docs(MEH-480)`: 4 new nested briefing stubs (30-60 lines each) at `backend/app/routers/CLAUDE.md`, `frontend/components/CLAUDE.md`, `tests/CLAUDE.md`, `frontend/e2e/CLAUDE.md`. Each names a canonical `file:line` pattern, the conventions for that dir (auth deps, imports, RTL, naming), and the local gotchas — linking to `.claude/rules/*` instead of duplicating them. Root `CLAUDE.md` untouched (≤80-line cap preserved). Pure docs-only — zero code changes.
+
+Closes MEH-480.
+
+## 2026-05-14 — MEH-556: Extend letter validation to 3 sibling fields
+
+`fix(MEH-556)`: extracts `_min_letters_validator` shared helper + `_LETTER_REGEX` (single regex source of truth) into `schemas.py` top-level. Extends ≥3-letter validation (MEH-555 pattern) to `ProducerCreate.name`, `HomeProductCreate.title`, `ExperienceCreate.title`. Refactors `CategoryRequestCreate._validate_letters` to use helper (no behavior change). 6 new Pydantic-layer pytest cases in `tests/test_schemas_validation.py`.
+
+Closes MEH-556.
+
+## 2026-05-14 — MEH-201: CitySearch in /settings + cities.js comment fix
+
+`feat(MEH-201)`: wires `CitySearch` autocomplete into the profile city field at `frontend/app/[locale]/settings/page.jsx` (was a plain `<input type="text">`). Also removes a pre-existing duplicate-rendering bug surfaced during Phase 0 audit — `ProfileTab` rendered two identical city `<input>` blocks back-to-back, both bound to the same `city` state, both with `id="profile-city"` (invalid HTML). Net diff: +9 / −23. Updates stale comment in `frontend/data/cities.js` to reflect the real 12 wirings (verified by grep) and documents that `/register/producer` step 2 intentionally has no city field (3-field minimal form by design — city is captured later via dashboard/admin). Phase 0 misidentified the duplicate block as a consumer/producer split; corrected here so future audits don't replay the same wrong reading.
+
+Closes MEH-201.
+
+## 2026-05-14 — MEH-564: Pre-launch security scan runbook
+
+`docs(MEH-564)`: new `docs/research/pre-launch-security-scan-runbook.md` (1468 words, under 1500 cap) — runbook for Smadar to execute ~30 min before public launch covering three external scans against `https://mehamakor.online`: OWASP ZAP baseline via Docker (passive only — explicit rationale against active scan because POST attacks would write to production DB and trip the rate limiter mid-run), SecurityHeaders.com browser check (target grade A-, screenshot artifact), and Snyk Code free tier (skip-on-no-account fallback documented because `pip-audit` MEH-330 + `npm-audit` MEH-336 gate already cover the dependency CVE class on every PR). Each scan has copy-paste command, fillable results template (severity / URL / fix / CONFIRMED-via-curl-vs-FLAGGED confidence column), and pre-marked false-positive patterns (CSP report-only, expected 401 on /admin, X-Powered-By absence, http→https redirect cookie probe). Triage protocol templates Linear ticket title + body for HIGH/CRITICAL (block-launch), MEDIUM (file, do not block), LOW/INFO (single umbrella backlog ticket). Confidence calibration block names HIGH/MEDIUM confidence per scan plus the 30-min budget assumption (Docker pre-installed, ZAP image pre-pulled). Out-of-scope section signposts active fuzzing, authenticated scans, OAuth state-param verification, container scanning, pen-test as future expansion. `docs/SECURITY-CHECKLIST.md` gets a top banner pointing at the runbook as the launch-day external-scan gate (per-PR TRAPs 1–8 unchanged). No code touched, no Linear tickets created (triage protocol is a template only), ZAP NOT added to per-PR CI.
+
+Closes MEH-564.
+
+## 2026-05-14 — MEH-566: Backlog hygiene sweep
+
+`docs(MEH-566)`: new `docs/research/backlog-hygiene-sweep.md` (1864w, under 2000 cap) — triages all 144 currently-open Mehamakor Linear issues against `docs/BUG_SEVERITY.md`. Headline: **2 SEV-1 + 18 SEV-2 launch blockers across 144 open issues.** Both SEV-1 are the WhatsApp epic (MEH-504 + MEH-509, only `prod-blocker`-labeled issues). 18 SEV-2 cover audits 1–7, pre-launch parents (MEH-125, 195, 225), supply seeding (MEH-409, 413), visual identity (MEH-451, 123), and launch-affecting onboarding (MEH-528). 12-item recommended close batch is all `post-launch`-labeled or superseded-by-decision (MEH-239 → MEH-504, MEH-560/561 → MEH-557 verdicts); 6 items flagged "needs Smadar review" rather than close. Zero stale candidates — repo too young (90-day threshold not yet reachable; oldest `updatedAt` = 2026-04-21). Analysis only; no Linear writes performed.
+
+Closes MEH-566.
+
+## 2026-05-14 — MEH-562: Static analysis Layer 2 — mypy + Knip + TS strict (warn-only)
+
+`feat(MEH-562)`: adds three non-blocking static-analysis jobs to CI. mypy strict on `app/auth.py` (12 errors — STOP-a triggered, schemas/ deferred; combined was 57 > 50 threshold). Knip on frontend (2 unused deps + 24 dead exports + 7 unused files). TS strict on e2e/*.ts (24 errors in `rtl.spec.ts` — JSDoc `left-*/right-*` comment terminates early, pre-existing). All jobs `continue-on-error: true`. Baseline documented in `docs/research/static-analysis-baseline.md`. tsconfig.e2e.json added; tsconfig.json added for Next.js strict compat; knip.json added; `mypy` + type stubs added to backend dev deps.
+
+Closes MEH-562.
+
+## 2026-05-14 — MEH-557: Pre-launch quality stack research
+
+`docs(MEH-557)`: new `docs/research/pre-launch-quality-stack.md` (1435w, under 1500 cap) — comparison of 4 quality tools against Mehamakor's FastAPI + Next.js + Hebrew RTL + Railway-free-tier constraints with existing test stack (pytest, Playwright E2E, Vitest, adversarial-review variants, pip-audit/npm-audit, Sentry) as baseline. TL;DR verdicts: **mutmut SHIP narrow** scoped to `backend/app/auth.py` only — auth is a documented SPOF (MEH-265, MEH-326) and mutation is the only thing that proves the existing auth tests catch bugs; **k6 SHIP minimal** as a 50-VU staging ramp the week before launch, with explicit footgun warning not to point k6 at production (Railway free-tier burn); **Playwright visual regression DEFER** — built-in snapshot tolerance is fragile against Hebrew RTL font-rendering flake, Percy/Chromatic post-launch with budget is the right path; **Hypothesis SKIP pre-launch** — validator surface (`mask_phone`, price, MEH-555 letter-count) is small enough that example coverage suffices, revisit if a SEV-2 lands on a validator edge case. Each tool section has setup-cost, runtime-cost, fit-to-stack notes, Hebrew RTL angle, Railway angle, key risks, official + third-party citation. Confidence calibration block names which verdicts are HIGH and which are MEDIUM confidence.
+
+Closes MEH-557.
+
+## 2026-05-14 — MEH-563: UptimeRobot synthetic monitoring runbook
+
+`docs(MEH-563)`: new `docs/MONITORING.md` — Sentry-vs-synthetic table, UptimeRobot free-tier signup steps + current limits (50 monitors, 5-min minimum, email-only on free), three production monitors specified (`/health` simple, `/producers?page_size=1` keyword on `producers`, `mehamakor.online/`), alert-routing today + future (Slack/SMS deferred), status-page deferred 30 days, four alert-class runbooks (`backend-health` down / `backend-producers` down with health green / `frontend-home` down with backend green / SSL expiring) each ≤5 steps per the issue constraint. Vendor-neutral framing — Better Stack and Checkly listed as alternatives. Login-path probe explicitly deferred (POST `/auth/login` is wrong shape for synthetic probe; Checkly browser flow if needed later). HANDOFF.md updated. README.md badge deferred — see PR description.
+
+Closes MEH-563.
+
+## 2026-05-14 — MEH-580: /about — replace 5 gating criteria with 4 inviting values
+
+`feat(MEH-580)`: supersedes the criteria section landed in PR #637 (MEH-526). Per Smadar's review, the 5-criteria checklist excluded legitimate aggregator producers from her outreach list (משק רתם פיין, אביגיל, רביב). Replaced with 4 values — שקיפות, קרבה, איכות, בטיחות — that invite rather than gate. Section heading: "קריטריוני כניסה" → "כך אנחנו בוחרות". Removed bullet TL;DR and numbered H3 headers; no checkmarks. New `values` array replaces both `criteria` and `criteriaDetail`. Pattern source: Farm to People, MadeWith Foods, Farmwell, USDA Farmers Market. Single file changed: `frontend/app/[locale]/about/AboutClient.jsx`. Other /about sections (founder credibility from MEH-527, hero, tips, testimonials, CTA, contact form) untouched.
+
+Closes MEH-580.
+
+## 2026-05-14 — MEH-579: FAQ copy fix — 10 → 8 customer-centric Q&A
+
+`copy(MEH-579)`: replaces the 10 founder-voice Q&A pairs in `/about/for-businesses` (MEH-571) with 8 customer-voice pairs (verbatim from the issue). Subject of every answer is now the reader ("את"), not Mehamakor ("אנחנו"/"אני"). Removes the over-claimed "Trust badge מאומת על ידי מהמקור" line (no vetting infrastructure exists yet) and the consumer-framed Q7 ("מי בודק שעסקים אחרים אצלכם אמינים?") that didn't match what a producer actually thinks about. Founder bio updated: ספיר מזכרון יעקב (not "מהמרכז"). Category D renamed שליטה ותחרות → שליטה ועמדה. JSON-LD `FAQPage` `mainEntity` array drops from 10 → 8 (auto-derived from the same `CATEGORIES` array). H1, metadata, and OG description all updated from "10 שאלות" → "8 שאלות". `docs/COPY_BANK.md` gains a "Customer-centric voice rule" section codifying the subject test + over-claim guard + anti-defensive framing as the lesson from this revert.
+
+Closes MEH-579.
+
+## 2026-05-14 — MEH-565: Bug Severity Matrix + Decision Authority guide
+
+`docs(MEH-565)`: new `docs/BUG_SEVERITY.md` (996 words) — SEV-1..SEV-4 matrix with worked examples from Linear (MEH-265, MEH-314/317, MEH-256, MEH-321, MEH-353, MEH-575), Severity-vs-Priority orthogonality walkthrough using MEH-408 (P1 Urgent + SEV-4 pre-launch hardening), and CertifiClaude decision-authority section cross-referencing CLAUDE.md / `.claude/rules/workflow.md`. No code or other docs touched.
+
+Closes MEH-565.
+
+## 2026-05-14 — MEH-526: /about criteria deep article (5 paragraphs)
+
+`feat(MEH-526)`: expands `/about` קריטריוני כניסה section in `frontend/app/[locale]/about/AboutClient.jsx` from a 5-bullet list to a deep article: 1 intro paragraph (sets stakes) + retained 5-bullet TL;DR (scannability) + 5 expanded paragraphs (60-80 words each, numbered H3 headers, explaining *what / why / how mehamakor verifies* for each criterion) + 1 closing paragraph. New `criteriaDetail` array holds the long-form copy. Tone: factual + slightly editorial, feminine voice, "בית עסק / בעלת עסק" throughout, no marketing-speak. No metadata changes — page-level `metadata` export in `page.js` already references "קריטריוני הכניסה" and is left untouched.
+
+Closes MEH-526.
+
+## 2026-05-14 — MEH-527: /about founder credibility amplification
+
+`feat(MEH-527)`: expands Smadar's founder credibility line in `frontend/app/[locale]/about/AboutClient.jsx` from a single muted sentence to a 3-paragraph italic block with right-edge accent (RTL `border-s-2 border-primary/40`). Picked Option A (inline italic emphasis) + Candidate 1 (matter-of-fact) per issue's "safest" recommendation. Removed "בצבא" military reference per forbidden list. New copy: "מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית." + "את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית." + "את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל." No other /about sections touched.
+
+Closes MEH-527.
+
+## 2026-05-14 — MEH-576: add "compact" matcher to SessionStart hook
+
+`fix(MEH-576)`: adds a second `SessionStart` entry to `.claude/settings.json` with `"matcher": "compact"`, re-invoking the existing `session-start.sh`. Closes the silent context-loss gap identified in MEH-574 audit: after workflow rule 7's `/compact` at 40%, the hook previously never fired, dropping HANDOFF/branch-base context. Config-only change — no script modifications. JSON validated via `python3 -m json.tool`.
+
+Closes MEH-576.
+
+## 2026-05-14 — MEH-572: Shai-Hulud IOC audit baseline + Actions hardening
+
+`security(MEH-572)`: Mini Shai-Hulud (TeamPCP campaign, 11 May 2026) compromised ~120 npm packages plus several Python names with token-exfil post-install hooks. Ran a read-only IOC sweep across `frontend/package-lock.json` + `backend/uv.lock` + `.github/workflows/` against the published compromised-scope/unscoped-name/artifact/C2/persistence-daemon lists — **RESULT: CLEAN** (0 hits). Verified no workflow uses `pull_request_target`. Added workflow-root `permissions: contents: read` to `deploy.yml` (the only remaining workflow without one — `e2e.yml`/`pr-checks.yml`/`dependency-audit.yml`/`skills-audit.yml`/`claude-review.yml`/`changelog.yml` were already scoped). Railway deploys use a separate Railway-scoped token, so no GITHUB_TOKEN write scope is needed in `deploy.yml`. Baseline + IOC list + re-run greps documented as `TRAP 9 — Shai-Hulud baseline (May 2026)` in `docs/SECURITY.md`. No lockfile or app-code changes; no token rotation required (clean audit).
+
+Closes MEH-572.
+
+## 2026-05-14 — MEH-574: dotclaude sweep — research audit
+
+`docs(MEH-574)`: research sweep comparing `poshan0126/dotclaude` against Mehamakor's `.claude/`. Output: `docs/audits/2026-05-dotclaude-sweep.md` (763 words). 1 ADOPT (SessionStart `compact`-matcher hook to survive `/compact` context loss — Mehamakor's current SessionStart block has no matcher field, runs only at session start), 2 DEFER (token-cost audit script, doc-drift PR check prototype). Everything else SKIP — already covered by MEH-397/408/442/RTL guards or fights solo paste-relay workflow. No `.claude/` files touched.
+
+Closes MEH-574.
+
+## 2026-05-10 — MEH-555: CategoryRequest validation — reject junk text
+
+`fix(MEH-555)`: adds `field_validator` to `CategoryRequestCreate.requested_name` that rejects strings with fewer than 3 Hebrew/Latin letter characters (`[א-תa-zA-Z]` regex). Returns `strip()`-ed value. Frontend `CategoryRequestModal.jsx` mirrors the guard: submit button disabled until `countLetters(name) >= 3`. Closes admin-queue junk-row vector (anonymous endpoint, 5/hour limit). Added 4 pytest cases in `tests/test_category_requests.py`. Bug Protocol entry added to `.claude/rules/workflow.md`.
+
+Closes MEH-555.
+
+## 2026-05-10 — MEH-553: followers page for producer dashboard
+
+`feat(MEH-553)`: adds `/producer/dashboard/followers` page. Auth-guarded (producer role only). Fetches `follower_count` from `/producers/me/analytics` + `slug` from `/producers/me` in parallel. Three states: loading → zero (EmptyState with share CTA) → count>0 (count display + "רשימה בקרוב" placeholder + same share CTA). No new backend endpoint — follower list deferred.
+
+Closes MEH-553.
+## 2026-05-10 — MEH-554: reviews empty state — propagate isOwner prop
+
+`feat(MEH-554)`: adds `isOwner` prop to `ReviewsSection.jsx` (default `false`). When `isOwner=true` and reviews are empty, renders producer-facing EmptyState: title "ביקורות ראשונות מגיעות אחרי כמה לקוחות", explains WhatsApp-triggered auto-review flow, CTA links to `/producer/dashboard/followers`. Consumer empty state unchanged. Computed in `ProducerDetail.jsx` as `user?.producer_id === producer.id`, propagated via `ProducerSections.jsx`.
+
+Closes MEH-554.
+
+## 2026-05-10 — MEH-529: add 3 categories — wine/beer, spices, chocolate
+
+`feat(MEH-529)`: added 3 categories to `backend/seed_data.py:CATEGORIES` (lines 25-27): יין, בירה ומשקאות 🍷 · תבלינים וצמחי תיבול 🌶️ · שוקולד וממתקים בוטיק 🍫. No schema change — seed data only. Unblocks Persona 6 (יקב זעיר) registration and two high-growth Israeli producer categories.
+
+Closes MEH-529.
+
+## 2026-05-10 — MEH-535: newsletter copy upgrade + welcome email
+
+`feat(MEH-535)`: upgrades footer newsletter CTA from generic to specific value prop. Adds tagline ("סיפור של עסק חדש בכל שבוע, ישירות אל המייל שלך") and frequency promise ("פעם בשבוע. בלי spam. אפשר לבטל בכל רגע.") in `Footer.jsx`. CTA button changed from "→" to "להירשם ✨" (via i18n). Adds welcome email on successful subscribe (`_send_newsletter_welcome` helper in `marketing.py`) — RTL Hebrew HTML email, fail-open, unsubscribe link included. No API contract change, no schema change, rate limiter unchanged.
+
+Closes MEH-535.
+
+## 2026-05-10 — MEH-289: producer-dashboard empty states (4/6 shipped)
+
+`feat(MEH-289)`: updated 4 of 6 producer-dashboard empty states to the 3-line structure (mה זה / למה זה חשוב / פעולה). Copy verbatim from MEH-289 spec. Two locations flagged as requiring new UI sections (followers + reviews StatCards only in current UI — scope expansion needed, not copy-only).
+
+- **`frontend/app/[locale]/producer/dashboard/group-buys/page.js`** — replaced generic "עדיין אין קבוצות רכש" div with EmptyState component; spec copy + CTA "צרי קבוצה ראשונה"
+- **`frontend/app/[locale]/producer/dashboard/events/new/page.js`** — added educational line above form + updated description placeholder with visibility context
+- **`frontend/app/[locale]/settings/page.jsx`** — replaced passive "טרם הוספת מוצרים לפרופיל." with EmptyState; spec copy + CTA "הוסיפי מוצר ראשון"
+- **`frontend/app/[locale]/neighbor/NeighborClient.jsx`** — producer branch (`user.role === "producer"`) now shows spec copy with "חזרי לדשבורד העסק" + "פרסם מוצר חד-פעמי" CTAs; consumer branch unchanged
+- **Followers (4) + Reviews (5)** — FLAGGED: no `/producer/dashboard/followers` or `/producer/dashboard/reviews` pages exist; both are StatCards only. Requires new UI section, out of spec "copy-only + no new routes" constraint.
+
+Closes MEH-289.
+
+## 2026-05-10 — MEH-344: /batch slash command
+
+`feat(MEH-344)`: added `.claude/commands/batch.md` — a single-file execution playbook for running batches of Linear MEH-XXX tasks end-to-end. Per Boris Cherny + "Scaling Claude Code 2026" guidance, kept this as a slash command rather than a skill (rejected the 6-file `mehamakor-batch` skill option to avoid the long-list-of-bespoke-commands anti-pattern). 11 sections: pre-flight checks, per-task workflow (10 steps), 3 auto-fix patterns (package-lock drift, ESLint warnings, pre-commit filename bug — MEH-518), MEH-472 hybrid brand-voice guard with grep canary, STOP conditions (8), Hebrew RTL terminal warning, Linear `Closes MEH-XX` integration, MEH-498 3-Tier Verification reference (no duplication), post-merge autonomous verification via Vercel + Sentry MCPs, `autonomy-cache.json` GREEN/YELLOW/RED routing, and `.claude/settings.local.json` (gitignored, 30 deny patterns) explanation.
+
+- **`.claude/commands/batch.md`** — new file. Covers full inner-loop batch execution; the file is the source-of-truth, not a wrapper around a separate skill.
+
+Closes MEH-344.
+
+## 2026-05-10 — MEH-465: split frontend/lib/env.js into env.client.js + env.server.js
+
+`feat(MEH-465)`: splits the monolithic `frontend/lib/env.js` into two files with distinct scopes. `env.client.js` (safe to import from any component, NEXT_PUBLIC_* vars only) and `env.server.js` (`import "server-only"` guard — Next.js build error if a client bundle imports it, BACKEND_URL + SITE_URL server vars included). All 12 importers migrated to `env.client.js`. `env.js` kept as a 1-line re-export shim so `next.config.js` jiti validation still runs without touching the protected config file. `server-only` package added as direct dependency.
+
+- **`frontend/lib/env.client.js`** — new file; NEXT_PUBLIC_* vars + SITE_URL/API_URL convenience exports
+- **`frontend/lib/env.server.js`** — new file; `import "server-only"` guard + BACKEND_URL/SITE_URL server vars
+- **`frontend/lib/env.js`** — converted to 1-line re-export shim pointing at env.client.js
+- **12 importer files** — `@/lib/env` → `@/lib/env.client` (sitemap.js, layout.js, login, map, producer, producers, register, settings, [slug], AppleAuthButton, GoogleAuthButton, ProducerOAuthButtons)
+- **`frontend/package.json`** — `server-only` added as direct dependency
+
+Closes MEH-465.
+
+## 2026-05-10 — MEH-541: docs/COPY_BANK.md — copy decisions source-of-truth
+
+`docs(MEH-541)`: created `docs/COPY_BANK.md` — single source of truth for all copy decisions. Documents 6 sections: Hero & Header, Trust signals, Content sections, Producer-facing copy, Footer & CTAs, and a Decision log. Covers all copy merged to staging as of 2026-05-10. Entries are keyed to MEH issues and i18n keys. Pending decisions (MEH-520, MEH-522-527, MEH-534-540) noted with links.
+
+- **`docs/COPY_BANK.md`** — new file, 200+ lines, 6 sections.
+
+## 2026-05-10 — MEH-517: fix React #418 hydration mismatch on homepage (useState lazy initializers)
+
+`fix(MEH-517)`: three `useState` lazy initializers in `frontend/lib/use-home-page.js` were reading `window.location.search` and `sessionStorage` during render — the server returns static defaults, the client reruns with URL params, causing React error #418. Moved all browser API reads into the existing initial-load `useEffect`, using local variables for the first `loadProducers` call (since state setters are async).
+
+- **`frontend/lib/use-home-page.js`** — `filters`, `visibleCount`, `chips` useState calls replaced with SSR-safe static defaults. All browser reads (`URLSearchParams(window.location.search)`, `sessionStorage.getItem("home_visible_count")`) moved into the mount `useEffect`, which also sets `initFilters`/`initChips` and uses them directly for the initial `loadProducers` call to avoid async state timing issues. Also resolved pre-existing ESLint warnings: removed unused `setGeoLoading`, switched to `.toSorted()`.
+
+Closes MEH-517.
+
+## 2026-05-10 — MEH-518: rename admin Twilio test button → WhatsApp
+
+`chore(MEH-518)`: the admin settings page listed a "Twilio" connection test, but the backend route is `/admin/settings/test/whatsapp`. The UI key `"twilio"` therefore called a non-existent endpoint. Renamed the key to `"whatsapp"`, added explicit labels `{ key, label }` so the display reads "WhatsApp" (not CSS-capitalized "Whatsapp"), and resolved 27 pre-existing ESLint warnings in the file.
+
+Also fixes a pre-commit ESLint hook bug (`.pre-commit-config.yaml`): `bash -c '...'` with `pass_filenames: true` was passing staged filenames as bash positional params `$0/$1`, not to ESLint — so ESLint ran on all files. Fixed with `"${@#frontend/}"` pattern to forward filenames with the `frontend/` prefix stripped.
+
+- **`frontend/app/[locale]/admin/settings/page.js`** — `["twilio", "cloudinary"].map(name =>...)` → `[{ key: "whatsapp", label: "WhatsApp" }, { key: "cloudinary", label: "Cloudinary" }].map(({ key, label }) =>...)`. All 27 pre-existing ESLint warnings resolved (identifier renames, `window.confirm` → `globalThis.confirm`, negated condition flip, nested ternary → if/else if, eslint-disable for structural rules).
+- **`.pre-commit-config.yaml`** — pre-commit ESLint hook entry fixed to forward staged filenames to ESLint correctly.
+
+Closes MEH-518.
+
+## 2026-05-10 — MEH-515: rating_dispatcher per-click try/except — batch resilience
+
+`fix(MEH-515)`: `dispatch_pending_rating_requests` aborted the entire batch on a single `send()` failure and implicitly rolled back `rating_sent=True` flags on pre-failure siblings (no `db.commit()` reached). Fix: per-click `try/except Exception`, log failure with `click_id` + `home_product_id` via structlog kwargs, continue to next click. `db.commit()` now gates on `sent_count or failed_count`. Batch-completion log added. Docstring updated.
+
+- **`backend/app/services/rating_dispatcher.py`** — `sent_count/failed_count` loop with try/except, updated db.commit() guard, `rating_dispatcher.batch_complete` log, docstring rewrite.
+- **`tests/test_rating_dispatch.py`** — 2 new tests: `test_one_send_fails_batch_continues` and `test_all_sends_fail_batch_completes` (structlog.testing.capture_logs verifies 3 send_failed events with distinct click_ids).
+
+## 2026-05-10 — MEH-321: fix GET /producers/me 500 after producer registration
+
+`fix(MEH-321)`: `GET /producers/me` returned 500 (ResponseValidationError) immediately after producer registration because `ProducerDetailOut.created_at` was declared `datetime` (non-optional, no default) while the DB column is `nullable=True`. In FastAPI ≥0.104.0, response model validation failures → 500, not 422. SQLAlchemy returns `None` for NULL columns; Pydantic v2 `from_attributes=True` validates `None` against `datetime` and fails. Two secondary fields (`status: str`, `is_verified: bool`) also lacked defaults despite nullable DB columns.
+
+- **`backend/app/schemas/schemas.py`** — `ProducerListOut.status: str` → `status: str = "pending"`, `is_verified: bool` → `is_verified: bool = False` (defensive defaults matching DB nullable columns). `ProducerDetailOut.created_at: datetime` → `created_at: datetime | None = None` (root cause fix — allows NULL from DB).
+- **`tests/test_api.py`** — 2 new regression tests in `TestGetProducersMeRouteOrder`: `test_get_me_after_registration` (full registration → GET /producers/me flow, monkeypatches email/notify calls) and `test_get_me_with_null_created_at_returns_200` (directly sets `created_at = NULL` via parameterized raw SQL, verifies 200 + null in response).
+
+## 2026-05-10 — MEH-208 / MEH-209: /about editorial paragraph 1 sub copy fix
+
+`fix(MEH-208/MEH-209)`: paragraph 1 sub-headline on `/about` ("אוכל אמיתי קרוב אלייך" section) had a weak, arrhythmic closer — "העסקים שתמיד היו — רק שעכשיו את רואה אותם." Replaced with "כל מה שקרוב אלייך, במקום אחד." — direct, rhythm-preserving, non-boastful. Both tickets prescribed the identical change; bundled into one PR. H2 and paragraphs 2+3 untouched.
+
+- **`frontend/app/[locale]/about/AboutClient.jsx:156`** — single line replacement; `<br />` structure preserved.
+
+## 2026-05-09 — MEH-508: WhatsApp Twilio → Meta Cloud API (Graph v21.0)
+
+`feat(MEH-508)`: replaced Twilio Python SDK with a direct Meta WhatsApp Cloud API integration. New `backend/app/services/whatsapp.py` module (`send_text` + `send_template`) wraps Graph v21.0 REST calls, with fail-open semantics matching the old Twilio path. `twilio.rest.Client` calls removed from 5 callers across `auth.py`, `admin.py`, `admin_outreach.py`, `alerts.py`. Lockfile regenerated to drop `twilio==9.10.5` and transitive `aiohttp-retry==2.9.1` (PR #573).
+
+- **`backend/app/services/whatsapp.py`** (NEW) — `send_text(to, body)` + `send_template(to, template, language, components)` over `httpx.Client`; fail-open on missing config; `mask_phone()` in all log lines.
+- **Env var migration:** `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_FROM` → `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_ACCESS_TOKEN` / `WHATSAPP_BUSINESS_ID` / `WHATSAPP_API_VERSION`.
+- **4 approved Meta utility templates:** `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_mode_response_he`.
+- **Admin smoke test endpoint:** `POST /api/admin/settings/test/whatsapp` → `{"ok": true, "configured": true, "service": "whatsapp"}`.
+- **`backend/app/services/auth_notifications.py`** — Twilio import removed; now delegates to `whatsapp.send_text`.
+
+Closes MEH-508.
+
+## 2026-05-09 — MEH-513: fix user-delete story-card orphan leak in auth.delete_account (MEH-375 R3)
+
+`fix(MEH-513)`: closes the Cloudinary orphan leak introduced by SQLA cascade in `delete_account`. When a producer-user deletes their account, the Producer row is removed via SQLA cascade, but `producer.story_card_url` was never captured and the Cloudinary asset survived — protected by `RESERVED_PUBLIC_ID_PREFIXES` (`mehamakor/producers/*`), making the orphan permanent. Pattern identical to MEH-510's `admin_delete_producer` fix.
+
+- **`backend/app/routers/auth.py`** — `delete_account`: capture `old_story_card_url = producer_for_capture.story_card_url` inside the pre-commit URL-capture block; call `destroy_image(old_story_card_url, bypass_reserved=True, context="auth.delete_account story_card")` post-commit in a dedicated call separate from the `captured_urls` loop (which doesn't pass `bypass_reserved`). Replace MEH-511 placeholder comment with accurate "IS captured (MEH-513)" wording.
+- **`tests/test_account_deletion_cascade.py`** — 2 new tests: `test_delete_account_cascades_story_card_destroy` (verifies `destroy_image` fires with `bypass_reserved=True` for a producer with `story_card_url` set) and `test_delete_account_with_no_story_card_still_calls_destroy` (verifies `destroy(None, bypass_reserved=True)` fires when `story_card_url` is None — keeps cascade branch-free).
+
+Closes MEH-513.
+
+## 2026-05-08 — MEH-512: expose destroy_image failures via structured logging at all cascade call sites (MEH-375 R5)
+
+`feat(MEH-512)`: closes the operability gap surfaced in PR #537 adversarial review (R5). The `destroy_image` helper has always logged failures at ERROR level via `app.upload`, but log lines lacked a caller identifier — post-incident debugging couldn't tell which cascade hook dropped a destroy. New `context: str = ""` keyword on `destroy_image` + `destroy_removed_images` (the gallery-diff wrapper) is included in failure log lines as a `[context]` tag. All 12 cascade call sites updated with descriptive context strings. Default empty string preserves existing log format minimally — the bracketed slot just appears empty for any caller that hasn't been updated.
+
+- **`backend/app/cloudinary_utils.py`** — `destroy_image(url, bypass_reserved=False, context="")` adds the new keyword and includes it in both error log lines (the SDK-exception path and the unexpected-result-string path). `destroy_removed_images(old, new, context="")` adds matching pass-through. **ERROR level preserved** — Cloudinary destroy failures stay at ERROR, not downgraded to WARNING.
+- **12 cascade call sites updated** with descriptive context strings:
+  - `auth.py:delete_account` (1 site, captured-URLs loop)
+  - `admin.py:admin_delete_producer` (3 sites: images / product_image / story_card)
+  - `admin.py:delete_listing` (2 sites: photo / images loop)
+  - `admin.py:admin_update_producer` (1 wrapper site)
+  - `users_me.py:update_profile` (1 site, avatar swap)
+  - `producer_me.py:update_my_producer` (1 wrapper site)
+  - `producer_me.py:delete_my_product` (1 site, product image)
+  - `home_products.py:update_home_product` (2 sites: photo / images wrapper)
+- **`tests/test_cloudinary_cleanup.py`** — new `TestDestroyImageContext` class with 4 tests covering: context appears in error log, default empty context preserves format, unexpected-result-string path also carries context, `destroy_removed_images` propagates context to inner `destroy_image` calls.
+- **Fail-open semantics unchanged** — exceptions still don't propagate; return value still `bool`.
+
+Closes MEH-512.
+
+## 2026-05-08 — MEH-511: fix stale comment on story_card namespace in auth.delete_account (MEH-375 R2)
+
+`docs(MEH-511)`: comment-only update at `backend/app/routers/auth.py:1009-1014` (post-MEH-510 line numbers; pre-MEH-510 the line was `:893`). The previous "destroy_image rejects the prefix anyway" rationale is no longer accurate after MEH-510 added the `bypass_reserved=True` opt-out for the admin-delete cascade. The user-delete path still doesn't capture `story_card_url`, but the actual reason is a known orphan-leak gap (when `user.producer_id` is set, `delete_account`'s SQLA cascade deletes the producer but the Cloudinary story-card asset survives) — same bug class as MEH-510 R1, filed separately as MEH-513.
+
+- **`backend/app/routers/auth.py`** — replace 3-line stale comment with accurate "known orphan-leak gap, tracked in MEH-513" wording. Reference MEH-510 (sibling admin-path fix) inline.
+- Zero code lines changed (comment-only diff).
+
+Closes MEH-511.
+
+---
+
+## Pre-automation history (manual entries — 2026-05-08 and earlier)
+
+---
+
+## 2026-05-08 — MEH-497: CHANGELOG automation (git-cliff)
+
+`chore(MEH-497)`: configure git-cliff to auto-generate `docs/CHANGELOG.md` entries on every staging push. New `.git-cliff.toml` (Tera template producing the existing `## DATE — SCOPE: title` format) + `.github/workflows/changelog.yml` (triggers on `push: staging`; anchors via `--since` on the last `[skip ci]` auto-commit; splices new entries above the `---` pre-automation marker using a Python inline script; creates a first-run sentinel commit so the second push has an anchor). `orhun/git-cliff-action` pinned to commit SHA `b946ed2`. Existing manual entries preserved below the marker. README updated with the MEH-XXX commit convention.
+
+Closes MEH-497.
+
+## 2026-05-08 — MEH-510: cascade story_card destroy in admin_delete_producer with bypass_reserved opt-out (MEH-375 follow-up R1)
+
+`feat(MEH-510)`: closes the story-card orphan accumulation surfaced in PR #537 adversarial review (R1). On producer delete, `mehamakor/producers/<id>/story-card` Cloudinary assets were unreachable by both the cascade (helper rejected the prefix) and the cleanup script (script's reject list intentionally protects live story-cards). New `bypass_reserved=True` parameter on `extract_public_id` + `destroy_image` lets the producer-delete cascade explicitly opt out — default behavior unchanged for the cleanup script and the existing 8 MEH-375 cascade hooks.
+
+- **`backend/app/cloudinary_utils.py`** — `extract_public_id(url, bypass_reserved=False)` and `destroy_image(url, bypass_reserved=False)` gain the new keyword. When `True`, the `RESERVED_PUBLIC_ID_PREFIXES` startswith check is skipped. Module docstring updated to document the opt-out.
+- **`backend/app/routers/admin.py:admin_delete_producer`** — captures `producer.story_card_url` before `db.delete`, calls `destroy_image(old_story_card_url, bypass_reserved=True)` after `db.commit()`. Misleading "story_card_url intentionally NOT captured" comment block (R2 fold-in for `admin.py:268-270`) replaced with accurate documentation. `auth.py:893` R2 sub-task remains deferred.
+- **`tests/test_cloudinary_cleanup.py`** — new `TestBypassReserved` class: 3 tests covering default-still-rejects regression guard, bypass returns the public_id, bypass actually invokes `cloudinary.uploader.destroy` (mock + assert).
+- **`tests/test_admin_producer_delete_cascade.py` (NEW)** — 2 tests: cascade hook called with `bypass_reserved=True` for a producer with `story_card_url`, and the no-story-card path (helper handles `None` internally; cascade stays branch-free).
+- **R5 deferred separately** (destroy_image return-value visibility — operability nit).
+
+Closes MEH-510.
+
+## 2026-05-08 — MEH-496: pre-commit hooks (ruff + eslint)
+
+`chore(MEH-496)`: add `.pre-commit-config.yaml` so backend ruff (`--fix`, `ruff-format`) and frontend eslint run locally before each commit, mirroring the CI lint gates. Hooks are installed per-clone via `pre-commit install` and skippable with `git commit --no-verify` (documented in README for emergency use on Windows where the eslint hook may time out). Fixed a path typo in the original spec — alembic versions live under `backend/alembic/versions/`, not `backend/app/alembic/versions/`. Smadar to test on Windows + Git Bash before flipping to ready-for-review.
+
+Closes MEH-496.
+
+## 2026-05-08 — MEH-490 / MEH-494 / MEH-495: docs batch (forward-compat + Vercel skip + E2E locator rule)
+
+`docs(MEH-490+494+495)`: three low-risk infra/docs items shipped as one PR.
+
+- **MEH-490 — `AGENTS.md` symlink.** Repo root now has `AGENTS.md` as a symlink to `CLAUDE.md`. Forward-compat for Codex / Cursor / Gemini agents that look up the Linux Foundation `agents.md` standard. CLAUDE.md remains the single source of truth — the meta blockquote at line 24 calls out the mirror so future edits stay scoped to one file.
+- **MEH-494 — Vercel `ignoreCommand`.** New `vercel.json` + `scripts/vercel-skip-build.sh` skip preview builds on docs-only / backend-only commits (`docs/`, `HANDOFF.md`, `CHANGELOG.md`, `README.md`, `.github/`, `backend/`). First deploy (no `VERCEL_GIT_PREVIOUS_SHA`) and any frontend / shared change still build. Verified locally against the MEH-500 cleanup branch (skip) and a recent staging frontend touch (build).
+- **MEH-495 — `data-testid` locator codification.** New `docs/E2E-LOCATORS.md` documents the rule (mandatory for new E2E tests), naming convention (kebab-case, surface-prefixed), migration policy (organic, when touched), worked before/after example, and anti-patterns. CLAUDE.md doc-map row for testing now points at the file. No existing tests migrated in this PR — that happens opportunistically per the policy.
+
+CLAUDE.md stays at the 80-line cap — both new references folded into existing rows (line 24 meta, line 67 testing doc-map).
+
+Closes MEH-490, MEH-494, MEH-495.
+
+## 2026-05-08 — MEH-500 cleanup
+
+`chore(MEH-500)`: MEH-500 verify endpoint removed post-dashboard-receipt confirmation.
+
+## 2026-05-08 — MEH-375: Cloudinary orphan cleanup
+
+`feat(MEH-375)`: ship cascade destroy hooks + operator-facing batch cleanup script for Cloudinary orphan images. Closes the avatar-replace + producer/HomeProduct delete leak surfaced pre-launch. Staging validation: dry-run M=37 / N=2 / K=35 → `--apply` deleted 35/35 with 0 errors → post-apply verification K=0.
+
+- **`backend/app/cloudinary_utils.py` (NEW)** — helper module with `extract_public_id()`, `destroy_image()` (single-URL fail-open), `destroy_removed_images()` (set-diff helper), and `RESERVED_PUBLIC_ID_PREFIXES` (story-card namespace exclusion).
+- **Cascade destroy hooks across 8 delete surfaces** (all destroys run AFTER `db.commit()` per the external-cleanup invariant):
+  1. `auth.py:delete_account` — cascade capture + post-commit destroy
+  2. `users_me.py:update_profile` — avatar swap pre/post snapshot
+  3. `producer_me.py:update_my_producer` — gallery diff destroy
+  4. `producer_me.py:delete_my_product` — image_url destroy
+  5. `home_products.py:update_home_product` — photo + images diff destroy
+  6. `admin.py:admin_update_producer` — gallery diff destroy
+  7. `admin.py:admin_delete_producer` — producer + product cascade
+  8. `admin.py:delete_listing` (home_product hard-delete) — photo + images destroy
+- **`/upload/avatar` fixed-slot pattern** — `public_id=f"user_{user.id}"` + `overwrite=True` + `invalidate=True`. Re-uploads reuse the same Cloudinary slot instead of generating a new asset and orphaning the previous one.
+- **`backend/scripts/cleanup_cloudinary_orphans.py` (NEW)** — operator-facing dry-run/apply script. Default: dry-run (read-only listing + comparison). `--apply --yes` for destructive mode. Queries 8 DB image sources, lists Cloudinary assets under configurable prefixes, computes orphans via `secure_url` string equality. Safety: `--min-age-hours 24` (in-flight upload guard), per-batch error handling (continue on transient API errors), deterministic sample output, exit-code matrix.
+- **Tests** — 141 unit tests total (28 helper + 113 script).
+- **R3** — DB query failure wrapping in cleanup script (clean exit-1).
+- **R4** — joserfc CVE GHSA-w5r5-m38g-f9f9 accept-risk note in `docs/SECURITY.md`.
+
+Closes MEH-375.
+
+## 2026-05-08 — MEH-506: fix claude-review silent no-op (post-comment tool directive)
+
+`fix(MEH-506)`: 5 consecutive `Adversarial review (calibration)` runs reported `conclusion: success` with 0 PR comments. Investigation traced the cause to a missing tool-call directive — not an action bug, not a prompt-not-reaching-model bug.
+
+### Root cause
+
+`anthropics/claude-code-action@v1` does NOT auto-post the model's output. Per the action's `docs/usage.md` + `docs/custom-automations.md`:
+
+- No parameter like `post_comment_always` / `comment_on_no_findings` exists.
+- No dedicated "review mode" that auto-posts.
+- "You must use the `prompt` input and rely on Claude's agent capabilities to decide how to post output."
+
+The model must explicitly call `mcp__github__add_issue_comment` (or equivalent) to make the review appear. Our previous prompt told the model to "post a comment, even when sections are empty" — but never named the tool, never provided the PR number, and was structured as a soft directive ("follow CLAUDE-REVIEW.md") rather than an imperative tool call. With no findings worth flagging + no explicit posting mechanism, the model exited cleanly without invoking the tool. `conclusion: success`, no comment.
+
+### Fix
+
+- **`.github/workflows/claude-review.yml`** — prompt now starts with `REPO: ${{ github.repository }}` + `PR NUMBER: ${{ github.event.pull_request.number }}` template variables (canonical v1.0 pattern from the action's migration docs). New `MUST call mcp__github__add_issue_comment(owner, repo, issue_number, body)` block as the explicit posting directive. "Skipping the tool call = silent no-op (MEH-506 root cause)" framing makes the failure mode explicit so the model treats the call as mandatory.
+- **`docs/CLAUDE-REVIEW.md`** — new `Posting the comment (MEH-506 fix)` subsection in the output format contract, with the same tool-call signature spelled out. Cross-references the workflow YAML for the context variables.
+
+### Cost/benefit
+
+The "always post a comment" invariant is preserved (calibration-window proof-of-life signal). The fix doesn't fight any action default — the action has no opinion on whether to post; that's the model's job, and the model now has explicit instructions.
+
+### Verification deferred to next PR
+
+Cannot verify locally (action runs in CI on PR open/synchronize). The next PR opened after this merge is the proof — a comment must appear under `Adversarial review (calibration)` even if all three sections read `None.`. If still silent → re-investigate (the model may need `claude_args: "--allowed-tools mcp__github__add_issue_comment"` made explicit).
+
+Closes MEH-506.
+
+## 2026-05-08 — MEH-500: backend Sentry SDK init (activates MEH-483 + MEH-493 shim)
+
+`feat(MEH-500)`: wires `sentry-sdk[fastapi]` so the `SentryRequestScopeMiddleware` shim from MEH-483/493 (`backend/app/middleware.py:21-24`, `:106-134`) flips from `_sentry_sdk = None` → live SDK and starts emitting events. Fail-open: when `BACKEND_SENTRY_DSN` is unset, the SDK isn't initialized and the middleware continues to no-op.
+
+### Changes
+
+- **`backend/pyproject.toml:32`** — `sentry-sdk[fastapi]==2.18.0` added to `dependencies`. The `[fastapi]` extra pulls `FastApiIntegration` (auto route attribution + unhandled-exception capture). `uv.lock` regenerated; +1 package.
+- **NEW `backend/app/sentry.py`** (~60 lines) — `init_sentry()` reads env via `os.getenv` directly (decoupled from pydantic-settings init order). DSN unset/empty → log INFO `"Sentry disabled (no BACKEND_SENTRY_DSN set)"` and return early. Otherwise calls `sentry_sdk.init(dsn, environment, release, traces_sample_rate=0.1, integrations=[FastApiIntegration()])`. Wraps in `try/except` — any SDK init failure is logged and swallowed; never raises into app boot.
+  - **`environment`** = `ENV` env var (default `"development"`).
+  - **`release`** priority: `APP_VERSION` (explicit operator override) > `RAILWAY_GIT_COMMIT_SHA` (Railway-injected) > `"unknown"`.
+  - **`traces_sample_rate=0.1`** hardcoded — flip to env-driven later if cost requires tuning.
+  - **No `before_send` PII hook** — JWT claims don't carry email today, so MEH-493's `_redact_email` has no enrichment source. Add when User-row enrichment lands.
+- **`backend/app/main.py`** — `init_sentry()` called between `configure_logging()` and `app = FastAPI(...)`. Order matters: must run BEFORE FastAPI() instantiation so any exception during app construction is captured.
+- **`backend/.env.example`** — new `--- Sentry (MEH-500) ---` block documents `BACKEND_SENTRY_DSN` + `APP_VERSION` (with placeholder + comment naming the priority chain).
+- **`scripts/check_env_drift.sh:33`** — `RAILWAY_GIT_COMMIT_SHA` added to `SYSTEM_EXCLUDE_RE` (Railway platform-injected, mirrors `VERCEL_*` precedent).
+- **NEW `tests/test_sentry_init.py`** — 6 unit tests, no DB fixtures: no-op when DSN unset, no-op when DSN empty, init-with-expected-kwargs (DSN/environment/release/traces_sample_rate/FastApiIntegration shape), `APP_VERSION` overrides `RAILWAY_GIT_COMMIT_SHA`, release falls back to `"unknown"`, init swallows SDK exceptions.
+
+### Drift snapshot (env-drift gate)
+
+```
+post-MEH-500: 50 vars used / 50 documented / 0 BLOCK / 0 WARN
+```
+
+`BACKEND_SENTRY_DSN` + `APP_VERSION` documented in `backend/.env.example`. `RAILWAY_GIT_COMMIT_SHA` excluded as platform var.
+
+### Verification (CC-side)
+
+- `cd backend && uv lock` → +1 package (sentry-sdk 2.18.0)
+- `cd backend && uv sync --frozen` → installs cleanly
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → All checks passed
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files
+- `bash scripts/check_env_drift.sh` → exit 0
+- `pytest tests/ --collect-only` → 509 tests (503 baseline + 6 new)
+- `python -c "from app.sentry import init_sentry; init_sentry()"` → INFO `Sentry disabled (no BACKEND_SENTRY_DSN set)`, no exception
+
+### Verify-on-staging contract (per `.claude/rules/observability.md`)
+
+Dashboard receipt verification deferred to Smadar manual:
+
+1. Add ONE-OFF endpoint that raises `RuntimeError("[MEH-500] verify")`
+2. Hit it on staging, expect Sentry event within 5min
+3. Confirm event payload includes: `request_id`, `route`, `method`, `environment=staging`, `release=<SHA>`, `request_info` context (url/method/client), (optional) `user.id` if authenticated request
+4. Remove the one-off endpoint via follow-up commit
+5. Repeat verification on production after staging burn-in
+
+Bundle-side / env-var / SDK-load checks alone do not satisfy `observability.md`. Ticket marks Done only after dashboard receipt is confirmed.
+
+Closes MEH-500.
+
+
+## 2026-05-08 — MEH-491: env-drift CI gate + 16-var .env.example backfill
+
+`ci(MEH-491)`: catches the bug class where a developer adds an `os.getenv("X")` / `process.env.X` / pydantic-settings field but forgets to update `.env.example`. New deployments then boot with the var unset and the feature silently degrades — the gate fails the PR before that lands.
+
+### What ships
+
+- **NEW `scripts/check_env_drift.sh`** (~110 lines bash) — scans `backend/app/**`, `backend/scripts/**`, `backend/seed_data.py`, and `frontend/**` (excluding `node_modules`, `.next`, test files) for env var reads. Compares against the union of `.env.example` (root), `backend/.env.example`, `frontend/.env.example`. Sources scanned:
+  - `os.getenv("X")` / `os.environ["X"]` / `os.environ.get("X")` (literal-keyed only — dynamically-keyed access intentionally skipped).
+  - `pydantic-settings` Settings fields in `backend/app/config.py` — 4-space-indented lowercase identifiers map to UPPERCASE env vars per pydantic convention.
+  - `process.env.X` in `*.{js,jsx,ts,tsx,mjs,cjs}` (excluding test files).
+  - `SYSTEM_EXCLUDE` regex skips platform/runtime vars (`CI`, `NODE_ENV`, `NEXT_RUNTIME`, `VERCEL_*`, `SKIP_ENV_VALIDATION`, `TEST_URL`, `PATH`, `HOME`, `USER`, `PYTHONPATH`).
+- **NEW `env-drift` job in `.github/workflows/pr-checks.yml`** (JOB 4) — runs `bash scripts/check_env_drift.sh`. **NOT** paths-filter gated (env reads can land in any file — frontend config, backend router, observability setup; the drift surface is broader than `backend/` or `frontend/` alone). Fast (<10s expected). Required posture (no `continue-on-error`).
+- **`backend/.env.example` +10 vars** — `DATABASE_URL_PRODUCTION`, `DATABASE_URL_STAGING`, `REFRESH_TOKEN_EXPIRE_DAYS`, `ANTHROPIC_MODEL`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `LOG_LEVEL`, `LOG_FORMAT`, `TRUSTED_PROXY`, `PORT`. Each with placeholder + comment naming the source ticket / module.
+- **`frontend/.env.example` +6 vars** — `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENV`, `SENTRY_DSN`, `SENTRY_ENV`, `SENTRY_ORG`, `SENTRY_PROJECT`. All wired by MEH-483 frontend Sentry SDK (`sentry.{client,server,edge}.config.js` + `next.config.js`); env.example never caught up.
+
+### Drift snapshot (pre-fix → post-fix)
+
+```
+- vars used in code: 48
+- vars documented: 32 (pre-fix) → 48 (post-fix)
+- BLOCK list: 16 (pre-fix) → 0 (post-fix)
+- WARN list: 0 (pre-fix) → 0 (post-fix)
+```
+
+Reverse direction (documented but unread) is clean — every `.env.example` entry is referenced by code.
+
+### Verification
+
+- `bash scripts/check_env_drift.sh` → exits 0 with `✅ no missing vars`.
+- This PR's own CI is the proof — the new `env-drift` job runs against this PR with required posture.
+
+### Smadar action items post-merge
+
+`Settings → Branches → staging` and `Settings → Branches → main` rules: add `Env drift (.env.example)` to required-status-checks list. GitHub auto-suggests the check name after the first run on the protected branch.
+
+Closes MEH-491.
+
+
+## 2026-05-08 — MEH-505: flip `lint-backend` to blocking + fix `ruff format` flag
+
+`ci(MEH-505)`: completes the MEH-488 calibration cycle. Two single-line workflow changes; no new behavior, just removes the calibration scaffold and corrects a flag bug.
+
+- **`.github/workflows/pr-checks.yml` lint-backend job** — removed `continue-on-error: true` (blocking posture restored). Block comment + workflow header comment rewritten to reflect post-flip state. Calibration started with MEH-488 against the dirty baseline (18 check errors + 56 format files); MEH-448 cleaned to zero; this PR flips. The job now gates merges on any new violation.
+- **`ruff format --check` step flag fix** — `--extend-exclude alembic/versions` → `--exclude alembic/versions`. `ruff format` doesn't accept `--extend-exclude` (only `ruff check` does — the `extend-` family is `check`-only); the calibration window's `continue-on-error: true` had been masking the unrecognized-flag failure as a format violation. Bug surfaced in MEH-448 CHANGELOG; fix folded here per MEH-505 DoD. Check step keeps `--extend-exclude` (correct flag for `ruff check`).
+- **`docs/DEPLOYMENT.md` §C** — note rewritten: was "intentionally NOT a required check (yet)"; is now "is a required check". Records the MEH-488 → MEH-448 → MEH-505 sequence and the post-merge GitHub UI step (add `Backend lint (ruff)` to branch-protection required checks for both `staging` and `main`).
+
+### Verification (local)
+
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → **All checks passed!**
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → **69 files already formatted**
+- This PR's own CI is the proof — `lint-backend` runs without `continue-on-error` and must pass green for the merge to proceed.
+
+### Smadar action items post-merge
+
+1. `Settings → Branches → staging` rule: add `Backend lint (ruff)` to required-status-checks list. GitHub auto-suggests the check name after the first run on the protected branch (i.e., after this PR's CI completes once with the new flag).
+2. Same for `Settings → Branches → main` rule.
+
+Closes MEH-505.
+
+
+## 2026-05-07 — MEH-492: alembic check CI gate (model-vs-migration drift) + 2 partial-index drift fixes
+
+`ci(MEH-492)`: catches the bug class where a column is added to a SQLAlchemy model without a paired Alembic revision — `pytest` passes (tests don't exercise the new column), `alembic upgrade head` passes (chain is intact), `EXPECTED_TABLES` still matches (count unchanged), but production boot fails reading/writing the missing column. `alembic check` (1.9+) compares `Base.metadata` against the post-`upgrade head` schema and surfaces the diff before merge.
+
+### Scope expansion — fixing the drift the gate found
+
+The first CI run on this PR (PR #549) **did exactly what the gate was designed to do** and reported real drift on staging baseline: 2 partial indexes existed in the DB schema (created by past migrations) but were not declared on the corresponding SQLAlchemy models. Scope expanded inside this PR rather than splitting to a follow-up ticket — fix is mechanical and avoids running a second calibration→required cycle in parallel with MEH-488/MEH-505.
+
+**Drift items found:**
+
+| Index | Migration that created it | Model now declares it |
+|---|---|---|
+| `idx_producers_availability_state` | `2a74fa41ceb1` (MEH-291, 2026-05-04) — partial: `WHERE availability_state != 'accepting_orders'` | `Producer.__table_args__` (`backend/app/models/models.py:161-168`) |
+| `idx_products_dietary` | `1afe844d11f4` (MEH-293, 2026-05-07) — partial: `WHERE is_gluten_free OR is_vegan OR is_lactose_free` | NEW `Product.__table_args__` (`backend/app/models/models.py:340-348`) |
+
+Both copied verbatim from the migration's `op.create_index(...)` predicate string — `postgresql_where=text("...")` byte-stable with the migration source. Each declaration carries a comment citing the source migration revision + ticket + role.
+
+### Why scope expansion vs separate ticket
+
+1. **Avoids double-calibration.** MEH-488 (ruff CI gate) is mid-calibration→required cycle (MEH-505 blocks on PR #544 merge). Shipping MEH-492 with `continue-on-error: true` would create a parallel flip-PR backlog. Two simultaneous calibrations is meta-cost we should avoid.
+2. **Fix is mechanical.** Both indexes are simple partial indexes; predicates are short single-line strings; the `Index(..., postgresql_where=text(...))` shape already exists in the file (`models.py:154-160` `idx_producers_name`). Not a new precedent.
+3. **Single PR ships gate AS REQUIRED.** No `continue-on-error` on the `Alembic drift check` step. The gate becomes blocking on day 1.
+
+### Changes
+
+- **`backend/app/models/models.py`** — 2 partial-index declarations added to fix the drift the gate surfaced. Producer's existing `__table_args__` extended with `idx_producers_availability_state`; new `Product.__table_args__` carries `idx_products_dietary`. Each declaration is the verbatim equivalent of the migration's `op.create_index(..., postgresql_where=sa.text("..."))` call, with a leading comment naming the source migration + ticket + role.
+- **`.github/workflows/pr-checks.yml:171-186`** — NEW `Alembic drift check (models vs migrations)` step in the `pytest` job. Inserted AFTER `Verify alembic schema (34 tables + baseline revision)` and BEFORE the MEH-489 `Run tests with coverage gate` step. Same env block as the existing `alembic upgrade head` step (verbatim copy: `DATABASE_URL` + `SECRET_KEY` only — no new secrets introduced). Fails CI on any drift; exit code from `alembic check` is the gate signal. **Ships AS REQUIRED — no `continue-on-error`.**
+- **`docs/MIGRATIONS.md` "CI Migration Drift Gate" section** — flow diagram updated (added `→ alembic check ← MEH-492` line), failure-mode list extended with the alembic-check failure rationale + recovery steps, new "מקומית, לפני PR" line documenting `cd backend && uv run alembic check`.
+
+### Pre-flight verification
+
+- **`backend/pyproject.toml:10`** — `alembic==1.13.2` (≥1.9 required by `check` subcommand). No bump needed.
+- **`backend/alembic/env.py:36`** — `target_metadata = Base.metadata` already set. `alembic check` reads this to know the "expected" schema. Path note: spec wrote `backend/app/alembic/env.py`, actual path is `backend/alembic/env.py` (env.py:1-19 prepends `backend/` to sys.path so `from app.database import Base` resolves at line 19).
+- **Local `alembic check` execution:** sandbox cannot reach Postgres (MEH-360); ran `cd backend && DATABASE_URL=... .venv/bin/alembic check` → command found, env loads, fails at psycopg2 connect with `Connection refused` — proves the binary path is correct. CI verification on PR.
+
+### What the gate does NOT cover
+
+- It compares the model graph against the live DB schema. If a model is added but the test suite never imports it (rare — `models/__init__.py` re-exports everything), `Base.metadata` won't include it and drift will be missed. Mitigated in this codebase by the existing `from app.models import *` re-export pattern.
+- It does NOT auto-generate a missing revision. The CI step fails loudly; the developer runs `alembic revision --autogenerate -m "MEH-XXX ..."` locally and ships a paired revision in the same PR.
+
+### Smadar action items
+
+- None pre-merge. Post-merge: any future "I added a column and CI fails" experience is the gate working as designed — the failure message names the missing column.
+
+Closes MEH-492.
+
+## 2026-05-07 — MEH-493: extend SentryRequestScopeMiddleware with set_context + set_user (no-op until SDK lands)
+
+`feat(MEH-493)`: backend Sentry context middleware — `set_context("request_info", {...})` + best-effort `set_user({"id": <jwt-sub>})` + PII-safe email redaction helper. Ships as no-op shim until MEH-500 wires `sentry_sdk.init`.
+
+**Path deviation from MEH-493 spec:** extended the existing `SentryRequestScopeMiddleware` (from MEH-483) instead of creating a new `SentryContextMiddleware` class. Reason: avoid MEH-271 anti-pattern #1 (two parallel mechanisms). Spec was drafted without project_knowledge_search of existing middleware and asked for a new file under `backend/app/middleware/sentry_context.py`. Locked Plan B middleware ordering from MEH-483 (Sentry-scope-bind class registered INNER to `CorrelationIdMiddleware`) is preserved by construction — no `add_middleware` reordering. Scope-fix approved 2026-05-07.
+
+**Second minor spec deviation:** spec assumed user `email` was readily extractable from the request and could be redacted into the Sentry user payload. The project's access-token JWT claims set (`backend/app/auth.py:38-57`) intentionally contains only `sub`/`exp`/`iat`/`tv`/`scope` (+ optional `userFingerprint`) — no email. Email enrichment via DB lookup inside middleware was rejected on perf + fail-open grounds. The `_redact_email` helper still ships and is unit-tested (7 cases covering valid emails, empty/None/no-`@` defensive shapes); MEH-500's `before_send` hook can call it from a place that already has the User row.
+
+### Changes (1 file modified, 1 file added)
+
+- **`backend/app/middleware.py`** —
+  - NEW module-level helper `_redact_email(addr: str | None) -> str` — `'alice@gmail.com'` → `'a***@gmail.com'`. Empty/None/no-`@` → `'<no-email>'` (never half-redacted).
+  - `SentryRequestScopeMiddleware.dispatch` extended with `scope.set_context("request_info", {url, method, client})` + `scope.set_user({"id": sub})` when JWT extractable. Existing MEH-483 `set_tag` calls (`request_id`/`route`/`method`) preserved verbatim.
+  - NEW module-level helper `_try_extract_user_id(request) -> str | None` — best-effort `Authorization: Bearer <jwt>` → `sub` claim. No DB lookup. Lazy imports `joserfc.jwt` + `app.auth._jwt_key` to keep the auth module out of the cold-import path. Catches every `Exception` (JoseError, ImportError, anything) and returns `None` — fail-open posture per MEH-493 spec `<forbidden>`: "Failing the request if user extraction fails (always swallow exception)".
+  - Class docstring rewritten to enumerate the PII-guard contract: NEVER passwords / JWT tokens / OAuth secrets / request body / session keys / full email; allowed: route / method / full URL / client IP / request_id / user.id (opaque UUID).
+- **`tests/test_sentry_context.py`** (NEW, 14 tests) —
+  - 7 `_redact_email` parametrized cases.
+  - 3 dispatch cases: no-op when `_sentry_sdk is None` (current production state) · `set_context("request_info", ...)` called with `url/method/client` keys when SDK mocked in · malformed Bearer header → `set_user` NOT called, request still 200.
+  - 4 `_try_extract_user_id` direct cases: no header / Basic scheme / empty Bearer / malformed JWT → all return `None`.
+
+### Verification
+
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → 0 errors
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files would be reformatted
+- `pytest --collect-only` → 503 tests (was 489 before this PR; +14 from `test_sentry_context.py`)
+- Full pytest suite verification deferred to CI per MEH-360 (sandbox cannot reach Postgres; conftest.py auto-loads DB fixtures even for fixture-free unit tests)
+
+### Verify-on-SDK-land contract
+
+This middleware is a no-op until backend `sentry_sdk` is wired in MEH-500. The PII redaction helper is dashboard-independent and unit-testable now. Dashboard receipt verification (request_info context, user.id, redacted email tags) becomes part of MEH-500's DoD.
+
+Per `.claude/rules/observability.md` — bundle-side / env-var / SDK-load checks do not prove events arrive. Observability ticket Done state is gated on dashboard receipt. MEH-500's DoD is being amended to add a single check covering both MEH-483 + MEH-493 surfaces.
+
+Closes MEH-493.
+
+## 2026-05-07 — MEH-448: clean baseline ruff violations + format pass
+
+`chore(MEH-448)`: 18 ruff `check` violations + 56 `ruff format` files cleaned to zero. Unblocks the MEH-488 calibration→required flip.
+
+**Verification:**
+- `cd backend && uv run ruff check . --extend-exclude alembic/versions` → 0 errors
+- `cd backend && uv run ruff format --check --exclude alembic/versions .` → 0 files would be reformatted
+- `pytest --collect-only` → 489 tests collect cleanly (proxy for whitespace-sensitive bugs from format pass; full suite verification deferred to CI per MEH-360 sandbox limitation)
+
+**Commit split:**
+1. `style(MEH-448): ruff format auto-fixes across 56 files` (4c9cd68) — 56 files, 1346+/526−. Pure mechanical; scroll past for review.
+2. `chore(MEH-448): clean 18 ruff check violations (manual decisions)` (cbba799) — 9 files, 17+/20−. The 14 manual decisions listed below.
+
+### Phase 1a — auto-fixes (4 unused imports via `ruff check --fix`)
+
+Sibling-grep confirmed each name appears only at its import line:
+- `backend/app/services/analytics.py:35` — `datetime.timedelta`
+- `backend/app/routers/experiences.py:20` — `fastapi.Query`
+- `backend/app/routers/reports.py:11` — `app.schemas.schemas.ReportOut`
+- `backend/seed_data.py:3` — `uuid`
+
+**Spec deviation surfaced:** the MEH-488 calibration inventory listed 2 of these 4 (analytics + seed_data). `experiences.py:20` (`Query`) and `reports.py:11` (`ReportOut`) were missed by the calibration. Folded in here so the post-MEH-448 flip-PR doesn't trip over residual auto-fixables.
+
+### Phase 1b — `ruff format` (56 files reformatted)
+
+Pure mechanical: quote normalization, multi-line argument lists, trailing commas. 13 files already format-clean (mostly small modules). Cross-checked against `pytest --collect-only` — no whitespace-sensitive parse regressions.
+
+### Phase 2 — E402 manual decisions (10 errors → 0)
+
+| File | Lines | Decision | Rationale |
+|---|---|---|---|
+| `backend/scripts/seed_cities.py` | 21, 23, 24 | `# noqa: E402` per line | `sys.path.insert(0, ROOT)` at line 19 makes the script runnable directly from `backend/`. Imports MUST follow. Three noqa comments document the shim once each: `# noqa: E402  # imports must follow sys.path.insert (script run-from-backend shim)`. |
+| `backend/app/routers/upload.py` | 18→23 | MOVE `log = logging.getLogger("app.upload")` below imports | Statement was sitting between two import groups; doesn't depend on any of the imports below it. Root-cause fix, no noqa. |
+| `backend/app/services/rating_dispatcher.py` | 23→25 | MOVE `logger = structlog.get_logger(__name__)` below `HomeProductWhatsAppClick` import | Same pattern as upload.py. Root-cause fix, no noqa. |
+| `backend/app/services/producer_import.py` | 29, 31, 32 → above 22 | MOVE 3 imports (`sqlalchemy.orm`, `app.models`, `app.slug_utils`) ABOVE `_MOJIBAKE_RE` constant + `_has_mojibake` helper | `_MOJIBAKE_RE = re.compile(...)` doesn't reference any of the relocated imports; previous order was organizational drift. Root-cause fix, no noqa. |
+
+**Spec deviation surfaced:** MEH-488 calibration listed `upload.py` as 4 E402 errors (lines 21-24). Actual count was 6 (lines 19-24, including the `from app.auth ...` and `from app.config ...` lines). The MOVE fix resolves all 6 with one structural change.
+
+### Phase 3 — C901 inline noqa (1 error → 0)
+
+| File | Line | Decision | Rationale |
+|---|---|---|---|
+| `backend/app/services/producer_listing.py` | 145 | `# noqa: C901` inline on `_apply_scalar_filters` def | Read the full 65-line function in plan phase. Complexity 12 vs threshold 10 comes from: (a) 2 dispatch loops over `_SIMPLE_FILTERS` / `_DIETARY_FILTERS` (already minimized — each new boolean column = +1 row, not +1 branch), (b) 5 structurally-distinct branches: `availability_state` MEH-291 default-hide, `kosher` IS NULL OR empty-string, `category` JOIN ProducerCategory, `delivery_city`/`has_delivery` mutually-exclusive elif, `city` lowercase-compare. Each special-case branch has a different query shape — folding into the dispatch tables would obscure the structural distinctions. Refactor was considered; rejected because extracting `_apply_kosher_filter` / `_apply_category_filter` / etc. produces 7-line helpers reading as boilerplate while the dispatch reads less coherent overall. |
+
+`# noqa` is inline (not in `[tool.ruff.lint.per-file-ignores]`) because the lint-config protection hook (MEH-442/MEH-466) blocks `[tool.ruff*]` edits. Inline placement is the cleaner approach anyway — the rationale lives next to the code.
+
+### Phase 4 — original MEH-448 scope (`producer_me.py`) — NO-OP
+
+The 4 violations listed in the original MEH-448 spec (F401 `HomeProductWhatsAppClick`, F401 `Category`, E712×2 `== False` patterns) are **no longer present** in `producer_me.py`. Live `ruff check` shows zero violations there. Addressed by **MEH-447** (8443ae3 `Reduce backend complexity/args in 5 audit-flagged files`). CHANGELOG entry retained for traceability so future archeology shows MEH-448 was acknowledged as completed-by-side-effect.
+
+### Bug found in MEH-488 workflow — `ruff format --extend-exclude` is unsupported
+
+While running Phase 1b locally, hit `Usage: ruff format [OPTIONS] [FILES]...` because `ruff format` only accepts `--exclude`, not `--extend-exclude` (only `ruff check` supports the `extend-` form). The `lint-backend` job in `.github/workflows/pr-checks.yml` uses `--extend-exclude alembic/versions` for both check AND format steps — the format step is currently CLI-broken (always exits 1 with usage error, masquerading as a format-violation failure under `continue-on-error: true`).
+
+**Not fixed in this PR** (scope-locked to baseline cleanup). Smadar's post-MEH-448 flip-PR should change the format step's flag to `--exclude alembic/versions` while flipping `continue-on-error: true → false`.
+
+### Files modified
+
+- `backend/seed_data.py` (1)
+- `backend/scripts/seed_cities.py` (1)
+- `backend/app/routers/upload.py`, `experiences.py`, `reports.py` (3)
+- `backend/app/services/analytics.py`, `producer_import.py`, `producer_listing.py`, `rating_dispatcher.py` (4)
+- 56 files reformatted across `backend/app/**` + `backend/scripts/**` + alembic env.py
+
+### Smadar action items post-merge
+
+1. Open 1-line follow-up PR on `.github/workflows/pr-checks.yml`:
+   - Flip `lint-backend` job's `continue-on-error: true → false`.
+   - Change `--extend-exclude alembic/versions` to `--exclude alembic/versions` on the **format-check step only** (the check step keeps `--extend-exclude`).
+2. After that PR's CI run completes once on the protected branch: add `Backend lint (ruff)` to required-checks in `Settings → Branches → staging` AND `Settings → Branches → main`.
+
+Closes MEH-448.
+
+## 2026-05-07 — MEH-488: ruff CI gate (calibration) + `.editorconfig`
+
+`ci(MEH-488)`: backend lint enforcement in CI + cross-platform line-ending normalization. Calibration mode — see "Why calibration" below.
+
+- **NEW `lint-backend` job in `.github/workflows/pr-checks.yml`** — runs `uv run ruff check . --extend-exclude alembic/versions` and `uv run ruff format --check . --extend-exclude alembic/versions` against `backend/`. Gated by `needs.changes.outputs.backend == 'true' || workflows == 'true'` (MEH-485 paths-filter pattern). Job name: `Backend lint (ruff)`.
+- **`continue-on-error: true` (calibration)** — pre-flight against clean staging found **18 ruff `check` errors** + **56 files would be reformatted**. Spec's `<forbidden>` blocks mass-fix in this PR; MEH-448 owns the baseline cleanup. Calibration matches the repo convention from MEH-487 (claude-review) and MEH-489 (Smokeshow). A 1-line follow-up PR flips `continue-on-error: false` once MEH-448 lands; same PR adds `Backend lint (ruff)` to the required-checks lists in `Settings → Branches → staging` / `main`.
+- **`backend/pyproject.toml` dev deps** — `ruff>=0.15.0` added explicitly so `uv run ruff` works deterministically in CI (ruff was previously a transitive/global tool only). `uv.lock` regenerated; +1 package: `ruff 0.15.12`.
+- **CLI exclude (NOT pyproject)** — alembic/versions exclude is passed via `--extend-exclude alembic/versions` on the workflow CLI rather than added to `[tool.ruff].extend-exclude`. The `[tool.ruff*]` lint-config protection hook (MEH-442 / MEH-466) blocks edits to those sections; the CLI flag achieves identical scoping without bypassing the guard. Documented inline in `pr-checks.yml`.
+- **NEW `.editorconfig`** at repo root — 12 lines per spec: `root = true`, LF line endings, final newline, trim trailing whitespace, UTF-8, space indent. Per-glob: `*.py` → 4 spaces, `*.{js,jsx,ts,tsx,json,yml,yaml}` → 2 spaces. Matches Python/Tailwind conventions already in use; explicit to prevent Windows local + Vercel + Linux CI line-ending drift.
+- **`docs/DEPLOYMENT.md` §C** — new note paragraph: `Backend lint (ruff)` is intentionally NOT a required check yet; calibration window + post-MEH-448 promotion path documented.
+- **Smadar action item post-MEH-448-merge (NOT this PR):** open a 1-line follow-up PR flipping `continue-on-error: true → false` on the `lint-backend` job, then add `Backend lint (ruff)` to required checks for `staging` AND `main` in branch-protection settings (GitHub auto-suggests the check name only after it's run once on the protected branch).
+- **Verification deferred to user (CC sandbox MEH-360):** the calibration step's failure on the dirty baseline reproduces locally — `cd backend && ruff check . --extend-exclude alembic/versions` exits non-zero with 18 errors; format-check exits non-zero with 56 files. CI will surface the same.
+
+Closes MEH-488.
+
+## 2026-05-07 — MEH-489: pytest-cov + 70% coverage gate + Smokeshow badge
+
+`ci(MEH-489)`: backend coverage gating — pytest-cov + 70% threshold + Smokeshow upload + README badge. `test-inventory` job deleted; the gated `pytest` job now owns the full-suite run.
+
+- **Baseline coverage measured locally before threshold set:** 77% (5,529 statements, 1,281 missed) across `backend/app/**`, 487 passed / 2 skipped / 0 failed. Run against a fresh Postgres + `alembic upgrade head` (CI's exact setup). Threshold chosen per spec rule `min(70, baseline − 2) = 70%` — leaves a 7-point buffer so a routine PR doesn't trip the gate, anything below 70% does.
+- **`backend/pyproject.toml:33-39`** — `pytest-cov>=7.0` added to `[dependency-groups].dev` (alongside `pytest`, `pytest-timeout`, `pip-audit`). `uv lock` regenerated; lock diff resolves +2 packages: `coverage==7.13.5` + `pytest-cov==7.1.0`.
+- **`.github/workflows/pr-checks.yml` "Run tests" step rewritten** — invocation now: `pytest tests/ --cov=backend/app --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=70 --tb=long --timeout=60`. Dropped `-x` (full suite must run for coverage to be accurate) and `-v` (coverage summary is now the load-bearing log signal). Failure tracebacks remain `--tb=long` for debugging quality.
+- **`.github/workflows/pr-checks.yml` NEW Smokeshow upload step** (Tiangolo pattern) — `uvx`-equivalent install + `smokeshow upload htmlcov` after pytest succeeds. Sets GitHub commit-status with `coverage` context + `"Coverage {coverage-percentage}"` description that the badge worker reads. `continue-on-error: true` covers the calibration window before `SMOKESHOW_AUTH_KEY` is configured. `if: success() && head.repo.full_name == github.repository` skips upload on fork PRs (no secret access there).
+- **`.github/workflows/pr-checks.yml:179-248` DELETED** — entire `test-inventory` job + leading comment block. The gated `pytest` job now runs the full suite; `continue-on-error: true` was always a band-aid (workflow.md "two parallel mechanisms" smell — same `tests/` source, two CI consumers). Header comment updated: "Two jobs: build, pytest (with coverage gate at 70%, MEH-489)."
+- **`README.md:3`** — badge inserted near top: `[![Coverage](https://coverage-badge.samuelcolvin.workers.dev/show/levismadar80-ship-it/FoodMamkor.svg)](pr-checks workflow URL)`. Badge endpoint reads the GH commit-status `coverage` context that smokeshow sets — same stable pattern Tiangolo uses publicly. Click-through links to the workflow run.
+- **`.gitignore`** — added `.coverage`, `coverage.xml`, `htmlcov/` (pytest-cov local artifacts; produced on every dev run now).
+- **Smadar action item post-merge** — add `SMOKESHOW_AUTH_KEY` repo secret. Generate via `pip install smokeshow && smokeshow generate-key` → output → repo Settings → Secrets and variables → Actions. Until the secret lands, the Smokeshow upload step exits non-zero but `continue-on-error: true` prevents merge breakage.
+- **Verification deferred to user (CC sandbox MEH-360):** Smokeshow upload itself cannot be verified from CC (no `SMOKESHOW_AUTH_KEY`, host outside WebFetch allowlist). Coverage measurement was verified locally by bootstrapping a Postgres cluster in the sandbox.
+
+Closes MEH-489.
+
+## 2026-05-07 — MEH-487: wire `anthropics/claude-code-action@v1` for adversarial PR review
+
+`ci(MEH-487)`: wires the official Anthropic GitHub Action for fresh-eyes PR review; deletes the dead JOB 4 skeleton from `pr-checks.yml`.
+
+- **NEW `.github/workflows/claude-review.yml`** — runs `anthropics/claude-code-action@v1` on `pull_request: [opened, synchronize]`. `continue-on-error: true` for calibration. Concurrency key follows MEH-485 canonical pattern (`workflow + head_ref || ref`). Permissions: `contents:read` + `pull-requests:write` + `issues:write` (action posts the review comment). Model: `claude-sonnet-4-6` (per MEH-487 spec). Workflow YAML carries a thin pointer; the full prompt lives in `docs/CLAUDE-REVIEW.md` so calibration history shows up in `git log docs/CLAUDE-REVIEW.md`.
+- **DELETED `pr-checks.yml` JOB 4** (lines 250-283 pre-edit) — `adversarial-review` was a hook-point skeleton conditioned on `.github/scripts/adversarial-review.sh` existing; the script never landed (revised approach uses the action, not custom CLI shell-out per MEH-487 revision 2026-05-07). Header comment updated: "Three jobs: build, pytest, test-inventory (non-gating)."
+- **NEW `docs/CLAUDE-REVIEW.md`** — canonical prompt + 6 focus areas (security / RTL / schema-drift / scope creep / Hebrew copy / test coverage) + output format contract + calibration plan (5-PR window, >70%/30-70%/<30% decision matrix). "Always post a comment" rule explicit during calibration so silent no-op doesn't masquerade as a clean diff.
+- **`docs/DEPLOYMENT.md`** — note at §C rewritten: `Adversarial review (calibration)` is NOT a required check during the calibration window; promoted to required check after the tally crosses >70% useful in a follow-up PR.
+- **ADR-007 forward-link** — `docs/decisions/ADR-007-expand-contract-schema-changes.md` not yet on staging (MEH-486 in flight on parallel branch). Prompt references ADR-007 as a *concept* ("expand-contract pattern, per ADR-007"); file path commented `<!-- TODO: ADR-007 path lands when MEH-486 merges to staging -->`.
+- **Calibration tally** — lives in `HANDOFF.md` "Claude Review calibration" subsection. Smadar updates per PR before merge.
+- **Forbidden, per spec** — no custom `.github/scripts/adversarial-review.sh`; no inline prompt in YAML beyond ~10-line pointer; no branch-protection required-check change on day 1.
+- Added `id-token: write` permission — required by `claude-code-action@v1` for OIDC.
+
+Closes MEH-487.
+
+## 2026-05-07 — MEH-483: /health/{liveness,readiness} split + LOG_FORMAT default flip + Sentry per-request scope shim
+
+`feat(MEH-483)`: backend observability — readiness-gated healthchecks, JSON-by-default logs in non-dev, request-scope shim ready for Sentry SDK init.
+
+- **New `backend/app/routers/health.py`** — three endpoints, single owner per workflow.md "two parallel mechanisms":
+  - `GET /health/liveness` — 200 `{"status":"alive"}`, no DB call.
+  - `GET /health/readiness` — `SELECT 1` + `app.state.db_init_status` + Alembic head probe. 200 `{"status":"ready","migrations":"<rev>","db_init":"ready"}` or 503 `{"status":"not_ready","reason":"db_unreachable:<exc>" | "db_init_failed" | "db_init_pending"}`.
+  - `GET /health` (alias) — preserves pre-MEH-483 shape `{"status":"ok","db_init":<state>}`. Keeps `railway.json:8` healthcheck green at merge time. Smadar to flip Railway service Settings → Networking → Healthcheck Path to `/health/readiness` post-merge for proper readiness gating; alias removable in follow-up after path flip soaks.
+- **Removed `/health` from `backend/app/routers/system.py:13-16`** — single owner now in `health.py` (workflow.md "two parallel mechanisms" smell).
+- **`logging_config.py:34`** — LOG_FORMAT default flipped: JSON unless `ENV=development`. Explicit `LOG_FORMAT` env-var still wins. `ENV` is canonical (`config.py:37,113,127`); no new env-var introduced.
+- **Sentry per-request scope shim** — new `SentryRequestScopeMiddleware` in `backend/app/middleware.py`. Plan B ordering locked: registered AFTER `SlowAPIMiddleware`, BEFORE `CorrelationIdMiddleware` in `add_middleware` calls so it ends up INNER to CorrelationId on request-in (Starlette wraps in reverse). Reads `correlation_id.get()` AFTER the contextvar is bound, sets `request_id` + `route` + `method` Sentry scope tags on request-in so handler exceptions carry the tags. **No-op until `sentry_sdk` is installed and `sentry_sdk.init()` is called** — backend Sentry SDK is NOT yet wired (frontend-only today, MEH-376/379). Follow-up Linear ticket filed to wire `sentry-sdk[fastapi]` + `BACKEND_SENTRY_DSN`; this PR's shim activates immediately upon that follow-up landing.
+- **Tests** — `tests/test_health.py` (10 cases): liveness 200, liveness HEAD, readiness 200, readiness 503 on `db_init=failed`, readiness 503 on `db_init=initializing`, readiness 503 on `SELECT 1` raise, `/health` alias backwards-compat shape, X-Request-ID UUID round-trip, X-Request-ID auto-gen when absent, non-UUID X-Request-ID gets rewritten (documents `asgi-correlation-id` default validator behaviour).
+- **No new deps** — `structlog==24.4.0` + `asgi-correlation-id==4.3.4` already pinned in `backend/pyproject.toml:29-30`.
+- **Out of scope** — full email-address masking processor (spec mentioned `a***@gmail.com`). Existing `_redact_sensitive` covers password/token/secret/api_key keys; manual masking already exists at `backend/app/services/email.py:51`. Email-by-key processor deferred — minimal scope per HIGH-risk locked review.
+- **Deferred verification** — issue's `<verification_step>` #6 (Sentry dashboard receipt) cannot run today: `sentry_sdk` is not initialized in backend. Will verify via dashboard receipt (per `.claude/rules/observability.md`) on the follow-up PR that wires `sentry_sdk.init()`.
+
+Closes MEH-483.
+
+## 2026-05-07 — MEH-485: CI concurrency-key fix + paths-filter on pr-checks.yml
+
+`ci(MEH-485)`: two CI optimizations targeting 30-50% minute savings on single-stack PRs.
+
+- **Bug 1 — concurrency keys** — 4 of 5 workflow files used a key derived from `github.ref`, which on `pull_request` events is `refs/pull/<n>/merge` (per-PR) but does not stably dedupe force-pushes within the same PR. Migrated to canonical `${{ github.workflow }}-${{ github.head_ref || github.ref }}` (Modexa "12 GHA moves" / Blacksmith pattern). `head_ref` resolves to the source branch on PRs and is empty elsewhere; the `||` fallback covers `push` / `schedule` / `workflow_dispatch` triggers.
+- **Files updated:** `pr-checks.yml`, `dependency-audit.yml`, `skills-audit.yml`, `deploy.yml` (per-job split, see below).
+- **`e2e.yml` intentionally untouched** — trigger is `deployment_status` (no `head_ref`); `e2e-${{ github.event.deployment.ref }}` is the MEH-424 design intent (scope by deployed SHA, not source branch).
+- **`deploy.yml` per-job split** — workflow-level `concurrency:` removed. 5 jobs each get their own `concurrency:` block:
+  - `lint`, `api-contract-static`, `api-contract-probe-staging` — canonical key, `cancel-in-progress: true` (CI checks; fresh run wins).
+  - `production`, `staging` — `${{ github.workflow }}-<job>-${{ github.ref }}`, **`cancel-in-progress: false`** (Railway data integrity; back-to-back pushes serialize, never abort mid-deploy).
+- **Bug 2 — no paths-filter on `pr-checks.yml`** — every PR ran full backend pytest + frontend build regardless of touched paths. Added new `changes` job using `dorny/paths-filter@v3` (pattern reused from `e2e.yml`, MEH-424). 4 downstream jobs gated:
+  - `build` — runs when `frontend || workflows`
+  - `pytest` — runs when `backend || workflows`
+  - `test-inventory` — runs when `backend || workflows`
+  - `adversarial-review` — runs when `frontend || backend || workflows`
+- **Skip-as-success contract** — GitHub reports skipped-via-job-`if:` jobs with `conclusion=success`; required-status checks (`build`, `pytest`) remain satisfied on docs-only PRs without manual override.
+- **Job `name:` fields preserved byte-identical** in all 4 gated jobs (branch-protection required-check identifiers).
+- **Adversarial-review step-level skip** (`if: steps.check.outputs.exists == 'true'` on the "Run adversarial review" step) preserved verbatim. Layered gating: paths-filter at job level + script-existence at step level.
+- **Out of scope** — Playwright sharding (separate ticket); self-hosted runners (MEH-270 explicitly out); branch-protection UI changes (Smadar handles in GitHub settings).
+- **`pr-checks.yml`**: added `permissions: contents:read, pull-requests:read` block — required for `dorny/paths-filter@v3` on `pull_request` events. Parity with e2e.yml. Discovered when Paths filter job exited at 6s on first PR run; surfaced + fixed on the same PR.
+
+Closes MEH-485.
+
+## 2026-05-07 — MEH-472 PR-A: i18n Wave 2 translation sweep (Header, Footer, home page)
+
+`feat(MEH-472)`: Wave 2 of next-intl migration — ~88 new keys in `messages/he.json` + `en.json`; all hardcoded Hebrew replaced with `t()` in Header.jsx, Footer.jsx, HomeHero.jsx, HomeProducersGrid.jsx, HomeCategoryGrid.jsx, HomeStaticBlocks.jsx, UpcomingEventsPreview.jsx, BottomNav.jsx, and `app/[locale]/page.js`. Q7 gender-neutral plural imperatives applied throughout (נסי→נסו, הוסיפי→הוסיפו, הצטרפי→הצטרפו, שלחי→שלחו, התנתקי→התנתקו, ראי→ראו, מצאי→מצאו, גלי→גלו, קבלי→קבלו). Q3 `lib/categories.js` established with `categoryKey()` helper + 7 slug→key entries. PR-B (shim deletion + `lib/language-context.js` removal) deferred ≥ 2026-05-14 after 7-day staging burn-in. Bug fixed: `t("nav_login")` → `t("nav.login")` in Header.jsx mobile drawer.
+
+## 2026-05-07 — MEH-479: drop legacy producer dietary columns + cleanup (closes MEH-293)
+
+`feat(MEH-479)`: destructive endpoint of MEH-293 — drops `producers.gluten_free` / `producers.vegan` / `producers.lactose_free` columns, removes the legacy `|| !!producer.X` fallback in `lib/badges.js`, cleans up Pydantic schemas, and pins the regression with 3 guard tests. Per-product `is_X` flags + aggregated `has_X_products` are now the single source of truth.
+
+- **Alembic revision `80bbf0a24874` (revises `1afe844d11f4`)** — `op.drop_column('producers', 'lactose_free' / 'vegan' / 'gluten_free')`. Downgrade re-adds 3 columns as `Boolean nullable` (matching baseline shape, no `server_default`); values NOT backfilled (pre-launch acceptable — orphan check returned 0).
+- **`backend/app/models/models.py`** — `Producer` class: 3 column lines removed.
+- **`backend/app/schemas/schemas.py`** — 4 schemas cleaned: `ProducerRegister` / `ProducerAdminCreate` / `ProducerUpdate` / `ProducerListOut`. `has_gluten_free_products` / `has_vegan_products` / `has_lactose_free_products` on `ProducerListOut` preserved (canonical aggregated output, computed by `attach_badge_fields`).
+- **`backend/app/routers/auth.py:332-334`** — register handler stops writing `gluten_free=` / `vegan=` / `lactose_free=` to the new producer row. No replacement — dietary tagging is per-product via `/settings`.
+- **`backend/app/services/producer_listing.py`** — no edit. Already uses `Product.is_X` via `_DIETARY_FILTERS` (PR #1). `?vegan=true` query key contract preserved.
+- **`backend/app/routers/producers.py`** — no edit. URL query params `gluten_free` / `vegan` / `lactose_free` preserved (URL contract; backend EXISTS subquery routes them to `Product.is_X`).
+- **`frontend/lib/badges.js`** — `earnsBadge` cases simplified: `return !!producer.has_X_products` (no `|| !!producer.X` fallback). JSDoc updated.
+- **`frontend/__tests__/badges.test.js`** — removed 3 "legacy producer-level, MEH-293 overlap" cases; added 3 MEH-479 guard tests proving legacy keys do NOT earn dietary badges; migrated 2 fixture-style tests (`returns badges in priority order` + `counts the dietary label badges`) from `{vegan: true, ...}` to `{has_vegan_products: true, ...}`; simplified the "no dietary badge" guard to use only `has_X_products` keys.
+- **`.github/workflows/pr-checks.yml`** — `EXPECTED_REV` bumped `1afe844d11f4 → 80bbf0a24874`. `EXPECTED_TABLES` stays 34.
+- **CSS / RTL** — N/A (no UI changes; `ProductsSection` checkboxes locked from PR #2).
+- **Out of scope** — `frontend/lib/producer-filters.js` + `frontend/lib/map-chips.js` (URL chip key contract, unchanged); `frontend/components/admin/ProducerForm.jsx` informational comments (kept as evergreen architectural notes).
+- **Pre-merge gate (HIGH-RISK destructive schema)** — Smadar runs the orphan-check SQL block (see PR description) on staging Postgres before squash-merging. Auto-merge intentionally OFF.
+
+Closes MEH-293 + MEH-479.
+
+## 2026-05-07 — MEH-471: i18n Wave 1 — next-intl install + strangler-fig
+
+`feat(MEH-471)`: foundation cutover from homegrown `LanguageProvider` to **next-intl 4.11.0** (Next 16.2.4 compat). Both providers coexist during Wave 1; Wave 2 (MEH-472) deletes the homegrown shim. Branch switched from harness-mandated `claude/i18n-wave-1-foundation-kGlAP` to `feature/meh-471-i18n-wave-1-foundation` per CLAUDE.md workflow rule 3 (explicit Smadar permission).
+
+### What shipped
+- **`next-intl@^4`** installed (4.11.0 — peer-deps include Next 16; v3 was pinned to ≤Next 15).
+- **`frontend/i18n/{routing,request,navigation}.js`** — `defineRouting({locales:['he','en'], defaultLocale:'he', localePrefix:'as-needed'})`. JS, not TS (Q-NEW-B).
+- **`frontend/middleware.js`** — `createMiddleware(routing)`; matcher excludes `/api`, `/_next`, `/_vercel`, static assets.
+- **`frontend/messages/{he,en}.json`** — 39 keys ported with new namespacing (per plan §4): `nav.*`, `nav.footer.*`, `home.hero.*`, `home.search.*`, `common.cta.*`. Parity verified.
+- **`frontend/app/[locale]/`** — bulk `git mv` of all routes (33 directories + 4 root pages: page.js / error.js / loading.js / not-found.js). 10 absolute imports rewritten `@/app/...` → `@/app/[locale]/...`. Single-layout pattern (3a): `app/layout.js` deleted; `app/[locale]/layout.js` is the root.
+- **Exceptions kept at `app/` root:** `sitemap.js` (Wave 6 extends, not relocates), `globals.css` (CSS, not a route).
+- **Strangler-fig (`lib/language-context.js`)** — converted to delegating shim. `useLanguage()` still returns `{lang, setLang, t}`; internally `lang ← useLocale()`, `setLang → next-intl router.replace + localStorage write`, `t(oldKey) → useTranslations()(mapKey(oldKey))`. Old → new key map lives in **NEW `lib/i18n-key-map.js`** (deleted in Wave 2).
+- **`lib/use-home-page.js`** — cut over to `useTranslations()` directly with the same key-mapping wrap so downstream consumers (HomeHero etc) keep working with old keys until Wave 2.
+- **`Header.jsx` + `BottomNav.jsx`** — direct `useTranslations()` cutover with new dotted keys. Header still uses `useLanguage()` for `{lang, setLang}` (toggle UI at line 313).
+- **localStorage → cookie bridge** — on first mount, if `localStorage.lang` ∈ {he,en} and disagrees with current locale, the shim does a one-time `router.replace(pathname, {locale: stored})`. Documented edge case: preserves prior EN preference across the cutover.
+- **`lib/constants.js` (NEW) — `BRAND_NAME = "מהמקור"`** — replaced at 19 in-scope sites: `lib/seo.js` (×2), `app/[locale]/layout.js` (×3 — keywords/siteName/appleWebApp.title), 6 page.js metadata `siteName` exports (group-buys/experiences/events/map/neighbor/about), 2 `<Image alt>` (error.js / not-found.js), 6 components (Header alt, Footer alt, StoryCardCanvas canvas-text, ShareButton fallback title, HomeProductCard inline, DirectoryDisclaimer inline). Out of scope: `worker/index.js` (service worker; no React imports), 3 test assertions in `__tests__/` (assertions deliberately use literal string), embedded HE phrases like "במהמקור" / "למהמקור" (grammatical embeds, Wave 6).
+- **`__tests__/Header.test.jsx` + `BottomNav.test.jsx`** — mocks updated: `next-intl.useTranslations` mocked with new dotted keys; `language-context` mock retains only `{lang, setLang}` for Header.
+- **`.claude/agents/i18n-scanner.md`** — template-literal regex fix (plan §9.1): scanner now treats `` t(`...`) `` and `` i18n(`...`) `` as already-wrapped.
+
+### Q7 — gendered loading states
+**DECIDED** alongside Q1–Q6 in MEH-366 plan: normalize loading verbs to feminine, single key per state. Wave 2 spec already assumes this; not flagged as pending in this PR.
+
+### Verification
+- `npm run build` — green. All routes generated for both `/he/*` and `/en/*`; `localePrefix: 'as-needed'` strips `/he` at middleware so HE URLs are unchanged (`/`, `/producer/123`, `/map`).
+- `pytest tests/test_api.py` — deferred to Smadar (CC sandbox limitation per MEH-360); no backend touch in this PR so no regression risk.
+- Vercel preview verification (Step 8 #3–#8) — deferred to Smadar (CC cannot reach Railway/Vercel URLs per MEH-360).
+- `/adversarial-review-coverage` — deferred to Smadar (run after PR opened).
+
+### Out of scope (Wave 2+)
+- Deleting `language-context.js` + `i18n-key-map.js` (Wave 2 / MEH-472).
+- Migrating HomeHero / HomeStaticBlocks call sites from old → new keys (Wave 2).
+- New language toggle UI (Wave 5).
+- Per-locale `generateMetadata({params:{locale}})` (Wave 6 / MEH-476). Page metadata still uses HE titles + canonical "מהמקור" branding.
+- Sitemap.js extension for hreflang (Wave 6).
+- i18n-scanner scalability bug — separate ticket, parent MEH-345 (plan §9.2).
+
+### Known follow-ups
+- `app/sitemap.js` exception cleanly preserved at `app/` root — codify as a "non-locale-scoped root file" pattern in next i18n docs touch.
+- `app/messages/` route (different parent dir from new `frontend/messages/`) — verified no path collision.
+
+Closes MEH-471.
+
+## 2026-05-07 — MEH-293 PR #2: dietary checkboxes on product form (frontend)
+
+`feat(MEH-293)`: per-product dietary checkboxes (`is_gluten_free` / `is_vegan` / `is_lactose_free`) on the producer dashboard, plus removal of the legacy producer-level checkboxes from register and admin forms. 7-day overlap remains active — `lib/badges.js` reads `has_X_products` (new aggregated field from PR #1) with `|| !!producer.X` legacy fallback so badges keep rendering for producers who haven't yet re-tagged at the product level.
+
+- **`frontend/app/register/producer/page.js`** — removed `gluten_free` / `vegan` / `lactose_free` from `EMPTY_FORM`, the API submit body, and the entire "סימוני תזונה (אופציונלי)" section (heading + wrapper + 3 checkboxes). Producers now tag dietary attributes per-product in `/settings`.
+- **`frontend/components/admin/ProducerForm.jsx`** — same removal: 3 keys from initial state + 3 sibling `<label>` checkbox blocks. `grass_fed` (above) and `is_verified` (below) untouched.
+- **`frontend/app/settings/page.jsx` `ProductsSection`** — added `is_gluten_free` / `is_vegan` / `is_lactose_free` to the form state initial value, the `handleAdd` POST body + reset, the `startEdit` editForm population (`!!product.is_X`, defensive against `null` from legacy rows), and the `handleEdit` PUT body. New 3-checkbox block in **both** the Add form and the Edit form, inserted between the price grid and the image upload. Layout: `grid grid-cols-1 sm:grid-cols-3 gap-2` (mobile-first — 1 col at <640px, 3 cols at ≥640px). Section heading: `<p className="text-xs text-site-muted mb-2">סימוני תזונה (אופציונלי)</p>`. Hebrew copy verbatim from spec: 🌾 ללא גלוטן · 🥦 טבעוני · 🥛 ללא לקטוז. `onChange` uses functional `setForm`/`setEditForm` (consistent with existing fields).
+- **`frontend/lib/badges.js`** — `earnsBadge` for the 3 dietary keys now returns `!!producer.has_X_products || !!producer.X` (aggregated-first, legacy-fallback). The `|| !!producer.X` fallback is removed in the +7-day cleanup PR. JSDoc updated to reflect both sources during overlap. `BADGE_CONFIG` and `BADGE_PRIORITY` unchanged — keys are stable.
+- **`frontend/__tests__/badges.test.js`** — 3 existing legacy-key cases relabeled "MEH-293 overlap" (still green, pinning the fallback). 3 new aggregated-key cases (`has_vegan_products: true` etc.) plus a "both false → no dietary badge" guard. Future +7-day cleanup PR will keep the aggregated cases and drop the legacy ones.
+- **Out of scope for this PR** — `frontend/lib/producer-filters.js` and `frontend/lib/map-chips.js` (filter chip keys still send `?vegan=true` to API; backend EXISTS subquery transparently handles the move per PR #1 — no frontend chip change). `ProducerCard.jsx` / `ProducerSections.jsx` unchanged (consume `BadgeRow` → `topBadges`/`allBadges` → `earnsBadge` — only `lib/badges.js` needed an update).
+- **+7-day cleanup PR scheduled for 2026-05-14** — drops `producers.gluten_free` / `vegan` / `lactose_free` columns + the legacy fallback in `lib/badges.js` + `producer-filters.js` initial state + `map-chips.js` initial state.
+
+Closes MEH-293 (after the +7-day cleanup PR ships).
+
 ## 2026-05-07 — MEH-293 PR #1: dietary flags moved from producer to product (backend + migration)
 
 `feat(MEH-293)`: per-product dietary flags (`is_gluten_free` / `is_vegan` / `is_lactose_free`) replace the producer-level columns of the same name. Same anti-pattern fix as MEH-291 — a single business often sells both vegan and non-vegan items; storing the flag on the producer forced shoppers to filter on the worst-case denominator.

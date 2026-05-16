@@ -10,15 +10,25 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import require_admin
 from app.config import settings
 from app.services.email import send_email
+from app.services.whatsapp import send_text
 from app.database import get_db
-from app.models import DeliveryArea, HomeProduct, Producer, ProducerCategory, Recipe, User
+from app.models import (
+    DeliveryArea,
+    HomeProduct,
+    Producer,
+    ProducerCategory,
+    Product,
+    User,
+)
 from app.schemas.schemas import (
     ProducerAdminCreate,
+    ProducerAdminOut,
     ProducerDetailOut,
     ProducerUpdate,
     RemoveListingBody,
     StoryCardUploadRequest,
 )
+from app.services.license_validation import ensure_license_for_categories
 from app.slug_utils import RESERVED_SLUGS
 
 logger = logging.getLogger(__name__)
@@ -49,7 +59,9 @@ def _yes_no(value) -> bool:
     return s in ("כן", "yes", "y", "true", "1", "v", "✓")
 
 
-def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = None) -> str:
+def _ensure_unique_slug(
+    db: Session, base_slug: str, exclude_id: UUID | None = None
+) -> str:
     """Append -2, -3, ... until slug is unique and not reserved."""
     if not base_slug:
         return base_slug
@@ -67,7 +79,9 @@ def _ensure_unique_slug(db: Session, base_slug: str, exclude_id: UUID | None = N
 
 
 def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
-    db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
+    db.query(ProducerCategory).filter(
+        ProducerCategory.producer_id == producer.id
+    ).delete()
     for cid in category_ids:
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
 
@@ -83,7 +97,9 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
 
 @router.get("/producers", response_model=list[ProducerDetailOut])
 def list_producers(
-    status: str | None = Query(None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"),
+    status: str | None = Query(
+        None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"
+    ),
     search: str | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -104,7 +120,7 @@ def list_producers(
     return q.order_by(Producer.created_at.desc()).all()
 
 
-@router.post("/producers", response_model=ProducerDetailOut, status_code=201)
+@router.post("/producers", response_model=ProducerAdminOut, status_code=201)
 def admin_create_producer(
     data: ProducerAdminCreate,
     user: User = Depends(require_admin),
@@ -114,8 +130,16 @@ def admin_create_producer(
     slug = data.slug or _slugify(data.name)
     # Reject explicit reserved slugs; auto-generated slugs get suffixed by _ensure_unique_slug.
     if data.slug and _slugify(data.slug) in RESERVED_SLUGS:
-        raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+        raise HTTPException(
+            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
+        )
     slug = _ensure_unique_slug(db, slug)
+
+    # MEH-530: same conditional-required guard as the public endpoints —
+    # admin form can still persist non-regex license values verbatim
+    # (manual-approval flow), but missing-license-for-required-category
+    # is still a 422.
+    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
 
     producer = Producer(
         name=data.name,
@@ -141,6 +165,7 @@ def admin_create_producer(
         has_delivery=data.has_delivery,
         pickup_points=data.pickup_points,
         kosher=data.kosher,
+        producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
         is_verified=data.is_verified,
         images=data.images or [],
@@ -162,7 +187,7 @@ def admin_create_producer(
     return producer
 
 
-@router.put("/producers/{producer_id}", response_model=ProducerDetailOut)
+@router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
     data: ProducerUpdate,
@@ -177,16 +202,43 @@ def admin_update_producer(
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
 
+    # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
+    # the update. If category_ids is being changed → use the new list,
+    # otherwise read existing producer-category join rows. Same for license:
+    # if the field is in the payload (even explicitly None to clear) → use
+    # that, otherwise keep the current column. Helper short-circuits to OK
+    # when no required-category is touched, so this is cheap on non-license
+    # admin edits.
+    effective_category_ids = (
+        category_ids
+        if category_ids is not None
+        else [c.id for c in producer.categories]
+    )
+    effective_license = (
+        payload.get("producer_license_number")
+        if "producer_license_number" in payload
+        else producer.producer_license_number
+    )
+    ensure_license_for_categories(db, effective_category_ids, effective_license)
+
     # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:
         candidate = _slugify(payload["slug"])
         if candidate in RESERVED_SLUGS:
-            raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+            raise HTTPException(
+                status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
+            )
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
 
     # Mirror price_range → starting_price_label for backward-compat display
     if "price_range" in payload:
         producer.starting_price_label = payload["price_range"]
+
+    # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
+    # destroy URLs the admin dropped AFTER db.commit succeeds. Order
+    # matters — destroying before commit would orphan-leak in reverse
+    # (assets gone, DB still references them) on a commit raise.
+    old_images = list(producer.images or [])
 
     for field, value in payload.items():
         setattr(producer, field, value)
@@ -198,6 +250,18 @@ def admin_update_producer(
 
     db.commit()
     db.refresh(producer)
+
+    # MEH-375: post-commit cleanup. Helper handles set diff + dedup +
+    # fail-open per-URL destroy.
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+
+        destroy_removed_images(
+            old_images,
+            producer.images or [],
+            context="admin.admin_update_producer images",
+        )
+
     return producer
 
 
@@ -225,15 +289,50 @@ def admin_delete_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-375 + MEH-510: capture every Cloudinary URL owned by this
+    # producer BEFORE db.delete — the cascade detaches the relationship
+    # and producer.images / Product.image_url / story_card_url become
+    # unreachable after commit. Destroy runs AFTER commit so a
+    # constraint / deadlock failure doesn't leave Cloudinary and DB
+    # out of sync.
+    #
+    # MEH-510: story_card_url IS captured here. The reserved namespace
+    # (mehamakor/producers/*) is protected by destroy_image's reject
+    # list to keep the cleanup script from sweeping live story-cards,
+    # but the producer-delete path is the one legitimate caller that
+    # should free the slot — pass `bypass_reserved=True` to opt out.
+    old_image_urls = list(producer.images or [])
+    products = db.query(Product).filter(Product.producer_id == producer.id).all()
+    old_product_urls = [p.image_url for p in products if p.image_url]
+    old_story_card_url = producer.story_card_url
+
     db.delete(producer)
     db.commit()
+
+    # Post-commit orphan cleanup, fail-open per destroy_image contract.
+    from app.cloudinary_utils import destroy_image
+
+    for url in old_image_urls:
+        destroy_image(url, context="admin.admin_delete_producer images")
+    for url in old_product_urls:
+        destroy_image(url, context="admin.admin_delete_producer product_image")
+    # MEH-510: bypass_reserved=True — the producer is gone, the slot is now an orphan.
+    destroy_image(
+        old_story_card_url,
+        bypass_reserved=True,
+        context="admin.admin_delete_producer story_card",
+    )
+
     return {"detail": "Producer deleted"}
 
 
 @router.post("/producers/import")
 async def import_producers_excel(
     file: UploadFile = File(...),
-    dry_run: bool = Query(True, description="Preview only — set false to actually save"),
+    dry_run: bool = Query(
+        True, description="Preview only — set false to actually save"
+    ),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -262,8 +361,10 @@ async def import_producers_excel(
     return import_rows(db, rows, dry_run=dry_run)
 
 
-@router.get("/producers/pending", response_model=list[ProducerDetailOut])
-def pending_producers(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+@router.get("/producers/pending", response_model=list[ProducerAdminOut])
+def pending_producers(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     return (
         db.query(Producer)
         .options(
@@ -278,7 +379,11 @@ def pending_producers(user: User = Depends(require_admin), db: Session = Depends
 
 
 @router.post("/producers/{producer_id}/approve")
-def approve_producer(producer_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def approve_producer(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -341,7 +446,9 @@ def reject_producer(
 
 # --- Hidden Home Listings ---
 @router.get("/home-products/hidden")
-def get_hidden_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def get_hidden_listings(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     """Get home products auto-hidden by negative ratings."""
     listings = db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).all()
     return [
@@ -357,7 +464,9 @@ def get_hidden_listings(user: User = Depends(require_admin), db: Session = Depen
 
 
 @router.post("/home-products/{product_id}/restore")
-def restore_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def restore_listing(
+    product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Listing not found")
@@ -367,18 +476,39 @@ def restore_listing(product_id: UUID, user: User = Depends(require_admin), db: S
 
 
 @router.delete("/home-products/{product_id}")
-def delete_listing(product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def delete_listing(
+    product_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Listing not found")
+
+    # MEH-375: capture HomeProduct's two image surfaces (cover photo +
+    # images list) BEFORE db.delete; destroy AFTER commit per the
+    # external-cleanup rule (DB and Cloudinary must agree on rollback).
+    # Distinct from the soft-delete at /home-products/{id} (sets
+    # is_active=False), which preserves assets for reactivation.
+    old_photo = hp.photo
+    old_images = list(hp.images or [])
+
     db.delete(hp)
     db.commit()
+
+    from app.cloudinary_utils import destroy_image
+
+    if old_photo:
+        destroy_image(old_photo, context="admin.delete_listing photo")
+    for url in old_images:
+        destroy_image(url, context="admin.delete_listing images")
+
     return {"detail": "Listing deleted"}
 
 
 # --- Moderation queue (FLAGGED by AI) ---
 @router.get("/home-products/flagged")
-def get_flagged_listings(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+def get_flagged_listings(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+):
     """Return home products that AI moderation marked as FLAGGED —
     published but in the admin review queue.
     """
@@ -445,33 +575,12 @@ def remove_flagged_listing(
     return {"detail": "Listing removed"}
 
 
-# --- Recipes ---
-@router.get("/recipes/pending")
-def pending_recipes(user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    return db.query(Recipe).filter(Recipe.status == "pending").all()
-
-
-@router.post("/recipes/{recipe_id}/approve")
-def approve_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    recipe.status = "approved"
-    db.commit()
-    return {"detail": "Recipe approved"}
-
-
-@router.post("/recipes/{recipe_id}/reject")
-def reject_recipe(recipe_id: UUID, user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    recipe.status = "rejected"
-    db.commit()
-    return {"detail": "Recipe rejected"}
+# MEH-587: admin Recipe endpoints removed (chunk 0/4) — see
+# backend/alembic/versions/20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
 # --- MEH-53: Instagram story card ---
+
 
 @router.post("/producers/{producer_id}/story-card")
 def upload_story_card(
@@ -491,6 +600,7 @@ def upload_story_card(
         data_uri = data_uri.split(",", 1)[1]
 
     import base64
+
     try:
         raw = base64.b64decode(data_uri)
     except Exception:
@@ -530,11 +640,19 @@ def upload_story_card(
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return {
         "total_producers": db.query(Producer).count(),
-        "pending_producers": db.query(Producer).filter(Producer.status.in_(["pending", "pending_whatsapp"])).count(),
-        "approved_producers": db.query(Producer).filter(Producer.status == "approved").count(),
+        "pending_producers": db.query(Producer)
+        .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
+        .count(),
+        "approved_producers": db.query(Producer)
+        .filter(Producer.status == "approved")
+        .count(),
         "total_users": db.query(User).count(),
-        "total_home_products": db.query(HomeProduct).filter(HomeProduct.is_active.is_(True)).count(),
-        "hidden_home_products": db.query(HomeProduct).filter(HomeProduct.is_hidden.is_(True)).count(),
+        "total_home_products": db.query(HomeProduct)
+        .filter(HomeProduct.is_active.is_(True))
+        .count(),
+        "hidden_home_products": db.query(HomeProduct)
+        .filter(HomeProduct.is_hidden.is_(True))
+        .count(),
     }
 
 
@@ -584,20 +702,10 @@ def _send_notification_email(to_email: str, subject: str, body: str):
 
 
 def _send_whatsapp(to: str, body: str):
-    """Send WhatsApp notification via Twilio."""
-    if not settings.twilio_account_sid or not settings.twilio_auth_token:
-        logger.debug(f"[WHATSAPP] Would send to {to}: {body}")
-        return
+    """Send WhatsApp admin notification via Meta Cloud API.
 
-    try:
-        from twilio.rest import Client
-
-        client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-        client.messages.create(
-            body=body,
-            from_=f"whatsapp:{settings.twilio_whatsapp_from}",
-            to=f"whatsapp:{to}",
-        )
-        logger.info(f"[WHATSAPP] Sent to {to}")
-    except Exception as e:
-        logger.warning(f"[WHATSAPP] Failed to send to {to}: {e}")
+    MEH-508: send_text is fail-open (False on missing config or HTTP error,
+    no exception raised), so the previous try/except + configured-check
+    collapse to a single call. Service-level logger emits the warning.
+    """
+    send_text(to, body)

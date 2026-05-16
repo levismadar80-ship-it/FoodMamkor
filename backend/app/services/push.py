@@ -3,6 +3,7 @@
 Fail-open: if VAPID keys are not configured, send() is a no-op.
 This follows the same pattern as the AI fail-open rule in CLAUDE.md.
 """
+
 from __future__ import annotations
 
 import json
@@ -11,7 +12,9 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def send_push_notification(subscription: dict, *, title: str, body: str, url: str = "/") -> None:
+def send_push_notification(
+    subscription: dict, *, title: str, body: str, url: str = "/"
+) -> None:
     """Send a single Web Push notification to one subscription endpoint.
 
     Args:

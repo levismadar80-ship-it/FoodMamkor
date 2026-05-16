@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
+from app.services.whatsapp import send_text
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -23,7 +24,6 @@ from app.models import (
     User,
 )
 import logging
-import os
 import secrets
 import string
 
@@ -36,12 +36,13 @@ from app.schemas.schemas import (
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
-    ProducerDetailOut,
+    ProducerAdminOut,
     ProducerUpdate,
     ProductCreate,
     ProductOut,
     ProductUpdate,
 )
+from app.services.license_validation import ensure_license_for_categories
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
@@ -50,8 +51,10 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/producers/me", tags=["producer-management"])
 
 
-@router.get("", response_model=ProducerDetailOut)
-def get_my_producer(user: User = Depends(require_producer), db: Session = Depends(get_db)):
+@router.get("", response_model=ProducerAdminOut)
+def get_my_producer(
+    user: User = Depends(require_producer), db: Session = Depends(get_db)
+):
     producer = (
         db.query(Producer)
         .options(
@@ -81,22 +84,28 @@ def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
     a non-colliding suffix (`-2`, `-3`, ...) against other producers."""
     raw = _slugify_me(raw_slug)
     if raw in RESERVED_SLUGS:
-        raise HTTPException(status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר.")
+        raise HTTPException(
+            status_code=400, detail="שם זה שמור לשימוש האתר. בחרי שם אחר."
+        )
     candidate = raw
     counter = 2
     while True:
         if candidate not in RESERVED_SLUGS:
-            existing = db.query(Producer).filter(
-                Producer.slug == candidate,
-                Producer.id != producer_id,
-            ).first()
+            existing = (
+                db.query(Producer)
+                .filter(
+                    Producer.slug == candidate,
+                    Producer.id != producer_id,
+                )
+                .first()
+            )
             if not existing:
                 return candidate
         candidate = f"{raw}-{counter}"
         counter += 1
 
 
-@router.put("", response_model=ProducerDetailOut)
+@router.put("", response_model=ProducerAdminOut)
 @limiter.limit("30/hour")
 def update_my_producer(
     request: Request,
@@ -110,20 +119,61 @@ def update_my_producer(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     _PRODUCER_WRITABLE_FIELDS = {
-        "name", "contact_name", "description", "short_description", "city",
-        "lat", "lng", "phone", "instagram", "website", "whatsapp_group",
-        "primary_contact_method", "contact_email", "slug", "top_product_name",
-        "starting_price_label", "price_range", "grass_fed", "organic_certified",
-        "has_delivery", "pickup_points", "kosher", "is_available_today",
-        "images", "custom_questions",
+        "name",
+        "contact_name",
+        "description",
+        "short_description",
+        "city",
+        "lat",
+        "lng",
+        "phone",
+        "instagram",
+        "website",
+        "whatsapp_group",
+        "primary_contact_method",
+        "contact_email",
+        "slug",
+        "top_product_name",
+        "starting_price_label",
+        "price_range",
+        "grass_fed",
+        "organic_certified",
+        "has_delivery",
+        "pickup_points",
+        "kosher",
+        # MEH-530: owner can edit her own license # via /producer/me PUT.
+        "producer_license_number",
+        "is_available_today",
+        "images",
+        "custom_questions",
     }
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
 
+    # MEH-530: effective-state guard, same shape as admin.py PUT. Helper
+    # short-circuits when no license-required category is touched.
+    effective_category_ids = (
+        category_ids
+        if category_ids is not None
+        else [c.id for c in producer.categories]
+    )
+    effective_license = (
+        payload.get("producer_license_number")
+        if "producer_license_number" in payload
+        else producer.producer_license_number
+    )
+    ensure_license_for_categories(db, effective_category_ids, effective_license)
+
     # Validate and deduplicate slug if explicitly provided.
     if "slug" in payload and payload["slug"]:
         payload["slug"] = _resolve_unique_slug(db, payload["slug"], producer.id)
+
+    # MEH-375: snapshot the gallery BEFORE mutation so we can diff old vs
+    # new and clean up dropped URLs AFTER db.commit succeeds. Destroying
+    # before commit would orphan-leak in the opposite direction (assets
+    # gone, DB still references them) if commit raises.
+    old_images = list(producer.images or [])
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
@@ -132,25 +182,50 @@ def update_my_producer(
     # Handle delivery area cities (replaces existing areas like admin endpoint)
     new_cities: list[str] = []
     if delivery_cities is not None:
-        existing_cities = {da.city for da in producer.delivery_areas} if producer.delivery_areas else set()
+        existing_cities = (
+            {da.city for da in producer.delivery_areas}
+            if producer.delivery_areas
+            else set()
+        )
         _apply_delivery_cities(db, producer, delivery_cities)
         new_cities = [c for c in delivery_cities if c and c not in existing_cities]
 
     # Handle category updates
     if category_ids is not None:
         from app.models.models import ProducerCategory
-        db.query(ProducerCategory).filter(ProducerCategory.producer_id == producer.id).delete()
+
+        db.query(ProducerCategory).filter(
+            ProducerCategory.producer_id == producer.id
+        ).delete()
         for cid in category_ids:
             db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
 
     db.commit()
     db.refresh(producer)
 
+    # MEH-375: best-effort destroy of Cloudinary assets the producer
+    # dropped from the gallery, AFTER db.commit so a constraint failure
+    # / deadlock leaves DB and Cloudinary in sync. Helper does the set
+    # diff + dedup + per-URL fail-open destroy; failures log via
+    # app.upload and the cleanup script catches misses on its next run.
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+
+        destroy_removed_images(
+            old_images,
+            producer.images or [],
+            context="producer_me.update_my_producer images",
+        )
+
     # MEH-54: fire delivery area alerts for newly added cities
     if new_cities:
         from app.routers.alerts import AlertContent, fire_alerts
+
         background_tasks.add_task(
-            fire_alerts, db, producer.id, "delivery_area",
+            fire_alerts,
+            db,
+            producer.id,
+            "delivery_area",
             AlertContent(
                 title=f"🚚 משלוחים חדשים: {producer.name}",
                 body=f"עכשיו מגיעים גם ל: {', '.join(new_cities)}",
@@ -165,19 +240,22 @@ def update_my_producer(
 # Phase 4 (separate PR) drops the legacy is_available_today + availability_status
 # columns and removes these helpers along with the legacy endpoints below.
 
+
 def _state_to_legacy(state: str) -> tuple[bool, str]:
     """Map the new 4-value enum to the (is_available_today, availability_status)
     pair so old readers (ProducerCard, ProducerDetail, dashboard) stay accurate
     until the legacy columns are dropped."""
     return {
         "accepting_orders": (False, "available"),
-        "available_today":  (True,  "available"),
-        "full_this_week":   (False, "full"),
-        "on_vacation":      (False, "vacation"),
+        "available_today": (True, "available"),
+        "full_this_week": (False, "full"),
+        "on_vacation": (False, "vacation"),
     }[state]
 
 
-def _legacy_to_state(is_available_today: bool | None, availability_status: str | None) -> str:
+def _legacy_to_state(
+    is_available_today: bool | None, availability_status: str | None
+) -> str:
     """Inverse mapping. Precedence matches the Phase 1 backfill CASE WHEN tree:
     vacation > full > is_available_today > default."""
     if availability_status == "vacation":
@@ -250,12 +328,15 @@ def set_availability_status(
     return {
         "availability_status": producer.availability_status,
         "availability_state": producer.availability_state,
-        "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
+        "vacation_until": producer.vacation_until.isoformat()
+        if producer.vacation_until
+        else None,
     }
 
 
 # MEH-291 — new unified endpoint. Phase 3 frontend will call this exclusively;
 # the two legacy endpoints above stay during the 7-day overlap and dual-write.
+
 
 @router.post("/availability-state")
 @limiter.limit("20/hour")
@@ -281,12 +362,16 @@ def set_availability_state(
     is_today, legacy_status = _state_to_legacy(data.state)
     producer.is_available_today = is_today
     producer.availability_status = legacy_status
-    producer.vacation_until = data.vacation_until if data.state == "on_vacation" else None
+    producer.vacation_until = (
+        data.vacation_until if data.state == "on_vacation" else None
+    )
     producer.last_active_at = datetime.utcnow()
     db.commit()
     return {
         "availability_state": producer.availability_state,
-        "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
+        "vacation_until": producer.vacation_until.isoformat()
+        if producer.vacation_until
+        else None,
     }
 
 
@@ -332,7 +417,9 @@ def dashboard(
             # MEH-291 — durable 4-value enum that supersedes the two above.
             # Defensive default in case ORM ever returns NULL despite NOT NULL.
             "availability_state": producer.availability_state or "accepting_orders",
-            "vacation_until": producer.vacation_until.isoformat() if producer.vacation_until else None,
+            "vacation_until": producer.vacation_until.isoformat()
+            if producer.vacation_until
+            else None,
             "status": producer.status,
             "plan": producer.plan,
         },
@@ -357,7 +444,9 @@ class WindowFilter:
     extra_filter: Any = None
 
 
-def _count_in_window(db: Session, model, time_col, producer_id, window: WindowFilter = WindowFilter()):
+def _count_in_window(
+    db: Session, model, time_col, producer_id, window: WindowFilter = WindowFilter()
+):
     """Count rows for the given model, optionally windowed to last N days."""
     q = db.query(func.count(model.id)).filter(model.producer_id == producer_id)
     if window.days is not None:
@@ -392,14 +481,21 @@ def producer_analytics(
     # Time-windowed counts for the 3 main metrics.
     def windowed(model, time_col, *, extra=None):
         return {
-            "last_7d": _count_in_window(db, model, time_col, pid, WindowFilter(days=7, extra_filter=extra)),
-            "last_30d": _count_in_window(db, model, time_col, pid, WindowFilter(days=30, extra_filter=extra)),
-            "total": _count_in_window(db, model, time_col, pid, WindowFilter(days=None, extra_filter=extra)),
+            "last_7d": _count_in_window(
+                db, model, time_col, pid, WindowFilter(days=7, extra_filter=extra)
+            ),
+            "last_30d": _count_in_window(
+                db, model, time_col, pid, WindowFilter(days=30, extra_filter=extra)
+            ),
+            "total": _count_in_window(
+                db, model, time_col, pid, WindowFilter(days=None, extra_filter=extra)
+            ),
         }
 
     profile_views = windowed(ProducerPageView, ProducerPageView.created_at)
     search_appearances = windowed(
-        ProducerPageView, ProducerPageView.created_at,
+        ProducerPageView,
+        ProducerPageView.created_at,
         extra=(ProducerPageView.referrer == "search"),
     )
     whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
@@ -458,7 +554,9 @@ def producer_analytics(
     views_by_day = []
     for i in range(29, -1, -1):
         d = today - timedelta(days=i)
-        views_by_day.append({"date": d.isoformat(), "count": by_day.get(d.isoformat(), 0)})
+        views_by_day.append(
+            {"date": d.isoformat(), "count": by_day.get(d.isoformat(), 0)}
+        )
 
     # Top cities (viewers who had a city attached — i.e. logged-in viewers).
     top_city_rows = (
@@ -518,14 +616,19 @@ def producer_analytics(
         .scalar()
         or 0
     ) > 0
-    strength_score = sum([
-        15 if (producer.images or []) else 0,
-        20 if (producer.description or "").strip() and len((producer.description or "").strip()) >= 50 else 0,
-        25 if int(home_products_count) > 0 else 0,
-        10 if has_delivery_area else 0,
-        15 if int(total_reviews) > 0 else 0,
-        15 if producer.phone_verified else 0,
-    ])
+    strength_score = sum(
+        [
+            15 if (producer.images or []) else 0,
+            20
+            if (producer.description or "").strip()
+            and len((producer.description or "").strip()) >= 50
+            else 0,
+            25 if int(home_products_count) > 0 else 0,
+            10 if has_delivery_area else 0,
+            15 if int(total_reviews) > 0 else 0,
+            15 if producer.phone_verified else 0,
+        ]
+    )
     profile_strength = int(strength_score)
 
     # MEH-57 ── weekly_trend: compare last 7d views vs previous 7d (days 14→7).
@@ -576,26 +679,17 @@ def producer_analytics(
 # MEH-51: Phone verification (WhatsApp OTP)
 # ---------------------------------------------------------------------------
 
+
 def _send_whatsapp_otp(phone: str, code: str) -> bool:
-    """Send a 6-digit OTP via Twilio WhatsApp. Fail-open: returns False if
-    creds are missing — caller logs and still returns HTTP 200."""
-    sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    token = os.environ.get("TWILIO_AUTH_TOKEN")
-    from_wa = os.environ.get("TWILIO_WHATSAPP_FROM")
-    if not (sid and token and from_wa):
-        log.warning("MEH-51: Twilio creds missing — OTP not sent (fail-open)")
-        return False
-    try:
-        from twilio.rest import Client
-        Client(sid, token).messages.create(
-            from_=from_wa,
-            to=f"whatsapp:{phone}",
-            body=f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות.",
-        )
-        return True
-    except Exception as e:
-        log.warning("MEH-51: Twilio send failed: %s", e)
-        return False
+    """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508).
+
+    Fail-open: returns False if WHATSAPP_* config is missing or the Meta
+    Graph call errors — caller logs and still returns HTTP 200. send_text
+    handles config / HTTP fail-open internally; this function is now a
+    thin wrapper that owns only the OTP message body.
+    """
+    body = f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות."
+    return send_text(phone, body)
 
 
 @router.post("/verify-phone", status_code=200)
@@ -622,12 +716,14 @@ def send_phone_otp(
         PhoneOtpToken.used.is_(False),
     ).update({"used": True})
 
-    db.add(PhoneOtpToken(
-        producer_id=producer.id,
-        phone=producer.phone,
-        code=code,
-        expires_at=expires,
-    ))
+    db.add(
+        PhoneOtpToken(
+            producer_id=producer.id,
+            phone=producer.phone,
+            code=code,
+            expires_at=expires,
+        )
+    )
     db.commit()
 
     _send_whatsapp_otp(producer.phone, code)
@@ -670,6 +766,7 @@ def confirm_phone_otp(
 # ---------------------------------------------------------------------------
 # MEH-51: Kashrut badge requests
 # ---------------------------------------------------------------------------
+
 
 @router.post("/kashrut-request", response_model=KashrutRequestOut, status_code=201)
 @limiter.limit("10/hour")
@@ -717,6 +814,7 @@ def request_kashrut_badge(
 # MEH-56: AI bio generator
 # ---------------------------------------------------------------------------
 
+
 @router.post("/bio/generate")
 @limiter.limit("5/hour")
 def generate_bio_endpoint(
@@ -729,12 +827,14 @@ def generate_bio_endpoint(
     Fail-open: returns {"bio": ""} when AI is unavailable.
     """
     from app.services.bio_generator import generate_bio
+
     bio = generate_bio(body.source)
     return {"bio": bio}
 
 
 # MEH-88: Product CRUD
 # ---------------------------------------------------------------------------
+
 
 @router.get("/products", response_model=list[ProductOut])
 def list_my_products(
@@ -764,8 +864,12 @@ def create_my_product(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     producer_name = producer.name if producer else "בית העסק"
     from app.routers.alerts import AlertContent, fire_alerts
+
     background_tasks.add_task(
-        fire_alerts, db, user.producer_id, "new_product",
+        fire_alerts,
+        db,
+        user.producer_id,
+        "new_product",
         AlertContent(
             title=f"🆕 מוצר חדש מ{producer_name}",
             body=product.name,
@@ -785,10 +889,14 @@ def update_my_product(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
-    product = db.query(Product).filter(
-        Product.id == product_id,
-        Product.producer_id == user.producer_id,
-    ).first()
+    product = (
+        db.query(Product)
+        .filter(
+            Product.id == product_id,
+            Product.producer_id == user.producer_id,
+        )
+        .first()
+    )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
     for field, value in data.model_dump(exclude_unset=True).items():
@@ -804,11 +912,26 @@ def delete_my_product(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
-    product = db.query(Product).filter(
-        Product.id == product_id,
-        Product.producer_id == user.producer_id,
-    ).first()
+    product = (
+        db.query(Product)
+        .filter(
+            Product.id == product_id,
+            Product.producer_id == user.producer_id,
+        )
+        .first()
+    )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
+
+    # MEH-375 (YF-2): capture image_url BEFORE db.delete; destroy after
+    # commit per the external-cleanup rule. Truthy guard skips the
+    # logger spam for products that never had an image.
+    old_image_url = product.image_url
+
     db.delete(product)
     db.commit()
+
+    if old_image_url:
+        from app.cloudinary_utils import destroy_image
+
+        destroy_image(old_image_url, context="producer_me.delete_my_product image")

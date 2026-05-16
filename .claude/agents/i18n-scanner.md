@@ -16,6 +16,15 @@ t() or i18n() wrapper. You do NOT modify files — report only.
 
 ## Steps
 
+0. **Scale check — full-scope delegation:**
+   - If the user prompt does NOT name a specific file or folder → run
+     `python .claude/scripts/i18n-scan.py --format text` from the repo
+     root instead of the manual steps below. Return its stdout directly;
+     the output already matches the required `## Hardcoded Hebrew Strings`
+     format.
+   - Proceed to Step 1 ONLY when the prompt names a specific file or
+     folder (narrowed scope where manual read + classify is feasible).
+
 1. Glob target files (scope-aware):
    - If the user prompt names a specific file, glob ONLY that file.
    - If the user prompt names a folder, glob ONLY that folder.
@@ -32,8 +41,9 @@ t() or i18n() wrapper. You do NOT modify files — report only.
    - Block comment: line is inside `/* ... */`
    - JSDoc block: inside `/** ... */`
    - Test file: filename contains `.test.` or `.spec.`
-   - Already wrapped: Hebrew text appears inside `t("...")`, `t('...')`, `i18n("...")`,
-     or `i18n('...')`
+   - Already wrapped: Hebrew text appears inside `t("...")`, `t('...')`, `` t(`...`) ``,
+     `i18n("...")`, `i18n('...')`, or `` i18n(`...`) `` (template-literal form covers
+     interpolated strings like `` t(`hello ${name}`) ``)
    - Translation dict key/value: file contains `translations = {` or similar dict
 
    **REPORT:**

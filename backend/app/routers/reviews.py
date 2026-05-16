@@ -12,6 +12,7 @@ MEH-103 verified reviews system:
 
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
+
 import json
 import logging
 import math
@@ -26,7 +27,12 @@ from app.auth import get_current_user, require_admin
 from app.database import get_db
 from app.models import Producer, ProducerReview, ProducerWhatsAppClick, User
 from app.rate_limit import limiter
-from app.schemas.schemas import AdminReviewOut, ReviewCreateNested, ReviewOut, ReviewsPage
+from app.schemas.schemas import (
+    AdminReviewOut,
+    ReviewCreateNested,
+    ReviewOut,
+    ReviewsPage,
+)
 
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
@@ -41,10 +47,12 @@ def _get_ai_client():
         return _ai_client
     try:
         from app.config import settings
+
         if not settings.anthropic_api_key:
             return None
         import httpx
         import anthropic
+
         _ai_client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
             http_client=httpx.Client(),
@@ -82,7 +90,9 @@ REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזע
             max_tokens=100,
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "").strip()
+        raw = next(
+            (b.text for b in msg.content if getattr(b, "type", None) == "text"), ""
+        ).strip()
         data = json.loads(raw)
         status = data.get("status", "APPROVED")
         return status if status in {"APPROVED", "FLAGGED", "REJECTED"} else "APPROVED"
@@ -129,6 +139,7 @@ def _serialize(review: ProducerReview) -> ReviewOut:
 # ---------------------------------------------------------------------------
 # Public GET
 # ---------------------------------------------------------------------------
+
 
 @router.get("/producers/{producer_id}/reviews", response_model=ReviewsPage)
 def list_reviews_nested(
@@ -182,6 +193,7 @@ def list_reviews(
 # ---------------------------------------------------------------------------
 # POST — create or update a review (upsert, one per user per producer)
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/producers/{producer_id}/reviews",
@@ -295,6 +307,7 @@ def create_review_nested(
 # DELETE — owner or admin
 # ---------------------------------------------------------------------------
 
+
 @router.delete("/reviews/{review_id}")
 def delete_review(
     review_id: UUID,
@@ -318,6 +331,7 @@ def delete_review(
 # ---------------------------------------------------------------------------
 # Admin endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.put("/admin/reviews/{review_id}/hide")
 def hide_review(

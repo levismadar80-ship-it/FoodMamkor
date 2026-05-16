@@ -53,13 +53,12 @@ on:
     branches: [main, staging]
   workflow_dispatch:
 
-# Cancel any in-flight run if a new push lands while we're still calling
-# the CLI. Concurrency groups are per-branch (deploy-main vs deploy-staging)
-# so a main push and a staging push don't cancel each other — only
-# back-to-back pushes to the *same* branch dedupe.
-concurrency:
-  group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+# MEH-572 — Shai-Hulud supply-chain hardening (May 2026). Default the
+# GITHUB_TOKEN scope to read-only for the whole workflow. Railway deploys
+# authenticate with a separate Railway-scoped token (RAILWAY_TOKEN) — no
+# job here needs write scope on the GitHub side, so we don't widen.
+permissions:
+  contents: read
 
 jobs:
   # ──────────────────────────────────────────────────────────────────
@@ -72,6 +71,11 @@ jobs:
     name: Frontend lint (RTL + Next.js rules)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # MEH-485: per-job concurrency. CI checks dedupe per source branch
+    # (head_ref on PRs, ref on direct pushes); cancel stale runs.
+    concurrency:
+      group: ${{ github.workflow }}-lint-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
     defaults:
       run:
         working-directory: frontend
@@ -102,6 +106,10 @@ jobs:
     name: API contract audit (static)
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # MEH-485: per-job concurrency, same shape as lint.
+    concurrency:
+      group: ${{ github.workflow }}-api-contract-static-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
     continue-on-error: false
     steps:
       - uses: actions/checkout@v6
@@ -122,6 +130,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # MEH-485: deploy concurrency MUST NOT cancel-in-progress (data
+    # integrity — back-to-back main pushes serialize, never abort).
+    # Key uses github.ref because deploys only fire on push (head_ref empty).
+    concurrency:
+      group: ${{ github.workflow }}-production-${{ github.ref }}
+      cancel-in-progress: false
     env:
       # Sourced from RAILWAY_PRODUCTION_TOKEN — a Railway project-scoped
       # token restricted to the production environment. The CLI auto-reads
@@ -206,6 +220,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # MEH-485: same data-integrity rule as production deploy.
+    concurrency:
+      group: ${{ github.workflow }}-staging-${{ github.ref }}
+      cancel-in-progress: false
     env:
       # Sourced from RAILWAY_STAGING_TOKEN — a Railway project-scoped
       # token restricted to the staging environment. Same CLI behavior
@@ -282,6 +300,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # MEH-485: probe is verification, not a deploy — fresh probe wins on
+    # back-to-back staging pushes. Treated as a CI check.
+    concurrency:
+      group: ${{ github.workflow }}-api-contract-probe-staging-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
     continue-on-error: false
     steps:
       - uses: actions/checkout@v6

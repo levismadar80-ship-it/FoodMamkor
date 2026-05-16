@@ -7,10 +7,11 @@ link back to /rate/{token}, where the buyer can leave 1–5 stars and a comment.
 
 This module owns the *batch dispatch* logic. It is intentionally pure with
 respect to I/O: a `sender` callable is injected so the same code path is used
-in production (Twilio) and in tests (a list-append spy). A scheduled job
-(cron / Celery beat / FastAPI BackgroundTasks) calls
+in production (Meta Cloud API; MEH-508) and in tests (a list-append spy). A
+scheduled job (cron / Celery beat / FastAPI BackgroundTasks) calls
 `dispatch_pending_rating_requests` periodically — typically every few minutes.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -19,9 +20,9 @@ from typing import Callable, Optional
 import structlog
 from sqlalchemy.orm import Session
 
-logger = structlog.get_logger(__name__)
-
 from app.models.models import HomeProductWhatsAppClick
+
+logger = structlog.get_logger(__name__)
 
 RATING_DELAY = timedelta(hours=24)
 
@@ -40,16 +41,18 @@ def dispatch_pending_rating_requests(
         db: SQLAlchemy session.
         now: Override the current time (useful for tests).
         sender: Callable invoked with each eligible click. Defaults to the
-            Twilio sender. The dispatcher only flips `rating_sent=True` after
-            the sender returns successfully, so a raising sender leaves the
-            click eligible for the next run.
+            Cloud API sender. Per-click failures are caught and logged
+            (click_id + home_product_id); the dispatcher only flips
+            rating_sent=True for clicks where the sender returns successfully.
+            A raising sender leaves THAT click eligible for the next run;
+            other clicks in the same batch are unaffected.
 
     Returns:
         The number of rating requests successfully dispatched.
     """
     now = now or datetime.utcnow()
     cutoff = now - RATING_DELAY
-    send = sender or _twilio_sender
+    send = sender or _default_sender
 
     eligible = (
         db.query(HomeProductWhatsAppClick)
@@ -63,36 +66,64 @@ def dispatch_pending_rating_requests(
     )
 
     sent_count = 0
+    failed_count = 0
     for click in eligible:
-        send(click)
-        click.rating_sent = True
-        sent_count += 1
+        try:
+            send(click)
+            click.rating_sent = True
+            sent_count += 1
+        except Exception:
+            # MEH-515: per-click try/except — single failure must not
+            # abort the batch nor rollback flag-flips on already-sent siblings.
+            logger.exception(
+                "rating_dispatcher.send_failed",
+                click_id=str(click.id),
+                home_product_id=str(click.home_product_id),
+            )
+            failed_count += 1
+            continue
 
-    if sent_count:
+    if sent_count or failed_count:
         db.commit()
+        logger.info(
+            "rating_dispatcher.batch_complete",
+            sent=sent_count,
+            failed=failed_count,
+            total=len(eligible),
+        )
     return sent_count
 
 
-def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
-    """Default sender — fires a Twilio WhatsApp message if configured.
+def _default_sender(click: HomeProductWhatsAppClick) -> None:
+    """Default sender — fires a WhatsApp message via Meta Cloud API (MEH-508).
 
-    Silently no-ops when Twilio credentials are missing so local/dev
+    Silently no-ops when WhatsApp credentials are missing so local/dev
     environments don't crash. Production deployments must set
-    `twilio_account_sid`, `twilio_auth_token`, and `twilio_whatsapp_from`.
+    `whatsapp_phone_number_id` and `whatsapp_access_token`.
+
+    Behavioral preservation across the Twilio→Meta swap: the prior Twilio
+    sender raised on API error so the dispatcher left `rating_sent=False`
+    and the click stayed eligible for retry. send_text returns False
+    (instead of raising) on HTTP error, so we re-raise here when the
+    service is configured but the send returned False — matching the
+    Twilio-era retry semantics 1:1.
     """
     from app.config import settings
+    from app.services.whatsapp import send_text
 
-    if not (
-        settings.twilio_account_sid
-        and settings.twilio_auth_token
-        and settings.twilio_whatsapp_from
-    ):
-        logger.debug("[rating-dispatcher] SMS disabled", reason="Twilio credentials not set")
+    if not (settings.whatsapp_phone_number_id and settings.whatsapp_access_token):
+        logger.debug(
+            "[rating-dispatcher] SMS disabled", reason="WhatsApp credentials not set"
+        )
         return
 
     buyer = click.user
     if not buyer or not buyer.phone:
-        logger.debug("[rating-dispatcher] SMS skipped", reason="buyer has no phone", click_id=str(click.id))
+        logger.debug(
+            "[rating-dispatcher] SMS skipped",
+            reason="buyer has no phone",
+            click_id=str(click.id),
+        )
         return
 
     listing = click.home_product
@@ -100,21 +131,14 @@ def _twilio_sender(click: HomeProductWhatsAppClick) -> None:
     product_title = listing.title if listing else "המוצר"
     rate_url = f"https://mehamakor.co.il/rate/{click.rating_token}"
     body = (
-        f"היי! קנית מ{seller_name} ({product_title})? איך היה?\n"
-        f"דרגי כאן 👇\n{rate_url}"
+        f"היי! קנית מ{seller_name} ({product_title})? איך היה?\nדרגי כאן 👇\n{rate_url}"
     )
     # MEH-49: append referral link if the buyer has a referral code.
     if buyer.referral_code:
         ref_url = f"https://mehamakor.co.il/ref/{buyer.referral_code}"
-        body += (
-            f"\n\nאהבת? שתפי חברה והיא תקבל 10% הנחה בהזמנה הראשונה:\n{ref_url}"
+        body += f"\n\nאהבת? שתפי חברה והיא תקבל 10% הנחה בהזמנה הראשונה:\n{ref_url}"
+
+    if not send_text(buyer.phone, body):
+        raise RuntimeError(
+            "[rating-dispatcher] WhatsApp send failed; click will retry next cycle"
         )
-
-    from twilio.rest import Client
-
-    twilio = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-    twilio.messages.create(
-        from_=f"whatsapp:{settings.twilio_whatsapp_from}",
-        to=f"whatsapp:{buyer.phone}",
-        body=body,
-    )

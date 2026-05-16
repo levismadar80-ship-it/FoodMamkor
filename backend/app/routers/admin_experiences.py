@@ -11,6 +11,7 @@ Every state-changing action sends a best-effort email to the host
 if RESEND_API_KEY isn't configured the log line is still written but the router
 always returns 200 so the admin UI can move on.
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -142,8 +143,6 @@ def reject_experience(
     db.refresh(ex)
 
     if ex.host and ex.host.email:
-        notify_host_rejected(
-            ex.host.email, ex.title, action.feedback or ""
-        )
+        notify_host_rejected(ex.host.email, ex.title, action.feedback or "")
 
     return _serialize_detail(ex)

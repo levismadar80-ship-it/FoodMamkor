@@ -185,6 +185,30 @@ and MEH-374 (62 commits)._
       code.claude.com. User reviews + approves the plan before any
       code is written; only execute after explicit `go`. Requires
       Claude Code web account + GitHub repo connected.
+    - **Pre-code: `/goal` command for LOW-RISK end-to-end execution
+      (Claude Code 2.1.139+, May 2026).** Define one mechanical completion
+      condition; Claude works across turns until it's met, an evaluator
+      model checks each turn, and the agent stops on its own. Cuts
+      ping-pong on LOW-RISK tasks (test fixes, copy, i18n, docs-only,
+      CI/workflow YAML, single-file deps).
+      - **Usage:** `/goal [verifiable end-state]`. Examples that work:
+        `/goal pytest tests/test_X.py green + draft PR opened`;
+        `/goal npm run build green + preview URL posted + Lighthouse ≥ 90`.
+      - **HIGH-RISK ban.** Never `/goal` on auth, schema, central
+        components, security, or prod-deploy work. The evaluator can't
+        judge architectural trade-offs — same family as MEH-373 subagent
+        approximation drift.
+      - **Goal must be mechanically verifiable.** ✅ `pytest green + PR
+        state` (mechanical) — ❌ `design looks good` (subjective, will be
+        judged wrong).
+      - **STOP conditions stay in force (Risk-tiering section above).**
+        Goal failure on: discovery exposes scope > defined; >2 failed
+        attempts on same problem; cumulative runtime > 30 min. Set runtime
+        cap inside the goal string when relevant.
+      - **Pilot before mass adoption.** Use on one LOW-RISK Linear issue
+        first (current pilot: MEH-571 FAQ page). If the evaluator marks
+        "done" but PR isn't actually green → revert to manual flow, do not
+        `/goal` again until the failure mode is documented here.
     - Caveat: `Monitor` needs the advertising MCP server connected;
       if unavailable, fall back to manual `curl` polling and note it
       in the session summary.
@@ -359,6 +383,15 @@ When a bug is found and fixed:
 Known Bug Patterns (cross-ref before touching):
 [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md).
 
+**Pattern — Free-text input without character-class validation (MEH-555, 10 May 2026):**
+Free-text `str` fields feeding admin queues or public displays accept
+punctuation-only strings (e.g. "???") unless explicitly validated.
+When adding a `String` field visible to admins or users, add a
+`field_validator` requiring ≥ 3 letter chars via `[א-תa-zA-Z]` regex.
+Count letters AFTER `strip()`, not before. Return the stripped value.
+Sibling gaps not yet fixed: `ProducerCreate.name`, `HomeProductCreate.title`,
+`ExperienceCreate.title` — track in follow-up tickets.
+
 ---
 
 ## Commit discipline
@@ -512,3 +545,89 @@ Code session = quota usage. Use on-demand, never always-on.
 - 5+ concurrent loops in same session
 
 Tasks auto-expire after 7 days.
+
+---
+
+22. **Copy approval gate before Linear issue creation (MEH-579 lesson, May 14 2026).**
+    Before creating a Linear issue that contains user-facing copy — FAQ
+    pages, marketing copy, page text, error messages, form labels, email
+    templates — the copy MUST be approved verbatim by Smadar in
+    conversation first. Workflow:
+    1. Draft the copy in chat (or upload reference document)
+    2. Get explicit approval on each string ("approved", "go", "כן")
+    3. ONLY THEN open the Linear issue with the locked copy in the description
+
+    Anti-pattern: opening an issue with copy that "looks reasonable" and
+    sending to Claude Code without approval. Result: PR ships, copy is
+    wrong, follow-up fix issue needed (MEH-571 → MEH-579 cascade —
+    documented case where unapproved FAQ copy required full rewrite).
+
+    The rule `Description = source of truth` (rule 4) requires the
+    description to be correct from the start, not after a feedback loop.
+
+23. **`/goal` merge gate for UI work (MEH-571 + MEH-579 lessons, May 14 2026).**
+    `/goal` strings touching frontend files MUST stop at **Draft PR opened
+    + preview URL posted**, NOT at **PR merged**.
+
+    Reason: the `Closes MEH-XX` annotation in PR body triggers auto-merge
+    of the Linear issue to Done on PR merge. Any "Smadar confirms mobile
+    QA" condition in the `/goal` string races against this auto-merge,
+    and the auto-merge wins because it's mechanical and immediate.
+
+    The flow that works:
+    1. `/goal` ends at: "Draft PR opened + preview URL posted to Linear comment"
+    2. Smadar opens preview URL on mobile, runs QA
+    3. Smadar comments on Linear: "mobile QA ✅"
+    4. Smadar (or separate Claude Code prompt) marks PR ready-for-review and merges
+    5. `Closes MEH-XX` then correctly closes Linear after human approval
+
+    Applies to: any `/goal` touching `frontend/app/**`, `frontend/components/**`,
+    `frontend/pages/**`, or any other UI-visible code.
+
+    Does NOT apply to: backend-only, docs-only, tests-only, CI-only — those
+    can merge on green CI without human QA.
+
+    Anti-pattern: `/goal` ends with "PR merged" + any human-confirmation
+    condition. The conditions race, merge wins, QA is bypassed.
+
+24. **Scope-creep prevention for copy changes (MEH-579 lesson).**
+    When the prompt scope is "replace Q&A content", Claude Code MUST
+    NOT modify page headings, subtitles, taglines, or any text element
+    not explicitly named in `<acceptance_criteria>`. If a heading change
+    seems "obviously needed" — STOP and ask before touching it.
+    MEH-579 PR #639 silently changed the page heading from
+    "שאלות נפוצות לבעלות עסק" to "8 שאלות לפני שמצטרפות" and added
+    an unauthorized subtitle. Both required a follow-up PR to revert.
+    Discovery step (grep before edit) is now mandatory for any copy
+    fix that mentions specific text positions.
+
+25. **Pre-push staging sync (MEH-585, 15 May 2026).**
+    Before every `git push -u origin <feature-branch>`, sync the branch
+    against the current tip of `staging` to absorb any append-only log
+    edits (CHANGELOG.md, HANDOFF.md) that landed during the work window.
+    Prevention layer — pairs with the `resolve-conflicts` skill
+    (recovery). Rule 1's session-start fetch covers boot; this covers
+    the moment between feature work completion and `push`.
+
+    Canonical command sequence:
+
+    ```bash
+    git fetch origin
+    git merge origin/staging   # produces a merge commit OR fast-forwards
+    # resolve conflicts via .claude/skills/resolve-conflicts/ if non-trivial
+    git push -u origin <feature-branch>
+    ```
+
+    CHANGELOG.md + HANDOFF.md follow **Accept-Both** (Haacked rule for
+    append-only logs) — both entries land in chronological order, no
+    information lost. The resolve-conflicts skill encodes this.
+
+    `git rebase origin/staging` is acceptable but **merge is the default**
+    — preserves the original feature SHAs for adversarial review and the
+    merge commit makes the sync point explicit in `git log`. Never force-push.
+
+    _Source: 2026-05-15 night batch — PR #662 (MEH-222) hit an avoidable
+    CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660
+    (MEH-481) merged between branch creation and push. Three merges in a
+    one-hour window made the 4th branch stale. Forward-only convention;
+    no retrofit of open feature branches._
