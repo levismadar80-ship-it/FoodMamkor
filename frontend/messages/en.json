@@ -366,6 +366,186 @@
       "favorites_count_short": "{count, plural, one {1 saved} other {# saved}}"
     }
   },
+  "recipes": {
+    "status": {
+      "pending": "Pending approval",
+      "approved": "Approved & published",
+      "rejected": "Rejected",
+      "needs_revision": "Needs revision"
+    },
+    "card": {
+      "minutes_suffix": "minutes",
+      "servings_suffix": "servings"
+    },
+    "detail": {
+      "breadcrumb_aria": "Breadcrumb navigation",
+      "breadcrumb_recipes": "Recipes",
+      "prep_time_label": "Prep time:",
+      "cook_time_label": "Cook time:",
+      "servings_label": "Servings:",
+      "minutes_unit": "min",
+      "ingredients_heading": "Ingredients",
+      "instructions_heading": "Instructions",
+      "related_products_heading": "Our products in this recipe",
+      "back_to_producer": "← Back to business page"
+    },
+    "form": {
+      "heading_edit": "Edit recipe",
+      "heading_create": "Publish new recipe",
+      "title_label": "Recipe name",
+      "description_label": "Short description",
+      "ingredients_label": "Ingredients",
+      "ingredients_placeholder": "500g flour\n10g salt\n350ml water",
+      "instructions_label": "Instructions",
+      "instructions_placeholder": "Mix the flour with the salt...",
+      "prep_time_label": "Prep time (min)",
+      "cook_time_label": "Cook time (min)",
+      "servings_label": "Number of servings",
+      "image_label": "Image",
+      "image_remove": "Remove image",
+      "image_uploading": "Uploading...",
+      "image_upload": "Upload image",
+      "related_products_label": "Related products",
+      "related_products_hint": "(recipes promote your products)",
+      "products_loading": "Loading products...",
+      "no_products": "You don't have any products yet. You can publish the recipe without linking products.",
+      "submit_saving": "Saving...",
+      "submit": "Save recipe",
+      "cancel": "Cancel",
+      "toast_updated": "Recipe updated",
+      "toast_created": "Recipe sent for approval 🌿",
+      "errors": {
+        "upload_image_failed": "Image upload failed",
+        "rejected_default": "Content does not meet our criteria",
+        "generic": "Something went wrong, please try again"
+      }
+    },
+    "dashboard": {
+      "back": "← Dashboard",
+      "heading": "My recipes",
+      "btn_close_form": "Close",
+      "btn_open_form": "+ Publish new recipe",
+      "loading": "Loading...",
+      "empty_title": "You haven't published any recipes yet",
+      "empty_description": "A recipe promotes your products — share how your customers use them at home.",
+      "empty_cta": "+ Publish new recipe",
+      "notes_needs_revision": "Reviewer note:",
+      "notes_rejected": "Rejection reason:",
+      "published": "Published on the site",
+      "not_published": "Not yet published",
+      "edit": "Edit",
+      "delete": "Delete",
+      "delete_confirm": "Delete this recipe?",
+      "toast_deleted": "Recipe deleted",
+      "toast_delete_error": "Delete failed"
+    },
+    "edit": {
+      "back": "← Back to recipes",
+      "heading": "Edit recipe",
+      "loading": "Loading...",
+      "not_found": "Recipe not found"
+    }
+  },
+  "group_buys": {
+    "list": {
+      "hero_title": "Group buys",
+      "hero_subtitle": "Buy together and save — local products at a group price",
+      "filter_city_label": "Filter by city",
+      "filter_city_placeholder": "All cities",
+      "status_open": "Open",
+      "status_funded": "Funded",
+      "status_fulfilled": "Fulfilled",
+      "empty_title": "No group buys right now",
+      "empty_subtitle": "Check back soon"
+    },
+    "card": {
+      "funded_banner": "🎉 Price unlocked!",
+      "by_producer": "by {name}",
+      "unit_prefix": "/ {unit}",
+      "min_hint": "Group price when {min} participants commit",
+      "progress_label": "{commits} of {min} participants",
+      "days_left": "{days} days left",
+      "expired": "Expired",
+      "cta_funded_details": "Details",
+      "cta_join": "I want to join!"
+    },
+    "detail": {
+      "loading": "Loading...",
+      "not_found_title": "Group buy not found",
+      "back_to_list": "Back to group buys",
+      "back_to_list_arrow": "← Back to group buys",
+      "funded_title": "Price unlocked! 🎉",
+      "funded_subtitle": "{name} will contact the participants soon",
+      "cancelled": "Group buy cancelled",
+      "fulfilled": "✅ Group buy completed",
+      "by_producer": "by {name}",
+      "unit_suffix": "/ {unit}",
+      "discount_hint": "Save {discount}% at the group price",
+      "progress_label": "{commits} of {min} participants",
+      "remaining_to_open": "{n} more participants to unlock the price",
+      "deadline_prefix": "Deadline: {date}",
+      "quantity_label": "Quantity",
+      "phone_label": "Contact phone",
+      "phone_placeholder": "050-1234567",
+      "submitting": "Joining...",
+      "submit_join": "I want to join! 🛒",
+      "submit_login": "Sign in to join",
+      "login_required": "You must sign in to join a group buy",
+      "committed_confirm": "✅ You joined this group buy",
+      "committed_units": " ({count} units)",
+      "cancelling": "Cancelling...",
+      "cancel_cta": "Cancel my commitment",
+      "cancel_confirm": "Cancel your commitment?",
+      "deadline_passed": "The deadline has passed — joining is no longer possible",
+      "share_wa": "Share with friends",
+      "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
+      "share_default_region": "Israel",
+      "errors": {
+        "generic": "Something went wrong, please try again",
+        "cancel_failed": "Cancellation failed"
+      }
+    },
+    "dashboard": {
+      "status": {
+        "open": "Open",
+        "funded": "Funded 🎉",
+        "cancelled": "Cancelled",
+        "fulfilled": "Completed ✅"
+      },
+      "back": "← Dashboard",
+      "heading": "My group buys",
+      "btn_close_form": "Close",
+      "btn_open_form": "+ New group buy",
+      "loading": "Loading...",
+      "empty_title": "Group buys = wholesale price for your customers",
+      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for whole-lamb slaughter, basket-packing day, or a bulk veal order.",
+      "empty_cta": "+ Create first group",
+      "progress_label": "{commits} / {min} participants",
+      "deadline_prefix": "Deadline: {date}",
+      "view_public": "View public page ←",
+      "form": {
+        "heading": "New group buy",
+        "title_label": "Title",
+        "description_label": "Description",
+        "product_name_label": "Product name",
+        "unit_label": "Unit",
+        "unit_placeholder": "kg, liter, unit",
+        "price_regular_label": "Regular price (₪)",
+        "price_group_label": "Group price (₪)",
+        "min_label": "Minimum participants",
+        "min_tooltip": "Number of orders required to close the group. If the minimum isn't met by the deadline — no one pays and you aren't obligated to fulfill.",
+        "max_label": "Maximum participants",
+        "deadline_label": "Deadline",
+        "city_label": "City",
+        "required_marker": " *",
+        "submitting": "Creating...",
+        "submit": "Create group buy",
+        "errors": {
+          "generic": "Something went wrong, please try again"
+        }
+      }
+    }
+  },
   "map": {
     "client": {
       "loading_map": "Loading map...",
