@@ -1,12 +1,57 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch + homepage kitchen section; PR pending; sits on top of PR #682 launch-blocker batch)
-> Previously: 2026-05-16 (MEH-608 — Step 2 subhead drift fix; **PR #683 MERGED**; filed MEH-616 follow-up)
+> Last updated: 2026-05-16 (MEH-599 — Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms; PR pending; sits on top of PR #684 MEH-598)
+> Previously: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch; **PR #684 MERGED** at `d8200525`)
 
 ---
 
-## 2026-05-16 — MEH-598: Hide /neighbor pre-launch (brand LOCK) (PR PENDING)
+## 2026-05-16 — MEH-599: Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms (PR PENDING)
+
+**Branch:** `feature/meh-599-fix-terms-lock` off `staging@d8200525` (post-PR #684 merge).
+
+**Risk tier:** LOW (copy + section deletion + section renumber, no schema, no auth, no central components).
+
+**Closes:** MEH-599. **Sibling LOCK leaks E1-E6** (chat widget, backend chat FAQ, producer dashboard, HomeProductCard label, test) discovered in MEH-598 audit remain deferred to a future ticket (not in MEH-599 scope per its issue description).
+
+**What shipped (3 files, +13/-26 lines):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/app/[locale]/terms/page.js` | L4 meta desc swap (`יצרני אוכל בריא` → `בתי עסק שמייצרים אוכל בריא`); §1 body — drop `ויצרניות עצמאיות` clause; §2 body — drop em-dash `מהמטבח של השכן` carveout; §5 entire section deleted; §6-12 renumbered → §5-11 |
+| 2 | `frontend/app/[locale]/privacy/page.js` | L14 — `בתי עסק ליצרני אוכל בריא` → `בתי עסק שמייצרים אוכל בריא` (grammar-fix over literal mapping) |
+| 3 | `frontend/app/[locale]/layout.js` | L40 keywords[] — `יצרנים ישראלים` → `בעלי עסק ישראלים` |
+
+**4 Sapir-decisions (all A):**
+- Q1 — terms meta desc literal swap (`יצרני` → `בתי עסק`) would have produced ungrammatical construct state `בתי עסק אוכל בריא` → **A**: insert `שמייצרים` to preserve meaning + grammar.
+- Q2 — `יצרניות` (feminine plural) absent from mapping table. Literal extension `בעלות עסק` next to existing `בתי עסק` would be redundant → **A**: drop the `ויצרניות עצמאיות` clause entirely, keep `בתי עסק` only.
+- Q3 — §2 em-dash clause `— בית עסק מאומת או משתמשת פרטית בסקציית "מהמטבח של השכן" —` specifically named the carveout being removed → **A**: drop the clause entirely; obligation now applies uniformly to `כל מוכרת המופיעה בפלטפורמה`.
+- Q4 — privacy L14 had TWO categories (`בתי עסק` AND `יצרני אוכל בריא`); literal swap would have produced `בתי עסק לבתי עסק` → **A**: collapse to one category `בתי עסק שמייצרים אוכל בריא`.
+
+**Mapping applied (per MEH-599 spec):** `יצרן`→`בית עסק`, `יצרני`→`בתי עסק`, `יצרנית`→`בעלת עסק`, `יצרנים`→`בעלי עסק`. The feminine-plural `יצרניות` is **not** in the spec table — handled by Q2 deletion rather than unilaterally extending the mapping.
+
+**Verification (in-scope greps):**
+- `grep -rE "יצרנ" frontend/app/[locale]/terms/ frontend/app/[locale]/privacy/ frontend/app/[locale]/layout.js` → **0 hits** ✅
+- `grep "מהמטבח של השכן" frontend/app/[locale]/terms/ frontend/app/[locale]/privacy/` → **0 hits** ✅
+- Terms section numbering sequential **1→11** ✅
+- `npm run build` → **green** (93/93 pages, 12.0s, 0 errors) ✅
+- `pytest tests/test_api.py` — **deferred to CI** (sandbox blocks `pip install`; backend untouched, no risk)
+
+**Skeptic flags:**
+1. The `יצרנ*` regex doesn't catch standalone `יצרניות` if a future copy edit reintroduces it — only `יצרני`/`יצרנים`/`יצרן`/`יצרנית`/`יצרניות` are direct hits. Mitigation: post-launch i18n sweep ticket (out of scope here).
+2. Section renumbering changes `#home-kitchen` removal — any external link / inline anchor pointing to `terms#home-kitchen` will 404 in-page. Best-effort check: `grep -rn "terms#" frontend/ docs/` → expected 0; will verify pre-push.
+3. Mobile QA cannot run in sandbox (MEH-360 — `*.vercel.app` egress blocked); Vercel preview link will be posted for your manual check. Per Rule 23 + Rule 9, will NOT auto-merge UI change.
+
+**Out of scope (forward tickets):**
+- E1-E6 deferred LOCK leaks from MEH-598 audit — separate future ticket
+- `messages/he.json` `neighbor_kitchen` / `heading` — already removed in PR #684
+- `יצרנ*` hits in `group-buys/page.js`, `register/page.js`, `admin/settings/page.js`, `FridayDeliveryStrip.jsx` — i18n sweep ticket, not MEH-599 scope
+
+**Next:** push branch, open draft PR with `Closes MEH-599`, post Vercel preview URL for mobile QA. Await your `merge` after QA.
+
+---
+
+## 2026-05-16 — MEH-598: Hide /neighbor pre-launch (brand LOCK) (PR #684 MERGED)
 
 **Branch:** `feature/meh-598-hide-neighbor-prelaunch` off `staging` (originally branched from `0f19a08` post-PR #681; merged in `3cb6503` mid-work to absorb PR #682 launch-blocker bundle per Rule 25).
 
