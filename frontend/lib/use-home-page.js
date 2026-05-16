@@ -30,8 +30,9 @@ const STATS_DISPLAY_THRESHOLD = 5;
  *     handleWhatsAppClick, scrollToProducers, toggleChip, handleNearMe,
  *     handleCitySelected) close over the same state via the same
  *     reference identities they did before extraction
- *   - 6 derived values (visibleProducers, hasMore, categoryCards,
- *     statsProducersCount, statsCategoriesCount, newestProducers)
+ *   - 7 derived values (visibleProducers, hasMore, categoryCards,
+ *     statsProducersCount, statsCategoriesCount, statsLoaded,
+ *     newestProducers)
  *   - 2 thin adapter callbacks (handleClearCategory, handleLoadMore)
  *     wrap inline JSX-side calls so the producers grid component
  *     does not need setFilters / setVisibleCount / loadProducers /
@@ -58,7 +59,12 @@ export function useHomePage() {
   // returns via the back button. Read on mount only; subsequent changes
   // flow through the setter below.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
+  // MEH-607: `null` initial = "not yet fetched" → drives F10 skeleton in
+  // page.js. After /stats resolves, value is the response object (or `{}` on
+  // error so derived selectors stay safe). Three render states downstream:
+  // skeleton (statsLoaded=false), counter (loaded + count >= threshold),
+  // fallback/hidden (loaded + below threshold).
+  const [stats, setStats] = useState(null);
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading] = useState(false);
   const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
@@ -131,7 +137,11 @@ export function useHomePage() {
       .get("/home-products")
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
-    api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
+    // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
+    // true and the skeleton dismisses — empty result hides the section
+    // (showStatsCounter/showStatsFallback both false), which is the same
+    // behavior we had before, just CLS-safe (skeleton bridged the gap).
+    api.get("/stats").then((r) => setStats(r.data)).catch(() => setStats({}));
     // Task 13 + MEH-11: load recently viewed producer IDs from
     // localStorage. The helper applies a 7-day TTL and gracefully
     // ignores legacy storage shapes.
@@ -297,10 +307,14 @@ export function useHomePage() {
   const visibleProducers = producers.slice(0, visibleCount);
   const hasMore = visibleCount < producers.length;
   const categoryCards = matchCategoryId(CATEGORY_CARDS, categories);
-  const statsProducersCount = stats.producers_count || producers.length;
-  const statsCategoriesCount = stats.categories_count || categories.length || 6;
-  const showStatsCounter = statsProducersCount >= STATS_DISPLAY_THRESHOLD;
-  const showStatsFallback = !showStatsCounter && statsProducersCount > 0;
+  // MEH-607: statsLoaded gates the F10 skeleton in page.js. Null-safe
+  // accessors handle the `stats === null` initial state without crashing
+  // (optional chaining + `|| fallback`).
+  const statsLoaded = stats !== null;
+  const statsProducersCount = stats?.producers_count || producers.length;
+  const statsCategoriesCount = stats?.categories_count || categories.length || 6;
+  const showStatsCounter = statsLoaded && statsProducersCount >= STATS_DISPLAY_THRESHOLD;
+  const showStatsFallback = statsLoaded && !showStatsCounter && statsProducersCount > 0;
 
   // Newest producers (last 4 by created_at if available, else first 4)
   const newestProducers = producers
@@ -337,6 +351,7 @@ export function useHomePage() {
     categoryCards,
     statsProducersCount,
     statsCategoriesCount,
+    statsLoaded,
     showStatsCounter,
     showStatsFallback,
     newestProducers,

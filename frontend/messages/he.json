@@ -102,7 +102,8 @@
       "submit": "חיפוש"
     },
     "stats": {
-      "verified_businesses": "בתי עסק מאומתים",
+      "issue_prefix": "גליון {month} —",
+      "businesses": "בתי עסק",
       "categories": "קטגוריות",
       "countrywide": "מכל רחבי הארץ",
       "fallback": "מתחילות עכשיו · בכל רחבי הארץ 🌿"
