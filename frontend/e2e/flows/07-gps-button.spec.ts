@@ -6,18 +6,20 @@ import { test, expect } from "@playwright/test";
  */
 test.describe("GPS button on /map", () => {
   test("GPS button is visible on desktop and triggers geolocation API", async ({ page, context }) => {
-    // MEH-549: Leaflet fails to load on current staging deployment.
-    // Re-enable (and restore the mobile-only skip below) once MEH-549 is resolved.
-    test.skip(true, "MEH-549: map regression — Leaflet fails to mount on staging");
-
     // Grant geolocation permission and set a fixed position (Tel Aviv)
     await context.grantPermissions(["geolocation"]);
     await context.setGeolocation({ latitude: 32.0853, longitude: 34.7818 });
 
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
-    // Wait for Leaflet to mount from the dynamic import before checking GPS button.
-    await page.waitForSelector(".leaflet-container:visible", { timeout: 45_000 });
+    // MEH-549: wait on `window.__MAP_CENTER__` (exposed by MapComponent.jsx:272)
+    // instead of `.leaflet-container:visible`. Two MapPane instances render
+    // in DOM (desktop + mobile via Tailwind toggles); `:visible` races on
+    // cold Vercel previews. `__MAP_CENTER__` is a single global, race-free.
+    await page.waitForFunction(
+      () => (window as unknown as { __MAP_CENTER__?: [number, number] }).__MAP_CENTER__ !== undefined,
+      { timeout: 45_000 }
+    );
 
     // LocationModal (z-[9000]) opens 800ms after mount when no userCity is saved and
     // visually masks the GPS button (z-[1000]). Dismiss it via "דלגי לעכשיו" if present.
