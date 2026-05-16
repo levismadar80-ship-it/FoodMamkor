@@ -70,146 +70,93 @@
       "sent": "✓ Sent!",
       "rate_limited": "Rate limited — try again in an hour"
     },
-    "register": {
-      "consumer": {
-        "heading": "Join the community",
-        "subtitle": "Welcome to מהמקור 🌿",
-        "referral_badge": "Invited by a friend 🌿 10% off your first order",
-        "email_hint": "A verification email will be sent after signup",
-        "oauth_divider": "or",
-        "have_account": "Already have an account?",
-        "login_link": "Sign in",
-        "cta_producer": "Want to add your business?",
-        "cta_producer_link": "Register as a business",
-        "value_props": {
-          "discover": "🗺️ Discover businesses",
-          "favorites": "❤️ Save favourites",
-          "rate": "⭐ Rate & share"
-        },
-        "fields": {
-          "name": "Full name *",
-          "email": "Email *",
-          "password": "Password *",
-          "password_aria": "Password"
-        },
-        "validation": {
-          "name_required": "Full name is required",
-          "email_invalid": "Invalid email",
-          "password_min": "Your password must be at least {min} characters",
-          "valid_hint": "✓ Valid"
-        },
-        "terms": {
-          "intro": "I have read and agree to",
-          "tos_link": "the Terms of Use",
-          "and": "and ",
-          "privacy_link": "the Privacy Policy"
-        },
-        "actions": {
-          "submit": "Join",
-          "submitting": "Signing up..."
-        },
+    "passwordRecovery": {
+      "forgot": {
+        "title": "Reset password",
+        "subtitle": "We'll send you a link to reset your password",
+        "success_main": "✓ If the email exists in our system — a reset link will be sent",
+        "success_contact_prefix": "Didn't receive it? Contact us:",
+        "email_placeholder": "Your email",
+        "submit_sending": "Sending...",
+        "submit": "Send reset link",
+        "back_to_login": "Back to login",
         "errors": {
-          "generic": "Something went wrong, try again"
-        },
-        "email_sent": {
-          "title": "Check your inbox 📬",
-          "body": "If the email is available, a verification message has been sent. Please check your inbox.",
-          "hint": "Didn't get it? Check spam or try again in a minute.",
-          "back_home": "Back to home"
+          "send_failed": "Sending failed, please try again later"
         }
       },
-      "producer": {
-        "heading": "Give your business a home",
-        "subtitle": "5 minutes. No commissions. No middlemen.",
+      "reset": {
         "loading": "Loading...",
-        "loading_form": "Loading registration form...",
-        "default_description": "Local business. More details coming soon.",
-        "prefill_notice": "We pre-filled your business details — you can update any field before continuing.",
-        "upgrade_banner": {
-          "connected_with": "You're signed in as {email}",
-          "attached_to_account": "The business will be attached to this account"
-        },
-        "draft": {
-          "prompt": "We saved a draft from a previous session — want to continue?",
-          "continue": "Yes, continue",
-          "dismiss": "No"
-        },
-        "steps": {
-          "account": {
-            "title": "1. Account details",
-            "email_section": "Sign up with email"
-          },
-          "business": {
-            "title": "2. Business details",
-            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
-          }
-        },
-        "fields": {
-          "name": "Full name *",
-          "email": "Email *",
-          "password": "Password *",
-          "producer_name": "Business name *",
-          "description_label": "Tell us about your business",
-          "description_hint": "A 100-300 word story — how did you start? What makes you special? What's closest to your heart?",
-          "phone": "WhatsApp phone * (0501234567)",
-          "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
-          "license_required_label": "Producer license number (required)",
-          "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
-          "license_optional_label": "Producer license number"
-        },
-        "validation": {
-          "all_required": "Please fill all required fields",
-          "email_invalid": "Invalid email",
-          "password_complexity": "Password must be at least 8 characters, with one uppercase letter and one number",
-          "producer_name_required": "Please enter a business name",
-          "phone_required": "Please enter a valid phone number",
-          "phone_invalid": "❌ Invalid phone number",
-          "phone_valid": "✓ Valid number",
-          "category_required": "Please select at least one category",
-          "terms_required": "Please accept the Terms of Use before joining",
-          "license_format": "Producer license number is 7-10 digits"
-        },
-        "terms": {
-          "intro": "I have read and agree to",
-          "tos_link": "the Terms of Use",
-          "and": "and ",
-          "privacy_link": "the Privacy Policy",
-          "license_declaration": ", and I declare that I hold all licenses required to sell my products under the Business Licensing Law."
-        },
-        "actions": {
-          "next": "Next →",
-          "back": "Previous step",
-          "submit": "Join →",
-          "submitting": "Submitting...",
-          "write_later": "I'll write this later",
-          "edit_description": "Edit description",
-          "add_license": "I have a producer license ↓",
-          "close": "Close"
-        },
+        "invalid_link": "The reset link is invalid",
+        "request_new_link": "Request a new link",
+        "title": "New password",
+        "subtitle": "Enter a new password (at least {min} characters)",
+        "password_placeholder": "New password",
+        "password_aria": "New password",
+        "confirm_placeholder": "Confirm password",
+        "toggle_show": "Show password",
+        "toggle_hide": "Hide password",
+        "success_title": "✓ Password updated successfully",
+        "success_subtitle": "Redirecting you to the login page...",
+        "submit_updating": "Updating...",
+        "submit": "Update password",
         "errors": {
-          "already_has_producer": "You already have a business registered on this account.",
-          "generic": "Connection error — please try again."
-        },
-        "confirm": {
-          "heading": "You're in!",
-          "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
-          "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
-          "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
-          "next_heading": "What's next?",
-          "next_step1": "✓ Complete the profile from the dashboard — photos, description, deliveries",
-          "next_step2": "✓ Our team will review the request within 1-2 business days",
-          "next_step3": "✓ After approval — the business appears on the map and in search",
-          "dashboard_cta": "Go to my dashboard ←",
-          "share_msg": "Hi 🌿 I just joined Mehamakor — an Israeli directory connecting local businesses with people looking for real food. Come join: https://mehamakor.online/register/producer",
-          "share_cta": "Invite a neighbour"
-        },
-        "email_sent": {
-          "title": "Check your inbox 📬",
-          "body": "If the email is available, a verification message has been sent. Please check your inbox.",
-          "hint": "Didn't get it? Check spam or try again in a minute.",
-          "back_home": "Back to home"
+          "too_short": "Password must be at least {min} characters",
+          "mismatch": "Passwords don't match",
+          "invalid_token": "The reset link is invalid. Request a new link.",
+          "expired_token": "The reset link has expired. Request a new link.",
+          "generic": "Failed to update password, please try again"
         }
       }
+    },
+    "verifyEmail": {
+      "loading_title": "Verifying...",
+      "loading_subtitle": "Please wait",
+      "fallback_loading": "Loading...",
+      "success_title": "Email verified successfully!",
+      "success_subtitle": "Redirecting you to the site...",
+      "success_cta": "Continue to the site",
+      "error_title": "Verification failed",
+      "error_cta": "Back to the site",
+      "errors": {
+        "invalid_link": "The verification link is invalid",
+        "invalid_or_expired": "The verification link is invalid or expired"
+      }
+    },
+    "login": {
+      "loading": "Loading...",
+      "title": "Sign in to Mehamakor",
+      "welcome": "Welcome",
+      "value_save": "❤️ Save businesses",
+      "value_rate": "⭐ Rate",
+      "value_publish": "🏠 Publish your home kitchen",
+      "email_label": "Email",
+      "email_invalid": "Invalid email",
+      "valid": "✓ Valid",
+      "password_label": "Password",
+      "password_required": "Enter your password",
+      "password_show": "Show password",
+      "password_hide": "Hide password",
+      "forgot_password": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "reset_success": "Password updated successfully — you can sign in",
+      "or": "or",
+      "no_account": "Don't have an account?",
+      "register_cta": "Join →",
+      "generic_error": "Something went wrong, please try again"
+    },
+    "oauth": {
+      "google_error": "Google sign-in failed",
+      "apple_error": "Apple sign-in failed",
+      "apple_continue": "Continue with Apple",
+      "apple_continue_f": "Continue with Apple",
+      "producer_quick_signup": "Quick sign-up",
+      "producer_only_email_name": "We'll only receive your name and email",
+      "or": "or",
+      "producer_already_account": "You already have a Mehamakor account — sign in to manage it",
+      "rate_limited": "Too many attempts, try again in a minute",
+      "connection_failed": "We couldn't connect, please try again",
+      "generic_error": "Sign-in failed"
     }
   },
   "account": {

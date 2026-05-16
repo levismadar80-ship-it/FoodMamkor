@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -16,7 +15,6 @@ import api from "@/lib/api";
 import { env } from "@/lib/env";
 
 export default function RegisterPage() {
-  const t = useTranslations();
   const { register } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({ email: "", name: "", password: "" });
@@ -56,17 +54,17 @@ export default function RegisterPage() {
     // disable the submit button when any field fails, so this is a
     // belt-and-suspenders server-round-trip guard.
     if (!form.name.trim()) {
-      setError(t("auth.register.consumer.validation.name_required"));
+      setError("שם מלא הוא שדה חובה");
       return;
     }
     if (!validateEmail(form.email)) {
-      setError(t("auth.register.consumer.validation.email_invalid"));
+      setError("האימייל לא תקין");
       return;
     }
     if (form.password.length < PASSWORD_MIN_LENGTH) {
       // PasswordInput already shows the inline checklist; this is the
       // belt-and-suspenders submit guard with the same Hebrew copy.
-      setError(t("auth.register.consumer.validation.password_min", { min: PASSWORD_MIN_LENGTH }));
+      setError(`סיסמתך חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`);
       return;
     }
     setLoading(true);
@@ -100,7 +98,7 @@ export default function RegisterPage() {
         // on policy rejection. Map the first to the matching Hebrew string.
         setError(firstFailureMessage(detail.failures));
       } else {
-        setError(typeof detail === "string" ? detail : t("auth.register.consumer.errors.generic"));
+        setError(typeof detail === "string" ? detail : "משהו השתבש, נסי שוב");
       }
     } finally {
       setLoading(false);
@@ -146,11 +144,11 @@ export default function RegisterPage() {
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
           <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
-          <p className="text-site-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
-          <p className="text-site-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
+          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את תיבת המייל שלך 📬</h1>
+          <p className="text-site-muted text-sm mb-3">אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.</p>
+          <p className="text-site-muted text-xs mb-6">לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.</p>
           <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center">
-            {t("auth.register.consumer.email_sent.back_home")}
+            חזרה לדף הראשי
           </Link>
         </div>
       </div>
@@ -168,27 +166,27 @@ export default function RegisterPage() {
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-1">{t("auth.register.consumer.heading")}</h1>
-          <p className="text-site-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
+          <h1 className="font-headline text-2xl font-bold text-site-text mb-1">הצטרפי לקהילה</h1>
+          <p className="text-site-muted text-sm">ברוכה הבאה למהמקור 🌿</p>
         </div>
 
         {/* Value-prop strip */}
         <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
-          <span>{t("auth.register.consumer.value_props.discover")}</span>
-          <span>{t("auth.register.consumer.value_props.favorites")}</span>
-          <span>{t("auth.register.consumer.value_props.rate")}</span>
+          <span>🗺️ גלי יצרנים</span>
+          <span>❤️ שמרי מועדפים</span>
+          <span>⭐ דרגי ושתפי</span>
         </div>
 
         {/* MEH-49: referral discount badge */}
         {referralCode && (
           <div className="mb-4 rounded-[10px] bg-[#EAF3DE] border border-[#2e6853]/20 px-4 py-2 text-sm text-[#2e6853] font-medium">
-            {t("auth.register.consumer.referral_badge")}
+            הגעת דרך חברה 🌿 10% הנחה בהזמנה הראשונה
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="register-name" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.name")}</label>
+            <label htmlFor="register-name" className="block text-sm font-medium mb-1">שם מלא *</label>
             <input
               id="register-name"
               value={form.name}
@@ -206,14 +204,14 @@ export default function RegisterPage() {
               dir="rtl"
             />
             {nameInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">שם מלא הוא שדה חובה</p>
             )}
             {nameValid && (
-              <p className="text-xs text-primary mt-1 text-right">{t("auth.register.consumer.validation.valid_hint")}</p>
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
           </div>
           <div>
-            <label htmlFor="register-email" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.email")}</label>
+            <label htmlFor="register-email" className="block text-sm font-medium mb-1">אימייל *</label>
             <input
               id="register-email"
               type="email"
@@ -232,14 +230,14 @@ export default function RegisterPage() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">האימייל לא תקין</p>
             )}
             {emailValid && (
-              <p className="text-xs text-primary mt-1 text-right">{t("auth.register.consumer.validation.valid_hint")}</p>
+              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
             )}
           </div>
           <div>
-            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.password")}</label>
+            <label htmlFor="pw-password" className="block text-sm font-medium mb-1">סיסמה *</label>
             {/* MEH-306: PasswordInput owns input + eye toggle + live policy
                 checklist (length + breach). Form-level error div above
                 renders 422-failure messages from the submit handler. */}
@@ -247,7 +245,7 @@ export default function RegisterPage() {
               name="password"
               value={form.password}
               onChange={set("password")}
-              ariaLabel={t("auth.register.consumer.fields.password_aria")}
+              ariaLabel="סיסמה"
               onValidityChange={setPasswordOk}
             />
           </div>
@@ -260,13 +258,13 @@ export default function RegisterPage() {
               required
             />
             <span className="leading-relaxed">
-              {t("auth.register.consumer.terms.intro")}{" "}
+              קראתי ואני מסכימה{" "}
               <a href="/terms" target="_blank" className="text-primary hover:underline">
-                {t("auth.register.consumer.terms.tos_link")}
+                לתנאי השימוש
               </a>{" "}
-              {t("auth.register.consumer.terms.and")}
+              ו
               <a href="/privacy" target="_blank" className="text-primary hover:underline">
-                {t("auth.register.consumer.terms.privacy_link")}
+                למדיניות הפרטיות
               </a>
             </span>
           </label>
@@ -281,14 +279,14 @@ export default function RegisterPage() {
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <ButtonSpinner />
-                {t("auth.register.consumer.actions.submitting")}
+                נרשמת...
               </span>
             ) : (
-              t("auth.register.consumer.actions.submit")
+              "הצטרפי"
             )}
           </button>
           <p className="text-center mt-3 text-site-muted" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px" }}>
-            {t("auth.register.consumer.email_hint")}
+            לאחר ההרשמה תישלח הודעת אימות לאימייל שלך
           </p>
         </form>
 
@@ -299,7 +297,7 @@ export default function RegisterPage() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-site-muted">{t("auth.register.consumer.oauth_divider")}</span>
+                <span className="px-3 bg-white text-site-muted">או</span>
               </div>
             </div>
             <div className="space-y-2.5">
@@ -320,15 +318,15 @@ export default function RegisterPage() {
         )}
 
         <p className="text-center text-sm text-site-muted mt-6">
-          {t("auth.register.consumer.have_account")}{" "}
+          יש לך כבר חשבון?{" "}
           <Link href="/login" className="text-primary hover:underline">
-            {t("auth.register.consumer.login_link")}
+            כניסה לחשבון
           </Link>
         </p>
         <p className="text-center text-sm text-site-muted mt-2">
-          {t("auth.register.consumer.cta_producer")}{" "}
+          רוצה להוסיף את העסק שלך?{" "}
           <Link href="/register/producer" className="text-secondary hover:underline">
-            {t("auth.register.consumer.cta_producer_link")}
+            הצטרפי כבית עסק
           </Link>
         </p>
       </div>

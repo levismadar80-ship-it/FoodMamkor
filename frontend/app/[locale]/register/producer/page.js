@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -22,6 +21,7 @@ import {
 const DRAFT_KEY = "producer_registration_draft";
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
+const DESCRIPTION_DEFAULT_TEXT = "בית עסק מקומי. עוד פרטים בקרוב.";
 
 const EMPTY_FORM = {
   email: "", name: "", password: "",
@@ -33,25 +33,15 @@ const EMPTY_FORM = {
   producer_license_number: "",
 };
 
-function RegisterProducerPageFallback() {
-  const t = useTranslations();
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">
-      {t("auth.register.producer.loading_form")}
-    </div>
-  );
-}
-
 export default function RegisterProducerPage() {
   return (
-    <Suspense fallback={<RegisterProducerPageFallback />}>
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">טוען טופס הרשמה...</div>}>
       <RegisterProducerPageBody />
     </Suspense>
   );
 }
 
 function RegisterProducerPageBody() {
-  const t = useTranslations();
   const router = useRouter();
   const params = useSearchParams();
   const prefillToken = params.get("prefill");
@@ -262,9 +252,9 @@ function RegisterProducerPageBody() {
       // isUpgrade frontend flag is sufficient for this error branch
       // (non-upgrade 409 was removed in Chunk B).
       if (status === 409 && isUpgrade) {
-        setError(t("auth.register.producer.errors.already_has_producer"));
+        setError("כבר יש לך עסק רשום בחשבון זה.");
       } else {
-        setError(detail || t("auth.register.producer.errors.generic"));
+        setError(detail || "שגיאת תקשורת — נסי שוב.");
       }
     } finally {
       setLoading(false);
@@ -274,32 +264,32 @@ function RegisterProducerPageBody() {
   // Don't show step 1 (account form) until we know whether user is logged in —
   // prevents the flash of email/password inputs for already-authenticated users.
   if (authLoading && step === 1) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">{t("auth.register.producer.loading")}</div>;
+    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">טוען...</div>;
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-        <p className="text-site-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">תני לעסק שלך בית</h1>
+        <p className="text-site-muted text-center mb-4">5 דקות. בלי עמלות. בלי מתווכים.</p>
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < 3 && (
           <div className="bg-light border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-site-text flex items-start gap-2">
             <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              <span className="block">{t("auth.register.producer.upgrade_banner.connected_with", { email: user.email })}</span>
-              <span className="block">{t("auth.register.producer.upgrade_banner.attached_to_account")}</span>
+              <span className="block">את מחוברת עם {user.email}</span>
+              <span className="block">העסק יצורף לחשבון הזה</span>
             </span>
           </div>
         )}
 
         {showDraftBanner && step < 3 && (
           <div className="bg-light border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
-            <span className="text-site-text">{t("auth.register.producer.draft.prompt")}</span>
+            <span className="text-site-text">שמרנו טיוטה ממילוי קודם — רוצה להמשיך?</span>
             <div className="flex gap-3">
-              <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
-              <button onClick={() => setShowDraftBanner(false)} className="text-site-muted hover:text-site-text">{t("auth.register.producer.draft.dismiss")}</button>
+              <button onClick={restoreDraft} className="text-primary font-medium hover:underline">כן, המשך</button>
+              <button onClick={() => setShowDraftBanner(false)} className="text-site-muted hover:text-site-text">לא</button>
             </div>
           </div>
         )}
@@ -315,14 +305,14 @@ function RegisterProducerPageBody() {
         {prefillToken && prefillApplied && (
           <div className="bg-light text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm inline-flex items-center gap-2">
             <Leaf size={16} weight="duotone" aria-hidden="true" className="shrink-0" />
-            {t("auth.register.producer.prefill_notice")}
+            מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.
           </div>
         )}
 
         {/* Step 1: Account */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-semibold text-lg">{t("auth.register.producer.steps.account.title")}</h2>
+            <h2 className="font-semibold text-lg">1. פרטי חשבון</h2>
 
             {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
                 no Google/Apple client_id is configured. */}
@@ -340,10 +330,10 @@ function RegisterProducerPageBody() {
               }}
             />
 
-            <h3 className="text-sm font-medium text-site-muted pt-2">{t("auth.register.producer.steps.account.email_section")}</h3>
+            <h3 className="text-sm font-medium text-site-muted pt-2">הרשמה עם אימייל</h3>
 
             <input
-              placeholder={t("auth.register.producer.fields.name")}
+              placeholder="שם מלא *"
               value={form.name}
               onChange={set("name")}
               className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
@@ -351,7 +341,7 @@ function RegisterProducerPageBody() {
             />
             <input
               type="email"
-              placeholder={t("auth.register.producer.fields.email")}
+              placeholder="אימייל *"
               value={form.email}
               onChange={set("email")}
               className="w-full border rounded-[12px] px-3 py-2"
@@ -363,7 +353,7 @@ function RegisterProducerPageBody() {
             <div>
               <input
                 type="password"
-                placeholder={t("auth.register.producer.fields.password")}
+                placeholder="סיסמה *"
                 value={form.password}
                 onChange={set("password")}
                 className="w-full border rounded-[12px] px-3 py-2"
@@ -376,15 +366,15 @@ function RegisterProducerPageBody() {
             <button
               onClick={() => {
                 if (!form.name || !form.email || !form.password) {
-                  setStepError(t("auth.register.producer.validation.all_required"));
+                  setStepError("יש למלא את כל שדות החובה");
                   return;
                 }
                 if (!validateEmail(form.email)) {
-                  setStepError(t("auth.register.producer.validation.email_invalid"));
+                  setStepError("אימייל לא תקין");
                   return;
                 }
                 if (!passwordValid(form.password)) {
-                  setStepError(t("auth.register.producer.validation.password_complexity"));
+                  setStepError("הסיסמה חייבת להכיל לפחות 8 תווים, אות גדולה ומספר");
                   return;
                 }
                 setStepError("");
@@ -392,7 +382,7 @@ function RegisterProducerPageBody() {
               }}
               className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition"
             >
-              {t("auth.register.producer.actions.next")}
+              הבא →
             </button>
           </div>
         )}
@@ -400,13 +390,13 @@ function RegisterProducerPageBody() {
         {/* Step 2: Business basics */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-semibold text-lg">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
             <p className="text-sm text-site-muted">
-              {t("auth.register.producer.steps.business.subtitle")}
+              כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.
             </p>
 
             <input
-              placeholder={t("auth.register.producer.fields.producer_name")}
+              placeholder="שם העסק *"
               value={form.producer_name}
               onChange={set("producer_name")}
               className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
@@ -424,10 +414,10 @@ function RegisterProducerPageBody() {
                 htmlFor="producer-description"
                 className="block text-sm font-medium text-site-text mb-1 text-right"
               >
-                {t("auth.register.producer.fields.description_label")}
+                ספרי על העסק שלך
               </label>
               <p className="text-xs text-site-muted mb-2 text-right">
-                {t("auth.register.producer.fields.description_hint")}
+                סיפור של 100-300 מילים — איך התחלת? מה מיוחד אצלך? מה הקרוב ביותר ללב שלך?
               </p>
               <textarea
                 id="producer-description"
@@ -446,7 +436,7 @@ function RegisterProducerPageBody() {
                     // MEH-619: snapshot pre-click text so the matching
                     // "ערוך תיאור" undo link can restore it.
                     descriptionBeforeDisableRef.current = form.description || "";
-                    setAndSave((prev) => ({ ...prev, description: t("auth.register.producer.default_description") }));
+                    setAndSave((prev) => ({ ...prev, description: DESCRIPTION_DEFAULT_TEXT }));
                     setDescriptionDisabled(true);
                     try {
                       localStorage.setItem(DESCRIPTION_PENDING_KEY, "true");
@@ -456,7 +446,7 @@ function RegisterProducerPageBody() {
                   }}
                   className="text-xs text-primary underline mt-1 hover:text-primary-light"
                 >
-                  {t("auth.register.producer.actions.write_later")}
+                  אני אכתוב אחר כך
                 </button>
               ) : (
                 <button
@@ -480,14 +470,14 @@ function RegisterProducerPageBody() {
                   }}
                   className="text-xs text-primary underline mt-1 hover:text-primary-light"
                 >
-                  {t("auth.register.producer.actions.edit_description")}
+                  ערוך תיאור
                 </button>
               )}
             </div>
 
             <div>
               <input
-                placeholder={t("auth.register.producer.fields.phone")}
+                placeholder="טלפון WhatsApp * (0501234567)"
                 value={form.phone}
                 onChange={set("phone")}
                 className={`w-full border rounded-[12px] px-3 py-2 ${
@@ -496,13 +486,13 @@ function RegisterProducerPageBody() {
                 dir="ltr"
               />
               {form.phone && !validateIsraeliPhone(form.phone) && (
-                <p className="text-xs text-red-500 mt-1">{t("auth.register.producer.validation.phone_invalid")}</p>
+                <p className="text-xs text-red-500 mt-1">❌ מספר טלפון לא תקין</p>
               )}
               {form.phone && validateIsraeliPhone(form.phone) && (
-                <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>
+                <p className="text-xs text-primary mt-1">✓ מספר תקין</p>
               )}
               <p className="text-xs text-site-muted mt-1">
-                {t("auth.register.producer.fields.phone_hint")}
+                נשלח לך הודעת WhatsApp לאישור ולהשלמת הפרופיל
               </p>
             </div>
 
@@ -529,10 +519,10 @@ function RegisterProducerPageBody() {
                   htmlFor="producer-license-required"
                   className="block text-sm font-medium text-site-text mb-1 text-right"
                 >
-                  {t("auth.register.producer.fields.license_required_label")}
+                  מספר רישיון יצרן (חובה)
                 </label>
                 <p className="text-xs text-site-muted mb-2 text-right">
-                  {t("auth.register.producer.fields.license_required_hint")}
+                  ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות
                 </p>
                 <input
                   id="producer-license-required"
@@ -545,7 +535,7 @@ function RegisterProducerPageBody() {
                 />
                 {licenseWarning && (
                   <p className="text-xs text-amber-600 mt-1 text-right">
-                    {t("auth.register.producer.validation.license_format")}
+                    מספר רישיון יצרן הוא 7-10 ספרות
                   </p>
                 )}
               </div>
@@ -564,7 +554,7 @@ function RegisterProducerPageBody() {
                     setAndSave((prev) => ({ ...prev, producer_license_number: "" }));
                     setLicenseOptionalExpanded(false);
                   }}
-                  aria-label={t("auth.register.producer.actions.close")}
+                  aria-label="סגור"
                   className="absolute top-0 end-0 text-site-muted hover:text-site-text text-lg leading-none p-1"
                 >
                   ✕
@@ -573,7 +563,7 @@ function RegisterProducerPageBody() {
                   htmlFor="producer-license-optional"
                   className="block text-sm font-medium text-site-text mb-1 text-right"
                 >
-                  {t("auth.register.producer.fields.license_optional_label")}
+                  מספר רישיון יצרן
                 </label>
                 <input
                   id="producer-license-optional"
@@ -586,7 +576,7 @@ function RegisterProducerPageBody() {
                 />
                 {licenseWarning && (
                   <p className="text-xs text-amber-600 mt-1 text-right">
-                    {t("auth.register.producer.validation.license_format")}
+                    מספר רישיון יצרן הוא 7-10 ספרות
                   </p>
                 )}
               </div>
@@ -596,7 +586,7 @@ function RegisterProducerPageBody() {
                 onClick={() => setLicenseOptionalExpanded(true)}
                 className="text-xs text-primary underline hover:text-primary-light text-right"
               >
-                {t("auth.register.producer.actions.add_license")}
+                יש לי רישיון יצרן ↓
               </button>
             )}
 
@@ -610,9 +600,10 @@ function RegisterProducerPageBody() {
                 required
               />
               <span className="leading-relaxed text-site-muted">
-                {t("auth.register.producer.terms.intro")}{" "}
-                <a href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</a>{" "}
-                {t("auth.register.producer.terms.and")}<a href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</a>{t("auth.register.producer.terms.license_declaration")}
+                קראתי ואני מסכימה{" "}
+                <a href="/terms" target="_blank" className="text-primary hover:underline">לתנאי השימוש</a>{" "}
+                ו<a href="/privacy" target="_blank" className="text-primary hover:underline">למדיניות הפרטיות</a>,
+                ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.
               </span>
             </label>
 
@@ -623,7 +614,7 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-text-secondary">{t("auth.register.producer.actions.back")}</button>
+                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
               )}
               <button
                 onClick={() => {
@@ -633,19 +624,19 @@ function RegisterProducerPageBody() {
                   // fixes one field).
                   setError("");
                   if (!form.producer_name) {
-                    setError(t("auth.register.producer.validation.producer_name_required"));
+                    setError("יש למלא שם עסק");
                     return;
                   }
                   if (!form.phone || !validateIsraeliPhone(form.phone)) {
-                    setError(t("auth.register.producer.validation.phone_required"));
+                    setError("יש למלא מספר טלפון תקין");
                     return;
                   }
                   if (form.category_ids.length === 0) {
-                    setError(t("auth.register.producer.validation.category_required"));
+                    setError("יש לבחור לפחות קטגוריה אחת");
                     return;
                   }
                   if (!agreedToTerms) {
-                    setError(t("auth.register.producer.validation.terms_required"));
+                    setError("יש לאשר את תנאי השימוש לפני ההצטרפות");
                     return;
                   }
                   handleSubmit();
@@ -656,10 +647,10 @@ function RegisterProducerPageBody() {
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
                     <ButtonSpinner />
-                    {t("auth.register.producer.actions.submitting")}
+                    שולחת...
                   </span>
                 ) : (
-                  t("auth.register.producer.actions.submit")
+                  "הצטרפי →"
                 )}
               </button>
             </div>
@@ -683,26 +674,26 @@ function RegisterProducerPageBody() {
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.producer.confirm.heading")}</h2>
+            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">הצטרפת!</h2>
             <p className="text-site-muted mb-6">
               {whatsappSent
-                ? t("auth.register.producer.confirm.body_with_whatsapp")
-                : t("auth.register.producer.confirm.body_no_whatsapp")}
+                ? "שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים."
+                : "הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים."}
             </p>
             {!whatsappSent && (
               <div
                 role="status"
                 className="bg-amber-50 border border-amber-200 text-amber-900 rounded-[12px] px-4 py-3 mb-6 text-sm text-end"
               >
-                {t("auth.register.producer.confirm.whatsapp_warning")}
+                לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד.
               </div>
             )}
             <div className="bg-light rounded-[16px] p-5 text-right mb-6">
-              <h3 className="font-semibold text-site-text mb-3">{t("auth.register.producer.confirm.next_heading")}</h3>
+              <h3 className="font-semibold text-site-text mb-3">מה הלאה?</h3>
               <ul className="text-sm text-site-muted space-y-2">
-                <li>{t("auth.register.producer.confirm.next_step1")}</li>
-                <li>{t("auth.register.producer.confirm.next_step2")}</li>
-                <li>{t("auth.register.producer.confirm.next_step3")}</li>
+                <li>✓ השלימי את הפרופיל מהדשבורד — תמונות, תיאור, משלוחים</li>
+                <li>✓ הצוות שלנו יבדוק את הבקשה תוך 1-2 ימי עסקים</li>
+                <li>✓ אחרי האישור — העסק יופיע במפה ובחיפוש</li>
               </ul>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -710,16 +701,18 @@ function RegisterProducerPageBody() {
                 onClick={() => router.push("/producer/dashboard")}
                 className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
               >
-                {t("auth.register.producer.confirm.dashboard_cta")}
+                לדשבורד שלי ←
               </button>
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.confirm.share_msg"))}`}
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  "היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל אמיתי. מוזמנת להצטרף: https://mehamakor.online/register/producer"
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-whatsapp inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm"
               >
                 <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
-                {t("auth.register.producer.confirm.share_cta")}
+                הזמיני שכנה
               </a>
             </div>
           </div>
@@ -727,14 +720,14 @@ function RegisterProducerPageBody() {
         {step === 3 && !didUpgrade && (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.producer.email_sent.title")}</h2>
-            <p className="text-site-muted text-sm mb-3">{t("auth.register.producer.email_sent.body")}</p>
-            <p className="text-site-muted text-xs mb-6">{t("auth.register.producer.email_sent.hint")}</p>
+            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את תיבת המייל שלך 📬</h2>
+            <p className="text-site-muted text-sm mb-3">אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.</p>
+            <p className="text-site-muted text-xs mb-6">לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.</p>
             <button
               onClick={() => router.push("/")}
               className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
             >
-              {t("auth.register.producer.email_sent.back_home")}
+              חזרה לדף הראשי
             </button>
           </div>
         )}
