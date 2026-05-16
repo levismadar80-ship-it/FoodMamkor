@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { EnvelopeSimple, Globe, InstagramLogo, Phone, WhatsappLogo } from "@phosphor-icons/react";
 
 import FollowButton from "@/components/FollowButton";
@@ -33,13 +34,14 @@ export default function ContactSidebar({
   primaryCategory,
   shareUrl,
 }) {
+  const t = useTranslations();
   return (
     <aside>
       <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
         {/* Vacation notice in sidebar */}
         {isVacation && (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
-            <p className="text-xs font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+            <p className="text-xs font-bold text-slate-700">{t("producer.detail.header.vacation")}</p>
             <p className="text-xs text-slate-500 mt-0.5">{vacationReturnLabel}</p>
           </div>
         )}
@@ -112,7 +114,7 @@ export default function ContactSidebar({
               onClick={() => trackContactClick(producer.id, "website")}
             >
               <Globe size={18} weight="duotone" className="text-primary shrink-0" />
-              אתר
+              {t("producer.card.contact.website")}
             </a>
           )}
           {/* MEH-17 — secondary email tile. Skipped when email IS
@@ -144,7 +146,7 @@ export default function ContactSidebar({
             className="w-full flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
           >
             <WhatsappLogo size={16} weight="duotone" />
-            הצטרפי לקבוצת וואטסאפ
+            {t("producer.detail.contact_sidebar.join_whatsapp_group")}
           </a>
         )}
 

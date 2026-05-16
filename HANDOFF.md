@@ -1,8 +1,9 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
-> Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
+> Last updated: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
+> Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
+> Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; **PR #699 MERGED** at `89e436e`)
 > Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-354 — `/retro` slash command; **PR #697 MERGED** at `4a24a37`)
 > Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
@@ -13,7 +14,48 @@
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
 
-### MEH-623 — i18n-scanner `--diff` + `--self-test` flags (PR pending, off staging)
+### MEH-473 — i18n Wave 3 — producer detail / card + map widgets + ICU plural lint + Q7 carry-over (PR pending, off `staging@89e436e`)
+
+Branch: `feature/meh-473-i18n-wave-3-producer-map`. Off `89e436e` (staging post-MEH-623 merge). HIGH-RISK Wave per MEH-450 — touches 3 central components (MapClient, ProducerCard, ProducerDetail-via-D1) + new ICU plural CI gate.
+
+**Scope corrected during Phase 0** (2026-05-16). Original draft: ~30 files / ~400 strings. Actual: **22 files / ~104 strings removed** — Phase 0 inventory grep verified files, dropped phantom `components/forms/*` + `ReviewForm`, deferred `experiences/*` to Wave 4/5, added 2 `map/state/` hooks (user-visible toasts).
+
+**Files changed (22):**
+- Source: 17 of 19 in-scope (`producer/[id]/page.js` was 0 HE — untouched; `producers/page.jsx` was Wave-6 metadata only — untouched)
+- ICU lint: `.claude/scripts/check-icu-parity.py` (new, 213 LOC) + 2 fixtures under `.claude/scripts/test/i18n-icu-fixtures/`
+- Messages: `frontend/messages/he.json` + `en.json` (94→229 keys, parity clean, ICU lint green)
+- **Scope deviation:** `frontend/__tests__/ProducerCard.test.jsx` — added `vi.mock("next-intl", ...)` per MEH-471 Header.test.jsx precedent. Out of strict 19-file scope; documented in PR description.
+
+**Deliverables shipped:**
+- ✅ ~104 hardcoded HE strings → t() calls (target was ~120; close to upper end of ±100 threshold around 2,950)
+- ✅ **ICU plural CI lint check** — `.claude/scripts/check-icu-parity.py` self-test passes (exits 1 on bad-plural fixtures showing `[HE-MISSING]` + `[PARITY]`, exits 0 on real messages). HE rule: must have one/two/other. EN rule: must have one/other. CI workflow YAML drafted in `/tmp/i18n-icu-parity.yml` (Smadar to install manually post-merge — `.github/workflows/` permission-denied per MEH-621 pattern).
+- ✅ **4 ICU plural keys** shipped: `map.client.business_count`, `producer.detail.header.review_count`, `producer.detail.header.favorites_count`, `producer.card.favorites_count_short`, plus `producer.detail.sections.events.show_all_count`. Hebrew dual form (`two`) correctly rendered in all.
+- ✅ **Q4 dates via next-intl/format**: ProducerSections.jsx event date `useFormatter().dateTime(...)` replaces `toLocaleDateString("he-IL", ...)`.
+- ✅ **Q7 carry-over**: 2 sites (`ProducerDetail.jsx:54`, `MapPane.jsx:24`) — both got new domain keys (`producer.detail.loading_fresh` + `map.client.loading_map`) per P1 default. Q7 grep gate returns ZERO.
+- ✅ **4-step Vibe Coding Guardrails** applied to MapClient + ProducerCard + ProducerDetail. Step 1 consumer grep clean (no unexpected consumers outside `[locale]/`). Step 4 sibling-render check: ESLint sandbox-blocked (MEH-360); deferred to Vercel preview.
+
+**Key decisions (this session):**
+- **D1 — ProducerDetail not in central-components.json:** applied 4-step protocol per ticket spec. Follow-up ticket required post-merge to add `frontend/app/[locale]/producer/[id]/ProducerDetail.jsx` to `.claude/central-components.json`.
+- **D2 path corrections:** all scope paths verified against actual repo layout post-Wave-1 `[locale]/` migration. Dropped phantom `components/forms/*` + `ReviewForm`. Added `map/state/useMapSync.js` + `useProducersFeed.js` (user-visible toasts) — out of ticket but in spirit of "map UX surface".
+- **D3 residual target:** revised from 1,844 to 2,950 ± 100. Actual landed at 3003 — within band but at upper end (53 above target). Acceptable.
+- **Q7 strategy (P1):** domain keys (`producer.detail.loading_fresh` + `map.client.loading_map`) over `common.loading` reuse — gives translators clean full sentences for EN. PR-A's `common.loading` doesn't exist in messages anyway (only `common.cta.*` + `common.aria.close` added by Wave 3).
+- **Test mock scope deviation (precedent MEH-471):** `vi.mock("next-intl", ...)` added to ProducerCard.test.jsx — same pattern Wave 1 used for Header.test.jsx. Documented as deviation but justified by precedent.
+- **`map/page.js` server-component**: used `getTranslations` from `next-intl/server` (RSC variant) for sr-only nav; metadata (`title`, `description`, OG block) deferred to Wave 6.
+- **ICU workflow location**: `/tmp/i18n-icu-parity.yml` — script path is `.github/workflows/i18n-icu-parity.yml`. Smadar installs via the MEH-621 manual-wiring pattern.
+
+**Follow-up tickets needed (post-merge):**
+- Add `ProducerDetail.jsx` to `.claude/central-components.json` (D1)
+- `experiences/*` Q7 carry-over + full i18n (deferred from Wave 3)
+- `producers/page.jsx` metadata (Wave 6 territory anyway)
+- `lib/badges.js` i18n (current state: ProducerCard renders translated badge strings via `<BadgeRow>` which still reads HE labels from `lib/badges.js`. MobileSheetSelectedCard's 3 inline-duplicate badges are translated; badges.js itself awaits separate ticket.)
+- Smadar to install `/tmp/i18n-icu-parity.yml` into `.github/workflows/` post-merge
+- **Q6 HYBRID decision (Smadar 2026-05-16) — needs codification:**
+  - **UI metadata / headers / navigation / brand display / siteName** → `"מהמקור"` (Hebrew brand, per Wave 1 BRAND_NAME constant)
+  - **User-generated prose that exits to third parties** (WhatsApp greetings, referral messages, shared URLs) → `"Mehamakor"` (transliteration)
+  - Update Brand Hub doc + MEH-476 Wave 6 description (SEO metadata stays HE brand; OG og:title etc. use `siteName: BRAND_NAME`)
+  - Codify in `docs/DESIGN.md` micro-copy table for future Waves' translators
+
+### MEH-623 — i18n-scanner `--diff` + `--self-test` flags — **PR #699 MERGED** (`89e436e`)
 
 Branch: `feature/meh-623-i18n-scan-diff-flag` off `4a24a37` (staging tip). Polish of `.claude/scripts/i18n-scan.py` (MEH-477 follow-up) per `docs/i18n-migration-plan.md` §9.2.
 
