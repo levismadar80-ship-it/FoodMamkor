@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-16 — MEH-623: i18n-scanner `--diff` + `--self-test` flags (PR pending)
+
+`feat(i18n)`: polish of `.claude/scripts/i18n-scan.py` (MEH-477 follow-up) — adds the two flags from `docs/i18n-migration-plan.md` §9.2 that MEH-477 didn't ship: `--diff <baseline.json>` for residual-count delta reporting in Wave PRs, and `--self-test` for regression protection via eval fixtures. **Scanner core untouched** — no regex changes, no file-walk changes (per MEH-623 scope guard); both flags wrap the existing `collect_files` + `scan_file` via a new shared `_run_scan()` helper.
+
+**`--diff <BASELINE_JSON>`** — reads a previously-emitted `--format json` array, scans current code at the same scope, prints `Previous: N → Current: M (Δ ±D)`, exits 1 on regression (Δ > 0), 0 on improvement or no change. Wave PR authors (MEH-471 → MEH-476) can now report the residual-count delta in one command instead of running scanner twice and diffing manually. Baseline shape contract is the existing `--format json` output (4 fields per record: `file`, `line`, `text`, `suggested_key`); total = `len(array)`.
+
+**`--self-test`** — scans `.claude/scripts/test/i18n-scan-fixtures/`, asserts expected counts per fixture (T1=1, T2=1, T3=1 with ±5% tolerance on T3), exits 0/1. Three new fixtures under `.claude/scripts/test/i18n-scan-fixtures/`: **T1** `t1-literal.tsx` (string-literal Hebrew via `<div>שלום</div>` → `HEBREW_JSX_RE` catches), **T2** `t2-template.tsx` (template-literal Hebrew via `` `שלום ${userName}` `` → `HEBREW_STR_RE` group 3 catches), **T3** `t3-eol-comment.tsx` (EOL `// הערה בעברית` comment → fallback regex catches; this is the documented FP class, hence ±5% tolerance). Plus `baseline-fixture.json` — JSON form of the 3 fixture findings, usable as a `--diff` test target.
+
+**Other:** `--diff` and `--self-test` are mutually exclusive (`parser.error` → exit 2). Module docstring's Usage / Exit-codes sections updated; `History:` line added per code-execution.md §14. `import sys` added.
+
+**Risk tier:** LOW per MEH-450 — CLI script only, no frontend/backend/DB touch, no central component. **Verification:** 3-step protocol from MEH-623's `<verification_step>` all pass + 4 sanity checks (Δ<0 → exit 0, Δ>0 → exit 1, mutex → exit 2, `--help` lists both flags). **DoD exception:** mobile QA N/A (CLI script).
+
+Closes MEH-623.
+
 ### 2026-05-16 — MEH-621: SubagentStop trace hook — script + wiring snippet (PR pending; manual wiring required post-merge)
 
 `tooling(MEH-621)`: ships **the contents** of a new SubagentStop hook

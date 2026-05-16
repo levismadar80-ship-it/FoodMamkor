@@ -1,0 +1,20 @@
+[
+  {
+    "file": ".claude/scripts/test/i18n-scan-fixtures/t1-literal.tsx",
+    "line": 4,
+    "text": "שלום",
+    "suggested_key": "t1_literal.text_0"
+  },
+  {
+    "file": ".claude/scripts/test/i18n-scan-fixtures/t2-template.tsx",
+    "line": 4,
+    "text": "שלום ${userName}",
+    "suggested_key": "t2_template.text_1"
+  },
+  {
+    "file": ".claude/scripts/test/i18n-scan-fixtures/t3-eol-comment.tsx",
+    "line": 1,
+    "text": "הערה בעברית",
+    "suggested_key": "t3_eol_comment.text_2"
+  }
+]
