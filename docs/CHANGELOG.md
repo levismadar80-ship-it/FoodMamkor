@@ -39,6 +39,71 @@
 
 **Risk tier:** HIGH per MEH-450 — 3 central components + new CI gate + central-component test mock added. Closes MEH-473.
 
+### 2026-05-16 — MEH-622: SessionEnd hook — HANDOFF.md ledger auto-append (PR pending; manual wiring required post-merge)
+
+`tooling(MEH-622)`: ships **the contents** of a new SessionEnd hook
+`.claude/hooks/session-end.sh` (~100 LOC) plus a `.claude/settings.json`
+SessionEnd wiring snippet. **Derived from MEH-502 audit REC 1** (DEFER
+verdict; trigger condition MEH-456 cleared 2026-05-05 — same-audit
+sibling of MEH-621). Per the project's deny-list invariants
+(`Edit(.claude/hooks/**)` + `Edit(.claude/settings.json)` are both
+denied to Claude Code), the script content and the
+`.claude/settings.json` wiring snippet live **in the PR description**
+for Smadar to install manually post-merge — this PR commits only the
+new `## Session ledger` table at the bottom of `HANDOFF.md` (table
+header + preamble + zero data rows; first row lands post-merge once
+wiring is complete), this CHANGELOG line, and the HANDOFF dated
+section + top pointer (2 files committed).
+**Captured per event (5 columns + dedup comment):** `Ended (UTC)` (ISO8601
+minute-precision via `date -u`), `Branch` (`git rev-parse --abbrev-ref
+HEAD`), `SHA` (`git log -1 --format=%h`), `Closes` (up to **2** refs
+matching `Closes MEH-\d+` or `#\d+` from HEAD commit body, joined with
+` / ` via awk — `paste -d` can't emit multi-char delimiters), `Reason`
+(`clear` / `logout` / `prompt_input_exit` / `other`). HTML comment
+`<!-- session=<session_id> -->` is invisible in rendered Markdown but
+greppable in source — used for **idempotency** (same `session_id`
+firing twice → 1 row, not 2).
+**No LLM calls anywhere in the hook** — deterministic git-based facts
+only. MEH-502 audit's DEFER verdict explicitly cited the LLM-summarize
+trap; this implementation honors that constraint.
+**Schema sourced via WebSearch 2026-05-16** (direct WebFetch to
+`docs.anthropic.com/en/docs/claude-code/hooks-guide` returned HTTP
+403; `code.claude.com/docs/en/hooks` blocked by MEH-397 WebFetch
+allowlist) cross-referenced against 5 sources cited in PR description
++ hook comment block:
+[anthropics/claude-code#6306](https://github.com/anthropics/claude-code/issues/6306)
+(SessionEnd doc request),
+[#6428](https://github.com/anthropics/claude-code/issues/6428)
+(enumerates `reason ∈ {clear, logout}`),
+[#17885](https://github.com/anthropics/claude-code/issues/17885) +
+[#35892](https://github.com/anthropics/claude-code/issues/35892)
+(`/exit` upstream gap), code.claude.com/docs/en/hooks (canonical).
+**Known limitation flagged honestly:** SessionEnd does NOT fire on
+the `/exit` slash command (upstream bug — #17885/#35892); fires on
+ctrl-d, `/clear`, logout, window close, prompt_input_exit. Documented
+in the ledger preamble + hook header comment.
+**Risk tier:** LOW per MEH-450 — never blocks (always exit 0),
+fail-open on missing `jq` / missing `HANDOFF.md` / detached HEAD /
+empty SHA / git command failure (all 4 surfaces log to
+`/tmp/session-end-error.log` and `exit 0`), no logic in committed
+code (only docs scaffolding). **DoD exception:** mobile QA N/A (no
+UI, no commit-time code execution).
+**Sandbox verification (6 tests passed before push):** (1) first
+invocation auto-creates `## Session ledger` heading + 1 row; (2)
+re-run identical input → 0 line delta (idempotent); (3) different
+`session_id` → 2nd row appended; (4) delete ledger heading → hook
+re-creates the table on next fire; (5) `git diff HANDOFF.md` → only
+EOF additions, no narrative line touched (scope guard); (6)
+`PATH=/nonexistent` (simulate missing `jq`) → exit 0, 0 line delta,
+stderr warning emitted. **Manual wiring step post-merge:** (1) `cp
+/tmp/session-end.sh .claude/hooks/session-end.sh && chmod +x …`;
+(2) paste the `SessionEnd` JSON block from the PR description into
+`.claude/settings.json` `hooks` object; (3) trigger any session end
+(ctrl-d or `/clear`) and verify a new row lands in HANDOFF.md
+`## Session ledger` table; (4) close the loop in Linear / PR comment.
+
+Closes MEH-622, derived from MEH-502 audit REC 1.
+
 ### 2026-05-16 — MEH-623: i18n-scanner `--diff` + `--self-test` flags (PR pending)
 
 `feat(i18n)`: polish of `.claude/scripts/i18n-scan.py` (MEH-477 follow-up) — adds the two flags from `docs/i18n-migration-plan.md` §9.2 that MEH-477 didn't ship: `--diff <baseline.json>` for residual-count delta reporting in Wave PRs, and `--self-test` for regression protection via eval fixtures. **Scanner core untouched** — no regex changes, no file-walk changes (per MEH-623 scope guard); both flags wrap the existing `collect_files` + `scan_file` via a new shared `_run_scan()` helper.
