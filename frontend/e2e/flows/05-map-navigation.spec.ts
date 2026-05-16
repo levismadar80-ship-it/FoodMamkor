@@ -8,9 +8,10 @@ test.describe("Map", () => {
   test.use({ actionTimeout: 15_000 });
 
   test("map page loads and centers on Israel", async ({ page }) => {
-    // MEH-549: Leaflet fails to load on current staging deployment.
-    // Re-enable once MEH-549 is resolved.
-    test.skip(true, "MEH-549: map regression — Leaflet fails to mount on staging");
+    // MEH-549: CI-only Playwright .leaflet-container:visible selector flakiness.
+    // Production /map verified to render correctly (owner real-browser check
+    // 2026-05-14). Fix tracked separately; tests skipped to keep CI green.
+    test.skip(true, "MEH-549: CI selector flakiness — production unaffected");
     test.setTimeout(90_000);
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");

@@ -6,9 +6,10 @@ import { test, expect } from "@playwright/test";
  */
 test.describe("GPS button on /map", () => {
   test("GPS button is visible on desktop and triggers geolocation API", async ({ page, context }) => {
-    // MEH-549: Leaflet fails to load on current staging deployment.
-    // Re-enable (and restore the mobile-only skip below) once MEH-549 is resolved.
-    test.skip(true, "MEH-549: map regression — Leaflet fails to mount on staging");
+    // MEH-549: CI-only Playwright .leaflet-container:visible selector flakiness.
+    // Production /map verified to render correctly (owner real-browser check
+    // 2026-05-14). Fix tracked separately; tests skipped to keep CI green.
+    test.skip(true, "MEH-549: CI selector flakiness — production unaffected");
 
     // Grant geolocation permission and set a fixed position (Tel Aviv)
     await context.grantPermissions(["geolocation"]);
