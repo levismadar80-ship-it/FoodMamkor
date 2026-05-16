@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -40,11 +41,14 @@ const METHOD_ICON = {
   email: EnvelopeSimple,
 };
 
-const METHOD_LABEL = {
-  whatsapp: "WhatsApp",
-  phone: "טלפון",
-  website: "אתר",
-  email: "אימייל",
+// MEH-473: METHOD_LABEL maps to translation keys so the labels resolve
+// per locale. The brand string "WhatsApp" stays as a constant (Q6 brand
+// convention from MEH-471). Resolved at render time via t().
+const METHOD_LABEL_KEY = {
+  whatsapp: null, // literal "WhatsApp"
+  phone: "producer.card.contact.phone",
+  website: "producer.card.contact.website",
+  email: "producer.card.contact.email",
 };
 
 // MEH-291 Phase 3 — badge color per the 4-state Decision tree.
@@ -73,6 +77,7 @@ function availabilityDotColor(producer) {
  *   - Hidden when the viewer owns this producer (own-card edge case).
  */
 function CardHeart({ producer, onCountChange }) {
+  const t = useTranslations();
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   // Independent "guest tapped" state — preserves visual feedback across
@@ -119,12 +124,12 @@ function CardHeart({ producer, onCountChange }) {
           ? window.location.pathname + window.location.search
           : "/";
       showToast(
-        "שמרתי — התחברי לראות את כל המועדפים שלך",
+        t("producer.card.favorites.saved_login_prompt"),
         "info",
         5000,
         {
           action: {
-            label: "התחברי",
+            label: t("producer.card.favorites.login_cta"),
             href: `/login?next=${encodeURIComponent(nextPath)}`,
           },
         },
@@ -155,11 +160,11 @@ function CardHeart({ producer, onCountChange }) {
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
-      showToast("משהו השתבש, נסי שוב", "error");
+      showToast(t("producer.card.favorites.error"), "error");
     }
   };
 
-  const label = filled ? "הסר ממועדפים" : "הוסף למועדפים";
+  const label = filled ? t("producer.card.favorites.remove") : t("producer.card.favorites.add");
   return (
     <button
       type="button"
@@ -181,6 +186,7 @@ function CardHeart({ producer, onCountChange }) {
 }
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
+  const t = useTranslations();
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
   // Keep in sync when the parent re-fetches the list (filter/pagination).
@@ -254,7 +260,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             ) : (
               <div
                 className="absolute inset-0 flex flex-col items-center justify-center bg-light px-2"
-                aria-label={`${producer.name} — תמונה חסרה`}
+                aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
                 <span className="text-5xl leading-none" aria-hidden="true">
                   {producer.categories?.[0]?.emoji || "🌿"}
@@ -341,12 +347,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           {/* MEH-213: delivery-only badge — shown when no physical storefront */}
           {producer.has_physical_location === false && producer.offers_delivery && (
             <span className="inline-flex items-center rounded-full bg-light border border-border text-site-text px-2 py-0.5 text-[11px]">
-              🚚 משלוחים בלבד
+              {t("producer.card.badges.delivery_only")}
             </span>
           )}
           {fridayMode && producer.is_available_today && (
             <span className="inline-flex items-center rounded-full bg-secondary/10 border border-secondary/30 text-secondary px-2 py-0.5 text-[11px] font-semibold">
-              🛒 מגיעה היום
+              {t("producer.card.badges.available_today")}
             </span>
           )}
         </div>
@@ -354,7 +360,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         {localFavCount >= 5 && (
           <p className="mt-1 flex items-center gap-1 text-[12px] text-site-muted">
             <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
-            {localFavCount} שמרו
+            {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
         )}
 
@@ -369,7 +375,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           {MethodIcon && (
             <span
               className="inline-flex items-center text-primary shrink-0"
-              aria-label={`ערוץ קשר עיקרי: ${METHOD_LABEL[primaryMethod]}`}
+              aria-label={t("producer.card.aria.primary_contact", { method: METHOD_LABEL_KEY[primaryMethod] ? t(METHOD_LABEL_KEY[primaryMethod]) : "WhatsApp" })}
               data-testid="primary-method-hint"
               data-method={primaryMethod}
             >

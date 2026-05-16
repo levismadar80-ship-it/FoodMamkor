@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Info, Package, Truck, Star } from "@phosphor-icons/react";
 
 import Breadcrumb from "@/components/Breadcrumb";
@@ -38,6 +39,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const t = useTranslations();
 
   const { producer, loading, events, similarProducers } = useProducerData({
     params,
@@ -51,7 +53,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
-        טוענת עסקים טריים...
+        {t("producer.detail.loading_fresh")}
       </div>
     );
   }
@@ -59,7 +61,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   if (!producer) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
-        לא מצאנו את בית העסק הזה — עדיין 🌱
+        {t("producer.detail.not_found")}
       </div>
     );
   }
@@ -80,7 +82,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       <div className="flex items-center justify-between mb-4">
         <Breadcrumb
           items={[
-            { href: "/", label: "בית" },
+            { href: "/", label: t("producer.detail.breadcrumb_home") },
             ...(primaryCategory
               ? [{ href: `/?category=${primaryCategory.id}`, label: primaryCategory.name }]
               : []),
@@ -91,9 +93,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           type="button"
           onClick={() => router.back()}
           className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded px-1"
-          aria-label="חזרה לעמוד הקודם"
+          aria-label={t("producer.detail.aria.back")}
         >
-          ← חזרה
+          {t("producer.detail.back_label")}
         </button>
       </div>
 
@@ -109,14 +111,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       <nav
         ref={tabBarRef}
         className="md:hidden sticky top-0 z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
-        aria-label="ניווט מהיר בפרופיל"
+        aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">
           {[
-            { key: "about", label: "אודות", Icon: Info },
-            { key: "products", label: "מוצרים", Icon: Package },
-            { key: "delivery", label: "משלוח", Icon: Truck },
-            { key: "reviews", label: "ביקורות", Icon: Star },
+            { key: "about", label: t("producer.detail.tabs.about"), Icon: Info },
+            { key: "products", label: t("producer.detail.tabs.products"), Icon: Package },
+            { key: "delivery", label: t("producer.detail.tabs.delivery"), Icon: Truck },
+            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: Star },
           ].map((tab) => (
             <button
               key={tab.key}

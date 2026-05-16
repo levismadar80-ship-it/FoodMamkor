@@ -162,6 +162,9 @@
     "cta": {
       "show_on_map": "הצג במפה",
       "more_info": "לפרופיל המלא"
+    },
+    "aria": {
+      "close": "סגור"
     }
   },
   "category": {
@@ -176,6 +179,193 @@
   "seo": {
     "home": {
       "description": "בתי עסק מקומיים, כולם במקום אחד. מצאו אוכל אמיתי, טרי ובריא באזור שלך."
+    }
+  },
+  "producer": {
+    "detail": {
+      "loading_fresh": "טוענת עסקים טריים...",
+      "not_found": "לא מצאנו את בית העסק הזה — עדיין 🌱",
+      "breadcrumb_home": "בית",
+      "aria": {
+        "back": "חזרה לעמוד הקודם",
+        "tab_nav": "ניווט מהיר בפרופיל"
+      },
+      "back_label": "← חזרה",
+      "tabs": {
+        "about": "אודות",
+        "products": "מוצרים",
+        "delivery": "משלוח",
+        "reviews_label": "ביקורות"
+      },
+      "sections": {
+        "about": "אודות",
+        "similar": {
+          "heading": "עסקים דומים",
+          "in_area": "{category} · באזור שלך"
+        },
+        "events": {
+          "heading": "אירועים קרובים",
+          "free": "חינם",
+          "register": "הרשמה לאירוע →",
+          "show_all_count": "{count, plural, one {הצג את כל האירוע} two {הצג את שני האירועים} other {הצג את כל # האירועים}}"
+        },
+        "products": {
+          "heading": "מוצרים"
+        },
+        "recipes": {
+          "cta": "המתכונים שלנו"
+        },
+        "delivery": {
+          "heading": "אזורי משלוח",
+          "col": {
+            "city": "עיר",
+            "min_order": "מינימום הזמנה",
+            "day": "יום משלוח"
+          }
+        }
+      },
+      "header": {
+        "review_count": "{count, plural, =0 {אין ביקורות} one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}",
+        "premium": "פרמיום",
+        "favorites_count": "{count, plural, one {שמרו אחד את העסק הזה} two {שניים שמרו את העסק הזה} other {# שמרו את העסק הזה}}",
+        "behind": "מאחורי העסק: {name}",
+        "attr": {
+          "grass_fed": "מרעה חופשי",
+          "organic": "אורגני מוסמך",
+          "delivery": "משלוח",
+          "kosher": "כשר"
+        },
+        "slow_response": "⏳ זמני תגובה ארוכים יותר השבוע",
+        "vacation": "🌙 בית עסק זה בהפסקה כרגע",
+        "vacation_return": "{label} — ניתן להשאיר הודעה"
+      },
+      "action_row": {
+        "aria": {
+          "show_on_map": "פתח את המיקום של העסק במפה"
+        },
+        "show_on_map": "הצג במפה",
+        "referral_msg": "גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/{code}",
+        "referral_cta": "שתפי וקבלי 10% 🌿"
+      },
+      "contact_sidebar": {
+        "join_whatsapp_group": "הצטרפי לקבוצת וואטסאפ"
+      },
+      "sticky_bar": {
+        "vacation_msg": "שלחי הודעה — יחזרו בקרוב"
+      }
+    },
+    "card": {
+      "contact": {
+        "phone": "טלפון",
+        "website": "אתר",
+        "email": "אימייל"
+      },
+      "favorites": {
+        "saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
+        "login_cta": "התחברי",
+        "error": "משהו השתבש, נסי שוב",
+        "remove": "הסר ממועדפים",
+        "add": "הוסף למועדפים"
+      },
+      "aria": {
+        "image_missing": "{name} — תמונה חסרה",
+        "primary_contact": "ערוץ קשר עיקרי: {method}"
+      },
+      "badges": {
+        "delivery_only": "🚚 משלוחים בלבד",
+        "available_today": "🛒 מגיעה היום"
+      },
+      "favorites_count_short": "{count, plural, one {אחד שמר} two {שניים שמרו} other {# שמרו}}"
+    }
+  },
+  "map": {
+    "client": {
+      "loading_map": "טוענת מפה...",
+      "title": "מפת בתי עסק",
+      "errors": {
+        "no_gps": "הדפדפן שלך לא תומך ב-GPS",
+        "permission_denied": "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
+        "position_unavailable": "המיקום שלך לא זמין. נסי מאוחר יותר.",
+        "timeout": "לקח יותר מדי זמן. נסי שוב.",
+        "gps_unknown": "לא הצלחנו לקבל את המיקום שלך"
+      },
+      "aria": {
+        "split_50_50": "תצוגה 50/50",
+        "split_25_75": "תצוגה 25/75",
+        "my_location": "קרוב אלי"
+      },
+      "city_search": {
+        "label": "סנן לפי עיר",
+        "placeholder": "חפשי עיר..."
+      },
+      "business_count": "{count, plural, =0 {אין בתי עסק} one {בית עסק אחד} two {שני בתי עסק} other {# בתי עסק}}",
+      "sort": {
+        "nearest": "קרוב אליי",
+        "top_rated": "הכי מדורגות",
+        "newest": "חדש בשוק"
+      }
+    },
+    "errors": {
+      "load_failed": "לא הצלחנו לטעון עסקים — נסי שוב",
+      "invalid_search": "חיפוש לא תקין"
+    },
+    "city_picker": {
+      "heading": "לאן לשלוח?",
+      "subheading": "בחרי עיר כדי לסנן לפי משלוח",
+      "popular": {
+        "tel_aviv": "תל אביב",
+        "jerusalem": "ירושלים",
+        "haifa": "חיפה",
+        "beersheba": "באר שבע"
+      },
+      "other": {
+        "label": "עיר אחרת",
+        "placeholder": "הקלידי שם עיר..."
+      },
+      "skip": "דלגי"
+    },
+    "popup": {
+      "whatsapp_greeting": "היי! מצאתי אותך במהמקור — {name}"
+    },
+    "filter": {
+      "aria": {
+        "remove": "הסירי סינון {label}"
+      },
+      "clear_all": "× נקי הכל"
+    },
+    "card_list": {
+      "empty": {
+        "heading": "לא נמצאו עסקים",
+        "body": "נסי להזיז את המפה או לשנות מסננים.",
+        "reset_filters": "אפסי סינון"
+      }
+    },
+    "pane": {
+      "hint": "לחצי על סמן עסק כדי לראות פרטים · גלגלי ברשימה מימין לכל העסקים",
+      "search_this_area": "חפשי באזור זה",
+      "empty": {
+        "heading": "אין עסקים באזור זה עדיין",
+        "body": "מכירה מישהי שתוכל להצטרף?",
+        "cta": "הוסיפי עסק +"
+      },
+      "aria": {
+        "center_on_me": "מרכזי את המפה על המיקום שלי",
+        "categories": "קטגוריות"
+      },
+      "show_all": "הצגי הכל"
+    },
+    "sheet": {
+      "badge": {
+        "verified": "✓ מאומת",
+        "organic": "🌿 אורגני",
+        "kosher": "✡️ כשר"
+      }
+    },
+    "page": {
+      "aria": {
+        "business_list": "רשימת בתי עסק על המפה"
+      },
+      "heading_ssr": "בתי עסק על המפה"
     }
   }
 }
