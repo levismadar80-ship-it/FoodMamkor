@@ -17,9 +17,11 @@ import {
   Trash,
   Pencil,
   X,
+  Camera,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import CitySearch from "@/components/CitySearch";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { env } from "@/lib/env";
@@ -241,6 +243,7 @@ function ProfileTab() {
       <div className="flex items-center gap-4 mb-6">
         <label
           htmlFor="avatar-upload"
+          title="לחצי לשינוי התמונה"
           className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
           aria-label="שינוי תמונת פרופיל"
         >
@@ -252,8 +255,9 @@ function ProfileTab() {
               {initial}
             </div>
           )}
-          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-            <span className="text-white text-xs font-medium">שנה</span>
+          {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover. */}
+          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            <Camera size={24} weight="light" className="text-white" aria-hidden="true" />
           </div>
           {uploading && (
             <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
@@ -286,16 +290,18 @@ function ProfileTab() {
           />
         </div>
         <div>
-          <label htmlFor="profile-city" className="block text-sm font-medium mb-1">עיר (אופציונלי)</label>
-          <input
+          <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
+            עיר <span className="text-site-muted font-normal">(אופציונלי)</span>
+          </label>
+          <CitySearch
             id="profile-city"
-            type="text"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={setCity}
             placeholder="לדוגמה: תל אביב"
-            className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
-            dir="rtl"
           />
+          <p className="text-xs text-site-muted mt-1 text-right">
+            כדי שנציג לך עסקים באזורך
+          </p>
         </div>
         <div>
           <label htmlFor="profile-email" className="block text-sm font-medium mb-1">אימייל</label>
@@ -312,23 +318,6 @@ function ProfileTab() {
             {isOAuth
               ? `האימייל מחובר לחשבון ${oAuthProvider ?? "חיצוני"} — לשינוי עדכני שם`
               : "לשינוי אימייל, פני לתמיכה"}
-          </p>
-        </div>
-        <div>
-          <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
-            עיר <span className="text-site-muted font-normal">(אופציונלי)</span>
-          </label>
-          <input
-            id="profile-city"
-            type="text"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="תל אביב"
-            className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
-            dir="rtl"
-          />
-          <p className="text-xs text-site-muted mt-1 text-right">
-            כדי שנציג לך עסקים באזורך
           </p>
         </div>
         <div>

@@ -37,7 +37,7 @@ export const metadata = {
     "grass-fed",
     "אוכל בריא",
     "אוכל אורגני",
-    "יצרנים ישראלים",
+    "בעלי עסק ישראלים",
     BRAND_NAME,
     "שוק איכרים",
   ],
@@ -116,6 +116,10 @@ export default async function LocaleLayout({ children, params }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        {/* MEH-604: preconnect OSM tile shards (a/b/c) for HomepageMiniMap above-the-fold */}
+        <link rel="preconnect" href="https://a.tile.openstreetmap.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"

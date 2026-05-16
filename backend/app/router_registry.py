@@ -6,6 +6,7 @@ from app.routers import (
     admin_extra,
     admin_kashrut,
     admin_outreach,
+    admin_recipes,
     alerts,
     auth,
     category_requests,
@@ -20,8 +21,8 @@ from app.routers import (
     home_products,
     marketing,
     producer_me,
+    producer_recipes,
     producers,
-    recipes,
     referrals,
     reports,
     reviews,
@@ -48,7 +49,6 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(favorites.router)
     app.include_router(admin.router)
     app.include_router(admin_extra.router)
-    app.include_router(recipes.router)
     app.include_router(home_products.router)
     app.include_router(reports.router)
     app.include_router(upload.router)
@@ -56,6 +56,9 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(events.router)
     app.include_router(experiences.router)
     app.include_router(admin_experiences.router)
+    # MEH-589: producer recipes chunk 2/4
+    app.include_router(producer_recipes.router)
+    app.include_router(admin_recipes.router)
     app.include_router(reviews.router)
     app.include_router(search.router)
     app.include_router(users_me.router)

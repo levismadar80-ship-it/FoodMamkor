@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { getProducerStatusLabel } from "@/lib/producer-status";
+import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -76,7 +77,22 @@ export default function AdminDashboard() {
               <c.Icon size={28} weight="duotone" aria-hidden="true" className="text-primary" />
               <span className="text-3xl font-bold text-primary">{c.value}</span>
             </div>
-            <p className="text-xs text-text-secondary mt-2">{c.label}</p>
+            <p className="text-xs text-text-secondary mt-2">
+              {c.label}
+              {c.label === "קבוצות רכש" && (
+                <span
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <InfoTooltip
+                    content="ניהול קבוצות רכש של משתמשות. לא פעיל כרגע."
+                    label="מידע על קבוצות רכש"
+                    position="bottom"
+                  />
+                </span>
+              )}
+            </p>
           </Link>
         ))}
       </div>

@@ -59,9 +59,9 @@ export default function Footer() {
   const navLinks = [
     { href: "/", label: t("nav.footer.nav_discover") },
     { href: "/map", label: t("nav.map") },
-    { href: "/neighbor", label: t("nav.footer.neighbor_kitchen") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },
+    { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
   ];
 
   return (

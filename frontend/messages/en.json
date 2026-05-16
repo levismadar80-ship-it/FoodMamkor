@@ -3,7 +3,6 @@
     "discover": "Discover",
     "map": "Map",
     "events": "Events",
-    "neighbor": "Neighbor",
     "about": "About",
     "favorites": "Favorites",
     "admin": "Admin",
@@ -35,8 +34,8 @@
       "all_businesses": "All Businesses",
       "new_businesses": "New Businesses",
       "events": "Events",
-      "neighbor_kitchen": "Neighbor's Kitchen",
       "about": "About",
+      "faq_businesses": "FAQ for Businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
       "manage": "Manage Business",
@@ -89,7 +88,7 @@
   "home": {
     "hero": {
       "title": "Real Food, Straight From the Source",
-      "subtitle": "Local businesses, all in one place.",
+      "subtitle": "Straight from the source. Businesses we've already vetted for you.",
       "friday_subtitle": "Friday is here 🛒 What's on the Shabbat table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
@@ -103,7 +102,8 @@
       "submit": "Search"
     },
     "stats": {
-      "verified_businesses": "verified businesses",
+      "issue_prefix": "{month} issue —",
+      "businesses": "businesses",
       "categories": "categories",
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel 🌿"
@@ -134,10 +134,6 @@
     },
     "recent": {
       "heading": "Recently viewed"
-    },
-    "kitchen": {
-      "heading": "From the Neighbor's Kitchen",
-      "see_more": "See more →"
     },
     "how_it_works": {
       "heading": "How it works",

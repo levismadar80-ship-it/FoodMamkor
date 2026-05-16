@@ -150,6 +150,17 @@
             "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/session-start.sh\""
           }
         ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "Context recovery after /compact (MEH-576) — re-injects branch, CHANGELOG head, HANDOFF tail. Mirrors the startup SessionStart entry. Always exits 0.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/session-start.sh\""
+          }
+        ]
       }
     ]
   },

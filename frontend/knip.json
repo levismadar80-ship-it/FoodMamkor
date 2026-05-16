@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "app/**/{page,layout,loading,error,not-found,route}.{js,jsx}",
+    "app/**/page.{js,jsx}",
+    "middleware.js",
+    "next.config.js",
+    "instrumentation.js",
+    "sentry.client.config.js",
+    "sentry.server.config.js",
+    "sentry.edge.config.js",
+    "playwright.config.ts",
+    "e2e/**/*.spec.ts",
+    "vitest.config.js",
+    "__tests__/**/*.{js,jsx,ts,tsx}"
+  ],
+  "project": [
+    "app/**/*.{js,jsx,ts,tsx}",
+    "components/**/*.{js,jsx,ts,tsx}",
+    "lib/**/*.{js,jsx,ts,tsx}",
+    "worker/**/*.{js,jsx,ts,tsx}",
+    "e2e/**/*.ts"
+  ],
+  "ignore": [
+    "**/*.d.ts"
+  ],
+  "ignoreDependencies": [
+    "autoprefixer",
+    "postcss",
+    "tailwindcss"
+  ]
+}

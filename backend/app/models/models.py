@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Table,
     Text,
     Time,
     UniqueConstraint,
@@ -86,6 +87,14 @@ class Producer(Base):
     has_delivery = Column(Boolean, default=False)
     pickup_points = Column(Boolean, default=False)
     kosher = Column(String(50), nullable=True)  # כשר / לא כשר / כשר למהדרין
+    # MEH-530: manufacturer license number (משרד הבריאות). Nullable at the
+    # DB level so existing producer rows stay valid; required-vs-optional
+    # is enforced at the application layer (router-level helper
+    # app/services/license_validation.py — depends on selected categories).
+    # Exposed publicly only as the derived boolean `has_producer_license`
+    # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
+    # via ProducerAdminOut.
+    producer_license_number = Column(String(20), nullable=True)
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     is_available_today = Column(Boolean, default=False)  # producer self-marks daily
     # MEH-12: durable availability status (vs. the per-day is_available_today above).
@@ -130,6 +139,14 @@ class Producer(Base):
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
     # never added it to the DB, baseline didn't pick it up).
     rejection_reason = Column(Text, nullable=True)
+    # MEH-539: timestamps for the 4 onboarding follow-up emails (Day 2 / 5 /
+    # 10 / 30). NULL = not yet sent — non-null is the durable "delivered to
+    # Resend" record. Scheduler (APScheduler, daily) reads created_at +
+    # these flags to decide who's due. See migration b504e4be4225.
+    email_followup_2_sent_at = Column(DateTime(timezone=True), nullable=True)
+    email_followup_3_sent_at = Column(DateTime(timezone=True), nullable=True)
+    email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
+    email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     categories = relationship(
         "Category", secondary="producer_categories", back_populates="producers"
@@ -148,6 +165,12 @@ class Producer(Base):
     )
     reviews = relationship(
         "ProducerReview", back_populates="producer", cascade="all, delete-orphan"
+    )
+    # MEH-588: producer-owned recipes (chunk 1/4). Cascade delete so a
+    # producer teardown removes its recipes (and the link rows via the
+    # FK cascade on producer_recipe_products.recipe_id).
+    producer_recipes = relationship(
+        "ProducerRecipe", back_populates="producer", cascade="all, delete-orphan"
     )
 
     # Full-text search on producer name (Hebrew-friendly via 'simple' config).
@@ -171,6 +194,11 @@ class Producer(Base):
                 "(availability_state)::text <> 'accepting_orders'::text"
             ),
         ),
+        # MEH-539: btree index on created_at supports the daily follow-up
+        # scheduler query `WHERE created_at BETWEEN today-N AND today-N+1`.
+        # Added in migration b504e4be4225 alongside the 4 email_followup_*
+        # columns above.
+        Index("idx_producers_created_at", "created_at"),
     )
 
 
@@ -347,6 +375,13 @@ class Product(Base):
     )
 
     producer = relationship("Producer", back_populates="products")
+    # MEH-588: M2M back-ref so a Product can list the producer's recipes
+    # that promote it. `secondary` points to the link Table defined below.
+    recipes = relationship(
+        "ProducerRecipe",
+        secondary="producer_recipe_products",
+        back_populates="products",
+    )
 
     # idx_products_dietary — added in MEH-293 migration 1afe844d11f4
     # (2026-05-07). Partial index covers products with at least one
@@ -462,44 +497,10 @@ class ProducerFollower(Base):
     producer = relationship("Producer")
 
 
-class Recipe(Base):
-    __tablename__ = "recipes"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    title = Column(String(300), nullable=False)
-    description = Column(Text)
-    steps = Column(JSON)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    submitted_by = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    status = Column(String(20), default="pending")  # pending | approved | rejected
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    category = relationship("Category")
-    author = relationship("User")
-    ingredients = relationship(
-        "RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan"
-    )
-
-
-class RecipeIngredient(Base):
-    __tablename__ = "recipe_ingredients"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    recipe_id = Column(
-        UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="CASCADE"), nullable=False
-    )
-    ingredient_name = Column(String(200), nullable=False)
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    notes = Column(Text)
-
-    recipe = relationship("Recipe", back_populates="ingredients")
-    producer = relationship("Producer")
+# MEH-587: Recipe + RecipeIngredient removed (chunk 0/4) ahead of the
+# producer-recipes feature. Tables verified empty on staging AND
+# production before drop. See backend/alembic/versions/
+# 20260515_1430_d7e3c9a82f5b_meh_587_remove_zombie_recipes.py.
 
 
 # --- New models for MVP v1 ---
@@ -1066,3 +1067,99 @@ class SearchQuery(Base):
     query = Column(Text, nullable=False)
     results_count = Column(Integer, nullable=False, default=0)
     searched_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+# MEH-588: producer-recipes schema (chunk 1/4). M2M link table declared
+# at module scope (not inside ProducerRecipe) so Product.recipes can
+# reference it by the string "producer_recipe_products" via `secondary`.
+# Mirror of the Alembic table created in revision f4c8a91e2b07.
+producer_recipe_products = Table(
+    "producer_recipe_products",
+    Base.metadata,
+    Column(
+        "recipe_id",
+        UUID(as_uuid=True),
+        ForeignKey("producer_recipes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "product_id",
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Index("ix_producer_recipe_products_product_id", "product_id"),
+)
+
+
+class ProducerRecipe(Base):
+    """MEH-588: a recipe owned by a producer that can promote one or more
+    of that producer's products via the producer_recipe_products M2M.
+
+    `moderation_status` mirrors the four-state machine used elsewhere
+    (pending / approved / rejected / needs_revision); the DB-level
+    CHECK constraint is declared in the Alembic migration, not here.
+
+    History: MEH-588 (creation, chunk 1/4 of the producer-recipes epic;
+    chunk 0 = MEH-587 cleared the legacy `recipes` namespace).
+    """
+
+    __tablename__ = "producer_recipes"
+    # MEH-588: mirror the partial index declared in Alembic revision
+    # f4c8a91e2b07 so `alembic check` (Base.metadata vs DB schema) does
+    # not flag ORM/migration drift. Plain `producer_id` index is covered
+    # by the column-level `index=True` below.
+    __table_args__ = (
+        Index(
+            "ix_producer_recipes_published_moderation",
+            "published",
+            "moderation_status",
+            postgresql_where=text("published = true"),
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    ingredients = Column(Text, nullable=False)
+    instructions = Column(Text, nullable=False)
+    prep_time_min = Column(Integer, nullable=True)
+    cook_time_min = Column(Integer, nullable=True)
+    servings = Column(Integer, nullable=True)
+    image_url = Column(Text, nullable=True)
+    moderation_status = Column(
+        Text,
+        nullable=False,
+        default="pending",
+        server_default=text("'pending'"),
+    )
+    moderation_notes = Column(Text, nullable=True)
+    published = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
+    created_at = Column(
+        DateTime, nullable=False, default=datetime.utcnow, server_default=text("now()")
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        server_default=text("now()"),
+    )
+
+    producer = relationship("Producer", back_populates="producer_recipes")
+    products = relationship(
+        "Product",
+        secondary=producer_recipe_products,
+        back_populates="recipes",
+    )

@@ -3,6 +3,63 @@
 
 ---
 
+## Stats counter reframe + skeleton (MEH-607)
+
+Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {month} — N בתי עסק · M קטגוריות · מכל רחבי הארץ"* — editorial-cadence framing per synthesis §5.2 Option A. Dynamic month name via `Intl.DateTimeFormat('he-IL', { month: 'long' })`. F10: while `/stats` hasn't returned, a skeleton with matching `bg-primary text-white py-4` dimensions reserves height → zero CLS between loading and the real counter.
+
+- [ ] Hebrew copy renders — visit `/he` → stats bar reads *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. Month name is the **current Hebrew month** (in May → "מאי"; in June → "יוני"). "מאומתים" word is **absent**.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first few hundred ms the stats slot shows the green section with a pulsing white pill (no numbers yet). When `/stats` resolves the pill is replaced by the real counter **with zero layout jump** (no content below shifts).
+- [ ] 375px wrap — open Vercel preview at exactly 375px viewport → counter wraps cleanly if it wraps at all. Watch for orphan words (a single word alone on its own line). Synthesis §5.3 acceptance: month+counter on line 1, categories+geography on line 2 if wrap happens.
+- [ ] Empty-DB state — if `/stats` returns `{ producers_count: 0 }` → after the skeleton dismisses, the stats section is **hidden** (no green bar). Acceptable launch-week behavior; not a CLS regression vs pre-MEH-607 (was also hidden).
+
+---
+
+## HomepageMiniMap above the fold (MEH-604)
+
+Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
+
+- [ ] Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
+- [ ] Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
+- [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
+
+---
+
+## Hide /neighbor pre-launch (MEH-598)
+
+Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen section removed from public surface. Page files preserved per MEH-543 revival path. AI chat + producer dashboard + `HomeProductCard` label LOCK leaks deferred to MEH-599 (see PR description for E1-E6 mapping).
+
+- [ ] Header nav (desktop ≥768px) — visit `/`, `/about`, `/map`, `/events` → top nav shows 3 items: גלה / מפה / אודות. "מהשכן" link **absent**.
+- [ ] Footer nav — scroll to footer on any page → 5 items: גלה / מפה / אירועים / אודות / FAQ לבתי עסק. "מהמטבח של השכן" link **absent**.
+- [ ] BottomNav (mobile <768px) — visit `/` on mobile → 3 tabs visible: בית / מפה / פרופיל. "מהשכן" tab **absent** (was 4 tabs, now 3).
+- [ ] Direct route redirect — visit `https://staging.mehamakor.online/neighbor` (or `/he/neighbor`) → redirects to `/` (locale-prefixed root via next-intl middleware).
+- [ ] Direct route on mobile — same as above on mobile browser → no broken intermediate render, clean redirect.
+- [ ] Homepage section absence — visit `/` → between `<HomeHowItWorks>` (איך זה עובד) and the parallax divider, the "מהמטבח של השכן" home-products marquee is **absent**. Page flows directly from "איך זה עובד" → parallax → events preview.
+- [ ] DOM grep — load any page → DevTools → Search for "/neighbor" in DOM → returns 0 (excluding code comments not rendered).
+- [ ] No console errors — DevTools console on `/`, `/neighbor` redirect target, mobile + desktop → no `Missing message: home.kitchen.heading` or similar i18n warnings.
+
+---
+
+## Producer license number (MEH-530)
+
+Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
+
+- [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
+- [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
+- [ ] Register vegetables — בחרי "ירקות ופירות" בלבד → שדה השתוקק לא מופיע, במקומו toggle "יש לי רישיון יצרן ↓". לחיצה → השדה נפתח אופציונלי. submit ללא ערך → 200 OK.
+- [ ] Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text.
+- [ ] Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על submit — **submit עובר** למרות האזהרה (manual-approval flow). 1234567 → אין warning.
+- [ ] Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`).
+- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר ודגים" → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
+- [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
+- [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
+- [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
+- [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
+- [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
+- [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
+
+---
+
 # Verification Protocol — 3-Tier Division of Labor
 
 לפני כל verification of merged work או pre-merge PR, ה-3 tiers הבאים פועלים בסדר.
@@ -212,14 +269,12 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ---
 
-## Recipe ingredient cascade (MEH-311)
+## ~~Recipe ingredient cascade (MEH-311)~~
 
-- [ ] FK violation regression — sanity check ידני בstaging:
-  1. בקונסולת DB ב-Railway: צרי `RecipeIngredient` שמצביע על producer קיים — `INSERT INTO recipe_ingredients (id, recipe_id, ingredient_name, producer_id) VALUES (gen_random_uuid(), '<existing-recipe-id>', 'בדיקה', '<producer-id>');`
-  2. דרך אדמין UI או DB: `DELETE FROM producers WHERE id = '<producer-id>';`
-  3. **תוצאה מצופה:** Producer נמחק. RecipeIngredient נשאר. `SELECT producer_id FROM recipe_ingredients WHERE id = '<ingredient-id>';` → `NULL`.
-  4. **בלי הfix:** היה נכשל בFK violation. אם זה עובד — הfix תקין.
-- [ ] DELETE /auth/me regression — producer-user מוחקת חשבון דרך setting → "מחיקת חשבון" כשיש לה RecipeIngredient שמצביע אליה: ה-deletion מצליח (היה נכשל בFK violation לפני הfix).
+> **MEH-587 (2026-05-15):** section removed — `recipes` and
+> `recipe_ingredients` dropped (chunk 0/4). The cascade contract this
+> section tested no longer has a surface to exercise. See CHANGELOG +
+> migration `d7e3c9a82f5b`.
 
 ---
 

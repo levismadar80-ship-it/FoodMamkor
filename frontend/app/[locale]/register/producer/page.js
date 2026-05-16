@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
@@ -12,13 +12,25 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
+import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
+import {
+  hasLicenseFormatWarning,
+  requiresProducerLicense,
+} from "@/lib/license-required-categories";
 
 const DRAFT_KEY = "producer_registration_draft";
+// MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
+const DESCRIPTION_PENDING_KEY = "description_pending";
+const DESCRIPTION_DEFAULT_TEXT = "בית עסק מקומי. עוד פרטים בקרוב.";
 
 const EMPTY_FORM = {
   email: "", name: "", password: "",
-  producer_name: "", phone: "",
+  producer_name: "", description: "", phone: "",
   category_ids: [],
+  // MEH-530: optional at the form level. Backend 422s when any selected
+  // category requires a license and this is empty — helper at
+  // backend/app/services/license_validation.py.
+  producer_license_number: "",
 };
 
 export default function RegisterProducerPage() {
@@ -61,6 +73,22 @@ function RegisterProducerPageBody() {
   // MEH-287: true when server confirms Twilio config is present (WhatsApp
   // expected to arrive). False → show dashboard-fallback banner on step 3.
   const [whatsappSent, setWhatsappSent] = useState(true);
+  // MEH-532: seasonal placeholder is locked to the value at first render
+  // so it doesn't flicker if the user crosses a season boundary mid-session.
+  // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
+  const [descriptionPlaceholder] = useState(() => getSeasonalPlaceholder());
+  const [descriptionDisabled, setDescriptionDisabled] = useState(false);
+  // MEH-619: snapshot of the user-typed description captured at the moment
+  // they click "אני אכתוב אחר כך", so the matching "ערוך תיאור" undo link
+  // can restore it. Plain ref (not state) — the value is read only inside
+  // the undo handler; no re-render needed when it changes.
+  const descriptionBeforeDisableRef = useRef("");
+  // MEH-530: optional path expanded-toggle. Required path renders the field
+  // directly (no toggle). Whether the path is required is derived live from
+  // the selected category IDs against the categories list fetched at mount.
+  const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
+  const licenseRequired = requiresProducerLicense(categories, form.category_ids);
+  const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -184,8 +212,15 @@ function RegisterProducerPageBody() {
     try {
       const body = {
         producer_name: form.producer_name,
+        // MEH-532: description is optional on the backend (sanitize_text
+        // strips/empty-string normalises); we still send what we have so the
+        // story shows up on the producer page immediately after approval.
+        description: form.description,
         phone: form.phone,
         category_ids: form.category_ids,
+        // MEH-530: empty string normalises server-side to "missing" via
+        // license_validation._normalize_license — safe to send unconditionally.
+        producer_license_number: form.producer_license_number,
         primary_contact_method: "whatsapp",
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
@@ -360,7 +395,7 @@ function RegisterProducerPageBody() {
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">2. פרטי העסק</h2>
             <p className="text-sm text-site-muted">
-              3 שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.
+              כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.
             </p>
 
             <input
@@ -370,6 +405,78 @@ function RegisterProducerPageBody() {
               className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
               dir="rtl"
             />
+
+            {/* MEH-532: description is moved to the prominent slot directly
+                below the business name. Submit is never blocked on it —
+                the "אני אכתוב אחר כך" link fills a default and disables the
+                textarea so motivated sellers add a real story while everyone
+                else still ships. localStorage flag surfaces a future
+                dashboard reminder. */}
+            <div>
+              <label
+                htmlFor="producer-description"
+                className="block text-sm font-medium text-site-text mb-1 text-right"
+              >
+                ספרי על העסק שלך
+              </label>
+              <p className="text-xs text-site-muted mb-2 text-right">
+                סיפור של 100-300 מילים — איך התחלת? מה מיוחד אצלך? מה הקרוב ביותר ללב שלך?
+              </p>
+              <textarea
+                id="producer-description"
+                value={form.description}
+                onChange={set("description")}
+                disabled={descriptionDisabled}
+                placeholder={descriptionPlaceholder}
+                rows={6}
+                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-light disabled:text-site-muted disabled:cursor-not-allowed"
+                dir="rtl"
+              />
+              {!descriptionDisabled ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // MEH-619: snapshot pre-click text so the matching
+                    // "ערוך תיאור" undo link can restore it.
+                    descriptionBeforeDisableRef.current = form.description || "";
+                    setAndSave((prev) => ({ ...prev, description: DESCRIPTION_DEFAULT_TEXT }));
+                    setDescriptionDisabled(true);
+                    try {
+                      localStorage.setItem(DESCRIPTION_PENDING_KEY, "true");
+                    } catch {
+                      // private browsing / storage disabled — flag is best-effort
+                    }
+                  }}
+                  className="text-xs text-primary underline mt-1 hover:text-primary-light"
+                >
+                  אני אכתוב אחר כך
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // MEH-619: restore the pre-click description, re-enable
+                    // the textarea, drop the pending-flag so a future
+                    // dashboard-reminder surface doesn't treat this as still
+                    // pending. setAndSave persists the restored text back to
+                    // the localStorage draft in the same write.
+                    setAndSave((prev) => ({
+                      ...prev,
+                      description: descriptionBeforeDisableRef.current,
+                    }));
+                    setDescriptionDisabled(false);
+                    try {
+                      localStorage.removeItem(DESCRIPTION_PENDING_KEY);
+                    } catch {
+                      // private browsing / storage disabled — best-effort
+                    }
+                  }}
+                  className="text-xs text-primary underline mt-1 hover:text-primary-light"
+                >
+                  ערוך תיאור
+                </button>
+              )}
+            </div>
 
             <div>
               <input
@@ -400,6 +507,91 @@ function RegisterProducerPageBody() {
             />
 
             {/* MEH-293: dietary labels moved to per-product (frontend/app/settings/page.jsx ProductsSection). */}
+
+            {/* MEH-530: conditional license field. Backend enforces the
+                requirement via ensure_license_for_categories — this block
+                is the matching UX. Required path renders inline with the
+                "(חובה)" suffix; optional path is collapsed behind a toggle
+                so the field doesn't add visual weight to producers who
+                don't need it (vegetables, eggs, etc.). Format warning is
+                inline + non-blocking per MEH-530 product decision (Sapir
+                manual-approval flow). */}
+            {licenseRequired ? (
+              <div>
+                <label
+                  htmlFor="producer-license-required"
+                  className="block text-sm font-medium text-site-text mb-1 text-right"
+                >
+                  מספר רישיון יצרן (חובה)
+                </label>
+                <p className="text-xs text-site-muted mb-2 text-right">
+                  ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות
+                </p>
+                <input
+                  id="producer-license-required"
+                  value={form.producer_license_number}
+                  onChange={set("producer_license_number")}
+                  maxLength={20}
+                  inputMode="numeric"
+                  className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+                  dir="ltr"
+                />
+                {licenseWarning && (
+                  <p className="text-xs text-amber-600 mt-1 text-right">
+                    מספר רישיון יצרן הוא 7-10 ספרות
+                  </p>
+                )}
+              </div>
+            ) : licenseOptionalExpanded ? (
+              <div className="relative">
+                {/* MEH-619: close button collapses the optional license input
+                    back to the "יש לי רישיון יצרן ↓" link AND clears any
+                    half-typed value so it doesn't submit silently. Positioned
+                    at the top-end (RTL-aware: end-0 = left edge in he) via
+                    logical properties. licenseRequired === true path above
+                    is intentionally NOT given this button — it's mandatory
+                    by category and must not be collapsible. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAndSave((prev) => ({ ...prev, producer_license_number: "" }));
+                    setLicenseOptionalExpanded(false);
+                  }}
+                  aria-label="סגור"
+                  className="absolute top-0 end-0 text-site-muted hover:text-site-text text-lg leading-none p-1"
+                >
+                  ✕
+                </button>
+                <label
+                  htmlFor="producer-license-optional"
+                  className="block text-sm font-medium text-site-text mb-1 text-right"
+                >
+                  מספר רישיון יצרן
+                </label>
+                <input
+                  id="producer-license-optional"
+                  value={form.producer_license_number}
+                  onChange={set("producer_license_number")}
+                  maxLength={20}
+                  inputMode="numeric"
+                  className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+                  dir="ltr"
+                />
+                {licenseWarning && (
+                  <p className="text-xs text-amber-600 mt-1 text-right">
+                    מספר רישיון יצרן הוא 7-10 ספרות
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setLicenseOptionalExpanded(true)}
+                className="text-xs text-primary underline hover:text-primary-light text-right"
+              >
+                יש לי רישיון יצרן ↓
+              </button>
+            )}
 
             {/* Legal consent — Israeli Consumer Protection Law + food license declaration */}
             <label className="flex items-start gap-2 text-sm cursor-pointer">

@@ -24,12 +24,23 @@ const TIPS = [
   },
 ];
 
-const criteria = [
-  "ייצור עצמי או משפחתי — לא סוחרים ולא מפיצים",
-  "חומרי גלם איכותיים ומזוהים",
-  "ללא חומרים משמרים מלאכותיים",
-  "שקיפות מלאה על תהליך הייצור",
-  "עמידה בתקני בטיחות מזון בסיסיים",
+const values = [
+  {
+    title: "שקיפות",
+    body: "את צריכה לדעת מי עומדת מאחורי המוצר שאת קונה. תמיד נספר לך מי בעלת בית העסק, איפה היא נמצאת, ואיך היא עובדת.",
+  },
+  {
+    title: "קרבה",
+    body: "אנחנו מעדיפות בתי עסק קרובים אלייך, ושרשרת קצרה ככל האפשר — מהשדה אלייך.",
+  },
+  {
+    title: "איכות",
+    body: "חומרי גלם אמיתיים שאת מזהה — בלי צבעי מאכל, בלי חומרים משמרים מיותרים, בלי תוספות מלאכותיות.",
+  },
+  {
+    title: "בטיחות",
+    body: "מקום הכנה נקי, אחסון נכון, ועמידה ברגולציה הרלוונטית לקטגוריה. בקטגוריות מסוימות נדרש רישיון יצרן בישראל, ושם נבקש אותו. כאן אין פשרות.",
+  },
 ];
 
 export default function AboutPage() {
@@ -128,9 +139,17 @@ export default function AboutPage() {
                 <p>
                   וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.
                 </p>
-                <p className="text-sm text-site-muted">
-                  מייסדת מהמקור, תוכניתנית בצבא ולומדת רפואה תזונתית.
-                </p>
+                <div className="border-s-2 border-primary/40 ps-4 mt-2 space-y-3">
+                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                    מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.
+                  </p>
+                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                    את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית.
+                  </p>
+                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                    את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -225,26 +244,30 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== Section 6 — Criteria ======== */}
+      {/* ======== Section 6 — Values ======== */}
       <section className="bg-white section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
-            קריטריוני כניסה
+          <h2 className="font-headline text-3xl font-bold mb-6 text-center text-site-text">
+            כך אנחנו בוחרות
           </h2>
-          <p className="text-site-muted text-center mb-8">
-            לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקות:
+          <p className="text-site-text/85 text-right text-lg leading-relaxed mb-10">
+            לא כל מה שכתוב &quot;טבעי&quot; באמת טבעי, ולא כל מה שכתוב &quot;מקומי&quot; באמת מקומי. אנחנו יודעות את זה. בשביל זה אנחנו עוברות על כל בית עסק לפני שהוא מצטרף — שואלות, מבררות, ולפעמים גם מבקרות במקום. הנה מה שחשוב לנו:
           </p>
-          <ul className="space-y-4">
-            {criteria.map((criterion, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 bg-background rounded-[16px] p-4 border border-border"
-              >
-                <span className="text-primary font-bold text-lg mt-0.5">✓</span>
-                <span className="text-lg">{criterion}</span>
-              </li>
+          <div className="space-y-8 text-right">
+            {values.map((item, i) => (
+              <article key={i}>
+                <h3 className="font-headline font-bold text-2xl text-site-text mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-site-text/85 text-lg leading-relaxed">
+                  {item.body}
+                </p>
+              </article>
             ))}
-          </ul>
+          </div>
+          <p className="text-site-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
+            אם זו את — בעלת עסק שבונה משהו שאת גאה בו — אנחנו רוצות להכיר.
+          </p>
         </div>
       </section>
 

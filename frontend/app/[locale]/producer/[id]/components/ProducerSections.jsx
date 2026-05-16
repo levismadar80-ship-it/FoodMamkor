@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Package } from "@phosphor-icons/react";
 
+import api from "@/lib/api";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
 import ProducerCard from "@/components/ProducerCard";
+import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
 import ReviewsSection from "@/components/ReviewsSection";
 
@@ -42,6 +44,26 @@ export default function ProducerSections({
   isOwner = false,
 }) {
   const [showAllEvents, setShowAllEvents] = useState(false);
+  // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
+  // public read endpoint added in chunk 2 — backend already filters to
+  // published+approved, so an empty array means "no recipes to show"
+  // and the section hides entirely (silent empty, per spec).
+  const [recipes, setRecipes] = useState([]);
+  useEffect(() => {
+    if (!producer?.slug) return;
+    let cancelled = false;
+    api
+      .get(`/producers/${encodeURIComponent(producer.slug)}/recipes`)
+      .then((r) => {
+        if (!cancelled) setRecipes(r.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecipes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [producer?.slug]);
 
   return (
     <>
@@ -185,6 +207,23 @@ export default function ProducerSections({
                   })()}
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* MEH-591: Producer recipes (chunk 4/4). Section is hidden entirely
+          when the producer has no published+approved recipes — empty state
+          is silent per spec. Anchor id matches the breadcrumb in
+          RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
+      {producer.slug && recipes.length > 0 && (
+        <section className="mt-8" id="recipes">
+          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+            המתכונים שלנו
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {recipes.map((r) => (
+              <RecipeCard key={r.id} slug={producer.slug} recipe={r} />
             ))}
           </div>
         </section>

@@ -147,7 +147,13 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          EXPECTED_REV="80bbf0a24874"
+          # MEH-530: head chain 80bbf0a24874 (MEH-479) → d7e3c9a82f5b (MEH-587
+          # drop recipes) → f4c8a91e2b07 (MEH-588 add producer_recipes +
+          # producer_recipe_products; tables 32 → 34) → e8a3c4b5d791 (this PR,
+          # add producer_license_number column to producers; no table count
+          # change). Second conflict on this line (after the MEH-587 resolution)
+          # — Rule 25 / MEH-585 staging-sync absorbed MEH-588 mid-PR.
+          EXPECTED_REV="b504e4be4225"
           EXPECTED_TABLES=34
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
@@ -289,3 +295,110 @@ jobs:
 
       - name: Run drift check
         run: bash scripts/check_env_drift.sh
+
+  # ─────────────────────────────────────────────
+  # JOB 5: backend-mypy (MEH-562 Layer 2)
+  # Strict mypy on app/auth.py only — scoped from
+  # auth.py + schemas/ due to STOP-condition (a):
+  # combined count was 57 errors > 50 threshold.
+  #
+  # Two-layer warn-only:
+  #   1. `|| true` on the mypy command → step exits 0 → check
+  #      reports green even when mypy finds errors. Clean PR UX
+  #      (the owner's call — see HANDOFF entry for MEH-562).
+  #   2. `continue-on-error: true` at the job → defensive belt-
+  #      and-braces: if `|| true` is ever stripped during a future
+  #      edit, the workflow still doesn't fail.
+  #
+  # Errors stay visible in the workflow logs and in
+  # docs/research/static-analysis-baseline.md. Regression
+  # tracking lives in the git history of the baseline doc, not
+  # in the check status. Hybrid annotation upgrade (post baseline-
+  # vs-current as a PR comment) is a follow-up ticket post-launch.
+  # ─────────────────────────────────────────────
+  backend-mypy:
+    name: Backend mypy (strict, warn-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies (including mypy)
+        run: uv sync --dev --frozen
+        working-directory: backend
+
+      - name: Run mypy strict on app/auth.py (warn-only — errors logged, check passes)
+        run: uv run mypy app/auth.py --strict || true
+        working-directory: backend
+
+  # ─────────────────────────────────────────────
+  # JOB 6: frontend-knip (MEH-562 Layer 2)
+  # Dead-code + unused-deps detection.
+  # Two-layer warn-only — see backend-mypy comment above.
+  # ─────────────────────────────────────────────
+  frontend-knip:
+    name: Frontend Knip (dead code, warn-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Knip (warn-only — findings logged, check passes)
+        run: npm run knip || true
+
+  # ─────────────────────────────────────────────
+  # JOB 7: frontend-tsc-strict (MEH-562 Layer 2)
+  # TypeScript strict on e2e/*.ts files via
+  # tsconfig.e2e.json. Baseline: 24 errors in
+  # e2e/rtl.spec.ts (JSDoc `left-*/right-*` comment
+  # terminates block early — pre-existing, TS6 bug).
+  # Two-layer warn-only — see backend-mypy comment above.
+  # ─────────────────────────────────────────────
+  frontend-tsc-strict:
+    name: Frontend tsc strict (warn-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tsc strict (e2e files, warn-only — errors logged, check passes)
+        run: npx tsc --project tsconfig.e2e.json --noEmit || true
