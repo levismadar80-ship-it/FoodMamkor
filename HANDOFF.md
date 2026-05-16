@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
+> Last updated: 2026-05-16 (MEH-475 PR-B — Admin panel i18n; 640 strings / 22 files extracted to `admin.*` namespace; PR pending; LOW-RISK end-to-end; 6 atomic commits per subdirectory)
+> Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
 > Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; **PR #699 MERGED** at `89e436e`)

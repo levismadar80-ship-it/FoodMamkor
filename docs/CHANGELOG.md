@@ -16,6 +16,18 @@
 
 Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: −213 strings, −3 files. CI: `npm run build` ✅ (101 pages), vitest net −9 failures vs staging (0 regressions). DoD exception: mobile QA on preview URL deferred to Smadar.
 
+### 2026-05-17 — MEH-475 PR-B: Admin panel i18n — full surface (supersedes PR-A1 namespace, PR pending)
+
+`i18n`: Full admin surface wired into next-intl `useTranslations("admin")` — all 22 admin files (21 under `frontend/app/[locale]/admin/**` + 1 under `frontend/components/admin/`) now resolve their UI strings from `admin.*` keys in `messages/he.json` / `messages/en.json`. 454 distinct keys added under `admin.*`, he/en parity verified (913 leaf keys per side, set-diff = ∅). Rebased onto staging after PR-A1 (#718) merged; PR-A1's 4 overlapping files were re-resolved to PR-B's namespace shape per the rebase contract.
+
+`scope`: Namespace mirrors directory: `admin.layout.*` (sidebar), `admin.dashboard.*` (home), `admin.producers.*` (list/form/toolbar/table/import/new/edit/use-hook), `admin.users/experiences/outreach/kashrut/reports/reviews/settings/help/content/category_requests/group_buys/analytics.*`, plus `admin.common.*` for shared verbs (loading, save, cancel, edit, view, etc.). Hebrew copy preserved verbatim; English translations idiomatic.
+
+`pattern`: `admin/help/page.jsx` uses `t.rich(key, { strong, code, em, placeholder })` for paragraphs with embedded `<strong>`/`<code>`/`<em>` markup. `admin/outreach/page.jsx` uses `t.raw()` for WhatsApp template bodies so `{name}` / `{prefillUrl}` placeholders survive untouched for downstream `replaceAll`. Module-scope label maps (STATUS_LABEL, WA_TEMPLATES) refactored to status-key arrays; labels resolved at render via `t(\`outreach.status.${s}\`)`.
+
+`residual`: 6 strings remain — all inside `KOSHER_OPTIONS` value-ID array in `ProducerForm.jsx` (deliberate; `kosherLabel()` helper resolves display). Pre-scan: 640 strings / 22 files → post-scan: 6 strings / 1 file (delta = −634, 99.06% extraction rate, well under the ≤50 residual budget).
+
+`verification`: `npm run build` green (101 static pages, both locales). `npm run lint` 0 errors. JSON parity check passes. No CSS classes touched, no metadata exports touched (Wave 6 territory), no non-admin files modified.
+
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 
 `security`: OWASP-strict anti-enumeration applied to both register endpoints. Both now return an identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` regardless of whether the email is new, belongs to an existing password user, or belongs to an existing OAuth user. Timing equalised by reordering — `validate_password` (HIBP) + `hash_password` (bcrypt) run before the existence check on both branches, so response time doesn't fork. Side-effect symmetry preserved on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea rows + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved inside the new-email branch only (no orphan rows or spurious admin notifications on collisions). A new `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate account owner out-of-band — two body variants (`password` / `google` / `apple`), identical Subject line so 3rd-party Subject-scanners can't distinguish provider.
