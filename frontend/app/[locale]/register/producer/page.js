@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
@@ -78,6 +78,11 @@ function RegisterProducerPageBody() {
   // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
   const [descriptionPlaceholder] = useState(() => getSeasonalPlaceholder());
   const [descriptionDisabled, setDescriptionDisabled] = useState(false);
+  // MEH-619: snapshot of the user-typed description captured at the moment
+  // they click "אני אכתוב אחר כך", so the matching "ערוך תיאור" undo link
+  // can restore it. Plain ref (not state) — the value is read only inside
+  // the undo handler; no re-render needed when it changes.
+  const descriptionBeforeDisableRef = useRef("");
   // MEH-530: optional path expanded-toggle. Required path renders the field
   // directly (no toggle). Whether the path is required is derived live from
   // the selected category IDs against the categories list fetched at mount.
@@ -427,10 +432,13 @@ function RegisterProducerPageBody() {
                 className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-light disabled:text-site-muted disabled:cursor-not-allowed"
                 dir="rtl"
               />
-              {!descriptionDisabled && (
+              {!descriptionDisabled ? (
                 <button
                   type="button"
                   onClick={() => {
+                    // MEH-619: snapshot pre-click text so the matching
+                    // "ערוך תיאור" undo link can restore it.
+                    descriptionBeforeDisableRef.current = form.description || "";
                     setAndSave((prev) => ({ ...prev, description: DESCRIPTION_DEFAULT_TEXT }));
                     setDescriptionDisabled(true);
                     try {
@@ -442,6 +450,30 @@ function RegisterProducerPageBody() {
                   className="text-xs text-primary underline mt-1 hover:text-primary-light"
                 >
                   אני אכתוב אחר כך
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // MEH-619: restore the pre-click description, re-enable
+                    // the textarea, drop the pending-flag so a future
+                    // dashboard-reminder surface doesn't treat this as still
+                    // pending. setAndSave persists the restored text back to
+                    // the localStorage draft in the same write.
+                    setAndSave((prev) => ({
+                      ...prev,
+                      description: descriptionBeforeDisableRef.current,
+                    }));
+                    setDescriptionDisabled(false);
+                    try {
+                      localStorage.removeItem(DESCRIPTION_PENDING_KEY);
+                    } catch {
+                      // private browsing / storage disabled — best-effort
+                    }
+                  }}
+                  className="text-xs text-primary underline mt-1 hover:text-primary-light"
+                >
+                  ערוך תיאור
                 </button>
               )}
             </div>
@@ -511,7 +543,25 @@ function RegisterProducerPageBody() {
                 )}
               </div>
             ) : licenseOptionalExpanded ? (
-              <div>
+              <div className="relative">
+                {/* MEH-619: close button collapses the optional license input
+                    back to the "יש לי רישיון יצרן ↓" link AND clears any
+                    half-typed value so it doesn't submit silently. Positioned
+                    at the top-end (RTL-aware: end-0 = left edge in he) via
+                    logical properties. licenseRequired === true path above
+                    is intentionally NOT given this button — it's mandatory
+                    by category and must not be collapsible. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAndSave((prev) => ({ ...prev, producer_license_number: "" }));
+                    setLicenseOptionalExpanded(false);
+                  }}
+                  aria-label="סגור"
+                  className="absolute top-0 end-0 text-site-muted hover:text-site-text text-lg leading-none p-1"
+                >
+                  ✕
+                </button>
                 <label
                   htmlFor="producer-license-optional"
                   className="block text-sm font-medium text-site-text mb-1 text-right"
