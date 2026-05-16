@@ -9,6 +9,41 @@
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
 
+### MEH-366 — i18n migration plan (PR #518 ready for review, off staging)
+
+Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` (~580 lines; commit `d38088c`). Plan-only PR — no code, no package.json, no agent edits. Plan body scoped per MEH-366 acceptance criteria; 7 open questions resolved by Smadar in-session.
+
+**Sub-tickets opened (6/7):**
+- **MEH-471** — i18n Wave 1 — foundation: next-intl install + LanguageProvider strangler-fig migration + scanner template-literal fix (12–18h, parent MEH-366)
+- **MEH-472** — i18n Wave 2 — Header / Footer / Hero / home-page + retire homegrown LanguageProvider (6–10h, parent MEH-366; applies Q7)
+- **MEH-473** — i18n Wave 3 — producer detail / card + map widgets + ICU plural lint check (12–18h, parent MEH-366; ICU plural CI gate is a build deliverable, not just risk mitigation)
+- **MEH-474** — i18n Wave 4 — auth + profile + dashboards (CVE check required) (14–20h, parent MEH-366)
+- **MEH-475** — i18n Wave 5 — long tail + admin + language toggle UI (10–14h, parent MEH-366; lifts `Disallow:/en/`)
+- **MEH-476** — i18n Wave 6 — SEO surfaces: sitemap.js per-locale extension + hreflang + OG metadata (4–6h, parent MEH-366)
+
+**Sub-ticket NOT opened — Linear quota hit:**
+- **(pending)** — 🔧 i18n-scanner scalability — chunked-scope or replace with deterministic Python script (4–6h, **parent MEH-345 NOT MEH-366**, sibling to MEH-367). Creation refused with `Usage limit exceeded - free issue limit for this workspace`. Spec is in `docs/i18n-migration-plan.md` §9.2 verbatim. Reopen once Linear quota is lifted.
+
+**Smadar's decisions on MEH-366 §8 open questions (record):**
+- Q1 — locale prefix: path prefix `/en/`, `localePrefix='as-needed'` (HE has no prefix)
+- Q2 — EN copy quality bar: ship LLM-translated EN; `Disallow:/en/` in robots.txt until Wave 5; spot-check per Wave; human translator polish post-MEH-366
+- Q3 — categories: DB stable slugs + UI translates via `category.<slug>` keys
+- Q4 — date formatting: next-intl/format Gregorian default (Hebrew calendar v2)
+- Q5 — homegrown migration: strangler-fig (Wave 2 deletes after ≥7-day burn-in)
+- Q6 — brand name: `BRAND_NAME` constant in `lib/constants.js`, NOT a translation key
+- Q7 — gender: normalize loading states to feminine canonical (`common.loading`, `common.saving`, `common.sending`); CLAUDE.md voice rule applies; net ~7 fewer keys
+
+**Decisions made this session:**
+- Wave 6 kept separate (not absorbed into Wave 5) — different review profile (sitemap/metadata vs translation polish); cleaner per-PR scope
+- Scanner scalability bug split as separate ticket (parent MEH-345) per Rule 3 (one PR = one logical change); template-literal regex fix bundled into Wave 1
+- Plan body cites the in-session deterministic Python scan (1,721 / 142) as reference baseline; until the scanner-scalability ticket ships, Wave PRs cite the Python scan via PR description
+
+**Next actions:**
+1. Smadar bumps Linear plan / opens the 7th ticket manually OR CC opens it once quota lifts
+2. Open MEH-471 (Wave 1) when ready to start execution; estimate 12–18h
+
+---
+
 ---
 
 ## 2026-05-16 — MEH-501: ADR-008 defer AutoDream activation (PR PENDING)
@@ -1990,7 +2025,6 @@ MEH-302; resolves MEH-287 follow-up F6.
 Frontmatter coverage now complete across all 6 path-scoped rules files
 (rtl, db, code-execution, prompting + frontend, backend). MEH-342
 follow-up — closes MEH-359.
-
 ### MEH-385 — pr-reviewer subagent (PR open, off staging)
 
 Branch: `feature/meh-385-pr-reviewer-subagent` (NOT the harness-assigned
