@@ -1,0 +1,90 @@
+F4 — Stats counter copy reframe (keep pattern, magazine voice)
+=================================================================
+
+LOCATION: home.stats.* in frontend/messages/he.json
+COMPONENT: inline <section> at page.js:69-85
+
+CURRENT (verbatim from page.js:69-85 + messages/he.json):
++----------------------------------------------------+
+|  ============================================      |
+|  ||  12 בתי עסק מאומתים · 8 קטגוריות ·       ||      |
+|  ||  מכל רחבי הארץ                            ||      |
+|  ============================================      |
+|     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^            |
+|     Wolt-style green bar — marketplace-tier         |
++----------------------------------------------------+
+
+PROPOSED (Option A — issue framing, RECOMMENDED):
++----------------------------------------------------+
+|  ============================================      |
+|  ||  גליון מאי — 12 בתי עסק · 8 קטגוריות ·   ||      |
+|  ||  מכל רחבי הארץ                            ||      |
+|  ============================================      |
+|     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^         |
+|     "Issue / month" framing                         |
+|     - Doubles as editorial-cadence signal           |
+|     - Visitor reads "גליון מאי", intuits "גליון      |
+|       יוני" is coming                              |
+|     - Counter still updates as new businesses join  |
+|     - Cheap to maintain (month string from date)    |
++----------------------------------------------------+
+
+PROPOSED (Option B — narrative framing):
++----------------------------------------------------+
+|  ============================================      |
+|  ||  12 בתי עסק שהצטרפו עד היום · 8 קטגוריות || |
+|  ||  · מכל רחבי הארץ                          ||      |
+|  ============================================      |
+|     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^     |
+|     "Joined so far" — implies more coming           |
++----------------------------------------------------+
+
+PROPOSED (Option C — minimal, magazine-cold):
++----------------------------------------------------+
+|  ============================================      |
+|  ||  12 בתי עסק · 8 קטגוריות · ישראל          ||      |
+|  ============================================      |
+|     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^            |
+|     Just the numbers — Kinfolk-cold                 |
+|     (least Sapir-warm of the three)                 |
++----------------------------------------------------+
+
+PURIST OPTION (CONSIDERED, REJECTED):
++----------------------------------------------------+
+|                  [no counter]                      |
++----------------------------------------------------+
+|                                                    |
+|  Magazines don't lead with metric strips.          |
+|  Remove the counter entirely.                      |
+|                                                    |
+|  REJECTED because:                                 |
+|  - Counter is valuable trust signal in early-      |
+|    launch context (12 producers > "we have         |
+|    farms!" abstract claim).                        |
+|  - MEH-521 threshold fallback already handles      |
+|    the <5 case gracefully.                         |
+|  - Removal would re-orphan the slot and re-        |
+|    introduce the broken "אלפי" claim risk          |
+|    MEH-521 was opened to fix.                      |
+|                                                    |
+|  Sapir-decision Q1 locked: hybrid, not purist.     |
++----------------------------------------------------+
+
+SKELETON FIX (F10, bundled):
++----------------------------------------------------+
+|  CURRENT loading state: section DOES NOT RENDER.   |
+|  Layout shifts when stats arrive (CLS risk).       |
++----------------------------------------------------+
+|  PROPOSED loading state: shimmer placeholder       |
+|  matching final dimensions:                        |
+|                                                    |
+|  ============================================      |
+|  ||  ░░░░░░░░ ░░░ ░░░░░░ · ░░░ ░░░░░░░░ ·  ||      |
+|  ||  ░░░░ ░░░░ ░░░░░                          ||      |
+|  ============================================      |
++----------------------------------------------------+
+
+WHAT THIS IS NOT:
+- Not a redesign of the counter section.
+- Not a removal of MEH-521 work.
+- Just the i18n strings + a 1-line skeleton placeholder.

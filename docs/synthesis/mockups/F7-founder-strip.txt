@@ -1,0 +1,76 @@
+F7 — Founder strip on homepage (post-launch, Q3 2026)
+=========================================================
+
+LOCATION: NEW section between <HolidayBanner> (section 6 today)
+         and the post-F1 <HomepageMiniMap> (new section 2)
+         — OR — between hero and map, depending on F1's land.
+
+RATIONALE: Sub 2 §4.4 found Israeli competitors use family-
+generation storytelling but always in male voice. Mehamakor's
+feminine voice is the protected differentiator (CLAUDE.md
+rule). Surfacing Sapir on the homepage — not only on /about —
+puts the founder where conversion happens.
+
+PROPOSED (single-line strip, mobile-first):
+
++----------------------------------------------------+
+|  +-----+                                           |
+|  | 👤 | ספיר, מייסדת מהמקור — תוכניתנית             |
+|  |     | + רפואה תזונתית. מצאי כאן את                |
+|  +-----+ בתי העסק שאני קונה מהן.                    |
+|                                                    |
+|             [ הכירי את ספיר ←  ]                    |
++----------------------------------------------------+
+   ^^^^^                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   thumbnail            credibility line (from MEH-527)
+   (right in RTL —      + first-person framing
+   reading direction:   ("אני קונה מהן")
+   face → name → quote)
+
+DESKTOP variant (1024px+):
+
++----------------------------------------------------+
+|  +-------+   ספיר, מייסדת מהמקור                  |
+|  |       |   ----------------------                |
+|  | 👤   |   תוכניתנית + רפואה תזונתית.            |
+|  | (lg) |   מצאי כאן את בתי העסק שאני קונה מהן.    |
+|  +-------+                                          |
+|                                                    |
+|                              [ הכירי את ספיר ← ]    |
++----------------------------------------------------+
+
+HEBREW COPY (drawn from existing MEH-527 content + adapted):
+
+> "ספיר, מייסדת מהמקור — תוכניתנית + רפואה תזונתית.
+>  מצאי כאן את בתי העסק שאני קונה מהן."
+
+CTA link target: /about (existing page).
+
+EVIDENCE:
+- Sub 1 §3.1 H4: founder credibility lives on /about only;
+  absent on the homepage that converts.
+- Sub 2 Pattern 3: producer-as-protagonist (Etsy seller
+  story is the gold standard — "tell your story" is
+  officially documented SEO + conversion advice).
+- Sub 2 §4.4: Israeli competitors do family-generations
+  framing (noyhasade "דור שלישי", hasade.co.il "דור
+  שלישי", sadeyarok Kobi+Dana family origin) — but
+  NEVER in feminine voice. Lane is open.
+
+WHY POST-LAUNCH:
+- Impact 4 / Effort 3 — valuable but not blocking launch.
+- Pre-launch focus: F1+F2+F3 (the 3 launch-blockers).
+- F7 is a Q3 2026 follow-up once F1's map placement is
+  validated in production.
+
+RTL NOTES:
+- Thumbnail on the right (reading flow: face → name).
+- Use logical properties (ms-/me-) per CLAUDE.md
+  hebrew-tailwind-preset rule. No physical positional
+  classes (ml-/mr-).
+
+WHAT THIS IS NOT:
+- Not a redesign of /about (that's MEH-135, separate).
+- Not a Sapir-quote section (already exists at section 10
+  as <HomeFounderQuote>). F7 is the credibility strip,
+  not the inspirational quote — different jobs.

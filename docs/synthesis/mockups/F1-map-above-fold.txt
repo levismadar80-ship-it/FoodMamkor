@@ -1,0 +1,74 @@
+F1 — Move HomepageMiniMap above the fold
+============================================
+
+CURRENT (page.js render order — abbreviated):
++----------------------------------------------------+
+| #1  Parallax hero (headline + search + scroll-down)|
++----------------------------------------------------+
+| #2  Friday delivery strip (conditional)            |
++----------------------------------------------------+
+| #3  Stats counter (green bar)                      |
++----------------------------------------------------+
+| #4  Location banner                                |
++----------------------------------------------------+
+| #6  Holiday banner                                 |
++----------------------------------------------------+
+| #7  HomepageMiniMap                  <-- HERE TODAY|
++----------------------------------------------------+
+| #8  Category grid                                  |
+| #9  Marquee                                        |
+| #10 Founder pull-quote                             |
+| ... (9 more sections)                              |
++----------------------------------------------------+
+
+PROPOSED (after F1):
++----------------------------------------------------+
+| #1  Parallax hero (headline + search + scroll-down)|
++----------------------------------------------------+
+| #2  HomepageMiniMap                 <-- NEW HOME  |
+|     ____________________________________________  |
+|     |   [skeleton during 200ms]                |   |
+|     |   ___________________________________    |   |
+|     |  |                                   |   |   |
+|     |  |       LEAFLET MAP                 |   |   |
+|     |  |       (Israel, 20 markers)        |   |   |
+|     |  |                                   |   |   |
+|     |  |___________________________________|   |   |
+|     |   "כל בית עסק על המפה"                  |   |
+|     |   "פתחי מפה מלאה ←"                     |   |
+|     ____________________________________________  |
++----------------------------------------------------+
+| #3  Friday delivery strip (conditional)            |
++----------------------------------------------------+
+| #4  Stats counter (reframed per F4)                |
++----------------------------------------------------+
+| #5  Location banner                                |
++----------------------------------------------------+
+| #6  Holiday banner                                 |
++----------------------------------------------------+
+| #7  Category grid (moved down 1 slot)             |
++----------------------------------------------------+
+| ... (everything else unchanged)                    |
++----------------------------------------------------+
+
+KEY CHANGE: the map IS section #2. Visitor lands on hero,
+scrolls once, sees the country shape of mehamakor's producer
+distribution. The "קרוב אלייך" promise is visible in <2s.
+
+REFERENCE SCREENSHOTS:
+- lrqdo-desktop.png — hive locator as primary discovery
+- grownby-mobile.png — search-bar-first contrast (we are NOT
+  doing this — kept here for negative example, mehamakor's
+  map-first is the alternative to GrownBy's search-first)
+
+PERFORMANCE NOTE:
+- Lazy-load IntersectionObserver fires immediately (map in
+  viewport on first paint). See Section 5.1 of synthesis doc
+  for the skeleton + 200ms defer + tile-preconnect plan.
+
+WHAT THIS IS NOT:
+- Not a full-bleed hero map (we kept the magazine hero).
+- Not a replacement of /map (full route stays as-is).
+- Not a redesign of HomepageMiniMap itself (MEH-538 stays).
+
+This is a positioning fix, not a new component.
