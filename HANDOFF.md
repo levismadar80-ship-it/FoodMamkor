@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
+> Last updated: 2026-05-16 (MEH-354 — `/retro` slash command; PR pending; docs-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
 > Previously: 2026-05-16 (MEH-620 — Hero subheading update per MEH-522; **PR #690 MERGED** at `284698c`)
@@ -43,6 +44,14 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 2. Open MEH-471 (Wave 1) when ready to start execution; estimate 12–18h
 
 ---
+
+---
+
+## 2026-05-16 — MEH-354: `/retro` slash command (PR PENDING)
+
+**Branch:** `feature/meh-354-retro-command` off `staging@375a60f`.
+**Risk tier:** **🟢 LOW per MEH-450** — docs/config only, 4 files. DoD exception: mobile QA N/A (no UI).
+**Closes:** MEH-354. New custom command `/retro` closes the end-of-session loop after Rule 13's HANDOFF.md update. **NOT a free-form journal** — encodes a 5-step protocol (EXTRACT → CLASSIFY → OUTPUT → WAIT → EMPTY CASE) that binds every finding to a source-of-truth file via numbered `str_replace` blocks. Three extraction buckets: **Corrections** (Smadar explicitly corrected behavior), **Preferences** (stated stylistic / process preferences for future sessions), **Self-critique** (Claude noticed its own miss). CLASSIFY routes each finding to exactly one target: `CLAUDE.md` / `.claude/rules/workflow.md` / `.claude/rules/rtl.md` / `templates/01-07` / `DROP`. OUTPUT block format: `### Finding N — <bucket>: <summary>` + `**Target:**` + `**old_str:**` (verbatim from target file, unique) + `**new_str:**` (full replacement) + `**Rationale:**` (≤2 sentences). WAIT prints *"Retro extracted N findings… Waiting for `go <N>` / `skip <N>` / `edit <N>`"* and stops — retro proposes per finding, **never applies edits autonomously**. EMPTY CASE prints *"No retro findings — clean session."* and exits — no placeholder findings. **4 files touched:** (1) NEW `.claude/commands/retro.md` (~80 lines, mirrors `session-save.md` YAML frontmatter style). (2) `.claude/rules/workflow.md` — Rule 13 closing-step append (6 lines) + Custom commands list bullet between `/session-resume` and `/adversarial-review`. (3) `docs/CHANGELOG.md` — Unreleased / 2026-05-16 entry. (4) `HANDOFF.md` — this section + top pointer. **No code, no schema, no UI, no central component.** Per spec, the `Closes MEH-354` annotation in the PR body will auto-close the Linear issue on merge.
 
 ---
 
