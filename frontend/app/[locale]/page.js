@@ -47,11 +47,17 @@ export default function HomePage() {
     fridayMode, step0Visible, userCity,
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, showStatsCounter, showStatsFallback, newestProducers,
+    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showStatsFallback, newestProducers,
     handleNearMe, handleCitySelected, handleCategoryCardClick,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
+
+  // MEH-607 F4: editorial-cadence framing — "גליון מאי — N בתי עסק · ...".
+  // Dynamic month via Intl (he-IL renders "מאי" for May). Computed once per
+  // render; safe to recompute (cheap, no allocations vs useMemo). Homepage
+  // is "use client" so no SSR-mismatch risk around midnight UTC.
+  const monthName = new Intl.DateTimeFormat("he-IL", { month: "long" }).format(new Date());
 
   return (
     <div>
@@ -73,15 +79,28 @@ export default function HomePage() {
       {fridayMode && <FridayDeliveryStrip city={userCity} />}
 
       {/* =========================
-          SOCIAL PROOF BAR — MEH-521: never show "0"; threshold in use-home-page.
+          SOCIAL PROOF BAR — MEH-521 threshold + MEH-607 (F4 + F10):
+          - F10 skeleton renders while /stats hasn't resolved (statsLoaded=false)
+            → reserves height so the section can't pop in and cause CLS.
+          - F4 copy reframe: "גליון {מאי} — N בתי עסק · M קטגוריות · ישראל".
+            Editorial-cadence framing per synthesis §5.2 Option A.
+          - "מאומתים" dropped (per-business badge carries verification now).
           ========================= */}
+      {!statsLoaded && (
+        <section className="bg-primary text-white py-4 text-center" aria-busy="true">
+          <p className="font-body text-lg tracking-wide opacity-60">
+            <span className="inline-block w-48 h-5 align-middle rounded bg-white/20 animate-pulse" />
+          </p>
+        </section>
+      )}
       {showStatsCounter && (
         <section className="bg-primary text-white py-4 text-center">
           <p className="font-body text-lg tracking-wide">
+            {t("home.stats.issue_prefix", { month: monthName })}{" "}
             <span className="font-semibold tabular-nums">
               <AnimatedCounter target={statsProducersCount} />
             </span>{" "}
-            {t("home.stats.verified_businesses")}
+            {t("home.stats.businesses")}
             &nbsp;·&nbsp;
             <span className="font-semibold tabular-nums">
               <AnimatedCounter target={statsCategoriesCount} />

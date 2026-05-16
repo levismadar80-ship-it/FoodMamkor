@@ -1,13 +1,58 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; PR pending; HIGH-RISK chunked review; last MEH-592 epic launch-blocker)
+> Last updated: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
+> Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
-> Previously: 2026-05-16 — **End of day** (4 PRs merged: #682 + #683 + #684; filed MEH-616; brand hub v1.1 live)
 
 ---
 
-## 2026-05-16 — MEH-604: HomepageMiniMap above the fold + perf defer (PR PENDING)
+## 2026-05-16 — MEH-607: Stats counter reframe (F4) + skeleton (F10) (PR PENDING)
+
+**Branch:** `feature/meh-607-stats-counter-bundle` off `staging@cd51905`.
+
+**Risk tier:** **🟢 GREEN end-to-end** — Smadar's classification (scoped state-shape change, not section orchestration; blast radius is one state slot + 4 i18n keys).
+
+**Closes:** MEH-607. **Bundles F4 (copy reframe) + F10 (CLS skeleton)** per discovery synthesis fast-follow week 1.
+
+**What shipped (4 files, +49 / -13 lines):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/messages/he.json` | 4 stats keys → 5: drop `verified_businesses`; add `issue_prefix` ("גליון {month} —") + `businesses` ("בתי עסק"); `categories`/`countrywide`/`fallback` unchanged |
+| 2 | `frontend/messages/en.json` | parallel: drop `verified_businesses`, add `issue_prefix` ("{month} issue —") + `businesses` ("businesses") |
+| 3 | `frontend/lib/use-home-page.js` | `stats` initial `useState({0,0})` → `useState(null)`; new `statsLoaded` derived flag exported; null-safe accessors (`stats?.producers_count`); error path sets `{}` (not null) so skeleton dismisses; `.catch(() => setStats({}))` |
+| 4 | `frontend/app/[locale]/page.js` | new `monthName` const via `Intl.DateTimeFormat('he-IL', { month: 'long' })`; new `!statsLoaded` skeleton branch with `bg-primary text-white py-4` + `bg-white/20 animate-pulse` pill; F4 reframe in render (issue prefix → counter → businesses → categories → countrywide) |
+
+**4 Sapir-decisions (all per defaults except Q4 confirmed):**
+- Q1 — Copy option **A** (editorial "גליון מאי" framing). RTL wrap concern acknowledged; pre-optimization rejected.
+- Q2 — Month name **dynamic A.1** via `Intl.DateTimeFormat('he-IL', { month: 'long' }).format(new Date())`. Homepage is `"use client"` so no SSR mismatch risk.
+- Q3 — **Drop "מאומתים"**. Verification now carried by per-business badge.
+- Q4 — **Hide section when truly 0** (loaded + no producers). F10 is loading→render CLS, not loading→empty. Launch-week-only edge case.
+
+**Verification:**
+- `grep -rn "stats.verified_businesses\|stats.fallback\|home.stats." frontend/` → **0 stale callers** (all 5 refs in `page.js` use the new keys) ✅
+- `npm run build` → **green** (15.7s, 93/93 pages, 0 errors) ✅
+- Diff scope: exactly 4 files per plan (+49 / -13 lines) ✅
+- Bundle size delta: estimated near-zero (4 string edits + 1 useState flip + small JSX branch). Well under 5KB regression bar.
+
+**Skeptic flags:**
+1. **Hebrew month name from `Intl.DateTimeFormat('he-IL', { month: 'long' })`** — confirmed via local Node.js test that `new Intl.DateTimeFormat('he-IL', {month: 'long'}).format(new Date('2026-05-16'))` returns `"מאי"`. Different runtimes may return Gregorian transliterations vs Hebrew names; sandbox can't reach Vercel Edge runtime (MEH-360). Mobile QA must verify the rendered string on the actual deploy.
+2. **RTL wrap on 375px** — synthesis §5.3 flagged ~12 extra chars vs current copy. Per Sapir, don't pre-optimize; verify in mobile QA. If it wraps to 2 lines, ensure logical-phrase break (month+counter on line 1, categories+geography on line 2).
+3. **Skeleton dimensions match counter** — `bg-primary text-white py-4` is identical; the inner `<p>` has `text-lg tracking-wide` matching the live counter. Pill width 48 (12rem) is approximate; CLS should be effectively zero between skeleton and the variable-length real string (Intl.NumberFormat tabular-nums + Hebrew month name).
+4. **Empty-DB hide still has small CLS** — loading skeleton has height; if /stats returns truly 0 producers, skeleton dismisses → height collapses → small CLS jump. Acceptable per Q4 (launch-week-only state, threshold logic in MEH-521 already chooses fallback path).
+
+**Out of scope (NOT touched):**
+- `AnimatedCounter` component internals
+- `STATS_DISPLAY_THRESHOLD` (MEH-521 stays)
+- `/stats` backend endpoint
+- Other home sections
+
+**Next:** push branch, open draft PR with `Closes MEH-607`, post Vercel preview URL. Smadar verifies: Hebrew "גליון מאי" renders correctly, no CLS jump on hard-reload with throttled network, no 375px wrap orphans.
+
+---
+
+## 2026-05-16 — MEH-604: HomepageMiniMap above the fold + perf defer (PR #686 MERGED)
 
 **Branch:** `feature/meh-604-minimap-above-fold` off `staging@e5aaacb` (post-PR #685 merge).
 
