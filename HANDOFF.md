@@ -1,12 +1,21 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; PR pending; docs-only LOW-RISK)
+> Last updated: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
 > Previously: 2026-05-16 (MEH-620 — Hero subheading update per MEH-522; **PR #690 MERGED** at `284698c`)
 > Previously: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+
+---
+
+## 2026-05-16 — MEH-501: ADR-008 defer AutoDream activation (PR PENDING)
+
+**Branch:** `feature/meh-501-adr-008-autodream-defer` off `staging@dee98a4`.
+**Risk tier:** **🟢 LOW per MEH-450** — docs-only, 4 files. DoD exception: mobile QA N/A.
+**Closes:** MEH-501. New ADR-008 records the Defer decision for the unannounced Claude Code `AutoDream` feature flag. 5 cumulative conditions for revisit (official Anthropic docs, post-MEH-456 stable window, full `~/.claude/` backup, manual trigger only, diff review). Anti-pattern rejected: toggling `Auto-dream: on` in `/memory` settings. `CLAUDE.md` line 48 gets a one-clause inline rule pointing to ADR-008 (0 net new lines; appended to existing dense "Key locked decisions" bullet, preserving the 80-line cap pressure). **Soft scope override (Smadar-approved):** MEH-501 spec referenced a "טעויות שאסור לחזור עליהן" section that no longer exists post-≤80-line refactor; semantically equivalent placement under `## Key locked decisions` (same idiom as `No claude/* branches.`).
 
 ---
 
