@@ -1,34 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
-const STATUS_LABELS = {
-  pending: "ממתינה",
-  approved: "אושרה",
-  rejected: "נדחתה",
-  merged: "מוזגה",
-};
-
-const STATUS_COLORS = {
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  merged: "bg-blue-100 text-blue-800",
-};
-
 export default function AdminCategoryRequestsPage() {
+  const t = useTranslations("admin");
+  const tCommon = useTranslations("common");
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+
+  const STATUS_LABELS = {
+    pending: t("category_requests.status.pending"),
+    approved: t("category_requests.status.approved"),
+    rejected: t("category_requests.status.rejected"),
+    merged: t("category_requests.status.merged"),
+  };
+
+  const STATUS_COLORS = {
+    pending: "bg-yellow-100 text-yellow-800",
+    approved: "bg-green-100 text-green-800",
+    rejected: "bg-red-100 text-red-800",
+    merged: "bg-blue-100 text-blue-800",
+  };
 
   useEffect(() => {
     api
       .get("/admin/category-requests")
       .then((r) => setGroups(r.data))
-      .catch(() => showToast("שגיאה בטעינה", "error"))
+      .catch(() => showToast(t("category_requests.load_error"), "error"))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateStatus = async (requestId, status, adminNotes = null) => {
@@ -43,28 +47,28 @@ export default function AdminCategoryRequestsPage() {
           ),
         }))
       );
-      showToast("הסטטוס עודכן", "success");
+      showToast(t("category_requests.status_updated"), "success");
     } catch {
-      showToast("שגיאה בעדכון", "error");
+      showToast(t("category_requests.update_error"), "error");
     } finally {
       setActionLoading(null);
     }
   };
 
-  if (loading) return <div className="text-site-muted">טוענת...</div>;
+  if (loading) return <div className="text-site-muted">{tCommon("loading_f")}</div>;
 
   return (
     <div className="space-y-6" dir="rtl">
       <div>
-        <h1 className="text-2xl font-bold">בקשות קטגוריה</h1>
+        <h1 className="text-2xl font-bold">{t("category_requests.title")}</h1>
         <p className="text-text-secondary text-sm mt-1">
-          קטגוריות שבתי עסק ביקשו להוסיף — מקובצות לפי שם. {groups.length} קבוצות
+          {t("category_requests.subtitle", { count: groups.length })}
         </p>
       </div>
 
       {groups.length === 0 && (
         <div className="bg-white border border-border rounded-[12px] p-8 text-center text-site-muted">
-          אין בקשות קטגוריה עדיין
+          {t("category_requests.empty")}
         </div>
       )}
 
@@ -77,7 +81,7 @@ export default function AdminCategoryRequestsPage() {
             <div>
               <span className="font-semibold text-site-text">{group.requested_name}</span>
               <span className="ms-2 bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
-                {group.count} {group.count === 1 ? "בקשה" : "בקשות"}
+                {group.count} {group.count === 1 ? t("category_requests.request_one") : t("category_requests.request_many")}
               </span>
             </div>
             {group.examples.length > 0 && (
@@ -90,11 +94,11 @@ export default function AdminCategoryRequestsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-site-muted text-xs">
-                <th className="px-5 py-2 text-start font-medium">מזהה</th>
-                <th className="px-5 py-2 text-start font-medium">עסק</th>
-                <th className="px-5 py-2 text-start font-medium">תאריך</th>
-                <th className="px-5 py-2 text-start font-medium">סטטוס</th>
-                <th className="px-5 py-2 text-start font-medium">פעולות</th>
+                <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.id")}</th>
+                <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.business")}</th>
+                <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.date")}</th>
+                <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.status")}</th>
+                <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -127,21 +131,21 @@ export default function AdminCategoryRequestsPage() {
                             disabled={actionLoading === req.id}
                             className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-[8px] hover:bg-green-100 transition disabled:opacity-50"
                           >
-                            אשרי
+                            {t("category_requests.actions.approve")}
                           </button>
                           <button
                             onClick={() => updateStatus(req.id, "rejected")}
                             disabled={actionLoading === req.id}
                             className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded-[8px] hover:bg-red-100 transition disabled:opacity-50"
                           >
-                            דחי
+                            {t("category_requests.actions.reject")}
                           </button>
                           <button
                             onClick={() => updateStatus(req.id, "merged")}
                             disabled={actionLoading === req.id}
                             className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-[8px] hover:bg-blue-100 transition disabled:opacity-50"
                           >
-                            מיזגי
+                            {t("category_requests.actions.merge")}
                           </button>
                         </>
                       )}
@@ -151,7 +155,7 @@ export default function AdminCategoryRequestsPage() {
                           disabled={actionLoading === req.id}
                           className="text-xs text-site-muted hover:text-site-text transition"
                         >
-                          אפסי
+                          {t("category_requests.actions.reset")}
                         </button>
                       )}
                     </div>
