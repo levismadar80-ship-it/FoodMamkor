@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-354 — `/retro` slash command; PR pending; docs-only LOW-RISK)
+> Last updated: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
+> Previously: 2026-05-16 (MEH-354 — `/retro` slash command; PR pending; docs-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
@@ -9,6 +10,30 @@
 > Previously: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+
+### MEH-623 — i18n-scanner `--diff` + `--self-test` flags (PR pending, off staging)
+
+Branch: `feature/meh-623-i18n-scan-diff-flag` off `4a24a37` (staging tip). Polish of `.claude/scripts/i18n-scan.py` (MEH-477 follow-up) per `docs/i18n-migration-plan.md` §9.2.
+
+**Files changed:**
+- `.claude/scripts/i18n-scan.py` — added `import sys`, new `_run_scan()` helper (shared by all 3 modes), new `run_diff()` + `run_self_test()` functions, 2 new argparse flags, mutex check. Scanner core (regex, file walk, `_extract_hebrew_strings`) **untouched** per scope guard.
+- `.claude/scripts/test/i18n-scan-fixtures/t1-literal.tsx` — string-literal HE fixture (1 finding expected)
+- `.claude/scripts/test/i18n-scan-fixtures/t2-template.tsx` — template-literal HE fixture (1 finding expected)
+- `.claude/scripts/test/i18n-scan-fixtures/t3-eol-comment.tsx` — EOL-comment HE fixture (1 finding expected, ±5% tolerance on the documented FP class)
+- `.claude/scripts/test/i18n-scan-fixtures/baseline-fixture.json` — JSON form of the 3 fixture findings; usable as a `--diff` test target
+
+**Verification results (Phase 2):**
+- Step 1: `--scope frontend --format json > /tmp/current.json` → 3107 records (current full frontend count; baseline drift since MEH-477's 1,721 reflects Waves 1 + 2 merges + ~30 other PRs)
+- Step 2: `--diff /tmp/current.json` → `Previous: 3107 → Current: 3107 (Δ 0)` exit 0
+- Step 3: `--self-test` → `T1 ✓ T2 ✓ T3 ✓` "All self-tests passed." exit 0
+- Sanity: regression (Δ +3) → exit 1; improvement (Δ -2) → exit 0; mutex → exit 2
+
+**Decisions made this session:**
+- Baseline JSON shape contract: existing `--format json` array (no top-level metadata). `len(array)` = total. Documented in `run_diff` docstring + `--diff` help text + module docstring's Exit codes section.
+- T3 ±5% tolerance: for `expected=1`, tolerance rounds to 0 (must be exact 1). The flag is meaningful at higher counts (e.g. the full-codebase scan where 3107 ± 5% ≈ 155). For T3 specifically, exact match is what we want today; the `tol_pct` parameter is reserved for future fixtures with larger expected counts.
+- Mutex via `parser.error` (exit 2) rather than `argparse.MutuallyExclusiveGroup` — clearer error string ("--diff and --self-test are mutually exclusive") and matches existing manual-check style.
+
+**Next:** PR opens immediately, CI green expected (paths-filter likely skips all frontend/backend jobs since diff is `.claude/scripts/*` only).
 
 ### MEH-366 — i18n migration plan (PR #518 ready for review, off staging)
 
