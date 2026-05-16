@@ -94,10 +94,11 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (data) => {
+    // MEH-328 Chunk D: OWASP anti-enumeration — /auth/register now
+    // returns an identical ack body for new-email / password-collision /
+    // oauth-collision. No access_token, no auto-login. Caller is the
+    // /register page which renders the inbox-check screen on any 200.
     const res = await api.post("/auth/register", data);
-    localStorage.setItem("token", res.data.access_token);
-    const me = await api.get("/auth/me");
-    await afterLogin(me.data);
     return res.data;
   };
 

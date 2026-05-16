@@ -350,8 +350,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 ### Auth (`app/routers/auth.py`)
 
 ```
-POST   /auth/register            public  — consumer signup, returns JWT (MEH-306: 12-char policy)
-POST   /auth/register/producer   public  — producer multi-step signup (8-char floor; MEH-306 sub-A out of scope)
+POST   /auth/register            public  — consumer signup → RegisterAck {detail} (MEH-328 OWASP anti-enum; no auto-login; verify via email)
+POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope)
 POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP)
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange

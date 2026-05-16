@@ -15,24 +15,192 @@ from conftest import auth_header, make_category, make_producer, make_user, valid
 
 # ---------- Auth ----------
 
+_REGISTER_ACK_DETAIL = (
+    "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."
+)
+
+
 class TestAuth:
-    def test_register_creates_user_and_returns_token(self, client):
+    def test_register_new_email_creates_user_and_returns_ack(self, client, db):
+        # MEH-328: OWASP-strict anti-enumeration. No access_token in body;
+        # the user must verify via email then POST /auth/login. Row creation
+        # is verified out-of-band via the DB query below.
         resp = client.post(
             "/auth/register",
             json={"email": "alice@test.com", "name": "Alice", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert resp.status_code == 200
         body = resp.json()
-        assert body["token_type"] == "bearer"
-        assert body["access_token"]
+        assert body == {"detail": _REGISTER_ACK_DETAIL}
+        assert "access_token" not in body
+        # User row was actually created (only signal the legitimate caller
+        # has is the verify email they receive).
+        from app.models.models import User
+        created = db.query(User).filter(User.email == "alice@test.com").first()
+        assert created is not None
+        assert created.password_hash  # password actually hashed + stored
+        assert created.email_verified is False
+        assert created.email_verify_token
 
-    def test_register_duplicate_email_fails(self, client, db):
+    def test_register_duplicate_email_returns_identical_ack(self, client, db):
+        # MEH-328: must NOT 400 (legacy behaviour leaked existence). Same
+        # 200 + body as the new-email path. No second user row created.
         make_user(db, email="dup@test.com")
+        from app.models.models import User
+        before = db.query(User).filter(User.email == "dup@test.com").count()
         resp = client.post(
             "/auth/register",
             json={"email": "dup@test.com", "name": "x", "password": "Zx7Yp9Mq2Lr4"},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        after = db.query(User).filter(User.email == "dup@test.com").count()
+        assert after == before == 1
+
+    def test_register_existing_password_user_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        make_user(db, email="dup_pw@test.com", name="Dana")
+        captured = {}
+
+        def fake_dup(to, name, provider):
+            captured["to"] = to
+            captured["name"] = name
+            captured["provider"] = provider
+
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email", fake_dup
+        )
+        # Also stub the verify-mail so a hypothetical regression that
+        # treats the existing email as "new" would still not send the
+        # wrong notification (would fail captured["provider"] assertion).
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "dup_pw@test.com",
+                "name": "AttackerName",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("to") == "dup_pw@test.com"
+        # Body uses the EXISTING user's name, not the attacker-supplied one.
+        assert captured.get("name") == "Dana"
+        assert captured.get("provider") == "password"
+
+    def test_register_existing_google_user_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        # Existing Google-only account: no password_hash, has google_id.
+        from app.models.models import User
+        u = User(
+            email="dup_g@test.com",
+            name="Galya",
+            google_id="google-sub-123",
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(u)
+        db.commit()
+
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "dup_g@test.com",
+                "name": "Attacker",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("provider") == "google"
+        assert captured.get("name") == "Galya"
+
+    def test_register_no_longer_returns_access_token(self, client):
+        # MEH-328: no auto-login. Caller must verify via email then login.
+        resp = client.post(
+            "/auth/register",
+            json={
+                "email": "noauto@test.com",
+                "name": "NoAuto",
+                "password": "Zx7Yp9Mq2Lr4",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "access_token" not in body
+        assert "token_type" not in body
+        # And neither refresh_token nor __Secure-Fgp cookies are set.
+        cookies = resp.headers.get_list("set-cookie")
+        assert not any(c.startswith("refresh_token=") for c in cookies)
+        assert not any(c.startswith("__Secure-Fgp=") for c in cookies)
+
+    def test_register_three_branches_have_identical_response_bytes(
+        self, client, db, monkeypatch
+    ):
+        # MEH-328 core invariant: an attacker comparing raw response bytes
+        # across (new / password-collision / oauth-collision) cannot
+        # distinguish branches. Stub the email senders so background tasks
+        # don't fire and influence the response.
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        # Seed an existing password-user and an existing google-user.
+        make_user(db, email="ident_pw@test.com")
+        from app.models.models import User
+        db.add(
+            User(
+                email="ident_g@test.com",
+                name="GUser",
+                google_id="google-sub-ident",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+
+        def post(email):
+            return client.post(
+                "/auth/register",
+                json={
+                    "email": email,
+                    "name": "Tester",
+                    "password": "Zx7Yp9Mq2Lr4",
+                },
+            )
+
+        r_new = post("ident_new@test.com")
+        r_pw = post("ident_pw@test.com")
+        r_g = post("ident_g@test.com")
+        for r in (r_new, r_pw, r_g):
+            assert r.status_code == 200
+        # Content (the response body the attacker sees) must be byte-identical.
+        assert r_new.content == r_pw.content == r_g.content
+        # Defensive: also no Set-Cookie divergence between branches.
+        assert (
+            r_new.headers.get_list("set-cookie")
+            == r_pw.headers.get_list("set-cookie")
+            == r_g.headers.get_list("set-cookie")
+            == []
+        )
 
     def test_login_returns_jwt(self, client, db):
         make_user(db, email="bob@test.com", password="Zx7Yp9Mq2Lr4")
@@ -80,11 +248,16 @@ class TestAuth:
         "primary_contact_method": "whatsapp",
     }
 
-    def test_register_producer_succeeds_returns_token(self, client, db):
-        """Valid payload → 200 + JWT; user+producer rows created."""
+    def test_register_producer_new_email_returns_ack(self, client, db):
+        """MEH-328 Chunk B: non-upgrade signup → 200 + generic ack (no
+        access_token), user + producer rows created. Renamed from
+        test_register_producer_succeeds_returns_token under MEH-328."""
         resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
         assert resp.status_code == 200
-        assert resp.json()["access_token"]
+        body = resp.json()
+        assert body == {"detail": _REGISTER_ACK_DETAIL}
+        assert "access_token" not in body
+        assert "whatsapp_sent" not in body
         from app.models.models import User, Producer
         user = db.query(User).filter(User.email == "producer@test.com").first()
         assert user is not None
@@ -94,19 +267,32 @@ class TestAuth:
         assert producer is not None
         assert producer.status == "pending_whatsapp"
 
-    def test_register_producer_duplicate_email_returns_409(self, client, db):
-        """Existing email → 409 (not 400) with actionable Hebrew message."""
+    def test_register_producer_duplicate_email_returns_identical_ack(self, client, db):
+        """MEH-328 Chunk B: existing email must NOT 409 (legacy leaked
+        existence). Returns the same RegisterAck as the new-email path,
+        no new user row, no new producer row."""
         make_user(db, email="producer@test.com")
+        from app.models.models import User, Producer
+        users_before = db.query(User).filter(User.email == "producer@test.com").count()
+        producers_before = db.query(Producer).count()
         resp = client.post("/auth/register/producer", json=self.VALID_PRODUCER_REG)
-        assert resp.status_code == 409
-        assert "התחברי לחשבון שלך" in resp.json()["detail"]
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert (
+            db.query(User).filter(User.email == "producer@test.com").count()
+            == users_before
+            == 1
+        )
+        assert db.query(Producer).count() == producers_before
 
     def test_register_producer_email_failure_still_succeeds(self, client, db, monkeypatch):
-        """Email delivery failure must never block the 200 response (fire-and-forget)."""
+        """Email delivery failure must never block the 200 response
+        (fire-and-forget). Same invariant as before MEH-328 — only the
+        body shape changes from token to ack."""
         from unittest.mock import patch
         from app import config
         # Activate resend so send_email attempts a real send, then simulate Resend
-        # being down.  The exception is caught INSIDE send_email's try/except so
+        # being down. The exception is caught INSIDE send_email's try/except so
         # the background task completes without raising — registration must still
         # return 200.
         monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
@@ -117,7 +303,180 @@ class TestAuth:
                 "producer_name": "חוות שרה 2",
             })
         assert resp.status_code == 200
-        assert resp.json()["access_token"]
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+
+    def test_register_producer_existing_password_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B: collision against a password-user surfaces
+        via send_duplicate_attempt_email(provider="password"). Body uses
+        the EXISTING user's name, not the attacker-supplied one."""
+        make_user(db, email="producer_pw@test.com", name="Dana")
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_PRODUCER_REG, "email": "producer_pw@test.com"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("to") == "producer_pw@test.com"
+        assert captured.get("name") == "Dana"
+        assert captured.get("provider") == "password"
+
+    def test_register_producer_existing_google_dispatches_dup_email(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B: collision against a google-only user surfaces
+        via send_duplicate_attempt_email(provider="google")."""
+        from app.models.models import User
+        u = User(
+            email="producer_g@test.com",
+            name="Galya",
+            google_id="google-sub-producer",
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(u)
+        db.commit()
+        captured = {}
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda to, name, provider: captured.update(
+                to=to, name=name, provider=provider
+            ),
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_PRODUCER_REG, "email": "producer_g@test.com"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert captured.get("provider") == "google"
+        assert captured.get("name") == "Galya"
+
+    def test_register_producer_no_longer_returns_token_on_signup(self, client):
+        """MEH-328 Chunk B: non-upgrade signup body has no token / no
+        whatsapp_sent / no refresh-token cookie / no __Secure-Fgp cookie."""
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "email": "noauto_producer@test.com",
+                "producer_name": "חוות חדשה",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "access_token" not in body
+        assert "token_type" not in body
+        assert "whatsapp_sent" not in body
+        cookies = resp.headers.get_list("set-cookie")
+        assert not any(c.startswith("refresh_token=") for c in cookies)
+        assert not any(c.startswith("__Secure-Fgp=") for c in cookies)
+
+    def test_register_producer_three_branches_identical_response_bytes(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B: an attacker comparing raw response bytes
+        across (new / password-collision / google-collision) cannot
+        distinguish branches. Stub the email senders so background tasks
+        don't influence the response."""
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth.notify_admin_new_producer", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth.notify_producer_registered", lambda *a, **kw: None
+        )
+        make_user(db, email="prod_ident_pw@test.com")
+        from app.models.models import User
+        db.add(
+            User(
+                email="prod_ident_g@test.com",
+                name="GUser",
+                google_id="google-sub-prod-ident",
+                role="consumer",
+                email_verified=True,
+            )
+        )
+        db.commit()
+
+        def post(email, producer_name):
+            return client.post(
+                "/auth/register/producer",
+                json={
+                    **self.VALID_PRODUCER_REG,
+                    "email": email,
+                    "producer_name": producer_name,
+                },
+            )
+
+        r_new = post("prod_ident_new@test.com", "חוות חדשה")
+        r_pw = post("prod_ident_pw@test.com", "חוות פסבורד")
+        r_g = post("prod_ident_g@test.com", "חוות גוגל")
+        for r in (r_new, r_pw, r_g):
+            assert r.status_code == 200
+        assert r_new.content == r_pw.content == r_g.content
+        assert (
+            r_new.headers.get_list("set-cookie")
+            == r_pw.headers.get_list("set-cookie")
+            == r_g.headers.get_list("set-cookie")
+            == []
+        )
+
+    def test_register_producer_collision_creates_no_producer_row(
+        self, client, db, monkeypatch
+    ):
+        """MEH-328 Chunk B core invariant: the collision branch must NOT
+        create a Producer / ProducerCategory / DeliveryArea row. Mirror
+        of the side-effect-symmetry acceptance criterion."""
+        from app.models.models import (
+            DeliveryArea,
+            Producer,
+            ProducerCategory,
+            User,
+        )
+        make_user(db, email="prod_collision@test.com")
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        producers_before = db.query(Producer).count()
+        cats_before = db.query(ProducerCategory).count()
+        areas_before = db.query(DeliveryArea).count()
+        users_before = db.query(User).count()
+        resp = client.post(
+            "/auth/register/producer",
+            json={
+                **self.VALID_PRODUCER_REG,
+                "email": "prod_collision@test.com",
+                "producer_name": "חוות שלא נוצרת",
+                "delivery_areas": [
+                    {"city": "תל אביב", "min_order": 100, "delivery_day": "ראשון"}
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"detail": _REGISTER_ACK_DETAIL}
+        assert db.query(Producer).count() == producers_before
+        assert db.query(ProducerCategory).count() == cats_before
+        assert db.query(DeliveryArea).count() == areas_before
+        assert db.query(User).count() == users_before
 
     # --- MEH-143: role-upgrade (existing consumer adds a producer) ---
 
@@ -165,16 +524,15 @@ class TestAuth:
         )
         assert resp.status_code == 409
 
-    def test_email_exists_endpoint_returns_true(self, client, db):
-        make_user(db, email="taken@test.com")
-        resp = client.get("/auth/email-exists?email=taken@test.com")
-        assert resp.status_code == 200
-        assert resp.json()["exists"] is True
-
-    def test_email_exists_endpoint_returns_false(self, client):
-        resp = client.get("/auth/email-exists?email=free@test.com")
-        assert resp.status_code == 200
-        assert resp.json()["exists"] is False
+    def test_email_exists_endpoint_removed(self, client):
+        """MEH-328 Chunk C: /auth/email-exists was a dedicated 30/min
+        enumeration oracle (returned {exists: bool} for any email). It
+        defeated the anti-enum refactor in Chunks A+B, so it's deleted
+        entirely. This test pins the deletion — a future refactor that
+        silently re-adds the endpoint fails CI here. Frontend onBlur
+        caller in register/producer/page.js is removed in Chunk D."""
+        resp = client.get("/auth/email-exists?email=test@example.com")
+        assert resp.status_code == 404
 
     def test_anonymous_registration_still_requires_account_fields(self, client):
         """Unauthenticated POST without email/name/password → 422."""
@@ -1675,45 +2033,52 @@ class TestGetProducersMeRouteOrder:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(producer.id)
 
-    def test_get_me_after_registration(self, client, db, monkeypatch):
+    def test_get_me_after_registration(self, client, db):
         """MEH-321 regression — GET /producers/me must return 200 immediately
         after a brand-new producer registration (Pydantic schema mismatch fix)."""
-        import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "_send_verify_email", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
-
-        reg = client.post("/auth/register/producer", json={
-            "email": "meh321@example.com",
-            "name": "בעלת עסק",
-            "password": "Zx7Yp9Mq2Lr4",
-            "producer_name": "חוות מה-321",
-            "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-        })
-        assert reg.status_code == 200, reg.text
-        token = reg.json()["access_token"]
-
-        # MEH-575: register_producer sets the fingerprint cookie via
-        # _set_fingerprint_cookie (auth.py:449), but TestClient drops Secure
-        # cookies on http://testserver — so the jar is empty on the next call
-        # and get_current_user 401s with "fingerprint mismatch — has_cookie=False".
-        # Extract the cookie from Set-Cookie headers and pass it explicitly.
-        fp_cookie = next(
-            (h.split(";", 1)[0].split("=", 1)[1]
-             for h in reg.headers.get_list("set-cookie")
-             if h.startswith("__Secure-Fgp=")),
-            None,
+        # MEH-321 regression: GET /producers/me returns 200 with valid Pydantic
+        # shape for a producer in pending_whatsapp state.
+        #
+        # NOTE: Post-MEH-328 (anti-enum refactor removed access_token from
+        # /auth/register/producer non-upgrade response), this test no longer
+        # exercises the original register-flow code path. The Pydantic
+        # null-field serialization invariant is now covered narrowly via a
+        # seeded producer that mirrors the register-flow NULL shape
+        # (description / lat / lng / instagram / website / city / contact_email
+        # all None). test_get_me_with_null_created_at_returns_200 (below)
+        # covers the null created_at case separately. If a new MEH-321-class
+        # regression surfaces post-launch, file a Linear and restore via a
+        # full HTTP register flow (which after Chunk D/E will give us a
+        # verified login path that still returns a token).
+        #
+        # make_producer fixture is bypassed because its signature
+        # (conftest.py:151-159) forces description="Test producer" + non-null
+        # lat/lng, which would mask the NULL-field shape this test guards.
+        # is_verified is left at the SQLAlchemy column default (False) rather
+        # than the fixture's True, matching the register-flow handler which
+        # does not set the column.
+        from app.models.models import Producer
+        producer = Producer(
+            name="חוות מה-321",
+            description=None,
+            city=None,
+            lat=None,
+            lng=None,
+            phone="0501234567",
+            instagram=None,
+            website=None,
+            primary_contact_method="whatsapp",
+            contact_email=None,
+            status="pending_whatsapp",
         )
-        assert fp_cookie, "register response missing __Secure-Fgp cookie"
+        db.add(producer)
+        db.flush()
+        user = make_user(db, email="meh321@example.com", role="producer")
+        user.producer_id = producer.id
+        user.is_producer = True
+        db.commit()
 
-        resp = client.get(
-            "/producers/me",
-            headers={"Authorization": f"Bearer {token}"},
-            cookies={"__Secure-Fgp": fp_cookie},
-        )
+        resp = client.get("/producers/me", headers=auth_header(user))
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["name"] == "חוות מה-321"
@@ -2157,19 +2522,18 @@ class TestFingerprintCookie:
         # 14 days = 1 209 600 seconds — must match refresh cookie TTL
         assert "max-age=1209600" in low
 
-    def test_register_sets_fingerprint_cookie(self, client):
+    def test_register_no_longer_sets_fingerprint_cookie(self, client):
+        # MEH-328: /auth/register no longer issues an access token (OWASP
+        # anti-enumeration — user must verify via email then login), so
+        # there is nothing to bind a fingerprint to. The cookie is set on
+        # /auth/login + /auth/refresh + /auth/logout-all-devices instead.
+        # Identical-bytes invariant in TestAuth depends on this being absent.
         res = client.post(
             "/auth/register",
             json={"email": "fp2@test.com", "name": "FP Test", "password": "Zx7Yp9Mq2Lr4"},
         )
         assert res.status_code == 200
-        fp_hdr = self._fp_cookie_header(res)
-        assert fp_hdr is not None, "No __Secure-Fgp Set-Cookie header on register"
-        low = fp_hdr.lower()
-        assert "httponly" in low
-        assert "secure" in low
-        assert "samesite=lax" in low
-        assert "path=/" in low
+        assert self._fp_cookie_header(res) is None
 
     def test_authenticated_request_valid_fingerprint_passes(self, client, db):
         make_user(db, email="fp3@test.com", password="Zx7Yp9Mq2Lr4")
