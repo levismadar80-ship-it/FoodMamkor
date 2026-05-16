@@ -69,6 +69,11 @@
       "resend": "Resend",
       "sent": "✓ Sent!",
       "rate_limited": "Rate limited — try again in an hour"
+    },
+    "toasts": {
+      "favoriteSaved": "Saved to favorites ❤️",
+      "sessionExpired": "Your session expired — please sign in again",
+      "loginAgainCta": "Sign in"
     }
   },
   "account": {
