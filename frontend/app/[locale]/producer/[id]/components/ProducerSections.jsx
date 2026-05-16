@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { useTranslations, useFormatter } from "next-intl";
 import { Package } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
@@ -43,6 +44,8 @@ export default function ProducerSections({
   reviewsVisible,
   isOwner = false,
 }) {
+  const t = useTranslations();
+  const format = useFormatter();
   const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
@@ -70,7 +73,7 @@ export default function ProducerSections({
       {/* Description */}
       {producer.description && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-3">אודות</h2>
+          <h2 className="font-headline text-2xl font-bold text-site-text mb-3">{t("producer.detail.sections.about")}</h2>
           <p className="text-site-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
@@ -88,10 +91,10 @@ export default function ProducerSections({
       {/* MEH-102: Similar producers */}
       {similarProducers.length >= 3 && (
         <section className="mt-8 border-t border-border pt-8">
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-1">עסקים דומים</h2>
+          <h2 className="font-headline text-2xl font-bold text-site-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
           {producer.categories?.[0]?.name && (
             <p className="text-sm text-site-muted mb-4">
-              {producer.categories[0].name} · באזור שלך
+              {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
             </p>
           )}
           <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
@@ -107,10 +110,13 @@ export default function ProducerSections({
       {/* Events section */}
       {events.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">אירועים קרובים</h2>
+          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
           <div className="space-y-3">
             {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
-              const dateStr = new Date(ev.event_date).toLocaleDateString("he-IL", {
+              // MEH-473: Q4 — Gregorian dates via next-intl/format. The
+              // `locale` param is implicit (provider sets it); options match
+              // the prior `toLocaleDateString("he-IL", {weekday/day/month})`.
+              const dateStr = format.dateTime(new Date(ev.event_date), {
                 weekday: "short", day: "numeric", month: "long",
               });
               const timeStr = ev.event_time
@@ -138,7 +144,7 @@ export default function ProducerSections({
                       <p className="text-sm text-accent font-medium mt-1">₪{ev.price}</p>
                     )}
                     {ev.price === 0 && (
-                      <p className="text-sm text-primary font-medium mt-1">חינם</p>
+                      <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
                     )}
                     {ev.registration_url && (
                       <a
@@ -147,7 +153,7 @@ export default function ProducerSections({
                         rel="noopener noreferrer"
                         className="inline-block mt-2 text-xs text-primary underline hover:text-primary-dark"
                       >
-                        הרשמה לאירוע →
+                        {t("producer.detail.sections.events.register")}
                       </a>
                     )}
                   </div>
@@ -160,7 +166,7 @@ export default function ProducerSections({
               onClick={() => setShowAllEvents(true)}
               className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
             >
-              הצג את כל {events.length} האירועים
+              {t("producer.detail.sections.events.show_all_count", { count: events.length })}
             </button>
           )}
         </section>
@@ -169,7 +175,7 @@ export default function ProducerSections({
       {/* Products (premium only) */}
       {producer.products?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">מוצרים</h2>
+          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {producer.products.map((product) => (
               <div
@@ -219,7 +225,7 @@ export default function ProducerSections({
       {producer.slug && recipes.length > 0 && (
         <section className="mt-8" id="recipes">
           <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
-            המתכונים שלנו
+            {t("producer.detail.sections.recipes.cta")}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {recipes.map((r) => (
@@ -246,15 +252,15 @@ export default function ProducerSections({
       {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
           <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
-            אזורי משלוח
+            {t("producer.detail.sections.delivery.heading")}
           </h2>
           <div className="bg-white rounded-[12px] overflow-hidden border border-border">
             <table className="w-full">
               <thead className="bg-light">
                 <tr>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">עיר</th>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">מינימום הזמנה</th>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">יום משלוח</th>
+                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.city")}</th>
+                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.min_order")}</th>
+                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.day")}</th>
                 </tr>
               </thead>
               <tbody>

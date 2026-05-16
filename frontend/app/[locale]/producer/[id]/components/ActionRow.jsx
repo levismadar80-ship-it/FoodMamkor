@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { MapTrifold } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
@@ -29,6 +30,7 @@ export default function ActionRow({
   shareUrl,
   onShowOnMap,
 }) {
+  const t = useTranslations();
   return (
     <>
       {/* Mobile inline CTA — IO trigger for StickyContactBar.
@@ -58,22 +60,22 @@ export default function ActionRow({
             type="button"
             onClick={onShowOnMap}
             className="flex items-center justify-center gap-2 border border-primary text-primary px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="פתח את המיקום של העסק במפה"
+            aria-label={t("producer.detail.action_row.aria.show_on_map")}
           >
             <MapTrifold size={16} weight="duotone" />
-            הצג במפה
+            {t("producer.detail.action_row.show_on_map")}
           </button>
         )}
         <WhatsAppShareButton producer={producer} url={shareUrl} />
         {/* MEH-49: referral chip — only for logged-in users with a referral code */}
         {user?.referral_code && (
           <a
-            href={`https://wa.me/?text=${encodeURIComponent(`גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/${user.referral_code}`)}`}
+            href={`https://wa.me/?text=${encodeURIComponent(t("producer.detail.action_row.referral_msg", { code: user.referral_code }))}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium"
           >
-            שתפי וקבלי 10% 🌿
+            {t("producer.detail.action_row.referral_cta")}
           </a>
         )}
       </div>

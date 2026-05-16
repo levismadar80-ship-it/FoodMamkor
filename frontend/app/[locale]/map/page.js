@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+
 import MapClient from "./MapClient";
 import { API_URL } from "@/lib/env";
 import { BRAND_NAME } from "@/lib/constants";
@@ -40,6 +42,9 @@ async function fetchProducersForSSR() {
 }
 
 export default async function MapPage() {
+  // MEH-473: page-level metadata translation deferred to Wave 6 (SEO).
+  // sr-only nav strings are functional UI, translated here.
+  const t = await getTranslations();
   const producers = await fetchProducersForSSR();
 
   return (
@@ -53,8 +58,8 @@ export default async function MapPage() {
         (producer names + cities are legitimate navigation content).
         The interactive map already covers the viewport for JS users.
       */}
-      <nav className="sr-only" aria-label="רשימת בתי עסק על המפה">
-        <h2>בתי עסק על המפה</h2>
+      <nav className="sr-only" aria-label={t("map.page.aria.business_list")}>
+        <h2>{t("map.page.heading_ssr")}</h2>
         <ul>
           {producers.map((p) => (
             <li key={p.id}>

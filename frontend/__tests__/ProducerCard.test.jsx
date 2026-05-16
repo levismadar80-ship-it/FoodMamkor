@@ -2,6 +2,35 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
 
+// MEH-473: ProducerCard now reads useTranslations() from next-intl
+// (Wave 3 i18n cutover). Mocked here following the Header.test.jsx
+// pattern established in MEH-471 — map only the keys ProducerCard
+// renders, plus ICU interpolation/plural for review/favorites counts.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key, values = {}) => {
+    const flat = {
+      "producer.card.contact.phone": "טלפון",
+      "producer.card.contact.website": "אתר",
+      "producer.card.contact.email": "אימייל",
+      "producer.card.favorites.saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
+      "producer.card.favorites.login_cta": "התחברי",
+      "producer.card.favorites.error": "משהו השתבש, נסי שוב",
+      "producer.card.favorites.remove": "הסר ממועדפים",
+      "producer.card.favorites.add": "הוסף למועדפים",
+      "producer.card.badges.delivery_only": "🚚 משלוחים בלבד",
+      "producer.card.badges.available_today": "🛒 מגיעה היום",
+    };
+    if (flat[key]) return flat[key];
+    if (key === "producer.card.aria.image_missing") return `${values.name} — תמונה חסרה`;
+    if (key === "producer.card.aria.primary_contact") return `ערוץ קשר עיקרי: ${values.method}`;
+    if (key === "producer.card.favorites_count_short") {
+      // Match the HE plural rendering for `{count} שמרו` (one/two/other).
+      return `${values.count} שמרו`;
+    }
+    return key;
+  },
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
     <a href={href} {...props}>

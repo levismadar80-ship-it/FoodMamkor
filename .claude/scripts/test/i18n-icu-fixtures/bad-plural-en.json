@@ -1,0 +1,6 @@
+{
+  "case_a_missing_two": "{count, plural, one {1 review} other {# reviews}}",
+  "case_b_he_flat_en_plural": "{count, plural, one {1 review} other {# reviews}}",
+  "case_c_well_formed": "{count, plural, one {1 review} other {# reviews}}",
+  "case_d_with_zero": "{count, plural, =0 {No reviews} one {1 review} other {# reviews}}"
+}
