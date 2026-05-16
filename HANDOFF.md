@@ -1,7 +1,61 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-15 (MEH-596 — discovery redesign synthesis; Sub 3/4 of MEH-592 epic; PR pending)
+> Last updated: 2026-05-16 (MEH-597 — Linear backlog cleanup; Sub 4/4 of MEH-592 epic; PR pending; **MEH-592 epic complete after this PR merges**)
+
+---
+
+## 2026-05-16 — MEH-597: Linear backlog cleanup + execution log (PR PENDING)
+
+**Branch:** `feature/meh-597-linear-cleanup` off `staging`.
+
+**Risk tier:** LOW (docs-only + Linear ops — no code touched, no schema, no central components, no CI gate, no mobile QA per docs-only DoD exception).
+
+**Closes:** MEH-597. **Completes MEH-592 epic** (Sub 1 ✅ #676 + Sub 2 ✅ #677/#678 + Sub 3 ✅ #679 + Sub 4 = this PR).
+
+**What shipped:** 1 file added — `docs/synthesis/2026-05-linear-execution-log.md` (203L audit trail). **Linear ops executed in-session** — 11 NEW issues created + 2 existing UPDATEd. The log file is the read-only audit trail of those operations; Linear itself is the source of truth.
+
+**13 Linear actions executed (matches synthesis Section 4 mapping table exactly):**
+
+| # | Type | Finding | Issue ID | Priority |
+|---|---|---|---|---|
+| 1 | NEW | F1 mini-map above-fold | MEH-604 | 1 Urgent (launch-blocker) |
+| 2 | NEW | F2 CTA "דירקטורי" reframe | MEH-605 | 1 Urgent (launch-blocker) |
+| 3 | NEW | F3 categories subhead reframe | MEH-606 | 1 Urgent (launch-blocker) |
+| 4 | NEW | F4+F10 counter + skeleton bundle | MEH-607 | 2 High (fast-follow) |
+| 5 | NEW | F11 step 2 subhead fix | MEH-608 | 2 High (fast-follow) |
+| 6 | NEW | F6 HIW step 3 reframe | MEH-609 | 2 High (fast-follow) |
+| 7 | NEW | F7 founder strip | MEH-610 | 3 Medium (post-launch Q3) |
+| 8 | NEW | F12 cross-surface filter persistence | MEH-611 | 3 Medium (post-launch Q4) |
+| 9 | NEW | F13 MiniMap rename | MEH-612 | 3 Medium (post-launch Q4) |
+| 10 | NEW | F14 pagination consolidation | MEH-613 | 3 Medium (post-launch Q4) |
+| 11 | NEW | Magazine peer research (Q3 deferred) | MEH-614 | 3 Medium |
+| 12 | UPDATE | F8 → MEH-542 priority bump | MEH-542 (3→2) | bumped to 2 High |
+| 13 | UPDATE | F9 → MEH-534 priority bump | MEH-534 (3→2) | bumped to 2 High |
+
+**All 11 NEW:**
+- Parented under MEH-592 (Epic — discovery-layer redesign)
+- v2.1 structure (8 sections + XML prompt with `<role>`, `<intent>`, `<acceptance_criteria>`, `<file_locations>`, `<scope>`, `<constraints>`, `<examples>`, `<confidence_calibration>`, `<over_engineering_guard>`, `<verification_step>`)
+- Labels `["research-content-2026-05", "stage-5-features"]`
+- Cite synthesis source + specific Finding number
+
+**Both UPDATEs:**
+- Priority bumped per synthesis recommendation (P3 Medium → P2 High)
+- Citation block PREPENDED above existing description (purely additive — no original content modified or deleted)
+- Labels preserved verbatim (`["research-content-2026-05", "stage-1-design", "Feature"]`)
+- Parent (MEH-519) unchanged — synthesis didn't ask to reparent
+- save_comment with bump justification + Sub 2 evidence
+- MEH-542 diff ~9%, MEH-534 diff ~13% (additive-only — flagged in execution log, approved by Smadar)
+
+**3 Sapir-decisions from MEH-596 Phase 0 honored (not re-litigated):** Q1 hybrid counter (MEH-607), Q2 hybrid map (MEH-604), Q3 H1 deferred to magazine peer research (MEH-614).
+
+**Anti-scope-creep verified:** MEH-125 (Pre-Launch Checklist), MEH-130 (Roadmap), and MEH-519 (Content/messaging Epic) explicitly NOT touched. Synthesis Section 4 didn't reference any of them; MEH-597 spec's *"if synthesis added launch items / changed sequencing"* conditions both evaluate FALSE. No-op section documented in execution log.
+
+**Workspace cap hiccup (resolved):** First attempt of Phase 1 hit Linear's free-tier issue cap on the launch-blocker batch — all 3 calls returned "Usage limit exceeded". STOP per guardrail. Cap was raised between sessions; retry succeeded on sentinel call (MEH-604), then all remaining 10 NEW + 2 UPDATE landed without incident. Documented in chat history for future-session reference.
+
+**Build + Rule 25:** `npm run build` green (sanity check, no code changed); `git fetch origin && git merge origin/staging` — no drift, fast-forward not needed.
+
+**Next:** **MEH-592 epic ships.** Launch-blockers (MEH-604/605/606) become the next implementation sprint — Smadar picks copy options A/B/C for F2/F3/F4 to unblock MEH-605/606/607.
 
 ---
 
