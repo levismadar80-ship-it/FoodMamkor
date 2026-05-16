@@ -69,6 +69,58 @@
       "resend": "שלחו שוב",
       "sent": "✓ נשלח!",
       "rate_limited": "הגעת למגבלה — נסו שוב בעוד שעה"
+    },
+    "passwordRecovery": {
+      "forgot": {
+        "title": "איפוס סיסמה",
+        "subtitle": "נשלח לך קישור לאיפוס סיסמה לאימייל",
+        "success_main": "✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס",
+        "success_contact_prefix": "לא קיבלת? צרי קשר:",
+        "email_placeholder": "האימייל שלך",
+        "submit_sending": "שולח...",
+        "submit": "שלחי קישור לאיפוס",
+        "back_to_login": "חזרה להתחברות",
+        "errors": {
+          "send_failed": "שגיאה בשליחה, נסי שוב מאוחר יותר"
+        }
+      },
+      "reset": {
+        "loading": "טוען...",
+        "invalid_link": "קישור האיפוס לא תקין",
+        "request_new_link": "בקשי קישור חדש",
+        "title": "סיסמה חדשה",
+        "subtitle": "הזיני סיסמה חדשה (לפחות {min} תווים)",
+        "password_placeholder": "סיסמה חדשה",
+        "password_aria": "סיסמה חדשה",
+        "confirm_placeholder": "אישור סיסמה",
+        "toggle_show": "הצג סיסמה",
+        "toggle_hide": "הסתר סיסמה",
+        "success_title": "✓ הסיסמה עודכנה בהצלחה",
+        "success_subtitle": "מעבירים אותך לדף הכניסה...",
+        "submit_updating": "מעדכן...",
+        "submit": "עדכני סיסמה",
+        "errors": {
+          "too_short": "הסיסמה חייבת להכיל לפחות {min} תווים",
+          "mismatch": "הסיסמאות אינן תואמות",
+          "invalid_token": "קישור האיפוס לא תקין. בקשי קישור חדש.",
+          "expired_token": "קישור האיפוס פג תוקף. בקשי קישור חדש.",
+          "generic": "שגיאה בעדכון הסיסמה, נסי שוב"
+        }
+      }
+    },
+    "verifyEmail": {
+      "loading_title": "מאמתת...",
+      "loading_subtitle": "אנא המתיני",
+      "fallback_loading": "טוענת...",
+      "success_title": "האימייל אומת בהצלחה!",
+      "success_subtitle": "מעבירה אותך לאתר...",
+      "success_cta": "המשיכי לאתר",
+      "error_title": "האימות נכשל",
+      "error_cta": "חזרי לאתר",
+      "errors": {
+        "invalid_link": "קישור האימות לא תקין",
+        "invalid_or_expired": "קישור האימות לא תקין או פג תוקף"
+      }
     }
   },
   "account": {
