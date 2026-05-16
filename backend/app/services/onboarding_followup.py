@@ -18,6 +18,7 @@ Related:  backend/app/services/email.py:22 (send_email fail-open contract),
           idx_producers_created_at this module relies on).
 History:  MEH-539 (creation, 2026-05-16) — Phase 2C of MEH-615.
 """
+
 from __future__ import annotations
 
 import logging
@@ -246,9 +247,7 @@ def _is_licensed(producer: Producer) -> bool:
     return bool(pln)
 
 
-def _build_email(
-    step: int, producer: Producer, first_name: str
-) -> Tuple[str, str]:
+def _build_email(step: int, producer: Producer, first_name: str) -> Tuple[str, str]:
     """Pick (subject, body) for one step. Email 5 branches on _is_licensed."""
     fmt = {
         "greeting": _greeting(first_name),
@@ -294,9 +293,7 @@ def send_due_followups(db: Session) -> dict[int, int]:
         )
         for p in candidates:
             try:
-                user = (
-                    db.query(User).filter(User.producer_id == p.id).first()
-                )
+                user = db.query(User).filter(User.producer_id == p.id).first()
                 if not user or not user.email:
                     continue
                 parts = (user.name or "").strip().split()
@@ -306,9 +303,7 @@ def send_due_followups(db: Session) -> dict[int, int]:
                 setattr(p, column_attr, datetime.now(timezone.utc))
                 db.commit()
                 counts[step] += 1
-                logger.info(
-                    "[FOLLOWUP] step=%d producer_id=%s sent", step, p.id
-                )
+                logger.info("[FOLLOWUP] step=%d producer_id=%s sent", step, p.id)
             except Exception as e:  # noqa: BLE001 — fail-open per producer
                 db.rollback()
                 logger.warning(
