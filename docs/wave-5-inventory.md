@@ -6,6 +6,18 @@
 **Raw JSON snapshot:** `docs/wave-5-scan.json` (committed with this doc)
 **Totals:** 2557 string findings across 139 files
 
+> **Caveat (added per adversarial review):** 2557 = raw scanner hits
+> including ±5% EOL-comment false positives and multi-line literals
+> counted per occurrence. MEH-475 spec's "~700 strings" refers to
+> distinct user-facing translation keys, not regex hits. Use these
+> counts for relative bucketing, not absolute translation-effort sizing.
+
+> **Snapshot regenerate rule:** This file reflects staging at parent SHA
+> `ff8bde9` (commit before `0fd839d`). Re-run
+> `python3 .claude/scripts/i18n-scan.py --format json` at PR-A/B/C
+> branch creation; **do not edit `docs/wave-5-scan.json` in place** —
+> regenerate it.
+
 ## Confirmed scanner path
 
 `.claude/scripts/i18n-scan.py` — deterministic Python scanner (MEH-477).
@@ -20,62 +32,110 @@ Regression-gate: `--diff <baseline.json>` (exit 1 on Δ > 0).
 | Bucket | Files | Strings |
 |---|---:|---:|
 | Admin (`frontend/app/[locale]/admin/**` + admin components) | 22 | 640 |
-| Long-tail (everything else not yet wired) | 113 | 1907 |
-| Wired-remaining (residual in Wave 2–4 files) | 4 | 10 |
+| Long-tail (everything else not yet wired) | 106 | 1857 |
+| Wired-remaining — sub-bucket (a) skip-okay non-UI | 3 | 6 |
+| Wired-remaining — sub-bucket (b) needs owner decision | 8 | 54 |
 | **Total** | **139** | **2557** |
 
-## Already-wired (Wave 2–4) — confirmation
+Adversarial review (PR #711) re-derived the wired set after the initial
+grep `--since=2026-04-25 --grep="MEH-47[1-4]"` missed Wave 1 (`f7ea62e`)
+and Wave 2 PR-A (`8ce1c6c` + Q7 fixes `652afdd`, `8257116`, `6ec3126`).
+7 files / 50 strings moved from Long-tail → Wired-remaining (b).
 
-Wired files derived from `git log --since=2026-04-25 --grep="MEH-47[1-4]" --name-only`
-(excluding `__tests__`, `frontend/messages/*.json`):
+## Already-wired (Wave 1–4) — confirmation
 
-- `frontend/app/[locale]/login/page.js`
-- `frontend/app/[locale]/map/MapClient.jsx`
-- `frontend/app/[locale]/map/components/CityPickerModal.jsx`
-- `frontend/app/[locale]/map/components/DesktopMiniPopup.jsx`
-- `frontend/app/[locale]/map/components/FilterChipsBar.jsx`
-- `frontend/app/[locale]/map/components/MapCardList.jsx`
-- `frontend/app/[locale]/map/components/MapPane.jsx`
-- `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx`
-- `frontend/app/[locale]/map/page.js`
-- `frontend/app/[locale]/map/state/useMapSync.js`
-- `frontend/app/[locale]/map/state/useProducersFeed.js`
-- `frontend/app/[locale]/producer/[id]/ProducerDetail.jsx`
-- `frontend/app/[locale]/producer/[id]/components/ActionRow.jsx`
-- `frontend/app/[locale]/producer/[id]/components/ContactSidebar.jsx`
-- `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx`
-- `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx`
-- `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx`
-- `frontend/components/AppleAuthButton.jsx`
-- `frontend/components/GoogleAuthButton.jsx`
-- `frontend/components/ProducerCard.jsx`
-- `frontend/components/ProducerOAuthButtons.jsx`
+Wired files derived from full `git log --grep="MEH-47[1-4]"` (no
+`--since` clamp — initial discovery's `--since=2026-04-25` filter
+silently dropped Wave 1 + Wave 2 PR-A commits and was caught in
+adversarial review):
 
-### Residual findings in wired files (10 total)
+**Wave 1 (`f7ea62e`) + Wave 2 (`8ce1c6c`, `652afdd`, `8257116`, `6ec3126`):**
 
-Decision: these are **not gaps**. Inspection below — neither requires
-re-wiring in Wave 5 PR-A/B/C; either pure-data constants or non-UI log
-strings. Document and skip.
+- `frontend/app/[locale]/home/HomeCategoryGrid.jsx` (0 residual)
+- `frontend/app/[locale]/home/HomeHero.jsx` (0 residual)
+- `frontend/app/[locale]/home/HomeProducersGrid.jsx` (0 residual)
+- `frontend/app/[locale]/home/HomeStaticBlocks.jsx` (8 residual)
+- `frontend/app/[locale]/page.js` (3 residual)
+- `frontend/components/BottomNav.jsx` (0 residual)
+- `frontend/components/DirectoryDisclaimer.jsx` (3 residual)
+- `frontend/components/Footer.jsx` (1 residual)
+- `frontend/components/Header.jsx` (0 residual)
+- `frontend/components/HomeProductCard.jsx` (20 residual ⚠️ also has forbidden-phrase hit — see Forbidden-string section)
+- `frontend/components/ShareButton.jsx` (5 residual)
+- `frontend/components/StoryCardCanvas.jsx` (10 residual)
+
+**Wave 3 (`c1165ab`):**
+
+- `frontend/app/[locale]/map/MapClient.jsx` (0 residual)
+- `frontend/app/[locale]/map/components/CityPickerModal.jsx` (4 residual)
+- `frontend/app/[locale]/map/components/DesktopMiniPopup.jsx` (0 residual)
+- `frontend/app/[locale]/map/components/FilterChipsBar.jsx` (0 residual)
+- `frontend/app/[locale]/map/components/MapCardList.jsx` (0 residual)
+- `frontend/app/[locale]/map/components/MapPane.jsx` (0 residual)
+- `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx` (0 residual)
+- `frontend/app/[locale]/map/page.js` (4 residual)
+- `frontend/app/[locale]/map/state/useMapSync.js` (1 residual)
+- `frontend/app/[locale]/map/state/useProducersFeed.js` (1 residual)
+- `frontend/app/[locale]/producer/[id]/ProducerDetail.jsx` (0 residual)
+- `frontend/app/[locale]/producer/[id]/components/ActionRow.jsx` (0 residual)
+- `frontend/app/[locale]/producer/[id]/components/ContactSidebar.jsx` (0 residual)
+- `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx` (0 residual)
+- `frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx` (0 residual)
+- `frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx` (0 residual)
+- `frontend/components/ProducerCard.jsx` (0 residual)
+
+**Wave 4 (`ff8bde9`):**
+
+- `frontend/app/[locale]/login/page.js` (0 residual)
+- `frontend/components/AppleAuthButton.jsx` (0 residual)
+- `frontend/components/GoogleAuthButton.jsx` (0 residual)
+- `frontend/components/ProducerOAuthButtons.jsx` (0 residual)
+
+### Wired-remaining — sub-bucket (a) skip-okay non-UI (6 strings / 3 files)
+
+Pure-data constants or developer-only strings. No translation key needed.
 
 ```
-frontend/app/[locale]/map/components/CityPickerModal.jsx:23  "תל אביב"
-frontend/app/[locale]/map/components/CityPickerModal.jsx:24  "ירושלים"
-frontend/app/[locale]/map/components/CityPickerModal.jsx:25  "חיפה"
-frontend/app/[locale]/map/components/CityPickerModal.jsx:26  "באר שבע"
-frontend/app/[locale]/map/page.js:9                          metadata.title (SEO)
-frontend/app/[locale]/map/page.js:11                         metadata.description (SEO)
-frontend/app/[locale]/map/page.js:13                         openGraph.title (SEO)
-frontend/app/[locale]/map/page.js:14                         openGraph.description (SEO)
-frontend/app/[locale]/map/state/useMapSync.js:220            console.warn tag "[חפשי באזור זה]"
-frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[חפשי באזור זה]"
+frontend/app/[locale]/map/components/CityPickerModal.jsx:23  "תל אביב"           (city data constant)
+frontend/app/[locale]/map/components/CityPickerModal.jsx:24  "ירושלים"            (city data constant)
+frontend/app/[locale]/map/components/CityPickerModal.jsx:25  "חיפה"              (city data constant)
+frontend/app/[locale]/map/components/CityPickerModal.jsx:26  "באר שבע"           (city data constant)
+frontend/app/[locale]/map/state/useMapSync.js:220            "[חפשי באזור זה] …"  (console.warn breadcrumb)
+frontend/app/[locale]/map/state/useProducersFeed.js:31       "[חפשי באזור זה] …"  (console.warn breadcrumb)
 ```
 
-- City names — geographic data; will localize via category/city dataset
-  in a future wave (out of scope here).
-- SEO metadata — Next.js `metadata` exports; per-locale variant lives at
-  the layout level, not the page component. Confirm with locale routing
-  owner before touching.
-- Console-warn tags — developer logs, not user-facing. Skip.
+Note (per adversarial review): the CityPickerModal city names are UI
+dropdown labels — "translate vs transliterate proper nouns on `/en/`"
+is a Smadar call. Defaulted to skip-okay here because they're driven
+by a static array that future locale work can swap via the
+category/city dataset. If Smadar wants them translated, move to (b).
+
+### Wired-remaining — sub-bucket (b) needs owner decision (54 strings / 8 files)
+
+Residuals on already-wired files OR user-facing SEO metadata. Each
+needs a deliberate owner call before PR-A/B/C touches them — they
+should NOT be re-wired by the long-tail PRs without a green light,
+because either the existing translation keys cover them (false
+positive) or the wiring deliberately omitted them (intent).
+
+```
+frontend/app/[locale]/map/page.js:9              metadata.title (SEO)
+frontend/app/[locale]/map/page.js:11             metadata.description (SEO)
+frontend/app/[locale]/map/page.js:13             openGraph.title (SEO)
+frontend/app/[locale]/map/page.js:14             openGraph.description (SEO)
+frontend/app/[locale]/page.js                    (3 residuals)
+frontend/app/[locale]/home/HomeStaticBlocks.jsx  (8 residuals)
+frontend/components/HomeProductCard.jsx          (20 residuals ⚠️ overlaps forbidden phrase)
+frontend/components/StoryCardCanvas.jsx          (10 residuals)
+frontend/components/ShareButton.jsx              (5 residuals)
+frontend/components/DirectoryDisclaimer.jsx      (3 residuals)
+frontend/components/Footer.jsx                   (1 residual)
+```
+
+`HomeProductCard.jsx` carries the `"מהמטבח של השכן"` forbidden phrase
+even though Wave 1+2 wired the file — meaning the phrase landed in a
+translation key as-is, or pre-dates the locked voice rule. Treat
+separately: forbidden-phrase ruling first, then re-wire if needed.
 
 ## Admin bucket (PR-A scope) — 640 strings, 22 files
 
@@ -104,7 +164,13 @@ frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[
   3  frontend/app/[locale]/admin/producers/use-admin-producers.js
 ```
 
-## Long-tail bucket (PR-B/C scope) — 1907 strings, 113 files
+## Long-tail bucket (PR-B/C scope) — 1857 strings, 106 files
+
+(7 files / 50 strings previously listed here moved to Wired-remaining
+sub-bucket (b) after adversarial review: `HomeProductCard.jsx` ×20,
+`StoryCardCanvas.jsx` ×10, `HomeStaticBlocks.jsx` ×8, `ShareButton.jsx`
+×5, `DirectoryDisclaimer.jsx` ×3, `app/[locale]/page.js` ×3,
+`Footer.jsx` ×1.)
 
 ```
 106  frontend/app/[locale]/producer/dashboard/page.js
@@ -133,7 +199,6 @@ frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[
  24  frontend/app/[locale]/upgrade/page.js
  21  frontend/app/[locale]/reset-password/page.js
  20  frontend/app/[locale]/experiences/[id]/ExperienceDetailClient.jsx
- 20  frontend/components/HomeProductCard.jsx
  20  frontend/components/ProducerReviews.jsx
  19  frontend/app/[locale]/contact/page.js
  18  frontend/components/KashrutBadgeStrip.jsx
@@ -153,13 +218,11 @@ frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[
  11  frontend/app/[locale]/producer/dashboard/followers/page.js
  10  frontend/app/[locale]/favorites/page.js
  10  frontend/app/[locale]/verify-email/page.js
- 10  frontend/components/StoryCardCanvas.jsx
   9  frontend/app/[locale]/forgot-password/page.js
   9  frontend/app/[locale]/layout.js
   9  frontend/app/[locale]/rate/[token]/page.js
   9  frontend/components/HeroSearch.jsx
   9  frontend/components/ReportButton.jsx
-  8  frontend/app/[locale]/home/HomeStaticBlocks.jsx
   8  frontend/components/CategorySelector.jsx
   8  frontend/components/Pagination.jsx
   8  frontend/components/PasswordInput.jsx
@@ -177,7 +240,6 @@ frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[
   5  frontend/components/Lightbox.jsx
   5  frontend/components/LoginPromptModal.jsx
   5  frontend/components/PasswordStrength.jsx
-  5  frontend/components/ShareButton.jsx
   4  frontend/app/[locale]/about/page.js
   4  frontend/app/[locale]/experiences/page.js
   4  frontend/app/[locale]/group-buys/page.js
@@ -192,10 +254,8 @@ frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[
   4  frontend/components/RecipeStatusBadge.jsx
   4  frontend/components/WhatsAppQuestionChips.jsx
   3  frontend/app/[locale]/experiences/[id]/page.js
-  3  frontend/app/[locale]/page.js
   3  frontend/app/[locale]/producers/page.jsx
   3  frontend/components/DeliveryBlock.jsx
-  3  frontend/components/DirectoryDisclaimer.jsx
   3  frontend/components/FollowButton.jsx
   3  frontend/components/FridayDeliveryStrip.jsx
   3  frontend/components/HolidayBanner.jsx
@@ -214,7 +274,6 @@ frontend/app/[locale]/map/state/useProducersFeed.js:31       console.warn tag "[
   1  frontend/components/AddressSearch.jsx
   1  frontend/components/BadgeRow.jsx
   1  frontend/components/Breadcrumb.jsx
-  1  frontend/components/Footer.jsx
   1  frontend/components/InfoTooltip.jsx
   1  frontend/components/ParallaxQuote.jsx
   1  frontend/components/Skeleton.jsx
