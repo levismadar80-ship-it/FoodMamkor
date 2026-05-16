@@ -28,6 +28,7 @@ dependencies = [
     "structlog==24.4.0",
     "asgi-correlation-id==4.3.4",
     "sentry-sdk[fastapi]==2.18.0",
+    "apscheduler~=3.10",
 ]
 
 [dependency-groups]
