@@ -3,7 +3,6 @@
     "discover": "Discover",
     "map": "Map",
     "events": "Events",
-    "neighbor": "Neighbor",
     "about": "About",
     "favorites": "Favorites",
     "admin": "Admin",
@@ -35,7 +34,6 @@
       "all_businesses": "All Businesses",
       "new_businesses": "New Businesses",
       "events": "Events",
-      "neighbor_kitchen": "Neighbor's Kitchen",
       "about": "About",
       "faq_businesses": "FAQ for Businesses",
       "add_business": "Add Your Business",
@@ -135,10 +133,6 @@
     },
     "recent": {
       "heading": "Recently viewed"
-    },
-    "kitchen": {
-      "heading": "From the Neighbor's Kitchen",
-      "see_more": "See more →"
     },
     "how_it_works": {
       "heading": "How it works",

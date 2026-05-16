@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, MapTrifold, CookingPot, UserCircle } from "@phosphor-icons/react";
+import { House, MapTrifold, UserCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
 import OnboardingTip from "@/components/OnboardingTip";
@@ -38,7 +38,6 @@ export default function BottomNav() {
   const tabs = [
     { href: "/", Icon: House, labelKey: "nav.discover", match: (p) => p === "/" },
     { href: "/map", Icon: MapTrifold, labelKey: "nav.map", match: (p) => p === "/map" },
-    { href: "/neighbor", Icon: CookingPot, labelKey: "nav.neighbor", match: (p) => p.startsWith("/neighbor") },
     {
       href: profileHref,
       Icon: UserCircle,

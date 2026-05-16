@@ -129,7 +129,6 @@ export default function Header() {
   const NAV_ITEMS = [
     { href: "/", label: t("nav.discover") },
     { href: "/map", label: t("nav.map") },
-    { href: "/neighbor", label: t("nav.neighbor") },
     { href: "/about", label: t("nav.about") },
   ];
 

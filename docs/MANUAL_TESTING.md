@@ -3,6 +3,21 @@
 
 ---
 
+## Hide /neighbor pre-launch (MEH-598)
+
+Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen section removed from public surface. Page files preserved per MEH-543 revival path. AI chat + producer dashboard + `HomeProductCard` label LOCK leaks deferred to MEH-599 (see PR description for E1-E6 mapping).
+
+- [ ] Header nav (desktop ≥768px) — visit `/`, `/about`, `/map`, `/events` → top nav shows 3 items: גלה / מפה / אודות. "מהשכן" link **absent**.
+- [ ] Footer nav — scroll to footer on any page → 5 items: גלה / מפה / אירועים / אודות / FAQ לבתי עסק. "מהמטבח של השכן" link **absent**.
+- [ ] BottomNav (mobile <768px) — visit `/` on mobile → 3 tabs visible: בית / מפה / פרופיל. "מהשכן" tab **absent** (was 4 tabs, now 3).
+- [ ] Direct route redirect — visit `https://staging.mehamakor.online/neighbor` (or `/he/neighbor`) → redirects to `/` (locale-prefixed root via next-intl middleware).
+- [ ] Direct route on mobile — same as above on mobile browser → no broken intermediate render, clean redirect.
+- [ ] Homepage section absence — visit `/` → between `<HomeHowItWorks>` (איך זה עובד) and the parallax divider, the "מהמטבח של השכן" home-products marquee is **absent**. Page flows directly from "איך זה עובד" → parallax → events preview.
+- [ ] DOM grep — load any page → DevTools → Search for "/neighbor" in DOM → returns 0 (excluding code comments not rendered).
+- [ ] No console errors — DevTools console on `/`, `/neighbor` redirect target, mobile + desktop → no `Missing message: home.kitchen.heading` or similar i18n warnings.
+
+---
+
 ## Producer license number (MEH-530)
 
 Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
