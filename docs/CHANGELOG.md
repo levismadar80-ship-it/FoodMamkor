@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-16 — MEH-475 / PR-C2: i18n Wave 5 — events + experiences namespaces (PR pending)
+
+`i18n`: wired `useTranslations()` into all events/** + experiences/** routes plus shared CalendarView and ExperienceCard components. Two new top-level namespaces added in parallel:
+
+- `events.*` — list/categories/experience_categories/detail/calendar (~75 keys; `events.calendar.events_count` is ICU plural `=0/one/two/other`; `events.calendar.days.*` for column headers, replacing `HEBREW_DAY_NAMES` const).
+- `experiences.*` — list/categories/detail/card/new (~100 keys; submit form, host card, detail status banners, ICU placeholders `{n}`, `{title}`, `{spots} / {max}`).
+
+Category arrays keep Hebrew API filter values (server enum) and look up display labels via `tCat(labelKey)`. Status banner object moved inside `ExperienceDetailClient` body so `t()` is in scope.
+
+Files touched (7): `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`, `ExperiencesClient.jsx`, `ExperienceCard.jsx`, `experiences/[id]/ExperienceDetailClient.jsx`, `experiences/new/NewExperienceClient.jsx`. JSON parity 439↔439. Build green, scanner residual 41 across in-scope paths — of which 27 are deliberate Hebrew API filter constants (wire format) and 14 are server-component metadata + Suspense fallbacks deferred to Wave 6. Runs in parallel with PR-C1 (`recipes.*` + `group_buys.*`); JSON merge expected as accept-both on different top-level keys.
+
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 
 `security`: OWASP-strict anti-enumeration applied to both register endpoints. Both now return an identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` regardless of whether the email is new, belongs to an existing password user, or belongs to an existing OAuth user. Timing equalised by reordering — `validate_password` (HIBP) + `hash_password` (bcrypt) run before the existence check on both branches, so response time doesn't fork. Side-effect symmetry preserved on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea rows + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved inside the new-email branch only (no orphan rows or spurious admin notifications on collisions). A new `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate account owner out-of-band — two body variants (`password` / `google` / `apple`), identical Subject line so 3rd-party Subject-scanners can't distinguish provider.
