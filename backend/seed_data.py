@@ -1,5 +1,4 @@
 """Seed the database with initial categories and sample producers."""
-import uuid
 
 from app.auth import hash_password
 from app.config import settings
@@ -23,6 +22,9 @@ CATEGORIES = [
     ("תכשירי צמחים", "🌿"),
     ("נרות וארומה", "🕯️"),
     ("תוספי תזונה", "💊"),
+    ("יין, בירה ומשקאות", "🍷"),
+    ("תבלינים וצמחי תיבול", "🌶️"),
+    ("שוקולד וממתקים בוטיק", "🍫"),
 ]
 
 PRODUCERS = [
@@ -39,9 +41,9 @@ PRODUCERS = [
         "instagram": "@galil_farm",
         "category_ids": [1],  # בשר ודגים
         "products": [
-            {"name": "סטייק אנטריקוט", "price_range": "120-180₪/ק\"ג"},
-            {"name": "בשר טחון", "price_range": "70-90₪/ק\"ג"},
-            {"name": "נקניקיות ביתיות", "price_range": "85₪/ק\"ג"},
+            {"name": "סטייק אנטריקוט", "price_range": '120-180₪/ק"ג'},
+            {"name": "בשר טחון", "price_range": '70-90₪/ק"ג'},
+            {"name": "נקניקיות ביתיות", "price_range": '85₪/ק"ג'},
         ],
         "delivery_areas": [
             {"city": "חיפה", "min_order": 200, "delivery_day": "שלישי"},
@@ -158,7 +160,9 @@ def seed():
 
         # Seed producers
         for p_data in PRODUCERS:
-            existing = db.query(Producer).filter(Producer.name == p_data["name"]).first()
+            existing = (
+                db.query(Producer).filter(Producer.name == p_data["name"]).first()
+            )
             if existing:
                 continue
 
@@ -184,19 +188,23 @@ def seed():
                 db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
 
             for prod in p_data["products"]:
-                db.add(Product(
-                    producer_id=producer.id,
-                    name=prod["name"],
-                    price_range=prod["price_range"],
-                ))
+                db.add(
+                    Product(
+                        producer_id=producer.id,
+                        name=prod["name"],
+                        price_range=prod["price_range"],
+                    )
+                )
 
             for da in p_data["delivery_areas"]:
-                db.add(DeliveryArea(
-                    producer_id=producer.id,
-                    city=da["city"],
-                    min_order=da["min_order"],
-                    delivery_day=da["delivery_day"],
-                ))
+                db.add(
+                    DeliveryArea(
+                        producer_id=producer.id,
+                        city=da["city"],
+                        min_order=da["min_order"],
+                        delivery_day=da["delivery_day"],
+                    )
+                )
 
         db.commit()
 
@@ -206,7 +214,9 @@ def seed():
         # admin. Secrets must NEVER be hardcoded here — the previous
         # hardcoded pair was exposed in git history and has been rotated.
         if settings.admin_email and settings.admin_password:
-            existing_admin = db.query(User).filter(User.email == settings.admin_email).first()
+            existing_admin = (
+                db.query(User).filter(User.email == settings.admin_email).first()
+            )
             if not existing_admin:
                 admin_user = User(
                     email=settings.admin_email,

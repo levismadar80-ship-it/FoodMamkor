@@ -25,12 +25,16 @@ router = APIRouter(prefix="/home-products", tags=["home-products"])
 
 def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
     """Build HomeProductOut data with rating info."""
-    avg = db.query(func.avg(HomeProductRating.stars)).filter(
-        HomeProductRating.home_product_id == hp.id
-    ).scalar()
-    count = db.query(func.count(HomeProductRating.id)).filter(
-        HomeProductRating.home_product_id == hp.id
-    ).scalar()
+    avg = (
+        db.query(func.avg(HomeProductRating.stars))
+        .filter(HomeProductRating.home_product_id == hp.id)
+        .scalar()
+    )
+    count = (
+        db.query(func.count(HomeProductRating.id))
+        .filter(HomeProductRating.home_product_id == hp.id)
+        .scalar()
+    )
     recent = (
         db.query(HomeProductRating)
         .filter(HomeProductRating.home_product_id == hp.id)
@@ -66,9 +70,7 @@ def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
         "moderation_suggestion": hp.moderation_suggestion,
         "avg_rating": round(float(avg), 1) if avg else None,
         "rating_count": count or 0,
-        "recent_comments": [
-            HomeProductRatingOut.model_validate(r) for r in recent
-        ],
+        "recent_comments": [HomeProductRatingOut.model_validate(r) for r in recent],
         "seller_name": hp.user.name if hp.user else None,
         "created_at": hp.created_at,
     }
@@ -80,9 +82,11 @@ def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
 @router.get("/rate/{token}")
 def get_rating_page(token: str, db: Session = Depends(get_db)):
     """Get info for the rating page (accessed via WhatsApp link)."""
-    click = db.query(HomeProductWhatsAppClick).filter(
-        HomeProductWhatsAppClick.rating_token == token
-    ).first()
+    click = (
+        db.query(HomeProductWhatsAppClick)
+        .filter(HomeProductWhatsAppClick.rating_token == token)
+        .first()
+    )
     if not click:
         raise HTTPException(status_code=404, detail="קישור דירוג לא תקין")
     if click.rated:
@@ -113,9 +117,11 @@ def validate_home_product_endpoint(
 @router.post("/rate/{token}")
 def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db)):
     """Submit a rating via token (no login required)."""
-    click = db.query(HomeProductWhatsAppClick).filter(
-        HomeProductWhatsAppClick.rating_token == token
-    ).first()
+    click = (
+        db.query(HomeProductWhatsAppClick)
+        .filter(HomeProductWhatsAppClick.rating_token == token)
+        .first()
+    )
     if not click:
         raise HTTPException(status_code=404, detail="קישור דירוג לא תקין")
     if click.rated:
@@ -133,12 +139,20 @@ def submit_rating(token: str, data: RatingSubmit, db: Session = Depends(get_db))
     db.commit()
 
     # Check if listing should be auto-hidden (3 negative ratings ≤2 stars)
-    negative_count = db.query(func.count(HomeProductRating.id)).filter(
-        HomeProductRating.home_product_id == click.home_product_id,
-        HomeProductRating.stars <= 2,
-    ).scalar()
+    negative_count = (
+        db.query(func.count(HomeProductRating.id))
+        .filter(
+            HomeProductRating.home_product_id == click.home_product_id,
+            HomeProductRating.stars <= 2,
+        )
+        .scalar()
+    )
     if negative_count >= 3:
-        hp = db.query(HomeProduct).filter(HomeProduct.id == click.home_product_id).first()
+        hp = (
+            db.query(HomeProduct)
+            .filter(HomeProduct.id == click.home_product_id)
+            .first()
+        )
         if hp:
             hp.is_hidden = True
             db.commit()
@@ -210,7 +224,8 @@ def create_home_product(
             status_code=400,
             detail={
                 "error": "listing_rejected",
-                "reason": moderation.get("reason") or "התוכן אינו עומד בקריטריונים שלנו",
+                "reason": moderation.get("reason")
+                or "התוכן אינו עומד בקריטריונים שלנו",
                 "suggestion": moderation.get("suggestion"),
             },
         )
@@ -265,10 +280,36 @@ def update_home_product(
     # owner, which was inconsistent with CLAUDE.md rule #5.
     if hp.user_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not your listing")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    payload = data.model_dump(exclude_unset=True)
+
+    # MEH-375: snapshot both photo + images BEFORE mutation so we can
+    # destroy dropped Cloudinary assets AFTER db.commit succeeds. Order
+    # matters — destroying mid-transaction would leave DB and Cloudinary
+    # out of sync if commit raises.
+    old_photo = hp.photo
+    old_images = list(hp.images or [])
+
+    for field, value in payload.items():
         setattr(hp, field, value)
     db.commit()
     db.refresh(hp)
+
+    # MEH-375: post-commit cleanup. Photo destroy guarded by both
+    # presence in payload (so a description-only update doesn't churn)
+    # and value-changed (so no-op PATCHes don't destroy the same URL).
+    if "photo" in payload and old_photo and old_photo != hp.photo:
+        from app.cloudinary_utils import destroy_image
+
+        destroy_image(old_photo, context="home_products.update_home_product photo")
+    if "images" in payload:
+        from app.cloudinary_utils import destroy_removed_images
+
+        destroy_removed_images(
+            old_images,
+            hp.images or [],
+            context="home_products.update_home_product images",
+        )
+
     return _enrich_home_product(hp, db)
 
 
@@ -312,12 +353,16 @@ def log_whatsapp_click(
 
 @router.get("/{product_id}/ratings", response_model=dict)
 def get_ratings(product_id: UUID, db: Session = Depends(get_db)):
-    avg = db.query(func.avg(HomeProductRating.stars)).filter(
-        HomeProductRating.home_product_id == product_id
-    ).scalar()
-    count = db.query(func.count(HomeProductRating.id)).filter(
-        HomeProductRating.home_product_id == product_id
-    ).scalar()
+    avg = (
+        db.query(func.avg(HomeProductRating.stars))
+        .filter(HomeProductRating.home_product_id == product_id)
+        .scalar()
+    )
+    count = (
+        db.query(func.count(HomeProductRating.id))
+        .filter(HomeProductRating.home_product_id == product_id)
+        .scalar()
+    )
     recent = (
         db.query(HomeProductRating)
         .filter(HomeProductRating.home_product_id == product_id)

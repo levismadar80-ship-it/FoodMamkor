@@ -124,7 +124,9 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
         user.last_active_at = now
         db.commit()
     except Exception:
-        logger.warning("[auth] last_active_at update failed", user_id=str(user.id), exc_info=True)
+        logger.warning(
+            "[auth] last_active_at update failed", user_id=str(user.id), exc_info=True
+        )
         try:
             db.rollback()
         except Exception:
@@ -139,7 +141,9 @@ def _validate_access_scope(claims: dict) -> None:
     # the deploy. This mirrors the MEH-206 fail-open pattern below.
     scope = claims.get("scope")
     if scope is not None and scope != "access":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
 
 
 def _check_password_change_invalidation(user: User, claims: dict) -> None:
@@ -168,7 +172,9 @@ def _check_token_version(user: User, claims: dict) -> None:
     # this column was added (no `tv` claim) are still accepted.
     tv = claims.get("tv")
     if tv is not None and tv != user.token_version:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
 
 
 def _check_fingerprint(request: Request, claims: dict) -> None:
@@ -186,7 +192,9 @@ def _check_fingerprint(request: Request, claims: dict) -> None:
             "[auth] fingerprint mismatch — possible token sidejacking",
             extra={"user_id": claims.get("sub"), "has_cookie": cookie_fp is not None},
         )
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
 
 
 def get_current_user(
@@ -195,21 +203,29 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     if token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
     try:
         token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
         JWTClaimsRegistry().validate(token_obj.claims)
         user_id = token_obj.claims.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+            )
     except JoseError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אסימון לא תקין"
+        )
 
     _validate_access_scope(token_obj.claims)
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא נמצא"
+        )
     if user.is_blocked:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="חשבון חסום")
 
@@ -240,13 +256,17 @@ def get_current_user_optional(
 
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
+        )
     return user
 
 
 def require_producer(user: User = Depends(get_current_user)) -> User:
     if user.role != "producer":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Producer access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Producer access required"
+        )
     return user
 
 

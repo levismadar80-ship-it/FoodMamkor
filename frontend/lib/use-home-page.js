@@ -1,10 +1,12 @@
+/* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, security/detect-object-injection, id-length */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { useLanguage } from "@/lib/language-context";
+import { useTranslations } from "next-intl";
+import { mapKey } from "@/lib/i18n-key-map";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
 import { buildChipParams } from "@/lib/producer-filters";
@@ -13,6 +15,8 @@ import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 
 const PAGE_SIZE = 8;
+// MEH-521: minimum approved count before showing numeric stats.
+const STATS_DISPLAY_THRESHOLD = 5;
 
 /**
  * Custom hook owning the homepage's state, effects, handlers, and
@@ -26,8 +30,9 @@ const PAGE_SIZE = 8;
  *     handleWhatsAppClick, scrollToProducers, toggleChip, handleNearMe,
  *     handleCitySelected) close over the same state via the same
  *     reference identities they did before extraction
- *   - 6 derived values (visibleProducers, hasMore, categoryCards,
- *     statsProducersCount, statsCategoriesCount, newestProducers)
+ *   - 7 derived values (visibleProducers, hasMore, categoryCards,
+ *     statsProducersCount, statsCategoriesCount, statsLoaded,
+ *     newestProducers)
  *   - 2 thin adapter callbacks (handleClearCategory, handleLoadMore)
  *     wrap inline JSX-side calls so the producers grid component
  *     does not need setFilters / setVisibleCount / loadProducers /
@@ -35,42 +40,34 @@ const PAGE_SIZE = 8;
  */
 export function useHomePage() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
+  // old flat keys ("hero_title"). Wave 2 migrates those call sites and
+  // this wrap is removed.
+  const intlT = useTranslations();
+  const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
   const router = useRouter();
   const [producers, setProducers] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState(() => {
-    if (typeof window === "undefined") return { category: "", delivery_city: "", has_delivery: false };
-    const p = new URLSearchParams(window.location.search);
-    return {
-      category: p.get("category") || "",
-      delivery_city: p.get("city") || "",
-      has_delivery: p.get("delivery") === "1",
-    };
-  });
+  // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
+  // sessionStorage) are read in the initial useEffect below to avoid React
+  // #418 hydration mismatches caused by lazy initializers running on the client
+  // but not on the server.
+  const [filters, setFilters] = useState({ category: "", delivery_city: "", has_delivery: false });
   // MEH-23 — persist visibleCount + scrollY across navigations so the
   // "Load more" expansion isn't lost when a user opens a producer and
   // returns via the back button. Read on mount only; subsequent changes
   // flow through the setter below.
-  const [visibleCount, setVisibleCount] = useState(() => {
-    if (typeof window === "undefined") return PAGE_SIZE;
-    const saved = Number(window.sessionStorage?.getItem("home_visible_count"));
-    return Number.isFinite(saved) && saved >= PAGE_SIZE ? saved : PAGE_SIZE;
-  });
-  const [stats, setStats] = useState({ producers_count: 0, categories_count: 0 });
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // MEH-607: `null` initial = "not yet fetched" → drives F10 skeleton in
+  // page.js. After /stats resolves, value is the response object (or `{}` on
+  // error so derived selectors stay safe). Three render states downstream:
+  // skeleton (statsLoaded=false), counter (loaded + count >= threshold),
+  // fallback/hidden (loaded + below threshold).
+  const [stats, setStats] = useState(null);
   const [producersLoading, setProducersLoading] = useState(true);
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [chips, setChips] = useState(() => {
-    if (typeof window === "undefined") return { kosher: false, organic: false, has_delivery: false, verified: false };
-    const p = new URLSearchParams(window.location.search);
-    return {
-      kosher: p.get("kosher") === "1",
-      organic: p.get("organic") === "1",
-      has_delivery: p.get("delivery") === "1",
-      verified: p.get("verified") === "1",
-    };
-  });
+  const [geoLoading] = useState(false);
+  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -107,12 +104,31 @@ export function useHomePage() {
   }, [showNewUserHint]);
 
   useEffect(() => {
+    // MEH-517: read browser APIs on mount (moved from useState lazy initialisers).
+    const p = new URLSearchParams(window.location.search);
+    const initFilters = {
+      category: p.get("category") || "",
+      delivery_city: p.get("city") || "",
+      has_delivery: p.get("delivery") === "1",
+    };
+    const initChips = {
+      kosher: p.get("kosher") === "1",
+      organic: p.get("organic") === "1",
+      has_delivery: p.get("delivery") === "1",
+      verified: p.get("verified") === "1",
+    };
+    const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
+    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) setVisibleCount(savedCount);
+    setFilters(initFilters);
+    setChips(initChips);
+
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
+    // Use local vars — state setters above are async and won't be reflected yet.
     const initParams = {};
-    if (filters.category) initParams.category = filters.category;
-    if (filters.delivery_city) initParams.delivery_city = filters.delivery_city;
-    const initChipParams = buildChipParams(chips);
+    if (initFilters.category) initParams.category = initFilters.category;
+    if (initFilters.delivery_city) initParams.delivery_city = initFilters.delivery_city;
+    const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
     loadProducers(initParams);
     // Home-kitchen preview — just the 3 most recent, no filter.
@@ -121,7 +137,11 @@ export function useHomePage() {
       .get("/home-products")
       .then((r) => setHomeProducts(r.data))
       .catch(() => setHomeProducts([]));
-    api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
+    // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
+    // true and the skeleton dismisses — empty result hides the section
+    // (showStatsCounter/showStatsFallback both false), which is the same
+    // behavior we had before, just CLS-safe (skeleton bridged the gap).
+    api.get("/stats").then((r) => setStats(r.data)).catch(() => setStats({}));
     // Task 13 + MEH-11: load recently viewed producer IDs from
     // localStorage. The helper applies a 7-day TTL and gracefully
     // ignores legacy storage shapes.
@@ -287,12 +307,18 @@ export function useHomePage() {
   const visibleProducers = producers.slice(0, visibleCount);
   const hasMore = visibleCount < producers.length;
   const categoryCards = matchCategoryId(CATEGORY_CARDS, categories);
-  const statsProducersCount = stats.producers_count || producers.length;
-  const statsCategoriesCount = stats.categories_count || categories.length || 6;
+  // MEH-607: statsLoaded gates the F10 skeleton in page.js. Null-safe
+  // accessors handle the `stats === null` initial state without crashing
+  // (optional chaining + `|| fallback`).
+  const statsLoaded = stats !== null;
+  const statsProducersCount = stats?.producers_count || producers.length;
+  const statsCategoriesCount = stats?.categories_count || categories.length || 6;
+  const showStatsCounter = statsLoaded && statsProducersCount >= STATS_DISPLAY_THRESHOLD;
+  const showStatsFallback = statsLoaded && !showStatsCounter && statsProducersCount > 0;
 
   // Newest producers (last 4 by created_at if available, else first 4)
-  const newestProducers = [...producers]
-    .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
+  const newestProducers = producers
+    .toSorted((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
     .slice(0, 4);
 
   return {
@@ -325,6 +351,9 @@ export function useHomePage() {
     categoryCards,
     statsProducersCount,
     statsCategoriesCount,
+    statsLoaded,
+    showStatsCounter,
+    showStatsFallback,
     newestProducers,
     // handlers
     handleNearMe,

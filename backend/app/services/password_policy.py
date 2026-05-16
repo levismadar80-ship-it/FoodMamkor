@@ -65,7 +65,9 @@ async def _check_hibp(candidate: str, timeout_seconds: float) -> bool:
             logger.warning("hibp_5xx_fail_open status=%s", resp.status_code)
             return False
         if resp.status_code != 200:
-            logger.warning("hibp_unexpected_status_fail_open status=%s", resp.status_code)
+            logger.warning(
+                "hibp_unexpected_status_fail_open status=%s", resp.status_code
+            )
             return False
         for line in resp.text.splitlines():
             row_suffix, _, count = line.partition(":")

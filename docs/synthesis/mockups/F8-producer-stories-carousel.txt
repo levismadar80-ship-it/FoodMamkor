@@ -1,0 +1,92 @@
+F8 — Producer stories carousel (post-launch, Q3 2026 — MEH-542 exists)
+=========================================================================
+
+LOCATION: NEW section between <HomeRecentlyViewed> (section 11)
+         and <HomeProducersGrid> (section 12)
+
+RATIONALE: This reframes the producers grid as catalog
+(directory-tier) and the carousel as editorial (magazine-tier).
+The two coexist, with the magazine layer leading.
+
+PROPOSED (3-5 cards, horizontal scroll on mobile, grid on desktop):
+
+MOBILE (375px — horizontal scroll):
++----------------------------------------------------+
+|     סיפורי בעלות עסק                                |
+|     ---------------------                          |
+|                                                    |
+|  +-----------+  +-----------+  +-----------+      |
+|  | 📸 (photo)|  | 📸 (photo)|  | 📸 (photo)|      |
+|  |           |  |           |  |           |      |
+|  | רעות      |  | יעל       |  | נורית     |      |
+|  | מחמצת     |  | חקלאות    |  | דבש קטיף  |      |
+|  | באר שבע   |  | עין יהב   |  | גליל עליון|      |
+|  |           |  |           |  |           |      |
+|  | "..." 60w |  | "..." 60w |  | "..." 60w |      |
+|  +-----------+  +-----------+  +-----------+      |
+|     →                                              |
+|     (swipeable, 3-5 cards)                         |
++----------------------------------------------------+
+
+DESKTOP (1024px — 3-up grid, no scroll):
++----------------------------------------------------+
+|     סיפורי בעלות עסק                                |
+|     ---------------------                          |
+|                                                    |
+|  +--------+  +--------+  +--------+               |
+|  | 📸     |  | 📸     |  | 📸     |               |
+|  | רעות    |  | יעל     |  | נורית   |               |
+|  | מחמצת   |  | חקלאות  |  | דבש קטיף|               |
+|  | באר שבע |  | עין יהב |  | גליל    |               |
+|  | "..."   |  | "..."   |  | "..."   |               |
+|  +--------+  +--------+  +--------+               |
+|                                                    |
+|         [ קראי עוד סיפורים ← ]                      |
++----------------------------------------------------+
+
+CARD STRUCTURE (per card):
+- Photo (Cloudinary, square, ~200x200px)
+- Producer name (first name only — feminine voice)
+- Category + location (one-liner)
+- 60-word quote (excerpt from producer.description)
+- Whole card is one <Link> to /[locale]/[slug]
+- "סיפורי בעלות עסק" heading uses feminine plural
+
+EVIDENCE:
+- Sub 1 §3.1 H2: producer-stories-as-homepage-primary
+  hypothesis grounded in current code state.
+- Sub 2 Pattern 3 (producer-as-protagonist): CrowdFarming
+  WTF blog amplifies individual farmer narratives;
+  Etsy seller story page is officially documented as
+  ranking + conversion lever.
+- Sub 2 §4.8 #3: no Israeli site in the study has an
+  editorial layer beyond product photos. Empty lane.
+- MEH-542 already in backlog — update with these
+  citations per Sub 3 Linear action.
+
+WHY POST-LAUNCH (Q3 2026):
+- Impact 5 / Effort 5 — high-leverage but content-heavy.
+- Producer-side content collection needed: 60-word quotes
+  don't exist in the producer.description field at the
+  depth needed today (Sub 1 §1.5: producers can defer
+  description with "אני אכתוב אחר כך" link).
+- Pre-launch: 12 producers, many without rich descriptions.
+- Post-launch: as the network grows + producer onboarding
+  prompts add a "story" prompt (Etsy-style), the carousel
+  earns its placement.
+
+RTL NOTES:
+- Horizontal scroll on mobile: scroll direction is right-
+  to-left (first card on the right).
+- Use logical properties — no `ml-`/`mr-`.
+- Card-to-card spacing via `ms-`/`me-` on flex children.
+
+WHAT THIS IS NOT:
+- Not the same as <HomeFounderQuote> (which is Sapir's
+  pull-quote, single-voice). F8 is multi-producer story
+  surfacing.
+- Not a "press" or "testimonials" carousel — visitors
+  are reading producer voices, not customer praise.
+- Not a replacement of <HomeProducersGrid>. The grid
+  stays. The carousel sits above it as the editorial
+  layer.

@@ -1,0 +1,338 @@
+"use client";
+
+/**
+ * RecipeForm — MEH-590 chunk 3/4 of the producer-recipes epic.
+ *
+ * Shared producer-recipe form for /producer/dashboard/recipes (create
+ * via inline toggle) and /producer/dashboard/recipes/[id]/edit (PATCH).
+ *
+ * Pattern mirrored from frontend/components/HomeProductForm.jsx (single
+ * image upload via POST /upload/image + react useState + showToast).
+ * RTL-only logical properties per .claude/rules/rtl.md.
+ *
+ * Props:
+ *   mode      — "create" | "edit"
+ *   initial   — initial form values (for edit). When omitted, defaults to empty.
+ *   onSaved   — callback(recipe) fired after a successful save.
+ *   onCancel  — optional callback for a "Cancel" button.
+ *
+ * On REJECTED (Claude pre-check):
+ *   The backend returns 400 with detail.error="recipe_rejected".
+ *   The UI surfaces the reason inline; submit is re-enabled so the
+ *   producer can edit and retry.
+ */
+
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
+
+const baseInput =
+  "w-full border border-border rounded-[10px] px-3 py-2 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+
+const EMPTY = {
+  title: "",
+  description: "",
+  ingredients: "",
+  instructions: "",
+  prep_time_min: "",
+  cook_time_min: "",
+  servings: "",
+  image_url: "",
+  product_ids: [],
+};
+
+function toInt(v) {
+  if (v === "" || v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.trunc(n) : null;
+}
+
+export default function RecipeForm({ mode = "create", initial, onSaved, onCancel }) {
+  const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // Producer's own products for the multi-select picker.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/producers/me/products")
+      .then((r) => {
+        if (!cancelled) setProducts(r.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  const toggleProduct = (productId) => {
+    const has = form.product_ids.includes(productId);
+    setForm({
+      ...form,
+      product_ids: has
+        ? form.product_ids.filter((id) => id !== productId)
+        : [...form.product_ids, productId],
+    });
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await api.post("/upload/image", formData);
+      setForm((f) => ({ ...f, image_url: res.data.url }));
+    } catch (err) {
+      showToast(err.response?.data?.detail || "שגיאה בהעלאת תמונה", "error");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const payload = {
+        title: form.title.trim(),
+        description: form.description?.trim() || null,
+        ingredients: form.ingredients.trim(),
+        instructions: form.instructions.trim(),
+        prep_time_min: toInt(form.prep_time_min),
+        cook_time_min: toInt(form.cook_time_min),
+        servings: toInt(form.servings),
+        image_url: form.image_url || null,
+        product_ids: form.product_ids,
+      };
+      const res =
+        mode === "edit" && initial?.id
+          ? await api.patch(`/producers/me/recipes/${initial.id}`, payload)
+          : await api.post("/producers/me/recipes", payload);
+      showToast(mode === "edit" ? "המתכון עודכן" : "המתכון נשלח לאישור 🌿");
+      onSaved?.(res.data);
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      if (detail?.error === "recipe_rejected") {
+        setError(detail.reason || "התוכן אינו עומד בקריטריונים שלנו");
+      } else if (typeof detail === "string") {
+        setError(detail);
+      } else {
+        setError("משהו השתבש, נסי שוב");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 bg-white rounded-[16px] border border-border p-6"
+    >
+      <h2 className="font-headline text-lg font-bold text-site-text">
+        {mode === "edit" ? "עריכת מתכון" : "פרסום מתכון חדש"}
+      </h2>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          שם המתכון <span className="text-red-500">*</span>
+        </label>
+        <input
+          required
+          minLength={3}
+          maxLength={200}
+          value={form.title}
+          onChange={set("title")}
+          className={baseInput}
+          dir="rtl"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">תיאור קצר</label>
+        <textarea
+          rows={2}
+          value={form.description}
+          onChange={set("description")}
+          className={`${baseInput} resize-none`}
+          dir="rtl"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          רכיבים <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          required
+          minLength={10}
+          rows={6}
+          value={form.ingredients}
+          onChange={set("ingredients")}
+          className={`${baseInput} resize-y`}
+          placeholder={"500 גרם קמח\n10 גרם מלח\n350 מל מים"}
+          dir="rtl"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          הוראות הכנה <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          required
+          minLength={10}
+          rows={8}
+          value={form.instructions}
+          onChange={set("instructions")}
+          className={`${baseInput} resize-y`}
+          placeholder="ערבבי את הקמח עם המלח..."
+          dir="rtl"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">זמן הכנה (דק)</label>
+          <input
+            type="number"
+            min={0}
+            max={1440}
+            value={form.prep_time_min}
+            onChange={set("prep_time_min")}
+            className={baseInput}
+            dir="ltr"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">זמן בישול (דק)</label>
+          <input
+            type="number"
+            min={0}
+            max={1440}
+            value={form.cook_time_min}
+            onChange={set("cook_time_min")}
+            className={baseInput}
+            dir="ltr"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">מספר מנות</label>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={form.servings}
+            onChange={set("servings")}
+            className={baseInput}
+            dir="ltr"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">תמונה</label>
+        {form.image_url ? (
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={form.image_url}
+              alt=""
+              className="w-24 h-24 object-cover rounded-[10px] border border-border"
+            />
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, image_url: "" })}
+              className="text-sm text-red-600 hover:underline"
+            >
+              הסירי תמונה
+            </button>
+          </div>
+        ) : (
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-light">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={handleImageUpload}
+            />
+            {uploading ? "מעלה..." : "העלאת תמונה"}
+          </label>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          מוצרים קשורים
+          <span className="ms-2 text-xs text-site-muted">
+            (מתכון מקדם מוצרים שלך)
+          </span>
+        </label>
+        {productsLoading ? (
+          <p className="text-sm text-site-muted">טוענת מוצרים...</p>
+        ) : products.length === 0 ? (
+          <p className="text-sm text-site-muted">
+            עדיין אין מוצרים בעסק שלך. אפשר לפרסם את המתכון בלי קישור.
+          </p>
+        ) : (
+          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-light">
+            {products.map((p) => (
+              <li key={p.id}>
+                <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-primary"
+                    checked={form.product_ids.includes(p.id)}
+                    onChange={() => toggleProduct(p.id)}
+                  />
+                  <span>{p.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={submitting || uploading}
+          className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+        >
+          {submitting ? "שומרת..." : "שמירת מתכון"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-site-muted hover:text-site-text"
+          >
+            ביטול
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}

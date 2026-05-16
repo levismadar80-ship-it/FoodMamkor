@@ -11,6 +11,7 @@ describe("BADGE_PRIORITY", () => {
     expect(BADGE_PRIORITY).toEqual([
       "verified",
       "recommended",
+      "license",
       "new",
       "organic",
       "grass_fed",
@@ -36,9 +37,9 @@ describe("allBadges", () => {
         products_count: 0,
         organic_certified: false,
         grass_fed: false,
-        gluten_free: false,
-        vegan: false,
-        lactose_free: false,
+        has_gluten_free_products: false,
+        has_vegan_products: false,
+        has_lactose_free_products: false,
         kosher: null,
       }),
     ).toEqual([]);
@@ -59,6 +60,23 @@ describe("allBadges", () => {
     expect(badges.map((b) => b.key)).toEqual(["recommended"]);
   });
 
+  // MEH-531: license badge — Ministry of Health producer license trust signal.
+  // Field source: ProducerListOut.has_producer_license (schemas.py:547).
+  it("license — when has_producer_license is true", () => {
+    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([
+      "license",
+    ]);
+  });
+
+  it("license — when has_producer_license is false → not earned", () => {
+    expect(allBadges({ has_producer_license: false }).map((b) => b.key)).toEqual([]);
+  });
+
+  it("license — when has_producer_license is null/undefined → not earned", () => {
+    expect(allBadges({ has_producer_license: null }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  });
+
   it("new — when days_since_created is <= 30", () => {
     expect(allBadges({ days_since_created: 0 }).map((b) => b.key)).toEqual(["new"]);
     expect(allBadges({ days_since_created: 30 }).map((b) => b.key)).toEqual(["new"]);
@@ -73,16 +91,46 @@ describe("allBadges", () => {
     expect(allBadges({ grass_fed: true }).map((b) => b.key)).toEqual(["grass_fed"]);
   });
 
-  it("gluten_free — when gluten_free is true", () => {
-    expect(allBadges({ gluten_free: true }).map((b) => b.key)).toEqual(["gluten_free"]);
+  // MEH-293/MEH-479: aggregated `has_X_products` is the canonical source.
+  // Legacy producer.X columns were dropped in MEH-479; the guard tests below
+  // confirm that even if a stale fixture sets producer.vegan=true (e.g. from
+  // an out-of-date API mock), it does NOT trigger a dietary badge.
+  it("gluten_free — when has_gluten_free_products is true", () => {
+    expect(allBadges({ has_gluten_free_products: true }).map((b) => b.key)).toEqual(["gluten_free"]);
   });
 
-  it("vegan — when vegan is true", () => {
-    expect(allBadges({ vegan: true }).map((b) => b.key)).toEqual(["vegan"]);
+  it("vegan — when has_vegan_products is true", () => {
+    expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
   });
 
-  it("lactose_free — when lactose_free is true", () => {
-    expect(allBadges({ lactose_free: true }).map((b) => b.key)).toEqual(["lactose_free"]);
+  it("lactose_free — when has_lactose_free_products is true", () => {
+    expect(allBadges({ has_lactose_free_products: true }).map((b) => b.key)).toEqual(["lactose_free"]);
+  });
+
+  // MEH-479 guard tests — legacy producer.X keys must NOT earn a dietary
+  // badge after the column drop. Pins the regression that motivated MEH-479's
+  // single-source-of-truth refactor.
+  it("MEH-479 guard — legacy producer.gluten_free alone does NOT trigger badge", () => {
+    expect(allBadges({ gluten_free: true }).map((b) => b.key)).not.toContain("gluten_free");
+  });
+
+  it("MEH-479 guard — legacy producer.vegan alone does NOT trigger badge", () => {
+    expect(allBadges({ vegan: true }).map((b) => b.key)).not.toContain("vegan");
+  });
+
+  it("MEH-479 guard — legacy producer.lactose_free alone does NOT trigger badge", () => {
+    expect(allBadges({ lactose_free: true }).map((b) => b.key)).not.toContain("lactose_free");
+  });
+
+  it("dietary — all has_X_products false yields no dietary badge", () => {
+    const keys = allBadges({
+      has_vegan_products: false,
+      has_gluten_free_products: false,
+      has_lactose_free_products: false,
+    }).map((b) => b.key);
+    expect(keys).not.toContain("vegan");
+    expect(keys).not.toContain("gluten_free");
+    expect(keys).not.toContain("lactose_free");
   });
 
   it("kosher — when kosher is a non-empty string", () => {
@@ -115,17 +163,19 @@ describe("allBadges", () => {
       has_delivery: true,
       kosher: "חלבי",
       grass_fed: true,
-      gluten_free: true,
-      vegan: true,
-      lactose_free: true,
+      has_gluten_free_products: true,
+      has_vegan_products: true,
+      has_lactose_free_products: true,
       organic_certified: true,
       days_since_created: 5,
+      has_producer_license: true,
       is_recommended: true,
       is_verified: true,
     });
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
       "recommended",
+      "license",
       "new",
       "organic",
       "grass_fed",
@@ -188,6 +238,22 @@ describe("topBadges", () => {
     };
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "organic"]);
   });
+
+  // MEH-531: license sits between recommended and new.
+  it("license priority — sits between recommended and new", () => {
+    const p = {
+      is_recommended: true,
+      has_producer_license: true,
+      days_since_created: 5,
+    };
+    expect(topBadges(p, 3).map((b) => b.key)).toEqual([
+      "recommended",
+      "license",
+      "new",
+    ]);
+    // limit=2 → recommended + license, new gets truncated
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["recommended", "license"]);
+  });
 });
 
 describe("badgeCount", () => {
@@ -216,9 +282,9 @@ describe("badgeCount", () => {
   it("counts the dietary label badges", () => {
     expect(
       badgeCount({
-        gluten_free: true,
-        vegan: true,
-        lactose_free: true,
+        has_gluten_free_products: true,
+        has_vegan_products: true,
+        has_lactose_free_products: true,
       }),
     ).toBe(3);
   });

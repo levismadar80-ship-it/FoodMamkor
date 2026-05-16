@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import AdminOutreachPage from "@/app/admin/outreach/page";
+import AdminOutreachPage from "@/app/[locale]/admin/outreach/page";
 
 // Mock api
 const listRef = { current: { data: [] } };

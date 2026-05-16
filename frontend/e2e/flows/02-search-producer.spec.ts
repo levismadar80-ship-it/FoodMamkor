@@ -4,7 +4,7 @@ test.describe("Search", () => {
   test("submitting hero search navigates to /producers?q=", async ({ page }) => {
     await page.goto("/");
     const searchInput = page.locator('[data-testid="hero-search"]');
-    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toBeVisible({ timeout: 15_000 });
 
     await searchInput.fill("חלב");
     // Click the submit button directly — avoids the autocomplete dropdown

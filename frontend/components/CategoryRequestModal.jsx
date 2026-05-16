@@ -5,6 +5,10 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 
+function countLetters(s) {
+  return (s.match(/[א-תa-zA-Z]/g) || []).length;
+}
+
 export default function CategoryRequestModal({ open, onClose, producerId }) {
   const [name, setName] = useState("");
   const [examples, setExamples] = useState("");
@@ -22,9 +26,11 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
 
   if (!open) return null;
 
+  const hasEnoughLetters = countLetters(name) >= 3;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!hasEnoughLetters) return;
     setLoading(true);
     try {
       await api.post("/category-requests", {
@@ -87,7 +93,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
           <div className="flex gap-3 pt-1">
             <button
               type="submit"
-              disabled={loading || !name.trim()}
+              disabled={loading || !hasEnoughLetters}
               className="flex-1 bg-primary text-white py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {loading ? "שולחת..." : "שלחי בקשה"}

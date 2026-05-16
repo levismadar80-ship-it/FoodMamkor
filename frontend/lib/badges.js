@@ -1,21 +1,22 @@
 /**
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *
- * Badges (Phase B fold, April 2026):
+ * Badges (Phase B fold, April 2026; license added MEH-531):
  *   verified     (manual)  — producer.is_verified
  *   recommended  (manual)  — producer.is_recommended
+ *   license      (manual)  — producer.has_producer_license       (MEH-531)
  *   new          (auto)    — producer.days_since_created <= 30
  *   organic      (manual)  — producer.organic_certified
  *   grass_fed    (manual)  — producer.grass_fed
- *   gluten_free  (manual)  — producer.gluten_free
- *   vegan        (manual)  — producer.vegan
- *   lactose_free (manual)  — producer.lactose_free
+ *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
+ *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
+ *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
  *   kosher       (manual)  — producer.kosher (any non-empty string)
  *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0
  *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > new > organic > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
+ *   verified > recommended > license > new > organic > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -33,6 +34,15 @@ export const BADGE_CONFIG = {
     label: "מומלץ",
     tooltip: "המלצת עורכת מהמקור — אהבנו את איכות המוצרים או השירות.",
     color: "accent",
+  },
+  // MEH-531: license badge — trust signal for Ministry of Health producer
+  // license. Field source: ProducerListOut.has_producer_license (computed
+  // boolean from MEH-530's producer_license_number, schemas.py:547).
+  license: {
+    key: "license",
+    label: "רישיון יצרן",
+    tooltip: "בית העסק מחזיק ברישיון יצרן ממשרד הבריאות.",
+    color: "primary",
   },
   new: {
     key: "new",
@@ -94,6 +104,7 @@ export const BADGE_CONFIG = {
 export const BADGE_PRIORITY = [
   "verified",
   "recommended",
+  "license",
   "new",
   "organic",
   "grass_fed",
@@ -115,6 +126,10 @@ function earnsBadge(producer, key) {
       return !!producer.is_verified;
     case "recommended":
       return !!producer.is_recommended;
+    case "license":
+      // MEH-531: ProducerListOut.has_producer_license (computed in
+      // attach_badge_fields, schemas.py:547).
+      return !!producer.has_producer_license;
     case "new":
       return (
         typeof producer.days_since_created === "number" &&
@@ -126,11 +141,12 @@ function earnsBadge(producer, key) {
     case "grass_fed":
       return !!producer.grass_fed;
     case "gluten_free":
-      return !!producer.gluten_free;
+      // MEH-293/MEH-479: aggregated from products.is_gluten_free.
+      return !!producer.has_gluten_free_products;
     case "vegan":
-      return !!producer.vegan;
+      return !!producer.has_vegan_products;
     case "lactose_free":
-      return !!producer.lactose_free;
+      return !!producer.has_lactose_free_products;
     case "kosher":
       return typeof producer.kosher === "string" && producer.kosher.trim().length > 0;
     case "delivery":

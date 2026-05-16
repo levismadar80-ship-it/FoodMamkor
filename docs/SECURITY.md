@@ -451,6 +451,35 @@ per-PR and weekly via cron. Dependabot opens weekly PRs to `staging` for
   `requests`, `starlette`) → **0 vulns** (cleared via MEH-337 + transitive
   bumps; pip-audit reports `No known vulnerabilities found`).
 
+**Accepted-risk CVEs (post-baseline):**
+
+- **GHSA-w5r5-m38g-f9f9** — joserfc PBES2 unbounded `p2c` iteration DoS
+  (advisory disclosed 2026-02-28). Affected range: `joserfc <= 1.6.2`;
+  advisory does not yet list a fixed version. Mehamakor pin:
+  `joserfc==1.6.4` (post-disclosure, no upstream fix confirmed). **Marked
+  non-exploitable in this codebase** because the auth layer uses HS256
+  JWS exclusively — no JWE encryption surface, so PBES2 (a JWE
+  algorithm) is never invoked. Verification:
+
+  ```bash
+  # Zero matches across the backend:
+  git grep -nE "jwe\.decrypt|PBES2|encrypt_compact|JsonWebEncryption" backend/
+
+  # All joserfc imports are JWS-only surface:
+  git grep -nE "from joserfc|import joserfc" backend/
+  # backend/app/auth.py:9:  from joserfc import jwt as jose_jwt
+  # backend/app/auth.py:10: from joserfc.errors import JoseError
+  # backend/app/auth.py:11: from joserfc.jwk import OctKey
+  # backend/app/auth.py:12: from joserfc.jwt import JWTClaimsRegistry
+  ```
+
+  No `joserfc.jwe` import anywhere; `OctKey` is the symmetric-key class
+  for HS256 JWS, consistent with the JWT-secret invariant in section 1.
+  **Re-evaluate** when joserfc publishes a fixed version (then bump and
+  remove this note) or if the codebase ever introduces JWE decryption
+  (then the CVE becomes live and must be remediated before merge).
+  Source: MEH-375 PR #537 R4 adversarial review (2026-05-07).
+
 ## 🟡 בינוני — תקן החודש
 
 ### 9. XSS — ניקוי input מהמשתמש
@@ -780,6 +809,75 @@ complete sandbox. Primary defense against obfuscated supply-chain
 attacks is the audit + hash enforcement + author verification stack
 (see `.claude/rules/skills.md` "Known limitations (MEH-422
 obfuscation bypass)" for the full list).
+
+---
+
+## TRAP 9 — Shai-Hulud baseline (May 2026)
+
+**Incident:** Mini Shai-Hulud (TeamPCP campaign, 11 May 2026) compromised
+~120 npm packages across multiple scopes plus a handful of unscoped names,
+dropping malicious post-install loaders (`router_init.js`,
+`router_runtime.js`) and a Python payload (`transformers.pyz`) that
+exfiltrated GitHub tokens to a C2 cluster (getsession.org,
+git-tanstack.com, 83.142.209.194, api.masscan.cloud) and installed a
+persistence daemon (`gh-token-monitor.plist` / `.service`).
+
+**Baseline audit (MEH-572, 14 May 2026) — RESULT: CLEAN.**
+
+| Surface | Check | Result |
+|---|---|---|
+| `frontend/package-lock.json` | 11 compromised scopes + 13 unscoped names | 0 hits |
+| `backend/uv.lock` | Same name list + `transformers.pyz` filename | 0 hits |
+| `frontend/package-lock.json` + `backend/uv.lock` | Malicious filenames (`router_init.js`, `router_runtime.js`, `transformers.pyz`) | 0 hits |
+| `.github/workflows/` + lockfiles | C2 indicators (getsession.org, git-tanstack.com, 83.142.209.194, api.masscan.cloud) | 0 hits |
+| repo-wide | `gh-token-monitor` persistence daemon | 0 hits |
+| `.github/workflows/*.yml` | `pull_request_target` (write-token + untrusted-fork trigger) | 0 hits |
+
+**Compromised scopes checked:** `@tanstack/`, `@uipath/`, `@mistralai/`,
+`@squawk/`, `@tallyui/`, `@beproduct/`, `@draftlab/`, `@draftauth/`,
+`@taskflow-corp/`, `@tolka/`, `@guardrails-ai/`.
+
+**Unscoped names checked:** `safe-action`, `ts-dna`, `cross-stitch`,
+`cmux-agent-mcp`, `agentwork-cli`, `git-branch-selector`, `wot-api`,
+`git-git-git`, `nextmove-mcp`, `ml-toolkit-ts`, `intercom-client`,
+`lightning`, `opensearch-project/opensearch`.
+
+### Remediation shipped (MEH-572)
+
+- **GITHUB_TOKEN scope narrowed.** `deploy.yml` gained a workflow-root
+  `permissions: contents: read` block. Railway deploys use a Railway-
+  scoped token, not GITHUB_TOKEN, so no job needs write scope. `e2e.yml`,
+  `pr-checks.yml`, `dependency-audit.yml`, `skills-audit.yml`,
+  `claude-review.yml`, `changelog.yml` were already correctly scoped at
+  audit time.
+- **No `pull_request_target` triggers.** Verified at audit; if a future
+  PR introduces one, that PR must also pin the checkout `ref` to
+  `github.event.pull_request.head.sha` and refuse to install fork
+  dependencies before they're reviewed.
+
+### Out of scope (separate follow-ups)
+
+- **SHA-pinning third-party actions** (`actions/checkout@v6`,
+  `dorny/paths-filter@v3`, etc.) — Dependabot handles upgrade cadence;
+  pin-to-SHA migration tracked separately.
+- **DNS-level C2 blocking** — solo-dev workstation, no enterprise proxy.
+  Mitigation is the audit baseline above plus lockfile drift detection
+  in `dependency-audit.yml`.
+
+### Re-running this audit
+
+```bash
+# IOC patterns kept current with public CISA / GitHub advisory feeds.
+# Re-run if any compromised-package advisory mentions a scope we use.
+grep -iE '@tanstack/|@uipath/|@mistralai/|@squawk/|@tallyui/|@beproduct/|@draftlab/|@draftauth/|@taskflow-corp/|@tolka/|@guardrails-ai/' frontend/package-lock.json
+grep -iE 'router_init\.js|router_runtime\.js|transformers\.pyz' frontend/package-lock.json backend/uv.lock
+grep -rn 'pull_request_target' .github/workflows/
+```
+
+Any hit on the first two greps → STOP, surface the package + version,
+rotate any token the affected job could touch, do not push the audit
+PR. Any hit on the third → STOP, review the workflow for `ref` pinning
+before merge.
 
 ---
 

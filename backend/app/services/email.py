@@ -9,6 +9,7 @@ Fail-open contract (same as the SMTP path it replaces):
   - If Resend raises → warning log, no exception propagates.
   - Empty `to` address → silent no-op.
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,6 +30,7 @@ def send_email(to: str, subject: str, body: str, html: str | None = None) -> Non
         return
     try:
         import resend  # lazy import — only installed when key is configured
+
         resend.api_key = settings.resend_api_key
         params: dict = {
             "from": settings.email_from_address,

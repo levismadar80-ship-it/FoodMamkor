@@ -49,7 +49,11 @@ def approve_kashrut_request(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    req = db.query(KashrutBadgeRequest).filter(KashrutBadgeRequest.id == request_id).first()
+    req = (
+        db.query(KashrutBadgeRequest)
+        .filter(KashrutBadgeRequest.id == request_id)
+        .first()
+    )
     if not req:
         raise HTTPException(status_code=404, detail="בקשה לא נמצאה")
     if req.status != "pending":
@@ -87,7 +91,11 @@ def reject_kashrut_request(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    req = db.query(KashrutBadgeRequest).filter(KashrutBadgeRequest.id == request_id).first()
+    req = (
+        db.query(KashrutBadgeRequest)
+        .filter(KashrutBadgeRequest.id == request_id)
+        .first()
+    )
     if not req:
         raise HTTPException(status_code=404, detail="בקשה לא נמצאה")
     if req.status != "pending":
@@ -111,7 +119,9 @@ def set_ambassador(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     if body.ambassador and producer.status != "approved":
-        raise HTTPException(status_code=400, detail="ניתן להגדיר שגריר רק לבית עסק פעיל")
+        raise HTTPException(
+            status_code=400, detail="ניתן להגדיר שגריר רק לבית עסק פעיל"
+        )
     if producer.ambassador == body.ambassador:
         return {"detail": "ללא שינוי", "ambassador": producer.ambassador}
     producer.ambassador = body.ambassador

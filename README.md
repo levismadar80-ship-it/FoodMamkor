@@ -1,5 +1,7 @@
 # מהמקור (Mehamakor)
 
+[![Coverage](https://coverage-badge.samuelcolvin.workers.dev/show/levismadar80-ship-it/FoodMamkor.svg)](https://github.com/levismadar80-ship-it/FoodMamkor/actions/workflows/pr-checks.yml)
+
 > Israeli directory of local food producers and home cooks.
 > Live: **[mehamakor.online](https://mehamakor.online)** · Instagram: [@meha_makor](https://www.instagram.com/meha_makor)
 
@@ -39,6 +41,9 @@ Always branch from `staging`, never from `main`. Both `staging` and `main` are
 PR-only — no direct pushes. See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for
 the full setup.
 
+Commit messages that follow `type(MEH-NNN): description` (e.g. `feat(MEH-123): add producer search`) are
+auto-detected by git-cliff and generate a `docs/CHANGELOG.md` entry on every push to `staging`.
+
 ## Local dev
 
 See [docs/DEPLOYMENT.md → Dev workflow](./docs/DEPLOYMENT.md). TL;DR:
@@ -46,6 +51,23 @@ See [docs/DEPLOYMENT.md → Dev workflow](./docs/DEPLOYMENT.md). TL;DR:
 ```bash
 cp .env.example .env       # then fill in JWT_SECRET_KEY + ANTHROPIC_API_KEY
 docker-compose up --build  # frontend on :3000, backend on :8000
+```
+
+## Pre-commit hooks (MEH-496)
+
+Install once per clone — runs `ruff` + `ruff-format` on backend changes and
+`eslint` on frontend changes before each commit, mirroring the CI lint gates.
+
+```bash
+# Mac/Linux:
+pip install pre-commit && pre-commit install
+
+# Windows + Git Bash:
+py -m pip install pre-commit
+py -m pre_commit install
+
+# Skip for emergency:
+git commit --no-verify
 ```
 
 ## License

@@ -1,5 +1,8 @@
 # API Contract Audit + Deployment Verification — MEH-245
 
+> **Note:** recipes feature removed in MEH-587 (15.5.2026). See CHANGELOG.
+
+
 > Tool: [`scripts/check_api_contract.py`](../scripts/check_api_contract.py)
 > First run: 2026-04-22 on branch `staging`
 > CI: `.github/workflows/deploy.yml` → `api-contract-static` + `api-contract-probe`

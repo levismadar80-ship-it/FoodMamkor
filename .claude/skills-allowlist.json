@@ -525,6 +525,15 @@
       "last_audit_date": "2026-05-01",
       "audit_verdict": "approved",
       "notes": "Active design tool. Python scripts (core.py 253 LOC, search.py 114 LOC, design_system.py 1067 LOC) manually audited in MEH-397 — no network, no subprocess, no os.environ, no eval/exec, no credential handling. Writes to user CWD via persist_design_system() are intentional (design system output). Path traversal hardening completed in MEH-398 (sanitized regex via _sanitize.py + 10 unit tests). MEH-404 closes F-3/F-4/F-7 (collapse multi-hyphens + cap 64 + trim ends; pipeline strip→collapse→cap→trim). MEH-423 locked into skills-lock.json (source: nextlevelbuilder/ui-ux-pro-max-skill, MIT license, sourceType: github, computedHash anchor). Layout migrated to .agents/skills/ + symlink from .claude/skills/ to match all other skills. F-13 (mkdir collision) + F-14 (symlink follow on persist) documented in .claude/rules/skills.md as inherited threat-model items."
+    },
+    "resolve-conflicts": {
+      "source": "local",
+      "author_verified": false,
+      "last_audit_date": "2026-05-10",
+      "audit_verdict": "approved",
+      "notes": "Authored locally during 2026-05-10 batch conflict resolution session. Pure documentation — codifies 6 categorization rules for git merge conflict resolution. No scripts, no network calls.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
     }
   }
 }

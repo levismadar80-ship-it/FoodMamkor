@@ -3,6 +3,154 @@
 
 ---
 
+## Stats counter reframe + skeleton (MEH-607)
+
+Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {month} — N בתי עסק · M קטגוריות · מכל רחבי הארץ"* — editorial-cadence framing per synthesis §5.2 Option A. Dynamic month name via `Intl.DateTimeFormat('he-IL', { month: 'long' })`. F10: while `/stats` hasn't returned, a skeleton with matching `bg-primary text-white py-4` dimensions reserves height → zero CLS between loading and the real counter.
+
+- [ ] Hebrew copy renders — visit `/he` → stats bar reads *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. Month name is the **current Hebrew month** (in May → "מאי"; in June → "יוני"). "מאומתים" word is **absent**.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first few hundred ms the stats slot shows the green section with a pulsing white pill (no numbers yet). When `/stats` resolves the pill is replaced by the real counter **with zero layout jump** (no content below shifts).
+- [ ] 375px wrap — open Vercel preview at exactly 375px viewport → counter wraps cleanly if it wraps at all. Watch for orphan words (a single word alone on its own line). Synthesis §5.3 acceptance: month+counter on line 1, categories+geography on line 2 if wrap happens.
+- [ ] Empty-DB state — if `/stats` returns `{ producers_count: 0 }` → after the skeleton dismisses, the stats section is **hidden** (no green bar). Acceptable launch-week behavior; not a CLS regression vs pre-MEH-607 (was also hidden).
+
+---
+
+## HomepageMiniMap above the fold (MEH-604)
+
+Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
+
+- [ ] Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
+- [ ] Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
+- [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
+
+---
+
+## Hide /neighbor pre-launch (MEH-598)
+
+Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen section removed from public surface. Page files preserved per MEH-543 revival path. AI chat + producer dashboard + `HomeProductCard` label LOCK leaks deferred to MEH-599 (see PR description for E1-E6 mapping).
+
+- [ ] Header nav (desktop ≥768px) — visit `/`, `/about`, `/map`, `/events` → top nav shows 3 items: גלה / מפה / אודות. "מהשכן" link **absent**.
+- [ ] Footer nav — scroll to footer on any page → 5 items: גלה / מפה / אירועים / אודות / FAQ לבתי עסק. "מהמטבח של השכן" link **absent**.
+- [ ] BottomNav (mobile <768px) — visit `/` on mobile → 3 tabs visible: בית / מפה / פרופיל. "מהשכן" tab **absent** (was 4 tabs, now 3).
+- [ ] Direct route redirect — visit `https://staging.mehamakor.online/neighbor` (or `/he/neighbor`) → redirects to `/` (locale-prefixed root via next-intl middleware).
+- [ ] Direct route on mobile — same as above on mobile browser → no broken intermediate render, clean redirect.
+- [ ] Homepage section absence — visit `/` → between `<HomeHowItWorks>` (איך זה עובד) and the parallax divider, the "מהמטבח של השכן" home-products marquee is **absent**. Page flows directly from "איך זה עובד" → parallax → events preview.
+- [ ] DOM grep — load any page → DevTools → Search for "/neighbor" in DOM → returns 0 (excluding code comments not rendered).
+- [ ] No console errors — DevTools console on `/`, `/neighbor` redirect target, mobile + desktop → no `Missing message: home.kitchen.heading` or similar i18n warnings.
+
+---
+
+## Producer license number (MEH-530)
+
+Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
+
+- [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
+- [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
+- [ ] Register vegetables — בחרי "ירקות ופירות" בלבד → שדה השתוקק לא מופיע, במקומו toggle "יש לי רישיון יצרן ↓". לחיצה → השדה נפתח אופציונלי. submit ללא ערך → 200 OK.
+- [ ] Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text.
+- [ ] Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על submit — **submit עובר** למרות האזהרה (manual-approval flow). 1234567 → אין warning.
+- [ ] Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`).
+- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר ודגים" → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
+- [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
+- [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
+- [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
+- [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
+- [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
+- [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
+
+---
+
+# Verification Protocol — 3-Tier Division of Labor
+
+לפני כל verification of merged work או pre-merge PR, ה-3 tiers הבאים פועלים בסדר.
+ה-rule הבסיסי: **כל tier בודק רק מה ש-tier הקודם לא יכול**. ספיר מבחינת mobile רק
+לדברים שדורשים real-device perception.
+
+## Tier 1 — Claude (chat assistant)
+
+לפני בקשה מ-CC או מ-Smadar, Claude בודק content ישירות:
+
+**Tools:**
+- `web_fetch` על `https://staging.mehamakor.online` (production-ish state)
+- `Vercel:web_fetch_vercel_url` על branch previews
+  → bypasses Vercel Deployment Protection auth-block automatically
+  → לא צריך לכבות protection ידנית
+- `Vercel:get_access_to_vercel_url` — fallback אם web_fetch fails
+
+**Claude מאמת automatically:**
+- [ ] Strings present/correct (translations, Q7 plurals, brand voice)
+- [ ] RTL `dir="rtl"` + `lang="he"` ב-html element
+- [ ] ARIA labels (`aria-label`, `aria-describedby`)
+- [ ] Meta tags (description, keywords, og:*, twitter:*)
+- [ ] hreflang alternates (per Wave 6 SEO requirements)
+- [ ] Tailwind responsive classes present (md:, lg:, sm:)
+- [ ] RSC payload structure (component hierarchy, locale, messages namespace)
+- [ ] Specific link hrefs (CTA targets, nav links)
+
+**מה Claude לא יכולה (גם דרך web_fetch):**
+- JS-dependent UI (Leaflet map render, modal states, dropdown opens)
+- Animations / transitions
+- Computed CSS (post-render width/height)
+- Real interaction state (hover, focus, active)
+
+## Tier 2 — Claude Code (CC)
+
+CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו דורש human eyes.
+
+**Capabilities:**
+- bash + filesystem
+- Playwright (אם הוגדר ב-repo) — JS render, screenshots, interaction
+- Build/test execution (npm, pytest, jest)
+- /adversarial-review, custom .claude/ scripts
+
+**CC מאמת automatically:**
+- [ ] Build clean (npm run build)
+- [ ] All test suites green (pytest, jest, playwright)
+- [ ] Code-level grep patterns (forbidden imports absent, required present)
+- [ ] /adversarial-review on central components
+- [ ] EN/HE messages parity (jq diff)
+- [ ] Residual hardcoded count (.claude/scripts/i18n-scan.py)
+- [ ] Schema/migration consistency (alembic check)
+- [ ] Playwright smoke: critical pages load, expected text present
+- [ ] Playwright form submit: fetch fires (mock backend)
+- [ ] Screenshots @ 375px / 768px / 1440px → /tmp/screenshots/
+  (attach to report ONLY if regression visually suspected)
+
+**CC's report MUST collapse ✅ items:**
+- ✅ items → single summary line (e.g., "All 14 auto-checks passed")
+- ❌ items → STOP, file:line + issue, await fix
+- ⏳ items → clean checklist for Smadar (max 5-7 items, each <30 sec on phone)
+
+**מה CC לא יכול (real-device-only):**
+- Touch tap-feel (size measurable, feel isn't)
+- Animation smoothness on real CPU/GPU/network
+- Font anti-aliasing (varies by OS/device)
+- Color rendering (real screen color profile)
+- Perceived latency (felt-fast threshold)
+
+## Tier 3 — Smadar (mobile real device)
+
+ספיר's mobile session reserved exclusively for items above.
+**רף:** כל פריט ב-Tier 3 חייב להיות testable ב-<30 שניות על הטלפון.
+אם פריט לוקח יותר → CC יכול לאמת אותו, ספיר לא צריכה.
+
+**Smadar's checklist template:**
+- [ ] Touch target tap-feel @ 375px (BottomNav, filter chips, CTAs)
+- [ ] Animation smoothness on real device (hero parallax, marquee, dropdowns)
+- [ ] Font rendering on Frank Ruhl Libre headlines (anti-aliasing)
+- [ ] Perceived latency on async actions (newsletter submit, login, search)
+- [ ] RTL overflow @ narrow viewports (360px-375px range)
+- [ ] Color contrast on real screen (category card overlays, footer links)
+
+## Anti-patterns (forbidden)
+
+- ✗ Claude לעולם לא תבקש מ-Smadar לאמת content — ה-content נבדק ב-Tier 1
+- ✗ CC לעולם לא תבקש מ-Smadar לאמת test outcomes — CC רץ tests ב-Tier 2
+- ✗ CC לא ימסור wall של ✅ checkmarks ב-final report — Smadar קוראת רק ❌ + ⏳
+- ✗ Smadar לא תבדוק content בעצמה אם Claude לא ביקשה ← waste of mobile session
+
+---
+
 ## Product price validation (MEH-295 backend)
 
 > Backend-only checklist. Frontend form ships in Phase 3 PR. Endpoint: `POST /producers/me/products` + `PUT /producers/me/products/:id`. All POSTs require a producer-role JWT.
@@ -29,6 +177,39 @@
 - [ ] Labels persist — איך לבדוק: הקלידי טקסט בשם / תיאור / מחיר; **תוצאה מצופה:** התוויות מעל השדה נשארות גלויות (לא placeholder שנעלם). Bug-2 fix.
 - [ ] Submit copy — נקבה — איך לבדוק: צפי בכפתור הסבמיט; **תוצאה מצופה:** "הוסיפי מוצר" / בזמן שמירה "מוסיפה...". לא "שמור" / "שומרת".
 - [ ] RTL mobile — איך לבדוק: 375px, פתחי טופס מוצר חדש; **תוצאה מצופה:** ללא scroll אופקי, התוויות מיושרות לימין, שני שדות המחיר ב-grid 2-עמודות נכנסים.
+
+### Dietary cleanup verification (MEH-479 — closes MEH-293)
+
+> Smoke test on Vercel preview after MEH-479 merge. Confirms the destructive column drop didn't break the per-product flow that PR #2 wired up.
+
+- [ ] Smoke — `\d producers` — איך לבדוק: `railway connect Postgres` (staging), `\d producers`; **תוצאה מצופה:** טור `gluten_free` / `vegan` / `lactose_free` כבר לא מופיעים. `grass_fed` / `organic_certified` עדיין שם.
+- [ ] Smoke — fresh signup — איך לבדוק: `/register/producer` במובייל; **תוצאה מצופה:** הטופס לא מציג checkboxes לתזונה (כבר הוסרו ב-PR #2). הרשמה עוברת בלי 5xx (auth.py כבר לא כותב `gluten_free=` etc.).
+- [ ] Smoke — add product with vegan checked → card badge — איך לבדוק: התחברי כיוצרת חדשה, `/settings` → "מוצרים" → "הוסיפי מוצר", סמני 🥦 טבעוני, שמרי. פתחי `/producers`; **תוצאה מצופה:** ה-card שלך מציג badge "טבעוני" (`has_vegan_products` aggregated מ-`Product.is_vegan` דרך `attach_badge_fields`).
+- [ ] Smoke — `?vegan=true` filter — איך לבדוק: `/producers?vegan=true`; **תוצאה מצופה:** רק יוצרות עם לפחות מוצר אחד מסומן `is_vegan=TRUE` מופיעות. URL contract של ה-chip לא השתנה.
+- [ ] Regression — admin form — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** עדיין אין checkboxes לתזונה (הוסרו ב-PR #2). שמירה עוברת בלי שדות הישנים (Pydantic schema cleaned ב-MEH-479).
+- [ ] Regression — `/admin` listing — איך לבדוק: `/admin/producers`; **תוצאה מצופה:** טבלה לא תופסת 5xx (ה-`ProducerListOut` schema לא מבקש יותר את 3 השדות הישנים מה-DB).
+- [ ] Regression — badge fixture stale — איך לבדוק: ה-jest test `MEH-479 guard — legacy producer.vegan alone does NOT trigger badge` מאומת ב-CI; **תוצאה מצופה:** ירוק (אם נכשל → רגרסיה ל-7-day overlap, להזעיק).
+
+---
+
+### Dietary checkboxes per product (MEH-293 PR #2)
+
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים". Backend live with `is_X` columns + `has_X_products` aggregated read (PR #1 already merged).
+
+- [ ] Add form — sees 3 checkboxes — איך לבדוק: `/settings` → "מוצרים" → "הוסיפי מוצר"; **תוצאה מצופה:** מתחת לרשת המחיר (price_min / price_max) ולפני העלאת התמונה מופיעה כותרת "סימוני תזונה (אופציונלי)" + 3 checkboxes (🌾 ללא גלוטן, 🥦 טבעוני, 🥛 ללא לקטוז).
+- [ ] Add form — 375px layout — איך לבדוק: באותו טופס במובייל (≤640px); **תוצאה מצופה:** 3 ה-checkboxes מסודרות בעמודה אחת (1-col), לא דחוסות.
+- [ ] Add form — ≥640px layout — איך לבדוק: באותו טופס בדסקטופ (≥640px); **תוצאה מצופה:** 3 ה-checkboxes ב-3 עמודות (`grid-cols-3`).
+- [ ] Add — vegan checked → POST body — איך לבדוק: סמני "🥦 טבעוני", השלימי שם + price_min, לחצי "הוסיפי מוצר"; **תוצאה מצופה:** ב-network tab, ה-POST `/producers/me/products` כולל `is_vegan: true, is_gluten_free: false, is_lactose_free: false`. ה-response מכיל `is_vegan: true`.
+- [ ] Edit form — sees 3 checkboxes — איך לבדוק: לחצי Pencil ("ערכי") על מוצר קיים; **תוצאה מצופה:** הטופס inline כולל את אותו block של 3 checkboxes באותו מיקום (אחרי המחיר, לפני התמונה). אם המוצר נשמר עם `is_vegan=true`, ה-checkbox טעון מסומן.
+- [ ] Edit — toggle off → PUT body — איך לבדוק: ערכי מוצר עם `is_vegan=true`, הסירי את הסימון, "שמרי שינויים"; **תוצאה מצופה:** ה-PUT body כולל `is_vegan: false`. השורה חוזרת ל-display mode.
+- [ ] Card aggregation — איך לבדוק: אחרי הוספת מוצר עם `is_vegan=true`, פתחי `/producers` כצרכן; **תוצאה מצופה:** ה-ProducerCard של אותה בעלת עסק מציג badge "טבעוני" (זה מ-`has_vegan_products: true` שה-backend מחזיר).
+- [ ] Card aggregation — toggle off — איך לבדוק: ערכי את המוצר היחיד עם `is_vegan=true` והסירי את הסימון; **תוצאה מצופה:** רענני `/producers` — ה-card כבר לא מציג badge "טבעוני" (כי `has_vegan_products` הפך ל-`false`).
+- [ ] Filter on /producers — איך לבדוק: `/producers?vegan=true` (או דרך ה-chip); **תוצאה מצופה:** רק בעלות עסק עם לפחות מוצר אחד שמסומן `is_vegan=true` מופיעות. בעלות עסק עם 0 מוצרים נופלות (התנהגות מכוונת — MEH-293 fix).
+- [ ] Register form — אין יותר checkboxes — איך לבדוק: `/register/producer`; **תוצאה מצופה:** לא מופיעים יותר 3 ה-checkboxes (gluten_free / vegan / lactose_free) או הכותרת "סימוני תזונה (אופציונלי)" ברמת בית העסק. הטופס מסתיים עם CategorySelector ועובר ל-Legal consent ישירות.
+- [ ] Admin form — אין יותר checkboxes — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** הסטריפ של הצ'קבוקסים מציג רק `grass_fed` ו-`is_verified` (3 ה-dietary הוסרו). שמירה עוברת.
+- [ ] Legacy producer (overlap) — איך לבדוק: בעלת עסק שנרשמה לפני MEH-293 ויש לה `producer.vegan=true` אבל אין מוצרים מסומנים; **תוצאה מצופה:** ה-card שלה עדיין מציג badge "טבעוני" (legacy fallback ב-`lib/badges.js` — `has_vegan_products || vegan`). הסרה ב-+7-day cleanup PR.
+
+---
 
 ### Product Edit flow (MEH-470)
 
@@ -88,14 +269,12 @@
 
 ---
 
-## Recipe ingredient cascade (MEH-311)
+## ~~Recipe ingredient cascade (MEH-311)~~
 
-- [ ] FK violation regression — sanity check ידני בstaging:
-  1. בקונסולת DB ב-Railway: צרי `RecipeIngredient` שמצביע על producer קיים — `INSERT INTO recipe_ingredients (id, recipe_id, ingredient_name, producer_id) VALUES (gen_random_uuid(), '<existing-recipe-id>', 'בדיקה', '<producer-id>');`
-  2. דרך אדמין UI או DB: `DELETE FROM producers WHERE id = '<producer-id>';`
-  3. **תוצאה מצופה:** Producer נמחק. RecipeIngredient נשאר. `SELECT producer_id FROM recipe_ingredients WHERE id = '<ingredient-id>';` → `NULL`.
-  4. **בלי הfix:** היה נכשל בFK violation. אם זה עובד — הfix תקין.
-- [ ] DELETE /auth/me regression — producer-user מוחקת חשבון דרך setting → "מחיקת חשבון" כשיש לה RecipeIngredient שמצביע אליה: ה-deletion מצליח (היה נכשל בFK violation לפני הfix).
+> **MEH-587 (2026-05-15):** section removed — `recipes` and
+> `recipe_ingredients` dropped (chunk 0/4). The cascade contract this
+> section tested no longer has a surface to exercise. See CHANGELOG +
+> migration `d7e3c9a82f5b`.
 
 ---
 
@@ -1085,3 +1264,133 @@ Drill steps:
 - [ ] **6. Log the result.**
       Add a one-liner to HANDOFF.md under MEH-408 Phase 4:
       `DR drill executed YYYY-MM-DD — restored mehamakor_<env>_<timestamp>.dump → row counts match — Phase 4 closed.`
+
+## Cloudinary Orphan Cleanup (MEH-375)
+
+Operator script: `backend/scripts/cleanup_cloudinary_orphans.py`
+
+### Dry-run (read-only, safe)
+
+From inside a Railway-deployed container (where `DATABASE_URL` resolves to the internal Postgres host):
+
+    cd backend
+    python -m scripts.cleanup_cloudinary_orphans
+
+From a local machine (where the internal host is unreachable), override `DATABASE_URL` with the public proxy:
+
+    DATABASE_URL="<DATABASE_PUBLIC_URL value>" python -m scripts.cleanup_cloudinary_orphans
+
+Default behavior: lists Cloudinary assets under prefixes `mehamakor/` and `mehamakor/avatars/`, queries 8 DB image sources (`User.avatar_url`, `Producer.story_card_url`, `Product.image_url`, `HomeProduct.photo`, `Event.image_url`, `Experience.image_url`, `Producer.images[]`, `HomeProduct.images[]`), computes orphans via `secure_url` string equality, and prints a summary block to stdout.
+
+Expected stdout output:
+
+    ============================================================
+    Cloudinary candidates (after filters): <M>
+    DB-referenced URLs:                    <N>
+    Orphans:                               <K>
+    Orphan total bytes:                    <bytes> (<human-readable>)
+
+    First 5 orphan public_ids:
+      - mehamakor/...
+      - ...
+    Re-run with --apply to delete.
+    ============================================================
+
+Operational logs go to stderr (INFO/ERROR level). Capture separately with:
+
+    python -m scripts.cleanup_cloudinary_orphans > out.log 2> err.log
+
+### Abort conditions (do NOT proceed to --apply if any of these are true)
+
+- Stacktrace in stderr or exit code != 0
+- K (orphans) > 50% of M (Cloudinary candidates) — suggests `secure_url` format mismatch between DB-stored URLs and Cloudinary listing; investigate before deleting
+- K = 0 with M > 0 and you expected orphans — filter logic may be too aggressive
+- Sample public_ids do not start with `mehamakor/` — wrong prefix filter
+- WARNING or ERROR lines in stderr beyond the standard INFO flow
+
+### Apply mode (destructive)
+
+Only after a clean dry-run with no abort conditions:
+
+    python -m scripts.cleanup_cloudinary_orphans --apply --yes
+
+`--apply` enables destructive mode. `--yes` skips the interactive confirmation prompt (required for cron/CI; omit for manual runs to get a "type yes to confirm" gate).
+
+Expected stdout output:
+
+    ============================================================
+    Apply complete: deleted=<D> not_found=<NF> errors=<E>
+    Status: CLEAN — exit code 0
+    ============================================================
+
+Where:
+- `deleted` = number of assets successfully removed
+- `not_found` = assets already gone (idempotent, not an error)
+- `errors` = assets that failed to delete (Cloudinary API error)
+
+Status values: `CLEAN` (errors=0), `PARTIAL` (errors>0 — some assets not deleted, re-run to retry).
+
+### Verification (post-apply)
+
+Re-run in dry-run mode immediately after `--apply`:
+
+    python -m scripts.cleanup_cloudinary_orphans
+
+Expected: `Orphans: 0`. If orphans remain, they were either uploaded after the `--apply` run or are in a prefix not covered by the default list.
+
+### Options
+
+- `--prefix PREFIX` — override default prefixes (can specify multiple times)
+- `--min-age-hours N` — skip assets younger than N hours (default: 24). Prevents race with in-flight uploads.
+- `--batch-size N` — Cloudinary delete batch size, max 100 (default: 100)
+
+### Exit codes
+
+- 0 — success (dry-run: computed cleanly; apply: CLEAN or PARTIAL with not_found only)
+- 1 — error (DB connection failed, Cloudinary listing failed, or delete errors > 0)
+
+### Known limitation
+
+Story-card assets under `mehamakor/producers/*` are excluded from cleanup by the reserved-prefix reject list (`RESERVED_PUBLIC_ID_PREFIXES` in `cloudinary_utils.py`). When a producer is deleted, their story-card asset remains in Cloudinary as an untouchable orphan (~few KB each). Tracked for follow-up (R1: story-card orphan accumulation post-producer-delete).
+
+---
+
+# Autonomous PR pipeline (MEH-551)
+
+תיעוד הסדר של pipeline autonomous PR — מה enabled, מה deferred, ומתי יופעל הבא.
+
+## Phase 0 + 1 — OAuth & MCP wiring (DONE)
+
+- ✅ `vercel` MCP — OAuth complete; CC can read deployment status, list previews, fetch build logs autonomously
+- ✅ `sentry` MCP — OAuth complete; CC can run pre/post-merge issue-diff via `search_issues` + `analyze_issue_with_seer`
+- Auth-token expiry: tokens last ~30 days. If MCP calls start failing silently, run `/mcp auth <server>` interactively (~30s)
+
+## Phase 2 — `/autofix-pr` slash command (DEFERRED)
+
+Built but not yet validated against a live CI failure. **Trigger to test:** when the next batch PR fails CI, run `/autofix-pr` instead of fixing manually. Until then `/autofix-pr` is unproven on this repo's failure modes.
+
+## Phase 3 — Cloud Auto-Fix (DEFERRED)
+
+Blocked by Phase 2. Cloud Auto-Fix wires `/autofix-pr` into a GitHub Action so failures fix themselves before Smadar even sees them. Don't enable until Phase 2 has at least 2 successful runs against real failures (not synthetic).
+
+## Pro plan caveat — token inflation
+
+Claude Code v2.1.100+ shows ~40% token inflation on Pro plans for slash commands that load multi-file context. **Use `/autofix-pr` selectively** — preferred for failure modes the 3 documented patterns can fix (package-lock drift, ESLint warnings, pre-commit filename bug). Don't auto-trigger on every CI failure or quota burns fast.
+
+## Brand voice enforcement (MEH-472 hybrid)
+
+Brand-voice grep canary lives inside `/batch` (created in MEH-344, `.claude/commands/batch.md`). Pipeline's autonomous loops route brand-sensitive copy through that grep before any commit:
+
+- Functional UI → gerund (`בטעינה`, `מתעדכן`)
+- CTAs → plural imperative (`הוסיפו`, `הצטרפו`) — never feminine `הוסיפי`/`הצטרפי`/`בואי`/`הזיני`
+- Producer term → `בית עסק` only, never `יצרן/ית`
+
+## Status summary
+
+| Phase | Status | Next action |
+|---|---|---|
+| 0 — Pre-flight | DONE | — |
+| 1 — MCP OAuth | DONE | — |
+| 2 — `/autofix-pr` validation | DEFERRED | Run on next real CI failure |
+| 3 — Cloud Auto-Fix wiring | DEFERRED | After Phase 2 succeeds 2x |
+| 4 — Documentation | THIS PR | — |

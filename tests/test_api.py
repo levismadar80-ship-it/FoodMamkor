@@ -1675,6 +1675,64 @@ class TestGetProducersMeRouteOrder:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(producer.id)
 
+    def test_get_me_after_registration(self, client, db, monkeypatch):
+        """MEH-321 regression — GET /producers/me must return 200 immediately
+        after a brand-new producer registration (Pydantic schema mismatch fix)."""
+        import app.routers.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "_send_verify_email", lambda *a, **k: None)
+        monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
+
+        reg = client.post("/auth/register/producer", json={
+            "email": "meh321@example.com",
+            "name": "בעלת עסק",
+            "password": "Zx7Yp9Mq2Lr4",
+            "producer_name": "חוות מה-321",
+            "phone": "0501234567",
+            "category_ids": [],
+            "primary_contact_method": "whatsapp",
+        })
+        assert reg.status_code == 200, reg.text
+        token = reg.json()["access_token"]
+
+        # MEH-575: register_producer sets the fingerprint cookie via
+        # _set_fingerprint_cookie (auth.py:449), but TestClient drops Secure
+        # cookies on http://testserver — so the jar is empty on the next call
+        # and get_current_user 401s with "fingerprint mismatch — has_cookie=False".
+        # Extract the cookie from Set-Cookie headers and pass it explicitly.
+        fp_cookie = next(
+            (h.split(";", 1)[0].split("=", 1)[1]
+             for h in reg.headers.get_list("set-cookie")
+             if h.startswith("__Secure-Fgp=")),
+            None,
+        )
+        assert fp_cookie, "register response missing __Secure-Fgp cookie"
+
+        resp = client.get(
+            "/producers/me",
+            headers={"Authorization": f"Bearer {token}"},
+            cookies={"__Secure-Fgp": fp_cookie},
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["name"] == "חוות מה-321"
+        assert body["status"] == "pending_whatsapp"
+
+    def test_get_me_with_null_created_at_returns_200(self, client, db):
+        """MEH-321: created_at is nullable=True in DB — NULL must not crash serialization."""
+        from sqlalchemy import text as sa_text
+        user = make_user(db, role="producer")
+        producer = make_producer(db)
+        user.producer_id = producer.id
+        db.commit()
+        db.execute(sa_text("UPDATE producers SET created_at = NULL WHERE id = :pid"), {"pid": str(producer.id)})
+        db.commit()
+
+        resp = client.get("/producers/me", headers=auth_header(user))
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["created_at"] is None
+
 
 class TestUploadGoogleAvatarOrNone:
     """MEH-299 — _upload_google_avatar_or_none helper unit tests.
@@ -2704,3 +2762,39 @@ class TestBOLA:
         # Must use authenticated user's producer_id, not the spoofed one
         assert body["producer_id"] == str(producer.id)
         assert body["producer_id"] != fake_id
+
+
+class TestPublicStats:
+    """GET /stats — public social-proof counter (MEH-521).
+
+    Contract:
+    - Anonymous (no auth).
+    - Returns producers_count (approved only) and categories_count.
+    - Returns 0 counts when no approved producers exist — never raises.
+    """
+
+    def test_stats_returns_200(self, client):
+        resp = client.get("/stats")
+        assert resp.status_code == 200
+
+    def test_stats_schema(self, client):
+        body = client.get("/stats").json()
+        assert "producers_count" in body
+        assert "categories_count" in body
+        assert isinstance(body["producers_count"], int)
+        assert isinstance(body["categories_count"], int)
+
+    def test_stats_returns_zero_when_no_approved_producers(self, client, db):
+        """MEH-521: endpoint must return 0 gracefully, not raise."""
+        # No producers created → approved count is 0
+        resp = client.get("/stats")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["producers_count"] == 0
+
+    def test_stats_counts_only_approved_producers(self, client, db):
+        """Pending producers must not inflate the counter."""
+        make_producer(db, name="ממתין לאישור", status="pending")
+        resp = client.get("/stats")
+        body = resp.json()
+        assert body["producers_count"] == 0

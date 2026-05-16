@@ -27,15 +27,42 @@ def _redacted_db_url() -> str:
 # migrations managed by Alembic — see backend/alembic/
 
 
+def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
+    """MEH-334: defense-in-depth boot guard for FRONTEND_URL drift.
+
+    Returns the list of mismatch reasons (empty == OK). Caller logs WARNING
+    per reason — never raises so boot continues even if drift is present
+    (rollback strategies depend on this).
+
+    Recurrence prevention for MEH-332: FRONTEND_URL was bulk-copied from
+    production into staging Railway env vars and went undetected for ~3
+    weeks because every staging email link pointed to the production host.
+    """
+    e = (env or "").lower()
+    url = (frontend_url or "").lower()
+    issues: list[str] = []
+    if e == "staging" and "staging." not in url:
+        issues.append("env=staging but frontend_url missing 'staging.' prefix")
+    if e == "production" and ("staging" in url or "localhost" in url):
+        issues.append("env=production but frontend_url points at staging/localhost")
+    if e == "development" and "mehamakor.online" in url:
+        issues.append("env=development but frontend_url points at mehamakor.online")
+    return issues
+
+
 def _run_db_init_sync() -> None:
     log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
     from app.database import Base, engine
-    Base.metadata.create_all(bind=engine)  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
+
+    Base.metadata.create_all(
+        bind=engine
+    )  # MEH-352: dev/CI safety net; checkfirst=True → no-op when tables exist (prod uses Alembic)
     log.info("[bg 1/2] models imported OK")
 
     log.info("[bg 2/2] running seed_data.seed()...")
     from seed_data import seed
+
     seed()
     log.info("[bg 2/2] seed OK")
 
@@ -46,8 +73,31 @@ async def _init_db_background(app: FastAPI) -> None:
         log.info("background DB init complete — all tables/migrations/seed ready")
         app.state.db_init_status = "ready"
     except Exception:
-        log.error("background DB init failed — /producers et al will 500 until fixed", exc_info=True)
+        log.error(
+            "background DB init failed — /producers et al will 500 until fixed",
+            exc_info=True,
+        )
         app.state.db_init_status = "failed"
+
+
+def _run_followup_job() -> None:
+    """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
+    (the BackgroundScheduler worker thread does not share the request-scoped
+    Session), invokes the per-step sender, and logs the per-step counts.
+    Any exception is swallowed so the scheduler thread itself never dies —
+    onboarding_followup.send_due_followups already fail-isolates per producer.
+    """
+    from app.database import SessionLocal
+    from app.services.onboarding_followup import send_due_followups
+
+    db = SessionLocal()
+    try:
+        counts = send_due_followups(db)
+        log.info("[FOLLOWUP] daily run complete counts=%s", counts)
+    except Exception:
+        log.error("[FOLLOWUP] daily run crashed", exc_info=True)
+    finally:
+        db.close()
 
 
 @asynccontextmanager
@@ -56,17 +106,21 @@ async def lifespan(app: FastAPI):
     log.info("mehamakor backend starting up")
     log.info("db_url        = %s", _redacted_db_url())
     log.info("PORT          = %s", os.getenv("PORT", "<unset, default 8000>"))
-    log.info("SECRET_KEY set= %s", "yes" if os.getenv("SECRET_KEY") else "no (using default)")
+    log.info(
+        "SECRET_KEY set= %s", "yes" if os.getenv("SECRET_KEY") else "no (using default)"
+    )
     log.info("ADMIN_EMAIL   = %s", os.getenv("ADMIN_EMAIL") or "<unset>")
     log.info("=" * 60)
     log.info("scheduling DB init in background — /health is live NOW")
 
     _missing = [
-        name for name, val in [
+        name
+        for name, val in [
             ("ADMIN_EMAIL", settings.admin_email),
             ("RESEND_API_KEY", settings.resend_api_key),
-            ("TWILIO_ACCOUNT_SID", settings.twilio_account_sid),
-        ] if not val
+            ("WHATSAPP_ACCESS_TOKEN", settings.whatsapp_access_token),
+        ]
+        if not val
     ]
     if _missing:
         log.warning(
@@ -74,9 +128,36 @@ async def lifespan(app: FastAPI):
             ", ".join(_missing),
         )
 
+    # MEH-334: FRONTEND_URL/ENV drift guard (recurrence prevention for MEH-332).
+    for issue in _check_frontend_url_consistency(settings.env, settings.frontend_url):
+        log.warning(
+            "FRONTEND_URL drift: %s — emails/links will point to wrong host (frontend_url=%s)",
+            issue,
+            settings.frontend_url,
+        )
+
     app.state.db_init_status = "initializing"
     app.state.db_init_task = asyncio.create_task(_init_db_background(app))
 
+    # MEH-539: in-process daily scheduler for the 4 onboarding follow-up
+    # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
+    # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+
+    followup_scheduler = BackgroundScheduler(timezone="UTC")
+    followup_scheduler.add_job(
+        _run_followup_job,
+        CronTrigger(hour=10, minute=0),
+        id="meh_539_onboarding_followups_daily",
+        replace_existing=True,
+    )
+    followup_scheduler.start()
+    app.state.followup_scheduler = followup_scheduler
+    log.info("[FOLLOWUP] scheduler started — daily 10:00 UTC")
+
     yield
 
+    log.info("[FOLLOWUP] stopping scheduler")
+    followup_scheduler.shutdown(wait=False)
     log.info("mehamakor backend shutting down")

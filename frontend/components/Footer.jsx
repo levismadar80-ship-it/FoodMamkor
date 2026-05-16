@@ -4,8 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { InstagramLogo, ArrowLeft } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
+import { BRAND_NAME } from "@/lib/constants";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -33,6 +35,7 @@ import api from "@/lib/api";
  * is the drop-in replacement that passes AA.
  */
 export default function Footer() {
+  const t = useTranslations();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
@@ -45,20 +48,20 @@ export default function Footer() {
     try {
       await api.post("/newsletter", { email });
       setStatus("success");
-      setMessage("ברוכה הבאה למהמקור 🌱 נפגשות בתיבה");
+      setMessage(t("nav.footer.newsletter_success"));
       setEmail("");
     } catch (err) {
       setStatus("error");
-      setMessage(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setMessage(err.response?.data?.detail || t("error.generic"));
     }
   };
 
   const navLinks = [
-    { href: "/", label: "גלה עסקים" },
-    { href: "/map", label: "מפה" },
-    { href: "/neighbor", label: "מהמטבח של השכן" },
-    { href: "/events", label: "אירועים" },
-    { href: "/about", label: "אודות" },
+    { href: "/", label: t("nav.footer.nav_discover") },
+    { href: "/map", label: t("nav.map") },
+    { href: "/events", label: t("nav.footer.events") },
+    { href: "/about", label: t("nav.footer.about") },
+    { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
   ];
 
   return (
@@ -83,15 +86,15 @@ export default function Footer() {
               padding: "10px 20px",
             }}
           >
-            הוסיפי את העסק שלך
+            {t("nav.footer.add_business")}
             <ArrowLeft size={14} weight="bold" aria-hidden="true" />
           </Link>
           <div className="text-center sm:text-start">
             <p className="font-headline text-white" style={{ fontSize: "14px" }}>
-              יש לך עסק מזון מקומי?
+              {t("nav.footer.cta_pitch")}
             </p>
             <p style={{ fontSize: "11px", color: "#9ab89a" }}>
-              הצטרפי לאלפי בעלות עסק במהמקור
+              {t("nav.footer.cta_subpitch")}
             </p>
           </div>
         </div>
@@ -100,23 +103,23 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-8">
           {/* Column 1 — Brand */}
           <div>
-            <Link href="/" aria-label="מהמקור — דף הבית">
+            <Link href="/" aria-label={t("nav.footer.brand_aria")}>
               <Image
                 src="/logo-footer.png"
-                alt="מהמקור"
+                alt={BRAND_NAME}
                 width={140}
                 height={52}
                 className="mb-4 brightness-0 invert"
               />
             </Link>
             <p className="text-sm leading-relaxed max-w-xs mb-4" style={{ color: "#EAF3DE" }}>
-              ישר מהמקור אליך — בתי עסק מקומיים, כולם במקום אחד.
+              {t("nav.footer.brand_tagline")}
             </p>
             <a
               href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="עמוד האינסטגרם של מהמקור — נפתח בחלון חדש"
+              aria-label={t("nav.footer.instagram_aria")}
               className="inline-flex items-center gap-2 hover:text-white transition"
               style={{ color: "#c8dcc8" }}
             >
@@ -126,7 +129,7 @@ export default function Footer() {
           </div>
 
           {/* Column 2 — Navigation */}
-          <nav aria-label="ניווט ראשי בפוטר">
+          <nav aria-label={t("nav.footer.nav_aria")}>
             <h3
               className="mb-3"
               style={{
@@ -136,7 +139,7 @@ export default function Footer() {
                 textTransform: "uppercase",
               }}
             >
-              ניווט
+              {t("nav.footer.nav_heading")}
             </h3>
             <ul className="flex flex-col gap-2">
               {navLinks.map((link) => (
@@ -159,11 +162,11 @@ export default function Footer() {
               className="font-headline text-white mb-4"
               style={{ fontSize: "16px" }}
             >
-              אוכל טוב לא שומרים לעצמנו.
+              {t("nav.footer.newsletter_heading")}
             </h3>
             <form onSubmit={handleSubscribe} className="relative">
               <label htmlFor="footer-newsletter-email" className="sr-only">
-                אימייל לניוזלטר
+                {t("nav.footer.newsletter_label")}
               </label>
               <input
                 id="footer-newsletter-email"
@@ -172,14 +175,14 @@ export default function Footer() {
                 dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="האימייל שלך, בבקשה"
+                placeholder={t("nav.footer.newsletter_placeholder")}
                 className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-8"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                aria-label="שלחי"
+                aria-label={t("nav.footer.newsletter_submit")}
                 className="absolute end-0 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition disabled:opacity-40"
               >
                 {status === "loading" ? <ButtonSpinner /> : "→"}
@@ -211,9 +214,9 @@ export default function Footer() {
           </p>
           <ul className="flex items-center gap-4">
             {[
-              { href: "/login", label: "כניסה לחשבון" },
-              { href: "/terms", label: "תנאי שימוש" },
-              { href: "/privacy", label: "פרטיות" },
+              { href: "/login", label: t("nav.footer.login") },
+              { href: "/terms", label: t("nav.footer.terms") },
+              { href: "/privacy", label: t("nav.footer.privacy_short") },
             ].map((link) => (
               <li key={link.href}>
                 <Link

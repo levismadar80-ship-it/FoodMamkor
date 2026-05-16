@@ -10,7 +10,11 @@ from app.auth import get_current_user_optional, require_admin
 from app.database import get_db
 from app.models.models import CategoryRequest, User
 from app.rate_limit import limiter
-from app.schemas.schemas import CategoryRequestCreate, CategoryRequestOut, CategoryRequestUpdate
+from app.schemas.schemas import (
+    CategoryRequestCreate,
+    CategoryRequestOut,
+    CategoryRequestUpdate,
+)
 
 router = APIRouter(tags=["category-requests"])
 
@@ -51,11 +55,7 @@ def list_category_requests(
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
-    rows = (
-        db.query(CategoryRequest)
-        .order_by(CategoryRequest.created_at.desc())
-        .all()
-    )
+    rows = db.query(CategoryRequest).order_by(CategoryRequest.created_at.desc()).all()
     # Group by normalised requested_name (case-insensitive, trimmed).
     grouped: dict[str, dict] = {}
     for r in rows:
@@ -83,7 +83,9 @@ def list_category_requests(
     return sorted(grouped.values(), key=lambda g: g["count"], reverse=True)
 
 
-@router.patch("/admin/category-requests/{request_id}", response_model=CategoryRequestOut)
+@router.patch(
+    "/admin/category-requests/{request_id}", response_model=CategoryRequestOut
+)
 @limiter.limit("60/minute")
 def review_category_request(
     request: Request,

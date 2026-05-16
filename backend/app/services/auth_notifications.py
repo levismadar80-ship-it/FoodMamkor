@@ -1,20 +1,22 @@
 """
-Twilio + email notifications for the producer-registration flow.
+WhatsApp + email notifications for the producer-registration flow.
 
 Both functions are fire-and-forget background-task targets; both
-fail-open so a Twilio outage cannot break producer signup. MEH-287
+fail-open so a WhatsApp outage cannot break producer signup. MEH-287
 retained: every skip path emits logger.error with the exact missing
-piece (phone, TWILIO_ACCOUNT_SID, TWILIO_WHATSAPP_FROM) so Railway /
-Sentry surfaces the misconfiguration instead of silently failing.
+piece (phone, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN) so
+Railway / Sentry surfaces the misconfiguration instead of silently
+failing.
 
 Lifted verbatim from backend/app/routers/auth.py during the MEH-440
-refactor.
+refactor; SDK swapped Twilio → Meta Cloud API in MEH-508.
 """
 
 import logging
 
 from app.config import settings
 from app.services.email import send_email
+from app.services.whatsapp import send_text
 from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
@@ -30,10 +32,10 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
     missing = []
     if not phone:
         missing.append("phone")
-    if not settings.twilio_account_sid:
-        missing.append("TWILIO_ACCOUNT_SID")
-    if not settings.twilio_whatsapp_from:
-        missing.append("TWILIO_WHATSAPP_FROM")
+    if not settings.whatsapp_phone_number_id:
+        missing.append("WHATSAPP_PHONE_NUMBER_ID")
+    if not settings.whatsapp_access_token:
+        missing.append("WHATSAPP_ACCESS_TOKEN")
     if missing:
         logger.error(
             f"[WHATSAPP] Producer welcome SKIPPED for '{name}' — missing: {', '.join(missing)}"
@@ -48,20 +50,15 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
         f"השלימי את הפרופיל כדי שלקוחות יוכלו למצוא אותך:\n"
         f"{settings.frontend_url}/producer/dashboard"
     )
-    try:
-        from twilio.rest import Client
-        Client(settings.twilio_account_sid, settings.twilio_auth_token).messages.create(
-            body=message,
-            from_=settings.twilio_whatsapp_from,
-            to=f"whatsapp:{phone}",
-        )
+    if send_text(phone, message):
         logger.info("[WHATSAPP] Producer welcome sent")
         return True
-    except Exception as e:
-        logger.error(
-            f"[WHATSAPP] Producer welcome FAILED for {mask_phone(phone)}: {e}", exc_info=True
-        )
-        return False
+    # send_text already logs the HTTP-error path with mask_phone; this
+    # MEH-287 line preserves the per-recipient error trail at this layer.
+    logger.error(
+        f"[WHATSAPP] Producer welcome FAILED for {mask_phone(phone)}",
+    )
+    return False
 
 
 def notify_admin_new_producer(name: str, city: str | None) -> None:
@@ -70,19 +67,10 @@ def notify_admin_new_producer(name: str, city: str | None) -> None:
         f"בית עסק חדש: {name} - {city or 'לא צוין'}\n"
         f"לאישור: {settings.frontend_url}/admin"
     )
-    # WhatsApp via Twilio
-    if settings.twilio_account_sid and settings.admin_whatsapp_to:
-        try:
-            from twilio.rest import Client
-            client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-            client.messages.create(
-                body=message,
-                from_=settings.twilio_whatsapp_from,
-                to=settings.admin_whatsapp_to,
-            )
+    # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+    if settings.admin_whatsapp_to:
+        if send_text(settings.admin_whatsapp_to, message):
             logger.info("[WHATSAPP] Notification sent to admin")
-        except Exception as e:
-            logger.warning(f"[WHATSAPP] Failed: {e}")
     else:
         logger.debug(f"[WHATSAPP] Would send: {message}")
 

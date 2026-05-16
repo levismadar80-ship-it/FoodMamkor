@@ -30,8 +30,10 @@ graph LR
     App --> Admin[admin.router<br/>/admin/producers/*]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
-    App --> Recipes[recipes.router<br/>v2 — no public UI yet]
 ```
+
+<!-- MEH-587: recipes.router removed (chunk 0/4) ahead of producer-recipes feature. -->
+
 
 ## 2. Public discovery (what the homepage/map/producer pages hit)
 

@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
+import { BRAND_NAME } from "@/lib/constants";
 
 const W = 1080;
 const H = 1920;
@@ -162,7 +163,7 @@ async function drawCard(canvas, producer) {
   // מהמקור logo text
   ctx.fillStyle = "#FFFFFF";
   ctx.font = `bold 72px "Frank Ruhl Libre", serif`;
-  ctx.fillText("מהמקור", W / 2, H - 220);
+  ctx.fillText(BRAND_NAME, W / 2, H - 220);
 
   // CTA text
   ctx.fillStyle = "rgba(255,255,255,0.6)";

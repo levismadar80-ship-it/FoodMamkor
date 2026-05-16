@@ -2,6 +2,7 @@
 
 import { showToast } from "@/lib/toast";
 import { ShareNetwork } from "@phosphor-icons/react";
+import { BRAND_NAME } from "@/lib/constants";
 
 export default function ShareButton({ url, title, description, city, category }) {
   const shareText = [
@@ -20,7 +21,7 @@ export default function ShareButton({ url, title, description, city, category })
     // Try native share first (mobile) — text only, no file fetching
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title: title || "מהמקור", text: shareText, url });
+        await navigator.share({ title: title || BRAND_NAME, text: shareText, url });
         return;
       } catch {
         // user cancelled or unsupported — fall through to clipboard

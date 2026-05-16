@@ -1,0 +1,24 @@
+[changelog]
+header = ""
+body = """
+{% for commit in commits %}
+## {{ commit.timestamp | date(format="%Y-%m-%d") }} — {{ commit.scope }}: {{ commit.description }}
+{% if commit.body %}
+`{{ commit.type }}({{ commit.scope }})`: {{ commit.body | trim }}
+{% endif %}
+Closes {{ commit.scope }}.
+{% endfor %}
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_parsers = [
+  { message = "^(feat|fix|chore|docs|ci|refactor|test|style|perf)\\(MEH-", group = "Changes" },
+  { message = ".*", skip = true },
+]
+filter_commits = true
+sort_commits = "newest"

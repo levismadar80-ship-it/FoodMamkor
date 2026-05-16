@@ -1,0 +1,257 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import CitySearch from "@/components/CitySearch";
+
+const CATEGORIES = ["סדנה", "סיור", "שוק", "קטיף", "טעימות", "אחר"];
+
+export default function NewEventPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    event_date: "",
+    event_time: "",
+    location: "",
+    city: "",
+    image_url: "",
+    category: "סדנה",
+    price: 0,
+    max_participants: "",
+    registration_url: "",
+  });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!authLoading && (!user || user.role !== "producer")) {
+    if (typeof window !== "undefined") router.push("/login");
+    return null;
+  }
+
+  const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const payload = {
+        ...form,
+        price: Number(form.price) || 0,
+        max_participants: form.max_participants ? Number(form.max_participants) : null,
+        event_time: form.event_time || null,
+        registration_url: form.registration_url || null,
+      };
+      const r = await api.post("/events", payload);
+      router.push(`/events/${r.data.id}`);
+    } catch (err) {
+      setError(err.response?.data?.detail || "שגיאה ביצירת האירוע");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-12">
+      <nav className="text-sm text-site-muted mb-4">
+        <Link href="/producer/dashboard" className="hover:text-primary">ניהול העסק</Link>
+        <span className="mx-2">›</span>
+        <span className="text-site-text">אירוע חדש</span>
+      </nav>
+
+      <h1 className="font-headline text-4xl font-bold text-site-text mb-2">אירוע חדש</h1>
+      <p className="text-site-muted mb-8">סדנה, סיור, שוק, קטיף או ימי פתיחה — פרסמי כאן</p>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[8px] p-3 mb-4 text-sm" role="alert">
+          {error}
+        </div>
+      )}
+
+      <p className="text-sm text-site-muted bg-light rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+        אירועים = סדנה, סיור, יום פתיחה, או כל מפגש עם לקוחות. יופיעו ב-/events ובעמוד שלך. מושלם להבאת לקוחות חדשות.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Field id="title" label="שם האירוע" required>
+          <input
+            id="title"
+            type="text"
+            required
+            value={form.title}
+            onChange={update("title")}
+            className="input-base"
+            placeholder="למשל: סדנת גבינה"
+          />
+        </Field>
+
+        <Field id="description" label="תיאור">
+          <textarea
+            id="description"
+            rows={4}
+            value={form.description}
+            onChange={update("description")}
+            className="input-base resize-none"
+            placeholder="אירועים נחשפים ללקוחות ב-/events ובעמוד שלך. ספרי: מה יקרה, מי מוזמנת, מה כלול במחיר, מה להביא."
+          />
+        </Field>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <Field id="event_date" label="תאריך" required>
+            <input
+              id="event_date"
+              type="date"
+              required
+              value={form.event_date}
+              onChange={update("event_date")}
+              className="input-base"
+            />
+          </Field>
+          <Field id="event_time" label="שעה">
+            <input
+              id="event_time"
+              type="time"
+              value={form.event_time}
+              onChange={update("event_time")}
+              className="input-base"
+            />
+          </Field>
+        </div>
+
+        <Field id="location" label="מיקום">
+          <input
+            id="location"
+            type="text"
+            value={form.location}
+            onChange={update("location")}
+            className="input-base"
+            placeholder="בחווה שלנו / כתובת מלאה"
+          />
+        </Field>
+
+        <div>
+          <label htmlFor="city" className="block text-sm font-medium text-site-text mb-1">עיר</label>
+          <CitySearch
+            id="city"
+            label="עיר"
+            value={form.city}
+            onChange={(val) => setForm({ ...form, city: val })}
+            placeholder="חפשי עיר..."
+          />
+        </div>
+
+        <Field id="category" label="קטגוריה" required>
+          <select
+            id="category"
+            value={form.category}
+            onChange={update("category")}
+            className="input-base"
+            required
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <Field id="price" label="מחיר (0 = חינם)">
+            <input
+              id="price"
+              type="number"
+              min="0"
+              value={form.price}
+              onChange={update("price")}
+              className="input-base"
+            />
+          </Field>
+          <Field id="max_participants" label="מקסימום משתתפים">
+            <input
+              id="max_participants"
+              type="number"
+              min="1"
+              value={form.max_participants}
+              onChange={update("max_participants")}
+              className="input-base"
+              placeholder="ריק = ללא הגבלה"
+            />
+          </Field>
+        </div>
+
+        <Field id="image_url" label="קישור לתמונה (Cloudinary)">
+          <input
+            id="image_url"
+            type="url"
+            value={form.image_url}
+            onChange={update("image_url")}
+            className="input-base"
+            placeholder="https://res.cloudinary.com/..."
+            dir="ltr"
+          />
+        </Field>
+
+        <Field id="registration_url" label="לינק הרשמה חיצוני (אופציונלי)">
+          <input
+            id="registration_url"
+            type="url"
+            value={form.registration_url}
+            onChange={update("registration_url")}
+            className="input-base"
+            placeholder="https://..."
+            dir="ltr"
+          />
+        </Field>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium disabled:opacity-60"
+          >
+            {submitting ? "מפרסמת..." : "פרסם אירוע"}
+          </button>
+          <Link
+            href="/producer/dashboard"
+            className="border border-border text-site-text px-6 py-3 rounded-[8px] hover:bg-light transition"
+          >
+            ביטול
+          </Link>
+        </div>
+      </form>
+
+      <style jsx>{`
+        .input-base {
+          width: 100%;
+          background: white;
+          border: 1px solid #e8e0d0;
+          border-radius: 8px;
+          padding: 12px 16px;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .input-base:focus {
+          border-color: #2e6853;
+          box-shadow: 0 0 0 3px rgba(46, 104, 83, 0.15);
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Field({ id, label, required, children }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-site-text mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}

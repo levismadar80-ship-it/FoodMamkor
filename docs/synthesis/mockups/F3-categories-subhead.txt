@@ -1,0 +1,74 @@
+F3 — Categories subhead reframe (the saturated "מהחקלאי" formula)
+=====================================================================
+
+LOCATION: categories.subheading in frontend/messages/he.json
+COMPONENT: <HomeCategoryGrid /> at page.js:115-118
+
+CURRENT (verbatim):
++----------------------------------------------------+
+|              גלו לפי קטגוריה                       |
+|         ישר מבית העסק — בלי מתווכים                 |
+|                                                    |
+|   [ ביצים ]  [ ירקות ]  [ פירות ]  [ דבש ]         |
+|   [ לחם ]    [ גבינות ]  [ בשר ]   [ זיתים ]        |
++----------------------------------------------------+
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       SATURATED. 5 of 7 Israeli competitors say this.
+       (israelfarmers, noyhasade, sadeyarok, hasade,
+        etzhasade, farmdirect all use variants)
+
+PROPOSED (Option A — story-tier, RECOMMENDED):
++----------------------------------------------------+
+|              גלו לפי קטגוריה                       |
+|        כל קטגוריה — בית עסק אחר, סיפור אחר.         |
+|                                                    |
+|   [ ביצים ]  [ ירקות ]  [ פירות ]  [ דבש ]         |
+|   [ לחם ]    [ גבינות ]  [ בשר ]   [ זיתים ]        |
++----------------------------------------------------+
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        story signal — magazine voice, not directory voice
+
+PROPOSED (Option B — task-tier, alternative):
++----------------------------------------------------+
+|              גלו לפי קטגוריה                       |
+|         מה מחפשת? המתכון מתחיל מהקטגוריה.           |
+|                                                    |
+|   [ ביצים ]  [ ירקות ]  [ פירות ]  [ דבש ]         |
+|   [ לחם ]    [ גבינות ]  [ בשר ]   [ זיתים ]        |
++----------------------------------------------------+
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       cooking-context framing — connects categories to
+       the kitchen, not to the supply chain
+
+PROPOSED (Option C — values-first, gan-hasade.com-inspired):
++----------------------------------------------------+
+|              גלו לפי קטגוריה                       |
+|   קטגוריות שמספרות איך בית עסק אמיתי                |
+|        נראה בישראל היום.                           |
+|                                                    |
+|   [ ביצים ]  [ ירקות ]  [ פירות ]  [ דבש ]         |
+|   [ לחם ]    [ גבינות ]  [ בשר ]   [ זיתים ]        |
++----------------------------------------------------+
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        values claim — strongest differentiator,
+        riskiest if not backed by content depth
+
+WHERE THE ANTI-MIDDLEMAN FRAMING GOES INSTEAD:
+The "בלי מתווכים" idea is good (Sub 2 Pattern 4 — anti-
+middleman framing works). It just doesn't belong on the
+category grid where it's saturated. Move it to:
+- /about values strip (already half-present: "שקיפות" +
+  "קרבה" values do this work)
+- Founder strip (F7 post-launch)
+
+EVIDENCE:
+- Sub 2 Anti-pattern 1: 5/7 Israeli sites use the
+  "מהחקלאי לצרכן" formula in their <title> element.
+- Sub 2 Pattern 4: farmdirect.co.il's "ללא פערי תיווך"
+  is the sharper version — but they're a single farm,
+  not a directory. Lane is open for mehamakor.
+- Sub 1 §3.2 C4: subhead is transactional ("בלי מתווכים"
+  is a Wolt-style guarantee, not a magazine description).
+
+CAN BUNDLE WITH F2: both are i18n string changes,
+single PR can ship both. Sub 4 Linear action note.

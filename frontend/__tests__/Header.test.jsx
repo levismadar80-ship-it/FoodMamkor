@@ -20,23 +20,24 @@ vi.mock("next/navigation", () => ({
 
 const setLang = vi.fn();
 vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({
-    lang: "he",
-    setLang,
-    t: (key) =>
-      ({
-        nav_discover: "גלה",
-        nav_map: "מפה",
-        nav_neighbor: "מהשכן",
-        nav_about: "אודות",
-        nav_login: "כניסה לחשבון",
-        nav_logout: "התנתק",
-        nav_add_business: "הוסיפי את העסק שלך",
-        nav_favorites: "מועדפים",
-        nav_admin: "אדמין",
-        nav_mobile_label: "ניווט מובייל",
-      }[key] || key),
-  }),
+  useLanguage: () => ({ lang: "he", setLang }),
+}));
+
+// MEH-471: Header reads useTranslations() from next-intl directly.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) =>
+    ({
+      "nav.discover": "גלה",
+      "nav.map": "מפה",
+      "nav.neighbor": "מהשכן",
+      "nav.about": "אודות",
+      "nav.login": "כניסה לחשבון",
+      "nav.logout": "התנתק",
+      "nav.add_business": "הוסיפי את העסק שלך",
+      "nav.favorites": "מועדפים",
+      "nav.admin": "אדמין",
+      "nav.mobile_label": "ניווט מובייל",
+    }[key] || key),
 }));
 
 vi.mock("next/link", () => ({

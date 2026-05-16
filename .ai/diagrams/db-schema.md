@@ -75,9 +75,9 @@ erDiagram
         string image_url
         decimal price_min "MEH-295: NUMERIC(10,2) NULL"
         decimal price_max "MEH-295: NUMERIC(10,2) NULL"
-        boolean is_gluten_free "MEH-293: moved from producers; 7-day overlap"
-        boolean is_vegan "MEH-293: moved from producers; 7-day overlap"
-        boolean is_lactose_free "MEH-293: moved from producers; 7-day overlap"
+        boolean is_gluten_free "MEH-293/MEH-479: single source of truth"
+        boolean is_vegan "MEH-293/MEH-479: single source of truth"
+        boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
     }
 
     delivery_areas {
