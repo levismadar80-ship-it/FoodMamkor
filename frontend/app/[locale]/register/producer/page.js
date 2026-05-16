@@ -67,7 +67,8 @@ function RegisterProducerPageBody() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [emailExistsWarning, setEmailExistsWarning] = useState("");
+  // MEH-328 Chunk C: emailExistsWarning state removed with /email-exists
+  // backend route. emailExistsSubmitError kept — wired to 409 on submit.
   const [emailExistsSubmitError, setEmailExistsSubmitError] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   // MEH-287: true when server confirms Twilio config is present (WhatsApp
@@ -187,23 +188,11 @@ function RegisterProducerPageBody() {
     }));
   };
 
-  const handleEmailBlur = async () => {
-    // Clear stale warning first — covers the case where the user erased
-    // the email after a previous "exists" check; the early return below
-    // would otherwise leave the warning stuck on screen.
-    setEmailExistsWarning("");
-    if (!form.email || !validateEmail(form.email)) return;
-    try {
-      const res = await api.get(`/auth/email-exists?email=${encodeURIComponent(form.email)}`);
-      if (res.data?.exists) {
-        setEmailExistsWarning(
-          "האימייל הזה כבר רשום. התחברי לחשבון שלך — ותוכלי להוסיף עסק ישירות מדף ההרשמה."
-        );
-      }
-    } catch {
-      // Network/API failure — leave the warning cleared (nothing to show).
-    }
-  };
+  // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted
+  // /auth/email-exists oracle to warn before submit. Duplicate-attempt
+  // email (Chunks A+B) now informs the legitimate owner out-of-band;
+  // the 409 → emailExistsSubmitError flow on submit is preserved by
+  // Chunk D (still authoritative for the producer-signup UX).
 
   const handleSubmit = async () => {
     setError("");
@@ -337,22 +326,12 @@ function RegisterProducerPageBody() {
               placeholder="אימייל *"
               value={form.email}
               onChange={set("email")}
-              onBlur={handleEmailBlur}
               className="w-full border rounded-[12px] px-3 py-2"
               dir="ltr"
             />
-            {emailExistsWarning && (
-              <p className="text-amber-600 text-xs mt-1">
-                יש לך כבר חשבון במהמקור.{" "}
-                <Link
-                  href={`/login?email=${encodeURIComponent(form.email || "")}`}
-                  className="underline font-medium hover:text-amber-700"
-                >
-                  התחברי ←
-                </Link>
-                {" "}והוסיפי את העסק שלך
-              </p>
-            )}
+            {/* MEH-328 Chunk C: emailExistsWarning render block removed
+                with handleEmailBlur. emailExistsSubmitError block below
+                (rendered on 409 from submit) is preserved by Chunk D. */}
             <div>
               <input
                 type="password"
