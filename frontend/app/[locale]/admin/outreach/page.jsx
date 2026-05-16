@@ -16,26 +16,29 @@ import { getWhatsAppHref } from "@/lib/utils";
  *      replied → registered (or declined).
  *   3. "הכן פרופיל" mints a single-use prefill token that pre-populates
  *      the /register/producer form — prospect's only friction is a password.
- *   4. Three WhatsApp templates per spec: warm / professional / short.
+ *   4. Three WhatsApp templates per spec: חמותה / מקצועי / קצר.
  *   5. Call-script modal shown before the admin picks up the phone.
- *   6. Top-of-page counters: contacted / replied / registered.
+ *   6. Top-of-page counters: פניתי / ענו / נרשמו.
  *
  * No Claude web search per plan Q1=b.
- * MEH-475 (PR-A1): all display strings live under admin.outreach.* in
- * messages/{he,en}.json; status labels resolved via t("statuses.<key>"),
- * WA template bodies via t("templates.<key>.body").
+ *
+ * i18n (MEH-475 PR-B): all strings via `useTranslations("admin")`.
+ * Status labels resolved per render via t(`outreach.status.${id}`).
+ * WA template titles/bodies resolved per render via
+ * t(`outreach.wa_templates.${key}_title`) and
+ * t.raw(`outreach.wa_templates.${key}_body`) — raw is required to keep
+ * literal {name}/{prefillUrl} placeholders for client-side replaceAll.
  */
 
-// Status order is locale-independent; labels resolved via t("statuses.<key>").
 const STATUS_ORDER = ["new", "contacted", "replied", "registered", "declined"];
 
-// Spec asks for three WhatsApp templates. Bodies now live in
-// admin.outreach.templates.<key>.body with {name} + {prefillUrl}
-// placeholders; substitution happens client-side via replaceAll.
-const WA_TEMPLATE_KEYS = ["warm", "professional", "short"];
+// MEH-475: template metadata only — titles/bodies resolved at render
+// via next-intl. Bodies use t.raw() so {name} and {prefillUrl}
+// placeholders survive verbatim for client-side replaceAll.
+const WA_TEMPLATE_KEYS = [{ key: "warm" }, { key: "professional" }, { key: "short" }];
 
 export default function AdminOutreachPage() {
-  const t = useTranslations("admin.outreach");
+  const t = useTranslations("admin");
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
@@ -74,10 +77,10 @@ export default function AdminOutreachPage() {
     await api
       .patch(`/admin/outreach/${id}`, { status })
       .then(() => {
-        showToast(t("toasts.status_updated"));
+        showToast(t("outreach.toasts.status_updated"));
         load();
       })
-      .catch(() => showToast(t("toasts.status_update_failed"), "error"));
+      .catch(() => showToast(t("outreach.toasts.status_failed"), "error"));
   };
 
   const handleMintToken = async (id) => {
@@ -88,20 +91,20 @@ export default function AdminOutreachPage() {
       // it into WhatsApp / the phone call.
       const url = `${window.location.origin}/register/producer?prefill=${r.data.prefill_token}`;
       await navigator.clipboard?.writeText?.(url).catch(() => {});
-      showToast(t("toasts.link_copied"));
+      showToast(t("outreach.toasts.link_copied"));
     } catch {
-      showToast(t("toasts.link_copy_failed"), "error");
+      showToast(t("outreach.toasts.prefill_failed"), "error");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm(t("toasts.delete_confirm"))) return;
+    if (!window.confirm(t("outreach.confirm_delete"))) return;
     try {
       await api.delete(`/admin/outreach/${id}`);
-      showToast(t("toasts.lead_deleted"));
+      showToast(t("outreach.toasts.lead_deleted"));
       load();
     } catch {
-      showToast(t("toasts.delete_failed"), "error");
+      showToast(t("outreach.toasts.delete_failed"), "error");
     }
   };
 
@@ -114,29 +117,29 @@ export default function AdminOutreachPage() {
     <div className="space-y-6">
       {/* Header + aggregate metrics */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <h1 className="text-2xl font-bold">{t("outreach.title")}</h1>
         <button
           type="button"
           onClick={() => setScriptOpen(true)}
           className="text-sm text-primary hover:underline inline-flex items-center gap-1.5"
         >
           <Phone size={16} weight="duotone" aria-hidden="true" />
-          {t("call_script_btn")}
+          {t("outreach.call_script_btn")}
         </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <MetricCard label={t("metrics.total")} value={metrics.total} />
-        <MetricCard label={t("metrics.new")} value={metrics.new} />
-        <MetricCard label={t("metrics.contacted")} value={metrics.contacted} tone="accent" />
-        <MetricCard label={t("metrics.replied")} value={metrics.replied} tone="primary" />
-        <MetricCard label={t("metrics.registered")} value={metrics.registered} tone="success" />
+        <MetricCard label={t("outreach.metrics.total")} value={metrics.total} />
+        <MetricCard label={t("outreach.metrics.new")} value={metrics.new} />
+        <MetricCard label={t("outreach.metrics.contacted")} value={metrics.contacted} tone="accent" />
+        <MetricCard label={t("outreach.metrics.replied")} value={metrics.replied} tone="primary" />
+        <MetricCard label={t("outreach.metrics.registered")} value={metrics.registered} tone="success" />
       </div>
 
       {/* Filters + add */}
       <div className="flex flex-col md:flex-row gap-3">
         <input
-          placeholder={t("filters.city_placeholder")}
+          placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
@@ -146,10 +149,10 @@ export default function AdminOutreachPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="border border-border rounded-[12px] px-3 py-2 bg-white"
         >
-          <option value="all">{t("filters.status_all")}</option>
+          <option value="all">{t("outreach.filters.all_statuses")}</option>
           {STATUS_ORDER.map((s) => (
             <option key={s} value={s}>
-              {t(`statuses.${s}`)}
+              {t(`outreach.status.${s}`)}
             </option>
           ))}
         </select>
@@ -158,7 +161,7 @@ export default function AdminOutreachPage() {
           onClick={() => setAddOpen(true)}
           className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-light transition"
         >
-          {t("add_lead_btn")}
+          {t("outreach.filters.new_lead")}
         </button>
       </div>
 
@@ -168,27 +171,27 @@ export default function AdminOutreachPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_name")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_city")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_category")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_phone")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_instagram")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_status")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_actions")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.name")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.city")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.category")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.phone")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.instagram")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.status")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-text-secondary">
-                    {t("table.loading")}
+                    {t("outreach.loading_leads")}
                   </td>
                 </tr>
               )}
               {!loading && leads.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-text-secondary">
-                    {t("table.empty")}
+                    {t("outreach.empty")}
                   </td>
                 </tr>
               )}
@@ -230,7 +233,7 @@ export default function AdminOutreachPage() {
                       >
                         {STATUS_ORDER.map((s) => (
                           <option key={s} value={s}>
-                            {t(`statuses.${s}`)}
+                            {t(`outreach.status.${s}`)}
                           </option>
                         ))}
                       </select>
@@ -241,9 +244,9 @@ export default function AdminOutreachPage() {
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
                           className="text-xs px-2 py-1 rounded bg-primary text-white hover:bg-primary-light"
-                          title={t("table.prep_profile_title")}
+                          title={t("outreach.actions.prefill_title")}
                         >
-                          {t("table.prep_profile")}
+                          {t("outreach.actions.prefill")}
                         </button>
                         {lead.phone && (
                           <button
@@ -251,7 +254,7 @@ export default function AdminOutreachPage() {
                             onClick={() => setWaLeadId(lead.id)}
                             className="text-xs px-2 py-1 rounded border border-border text-primary hover:bg-light"
                           >
-                            WhatsApp
+                            {t("outreach.actions.whatsapp")}
                           </button>
                         )}
                         <button
@@ -259,7 +262,7 @@ export default function AdminOutreachPage() {
                           onClick={() => handleDelete(lead.id)}
                           className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
                         >
-                          {t("table.delete_btn")}
+                          {t("outreach.actions.delete")}
                         </button>
                       </div>
                     </td>
@@ -309,7 +312,7 @@ function MetricCard({ label, value, tone }) {
 }
 
 function AddLeadModal({ onClose, onCreated }) {
-  const t = useTranslations("admin.outreach");
+  const t = useTranslations("admin");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -327,20 +330,20 @@ function AddLeadModal({ onClose, onCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      setError(t("add_modal.name_required"));
+      setError(t("outreach.modal_add.name_required"));
       return;
     }
     setSaving(true);
     try {
       await api.post("/admin/outreach", form);
-      showToast(t("toasts.lead_added"));
+      showToast(t("outreach.toasts.lead_added"));
       onCreated();
     } catch (err) {
       const detail = err?.response?.data?.detail;
       if (detail?.error === "duplicate_lead") {
-        setError(detail.message || t("add_modal.duplicate"));
+        setError(detail.message || t("outreach.toasts.duplicate"));
       } else {
-        setError(typeof detail === "string" ? detail : t("add_modal.generic_error"));
+        setError(typeof detail === "string" ? detail : t("outreach.toasts.generic_error"));
       }
     } finally {
       setSaving(false);
@@ -359,9 +362,9 @@ function AddLeadModal({ onClose, onCreated }) {
         onSubmit={handleSubmit}
         className="bg-white rounded-[16px] p-6 max-w-md w-full space-y-3"
       >
-        <h2 className="font-headline text-xl font-bold">{t("add_modal.title")}</h2>
+        <h2 className="font-headline text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         <input
-          placeholder={t("add_modal.placeholders.name")}
+          placeholder={t("outreach.modal_add.name_placeholder")}
           value={form.name}
           onChange={set("name")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
@@ -369,41 +372,41 @@ function AddLeadModal({ onClose, onCreated }) {
         />
         <div className="grid grid-cols-2 gap-2">
           <input
-            placeholder={t("add_modal.placeholders.city")}
+            placeholder={t("outreach.modal_add.city_placeholder")}
             value={form.city}
             onChange={set("city")}
             className="border border-border rounded-[12px] px-3 py-2"
           />
           <input
-            placeholder={t("add_modal.placeholders.category")}
+            placeholder={t("outreach.modal_add.category_placeholder")}
             value={form.category}
             onChange={set("category")}
             className="border border-border rounded-[12px] px-3 py-2"
           />
         </div>
         <input
-          placeholder={t("add_modal.placeholders.phone")}
+          placeholder={t("outreach.modal_add.phone_placeholder")}
           value={form.phone}
           onChange={set("phone")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <input
-          placeholder={t("add_modal.placeholders.instagram")}
+          placeholder={t("outreach.modal_add.instagram_placeholder")}
           value={form.instagram}
           onChange={set("instagram")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <input
-          placeholder={t("add_modal.placeholders.website")}
+          placeholder={t("outreach.modal_add.website_placeholder")}
           value={form.website}
           onChange={set("website")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <textarea
-          placeholder={t("add_modal.placeholders.notes")}
+          placeholder={t("outreach.modal_add.notes_placeholder")}
           value={form.notes}
           onChange={set("notes")}
           rows={2}
@@ -416,14 +419,14 @@ function AddLeadModal({ onClose, onCreated }) {
             onClick={onClose}
             className="flex-1 border border-border rounded-[12px] py-2 text-sm hover:bg-light"
           >
-            {t("add_modal.cancel")}
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="flex-1 bg-primary text-white rounded-[12px] py-2 text-sm font-medium disabled:opacity-60"
           >
-            {saving ? t("add_modal.saving") : t("add_modal.submit")}
+            {saving ? t("outreach.modal_add.submit_saving") : t("outreach.modal_add.submit")}
           </button>
         </div>
       </form>
@@ -432,7 +435,7 @@ function AddLeadModal({ onClose, onCreated }) {
 }
 
 function ScriptModal({ onClose }) {
-  const t = useTranslations("admin.outreach.script_modal");
+  const t = useTranslations("admin");
   return (
     <div
       className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
@@ -446,17 +449,17 @@ function ScriptModal({ onClose }) {
       >
         <h2 className="font-headline text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
-          {t("title")}
+          {t("outreach.modal_script.title")}
         </h2>
         <pre className="whitespace-pre-wrap text-sm text-site-text font-body leading-relaxed">
-          {t("body")}
+          {t("outreach.call_script")}
         </pre>
         <button
           type="button"
           onClick={onClose}
           className="mt-4 w-full bg-primary text-white rounded-[12px] py-2 text-sm font-medium"
         >
-          {t("close")}
+          {t("outreach.modal_script.close")}
         </button>
       </div>
     </div>
@@ -464,7 +467,7 @@ function ScriptModal({ onClose }) {
 }
 
 function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
-  const t = useTranslations("admin.outreach");
+  const t = useTranslations("admin");
   const [tokenBusy, setTokenBusy] = useState(false);
 
   const ensureToken = async () => {
@@ -479,29 +482,30 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
     }
   };
 
-  const renderTemplate = (key, fresh, url) =>
-    t(`templates.${key}.body`)
-      .replaceAll("{name}", fresh.name)
-      .replaceAll("{prefillUrl}", url);
-
-  const openTemplate = async (key) => {
+  const openTemplate = async (tpl) => {
     const fresh = await ensureToken();
     const url = `${window.location.origin}/register/producer?prefill=${fresh.prefill_token}`;
-    const body = renderTemplate(key, fresh, url);
+    // MEH-475: t.raw() keeps literal {name}/{prefillUrl} for replaceAll.
+    const body = t.raw(`outreach.wa_templates.${tpl.key}_body`)
+      .replaceAll("{name}", fresh.name)
+      .replaceAll("{prefillUrl}", url);
     const phone = (fresh.phone || "").replace(/\D/g, "").replace(/^0/, "972");
     window.open(getWhatsAppHref(phone, body), "_blank", "noopener,noreferrer");
     onClose();
   };
 
-  const copyTemplate = async (key) => {
+  const copyTemplate = async (tpl) => {
     const fresh = await ensureToken();
     const url = `${window.location.origin}/register/producer?prefill=${fresh.prefill_token}`;
-    const body = renderTemplate(key, fresh, url);
+    // MEH-475: t.raw() keeps literal {name}/{prefillUrl} for replaceAll.
+    const body = t.raw(`outreach.wa_templates.${tpl.key}_body`)
+      .replaceAll("{name}", fresh.name)
+      .replaceAll("{prefillUrl}", url);
     try {
       await navigator.clipboard.writeText(body);
-      showToast(t("toasts.text_copied"));
+      showToast(t("outreach.toasts.copied"));
     } catch {
-      showToast(t("toasts.copy_failed"), "error");
+      showToast(t("outreach.toasts.copy_failed"), "error");
     }
   };
 
@@ -517,37 +521,37 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         className="bg-white rounded-[16px] p-6 max-w-lg w-full space-y-4"
       >
         <h2 className="font-headline text-xl font-bold">
-          {t("whatsapp_modal.title", { name: lead.name })}
+          {t("outreach.modal_wa.title", { name: lead.name })}
         </h2>
         {tokenBusy && (
-          <p className="text-sm text-site-muted">{t("whatsapp_modal.preparing_link")}</p>
+          <p className="text-sm text-site-muted">{t("outreach.modal_wa.preparing")}</p>
         )}
-        {WA_TEMPLATE_KEYS.map((key) => (
+        {WA_TEMPLATE_KEYS.map((tpl) => (
           <div
-            key={key}
+            key={tpl.key}
             className="border border-border rounded-[12px] p-3"
           >
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold">{t(`templates.${key}.title`)}</h3>
+              <h3 className="font-semibold">{t(`outreach.wa_templates.${tpl.key}_title`)}</h3>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => copyTemplate(key)}
+                  onClick={() => copyTemplate(tpl)}
                   className="text-xs px-2 py-1 rounded border border-border hover:bg-light"
                 >
-                  {t("whatsapp_modal.copy_btn")}
+                  {t("outreach.modal_wa.copy")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => openTemplate(key)}
+                  onClick={() => openTemplate(tpl)}
                   className="btn-whatsapp text-xs px-2 py-1 rounded"
                 >
-                  {t("whatsapp_modal.open_btn")}
+                  {t("outreach.modal_wa.open")}
                 </button>
               </div>
             </div>
             <p className="text-sm text-site-text whitespace-pre-wrap leading-relaxed">
-              {t(`templates.${key}.body`)}
+              {t.raw(`outreach.wa_templates.${tpl.key}_body`)}
             </p>
           </div>
         ))}
@@ -556,7 +560,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
           onClick={onClose}
           className="w-full border border-border rounded-[12px] py-2 text-sm hover:bg-light"
         >
-          {t("whatsapp_modal.close")}
+          {t("outreach.modal_wa.close")}
         </button>
       </div>
     </div>
