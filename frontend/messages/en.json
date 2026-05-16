@@ -70,17 +70,6 @@
       "sent": "✓ Sent!",
       "rate_limited": "Rate limited — try again in an hour"
     },
-    "toasts": {
-      "favoriteSaved": "Saved to favorites ❤️",
-      "sessionExpired": "Your session expired — please sign in again",
-      "loginAgainCta": "Sign in"
-    },
-    "passwordValidation": {
-      "too_short": "Your password must contain at least {min} characters",
-      "too_common": "This password was leaked online — please choose another",
-      "same_as_current": "Your new password is the same as the previous one — please choose a different one",
-      "fallback": "Your password doesn't meet the requirements, try something longer and more unique"
-    },
     "passwordRecovery": {
       "forgot": {
         "title": "Reset password",
@@ -168,145 +157,6 @@
       "rate_limited": "Too many attempts, try again in a minute",
       "connection_failed": "We couldn't connect, please try again",
       "generic_error": "Sign-in failed"
-    },
-    "register": {
-      "consumer": {
-        "heading": "Join the community",
-        "subtitle": "Welcome to מהמקור 🌿",
-        "referral_badge": "Invited by a friend 🌿 10% off your first order",
-        "email_hint": "A verification email will be sent after signup",
-        "oauth_divider": "or",
-        "have_account": "Already have an account?",
-        "login_link": "Sign in",
-        "cta_producer": "Want to add your business?",
-        "cta_producer_link": "Register as a business",
-        "value_props": {
-          "discover": "🗺️ Discover businesses",
-          "favorites": "❤️ Save favourites",
-          "rate": "⭐ Rate & share"
-        },
-        "fields": {
-          "name": "Full name *",
-          "email": "Email *",
-          "password": "Password *",
-          "password_aria": "Password"
-        },
-        "validation": {
-          "name_required": "Full name is required",
-          "email_invalid": "Invalid email",
-          "password_min": "Your password must be at least {min} characters",
-          "valid_hint": "✓ Valid"
-        },
-        "terms": {
-          "intro": "I have read and agree to",
-          "tos_link": "the Terms of Use",
-          "and": "and ",
-          "privacy_link": "the Privacy Policy"
-        },
-        "actions": {
-          "submit": "Join",
-          "submitting": "Signing up..."
-        },
-        "errors": {
-          "generic": "Something went wrong, try again"
-        },
-        "email_sent": {
-          "title": "Check your inbox 📬",
-          "body": "If the email is available, a verification message has been sent. Please check your inbox.",
-          "hint": "Didn't get it? Check spam or try again in a minute.",
-          "back_home": "Back to home"
-        }
-      },
-      "producer": {
-        "heading": "Give your business a home",
-        "subtitle": "5 minutes. No commissions. No middlemen.",
-        "loading": "Loading...",
-        "loading_form": "Loading registration form...",
-        "default_description": "Local business. More details coming soon.",
-        "prefill_notice": "We pre-filled your business details — you can update any field before continuing.",
-        "upgrade_banner": {
-          "connected_with": "You're signed in as {email}",
-          "attached_to_account": "The business will be attached to this account"
-        },
-        "draft": {
-          "prompt": "We saved a draft from a previous session — want to continue?",
-          "continue": "Yes, continue",
-          "dismiss": "No"
-        },
-        "steps": {
-          "account": {
-            "title": "1. Account details",
-            "email_section": "Sign up with email"
-          },
-          "business": {
-            "title": "2. Business details",
-            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
-          }
-        },
-        "fields": {
-          "name": "Full name *",
-          "email": "Email *",
-          "password": "Password *",
-          "producer_name": "Business name *",
-          "description_label": "Tell us about your business",
-          "description_hint": "A 100-300 word story — how did you start? What makes you special? What's closest to your heart?",
-          "phone": "WhatsApp phone * (0501234567)",
-          "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
-          "license_required_label": "Producer license number (required)",
-          "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
-          "license_optional_label": "Producer license number"
-        },
-        "validation": {
-          "all_required": "Please fill all required fields",
-          "email_invalid": "Invalid email",
-          "password_complexity": "Password must be at least 8 characters, with one uppercase letter and one number",
-          "producer_name_required": "Please enter a business name",
-          "phone_required": "Please enter a valid phone number",
-          "phone_invalid": "❌ Invalid phone number",
-          "phone_valid": "✓ Valid number",
-          "category_required": "Please select at least one category",
-          "terms_required": "Please accept the Terms of Use before joining",
-          "license_format": "Producer license number is 7-10 digits"
-        },
-        "terms": {
-          "intro": "I have read and agree to",
-          "tos_link": "the Terms of Use",
-          "and": "and ",
-          "privacy_link": "the Privacy Policy",
-          "license_declaration": ", and I declare that I hold all licenses required to sell my products under the Business Licensing Law."
-        },
-        "actions": {
-          "next": "Next →",
-          "back": "Previous step",
-          "submit": "Join →",
-          "submitting": "Submitting...",
-          "write_later": "I'll write this later",
-          "edit_description": "Edit description",
-          "add_license": "I have a producer license ↓",
-          "close": "Close"
-        },
-        "errors": {
-          "already_has_producer": "You already have a business registered on this account.",
-          "generic": "Connection error — please try again."
-        },
-        "success": {
-          "heading": "You're in!",
-          "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
-          "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
-          "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
-          "next_heading": "What's next?",
-          "next_step1": "✓ Complete the profile from the dashboard — photos, description, deliveries",
-          "next_step2": "✓ Our team will review the request within 1-2 business days",
-          "next_step3": "✓ After approval — the business appears on the map and in search",
-          "dashboard_cta": "Go to my dashboard ←",
-          "share_msg": "Hi 🌿 I just joined Mehamakor — an Israeli directory connecting local businesses with people looking for real food. Come join: https://mehamakor.online/register/producer",
-          "share_cta": "Invite a neighbour",
-          "inbox_title": "Check your inbox 📬",
-          "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
-          "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
-          "back_home": "Back to home"
-        }
-      }
     }
   },
   "account": {
@@ -607,217 +457,396 @@
     }
   },
   "admin": {
+    "common": {
+      "loading": "Loading...",
+      "loading_f": "Loading...",
+      "saving": "Saving...",
+      "saving_f": "Saving...",
+      "sending": "Sending...",
+      "save": "Save",
+      "saved": "✓ Saved",
+      "saved_check": "Saved ✓",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "delete_f": "Delete",
+      "edit": "Edit",
+      "view": "View",
+      "view_f": "View",
+      "approve": "Approve",
+      "approve_f": "Approve",
+      "reject": "Reject",
+      "reject_f": "Reject",
+      "search": "Search",
+      "submit": "Confirm",
+      "back": "← Back to admin panel",
+      "back_to_dashboard": "← Admin dashboard",
+      "back_home": "← Back to site",
+      "error_loading": "Error loading data",
+      "error_generic": "Error",
+      "no_data": "No data to display",
+      "no_results": "No data",
+      "items_pending_label": "{count} items awaiting approval",
+      "items_pending_title": "{count} items awaiting approval",
+      "brand_admin": "Mehamakor Admin"
+    },
+    "layout": {
+      "nav": {
+        "dashboard": "Dashboard",
+        "producers": "Businesses",
+        "outreach": "Outreach",
+        "experiences": "Experiences",
+        "users": "Users",
+        "content": "Content",
+        "reviews": "Reviews",
+        "kashrut": "Kashrut",
+        "reports": "Reports",
+        "category_requests": "Category requests",
+        "analytics": "Analytics",
+        "settings": "Settings",
+        "help": "Help"
+      }
+    },
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Platform overview",
-      "loading": "Loading…",
-      "load_error": "Could not load data",
-      "cards": {
+      "stats": {
         "total_producers": "Total businesses",
-        "pending_producers": "Awaiting approval",
-        "total_users": "Registered users",
+        "pending_approval": "Awaiting approval",
+        "registered_users": "Registered users",
         "home_products": "Home products",
-        "group_buys": "Group buys"
+        "group_buys": "Group buys",
+        "group_buys_tooltip": "Manage user group buys. Not active currently.",
+        "group_buys_tooltip_label": "Group buys info"
       },
-      "group_buys_tooltip": "Manage user group buys. Currently inactive.",
-      "group_buys_tooltip_label": "Group buys info",
       "alerts": {
-        "pending_producers": "{count} businesses awaiting approval",
-        "pending_action": "Click to review",
+        "producers_waiting": "{count} businesses awaiting approval",
+        "click_to_handle": "Click to handle",
         "open_reports": "{count} open reports",
-        "open_reports_action": "Needs review",
-        "hidden_products": "{count} hidden home products",
-        "hidden_products_action": "Review"
+        "needs_review": "Needs review",
+        "hidden_home_products": "{count} hidden home products",
+        "for_review": "For review"
       },
-      "monthly_chart_title": "New businesses — last 6 months",
+      "chart": {
+        "new_producers_6_months": "New businesses — last 6 months"
+      },
       "pending_panel": {
-        "title": "Pending requests",
+        "heading": "Pending requests",
         "view_all": "View all →",
         "empty": "No pending requests",
-        "review": "Review"
+        "check": "Review"
       },
       "activity": {
-        "title": "Recent activity",
+        "heading": "Recent activity",
         "empty": "No data to display",
         "added_producer": "Business added:"
       },
-      "secondary": {
+      "weekly": {
         "new_users_week": "New users this week",
         "new_producers_week": "New businesses this week",
+        "out_of_total": "out of {total} total",
         "events": "Events",
         "experiences": "Experiences"
       },
-      "delta_of_total": "of {total} total",
-      "dau_title": "Active users — last 30 days",
-      "dau_empty": "No data yet",
-      "dau_aria_label": "DAU 30 days",
-      "top_cities_title": "Top cities",
-      "top_cities_empty": "No city data yet — guests don't report city.",
-      "server_health": {
-        "title": "Server health — last hour",
-        "waiting": "Waiting for traffic…",
-        "samples": "{count} requests",
-        "response_time": "Average response time",
+      "dau": {
+        "heading": "Active users — last 30 days",
+        "empty": "No data yet",
+        "aria": "DAU 30 days"
+      },
+      "top_cities": {
+        "heading": "Top cities",
+        "empty": "No city data yet — users who aren't logged in don't report their city."
+      },
+      "health": {
+        "heading": "Server health — last hour",
+        "waiting_traffic": "Waiting for traffic...",
+        "requests_count": "{count} requests",
+        "response_time_avg": "Average response time",
         "requests_per_minute": "Requests per minute",
-        "data_note": "ℹ️ Per-process in-memory data — reset on every deploy (docs/SECURITY.md)."
+        "footnote": "ℹ️ Per-process in-memory data — resets on every deploy (docs/SECURITY.md)."
       }
     },
-    "settings": {
-      "title": "Settings",
-      "loading": "Loading…",
-      "load_error": "Could not load settings — please refresh the page.",
-      "confirm_save": "Save the following changes?\n\n{summary}",
-      "notifications": {
-        "section_title": "Notifications",
-        "admin_email_label": "Admin email for notifications",
-        "admin_whatsapp_label": "Admin WhatsApp number (E.164)"
+    "producers": {
+      "list": {
+        "title": "Businesses",
+        "records_count": "{count} records"
       },
-      "freemium": {
-        "section_title": "Freemium",
-        "monthly_price_label": "Monthly premium price (₪)",
-        "free_image_limit_label": "Image limit on the free plan"
+      "toolbar": {
+        "search_placeholder": "Search by name or city...",
+        "all_statuses": "All statuses",
+        "active": "Active",
+        "pending": "Pending",
+        "suspended": "Suspended",
+        "rejected": "Rejected",
+        "incomplete_title": "Show only businesses missing required details",
+        "show_all": "Show all",
+        "incomplete_label": "Missing details",
+        "export": "📤 Export",
+        "import_excel": "📥 Import from Excel",
+        "new_producer": "+ New business"
       },
-      "holiday": {
-        "section_title": "Holiday window",
-        "tooltip_content": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses won't be taking orders this week'. Turn off after the holiday.",
-        "tooltip_label": "Holiday window info",
-        "section_description": "Enable manually to preview the banner on the dashboard and home page before the holiday.",
-        "switch_label": "Holiday window active",
-        "key_select_label": "Test holiday key (empty = auto-detect by date)",
-        "key_none": "— No override —",
-        "key_pesach": "Passover",
-        "key_shavuot": "Shavuot",
-        "key_rosh_hashana": "Rosh Hashana",
-        "key_sukkot": "Sukkot",
-        "key_chanuka": "Hanukkah",
-        "key_tu_bishvat": "Tu BiShvat"
+      "import": {
+        "errors_loading": "Error reading file",
+        "errors_importing": "Import error"
       },
-      "friday": {
-        "section_title": "Friday-market mode",
-        "tooltip_content": "Enable on Friday morning. Promotes market-selling businesses on the site. Turns off automatically after Shabbat.",
-        "tooltip_label": "Friday-market mode info",
-        "section_description": "Enable manually to preview Friday-market mode (producer strip, hero heading, 🛒 badge) outside the regular window (Wed 18:00 — Fri 14:00). This override is local to the current browser only.",
-        "switch_label": "Friday-market mode — override"
+      "preview": {
+        "title": "Import preview",
+        "importing": "Importing...",
+        "confirm": "Confirm import ({count})",
+        "stats": {
+          "to_import": "To import",
+          "skipped": "Skipped",
+          "errors": "Errors"
+        },
+        "table": {
+          "row": "Row",
+          "name": "Name",
+          "city": "City",
+          "category": "Category",
+          "slug": "Slug",
+          "status": "Status"
+        }
       },
-      "tests": {
-        "section_title": "Connection tests",
-        "status_unconfigured": "✗ Not configured",
-        "status_loading": "Testing…",
-        "status_ok": "✓ Connected",
-        "test_button": "Test"
+      "table": {
+        "status_tooltip_pending": "pending = awaiting initial approval",
+        "status_tooltip_approved": "approved = approved and shown on site",
+        "status_tooltip_rejected": "rejected = denied, hidden",
+        "status_tooltip_suspended": "suspended = temporarily suspended",
+        "status_tooltip_label": "Business status values info",
+        "completeness": {
+          "missing_critical_aria": "Critical details missing",
+          "missing_aria": "Details missing",
+          "complete_aria": "Complete",
+          "complete_title": "All details filled",
+          "missing_title": "Missing details: {fields}"
+        },
+        "tags": {
+          "verified": "Verified",
+          "organic_certified": "Certified organic",
+          "grass_fed": "Grass-fed",
+          "delivery": "Delivery",
+          "pickup_points": "Pickup points"
+        },
+        "actions": {
+          "approve_short": "✓ Approve",
+          "edit": "Edit",
+          "view": "View",
+          "suspend": "Suspend",
+          "activate": "Activate",
+          "remove_ambassador_title": "Remove ambassador role",
+          "set_ambassador_title": "Set as ambassador",
+          "ambassador_active": "⭐ Ambassador",
+          "ambassador_inactive": "☆ Ambassador",
+          "story_card_title": "Create Instagram card",
+          "story_card": "📸 Story",
+          "delete": "Delete"
+        },
+        "columns": {
+          "name": "Name",
+          "city": "City",
+          "categories": "Categories",
+          "tags": "Tags",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "all_complete": "All businesses are complete 🎉",
+        "empty": "No businesses to display",
+        "confirm_delete": "Delete \"{name}\"? This action cannot be undone."
       },
-      "categories": {
-        "section_title": "Category management",
-        "section_description": "To add, edit or delete — see the content page.",
-        "link_to_content": "Go to content ←"
+      "new": {
+        "title": "Add new business",
+        "subtitle": "The business will be saved immediately as approved (status=approved) and appear on the site."
       },
-      "save": {
-        "no_changes_title": "No changes to save",
-        "saving": "Saving…",
-        "submit": "Save settings",
-        "unsaved_count": "{count} unsaved changes",
-        "saved_indicator": "Saved ✓"
+      "edit": {
+        "title": "Edit: {name}",
+        "not_found": "Business not found"
+      },
+      "form": {
+        "errors": {
+          "image_upload": "Image upload error",
+          "save": "Save error"
+        },
+        "submit_create": "Create business",
+        "submit_update": "Save changes",
+        "uploading": "Uploading...",
+        "sections": {
+          "basic": "Basic details",
+          "categories_tags": "Categories and tags",
+          "business_type": "Business type",
+          "delivery_pickup": "Delivery and pickup",
+          "description_price": "Description and pricing",
+          "images": "Images",
+          "hours": "Opening hours",
+          "availability": "Availability",
+          "admin_notes": "Internal notes (not visible to users)",
+          "availability_tooltip": "Mark the business owner as on vacation. Shows a 'vacation' badge on their page and hides the WhatsApp button until the return date.",
+          "availability_tooltip_label": "Vacation mode info"
+        },
+        "fields": {
+          "name": "Business name *",
+          "contact_name": "Contact name",
+          "phone": "Phone / WhatsApp",
+          "phone_placeholder": "050-1234567",
+          "instagram": "Instagram",
+          "instagram_placeholder": "@username",
+          "website": "Website",
+          "website_placeholder": "https://...",
+          "whatsapp_group": "WhatsApp group link",
+          "whatsapp_group_placeholder": "https://chat.whatsapp.com/...",
+          "primary_contact": "Primary contact method",
+          "primary_contact_whatsapp": "WhatsApp",
+          "primary_contact_phone": "Phone",
+          "primary_contact_website": "Website",
+          "primary_contact_email": "Email",
+          "contact_email": "Contact email",
+          "contact_email_placeholder": "business@example.com",
+          "city": "City / region",
+          "slug": "Slug (URL)",
+          "slug_placeholder": "auto-generated",
+          "lat": "Latitude",
+          "lng": "Longitude",
+          "organic_certified": "Certified organic",
+          "grass_fed": "Grass-fed",
+          "verified": "Verified",
+          "recommended": "⭐ Recommended (editor's pick)",
+          "kosher": "Kosher",
+          "kosher_none": "—",
+          "kosher_kosher": "Kosher",
+          "kosher_mehadrin": "Kosher mehadrin",
+          "kosher_not_kosher": "Not kosher",
+          "license_label": "Producer license number",
+          "license_required_suffix": " (required)",
+          "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
+          "license_format_warning": "Producer license number is 7-10 digits",
+          "license_optional_toggle": "I have a producer license ↓",
+          "has_physical_location": "🏪 Physical store (welcomes customers)",
+          "offers_delivery": "🚚 Delivery",
+          "type_validation": "Must select at least one of the two",
+          "delivery_nationwide": "Delivery nationwide",
+          "delivery_cities_label": "Cities delivered to",
+          "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+          "has_delivery": "🚚 Offers delivery",
+          "pickup_points": "📦 Pickup points across the country",
+          "delivery_area_cities": "Delivery cities (comma-separated)",
+          "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
+          "short_description": "Short description (for the card)",
+          "description_full": "Full description",
+          "top_product": "Top product",
+          "top_product_placeholder": "Grass-fed beef",
+          "price_range": "Starting price",
+          "price_range_placeholder": "from ₪65/kg",
+          "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
+          "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+          "avail_accepting": "Accepting orders",
+          "avail_today": "Available today 🟢",
+          "avail_full": "Busy this week 🟠",
+          "avail_vacation": "On break ⏸",
+          "vacation_until": "Return date (optional)"
+        }
       }
     },
-    "producer_form": {
-      "errors": {
-        "upload_image": "Image upload failed",
-        "save": "Save failed"
+    "users": {
+      "title": "Users",
+      "count": "{count} users",
+      "search_placeholder": "Search by email or name...",
+      "role_filter": {
+        "all": "All roles",
+        "consumer": "Consumer",
+        "producer": "Business",
+        "admin": "Admin"
       },
-      "license": {
-        "optional_toggle": "I have a producer license ↓",
-        "label": "Producer license number",
-        "required_suffix": " (required)",
-        "required_note": "Food production in this category requires a Ministry of Health producer license",
-        "format_warning": "Producer license numbers are 7–10 digits"
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "city": "City",
+        "role": "Role",
+        "favorites": "Favorites",
+        "joined": "Joined",
+        "actions": "Actions"
       },
-      "sections": {
-        "basics": "Basic details",
-        "categories_tags": "Categories & tags",
-        "business_type": "Business type",
-        "delivery": "Delivery & pickup",
-        "description_and_price": "Description & price",
-        "images": "Images",
-        "hours": "Hours",
-        "availability": "Availability",
-        "internal_notes": "Internal notes (not visible to users)"
+      "empty": "No users",
+      "roles": {
+        "admin": "Admin",
+        "admin_protected": "Protected",
+        "producer": "Business",
+        "consumer": "Consumer"
       },
-      "placeholders": {
-        "delivery_area_cities": "Tel Aviv, Haifa, Jerusalem",
-        "top_product_name": "Grass-fed beef",
-        "price_range": "from ₪65/kg"
+      "actions": {
+        "promote": "Promote to admin",
+        "demote": "Remove permissions",
+        "protected_title": "Cannot remove permissions from the primary admin",
+        "unblock": "🚫 Unblock",
+        "block": "Block"
       },
-      "fields": {
-        "name": "Business name *",
-        "contact_name": "Contact name",
-        "phone": "Phone / WhatsApp",
-        "instagram": "Instagram",
-        "website": "Website",
-        "whatsapp_group": "WhatsApp group link",
-        "primary_contact_method": "Primary contact method",
-        "contact_email": "Contact email",
-        "city": "City / area",
-        "kosher": "Kosher",
-        "delivery_cities": "Cities you deliver to",
-        "delivery_area_cities": "Delivery cities (comma-separated)",
-        "short_description": "Short description (for the card)",
-        "description": "Full description",
-        "top_product_name": "Top product",
-        "price_range": "Starting price",
-        "hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
-        "vacation_until": "Return date (optional)"
+      "favorites": {
+        "of": "Favorites of {name}:",
+        "empty": "No favorites"
       },
-      "contact_methods": {
-        "phone": "Phone",
-        "website": "Website",
-        "email": "Email"
-      },
-      "kosher_options": {
-        "none": "—",
-        "kosher": "Kosher",
-        "mehadrin": "Kosher Mehadrin",
-        "not_kosher": "Not kosher"
-      },
-      "tags": {
-        "organic": "Certified organic",
-        "grass_fed": "Grass-fed",
-        "verified": "Verified",
-        "recommended": "⭐ Recommended (editor's pick)"
-      },
-      "business_type": {
-        "physical": "🏪 Physical storefront (in-person customers)",
-        "delivery": "🚚 Delivery",
-        "must_select_one": "Pick at least one of the two",
-        "nationwide": "Nationwide delivery",
-        "must_select_city": "Choose at least one city, or mark nationwide delivery"
-      },
-      "delivery": {
-        "has_delivery": "🚚 Delivery available",
-        "pickup_points": "📦 Pickup points around the country"
-      },
-      "availability_states": {
-        "accepting_orders": "Accepting orders",
-        "available_today": "Available today 🟢",
-        "full_this_week": "Fully booked this week 🟠",
-        "on_vacation": "On break ⏸"
-      },
-      "availability_tooltip": {
-        "content": "Mark the business owner as on vacation. The producer page shows a 'On vacation' badge, and the WhatsApp button is hidden until the return date.",
-        "label": "Vacation mode info"
-      },
-      "images": {
-        "uploading": "Uploading…"
-      },
-      "submit": {
-        "saving": "Saving…",
-        "save_changes": "Save changes",
-        "create": "Create business",
-        "cancel": "Cancel"
+      "confirm": {
+        "promote": "Are you sure you want to grant admin permissions to {name}?",
+        "demote": "Are you sure you want to remove admin permissions from {name}?",
+        "submitting": "...",
+        "confirm": "Confirm"
       }
+    },
+    "experiences": {
+      "title": "Community experiences",
+      "subtitle": "Moderation for user-submitted experiences",
+      "public_link": "Public page →",
+      "tabs": {
+        "pending": "Pending",
+        "changes_requested": "Changes requested",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+      },
+      "error_loading": "Error loading experiences",
+      "empty": "No experiences in this status 🌿",
+      "columns": {
+        "title": "Title",
+        "host": "Host",
+        "date": "Date",
+        "city": "City",
+        "claude": "Claude",
+        "actions": "Actions"
+      },
+      "claude_tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
+      "claude_tooltip_label": "Claude moderation info",
+      "actions": {
+        "approve": "Approve",
+        "changes": "Changes",
+        "reject": "Reject",
+        "view": "View"
+      },
+      "approve_toast": "Experience approved 🌿",
+      "approve_error": "Approval error",
+      "validate_feedback": "Please fill in a note",
+      "changes_toast": "Change request sent",
+      "reject_toast": "Experience rejected",
+      "submit_error": "Submission error",
+      "modal": {
+        "changes_title": "Request changes",
+        "reject_title": "Reject experience",
+        "changes_label": "Notes for editing",
+        "reject_label": "Reason for rejection",
+        "changes_placeholder": "e.g.: Description is too short, exact address missing...",
+        "reject_placeholder": "e.g.: Content not relevant to the platform",
+        "submit": "Confirm"
+      },
+      "free": "Free",
+      "price_per_person": "₪{price} / person",
+      "requirements_label": "Requirements:",
+      "claude_preview": "🤖 Claude Haiku pre-moderation"
     },
     "outreach": {
       "title": "Business outreach",
       "call_script_btn": "Call script",
+      "status": {
+        "new": "New",
+        "contacted": "Contacted",
+        "replied": "Replied",
+        "registered": "Registered",
+        "declined": "Declined"
+      },
       "metrics": {
         "total": "Total",
         "new": "New",
@@ -826,87 +855,411 @@
         "registered": "Registered"
       },
       "filters": {
-        "city_placeholder": "Filter by city…",
-        "status_all": "All statuses"
+        "city_placeholder": "Filter by city...",
+        "all_statuses": "All statuses",
+        "new_lead": "+ New lead"
       },
-      "add_lead_btn": "+ New lead",
-      "statuses": {
-        "new": "New",
-        "contacted": "Contacted",
-        "replied": "Replied",
-        "registered": "Registered",
-        "declined": "Declined"
+      "columns": {
+        "name": "Name",
+        "city": "City",
+        "category": "Category",
+        "phone": "Phone",
+        "instagram": "Instagram",
+        "status": "Status",
+        "actions": "Actions"
       },
-      "table": {
-        "col_name": "Name",
-        "col_city": "City",
-        "col_category": "Category",
-        "col_phone": "Phone",
-        "col_instagram": "Instagram",
-        "col_status": "Status",
-        "col_actions": "Actions",
-        "loading": "Loading leads…",
-        "empty": "No leads to show. Click \"+ New lead\" to get started.",
-        "prep_profile": "Prep profile",
-        "prep_profile_title": "Prepares a profile and copies the link",
-        "delete_btn": "Delete"
+      "loading_leads": "Loading leads...",
+      "empty": "No leads to display. Click \"+ New lead\" to start.",
+      "actions": {
+        "prefill": "Prep profile",
+        "prefill_title": "Prepares a profile and copies a link",
+        "whatsapp": "WhatsApp",
+        "delete": "Delete"
       },
       "toasts": {
         "status_updated": "Status updated",
-        "status_update_failed": "Update failed — please try again",
+        "status_failed": "Could not update — try again",
         "link_copied": "Link copied to clipboard",
-        "link_copy_failed": "Could not prepare the link — please try again",
-        "delete_confirm": "Permanently delete this lead?",
+        "prefill_failed": "Could not prepare link — try again",
         "lead_deleted": "Lead deleted",
-        "delete_failed": "Delete failed — please try again",
+        "delete_failed": "Could not delete — try again",
         "lead_added": "Lead added",
-        "text_copied": "Text copied",
-        "copy_failed": "Copy failed — please copy manually"
-      },
-      "add_modal": {
-        "title": "New lead",
-        "name_required": "Name is required",
         "duplicate": "A similar lead already exists",
         "generic_error": "Something went wrong",
-        "placeholders": {
-          "name": "Business name *",
-          "city": "City",
-          "category": "Category",
-          "phone": "Phone",
-          "instagram": "Instagram (username, without @)",
-          "website": "Website (optional)",
-          "notes": "Internal notes"
-        },
-        "cancel": "Cancel",
-        "saving": "Saving…",
+        "copied": "Text copied",
+        "copy_failed": "Could not copy — copy manually"
+      },
+      "confirm_delete": "Permanently delete this lead?",
+      "modal_add": {
+        "title": "New lead",
+        "name_placeholder": "Business name *",
+        "city_placeholder": "City",
+        "category_placeholder": "Category",
+        "phone_placeholder": "Phone",
+        "instagram_placeholder": "Instagram (username, without @)",
+        "website_placeholder": "Website (optional)",
+        "notes_placeholder": "Internal notes",
+        "name_required": "Name is required",
+        "submit_saving": "Saving...",
         "submit": "Add"
       },
-      "script_modal": {
+      "modal_script": {
         "title": "Call script",
-        "close": "Close",
-        "body": "1. Warm opening: \"Hi, I'm calling from Mehamakor — is now a good time?\"\n2. Brief intro: \"An Israeli site that connects local businesses with shoppers looking for high-quality food.\"\n3. Value proposition: \"Free to sign up, your profile gets published, and you receive customer inquiries directly via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'll send you a link with all your details ready — just confirm a password.\"\n6. If declining: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. To close: \"Have a great day.\""
-      },
-      "whatsapp_modal": {
-        "title": "WhatsApp message to {name}",
-        "preparing_link": "Preparing profile link…",
-        "copy_btn": "Copy",
-        "open_btn": "Open in WhatsApp",
         "close": "Close"
       },
-      "templates": {
-        "warm": {
-          "title": "Warm",
-          "body": "Hi {name} 🌿\nI saw your work and I really love what you do. I'm with Mehamakor — a site that connects small business owners with shoppers looking for real, local food.\nYou're invited to join us, free of charge — just click the link and your details are waiting:\n{prefillUrl}"
-        },
-        "professional": {
-          "title": "Professional",
-          "body": "Hello {name}, I'm reaching out on behalf of Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you; all that's left is to confirm a password:\n{prefillUrl}\nSign-up is free, no commitment."
-        },
-        "short": {
-          "title": "Short",
-          "body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
-        }
+      "modal_wa": {
+        "title": "WhatsApp message to {name}",
+        "preparing": "Preparing profile link...",
+        "copy": "Copy",
+        "open": "Open in WhatsApp",
+        "close": "Close"
+      },
+      "wa_templates": {
+        "warm_title": "Warm",
+        "warm_body": "Hi {name} 🌿\nI saw you and I really love what you do. I'm from Mehamakor — a site that connects small business owners with consumers looking for real local food.\nYou're welcome to join us for free — just click the link and your details are waiting:\n{prefillUrl}",
+        "professional_title": "Professional",
+        "professional_body": "Hello {name}, I'm reaching out from Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.",
+        "short_title": "Short",
+        "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
+      },
+      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. Closing: \"Have a great day.\""
+    },
+    "kashrut": {
+      "title": "Kashrut certificate approvals",
+      "tooltip": "A business owner requested a kashrut certificate. Review the attached certificate and approve/reject.",
+      "tooltip_label": "Kashrut certificate request info",
+      "subtitle": "Businesses request kashrut certificates from their dashboard. Review the certificate link before approving.",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "load_error": "Error loading requests",
+      "no_requests": "No requests",
+      "approved_toast": "Badge approved ✅",
+      "rejected_toast": "Request rejected",
+      "columns": {
+        "producer": "Business",
+        "badge": "Badge",
+        "cert": "Certificate",
+        "date": "Request date",
+        "notes": "Notes",
+        "actions": "Actions"
+      },
+      "cert_view": "View certificate ↗",
+      "no_cert": "Not uploaded",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "reject_modal": {
+        "title": "Reject request",
+        "placeholder": "Reason for rejection (optional)",
+        "submitting": "Sending...",
+        "submit": "Reject"
+      },
+      "badges": {
+        "rabanut": "Rabbinate kosher",
+        "badatz": "Badatz",
+        "chalak": "Chalak",
+        "mehadrin": "Mehadrin",
+        "organic_kosher": "Organic kosher",
+        "shmitta": "Shmita",
+        "kilayim": "Without kilayim",
+        "artisan_dairy": "Farm dairy products"
       }
+    },
+    "reports": {
+      "title": "Reports and issues",
+      "tabs": {
+        "reports": "User reports",
+        "flagged": "Home products under review",
+        "hidden": "Auto-hidden"
+      },
+      "section_3plus": "Businesses with 3+ reports",
+      "no_reports": "No open reports 🎉",
+      "report_count": "{count} reports",
+      "actions": {
+        "suspend": "⏸️ Suspend business",
+        "ignore": "Ignore"
+      },
+      "remove_reason_prompt": "Removal reason (will be sent to the seller)",
+      "flagged": {
+        "heading": "Home products that the AI flagged for review",
+        "subtitle": "These are products published with an \"under review\" tag because the AI identified something unclear — health claims, suspicious pricing, or a business posing as homemade.",
+        "empty": "No products under review right now 🌿",
+        "default_reason": "Flagged for review",
+        "approve": "Approve",
+        "remove": "❌ Remove"
+      },
+      "hidden": {
+        "heading": "Auto-hidden home products",
+        "empty": "No hidden products",
+        "restore": "Restore"
+      }
+    },
+    "reviews": {
+      "title": "Reviews",
+      "tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
+      "tooltip_label": "Reviews moderation info",
+      "count": "{filtered} of {total}",
+      "search_placeholder": "Search by business, user, title or text...",
+      "filter_aria": "Filter by rating",
+      "all_ratings": "All ratings",
+      "columns": {
+        "producer": "Business",
+        "user": "User",
+        "rating": "Rating",
+        "content": "Content",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "loading": "Loading reviews...",
+      "empty": "No reviews to display",
+      "stars_aria": "{stars} stars",
+      "delete_aria": "Delete review by {user}",
+      "deleting": "Deleting...",
+      "delete": "Delete",
+      "confirm_delete": "Delete the review by {user} on {producer}?",
+      "default_user": "User",
+      "default_producer": "the business",
+      "deleted_toast": "Review deleted",
+      "delete_error": "Something went wrong, please try again"
+    },
+    "settings": {
+      "title": "Settings",
+      "load_error": "Error loading settings — try refreshing the page.",
+      "sections": {
+        "notifications": "Notifications",
+        "freemium": "Freemium",
+        "holiday": "Holiday window",
+        "holiday_tooltip": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses are not accepting orders this week'. Disable after the holiday.",
+        "holiday_tooltip_label": "Holiday window info",
+        "holiday_hint": "Enable manually to test the banner on the dashboard and homepage before the holiday.",
+        "holiday_active": "Holiday window active",
+        "friday_mode": "Friday market mode",
+        "friday_tooltip": "Enable Friday mornings. Prioritises businesses selling at markets. Disables automatically after Shabbat.",
+        "friday_tooltip_label": "Friday market mode info",
+        "friday_hint": "Enable manually to test Friday market mode (producers strip, hero heading, 🛒 badge) outside the regular window (Wed 18:00 — Fri 14:00). This override applies in the current browser only.",
+        "friday_active": "Friday market mode — override",
+        "tests": "Connection tests",
+        "categories": "Manage categories",
+        "categories_hint": "To add, edit, and delete — the content screen.",
+        "categories_link": "Go to content ←"
+      },
+      "fields": {
+        "admin_email": "Admin email for notifications",
+        "admin_whatsapp": "Admin WhatsApp number (E.164)",
+        "premium_price": "Monthly premium price (₪)",
+        "free_image_limit": "Number of images in the free plan",
+        "holiday_key_label": "Holiday key for testing (empty = auto-detect by date)",
+        "holiday_none": "— No override —",
+        "holiday_pesach": "Passover",
+        "holiday_shavuot": "Shavuot",
+        "holiday_rosh_hashana": "Rosh Hashanah",
+        "holiday_sukkot": "Sukkot",
+        "holiday_chanuka": "Hanukkah",
+        "holiday_tu_bishvat": "Tu Bishvat"
+      },
+      "tests": {
+        "not_configured": "✗ Not configured",
+        "testing": "Testing...",
+        "connected": "✓ Connected",
+        "test_btn": "Test"
+      },
+      "save": {
+        "confirm_prefix": "Save the following changes?",
+        "saving": "Saving...",
+        "submit": "Save settings",
+        "nothing_to_save_title": "No changes to save",
+        "unsaved_count": "{count} unsaved changes"
+      }
+    },
+    "content": {
+      "title": "Content",
+      "tabs": {
+        "categories": "Categories",
+        "home_products": "Home products",
+        "about": "Vision page",
+        "terms": "Terms of service"
+      },
+      "categories": {
+        "emoji_placeholder": "Emoji",
+        "name_placeholder": "Category name",
+        "add": "+ Add",
+        "empty": "No data to display",
+        "save": "Save",
+        "delete": "Delete",
+        "confirm_delete": "Delete category?"
+      },
+      "home_products": {
+        "heading": "Hidden home products",
+        "empty": "No hidden products",
+        "restore": "Restore",
+        "delete": "Delete",
+        "confirm_delete": "Delete this product?"
+      },
+      "page_editor": {
+        "title_placeholder": "Title",
+        "body_placeholder": "Content (Markdown supported)",
+        "saving": "Saving...",
+        "save": "Save",
+        "saved": "Saved ✓"
+      }
+    },
+    "category_requests": {
+      "title": "Category requests",
+      "subtitle": "Categories that businesses asked to add — grouped by name. {count} groups",
+      "load_error": "Error loading",
+      "status_updated": "Status updated",
+      "update_error": "Update error",
+      "empty": "No category requests yet",
+      "request_one": "request",
+      "request_many": "requests",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "merged": "Merged"
+      },
+      "columns": {
+        "id": "ID",
+        "business": "Business",
+        "date": "Date",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "merge": "Merge",
+        "reset": "Reset"
+      }
+    },
+    "group_buys": {
+      "title": "Group buys",
+      "status": {
+        "open": "Open",
+        "funded": "Funded",
+        "cancelled": "Cancelled",
+        "fulfilled": "Fulfilled"
+      },
+      "load_error": "Error loading data",
+      "update_error": "Status update error",
+      "all": "All",
+      "empty": "No group buys",
+      "until": "until {date}",
+      "change_status": "Change status:",
+      "view_page": "View page ←"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "subtitle": "Platform insights",
+      "monthly_growth": "Monthly growth",
+      "legend_producers": "Businesses",
+      "legend_users": "Users",
+      "top_categories": "Popular categories",
+      "no_data": "No data",
+      "no_data_display": "No data to display",
+      "top_cities": "Top cities",
+      "top_producers_favorites": "Businesses with the most favorites",
+      "geographic": "Geographic distribution",
+      "map_count": "{count} businesses with map location"
+    },
+    "help": {
+      "title": "Admin help",
+      "intro": "This guide summarises the admin panel tools, key approval processes, and incident responses. Maintained manually — if something here is wrong, open a PR with a fix rather than leaving the next direction in the dark.",
+      "toc_label": "Contents",
+      "toc": {
+        "dashboard": "Dashboard overview",
+        "producers": "Approving and rejecting businesses",
+        "users": "Managing users",
+        "reviews": "Reviews",
+        "reports": "Reports",
+        "experiences": "Experiences",
+        "emergency": "Emergencies",
+        "urls": "Important URLs"
+      },
+      "sections": {
+        "dashboard": {
+          "title": "Dashboard overview",
+          "p1": "<strong>/admin</strong> — the main page. Four top metrics (users, businesses, events, open reports) + a weekly delta row beneath them.",
+          "li1": "<strong>Yellow pill on \"Dashboard\" in the sidebar</strong> — number of items awaiting approval (businesses + reports + flagged products + experiences). Refreshes on every internal navigation.",
+          "li2": "<strong>DAU 30-day chart</strong> — based on <code>users.last_active_at</code> which updates on every authenticated request (5-min throttle).",
+          "li3": "<strong>Top cities</strong> — aggregated from <code>producer_page_views</code> (rows without city are not counted).",
+          "li4": "<strong>Server health</strong> — average response time + requests per minute over the last hour. Per-process only (resets on every deploy)."
+        },
+        "producers": {
+          "title": "Approving and rejecting businesses",
+          "p1": "<strong>/admin/producers</strong> — table + search + Excel import.",
+          "li1": "Filter by status <strong>pending</strong>.",
+          "li2": "Click the business name → full details page, including licensing declarations, photos, and description.",
+          "li3": "<strong>To approve:</strong> click <em>\"Quick approve\"</em>. The business moves to <code>approved</code>, appears on the homepage, and shows on the map.",
+          "li4": "<strong>To reject:</strong> <em>\"Reject\"</em> + a short reason that will be emailed to the business owner.",
+          "li5": "<strong>Edit (pencil):</strong> goes to <code>/admin/producers/[id]/edit</code> — all fields including \"verified\" / \"recommended\" / \"availability status\" / \"primary contact method\".",
+          "footnote": "A business does not need to be verified to be <em>approved</em> — <strong>verified</strong> adds a blue tag after you've checked licensing and identity, usually in a monthly audit."
+        },
+        "users": {
+          "title": "Managing users",
+          "p1": "<strong>/admin/users</strong> — search by email/name, filter by role.",
+          "li1": "<strong>role:</strong> consumer / producer / admin — applied immediately, with no further confirmation.",
+          "li2": "<strong>Block:</strong> a blocked login returns 403. The user doesn't know immediately, they only see a message on their next login attempt.",
+          "li3": "<strong>Favorites:</strong> click the count next to a user to see the businesses they saved — useful for tracking suspicious activity.",
+          "footnote": "Reminder: blocking is reversible, a role change affects the next JWT immediately. <strong>Do not promote a user to admin</strong> without verifying identity outside the system."
+        },
+        "reviews": {
+          "title": "Reviews",
+          "p1": "<strong>/admin/reviews</strong> — all reviews in a single list (newest first).",
+          "li1": "Filter by rating (1–5) or free-text search across business/user/title/body.",
+          "li2": "Deletion requires confirmation (window.confirm). After deletion the business's <code>avg_rating</code> and review count update automatically.",
+          "li3": "Deletion is the correct pattern for: defamatory language, personal information, spam, a review about a different business."
+        },
+        "reports": {
+          "title": "Reports",
+          "p1": "<strong>/admin/reports</strong> — sorted by urgency (new + multiple-reports first).",
+          "li1": "<strong>Resolve</strong> — close the report, optionally with a follow-up action (block / delete).",
+          "li2": "<strong>Hold</strong> — keeps it open but moves it to the bottom of the list. Use when more information is needed.",
+          "li3": "<strong>Ignore</strong> — close with no action, for reports that don't substantiate an issue.",
+          "footnote": "Rule of thumb: <strong>respond within 24 hours</strong>. Product-safety reports (allergens, expiration dates) — immediately."
+        },
+        "experiences": {
+          "title": "Experiences",
+          "p1": "<strong>/admin/experiences</strong> — 5 tabs: pending / changes required / approved / rejected / all.",
+          "li1": "On click: approve / reject / request changes. The host receives an email.",
+          "li2": "Haiku pre-check runs before an experience reaches the \"pending\" tab — the \"changes required\" tab is when the AI flagged a warning but did not block."
+        },
+        "emergency": {
+          "title": "Emergencies",
+          "site_down_title": "Site is down",
+          "site_down_body": "Check <code>mehamakor.online/health</code>. If it's not 200 OK, check Railway → healthcheck + logs. See CLAUDE.md §\"Railway runtime port = 8080\" before any debugging — this is the most common source of 502.",
+          "migration_title": "Migration failed after deploy",
+          "migration_body": "Symptom: the container starts but endpoints return 500 with <code>UndefinedColumn</code>. Fix: verify that <code>_migrate_columns</code> in main.py lists the new column. If not, add it and push a hotfix commit.",
+          "login_broken_title": "Login is broken for everyone",
+          "login_broken_body": "Verify that <code>JWT_SECRET_KEY</code> exists in Railway Variables. If it was changed by mistake — old JWTs are invalidated and every user has to log in again. Do not rotate the key without alerting the team.",
+          "spam_title": "Spam storm / fake registrations",
+          "spam_body": "/register/producer is already rate-limited to 3/hour (slowapi). If that isn't enough, tighten to 1/hour temporarily in <code>auth.py</code> + hotfix push. Block suspicious IPs at Railway edge if traffic is unusual.",
+          "ai_silent_title": "AI features return silent errors",
+          "ai_silent_body": "Check <code>ANTHROPIC_API_KEY</code>. Fail-open is not infinite — if the key expired, moderation approves everything (APPROVED default). CLAUDE.md §\"Anthropic client init\" describes the httpx 0.28+ bug that may return TypeError via the green button."
+        },
+        "urls": {
+          "title": "Important URLs",
+          "intro": "The specific addresses (project IDs, tokens) are not here — they are in the team password manager. The list here points you where to look, it does not provide credentials.",
+          "prod_label": "Production site",
+          "staging_label": "Staging site",
+          "github_label": "Source code",
+          "github_text": "GitHub",
+          "railway_label": "Railway",
+          "railway_text": "<placeholder>fill in</placeholder> — project: <code>believable-tenderness</code>, service: backend",
+          "vercel_label": "Vercel",
+          "vercel_text": "<placeholder>fill in</placeholder> — project: <code>food-mamkor</code>",
+          "cloudinary_label": "Cloudinary",
+          "cloudinary_text": "<placeholder>fill in</placeholder> — cloud: <code>dvtcojtye</code> (approx.)",
+          "anthropic_label": "Anthropic Console",
+          "anthropic_text": "<placeholder>fill in</placeholder> — workspace: mehamakor"
+        }
+      },
+      "footer": "Daily/weekly/monthly checklist + emergency contacts — see <code>docs/ADMIN.md</code> (\"Handover checklist\" section).",
+      "footer_back": "← Back to dashboard"
     }
   }
 }
