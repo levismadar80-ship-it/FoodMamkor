@@ -41,6 +41,7 @@ export default function ProducerSections({
   sectionRefs,
   reviewsContainerRef,
   reviewsVisible,
+  isOwner = false,
 }) {
   const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
@@ -295,6 +296,7 @@ export default function ProducerSections({
             producerId={producer.id}
             avgRating={producer.avg_rating ?? 0}
             reviewCount={producer.reviews_count ?? 0}
+            isOwner={isOwner}
           />
         )}
       </div>
