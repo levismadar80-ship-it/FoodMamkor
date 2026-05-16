@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -26,13 +27,23 @@ import { env } from "@/lib/env";
  */
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-12 text-center text-site-muted">טוען...</div>}>
+    <Suspense fallback={<LoginPageFallback />}>
       <LoginPageBody />
     </Suspense>
   );
 }
 
+function LoginPageFallback() {
+  const t = useTranslations("auth.login");
+  return (
+    <div className="max-w-md mx-auto px-4 py-12 text-center text-site-muted">
+      {t("loading")}
+    </div>
+  );
+}
+
 function LoginPageBody() {
+  const t = useTranslations("auth.login");
   const router = useRouter();
   const params = useSearchParams();
   const redirectTo = params.get("redirect") || "/";
@@ -48,7 +59,7 @@ function LoginPageBody() {
 
   useEffect(() => {
     if (params.get("reset") === "1") {
-      showToast("הסיסמה עודכנה בהצלחה — אפשר להתחבר", "success");
+      showToast(t("reset_success"), "success");
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -56,7 +67,7 @@ function LoginPageBody() {
     e.preventDefault();
     setError("");
     if (!validateEmail(email)) {
-      setError("האימייל לא תקין");
+      setError(t("email_invalid"));
       return;
     }
     setLoading(true);
@@ -64,7 +75,7 @@ function LoginPageBody() {
       await login(email, password);
       router.push(redirectTo);
     } catch (err) {
-      setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setError(err.response?.data?.detail || t("generic_error"));
     } finally {
       setLoading(false);
     }
@@ -103,23 +114,23 @@ function LoginPageBody() {
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
           <h1 className="font-headline text-2xl font-bold text-site-text mb-1">
-            כניסה למהמקור
+            {t("title")}
           </h1>
-          <p className="text-site-muted text-sm">ברוכה הבאה</p>
+          <p className="text-site-muted text-sm">{t("welcome")}</p>
         </div>
 
         {/* Value-prop strip */}
         <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
-          <span>❤️ שמרי עסקים</span>
-          <span>⭐ דרגי</span>
-          <span>🏠 פרסמי מטבח ביתי</span>
+          <span>{t("value_save")}</span>
+          <span>{t("value_rate")}</span>
+          <span>{t("value_publish")}</span>
         </div>
 
         {/* Email + password form — FIRST per spec */}
         <form onSubmit={handleSubmit} className="space-y-3 text-right mb-5">
           <div>
             <label htmlFor="login-email" className="block text-sm font-medium mb-1 text-right">
-              אימייל
+              {t("email_label")}
             </label>
             <input
               id="login-email"
@@ -139,15 +150,15 @@ function LoginPageBody() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">האימייל לא תקין</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("email_invalid")}</p>
             )}
             {emailValid && (
-              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
+              <p className="text-xs text-primary mt-1 text-right">{t("valid")}</p>
             )}
           </div>
           <div>
             <label htmlFor="login-password" className="block text-sm font-medium mb-1 text-right">
-              סיסמה
+              {t("password_label")}
             </label>
             {/* Eye toggle — positioned at the END of the LTR password
                 field (physical right). `pr-11` reserves space so typed
@@ -176,7 +187,7 @@ function LoginPageBody() {
                 onClick={() => setShowPassword((v) => !v)}
                 // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
-                aria-label={showPassword ? "הסתירי סיסמה" : "הציגי סיסמה"}
+                aria-label={showPassword ? t("password_hide") : t("password_show")}
                 aria-pressed={showPassword}
                 tabIndex={0}
               >
@@ -188,14 +199,14 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">הזיני סיסמה</p>
+              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("password_required")}</p>
             )}
             {passwordValidLength && (
-              <p className="text-xs text-primary mt-1 text-right">✓ תקין</p>
+              <p className="text-xs text-primary mt-1 text-right">{t("valid")}</p>
             )}
             <div className="text-end mt-1">
               <Link href="/forgot-password" className="text-xs text-site-muted hover:text-primary transition">
-                שכחת סיסמה?
+                {t("forgot_password")}
               </Link>
             </div>
           </div>
@@ -212,10 +223,10 @@ function LoginPageBody() {
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <ButtonSpinner />
-                מתחברת...
+                {t("submitting")}
               </span>
             ) : (
-              "כניסה"
+              t("submit")
             )}
           </button>
         </form>
@@ -228,7 +239,7 @@ function LoginPageBody() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-site-muted">או</span>
+                <span className="px-3 bg-white text-site-muted">{t("or")}</span>
               </div>
             </div>
 
@@ -250,9 +261,9 @@ function LoginPageBody() {
         )}
 
         <p className="text-center text-sm text-site-muted mt-6">
-          אין לך חשבון?{" "}
+          {t("no_account")}{" "}
           <Link href="/register" className="text-primary hover:underline">
-            הצטרפי →
+            {t("register_cta")}
           </Link>
         </p>
       </div>
