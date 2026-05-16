@@ -14,10 +14,13 @@
  *           frontend/components/MiniMap.jsx (single-producer detail map
  *             — don't confuse the two; MiniMap takes lat/lng/name for
  *             one producer, this takes an array for the country preview).
- * History:  MEH-538 (creation, 2026-05-15).
+ * History:  MEH-538 (creation, 2026-05-15); MEH-604 (2026-05-16 — moved
+ *             above the fold; IntersectionObserver replaced with
+ *             setTimeout(200) + chained requestIdleCallback; skeleton
+ *             extracted to HomepageMiniMapSkeleton.jsx).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -36,10 +39,11 @@ import { styleForProducer } from "@/lib/map-categories";
 const ISRAEL_CENTER = [32.0853, 34.7818];
 const ISRAEL_ZOOM = 8;
 
-// MEH-538: rootMargin "200px" prevents flash by starting the load slightly
-// before the section enters the viewport. Single observer instance per
-// mount; disconnected after first fire.
-const LAZY_LOAD_ROOT_MARGIN = "200px";
+// MEH-604: above-the-fold means IntersectionObserver fires immediately —
+// not useful as a deferral mechanism. Replaced with setTimeout(200) +
+// chained requestIdleCallback so Leaflet bundle evaluation lands OUT of
+// the LCP measurement window AND outside of any long task.
+const POST_FCP_DEFER_MS = 200;
 
 // Build a minimal divIcon for the homepage preview. REUSES the category
 // COLOR from styleForProducer (single source of truth) but skips the
@@ -119,31 +123,26 @@ function PreviewEmpty() {
 }
 
 export default function HomepageMiniMap() {
-  const containerRef = useRef(null);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [producers, setProducers] = useState(null); // null = not yet fetched
 
-  // IntersectionObserver — fire once when the section is ~200px from the
-  // viewport, then disconnect.
+  // MEH-604: setTimeout(200) enforces the floor — Leaflet bundle eval does
+  // NOT start before 200ms post-FCP. requestIdleCallback chained after the
+  // timeout ensures the eval lands during browser idle time (off a long
+  // task), keeping INP healthy. Fallback to direct setShouldLoad if rIC is
+  // unavailable (Safari < 16). Rejected alternatives in the MEH-604 PR:
+  // Option B (rIC with timeout:200) — pulls Leaflet back INTO the LCP
+  // window. Option C (setTimeout only) — can land on a long task → bad INP.
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el || shouldLoad) return;
-    if (typeof IntersectionObserver === "undefined") {
-      // Fallback for ancient browsers / SSR (shouldn't hit — "use client")
-      setShouldLoad(true);
-      return;
-    }
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setShouldLoad(true);
-          obs.disconnect();
-        }
-      },
-      { rootMargin: LAZY_LOAD_ROOT_MARGIN },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+    if (shouldLoad) return;
+    const timer = setTimeout(() => {
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(() => setShouldLoad(true));
+      } else {
+        setShouldLoad(true);
+      }
+    }, POST_FCP_DEFER_MS);
+    return () => clearTimeout(timer);
   }, [shouldLoad]);
 
   // Fetch on shouldLoad. Q3 accepted the duplicate fetch (useHomePage also
@@ -174,7 +173,6 @@ export default function HomepageMiniMap() {
 
   return (
     <section
-      ref={containerRef}
       aria-label="תצוגה מקדימה של המפה"
       className="mt-6 mb-12 md:mt-12 md:mb-16 px-4 md:px-6"
     >

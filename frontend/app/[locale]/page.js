@@ -22,12 +22,15 @@ import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
 
-// MEH-538: lazy-load Leaflet + the mini-map preview so it doesn't block
-// initial render (SSR-disabled because Leaflet touches `window`). The
-// component itself uses IntersectionObserver to defer its `/producers`
-// fetch until the user scrolls near the section.
+// MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
+// because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
+// the above-the-fold slot reserves height on first paint (CLS = 0) before JS
+// hydrates. The skeleton lives in a SEPARATE file (Leaflet-free) so it can
+// be imported synchronously without dragging Leaflet into SSR.
+import HomepageMiniMapSkeleton from "@/components/HomepageMiniMapSkeleton";
 const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
   ssr: false,
+  loading: () => <HomepageMiniMapSkeleton />,
 });
 
 // PREMIUM_DESIGN: parallax divider images between sections.
@@ -58,6 +61,13 @@ export default function HomePage() {
         onNearMe={handleNearMe}
         onScrollDown={scrollToProducers}
       />
+
+      {/* MEH-538 + MEH-604: mini-map preview sits IMMEDIATELY after the hero
+          (section #2) so the country-shape of producer distribution is
+          visible within ~2s of FCP. Skeleton above (dynamic({ loading }))
+          reserves height on first paint; Leaflet bundle eval is deferred
+          200ms post-FCP via setTimeout + rIC inside the component. */}
+      <HomepageMiniMap />
 
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only */}
       {fridayMode && <FridayDeliveryStrip city={userCity} />}
@@ -104,12 +114,6 @@ export default function HomePage() {
       <div className="mt-4">
         <HolidayBanner />
       </div>
-
-      {/* MEH-538: mini-map preview slots in between Hero/search and the
-          Categories grid for discovery prominence. Lazy-mounted via the
-          dynamic() above + IntersectionObserver inside the component so
-          initial render isn't blocked. */}
-      <HomepageMiniMap />
 
       <HomeCategoryGrid
         categoryCards={categoryCards}

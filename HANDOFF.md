@@ -1,13 +1,80 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-599 — Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms; PR pending; sits on top of PR #684 MEH-598)
+> Last updated: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; PR pending; HIGH-RISK chunked review; last MEH-592 epic launch-blocker)
+> Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
 > Previously: 2026-05-16 — **End of day** (4 PRs merged: #682 + #683 + #684; filed MEH-616; brand hub v1.1 live)
-> Previously: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch; **PR #684 MERGED** at `d8200525`)
 
 ---
 
-## 2026-05-16 — MEH-599: Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms (PR PENDING)
+## 2026-05-16 — MEH-604: HomepageMiniMap above the fold + perf defer (PR PENDING)
+
+**Branch:** `feature/meh-604-minimap-above-fold` off `staging@e5aaacb` (post-PR #685 merge).
+
+**Risk tier:** **HIGH-RISK** — `page.js` + `layout.js` are central components per `.claude/central-components.json` (spirit-of-rule; JSON paths predate the `[locale]` segment migration). Chunked review applied (5 chunks, build-green between each, no scope creep, no per-chunk surprises).
+
+**Closes:** MEH-604. **MEH-592 epic launch-blockers: 3 of 3 shipped** (this is the last one).
+
+**What shipped (4 files):**
+
+| # | File | Change |
+|---|---|---|
+| 1 | `frontend/app/[locale]/layout.js` | +4 / -0 — 3 `<link rel="preconnect">` for OSM tile shards (a/b/c) |
+| 2 | NEW `frontend/components/HomepageMiniMapSkeleton.jsx` | +46 / -0 — Leaflet-free SSR-able skeleton matching live-map dimensions |
+| 3 | `frontend/components/HomepageMiniMap.jsx` | +28 / -34 — IntersectionObserver → setTimeout(200) + chained rIC; dropped useRef + LAZY_LOAD_ROOT_MARGIN; updated file-header History |
+| 4 | `frontend/app/[locale]/page.js` | +13 / -10 — moved `<HomepageMiniMap />` from section #7 to section #2 (right after Hero); added skeleton import + `dynamic({ loading })` |
+
+**Chunk-by-chunk record:**
+- **Chunk 1** — `layout.js` preconnect (commit `c485634`, build 15.2s ✅).
+- **Chunk 2** — `dynamic({ loading })` + skeleton. **STOP fired on first attempt**: inline export from `HomepageMiniMap.jsx` pulled `import L from "leaflet"` into SSR → `ReferenceError: window is not defined`. Fix: extract to NEW Leaflet-free file `HomepageMiniMapSkeleton.jsx`. Build green after fix (14.7s ✅). Skeptic-flag #4 from the plan called this exact failure mode.
+- **Chunk 3** — rIC defer (Option A: `setTimeout(200)` + chained rIC). Build 14.7s ✅. Inline comments document rejected Options B and C.
+- **Chunk 4** — section reorder. Build 16.0s ✅. Diff scope-bound to the 3 product files + 1 new skeleton file.
+- **Chunk 5** — docs (this entry + CHANGELOG + MANUAL_TESTING 4 test cases) + commit + push + draft PR.
+
+**rIC strategy (Option A, locked in):**
+```js
+setTimeout(() => {
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => setShouldLoad(true));
+  } else {
+    setShouldLoad(true);
+  }
+}, POST_FCP_DEFER_MS); // 200
+```
+Floor enforced by `setTimeout(200)`; idle-aware landing via `rIC`; Safari < 16 fallback to direct set. Inverse-strategy alternatives (rIC with `timeout: 200`, or `setTimeout` only) rejected inline with reasons.
+
+**Lighthouse expectations (synthesis §5.1):**
+
+| Metric | Target | Why |
+|---|---|---|
+| Performance | ≥85 mobile | Defer + preconnect keep Leaflet OUT of LCP window |
+| LCP | Unchanged (hero photo) | rIC defer prevents Leaflet from competing |
+| CLS | ≤0.05 | SSR skeleton reserves height on first paint |
+| INP | -100 to -200ms on first tile | OSM preconnect saves DNS + TLS handshake |
+
+Pre/post capture deferred to Smadar (sandbox blocks `*.vercel.app` per MEH-360; no Chromium runtime here). Acceptance bar: **Performance ≥ 85 mobile** — if drops below, revert chunk 4 (move map back to section #7), ship chunks 1-3 only.
+
+**Skeptic flags (from plan):**
+1. **Bundle size:** Next.js 14 non-interactive build doesn't emit per-page kB. Code-inference estimate ±1KB gzipped (well under 20KB threshold). Verify post-merge with `next build --debug` or bundle analyzer.
+2. **SSR loading verification:** confirmed via build pass that `HomepageMiniMapSkeleton` SSRs cleanly. Inline export pulled Leaflet into SSR; separate file fixes it.
+3. **useHomePage duplicate `/producers` fetch:** acknowledged out-of-scope; was an accepted trade-off in MEH-538. Now that map is above-the-fold, the duplicate fetch is harder to justify — separate perf ticket.
+4. **Mobile QA cannot run in sandbox** (MEH-360). Vercel preview link will be posted; Smadar verifies section order + skeleton flash + no CLS jank + tile-preconnect in DOM (4 MANUAL_TESTING cases).
+
+**Out of scope (will NOT touch):**
+- `useHomePage.js` duplicate `/producers` fetch — separate optimization ticket
+- `/map` route — unchanged
+- HomepageMiniMap internals (markers, tooltips, click-to-/map, category icons)
+- Hero image optimization
+- Lighthouse baseline capture (Smadar runs it locally)
+
+**Queued P3 follow-up (NOT bundled into MEH-604, file after merge):**
+- Update `.claude/central-components.json` paths for the i18n migration. Current JSON entries `frontend/app/page.js` and `frontend/app/layout.js` predate MEH-366 (`[locale]` segment move). Every future session hits the same "literal vs spirit" path-ambiguity question. Cheap config update.
+
+**Next:** push branch, open draft PR with `Closes MEH-604`, post Vercel preview URL. Smadar runs Lighthouse before/after + 4 MANUAL_TESTING cases on mobile. Merge after green.
+
+---
+
+## 2026-05-16 — MEH-599: Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms (PR #685 MERGED)
 
 **Branch:** `feature/meh-599-fix-terms-lock` off `staging@d8200525` (post-PR #684 merge).
 
