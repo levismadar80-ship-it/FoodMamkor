@@ -12,7 +12,6 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -582,13 +581,11 @@ async def register_producer(
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
 
 
-@router.get("/email-exists")
-@limiter.limit("30/minute")
-def email_exists(request: Request, email: EmailStr, db: Session = Depends(get_db)):
-    """MEH-143: non-auth check so the producer register form can warn
-    before submit that the email belongs to an existing consumer account."""
-    exists = db.query(User).filter(User.email == email).first() is not None
-    return {"exists": exists}
+# MEH-328 Chunk C: GET /auth/email-exists deleted. It was a 30/min per-IP
+# enumeration oracle that returned {exists: bool} for any email — defeated
+# the anti-enum refactor in Chunks A+B. Regression guard:
+# tests/test_api.py::test_email_exists_endpoint_removed pins the deletion.
+# Frontend onBlur caller in register/producer/page.js is removed in Chunk D.
 
 
 @router.post("/google", response_model=GoogleAuthResponse)

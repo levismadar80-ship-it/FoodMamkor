@@ -524,16 +524,15 @@ class TestAuth:
         )
         assert resp.status_code == 409
 
-    def test_email_exists_endpoint_returns_true(self, client, db):
-        make_user(db, email="taken@test.com")
-        resp = client.get("/auth/email-exists?email=taken@test.com")
-        assert resp.status_code == 200
-        assert resp.json()["exists"] is True
-
-    def test_email_exists_endpoint_returns_false(self, client):
-        resp = client.get("/auth/email-exists?email=free@test.com")
-        assert resp.status_code == 200
-        assert resp.json()["exists"] is False
+    def test_email_exists_endpoint_removed(self, client):
+        """MEH-328 Chunk C: /auth/email-exists was a dedicated 30/min
+        enumeration oracle (returned {exists: bool} for any email). It
+        defeated the anti-enum refactor in Chunks A+B, so it's deleted
+        entirely. This test pins the deletion — a future refactor that
+        silently re-adds the endpoint fails CI here. Frontend onBlur
+        caller in register/producer/page.js is removed in Chunk D."""
+        resp = client.get("/auth/email-exists?email=test@example.com")
+        assert resp.status_code == 404
 
     def test_anonymous_registration_still_requires_account_fields(self, client):
         """Unauthenticated POST without email/name/password → 422."""
