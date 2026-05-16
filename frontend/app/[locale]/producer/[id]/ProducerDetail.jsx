@@ -159,6 +159,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             sectionRefs={sectionRefs}
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}
+            isOwner={user?.producer_id === producer.id}
           />
         </div>
 

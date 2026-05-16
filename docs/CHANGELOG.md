@@ -297,6 +297,11 @@ Closes MEH-555.
 `feat(MEH-553)`: adds `/producer/dashboard/followers` page. Auth-guarded (producer role only). Fetches `follower_count` from `/producers/me/analytics` + `slug` from `/producers/me` in parallel. Three states: loading → zero (EmptyState with share CTA) → count>0 (count display + "רשימה בקרוב" placeholder + same share CTA). No new backend endpoint — follower list deferred.
 
 Closes MEH-553.
+## 2026-05-10 — MEH-554: reviews empty state — propagate isOwner prop
+
+`feat(MEH-554)`: adds `isOwner` prop to `ReviewsSection.jsx` (default `false`). When `isOwner=true` and reviews are empty, renders producer-facing EmptyState: title "ביקורות ראשונות מגיעות אחרי כמה לקוחות", explains WhatsApp-triggered auto-review flow, CTA links to `/producer/dashboard/followers`. Consumer empty state unchanged. Computed in `ProducerDetail.jsx` as `user?.producer_id === producer.id`, propagated via `ProducerSections.jsx`.
+
+Closes MEH-554.
 
 ## 2026-05-10 — MEH-529: add 3 categories — wine/beer, spices, chocolate
 

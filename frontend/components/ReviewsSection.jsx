@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import EmptyState from "@/components/ui/EmptyState";
 
 // "ספיר ל." — first name + last initial (privacy)
 function formatName(fullName) {
@@ -70,7 +71,7 @@ function StarPicker({ value, onChange }) {
  * `wa_clicked_{producerId}` === "1"). Backend enforces the same rule via
  * producer_whatsapp_clicks.user_id.
  */
-export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0 }) {
+export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
@@ -264,10 +265,20 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       {loading ? (
         <p className="text-sm text-site-muted">טוענת ביקורות...</p>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-8">
-          <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-          <p className="text-site-muted">עדיין אין ביקורות — היי הראשונה!</p>
-        </div>
+        isOwner ? (
+          <EmptyState
+            emoji="⭐"
+            title="ביקורות ראשונות מגיעות אחרי כמה לקוחות"
+            description="ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין."
+            ctaLabel="שתפי את הפרופיל בוואטסאפ"
+            ctaHref="/producer/dashboard/followers"
+          />
+        ) : (
+          <div className="text-center py-8">
+            <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
+            <p className="text-site-muted">עדיין אין ביקורות — היי הראשונה!</p>
+          </div>
+        )
       ) : (
         <>
           <div className="divide-y divide-border">
