@@ -2,6 +2,7 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 > Last updated: 2026-05-16 (MEH-599 — Fix "יצרני" → "בעלי עסק" + remove "מהמטבח של השכן" from /terms; PR pending; sits on top of PR #684 MEH-598)
+> Previously: 2026-05-16 — **End of day** (4 PRs merged: #682 + #683 + #684; filed MEH-616; brand hub v1.1 live)
 > Previously: 2026-05-16 (MEH-598 — Hide /neighbor pre-launch; **PR #684 MERGED** at `d8200525`)
 
 ---
@@ -48,6 +49,43 @@
 - `יצרנ*` hits in `group-buys/page.js`, `register/page.js`, `admin/settings/page.js`, `FridayDeliveryStrip.jsx` — i18n sweep ticket, not MEH-599 scope
 
 **Next:** push branch, open draft PR with `Closes MEH-599`, post Vercel preview URL for mobile QA. Await your `merge` after QA.
+
+---
+
+## 2026-05-16 — End of day status
+
+**5 issues closed today (4 PRs merged):**
+- MEH-605 + MEH-606 + MEH-609 (PR #682 — discovery copy bundle: CTA / categories / HIW step 3)
+- MEH-608 (PR #683 — `/register/producer` Step 2 subhead drift fix)
+- MEH-598 (PR #684 — `/neighbor` LOCK hide + homepage kitchen section removal)
+
+**Filed today:**
+- **MEH-616** — Reconcile ESLint pre-commit hook with MEH-443 warnings-as-feedback policy (P3 Medium); follow-up from the `--no-verify` bypass on MEH-608. See "Post-launch tech debt" + the dedicated dated section below.
+- **MEH-599 scope expanded** with E1-E6 from the `/neighbor` LOCK discovery during PR #684 — chat widget Q&A (E1+E2), HomeProductCard label (E3), producer dashboard subsection (E4), backend chat router FAQ (E5 — most critical LOCK leak), HomeProductCard test (E6). All LOCK-bound, deferred from MEH-598 to keep its scope tight. (Note: previously referenced as "MEH-NEW-2" in PR #684's body; the real issue is MEH-599.)
+
+**Brand Hub v1.1 live in Drive (16 May 2026):**
+- [`02-מדריך-מותג.md` v1.1](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) — added §8 audience-targeting rule (no partial category lists) + §9 CTA example
+- [`07-language-rules-anti-patterns.md` v1.1](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view) — added "מגזין internal only" rule + "partial category list" rule
+- Both rules mirrored into `docs/DESIGN.md` "כללי מיקרו-קופי" section in the bookkeeping commit for PR #682.
+
+**Adversarial reviews caught (pre-PR + during-PR):**
+- "מגדלת" exclusion bug in MEH-605/609 menu options — would have excluded ~75% of producer base (bakeries/dairies/wineries/chocolatiers) from the launch CTA. Caught in planning chat before any commit.
+- "מגזין" Tell-vs-Show drift — visitors don't share the brand thesis; magazine-tier voice must be surfaced through *what* copy says, not by labeling. Codified into Brand Hub v1.1 + DESIGN.md.
+- 6 LOCK leak surfaces beyond `/neighbor` route (E1-E6) — caught during PR #684 Phase 0 grep sweep; deferred to MEH-599 to preserve PR #684's scope discipline.
+
+**Three deferred items rolling into next session:**
+- **MEH-599 (LOCK leaks E1-E6)** — backlog'd description scope expanded today; UX decisions needed for E4 (producer dashboard subsection) and E5 (backend chat router FAQ — 5 hits, the most critical LOCK leak).
+- **pytest for PR #684** — deferred to CI; not run locally (sandbox blocks `pip install`). Backend untouched in PR #684, risk zero, but worth confirming green on CI dashboard.
+- **Mobile QA for PR #684** — closed this turn (Smadar verified on Vercel preview at 375px before authorizing merge: `/neighbor` redirect, BottomNav 3-item flag at grid-cols-4, homepage section flow without kitchen).
+
+**Next session priorities (in order):**
+- **MEH-599** — `/terms` LOCK violations + meta + E1-E6 surfaces (description scope-expanded today; Urgent)
+- **MEH-604** — Mini-map above-the-fold + performance plan (last remaining synthesis launch-blocker)
+- **MEH-607** — Stats counter copy reframe + skeleton (P2 fast-follow; Linear status `Backlog` confirmed today)
+
+**Open tech debt (post-launch):**
+- `RegisterProducerPageBody` refactor (`frontend/app/[locale]/register/producer/page.js` — 548L function, complexity 35, 25 ESLint warnings)
+- **MEH-616** — ESLint pre-commit hook policy reconciliation (P3 Medium)
 
 ---
 
