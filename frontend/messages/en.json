@@ -74,6 +74,94 @@
       "favoriteSaved": "Saved to favorites ❤️",
       "sessionExpired": "Your session expired — please sign in again",
       "loginAgainCta": "Sign in"
+    },
+    "passwordRecovery": {
+      "forgot": {
+        "title": "Reset password",
+        "subtitle": "We'll send you a link to reset your password",
+        "success_main": "✓ If the email exists in our system — a reset link will be sent",
+        "success_contact_prefix": "Didn't receive it? Contact us:",
+        "email_placeholder": "Your email",
+        "submit_sending": "Sending...",
+        "submit": "Send reset link",
+        "back_to_login": "Back to login",
+        "errors": {
+          "send_failed": "Sending failed, please try again later"
+        }
+      },
+      "reset": {
+        "loading": "Loading...",
+        "invalid_link": "The reset link is invalid",
+        "request_new_link": "Request a new link",
+        "title": "New password",
+        "subtitle": "Enter a new password (at least {min} characters)",
+        "password_placeholder": "New password",
+        "password_aria": "New password",
+        "confirm_placeholder": "Confirm password",
+        "toggle_show": "Show password",
+        "toggle_hide": "Hide password",
+        "success_title": "✓ Password updated successfully",
+        "success_subtitle": "Redirecting you to the login page...",
+        "submit_updating": "Updating...",
+        "submit": "Update password",
+        "errors": {
+          "too_short": "Password must be at least {min} characters",
+          "mismatch": "Passwords don't match",
+          "invalid_token": "The reset link is invalid. Request a new link.",
+          "expired_token": "The reset link has expired. Request a new link.",
+          "generic": "Failed to update password, please try again"
+        }
+      }
+    },
+    "verifyEmail": {
+      "loading_title": "Verifying...",
+      "loading_subtitle": "Please wait",
+      "fallback_loading": "Loading...",
+      "success_title": "Email verified successfully!",
+      "success_subtitle": "Redirecting you to the site...",
+      "success_cta": "Continue to the site",
+      "error_title": "Verification failed",
+      "error_cta": "Back to the site",
+      "errors": {
+        "invalid_link": "The verification link is invalid",
+        "invalid_or_expired": "The verification link is invalid or expired"
+      }
+    },
+    "login": {
+      "loading": "Loading...",
+      "title": "Sign in to Mehamakor",
+      "welcome": "Welcome",
+      "value_save": "❤️ Save businesses",
+      "value_rate": "⭐ Rate",
+      "value_publish": "🏠 Publish your home kitchen",
+      "email_label": "Email",
+      "email_invalid": "Invalid email",
+      "valid": "✓ Valid",
+      "password_label": "Password",
+      "password_required": "Enter your password",
+      "password_show": "Show password",
+      "password_hide": "Hide password",
+      "forgot_password": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "reset_success": "Password updated successfully — you can sign in",
+      "or": "or",
+      "no_account": "Don't have an account?",
+      "register_cta": "Join →",
+      "generic_error": "Something went wrong, please try again"
+    },
+    "oauth": {
+      "google_error": "Google sign-in failed",
+      "apple_error": "Apple sign-in failed",
+      "apple_continue": "Continue with Apple",
+      "apple_continue_f": "Continue with Apple",
+      "producer_quick_signup": "Quick sign-up",
+      "producer_only_email_name": "We'll only receive your name and email",
+      "or": "or",
+      "producer_already_account": "You already have a Mehamakor account — sign in to manage it",
+      "rate_limited": "Too many attempts, try again in a minute",
+      "connection_failed": "We couldn't connect, please try again",
+      "generic_error": "Sign-in failed"
     }
   },
   "account": {

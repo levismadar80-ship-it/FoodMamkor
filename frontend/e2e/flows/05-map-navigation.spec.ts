@@ -8,19 +8,22 @@ test.describe("Map", () => {
   test.use({ actionTimeout: 15_000 });
 
   test("map page loads and centers on Israel", async ({ page }) => {
-    // MEH-549: Leaflet fails to load on current staging deployment.
-    // Re-enable once MEH-549 is resolved.
-    test.skip(true, "MEH-549: map regression — Leaflet fails to mount on staging");
     test.setTimeout(90_000);
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
-    // MapComponent is ssr:false — dynamic import must complete before Leaflet
-    // initialises and adds .leaflet-container. In CI (cold Vercel preview)
-    // the chunk fetch can take up to ~35s; 45s gives comfortable headroom.
-    // :visible scopes to the active viewport container — MapClient renders
-    // mapPane twice (desktop hidden lg:grid + mobile lg:hidden); both Leaflet
-    // instances mount, producing two .leaflet-container elements in the DOM.
-    await page.waitForSelector(".leaflet-container:visible", { timeout: 45_000 });
+    // MEH-549: wait on `window.__MAP_CENTER__` (exposed by MapComponent.jsx:272
+    // immediately after `L.map().setView()` returns) instead of
+    // `.leaflet-container:visible`. Two MapPane instances mount (desktop
+    // hidden lg:grid + mobile lg:hidden); `:visible` races on the cold
+    // Vercel preview against which container resolves first. `__MAP_CENTER__`
+    // is a single global flag set by whichever instance initialises first,
+    // so it's race-free. Timeout kept at 45s for cold dynamic-chunk fetch
+    // (~35s observed). Production /map verified working 2026-05-14
+    // (HANDOFF.md:1019).
+    await page.waitForFunction(
+      () => (window as unknown as { __MAP_CENTER__?: [number, number] }).__MAP_CENTER__ !== undefined,
+      { timeout: 45_000 }
+    );
     // Allow tile + marker loading
     await page.waitForTimeout(2000);
 
