@@ -5,7 +5,12 @@ import { test, expect } from "@playwright/test";
  * The geolocation API is mocked so we don't depend on a real device.
  */
 test.describe("GPS button on /map", () => {
-  test("GPS button is visible on desktop and triggers geolocation API", async ({ page, context }) => {
+  test("GPS button is visible on desktop and triggers geolocation API", async ({ page, context }, info) => {
+    // Desktop-only: the desktop GPS button (MapPane.jsx:124, "hidden lg:flex")
+    // doesn't render on mobile; mobile uses a separate filter-bar button
+    // with aria-label "קרוב אלי" (MapClient.jsx:273-275).
+    test.skip(info.project.name === "mobile", "GPS button is desktop-only");
+
     // Grant geolocation permission and set a fixed position (Tel Aviv)
     await context.grantPermissions(["geolocation"]);
     await context.setGeolocation({ latitude: 32.0853, longitude: 34.7818 });
