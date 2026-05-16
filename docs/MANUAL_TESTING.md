@@ -3,6 +3,17 @@
 
 ---
 
+## Stats counter reframe + skeleton (MEH-607)
+
+Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {month} — N בתי עסק · M קטגוריות · מכל רחבי הארץ"* — editorial-cadence framing per synthesis §5.2 Option A. Dynamic month name via `Intl.DateTimeFormat('he-IL', { month: 'long' })`. F10: while `/stats` hasn't returned, a skeleton with matching `bg-primary text-white py-4` dimensions reserves height → zero CLS between loading and the real counter.
+
+- [ ] Hebrew copy renders — visit `/he` → stats bar reads *"גליון מאי — N בתי עסק · M קטגוריות · מכל רחבי הארץ"*. Month name is the **current Hebrew month** (in May → "מאי"; in June → "יוני"). "מאומתים" word is **absent**.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first few hundred ms the stats slot shows the green section with a pulsing white pill (no numbers yet). When `/stats` resolves the pill is replaced by the real counter **with zero layout jump** (no content below shifts).
+- [ ] 375px wrap — open Vercel preview at exactly 375px viewport → counter wraps cleanly if it wraps at all. Watch for orphan words (a single word alone on its own line). Synthesis §5.3 acceptance: month+counter on line 1, categories+geography on line 2 if wrap happens.
+- [ ] Empty-DB state — if `/stats` returns `{ producers_count: 0 }` → after the skeleton dismisses, the stats section is **hidden** (no green bar). Acceptable launch-week behavior; not a CLS regression vs pre-MEH-607 (was also hidden).
+
+---
+
 ## HomepageMiniMap above the fold (MEH-604)
 
 Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
