@@ -11,6 +11,7 @@ describe("BADGE_PRIORITY", () => {
     expect(BADGE_PRIORITY).toEqual([
       "verified",
       "recommended",
+      "license",
       "new",
       "organic",
       "grass_fed",
@@ -57,6 +58,23 @@ describe("allBadges", () => {
   it("recommended — when is_recommended is true", () => {
     const badges = allBadges({ is_recommended: true });
     expect(badges.map((b) => b.key)).toEqual(["recommended"]);
+  });
+
+  // MEH-531: license badge — Ministry of Health producer license trust signal.
+  // Field source: ProducerListOut.has_producer_license (schemas.py:547).
+  it("license — when has_producer_license is true", () => {
+    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([
+      "license",
+    ]);
+  });
+
+  it("license — when has_producer_license is false → not earned", () => {
+    expect(allBadges({ has_producer_license: false }).map((b) => b.key)).toEqual([]);
+  });
+
+  it("license — when has_producer_license is null/undefined → not earned", () => {
+    expect(allBadges({ has_producer_license: null }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({}).map((b) => b.key)).toEqual([]);
   });
 
   it("new — when days_since_created is <= 30", () => {
@@ -150,12 +168,14 @@ describe("allBadges", () => {
       has_lactose_free_products: true,
       organic_certified: true,
       days_since_created: 5,
+      has_producer_license: true,
       is_recommended: true,
       is_verified: true,
     });
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
       "recommended",
+      "license",
       "new",
       "organic",
       "grass_fed",
@@ -217,6 +237,22 @@ describe("topBadges", () => {
       has_delivery: true,
     };
     expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "organic"]);
+  });
+
+  // MEH-531: license sits between recommended and new.
+  it("license priority — sits between recommended and new", () => {
+    const p = {
+      is_recommended: true,
+      has_producer_license: true,
+      days_since_created: 5,
+    };
+    expect(topBadges(p, 3).map((b) => b.key)).toEqual([
+      "recommended",
+      "license",
+      "new",
+    ]);
+    // limit=2 → recommended + license, new gets truncated
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["recommended", "license"]);
   });
 });
 
