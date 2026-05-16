@@ -67,13 +67,21 @@ function RegisterProducerPageBody() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  // MEH-328 Chunk C: emailExistsWarning state removed with /email-exists
-  // backend route. emailExistsSubmitError kept — wired to 409 on submit.
-  const [emailExistsSubmitError, setEmailExistsSubmitError] = useState(false);
+  // MEH-328 Chunks C+D: emailExistsWarning (onBlur) + emailExistsSubmitError
+  // (409 on submit) state both removed. Backend's non-upgrade path no longer
+  // returns 409 (collisions return identical 200 ack); the duplicate-attempt
+  // email is the only signal to the legitimate owner. Upgrade-path 409
+  // ("user already has producer") flows through the existing `error` state.
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   // MEH-287: true when server confirms Twilio config is present (WhatsApp
   // expected to arrive). False → show dashboard-fallback banner on step 3.
+  // MEH-328: only meaningful on the upgrade path (non-upgrade renders the
+  // inbox-check screen which doesn't reference WhatsApp).
   const [whatsappSent, setWhatsappSent] = useState(true);
+  // MEH-328 Chunk D: step-3 branch signal. True after a successful upgrade
+  // (response had access_token); false after a successful non-upgrade
+  // signup (response was the OWASP ack). Drives step-3 render branching.
+  const [didUpgrade, setDidUpgrade] = useState(false);
   // MEH-532: seasonal placeholder is locked to the value at first render
   // so it doesn't flicker if the user crosses a season boundary mid-session.
   // Disabled flag is set when the seller picks "אני אכתוב אחר כך".
@@ -175,7 +183,7 @@ function RegisterProducerPageBody() {
 
   const set = (field) => (e) => {
     const value = e.target.value;
-    if (field === "email") setEmailExistsSubmitError(false);
+    // MEH-328 Chunk D: emailExistsSubmitError clear removed with the state.
     setAndSave((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -191,12 +199,11 @@ function RegisterProducerPageBody() {
   // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted
   // /auth/email-exists oracle to warn before submit. Duplicate-attempt
   // email (Chunks A+B) now informs the legitimate owner out-of-band;
-  // the 409 → emailExistsSubmitError flow on submit is preserved by
-  // Chunk D (still authoritative for the producer-signup UX).
+  // the non-upgrade 409 branch is removed entirely in Chunk D — collisions
+  // return an identical 200 ack and step 3 renders the inbox-check UI.
 
   const handleSubmit = async () => {
     setError("");
-    setEmailExistsSubmitError(false);
     setLoading(true);
     try {
       const body = {
@@ -219,22 +226,33 @@ function RegisterProducerPageBody() {
         body.password = form.password;
       }
       const res = await api.post("/auth/register/producer", body);
-      localStorage.setItem("token", res.data.access_token);
+      // MEH-328 Chunk D: branch on response shape rather than the frontend
+      // `isUpgrade` flag — guards against a token expiring between mount
+      // and submit (frontend would think upgrade, backend would have taken
+      // the non-upgrade path).
+      const isUpgradeResult = "access_token" in (res.data || {});
+      setDidUpgrade(isUpgradeResult);
       localStorage.removeItem(DRAFT_KEY);
-      // MEH-287: default true for older servers that don't return the flag.
-      setWhatsappSent(res.data.whatsapp_sent ?? true);
-      // Refresh auth context so user.role reflects the upgrade immediately.
-      await refreshUser();
+      if (isUpgradeResult) {
+        // UPGRADE PATH (UNCHANGED post-MEH-328): store token, refresh
+        // auth context, surface whatsapp_sent on step 3.
+        localStorage.setItem("token", res.data.access_token);
+        // MEH-287: default true for older servers that don't return the flag.
+        setWhatsappSent(res.data.whatsapp_sent ?? true);
+        // Refresh auth context so user.role reflects the upgrade immediately.
+        await refreshUser();
+      }
+      // Non-upgrade: no token, no refreshUser. Step 3 renders the
+      // inbox-check UI keyed on didUpgrade === false.
       setStep(3);
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
-      if (status === 409) {
-        if (isUpgrade) {
-          setError("כבר יש לך עסק רשום בחשבון זה.");
-        } else {
-          setEmailExistsSubmitError(true);
-        }
+      // MEH-328: only upgrade path can return 409 post-refactor.
+      // isUpgrade frontend flag is sufficient for this error branch
+      // (non-upgrade 409 was removed in Chunk B).
+      if (status === 409 && isUpgrade) {
+        setError("כבר יש לך עסק רשום בחשבון זה.");
       } else {
         setError(detail || "שגיאת תקשורת — נסי שוב.");
       }
@@ -589,22 +607,14 @@ function RegisterProducerPageBody() {
               </span>
             </label>
 
-            {emailExistsSubmitError && (
-              <p className="text-sm text-amber-700 mt-2">
-                האימייל הזה כבר רשום אצלנו.{" "}
-                <Link
-                  href={`/login?email=${encodeURIComponent(form.email || "")}`}
-                  className="underline font-medium"
-                >
-                  התחברי
-                </Link>
-              </p>
-            )}
+            {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.
+                Non-upgrade collisions return identical 200 ack → step 3
+                inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setEmailExistsSubmitError(false); setStep(1); }} className="text-text-secondary">שלב קודם</button>
+                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-text-secondary">שלב קודם</button>
               )}
               <button
                 onClick={() => {
@@ -654,7 +664,12 @@ function RegisterProducerPageBody() {
       />
 
         {/* Step 3: Confirmation */}
-        {step === 3 && (
+        {/* MEH-328 Chunk D: step 3 splits on didUpgrade. Upgrade path
+            (authenticated user added producer to account) keeps the
+            existing "הצטרפת!" success UI with token-backed dashboard CTA.
+            Non-upgrade path renders the OWASP-aligned inbox-check screen
+            — identical body across new-email / collision branches. */}
+        {step === 3 && didUpgrade && (
           <div className="text-center py-8">
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
@@ -700,6 +715,20 @@ function RegisterProducerPageBody() {
                 הזמיני שכנה
               </a>
             </div>
+          </div>
+        )}
+        {step === 3 && !didUpgrade && (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
+            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את תיבת המייל שלך 📬</h2>
+            <p className="text-site-muted text-sm mb-3">אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.</p>
+            <p className="text-site-muted text-xs mb-6">לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.</p>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
+            >
+              חזרה לדף הראשי
+            </button>
           </div>
         )}
       </div>
