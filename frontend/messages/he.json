@@ -455,5 +455,65 @@
       },
       "heading_ssr": "בתי עסק על המפה"
     }
+  },
+  "events": {
+    "list": {
+      "title": "אירועים בחוות ואצל בתי עסק",
+      "subtitle": "סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור",
+      "breadcrumb_home": "בית",
+      "breadcrumb_events": "אירועים",
+      "tab_events": "🌾 אירועים בחוות",
+      "tab_experiences": "🍳 חוויות וסדנאות",
+      "add_event": "הוסיפי אירוע",
+      "submit_experience": "הגישי חוויה",
+      "view_mode_label": "מצב תצוגה",
+      "view_list": "רשימה",
+      "view_calendar": "לוח שנה",
+      "filter_city_label": "סנן לפי עיר",
+      "filter_city_placeholder": "חפשי עיר...",
+      "loading_events": "טוענת אירועים...",
+      "loading_experiences": "טוענת חוויות...",
+      "empty_events": "אין אירועים שתואמים לסינון הנוכחי — עדיין 🌱",
+      "empty_experiences": "לא מצאנו חוויות שתואמות לסינון — עדיין",
+      "free": "חינם"
+    },
+    "categories": {
+      "all": "הכל",
+      "workshop": "סדנה",
+      "tour": "סיור",
+      "market": "שוק",
+      "harvest": "קטיף",
+      "tasting": "טעימות",
+      "other": "אחר"
+    },
+    "experience_categories": {
+      "all": "הכל",
+      "cooking": "בישול",
+      "nutrition": "תזונה",
+      "food_tour": "סיור אוכל",
+      "agriculture": "חקלאות",
+      "tasting": "טעימות",
+      "workshop": "סדנה",
+      "other": "אחר"
+    },
+    "detail": {
+      "loading": "טוענת את האירוע...",
+      "not_found": "לא מצאנו את האירוע הזה",
+      "back_to_all": "← חזרה לכל האירועים",
+      "register": "להרשמה →",
+      "contact_producer": "צור קשר עם בית העסק",
+      "all_events": "← כל האירועים",
+      "organized_by": "מאורגן על ידי",
+      "participants_limit": "עד {n} משתתפים",
+      "free": "חינם",
+      "breadcrumb_home": "בית",
+      "breadcrumb_events": "אירועים"
+    },
+    "calendar": {
+      "previous_month": "חודש קודם",
+      "next_month": "חודש הבא",
+      "label": "לוח שנה",
+      "events_count": "{count, plural, =0 {אין אירועים} one {אירוע אחד} two {שני אירועים} other {# אירועים}}"
+    }
   }
 }

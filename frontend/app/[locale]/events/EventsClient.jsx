@@ -3,33 +3,36 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ExperienceCard from "@/components/ExperienceCard";
 import CalendarView from "@/components/CalendarView";
 
-const CATEGORIES = [
-  { key: "", label: "הכל" },
-  { key: "סדנה", label: "סדנה" },
-  { key: "סיור", label: "סיור" },
-  { key: "שוק", label: "שוק" },
-  { key: "קטיף", label: "קטיף" },
-  { key: "טעימות", label: "טעימות" },
-  { key: "אחר", label: "אחר" },
+// API filter values are Hebrew strings (server-side enum). Keep keys
+// as the wire format; localize labels via t().
+const CATEGORY_KEYS = [
+  { key: "", labelKey: "all" },
+  { key: "סדנה", labelKey: "workshop" },
+  { key: "סיור", labelKey: "tour" },
+  { key: "שוק", labelKey: "market" },
+  { key: "קטיף", labelKey: "harvest" },
+  { key: "טעימות", labelKey: "tasting" },
+  { key: "אחר", labelKey: "other" },
 ];
 
 // Narrower set for the experiences tab — these come from the
 // community side, not producer farms, so the vocabulary is different.
-const EXPERIENCE_CATEGORIES = [
-  { key: "", label: "הכל" },
-  { key: "בישול", label: "בישול" },
-  { key: "תזונה", label: "תזונה" },
-  { key: "סיור אוכל", label: "סיור אוכל" },
-  { key: "חקלאות", label: "חקלאות" },
-  { key: "טעימות", label: "טעימות" },
-  { key: "סדנה", label: "סדנה" },
-  { key: "אחר", label: "אחר" },
+const EXPERIENCE_CATEGORY_KEYS = [
+  { key: "", labelKey: "all" },
+  { key: "בישול", labelKey: "cooking" },
+  { key: "תזונה", labelKey: "nutrition" },
+  { key: "סיור אוכל", labelKey: "food_tour" },
+  { key: "חקלאות", labelKey: "agriculture" },
+  { key: "טעימות", labelKey: "tasting" },
+  { key: "סדנה", labelKey: "workshop" },
+  { key: "אחר", labelKey: "other" },
 ];
 
 function formatDate(iso) {
@@ -51,6 +54,9 @@ function formatTime(t) {
 }
 
 export default function EventsPage() {
+  const t = useTranslations("events.list");
+  const tCat = useTranslations("events.categories");
+  const tExpCat = useTranslations("events.experience_categories");
   const search = useSearchParams();
   const router = useRouter();
   // Tab state lives in the URL so /events?tab=experiences is a real
@@ -103,7 +109,9 @@ export default function EventsPage() {
   // keeps using `events` even when the tab is experiences.
   const events = rows;
   const activeCategories =
-    tab === "experiences" ? EXPERIENCE_CATEGORIES : CATEGORIES;
+    tab === "experiences" ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
+  const categoryLabel = (entry) =>
+    tab === "experiences" ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
 
   const groupedByMonth = useMemo(() => {
     const groups = {};
@@ -140,17 +148,17 @@ export default function EventsPage() {
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
-            אירועים בחוות ואצל בתי עסק
+            {t("title")}
           </h1>
           <p className="text-light text-lg">
-            סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור
+            {t("subtitle")}
           </p>
         </div>
       </section>
 
       {/* Breadcrumb */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
-        <Breadcrumb items={[{ href: "/", label: "בית" }, { label: "אירועים" }]} />
+        <Breadcrumb items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_events") }]} />
       </div>
 
       {/* Tabs — combine producer events and community experiences */}
@@ -166,7 +174,7 @@ export default function EventsPage() {
                 : "border-transparent text-site-muted hover:text-primary"
             }`}
           >
-            🌾 אירועים בחוות
+            {t("tab_events")}
           </button>
           <button
             role="tab"
@@ -178,13 +186,13 @@ export default function EventsPage() {
                 : "border-transparent text-site-muted hover:text-primary"
             }`}
           >
-            🍳 חוויות וסדנאות
+            {t("tab_experiences")}
           </button>
           <Link
             href={tab === "experiences" ? "/experiences/new" : "/producer/dashboard/events/new"}
             className="ms-auto text-sm text-primary hover:underline self-center"
           >
-            {tab === "experiences" ? "הגישי חוויה" : "הוסיפי אירוע"} ←
+            {tab === "experiences" ? t("submit_experience") : t("add_event")} ←
           </Link>
         </div>
       </div>
@@ -193,7 +201,7 @@ export default function EventsPage() {
       <div className="max-w-5xl mx-auto px-4 pt-4">
         <div
           role="tablist"
-          aria-label="מצב תצוגה"
+          aria-label={t("view_mode_label")}
           className="inline-flex gap-1 rounded-lg bg-light p-1"
         >
           <button
@@ -206,7 +214,7 @@ export default function EventsPage() {
                 : "text-site-text hover:bg-background"
             }`}
           >
-            רשימה
+            {t("view_list")}
           </button>
           <button
             role="tab"
@@ -218,7 +226,7 @@ export default function EventsPage() {
                 : "text-site-text hover:bg-background"
             }`}
           >
-            לוח שנה
+            {t("view_calendar")}
           </button>
         </div>
       </div>
@@ -228,10 +236,10 @@ export default function EventsPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <CitySearch
             id="events-city"
-            label="סנן לפי עיר"
+            label={t("filter_city_label")}
             value={city}
             onChange={setCity}
-            placeholder="חפשי עיר..."
+            placeholder={t("filter_city_placeholder")}
             className="md:w-64"
           />
           <div className="flex flex-wrap gap-2">
@@ -245,7 +253,7 @@ export default function EventsPage() {
                     : "bg-white text-site-text border border-border hover:bg-light"
                 }`}
               >
-                {cat.label}
+                {categoryLabel(cat)}
               </button>
             ))}
           </div>
@@ -253,7 +261,7 @@ export default function EventsPage() {
 
         {loading ? (
           <p className="text-center text-site-muted py-12">
-            {tab === "experiences" ? "טוענת חוויות..." : "טוענת אירועים..."}
+            {tab === "experiences" ? t("loading_experiences") : t("loading_events")}
           </p>
         ) : events.length === 0 ? (
           <div className="text-center py-16">
@@ -262,8 +270,8 @@ export default function EventsPage() {
             </p>
             <p className="text-site-muted">
               {tab === "experiences"
-                ? "לא מצאנו חוויות שתואמות לסינון — עדיין"
-                : "אין אירועים שתואמים לסינון הנוכחי — עדיין 🌱"}
+                ? t("empty_experiences")
+                : t("empty_events")}
             </p>
           </div>
         ) : view === "calendar" ? (
@@ -283,7 +291,7 @@ export default function EventsPage() {
                     tab === "experiences" ? (
                       <ExperienceCard key={row.id} experience={row} />
                     ) : (
-                      <EventCard key={row.id} event={row} />
+                      <EventCard key={row.id} event={row} freeLabel={t("free")} />
                     )
                   )}
                 </div>
@@ -296,7 +304,7 @@ export default function EventsPage() {
   );
 }
 
-function EventCard({ event }) {
+function EventCard({ event, freeLabel }) {
   return (
     <Link
       href={`/events/${event.id}`}
@@ -331,7 +339,7 @@ function EventCard({ event }) {
             {event.category}
           </span>
           <span className="text-accent font-semibold text-sm">
-            {event.price > 0 ? `₪${event.price}` : "חינם"}
+            {event.price > 0 ? `₪${event.price}` : freeLabel}
           </span>
         </div>
       </div>

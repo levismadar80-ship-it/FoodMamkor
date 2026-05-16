@@ -455,5 +455,65 @@
       },
       "heading_ssr": "Businesses on the map"
     }
+  },
+  "events": {
+    "list": {
+      "title": "Events at farms and local businesses",
+      "subtitle": "Workshops, tours, open days and tastings — straight from the source",
+      "breadcrumb_home": "Home",
+      "breadcrumb_events": "Events",
+      "tab_events": "🌾 Farm events",
+      "tab_experiences": "🍳 Workshops & experiences",
+      "add_event": "Add event",
+      "submit_experience": "Submit experience",
+      "view_mode_label": "View mode",
+      "view_list": "List",
+      "view_calendar": "Calendar",
+      "filter_city_label": "Filter by city",
+      "filter_city_placeholder": "Search city...",
+      "loading_events": "Loading events...",
+      "loading_experiences": "Loading experiences...",
+      "empty_events": "No events match this filter — yet 🌱",
+      "empty_experiences": "No experiences match this filter — yet",
+      "free": "Free"
+    },
+    "categories": {
+      "all": "All",
+      "workshop": "Workshop",
+      "tour": "Tour",
+      "market": "Market",
+      "harvest": "Harvest",
+      "tasting": "Tasting",
+      "other": "Other"
+    },
+    "experience_categories": {
+      "all": "All",
+      "cooking": "Cooking",
+      "nutrition": "Nutrition",
+      "food_tour": "Food tour",
+      "agriculture": "Agriculture",
+      "tasting": "Tasting",
+      "workshop": "Workshop",
+      "other": "Other"
+    },
+    "detail": {
+      "loading": "Loading event...",
+      "not_found": "We couldn't find this event",
+      "back_to_all": "← Back to all events",
+      "register": "Register →",
+      "contact_producer": "Contact the business",
+      "all_events": "← All events",
+      "organized_by": "Organized by",
+      "participants_limit": "Up to {n} participants",
+      "free": "Free",
+      "breadcrumb_home": "Home",
+      "breadcrumb_events": "Events"
+    },
+    "calendar": {
+      "previous_month": "Previous month",
+      "next_month": "Next month",
+      "label": "Calendar",
+      "events_count": "{count, plural, =0 {No events} one {# event} other {# events}}"
+    }
   }
 }
