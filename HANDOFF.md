@@ -1,9 +1,20 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
+> Last updated: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; PR pending; docs-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
+> Previously: 2026-05-16 (MEH-620 — Hero subheading update per MEH-522; **PR #690 MERGED** at `284698c`)
+> Previously: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+
+---
+
+## 2026-05-16 — MEH-618: ADMIN.md monetization → Drive pointer (PR PENDING)
+
+**Branch:** `feature/meh-618-admin-pricing-pointer` off `staging@7df6a29`.
+**Risk tier:** **🟢 LOW per MEH-450** — docs-only single-file content swap (ADMIN.md), plus CHANGELOG + HANDOFF append. DoD exception: mobile QA N/A.
+**Closes:** MEH-618. Replaces the inline `## Freemium` price-tier table (חינם ₪0 / פרמיום TBD) with a pointer block to `Drive/01-Strategy/02-pricing-model.md` (v2.0). Section renamed `## Pricing / Monetization`. 6 LOCKs preserved verbatim per spec; 4 open options NOT enumerated (Drive holds them). No specific prices anywhere — `₪49`/`₪99`/`Freemium` grep returns 0 in ADMIN.md.
 
 ---
 
