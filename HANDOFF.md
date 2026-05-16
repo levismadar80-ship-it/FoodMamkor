@@ -1,7 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
+> Last updated: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
 > Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
 > Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-354 — `/retro` slash command; **PR #697 MERGED** at `4a24a37`)
@@ -74,7 +74,18 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 
 ---
 
-## 2026-05-16 — MEH-622: SessionEnd hook — HANDOFF.md ledger auto-append (PR PENDING; manual wiring required post-merge)
+## 2026-05-16 — MEH-622: SessionEnd hook — HANDOFF.md ledger auto-append (**PR #701 MERGED** at `86a8bbf`; manual wiring pending)
+
+**Status:** PR #701 merged to staging via squash at `86a8bbf` (2026-05-16, base `89e436e`). CI: 10 blocking checks green, 6 skipped via paths-filter, 1 calibration-mode adversarial-review failure (`continue-on-error: true`, non-blocking). Adversarial review pass run end-to-end before merge: 0 blockers, 3 deferred informational findings (6-cell rows vs 5-column header GFM cosmetic; empty-SESSION_ID edge case bounded by fail-open contract; `paste -d` rationale wording inaccuracy). All findings logged in PR conversation.
+
+**Sibling status (MEH-502 audit REC 3 — MEH-621 SubagentStop trace hook):** PR #698 merged at `68f7089` earlier same session; same A2 pattern (script + settings snippet in PR body). Both REC 1 (MEH-622) + REC 3 (MEH-621) reach SHIPPED state once Smadar completes the manual `cp` + settings.json paste on her local machine.
+
+**Manual wiring required post-merge** (full instructions in PR #701 description, 5 steps):
+1. `cp /tmp/session-end.sh .claude/hooks/session-end.sh && chmod +x .claude/hooks/session-end.sh`
+2. Paste the `SessionEnd` JSON block from PR #701 description into `.claude/settings.json` `hooks` object (sibling key to `PreToolUse` / `PostToolUse` / `Stop` / `SessionStart` / `SubagentStop`).
+3. Verify `jq` on PATH (`command -v jq`).
+4. Smoke test: end a session via `/clear` or ctrl-d, then `tail -3 HANDOFF.md` — confirm one new row appears under `## Session ledger` with current timestamp / branch / SHA / Closes ref / reason.
+5. Comment on PR #701 / Linear MEH-622 when wiring confirmed → audit REC 1 moves DEFER → SHIPPED.
 
 **Branch:** `feature/meh-622-session-end-hook` off `staging@89e436e`.
 **Risk tier:** **🟢 LOW per MEH-450** — script-content-in-PR-description (no committed code under `.claude/hooks/**` or `.claude/settings.json`), 2 files committed (`HANDOFF.md` + `docs/CHANGELOG.md`), never blocks (always exit 0), fail-open on missing `jq` / missing `HANDOFF.md` / detached HEAD / empty SHA. DoD exception: mobile QA N/A (no UI, no commit-time code execution).
