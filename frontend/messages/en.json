@@ -101,7 +101,7 @@
         "terms": {
           "intro": "I have read and agree to",
           "tos_link": "the Terms of Use",
-          "and": "and",
+          "and": "and ",
           "privacy_link": "the Privacy Policy"
         },
         "actions": {
@@ -172,7 +172,7 @@
         "terms": {
           "intro": "I have read and agree to",
           "tos_link": "the Terms of Use",
-          "and": "and",
+          "and": "and ",
           "privacy_link": "the Privacy Policy",
           "license_declaration": ", and I declare that I hold all licenses required to sell my products under the Business Licensing Law."
         },
