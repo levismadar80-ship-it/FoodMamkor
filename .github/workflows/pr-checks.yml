@@ -153,7 +153,7 @@ jobs:
           # add producer_license_number column to producers; no table count
           # change). Second conflict on this line (after the MEH-587 resolution)
           # — Rule 25 / MEH-585 staging-sync absorbed MEH-588 mid-PR.
-          EXPECTED_REV="e8a3c4b5d791"
+          EXPECTED_REV="b504e4be4225"
           EXPECTED_TABLES=34
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \

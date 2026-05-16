@@ -80,6 +80,26 @@ async def _init_db_background(app: FastAPI) -> None:
         app.state.db_init_status = "failed"
 
 
+def _run_followup_job() -> None:
+    """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
+    (the BackgroundScheduler worker thread does not share the request-scoped
+    Session), invokes the per-step sender, and logs the per-step counts.
+    Any exception is swallowed so the scheduler thread itself never dies —
+    onboarding_followup.send_due_followups already fail-isolates per producer.
+    """
+    from app.database import SessionLocal
+    from app.services.onboarding_followup import send_due_followups
+
+    db = SessionLocal()
+    try:
+        counts = send_due_followups(db)
+        log.info("[FOLLOWUP] daily run complete counts=%s", counts)
+    except Exception:
+        log.error("[FOLLOWUP] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -119,6 +139,25 @@ async def lifespan(app: FastAPI):
     app.state.db_init_status = "initializing"
     app.state.db_init_task = asyncio.create_task(_init_db_background(app))
 
+    # MEH-539: in-process daily scheduler for the 4 onboarding follow-up
+    # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
+    # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+
+    followup_scheduler = BackgroundScheduler(timezone="UTC")
+    followup_scheduler.add_job(
+        _run_followup_job,
+        CronTrigger(hour=10, minute=0),
+        id="meh_539_onboarding_followups_daily",
+        replace_existing=True,
+    )
+    followup_scheduler.start()
+    app.state.followup_scheduler = followup_scheduler
+    log.info("[FOLLOWUP] scheduler started — daily 10:00 UTC")
+
     yield
 
+    log.info("[FOLLOWUP] stopping scheduler")
+    followup_scheduler.shutdown(wait=False)
     log.info("mehamakor backend shutting down")
