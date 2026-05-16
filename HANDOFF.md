@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
+> Last updated: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
+> Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
 > Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; **PR #699 MERGED** at `89e436e`)
 > Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
@@ -186,6 +187,67 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 **Branch:** `feature/meh-354-retro-command` off `staging@375a60f`.
 **Risk tier:** **🟢 LOW per MEH-450** — docs/config only, 4 files. DoD exception: mobile QA N/A (no UI).
 **Closes:** MEH-354. New custom command `/retro` closes the end-of-session loop after Rule 13's HANDOFF.md update. **NOT a free-form journal** — encodes a 5-step protocol (EXTRACT → CLASSIFY → OUTPUT → WAIT → EMPTY CASE) that binds every finding to a source-of-truth file via numbered `str_replace` blocks. Three extraction buckets: **Corrections** (Smadar explicitly corrected behavior), **Preferences** (stated stylistic / process preferences for future sessions), **Self-critique** (Claude noticed its own miss). CLASSIFY routes each finding to exactly one target: `CLAUDE.md` / `.claude/rules/workflow.md` / `.claude/rules/rtl.md` / `templates/01-07` / `DROP`. OUTPUT block format: `### Finding N — <bucket>: <summary>` + `**Target:**` + `**old_str:**` (verbatim from target file, unique) + `**new_str:**` (full replacement) + `**Rationale:**` (≤2 sentences). WAIT prints *"Retro extracted N findings… Waiting for `go <N>` / `skip <N>` / `edit <N>`"* and stops — retro proposes per finding, **never applies edits autonomously**. EMPTY CASE prints *"No retro findings — clean session."* and exits — no placeholder findings. **4 files touched:** (1) NEW `.claude/commands/retro.md` (~80 lines, mirrors `session-save.md` YAML frontmatter style). (2) `.claude/rules/workflow.md` — Rule 13 closing-step append (6 lines) + Custom commands list bullet between `/session-resume` and `/adversarial-review`. (3) `docs/CHANGELOG.md` — Unreleased / 2026-05-16 entry. (4) `HANDOFF.md` — this section + top pointer. **No code, no schema, no UI, no central component.** Per spec, the `Closes MEH-354` annotation in the PR body will auto-close the Linear issue on merge.
+
+---
+
+## 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR #696 PENDING)
+
+**Branch:** `feature/meh-328-register-anti-enum` off `staging@375a60f` (6 commits).
+**Risk tier:** **🔴 HIGH per MEH-450** — auth changes, response-shape break, chunked review applied per workflow rule.
+**Closes:** MEH-328. OWASP-strict anti-enumeration on both register endpoints. Threat model: pre-MEH-328 the trio of `400 "האימייל כבר קיים"` on `/auth/register`, `409` on `/auth/register/producer`, and the 30/min/IP `/auth/email-exists` oracle let an attacker filter a credential-stuffing list to "emails actually at Mehamakor" before login — saves attacker time, raises hit rate, also leaks timing (~100ms HIBP+bcrypt new-email branch vs ~1ms DB-only collision branch).
+
+### Pattern shipped
+
+- Both register endpoints (non-upgrade path) return identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` across new-email / password-collision / oauth-collision. Status, body bytes, and Set-Cookie headers all identical (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling).
+- Timing equalised by reorder (option iii from Phase 0): `validate_password` (HIBP) + `hash_password` (bcrypt) run BEFORE the existence check on both branches. Discarded hash on collision is the equaliser. Post-bcrypt delta is ~5-30ms vs ~100ms equalised — same as MEH-191 `/forgot-password` reference.
+- New `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate owner. `provider ∈ {"password", "google", "apple"}` — body copy reflects the auth method ("את כבר רשומה אצלנו עם סיסמה" / "דרך Google" / "דרך Apple"). Identical subject line across variants (`"ניסיון רישום במהמקור — את כבר רשומה"`).
+- `GET /auth/email-exists` deleted entirely (was a dedicated 30/min/IP enumeration oracle). Pinned by `test_email_exists_endpoint_removed` (404 regression guard).
+- **No auto-login after registration.** `lib/auth-context.js::register()` returns the ack to the caller; no `localStorage.setItem("token")`, no `/auth/me` chain. Users always verify via email link, then log in. Unified "בדקי את תיבת המייל שלך 📬" inbox-check UI on both register pages (non-upgrade).
+- Upgrade path (authenticated user adding producer to existing account) UNCHANGED — still returns `ProducerRegistrationResponse {access_token, whatsapp_sent}`, still stores token, still renders dashboard CTA on step 3. Branch-detection on frontend uses response shape (`"access_token" in res.data`) rather than the user-state flag — safer against the token-expiry race between mount and submit.
+- Side-effect symmetry on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea row creation + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved INSIDE the new-email branch only. Collision branches create zero DB rows and dispatch zero producer-specific admin notifications.
+
+### Chunks
+
+| Chunk | SHA | Scope |
+|---|---|---|
+| A | `e340990` | `/register` rewrite + `RegisterAck` schema + `send_duplicate_attempt_email` helper + 4 new tests (test_api.py + test_auth_email_notify.py rewrite) |
+| B | `c63ddb9` | `/register/producer` non-upgrade rewrite + side-effect-symmetry + 5 new producer tests + collateral fixes in test_auth/test_producer_license/test_whatsapp_notify |
+| fix | `7baa534` | `test_get_me_after_registration` rewired off the deleted token surface (Pydantic null-shape regression still guarded via seeded producer) |
+| C | `f891a64` | `/email-exists` deletion + 404 regression test + `EmailStr` import cleanup |
+| early-D | `8350513` | Frontend `handleEmailBlur` removal — unblock `api-contract-static` CI gate that flagged the orphan caller. Process miss surfaced explicitly: Phase 0 Chunk C should have grepped `.github/workflows/` + `scripts/` for contract dependencies. Lesson logged for future chunks. |
+| D-prime | `f3da520` | `auth-context.register()` simplification + consumer + producer page rewires + E2E regex update at `11-password-policy.spec.ts:129` |
+| F | (this commit) | Documentation sweep — SECURITY.md § 18, AUDIT-SECURITY-FOLLOWUP.md mark resolved, CHANGELOG, HANDOFF, DATA.md, api-routes.md, MANUAL_TESTING.md |
+
+### Deploy order (post-merge)
+
+**Backend first, frontend within 5 min.** The response shape change is breaking for cached frontend bundles expecting `Token`. Vercel + Railway deploy windows ~2 min each; brief overlap acceptable pre-launch.
+
+### Follow-up tickets (for Smadar to file)
+
+1. **Per-email rate-limit key on `/register` + `/register/producer`** — `backend/app/routers/auth.py:249, 352`. Current decorators are per-IP only (10/hour on register, 3/hour on register/producer). MEH-191 `/forgot-password` reference uses an additional `@limiter.limit("5/15 minutes", key_func=email_from_body)`. Without it, a botnet rotating IPs can spray one victim email at 10 attempts/IP/hour. `email_from_body` is already imported (`auth.py:65`). Estimated 30 min.
+2. **`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup ticket.
+3. **`/login` timing equalisation** — `backend/app/routers/auth.py:818-830`. Wrong-password runs `verify_password` (bcrypt ~100ms); wrong-email skips it. Same threat model as MEH-328 on a sibling endpoint. Fix shape: bcrypt against a fixed sentinel hash on the no-user branch.
+4. **`.ai/diagrams/api-routes.md` rate-limit drift** — pre-existing, surfaced during Chunk F. Diagram shows `/auth/register` rate as `3/hour` but the actual limit has been `10/hour` since MEH-417 (PR #423, commit `662ba8e`, April 2026). Not silently fixed inside Chunk F to keep scope clean — file as a tiny doc-sync ticket.
+
+### Verification
+
+- 7 new pytest tests cover identical-bytes invariant across both endpoints + collision side-effect symmetry + token-absence + upgrade-path preservation.
+- Existing upgrade-path tests pass unchanged (`test_logged_in_user_can_upgrade_to_producer` at `test_api.py:292`, `test_upgrade_twice_returns_409` at `test_api.py:314`).
+- `scripts/check_api_contract.py` → 0 orphan frontend calls.
+- `npm run lint` → 0 errors (2640 pre-existing warnings unchanged per MEH-443 calibration policy).
+- `npm run build` → green, 101 static pages, 0 errors.
+- Backend ruff → clean across all 4 files (`auth.py`, `schemas.py`, `auth_emails.py`, `email.py` untouched).
+- Adversarial review on cumulative diff: 0 blockers, 3 follow-ups bucketed (above).
+
+### DoD exception
+
+**Mobile QA deferred to staging preview after merge.** Sandbox lacked a working backend + browser for the producer wizard upgrade path — load-bearing regression risk. Vercel preview URL on the branch covers visual verification once Smadar approves.
+
+### Out of scope for this ticket (explicitly preserved)
+
+- `/auth/register/producer/oauth` — Phase 0 declared out of scope for the entire ticket.
+- `/auth/forgot-password` — already MEH-191 compliant.
+- `/auth/login` — already returns generic 401; timing leak filed as follow-up #3 above.
 
 ---
 

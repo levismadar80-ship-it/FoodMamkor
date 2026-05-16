@@ -3,6 +3,82 @@
 
 ---
 
+## Anti-enumeration registration smoke test (MEH-328)
+
+**Run on the staging preview URL after PR #696 merges to staging.** Load-bearing for the upgrade-path regression — Tests A-C verify the new OWASP behavior, Test D verifies the upgrade path is unchanged, Test E verifies out-of-band notification.
+
+### Setup
+
+- Open the staging URL in an anonymous browser window.
+- Open DevTools (`F12`) → Application → Local Storage → the site's origin.
+- Open DevTools Network tab. Filter on `auth/register`.
+
+### Test A — Consumer flow, new email
+
+1. Navigate to `/he/register`.
+2. In DevTools console: `localStorage.clear()` then refresh.
+3. Submit the form with a fresh email (e.g. `meh328-a-<timestamp>@example.com`), a strong password (12+ chars), any name.
+4. Expect:
+   - Success screen headline: **"בדקי את תיבת המייל שלך 📬"**
+   - Body: **"אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."**
+   - Helper: **"לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה."**
+   - CTA: button **"חזרה לדף הראשי"** → routes to homepage.
+   - `localStorage.getItem('token')` → **`null`**.
+   - URL does NOT auto-redirect to `/producer/dashboard` or `/`.
+   - Network: `POST /auth/register` → `200`, body `{"detail": "אם האימייל פנוי..."}`. No `access_token` field.
+
+### Test B — Consumer flow, existing email (collision)
+
+5. Refresh the page. Submit the SAME email again with different password/name.
+6. Expect: **identical screen to step 4 — pixel for pixel.** No "already registered" chip. No different copy. Network response body matches byte-for-byte.
+
+### Test C — Producer non-upgrade, new email
+
+7. `localStorage.clear()` → refresh.
+8. Navigate to `/he/register/producer` (NOT logged in).
+9. Complete wizard steps 1 + 2 with a fresh email + producer details. Submit on step 2.
+10. Expect:
+    - Step 3 renders the **same inbox-check UI as Test A** (📬 emoji, headline, body, helper, "חזרה לדף הראשי" button).
+    - `localStorage.getItem('token')` → **`null`**.
+    - Network: `POST /auth/register/producer` → `200`, body `{"detail": "אם האימייל פנוי..."}`. No `access_token`, no `whatsapp_sent`.
+    - Step 3 does NOT show the old "הצטרפת!" + dashboard CTA.
+
+### Test D — Producer upgrade (LOAD-BEARING — regression risk for MEH-328 Chunk B)
+
+11. Log in as an existing consumer (no producer attached to the account).
+12. Navigate to `/he/register/producer`. The wizard should auto-skip step 1 (account form) — you should land on step 2 with the producer details form.
+13. Complete the wizard and submit.
+14. Expect:
+    - Step 3 renders the **OLD success UI**: `CheckCircle` icon + headline **"הצטרפת!"** + WhatsApp-aware paragraph + "מה הלאה?" bullet list + button **"לדשבורד שלי ←"** + share button.
+    - `localStorage.getItem('token')` → **non-null JWT** (the token from the upgrade response).
+    - Network: `POST /auth/register/producer` → `200`, body includes `access_token` + `whatsapp_sent`.
+    - Clicking "לדשבורד שלי ←" routes to `/producer/dashboard` and you're authenticated.
+
+### Test E — Duplicate-attempt email arrives
+
+15. Check the inbox of the EXISTING email used in Test B.
+16. Expect a Hebrew email:
+    - Subject: **"ניסיון רישום במהמקור — את כבר רשומה"**
+    - Body opens with **"היי {your name}, מישהו ניסה להירשם למהמקור עם הכתובת שלך."**
+    - For a password account: body says **"את כבר רשומה אצלנו עם סיסמה — אם זו את, היכנסי כאן: …"** + link to `/login`.
+    - For a Google/Apple account: body says **"את כבר רשומה אצלנו דרך {Google|Apple} — אם זו את, היכנסי כאן: …"** + link to `/login`.
+    - Footer: **"בברכה, צוות מהמקור"**.
+
+### Failure signals — STOP and file a hotfix if any of these fire
+
+- ❌ **Test D shows the inbox-check UI instead of the dashboard CTA** → upgrade-path branch detection is broken (`didUpgrade` state didn't flip). Possible root cause: response no longer carries `access_token` on the upgrade path, or `"access_token" in res.data` predicate is wrong.
+- ❌ **Test A or C renders different UI than Test B's collision response** → success-screen rendering bug. The whole point of MEH-328 is that the user cannot distinguish branches.
+- ❌ **Network response body for `/auth/register` (non-upgrade) carries an `access_token` field** → backend regression. Should be `{"detail": ...}` only.
+- ❌ **Test E email never arrives (within 5 min)** AND `RESEND_API_KEY` is configured on Railway → background task dispatch broken. Check Railway logs for `[EMAIL]` warnings.
+
+### Out of scope for this smoke
+
+- `/auth/register/producer/oauth` — out of scope for the entire MEH-328 ticket.
+- `/auth/forgot-password` — separate MEH-191 flow (already OWASP-compliant pre-MEH-328).
+- `/auth/login` — separate ticket (timing-leak follow-up filed).
+
+---
+
 ## Stats counter reframe + skeleton (MEH-607)
 
 Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {month} — N בתי עסק · M קטגוריות · מכל רחבי הארץ"* — editorial-cadence framing per synthesis §5.2 Option A. Dynamic month name via `Intl.DateTimeFormat('he-IL', { month: 'long' })`. F10: while `/stats` hasn't returned, a skeleton with matching `bg-primary text-white py-4` dimensions reserves height → zero CLS between loading and the real counter.

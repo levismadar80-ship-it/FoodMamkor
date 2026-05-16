@@ -964,3 +964,69 @@ Update SECURITY_REPORT.md with final status.
 ```
 
 **כלל: אל תעלי לדומיין לפני שכל ה-🔴 הפכו ל-✅**
+
+---
+
+## ✅ 18. Anti-enumeration on registration (MEH-328) — SHIPPED
+
+**Status:** shipped via PR #696, 2026-05-16. Chunks A → B → fix → C → early-D → D-prime → F across 6 commits on `feature/meh-328-register-anti-enum`.
+
+**OWASP source:** [Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html) — "Authentication Responses" + "Account creation".
+
+### Threat model
+
+Pre-MEH-328, three surfaces let an attacker enumerate registered emails:
+
+1. `POST /auth/register` returned `400 "האימייל כבר קיים במערכת"` on duplicate email (200 + JWT on new). Status + body diverged.
+2. `POST /auth/register/producer` returned `409 "האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך."` on duplicate (200 + JWT on new). Same divergence + email-explicit copy.
+3. `GET /auth/email-exists?email=...` returned `{exists: bool}` at 30/min/IP — a dedicated oracle.
+
+Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" before login attempts → higher hit rate, slower lockout detection. Also a timing leak: the existing-email branch returned ~1ms (DB read only); the new-email branch ran HIBP + bcrypt for ~100ms.
+
+### Pattern applied
+
+- **Both register endpoints (non-upgrade path) return identical 200 ack** regardless of branch:
+  - `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}`
+  - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / oauth-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test).
+- **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
+- **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
+- **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
+- **No auto-login on register.** `lib/auth-context.js::register()` returns the ack to the caller; no `localStorage.setItem("token")`, no `/auth/me` chain. Users always verify via email link and then log in at `/auth/login`. Frontend success screens show a unified "בדקי את תיבת המייל שלך 📬" inbox-check UI on both `/register` and `/register/producer` non-upgrade.
+- **Upgrade path preserved** (authenticated user adding producer to existing account): still returns `ProducerRegistrationResponse {access_token, whatsapp_sent}`, still stores token, still renders the existing dashboard CTA on step 3. No enumeration vector — caller already proved control of the email via JWT.
+
+### Files changed
+
+Backend:
+- `backend/app/routers/auth.py` — `/register` rewritten (Chunk A); `/register/producer` non-upgrade rewritten + side-effect-symmetry (Chunk B); `/email-exists` handler deleted (Chunk C); `EmailStr` import removed.
+- `backend/app/schemas/schemas.py` — new `RegisterAck` model; `RegisterResponse` marked deprecated (kept for sibling endpoints).
+- `backend/app/services/auth_emails.py` — new `send_duplicate_attempt_email(email, name, provider)` helper with Hebrew נקבה copy.
+
+Frontend:
+- `frontend/lib/auth-context.js` — `register()` simplified; no token, no `/auth/me` chain.
+- `frontend/app/[locale]/register/page.js` — inbox-check unified success screen; `emailExistsError` lifecycle removed.
+- `frontend/app/[locale]/register/producer/page.js` — `emailExistsWarning` (Chunk C/early-D) + `emailExistsSubmitError` (Chunk D) lifecycles removed; `didUpgrade` branch signal; step 3 split into upgrade vs non-upgrade renders; `handleEmailBlur` deleted with the deleted endpoint.
+
+Tests:
+- `tests/test_api.py` — flipped duplicate-email asserts; new identical-bytes tests for both endpoints; collision-side-effect-symmetry test; `/email-exists` 404 regression guard; `test_get_me_after_registration` rewired off the deleted token surface.
+- `tests/test_auth.py`, `tests/test_auth_email_notify.py`, `tests/test_producer_license.py`, `tests/test_whatsapp_notify.py` — collateral updates to match the new ack contract (whatsapp_sent assertions moved to upgrade path).
+- `frontend/e2e/flows/11-password-policy.spec.ts` — success-text regex updated to match the new headline.
+
+### Tests
+
+- **Identical-response-bytes invariant** asserted across all 3 non-upgrade branches for both `/register` (`test_register_three_branches_have_identical_response_bytes`) and `/register/producer` (`test_register_producer_three_branches_identical_response_bytes`).
+- **Upgrade path regression** covered by pre-existing `test_logged_in_user_can_upgrade_to_producer` + `test_upgrade_twice_returns_409` — both kept passing post-refactor.
+- **`/email-exists` deletion** pinned by `test_email_exists_endpoint_removed` (404 regression guard).
+- **Cookie/token absence on non-upgrade** asserted by `test_register_no_longer_returns_access_token`, `test_register_no_longer_sets_fingerprint_cookie`, and the producer-sibling test.
+- **Collision side-effect symmetry** asserted by `test_register_producer_collision_creates_no_producer_row` — no `Producer` / `ProducerCategory` / `DeliveryArea` row created on collision.
+
+### Follow-up items (post-MEH-328)
+
+Filed as separate Linear tickets:
+
+1. **Per-email rate-limit key on `/register` + `/register/producer`** — `backend/app/routers/auth.py:249, 352` use only the per-IP `@limiter.limit(...)`. The MEH-191 `/forgot-password` reference uses an additional `key_func=email_from_body` dual-key. Without it, a botnet rotating IPs can still spray one victim email with 10 attempts per IP per hour. `email_from_body` is already imported (`auth.py:65`). Estimated 30 min.
+2. **`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup.
+3. **`/login` timing equalisation** — `backend/app/routers/auth.py:818-830`. Wrong-password runs `verify_password` (bcrypt); wrong-email skips it. Same threat model as MEH-328 on a sibling endpoint; same fix shape (bcrypt against a fixed sentinel hash on the no-user branch). Out of scope for MEH-328 per Phase 0 plan.
+
+### Deploy order
+
+Backend first, frontend within 5 minutes. The `/auth/register` response shape change (`Token + email_sent` → `RegisterAck`) is breaking for cached frontend bundles that expect a token. Vercel + Railway deploy windows are ~2 min each; brief overlap acceptable pre-launch.

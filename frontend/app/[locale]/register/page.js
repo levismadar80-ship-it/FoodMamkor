@@ -20,7 +20,9 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
-  const [emailExistsError, setEmailExistsError] = useState(false);
+  // MEH-328 Chunk D: emailExistsError state removed. Backend returns an
+  // identical 200 ack for new-email / password-collision / oauth-collision;
+  // the legitimate owner finds out via the duplicate-attempt email.
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState(null);
 
@@ -39,13 +41,14 @@ export default function RegisterPage() {
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordOk, setPasswordOk] = useState(false);
+  // MEH-328 Chunk D: emailSent toggles the inbox-check success screen.
+  // emailExpected state removed — backend no longer carries email_sent,
+  // and the OWASP ack copy is unconditional ("if the email is free, …").
   const [emailSent, setEmailSent] = useState(false);
-  const [emailExpected, setEmailExpected] = useState(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setEmailExistsError(false);
 
     // Client-side validation. The inline onBlur rules below already
     // disable the submit button when any field fails, so this is a
@@ -66,8 +69,13 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const regData = await register(form);
-      // MEH-49: claim referral after successful registration (best-effort)
+      // MEH-328: register() returns the OWASP ack ({detail}); no token,
+      // no auto-login. Any 200 → render the inbox-check screen.
+      await register(form);
+      // MEH-49: claim referral after successful registration (best-effort).
+      // The user isn't yet authenticated post-MEH-328, so this endpoint
+      // would 401 — but it's still wrapped in try/catch for safety, and
+      // referral claim is moved to post-verify in a follow-up.
       if (referralCode) {
         try {
           await api.post("/referral/claim", { code: referralCode });
@@ -76,14 +84,11 @@ export default function RegisterPage() {
           // referral claim is non-blocking
         }
       }
-      setEmailExpected(regData?.email_sent !== false);
       setEmailSent(true);
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
-      if (status === 400 && typeof detail === "string" && detail.startsWith("האימייל כבר קיים")) {
-        setEmailExistsError(true);
-      } else if (
+      if (
         status === 422 &&
         detail &&
         typeof detail === "object" &&
@@ -101,7 +106,6 @@ export default function RegisterPage() {
   };
 
   const set = (field) => (e) => {
-    if (field === "email") setEmailExistsError(false);
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
@@ -133,25 +137,18 @@ export default function RegisterPage() {
   const oauthAvailable = googleConfigured || appleConfigured;
 
   if (emailSent) {
+    // MEH-328 Chunk D: unconditional inbox-check screen. Backend returns
+    // an identical 200 ack regardless of whether the email was new or
+    // already registered — same UI for both, OWASP-compliant.
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-          {emailExpected ? (
-            <>
-              <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📧</div>
-              <h1 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את האימייל שלך</h1>
-              <p className="text-site-muted text-sm mb-1">שלחנו הודעת אימות ל-{form.email}</p>
-              <p className="text-site-muted text-sm mb-6">לחצי על הקישור במייל כדי להפעיל את החשבון</p>
-            </>
-          ) : (
-            <>
-              <div className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center text-3xl">✅</div>
-              <h1 className="font-headline text-2xl font-bold text-site-text mb-2">החשבון נוצר בהצלחה</h1>
-              <p className="text-site-muted text-sm mb-6">הרשמה הושלמה. ניתן להתחיל לגלות בתי עסק מקומיים.</p>
-            </>
-          )}
+          <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
+          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">בדקי את תיבת המייל שלך 📬</h1>
+          <p className="text-site-muted text-sm mb-3">אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.</p>
+          <p className="text-site-muted text-xs mb-6">לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.</p>
           <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center">
-            המשיכי לאתר
+            חזרה לדף הראשי
           </Link>
         </div>
       </div>
@@ -271,17 +268,8 @@ export default function RegisterPage() {
               </a>
             </span>
           </label>
-          {emailExistsError && (
-            <p className="text-sm text-amber-700 mt-2">
-              האימייל הזה כבר רשום אצלנו.{" "}
-              <Link
-                href={`/login?email=${encodeURIComponent(form.email || "")}`}
-                className="underline font-medium"
-              >
-                התחברי
-              </Link>
-            </p>
-          )}
+          {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
+              Duplicate-attempt email (Chunks A+B) is the only signal. */}
           {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
           <button
             type="submit"

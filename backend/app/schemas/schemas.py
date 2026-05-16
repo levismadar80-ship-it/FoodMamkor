@@ -128,9 +128,20 @@ class ProducerRegistrationResponse(Token):
     whatsapp_sent: bool
 
 
+# MEH-328: generic ack returned by POST /auth/register on ALL branches
+# (new email, existing password user, existing OAuth user). Body bytes
+# must be identical across branches to prevent email enumeration; the
+# legitimate owner finds out via the duplicate-attempt email dispatched
+# server-side. No access_token — caller must verify email then login.
+class RegisterAck(BaseModel):
+    detail: str
+
+
 # MEH-301: email pre-flight flags for registration endpoints.
 # True = RESEND_API_KEY present and background task dispatched.
 # False = missing config; frontend can show a diagnostic banner.
+# MEH-328: no longer returned by /auth/register (replaced by RegisterAck).
+# Kept for sibling endpoints; do not delete in this chunk.
 class RegisterResponse(Token):
     email_sent: bool
 

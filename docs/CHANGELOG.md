@@ -4,6 +4,28 @@
 
 ## Unreleased
 
+### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
+
+`security`: OWASP-strict anti-enumeration applied to both register endpoints. Both now return an identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` regardless of whether the email is new, belongs to an existing password user, or belongs to an existing OAuth user. Timing equalised by reordering — `validate_password` (HIBP) + `hash_password` (bcrypt) run before the existence check on both branches, so response time doesn't fork. Side-effect symmetry preserved on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea rows + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved inside the new-email branch only (no orphan rows or spurious admin notifications on collisions). A new `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate account owner out-of-band — two body variants (`password` / `google` / `apple`), identical Subject line so 3rd-party Subject-scanners can't distinguish provider.
+
+`ux`: **breaking** — no auto-login after registration. Both `/register` and `/register/producer` non-upgrade success screens now show a unified "בדקי את תיבת המייל שלך 📬" inbox-check screen with the OWASP ack copy + "לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה" helper + "חזרה לדף הראשי" CTA. Users always verify via email link, then log in at `/auth/login`. Upgrade path (authenticated user adding producer) **unchanged** — step 3 still shows the existing "הצטרפת!" dashboard CTA and stores the returned access_token.
+
+`breaking`: `GET /auth/email-exists` endpoint deleted entirely. Was a 30/min/IP enumeration oracle returning `{exists: bool}`. Pinned by `test_email_exists_endpoint_removed` (404 regression guard). Frontend `onBlur` caller in `register/producer/page.js` removed.
+
+`response shape`: `POST /auth/register` now returns `RegisterAck {detail}` instead of `Token + email_sent` (MEH-301 flag removed — would have leaked branch). `POST /auth/register/producer` returns `RegisterAck` on non-upgrade, `ProducerRegistrationResponse {access_token, whatsapp_sent}` on upgrade (authenticated user adding producer). Branch-detection on the frontend uses response shape (`"access_token" in res.data`) rather than the user-state flag — safer against the token-expires-between-mount-and-submit race.
+
+**6 commits on `feature/meh-328-register-anti-enum`:** Chunk A `e340990` (`/register` rewrite + RegisterAck schema + send_duplicate_attempt_email helper + 4 new tests), Chunk B `c63ddb9` (`/register/producer` non-upgrade rewrite + side-effect-symmetry + 5 new producer tests + collateral fixes in test_auth/test_producer_license/test_whatsapp_notify), fix `7baa534` (`test_get_me_after_registration` rewired off the deleted token surface), Chunk C `f891a64` (`/email-exists` deletion + 404 regression test + `EmailStr` import cleanup), early-Chunk-D `8350513` (frontend `handleEmailBlur` removal to unblock the `api-contract-static` CI gate that flagged the orphan caller — process miss surfaced in summary, lesson recorded for future chunk plans), Chunk D `f3da520` (`auth-context.register()` simplification + consumer + producer page rewires + E2E regex update).
+
+**Deploy order:** backend first, frontend within 5 min. The response shape change is breaking for cached frontend bundles expecting Token. Vercel + Railway deploy windows ~2 min each.
+
+**Follow-ups filed separately:** (1) per-email rate-limit key on register endpoints (sibling of MEH-191 `/forgot-password` dual-key, not in scope per Phase 0 spec); (2) `RegisterResponse` Pydantic class deletion (dead code post-MEH-328); (3) `/login` timing equalisation (wrong-password runs bcrypt; wrong-email skips — same threat model on a sibling endpoint).
+
+**Risk tier:** HIGH per MEH-450 (auth changes, response-shape break). Chunked review applied per workflow rule. Adversarial review on cumulative diff: 0 blockers, 3 follow-ups bucketed.
+
+**Verification:** 7 new pytest tests cover the identical-bytes invariant across both endpoints; existing upgrade-path tests pass unchanged (`test_logged_in_user_can_upgrade_to_producer`, `test_upgrade_twice_returns_409`). `scripts/check_api_contract.py` → 0 orphan frontend calls. `npm run build` green, 101 static pages, 0 errors. **DoD exception:** mobile QA deferred to staging preview after merge (sandbox lacked browser smoke for the producer wizard upgrade path — load-bearing regression risk).
+
+Closes MEH-328. PR #696.
+
 ### 2026-05-16 — MEH-473: i18n Wave 3 — producer detail / card + map widgets + ICU plural lint check (PR pending)
 
 `feat(MEH-473)`: Wave 3 of the i18n migration scoped in MEH-366 — translates the highest-business-value bilingual surface (producer detail + producer card + map widgets), ships the ICU plural CI lint check as R-2 mitigation, applies Q7 carry-over to 2 sites, and adds Q4 date formatting via `next-intl/format`. **HIGH-RISK Wave per MEH-450** — touches 3 central components (`MapClient.jsx`, `ProducerCard.jsx`, `ProducerDetail.jsx` via D1). 4-step Vibe Coding Guardrails applied to all 3 centrals.

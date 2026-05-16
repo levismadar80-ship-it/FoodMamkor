@@ -55,7 +55,10 @@ class TestRegisterProducerLicense:
             ),
         )
         assert resp.status_code == 200, resp.text
-        assert resp.json()["access_token"]
+        # MEH-328 Chunk B: /auth/register/producer non-upgrade now returns
+        # RegisterAck (no token). License-required guard is unchanged —
+        # we only assert the success status here.
+        assert "access_token" not in resp.json()
 
     def test_bakery_without_license_422(self, client, db):
         """Test 3 — bakery + no license → 422 + Hebrew error."""
@@ -97,7 +100,10 @@ class TestRegisterProducerLicense:
             ),
         )
         assert resp.status_code == 200, resp.text
-        assert resp.json()["access_token"]
+        # MEH-328 Chunk B: /auth/register/producer non-upgrade now returns
+        # RegisterAck (no token). License-required guard is unchanged —
+        # we only assert the success status here.
+        assert "access_token" not in resp.json()
 
     def test_mixed_categories_without_license_422(self, client, db):
         """Test 6 — veggies + bakery, no license → 422 (any required wins)."""
