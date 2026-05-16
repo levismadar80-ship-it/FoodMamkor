@@ -3,6 +3,17 @@
 
 ---
 
+## HomepageMiniMap above the fold (MEH-604)
+
+Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
+
+- [ ] Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
+- [ ] Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
+- [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
+
+---
+
 ## Hide /neighbor pre-launch (MEH-598)
 
 Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen section removed from public surface. Page files preserved per MEH-543 revival path. AI chat + producer dashboard + `HomeProductCard` label LOCK leaks deferred to MEH-599 (see PR description for E1-E6 mapping).
