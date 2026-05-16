@@ -2034,45 +2034,52 @@ class TestGetProducersMeRouteOrder:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(producer.id)
 
-    def test_get_me_after_registration(self, client, db, monkeypatch):
+    def test_get_me_after_registration(self, client, db):
         """MEH-321 regression — GET /producers/me must return 200 immediately
         after a brand-new producer registration (Pydantic schema mismatch fix)."""
-        import app.routers.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "notify_admin_new_producer", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "_send_verify_email", lambda *a, **k: None)
-        monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
-
-        reg = client.post("/auth/register/producer", json={
-            "email": "meh321@example.com",
-            "name": "בעלת עסק",
-            "password": "Zx7Yp9Mq2Lr4",
-            "producer_name": "חוות מה-321",
-            "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-        })
-        assert reg.status_code == 200, reg.text
-        token = reg.json()["access_token"]
-
-        # MEH-575: register_producer sets the fingerprint cookie via
-        # _set_fingerprint_cookie (auth.py:449), but TestClient drops Secure
-        # cookies on http://testserver — so the jar is empty on the next call
-        # and get_current_user 401s with "fingerprint mismatch — has_cookie=False".
-        # Extract the cookie from Set-Cookie headers and pass it explicitly.
-        fp_cookie = next(
-            (h.split(";", 1)[0].split("=", 1)[1]
-             for h in reg.headers.get_list("set-cookie")
-             if h.startswith("__Secure-Fgp=")),
-            None,
+        # MEH-321 regression: GET /producers/me returns 200 with valid Pydantic
+        # shape for a producer in pending_whatsapp state.
+        #
+        # NOTE: Post-MEH-328 (anti-enum refactor removed access_token from
+        # /auth/register/producer non-upgrade response), this test no longer
+        # exercises the original register-flow code path. The Pydantic
+        # null-field serialization invariant is now covered narrowly via a
+        # seeded producer that mirrors the register-flow NULL shape
+        # (description / lat / lng / instagram / website / city / contact_email
+        # all None). test_get_me_with_null_created_at_returns_200 (below)
+        # covers the null created_at case separately. If a new MEH-321-class
+        # regression surfaces post-launch, file a Linear and restore via a
+        # full HTTP register flow (which after Chunk D/E will give us a
+        # verified login path that still returns a token).
+        #
+        # make_producer fixture is bypassed because its signature
+        # (conftest.py:151-159) forces description="Test producer" + non-null
+        # lat/lng, which would mask the NULL-field shape this test guards.
+        # is_verified is left at the SQLAlchemy column default (False) rather
+        # than the fixture's True, matching the register-flow handler which
+        # does not set the column.
+        from app.models.models import Producer
+        producer = Producer(
+            name="חוות מה-321",
+            description=None,
+            city=None,
+            lat=None,
+            lng=None,
+            phone="0501234567",
+            instagram=None,
+            website=None,
+            primary_contact_method="whatsapp",
+            contact_email=None,
+            status="pending_whatsapp",
         )
-        assert fp_cookie, "register response missing __Secure-Fgp cookie"
+        db.add(producer)
+        db.flush()
+        user = make_user(db, email="meh321@example.com", role="producer")
+        user.producer_id = producer.id
+        user.is_producer = True
+        db.commit()
 
-        resp = client.get(
-            "/producers/me",
-            headers={"Authorization": f"Bearer {token}"},
-            cookies={"__Secure-Fgp": fp_cookie},
-        )
+        resp = client.get("/producers/me", headers=auth_header(user))
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["name"] == "חוות מה-321"
