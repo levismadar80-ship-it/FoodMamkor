@@ -1,17 +1,33 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-597 — Linear backlog cleanup; Sub 4/4 of MEH-592 epic; PR pending; **MEH-592 epic complete after this PR merges**)
+> Last updated: 2026-05-16 (MEH-597 — Linear backlog cleanup; Sub 4/4 of MEH-592 epic; **PR #680 MERGED — MEH-592 epic COMPLETE**)
 
 ---
 
-## 2026-05-16 — MEH-597: Linear backlog cleanup + execution log (PR PENDING)
+## 🎯 Next sprint (recommended)
+
+The discovery-layer redesign epic (MEH-592) is closed. The next implementation work is the **3 launch-blockers** from Sub 3 synthesis:
+
+- **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan
+- **MEH-605** — Final CTA copy reframe (off "דירקטורי" — 3 Hebrew options A/B/C waiting for Sapir's pick)
+- **MEH-606** — Categories subhead reframe (off "מהחקלאי" saturation — 3 Hebrew options A/B/C waiting for Sapir's pick)
+
+**Recommended next session: MEH-605 + MEH-606 bundle** — both are i18n string changes in `frontend/messages/he.json`, can ship as a single copy-only PR, fastest path to land 2 of 3 launch-blockers. Sapir picks options A/B/C in chat → Claude implements + opens single PR.
+
+**Synthesis pointer:** [`docs/synthesis/2026-05-discovery-redesign-synthesis.md`](docs/synthesis/2026-05-discovery-redesign-synthesis.md) (14 findings, priority matrix, Hebrew copy options).
+
+**Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F2-cta-reframe.txt and F3-categories-subhead.txt contain the ASCII layouts + all 3 Hebrew options each.
+
+---
+
+## 2026-05-16 — MEH-597: Linear backlog cleanup + execution log (PR #680 MERGED)
 
 **Branch:** `feature/meh-597-linear-cleanup` off `staging`.
 
 **Risk tier:** LOW (docs-only + Linear ops — no code touched, no schema, no central components, no CI gate, no mobile QA per docs-only DoD exception).
 
-**Closes:** MEH-597. **Completes MEH-592 epic** (Sub 1 ✅ #676 + Sub 2 ✅ #677/#678 + Sub 3 ✅ #679 + Sub 4 = this PR).
+**Closes:** MEH-597. ✅ **MEH-592 epic COMPLETE** (Sub 1 ✅ #676 + Sub 2 ✅ #677/#678 + Sub 3 ✅ #679 + Sub 4 ✅ #680, merged 2026-05-16 ~08:06Z).
 
 **What shipped:** 1 file added — `docs/synthesis/2026-05-linear-execution-log.md` (203L audit trail). **Linear ops executed in-session** — 11 NEW issues created + 2 existing UPDATEd. The log file is the read-only audit trail of those operations; Linear itself is the source of truth.
 
@@ -55,7 +71,7 @@
 
 **Build + Rule 25:** `npm run build` green (sanity check, no code changed); `git fetch origin && git merge origin/staging` — no drift, fast-forward not needed.
 
-**Next:** **MEH-592 epic ships.** Launch-blockers (MEH-604/605/606) become the next implementation sprint — Smadar picks copy options A/B/C for F2/F3/F4 to unblock MEH-605/606/607.
+**Next:** **MEH-592 epic shipped.** Launch-blockers (MEH-604/605/606) become the next implementation sprint — see the "🎯 Next sprint (recommended)" section at the top of this file. Recommended path: bundle MEH-605 + MEH-606 as a single copy-only PR (fastest path, both are i18n string changes).
 
 ---
 
