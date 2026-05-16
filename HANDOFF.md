@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
+> Last updated: 2026-05-16 (MEH-475 PR-A — Language toggle UI — **ABORTED, gap filed**; preconditions unmet — see entry below)
+> Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
 > Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; **PR #699 MERGED** at `89e436e`)
@@ -14,6 +15,26 @@
 > Previously: 2026-05-16 (MEH-607 — Stats counter reframe + skeleton; PR pending; GREEN end-to-end)
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
+
+### MEH-475 PR-A — Language toggle UI — **ABORTED 2026-05-16**, preconditions unmet
+
+Branch `claude/language-toggle-ui-NY4PV` created by harness; no commits pushed. Working tree clean.
+
+**STOP reason (condition a — task brief):** PR-A spec asserts "All translations from PR-B + C1/C2/C3/C4 already merged." Verified against `origin/staging` log + `mcp__github__search_pull_requests query=MEH-475`:
+
+- PR-B = #711 (merged 2026-05-16) — **docs-only discovery inventory**, no production code, no `t()` wiring. Its own body: "Read-only discovery scan… No production code modified."
+- PR-C1, C2, C3, C4 — **do not exist** on this repo. No open or closed PRs match.
+
+Shipping the toggle now would expose users to English UI on the ~700 long-tail strings that are still raw Hebrew literals (per parent plan PR #518 Wave 5 scope: "~700 strings, 64 files"). The toggle is the capstone, not a prerequisite for the wiring.
+
+**Secondary blocker:** PR #711's own body flags 8 forbidden-phrase locations (`שכנות מבשלות מהבית`, `אוכל ביתי`, `מהמטבח של השכן`) requiring Smadar copy ruling before any PR-B/C wiring begins. Decision unresolved on the public record (NeighborClient.jsx, producer/dashboard/page.js, ChatWidget.jsx, HomeProductCard.jsx).
+
+**Action required to unblock PR-A:**
+1. Smadar rules on the 8 forbidden-phrase rewrites (per PR #711 test plan checkbox 3)
+2. PRs C1–C4 land (admin + long-tail + Wave 2–4 residual wiring per PR #711 buckets: 22 admin files / 113 long-tail / 4 wired-remaining)
+3. Resume PR-A — file paths and acceptance criteria in the original task brief still hold
+
+**HANDOFF.md + this note are the only changes this session.** No code, no new branch beyond the harness-created one, no PR opened.
 
 ### MEH-473 — i18n Wave 3 — producer detail / card + map widgets + ICU plural lint + Q7 carry-over (PR pending, off `staging@89e436e`)
 
