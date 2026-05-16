@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
+> Last updated: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; PR pending; LOW-RISK CLI script polish)
 > Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-354 — `/retro` slash command; **PR #697 MERGED** at `4a24a37`)
 > Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
@@ -70,6 +71,38 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 2. Open MEH-471 (Wave 1) when ready to start execution; estimate 12–18h
 
 ---
+
+---
+
+## 2026-05-16 — MEH-622: SessionEnd hook — HANDOFF.md ledger auto-append (PR PENDING; manual wiring required post-merge)
+
+**Branch:** `feature/meh-622-session-end-hook` off `staging@89e436e`.
+**Risk tier:** **🟢 LOW per MEH-450** — script-content-in-PR-description (no committed code under `.claude/hooks/**` or `.claude/settings.json`), 2 files committed (`HANDOFF.md` + `docs/CHANGELOG.md`), never blocks (always exit 0), fail-open on missing `jq` / missing `HANDOFF.md` / detached HEAD / empty SHA. DoD exception: mobile QA N/A (no UI, no commit-time code execution).
+**Closes:** MEH-622 (derived from MEH-502 audit REC 1).
+
+**Scope split (Path A2):** Per the project's deny-list invariants (`Edit(.claude/hooks/**)` + `Edit(.claude/settings.json)` are both denied to Claude Code), this PR commits **only** the `HANDOFF.md` top pointer + this dated section + the new `## Session ledger` table at file bottom, plus the `docs/CHANGELOG.md` entry. The hook script content and the `.claude/settings.json` `SessionEnd` block live **in the PR description** for manual install by Smadar post-merge. Solo-human-controlled — no automated wiring of `.claude/`.
+
+**Captured per event (5 columns + dedup comment):** `Ended (UTC)` (ISO8601 minute-precision), `Branch` (`git rev-parse --abbrev-ref HEAD`), `SHA` (`git log -1 --format=%h`), `Closes` (up to 2 refs matching `Closes MEH-\d+` or `#\d+` from HEAD commit body, joined with ` / `), `Reason` (`clear` / `logout` / `prompt_input_exit` / `other`). HTML comment `<!-- session=<session_id> -->` is invisible in rendered Markdown but greppable in source — used for idempotency (running twice in the same session yields 1 row, not 2).
+
+**Schema source:** WebSearch synthesis 2026-05-16. Direct WebFetch attempts blocked: `code.claude.com/docs/en/hooks` (MEH-397 allowlist), `docs.anthropic.com/en/docs/claude-code/hooks-guide` (HTTP 403 — same pattern MEH-621 hit). Sources cross-referenced (5): [anthropics/claude-code#6306](https://github.com/anthropics/claude-code/issues/6306) (SessionEnd doc request), [#6428](https://github.com/anthropics/claude-code/issues/6428) (enumerates `reason ∈ {clear, logout}`), [#17885](https://github.com/anthropics/claude-code/issues/17885) (`/exit` gap), [#35892](https://github.com/anthropics/claude-code/issues/35892) (same `/exit` gap confirmed), [code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks) (canonical reference). Direct HOOK_INPUT fields used: `session_id`, `reason`. `transcript_path`, `cwd`, `hook_event_name` are present but not consumed (deterministic git-based facts are stronger signals).
+
+**Known limitation flagged honestly:** SessionEnd does NOT fire on the `/exit` slash command (upstream bug — see #17885 / #35892). Fires on ctrl-d, `/clear`, logout, window close, prompt_input_exit. Documented in the ledger preamble.
+
+**Idempotency mechanism:** `grep -qF "session=${SESSION_ID}" HANDOFF.md` before append. Same `session_id` → exit 0 (no write). Different `session_id` → append new row.
+
+**Sandbox verification (6 tests, all pass before push):**
+1. First invocation → ledger heading auto-created, 1 row appended.
+2. Re-run identical input → 0 line delta (idempotent, no duplicate).
+3. New `session_id` → 2nd row appended (different `reason` honored).
+4. Delete `## Session ledger` heading → hook re-creates table on next fire.
+5. `git diff HANDOFF.md` → only EOF additions, no narrative line touched (scope guard).
+6. `PATH=/nonexistent` (simulate missing `jq`) → exit 0, 0 line delta, stderr warning emitted.
+
+**Manual wiring step required post-merge** (full instructions in PR description):
+1. `cp /tmp/session-end.sh .claude/hooks/session-end.sh && chmod +x .claude/hooks/session-end.sh`
+2. Open `.claude/settings.json` and paste the `SessionEnd` JSON block from the PR description into the `hooks` object.
+3. Trigger any session end (ctrl-d or `/clear`); verify a new row lands in HANDOFF.md `## Session ledger` table.
+4. Comment on PR / Linear when wiring confirmed.
 
 ---
 
@@ -6171,3 +6204,12 @@ d76f234 feat(MEH-527): amplify founder credibility on /about (#636)
 ### Next task
 No explicit next task assigned. Suggested: check MEH backlog for next /about or content task,
 or continue MEH-519 epic (About page work).
+
+---
+
+## Session ledger
+
+> Auto-appended by `.claude/hooks/session-end.sh` (MEH-622, derived from MEH-502 audit REC 1). Deterministic facts only — no narrative, no LLM. One row per session (deduped by `session_id` HTML comment). Known gap: row not added when session ends via `/exit` slash command — upstream bug, [anthropics/claude-code#17885](https://github.com/anthropics/claude-code/issues/17885) + [#35892](https://github.com/anthropics/claude-code/issues/35892). First real row lands once Smadar completes manual wiring post-merge (see MEH-622 PR description for the 5-step install). Seed table below is intentionally empty.
+
+| Ended (UTC)       | Branch                              | SHA       | Closes      | Reason |
+|-------------------|-------------------------------------|-----------|-------------|--------|
