@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -24,6 +26,7 @@ export default function StickyContactBar({
   vacationReturnLabel,
   isBarVisible,
 }) {
+  const t = useTranslations();
   return (
     <div
       className="md:hidden fixed bottom-16 inset-x-0 z-[598]"
@@ -47,7 +50,7 @@ export default function StickyContactBar({
             <div className="font-bold text-[#8B6914]">
               ⭐ {Number(producer.avg_rating).toFixed(1)}
             </div>
-            <div>{producer.reviews_count} ביקורות</div>
+            <div>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</div>
           </div>
         ) : null}
         {/* Primary CTA */}
@@ -79,7 +82,7 @@ export default function StickyContactBar({
                 : "bg-white text-site-text border border-primary hover:bg-light"
             }`}
           >
-            {isVacation ? "שלחי הודעה — יחזרו בקרוב" : getPrimaryContactLabel(producer)}
+            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}
           </a>
         )}
       </div>

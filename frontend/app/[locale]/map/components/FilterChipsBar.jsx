@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
 
@@ -17,6 +19,7 @@ export default function FilterChipsBar({
   activeFilterTags,
   resetAllFilters,
 }) {
+  const t = useTranslations();
   return (
     <div dir="rtl" className="min-w-0">
       <ChipScrollRow
@@ -47,7 +50,7 @@ export default function FilterChipsBar({
                   ? onCategoryChipClick("all")
                   : onToggleChipClick(tag.key)
               }
-              aria-label={`הסירי סינון ${tag.label}`}
+              aria-label={t("map.filter.aria.remove", { label: tag.label })}
               className="inline-flex items-center gap-1 rounded-[20px] bg-light text-primary px-2 py-0.5 text-[11px] hover:bg-light/80 transition"
             >
               <span aria-hidden="true">×</span>
@@ -59,7 +62,7 @@ export default function FilterChipsBar({
             onClick={resetAllFilters}
             className="text-primary text-[11px] no-underline hover:opacity-80 transition"
           >
-            × נקי הכל
+            {t("map.filter.clear_all")}
           </button>
         </div>
       )}
