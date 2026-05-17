@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
@@ -70,6 +71,7 @@ function progressPct(commits, min, max) {
 }
 
 export default function GroupBuyDetailClient({ id }) {
+  const t = useTranslations("group_buys.detail");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [gb, setGb] = useState(null);
@@ -127,20 +129,20 @@ export default function GroupBuyDetailClient({ id }) {
         setTimeout(() => setShowConfetti(false), 4500);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setError(err.response?.data?.detail || t("errors.generic"));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleCancel = async () => {
-    if (!confirm("לבטל את ההצטרפות?")) return;
+    if (!confirm(t("cancel_confirm"))) return;
     setCancelling(true);
     try {
       await api.delete(`/group-buys/${id}/commit`);
       await load();
     } catch (err) {
-      setError(err.response?.data?.detail || "לא הצלחנו לבטל");
+      setError(err.response?.data?.detail || t("errors.cancel_failed"));
     } finally {
       setCancelling(false);
     }
@@ -149,7 +151,7 @@ export default function GroupBuyDetailClient({ id }) {
   if (loading || authLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center text-site-muted">
-        טוענת...
+        {t("loading")}
       </div>
     );
   }
@@ -158,9 +160,9 @@ export default function GroupBuyDetailClient({ id }) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <p className="text-4xl mb-4">🔍</p>
-        <p className="text-lg font-medium text-site-text">קבוצת הרכש לא נמצאה</p>
+        <p className="text-lg font-medium text-site-text">{t("not_found_title")}</p>
         <Link href="/group-buys" className="text-primary hover:underline mt-4 inline-block">
-          חזרה לקבוצות הרכש
+          {t("back_to_list")}
         </Link>
       </div>
     );
@@ -178,7 +180,11 @@ export default function GroupBuyDetailClient({ id }) {
       100,
   );
   const waShareText = encodeURIComponent(
-    `הצטרפי לקבוצת רכש — ${gb.title} ב${gb.city || "ישראל"} 🌿\nhttps://mehamakor.co.il/group-buys/${id}`,
+    t("share_text", {
+      title: gb.title,
+      city: gb.city || t("share_default_region"),
+      id,
+    }),
   );
 
   return (
@@ -188,26 +194,26 @@ export default function GroupBuyDetailClient({ id }) {
       <div className="max-w-2xl mx-auto px-4 py-10">
         {/* Back */}
         <Link href="/group-buys" className="text-sm text-primary hover:underline mb-6 inline-block">
-          ← חזרה לקבוצות הרכש
+          {t("back_to_list_arrow")}
         </Link>
 
         {/* Funded banner */}
         {funded && (
           <div className="mb-6 rounded-[12px] bg-primary text-white px-5 py-4 text-center">
-            <p className="text-xl font-bold">המחיר נפתח! 🎉</p>
+            <p className="text-xl font-bold">{t("funded_title")}</p>
             <p className="text-sm mt-1 opacity-90">
-              {gb.producer_name} תצור קשר עם המשתתפות בקרוב
+              {t("funded_subtitle", { name: gb.producer_name })}
             </p>
           </div>
         )}
         {cancelled && (
           <div className="mb-6 rounded-[12px] bg-border px-5 py-3 text-center text-site-muted text-sm">
-            קבוצת הרכש בוטלה
+            {t("cancelled")}
           </div>
         )}
         {fulfilled && (
           <div className="mb-6 rounded-[12px] bg-light border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">
-            ✅ קבוצת הרכש הושלמה
+            {t("fulfilled")}
           </div>
         )}
 
@@ -223,7 +229,7 @@ export default function GroupBuyDetailClient({ id }) {
               {gb.title}
             </h1>
             {gb.producer_name && (
-              <p className="text-sm text-site-muted">מאת {gb.producer_name}</p>
+              <p className="text-sm text-site-muted">{t("by_producer", { name: gb.producer_name })}</p>
             )}
             {gb.description && (
               <p className="text-sm text-site-text mt-3 leading-relaxed">{gb.description}</p>
@@ -240,10 +246,10 @@ export default function GroupBuyDetailClient({ id }) {
                 <span className="text-site-muted line-through text-lg">
                   ₪{Number(gb.price_per_unit_regular).toFixed(0)}
                 </span>
-                {gb.unit && <span className="text-sm text-site-muted">/ {gb.unit}</span>}
+                {gb.unit && <span className="text-sm text-site-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
               </div>
               <p className="text-xs text-site-muted mt-0.5">
-                חיסכון של {discount}% במחיר קבוצתי
+                {t("discount_hint", { discount })}
               </p>
             </div>
           </div>
@@ -252,7 +258,7 @@ export default function GroupBuyDetailClient({ id }) {
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium text-site-text">
-                {gb.commits_count} מתוך {gb.min_participants} משתתפות
+                {t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}
               </span>
               <span className="text-site-muted text-xs">
                 {pct}%
@@ -266,11 +272,11 @@ export default function GroupBuyDetailClient({ id }) {
             </div>
             {!expired && open && (
               <p className="text-xs text-site-muted mt-1.5">
-                עוד {Math.max(0, gb.min_participants - gb.commits_count)} משתתפות לפתיחת המחיר
+                {t("remaining_to_open", { n: Math.max(0, gb.min_participants - gb.commits_count) })}
               </p>
             )}
             <p className="text-xs text-site-muted mt-1">
-              מועד אחרון: {new Date(gb.deadline).toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" })}
+              {t("deadline_prefix", { date: new Date(gb.deadline).toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
           </div>
 
@@ -278,7 +284,7 @@ export default function GroupBuyDetailClient({ id }) {
           {open && !expired && !gb.user_committed && (
             <form onSubmit={handleCommit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">כמות</label>
+                <label className="block text-sm font-medium mb-1">{t("quantity_label")}</label>
                 <input
                   type="number"
                   min={1}
@@ -290,11 +296,11 @@ export default function GroupBuyDetailClient({ id }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">טלפון ליצירת קשר</label>
+                <label className="block text-sm font-medium mb-1">{t("phone_label")}</label>
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="050-1234567"
+                  placeholder={t("phone_placeholder")}
                   className="w-full border border-border rounded-[10px] px-3 py-2"
                   dir="ltr"
                 />
@@ -305,11 +311,11 @@ export default function GroupBuyDetailClient({ id }) {
                 disabled={submitting}
                 className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
               >
-                {submitting ? "מצרפת..." : user ? "אני רוצה להצטרף! 🛒" : "כניסה להצטרפות"}
+                {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
               </button>
               {!user && (
                 <p className="text-center text-xs text-site-muted">
-                  יש להתחבר כדי להצטרף לקבוצת רכש
+                  {t("login_required")}
                 </p>
               )}
             </form>
@@ -319,8 +325,8 @@ export default function GroupBuyDetailClient({ id }) {
           {gb.user_committed && (
             <div className="space-y-3">
               <div className="rounded-[12px] bg-[#EAF3DE] border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
-                ✅ הצטרפת לקבוצת רכש זו
-                {gb.user_commit?.quantity > 1 && ` (${gb.user_commit.quantity} יחידות)`}
+                {t("committed_confirm")}
+                {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
               </div>
               {open && !expired && (
                 <button
@@ -328,7 +334,7 @@ export default function GroupBuyDetailClient({ id }) {
                   disabled={cancelling}
                   className="w-full text-sm text-site-muted hover:text-red-500 transition text-center"
                 >
-                  {cancelling ? "מבטלת..." : "בטלי את ההצטרפות"}
+                  {cancelling ? t("cancelling") : t("cancel_cta")}
                 </button>
               )}
             </div>
@@ -336,7 +342,7 @@ export default function GroupBuyDetailClient({ id }) {
 
           {expired && open && (
             <div className="rounded-[12px] bg-border px-4 py-3 text-site-muted text-sm text-center">
-              המועד האחרון חלף — לא ניתן להצטרף
+              {t("deadline_passed")}
             </div>
           )}
 
@@ -351,7 +357,7 @@ export default function GroupBuyDetailClient({ id }) {
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
               </svg>
-              שתפי עם חברות
+              {t("share_wa")}
             </a>
           </div>
         </div>
