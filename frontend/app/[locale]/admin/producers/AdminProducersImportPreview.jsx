@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 // Import preview panel for the admin producers page.
 //
 // Pure presentation — receives the dry-run server response and the
@@ -32,19 +34,20 @@ function ImportRow({ row }) {
 }
 
 function PreviewHeader({ importing, onConfirm, onCancel, importedCount }) {
+  const t = useTranslations("admin");
   return (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="font-semibold text-lg">תצוגה מקדימה של הייבוא</h2>
+      <h2 className="font-semibold text-lg">{t("producers.preview.title")}</h2>
       <div className="flex gap-2">
         <button
           onClick={onConfirm}
           disabled={importing}
           className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
         >
-          {importing ? "מייבא..." : `אשר ייבוא (${importedCount})`}
+          {importing ? t("producers.preview.importing") : t("producers.preview.confirm", { count: importedCount })}
         </button>
         <button onClick={onCancel} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
-          ביטול
+          {t("common.cancel")}
         </button>
       </div>
     </div>
@@ -52,36 +55,38 @@ function PreviewHeader({ importing, onConfirm, onCancel, importedCount }) {
 }
 
 function PreviewStats({ preview }) {
+  const t = useTranslations("admin");
   return (
     <div className="grid grid-cols-3 gap-3 mb-4 text-center">
       <div className="bg-green-50 rounded-[12px] p-3">
         <p className="text-2xl font-bold text-primary">{preview.imported}</p>
-        <p className="text-xs text-text-secondary">לייבוא</p>
+        <p className="text-xs text-text-secondary">{t("producers.preview.stats.to_import")}</p>
       </div>
       <div className="bg-yellow-50 rounded-[12px] p-3">
         <p className="text-2xl font-bold text-yellow-700">{preview.skipped}</p>
-        <p className="text-xs text-text-secondary">דולגו</p>
+        <p className="text-xs text-text-secondary">{t("producers.preview.stats.skipped")}</p>
       </div>
       <div className="bg-red-50 rounded-[12px] p-3">
         <p className="text-2xl font-bold text-red-700">{preview.errors}</p>
-        <p className="text-xs text-text-secondary">שגיאות</p>
+        <p className="text-xs text-text-secondary">{t("producers.preview.stats.errors")}</p>
       </div>
     </div>
   );
 }
 
 function PreviewTable({ rows }) {
+  const t = useTranslations("admin");
   return (
     <div className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded-[8px]">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 sticky top-0">
           <tr>
-            <th className="text-end px-3 py-2">שורה</th>
-            <th className="text-end px-3 py-2">שם</th>
-            <th className="text-end px-3 py-2">עיר</th>
-            <th className="text-end px-3 py-2">קטגוריה</th>
-            <th className="text-end px-3 py-2">slug</th>
-            <th className="text-end px-3 py-2">סטטוס</th>
+            <th className="text-end px-3 py-2">{t("producers.preview.table.row")}</th>
+            <th className="text-end px-3 py-2">{t("producers.preview.table.name")}</th>
+            <th className="text-end px-3 py-2">{t("producers.preview.table.city")}</th>
+            <th className="text-end px-3 py-2">{t("producers.preview.table.category")}</th>
+            <th className="text-end px-3 py-2">{t("producers.preview.table.slug")}</th>
+            <th className="text-end px-3 py-2">{t("producers.preview.table.status")}</th>
           </tr>
         </thead>
         <tbody>

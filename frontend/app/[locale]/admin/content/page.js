@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 
 export default function AdminContentPage() {
+  const t = useTranslations("admin");
   const [section, setSection] = useState("categories");
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">תוכן</h1>
+      <h1 className="text-2xl font-bold">{t("content.title")}</h1>
 
       <div className="flex gap-2 flex-wrap">
         {[
-          { id: "categories", label: "קטגוריות" },
-          { id: "home_products", label: "מוצרים ביתיים" },
-          { id: "about", label: "עמוד חזון" },
-          { id: "terms", label: "תנאי שימוש" },
+          { id: "categories", label: t("content.tabs.categories") },
+          { id: "home_products", label: t("content.tabs.home_products") },
+          { id: "about", label: t("content.tabs.about") },
+          { id: "terms", label: t("content.tabs.terms") },
         ].map((s) => (
           <button
             key={s.id}
@@ -37,6 +39,7 @@ export default function AdminContentPage() {
 }
 
 function CategoriesEditor() {
+  const t = useTranslations("admin");
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
@@ -57,7 +60,7 @@ function CategoriesEditor() {
     load();
   };
   const remove = async (id) => {
-    if (!confirm("למחוק קטגוריה?")) return;
+    if (!confirm(t("content.categories.confirm_delete"))) return;
     await api.delete(`/admin/categories/${id}`);
     load();
   };
@@ -66,25 +69,25 @@ function CategoriesEditor() {
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
         <input
-          placeholder="אימוג׳י"
+          placeholder={t("content.categories.emoji_placeholder")}
           value={emoji}
           onChange={(e) => setEmoji(e.target.value)}
           className="border border-border rounded-[12px] px-3 py-2 w-20 text-center"
         />
         <input
-          placeholder="שם קטגוריה"
+          placeholder={t("content.categories.name_placeholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
         />
         <button type="submit" className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
-          + הוסף
+          {t("content.categories.add")}
         </button>
       </form>
 
       <ul className="space-y-2">
         {items.length === 0 ? (
-          <li className="text-sm text-text-secondary text-center py-4">אין נתונים להצגה</li>
+          <li className="text-sm text-text-secondary text-center py-4">{t("content.categories.empty")}</li>
         ) : (
           items.map((c) => (
             <CategoryRow key={c.id} cat={c} onSave={update} onDelete={remove} />
@@ -96,6 +99,7 @@ function CategoriesEditor() {
 }
 
 function CategoryRow({ cat, onSave, onDelete }) {
+  const t = useTranslations("admin");
   const [name, setName] = useState(cat.name);
   const [emoji, setEmoji] = useState(cat.emoji || "");
   const dirty = name !== cat.name || emoji !== (cat.emoji || "");
@@ -109,14 +113,15 @@ function CategoryRow({ cat, onSave, onDelete }) {
         disabled={!dirty}
         className="text-xs bg-secondary text-white px-3 py-1 rounded disabled:opacity-30"
       >
-        שמור
+        {t("content.categories.save")}
       </button>
-      <button onClick={() => onDelete(cat.id)} className="text-xs text-red-600">מחק</button>
+      <button onClick={() => onDelete(cat.id)} className="text-xs text-red-600">{t("content.categories.delete")}</button>
     </li>
   );
 }
 
 function HiddenHomeProducts() {
+  const t = useTranslations("admin");
   const [items, setItems] = useState([]);
   useEffect(() => {
     api.get("/admin/home-products/hidden").then((r) => setItems(r.data)).catch(() => setItems([]));
@@ -127,16 +132,16 @@ function HiddenHomeProducts() {
     setItems(items.filter((i) => i.id !== id));
   };
   const remove = async (id) => {
-    if (!confirm("למחוק את המוצר?")) return;
+    if (!confirm(t("content.home_products.confirm_delete"))) return;
     await api.delete(`/admin/home-products/${id}`);
     setItems(items.filter((i) => i.id !== id));
   };
 
   return (
     <div className="bg-white border border-border rounded-[12px] p-5">
-      <h2 className="font-semibold mb-3">מוצרים ביתיים מוסתרים</h2>
+      <h2 className="font-semibold mb-3">{t("content.home_products.heading")}</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-text-secondary">אין מוצרים מוסתרים</p>
+        <p className="text-sm text-text-secondary">{t("content.home_products.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {items.map((hp) => (
@@ -146,8 +151,8 @@ function HiddenHomeProducts() {
                 <p className="text-xs text-text-secondary">{hp.seller_name} · {hp.city}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => restore(hp.id)} className="bg-primary text-white px-3 py-1 rounded text-xs">שחזר</button>
-                <button onClick={() => remove(hp.id)} className="bg-red-500 text-white px-3 py-1 rounded text-xs">מחק</button>
+                <button onClick={() => restore(hp.id)} className="bg-primary text-white px-3 py-1 rounded text-xs">{t("content.home_products.restore")}</button>
+                <button onClick={() => remove(hp.id)} className="bg-red-500 text-white px-3 py-1 rounded text-xs">{t("content.home_products.delete")}</button>
               </div>
             </li>
           ))}
@@ -158,6 +163,7 @@ function HiddenHomeProducts() {
 }
 
 function PageEditor({ slug }) {
+  const t = useTranslations("admin");
   const [page, setPage] = useState({ title: "", body: "" });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -182,21 +188,21 @@ function PageEditor({ slug }) {
       <input
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}
-        placeholder="כותרת"
+        placeholder={t("content.page_editor.title_placeholder")}
         className="w-full border border-border rounded-[12px] px-3 py-2 font-semibold"
       />
       <textarea
         value={page.body}
         onChange={(e) => { setPage({ ...page, body: e.target.value }); setSaved(false); }}
-        placeholder="תוכן (Markdown נתמך)"
+        placeholder={t("content.page_editor.body_placeholder")}
         rows={16}
         className="w-full border border-border rounded-[12px] px-3 py-2 font-mono text-sm"
       />
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={saving} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50">
-          {saving ? "שומר..." : "שמור"}
+          {saving ? t("content.page_editor.saving") : t("content.page_editor.save")}
         </button>
-        {saved && <span className="text-sm text-primary">נשמר ✓</span>}
+        {saved && <span className="text-sm text-primary">{t("content.page_editor.saved")}</span>}
       </div>
     </div>
   );

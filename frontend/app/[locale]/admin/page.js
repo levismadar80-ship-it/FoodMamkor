@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   CalendarBlank,
   CookingPot,
@@ -12,36 +13,35 @@ import {
   Users,
   Warning,
 } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { getProducerStatusLabel } from "@/lib/producer-status";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminDashboard() {
-  const t = useTranslations("admin.dashboard");
+  const t = useTranslations("admin");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     api.get("/admin/dashboard")
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.response?.data?.detail || t("load_error")));
+      .catch((e) => setError(e.response?.data?.detail || t("common.error_loading")));
   }, [t]);
 
   if (error) {
     return <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">{error}</div>;
   }
   if (!data) {
-    return <div className="text-text-secondary">{t("loading")}</div>;
+    return <div className="text-text-secondary">{t("common.loading")}</div>;
   }
 
   const s = data.stats;
   const cards = [
-    { key: "total_producers",   label: t("cards.total_producers"),   value: s.total_producers,     Icon: Storefront,      href: "/admin/producers" },
-    { key: "pending_producers", label: t("cards.pending_producers"), value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
-    { key: "total_users",       label: t("cards.total_users"),       value: s.total_users,         Icon: Users,           href: "/admin/users" },
-    { key: "home_products",     label: t("cards.home_products"),     value: s.total_home_products, Icon: CookingPot,      href: "/admin/content" },
-    { key: "group_buys",        label: t("cards.group_buys"),        value: "›",                   Icon: Package,         href: "/admin/group-buys" },
+    { key: "total_producers",   label: t("dashboard.stats.total_producers"),   value: s.total_producers,     Icon: Storefront, href: "/admin/producers" },
+    { key: "pending_approval",  label: t("dashboard.stats.pending_approval"),  value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
+    { key: "registered_users",  label: t("dashboard.stats.registered_users"),  value: s.total_users,         Icon: Users, href: "/admin/users" },
+    { key: "home_products",     label: t("dashboard.stats.home_products"),     value: s.total_home_products, Icon: CookingPot, href: "/admin/content" },
+    { key: "group_buys",        label: t("dashboard.stats.group_buys"),        value: "›",                   Icon: Package, href: "/admin/group-buys" },
   ];
 
   // Simple inline SVG line chart for monthly producers
@@ -61,15 +61,15 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-text-secondary text-sm mt-1">{t("subtitle")}</p>
+        <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
+        <p className="text-text-secondary text-sm mt-1">{t("dashboard.subtitle")}</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((c) => (
           <Link
-            key={c.key}
+            key={c.label}
             href={c.href}
             className={`bg-white border rounded-[12px] p-4 hover:shadow-sm transition ${
               c.warn ? "border-yellow-300 bg-yellow-50" : "border-border"
@@ -88,8 +88,8 @@ export default function AdminDashboard() {
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <InfoTooltip
-                    content={t("group_buys_tooltip")}
-                    label={t("group_buys_tooltip_label")}
+                    content={t("dashboard.stats.group_buys_tooltip")}
+                    label={t("dashboard.stats.group_buys_tooltip_label")}
                     position="bottom"
                   />
                 </span>
@@ -109,8 +109,8 @@ export default function AdminDashboard() {
             >
               <HourglassSimple size={28} weight="duotone" aria-hidden="true" className="text-yellow-600" />
               <div>
-                <p className="font-medium text-sm">{t("alerts.pending_producers", { count: s.pending_producers })}</p>
-                <p className="text-xs text-text-secondary">{t("alerts.pending_action")}</p>
+                <p className="font-medium text-sm">{t("dashboard.alerts.producers_waiting", { count: s.pending_producers })}</p>
+                <p className="text-xs text-text-secondary">{t("dashboard.alerts.click_to_handle")}</p>
               </div>
             </Link>
           )}
@@ -121,8 +121,8 @@ export default function AdminDashboard() {
             >
               <Warning size={28} weight="fill" aria-hidden="true" className="text-red-500" />
               <div>
-                <p className="font-medium text-sm">{t("alerts.open_reports", { count: s.open_reports })}</p>
-                <p className="text-xs text-text-secondary">{t("alerts.open_reports_action")}</p>
+                <p className="font-medium text-sm">{t("dashboard.alerts.open_reports", { count: s.open_reports })}</p>
+                <p className="text-xs text-text-secondary">{t("dashboard.alerts.needs_review")}</p>
               </div>
             </Link>
           )}
@@ -133,8 +133,8 @@ export default function AdminDashboard() {
             >
               <Package size={28} weight="duotone" aria-hidden="true" className="text-orange-500" />
               <div>
-                <p className="font-medium text-sm">{t("alerts.hidden_products", { count: s.hidden_home_products })}</p>
-                <p className="text-xs text-text-secondary">{t("alerts.hidden_products_action")}</p>
+                <p className="font-medium text-sm">{t("dashboard.alerts.hidden_home_products", { count: s.hidden_home_products })}</p>
+                <p className="text-xs text-text-secondary">{t("dashboard.alerts.for_review")}</p>
               </div>
             </Link>
           )}
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Mini chart */}
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">{t("monthly_chart_title")}</h2>
+          <h2 className="font-semibold mb-3">{t("dashboard.chart.new_producers_6_months")}</h2>
           <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-32">
             <polyline
               fill="none"
@@ -170,13 +170,13 @@ export default function AdminDashboard() {
         {/* Pending preview */}
         <div className="bg-white border border-border rounded-[12px] p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">{t("pending_panel.title")}</h2>
+            <h2 className="font-semibold">{t("dashboard.pending_panel.heading")}</h2>
             <Link href="/admin/producers?status=pending" className="text-primary text-xs hover:underline">
-              {t("pending_panel.view_all")}
+              {t("dashboard.pending_panel.view_all")}
             </Link>
           </div>
           {(data.pending_producers || []).length === 0 ? (
-            <p className="text-sm text-text-secondary">{t("pending_panel.empty")}</p>
+            <p className="text-sm text-text-secondary">{t("dashboard.pending_panel.empty")}</p>
           ) : (
             <ul className="space-y-2">
               {(data.pending_producers || []).map((p) => (
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
                     href={`/admin/producers/${p.id}/edit`}
                     className="text-xs text-primary hover:underline"
                   >
-                    {t("pending_panel.review")}
+                    {t("dashboard.pending_panel.check")}
                   </Link>
                 </li>
               ))}
@@ -200,16 +200,16 @@ export default function AdminDashboard() {
 
       {/* Activity feed */}
       <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-3">{t("activity.title")}</h2>
+        <h2 className="font-semibold mb-3">{t("dashboard.activity.heading")}</h2>
         {(data.recent_activity || []).length === 0 && (
-          <p className="text-sm text-text-secondary">{t("activity.empty")}</p>
+          <p className="text-sm text-text-secondary">{t("dashboard.activity.empty")}</p>
         )}
         <ul className="space-y-2">
           {(data.recent_activity || []).map((a) => (
             <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
               <div className="flex items-center gap-2">
                 <span>🆕</span>
-                <span>{t("activity.added_producer")}</span>
+                <span>{t("dashboard.activity.added_producer")}</span>
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}
                 </Link>
@@ -228,25 +228,27 @@ export default function AdminDashboard() {
       {/* Secondary stats row — weekly deltas + events + experiences */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <DeltaCard
-          label={t("secondary.new_users_week")}
+          label={t("dashboard.weekly.new_users_week")}
           value={s.new_users_this_week || 0}
           total={s.total_users || 0}
           Icon={Users}
+          totalLabel={t("dashboard.weekly.out_of_total", { total: s.total_users || 0 })}
         />
         <DeltaCard
-          label={t("secondary.new_producers_week")}
+          label={t("dashboard.weekly.new_producers_week")}
           value={s.new_producers_this_week || 0}
           total={s.total_producers || 0}
           Icon={Storefront}
+          totalLabel={t("dashboard.weekly.out_of_total", { total: s.total_producers || 0 })}
         />
         <SimpleStat
-          label={t("secondary.events")}
+          label={t("dashboard.weekly.events")}
           value={s.total_events || 0}
           Icon={CalendarBlank}
           href="/admin/content"
         />
         <SimpleStat
-          label={t("secondary.experiences")}
+          label={t("dashboard.weekly.experiences")}
           value={s.total_experiences || 0}
           Icon={Sparkle}
           href="/admin/experiences"
@@ -256,12 +258,12 @@ export default function AdminDashboard() {
       {/* DAU + top cities */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">{t("dau_title")}</h2>
-          <DauLineChart data={data.daily_active_users || []} />
+          <h2 className="font-semibold mb-3">{t("dashboard.dau.heading")}</h2>
+          <DauLineChart data={data.daily_active_users || []} emptyLabel={t("dashboard.dau.empty")} ariaLabel={t("dashboard.dau.aria")} />
         </div>
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">{t("top_cities_title")}</h2>
-          <TopCitiesList data={data.top_cities || []} />
+          <h2 className="font-semibold mb-3">{t("dashboard.top_cities.heading")}</h2>
+          <TopCitiesList data={data.top_cities || []} emptyLabel={t("dashboard.top_cities.empty")} />
         </div>
       </div>
 
@@ -271,8 +273,7 @@ export default function AdminDashboard() {
   );
 }
 
-function DeltaCard({ label, value, total, Icon }) {
-  const t = useTranslations("admin.dashboard");
+function DeltaCard({ label, value, Icon, totalLabel }) {
   return (
     <div className="bg-white border border-border rounded-[12px] p-4">
       <div className="flex items-start justify-between mb-1">
@@ -280,7 +281,7 @@ function DeltaCard({ label, value, total, Icon }) {
         <span className="text-3xl font-bold text-primary">+{value}</span>
       </div>
       <p className="text-xs text-text-secondary">{label}</p>
-      <p className="text-xs text-text-secondary">{t("delta_of_total", { total })}</p>
+      <p className="text-xs text-text-secondary">{totalLabel}</p>
     </div>
   );
 }
@@ -305,10 +306,9 @@ function SimpleStat({ label, value, Icon, href }) {
  * Matches the admin/page.js monthly_producers chart pattern — no chart
  * library, zero new dependencies.
  */
-function DauLineChart({ data }) {
-  const t = useTranslations("admin.dashboard");
+function DauLineChart({ data, emptyLabel, ariaLabel }) {
   if (!data || data.length === 0) {
-    return <p className="text-sm text-text-secondary">{t("dau_empty")}</p>;
+    return <p className="text-sm text-text-secondary">{emptyLabel}</p>;
   }
   const W = 320;
   const H = 110;
@@ -325,7 +325,7 @@ function DauLineChart({ data }) {
   const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-36" role="img" aria-label={t("dau_aria_label")}>
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-36" role="img" aria-label={ariaLabel}>
       <polyline fill="none" stroke="#2e6853" strokeWidth="2" points={points} />
       {data.map((d, i) => {
         const x = pad + i * stepX;
@@ -345,13 +345,10 @@ function DauLineChart({ data }) {
   );
 }
 
-function TopCitiesList({ data }) {
-  const t = useTranslations("admin.dashboard");
+function TopCitiesList({ data, emptyLabel }) {
   if (!data || data.length === 0) {
     return (
-      <p className="text-sm text-text-secondary">
-        {t("top_cities_empty")}
-      </p>
+      <p className="text-sm text-text-secondary">{emptyLabel}</p>
     );
   }
   const maxV = Math.max(1, ...data.map((d) => d.count));
@@ -376,27 +373,27 @@ function TopCitiesList({ data }) {
 }
 
 function ServerHealthPanel({ health }) {
-  const t = useTranslations("admin.dashboard");
+  const t = useTranslations("admin");
   if (!health) return null;
   const empty = (health.sample_count || 0) === 0;
   return (
     <div className="bg-white border border-border rounded-[12px] p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold">{t("server_health.title")}</h2>
+        <h2 className="font-semibold">{t("dashboard.health.heading")}</h2>
         <span className="text-xs text-text-secondary">
-          {empty ? t("server_health.waiting") : t("server_health.samples", { count: health.sample_count })}
+          {empty ? t("dashboard.health.waiting_traffic") : t("dashboard.health.requests_count", { count: health.sample_count })}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs text-text-secondary mb-1">{t("server_health.response_time")}</p>
+          <p className="text-xs text-text-secondary mb-1">{t("dashboard.health.response_time_avg")}</p>
           <p className="text-2xl font-bold text-primary">
             {health.response_time_avg_ms}
             <span className="text-sm text-text-secondary ms-1">ms</span>
           </p>
         </div>
         <div>
-          <p className="text-xs text-text-secondary mb-1">{t("server_health.requests_per_minute")}</p>
+          <p className="text-xs text-text-secondary mb-1">{t("dashboard.health.requests_per_minute")}</p>
           <p className="text-2xl font-bold text-primary">
             {health.requests_per_minute}
             <span className="text-sm text-text-secondary ms-1">req/min</span>
@@ -404,7 +401,7 @@ function ServerHealthPanel({ health }) {
         </div>
       </div>
       <p className="text-[13px] text-text-secondary mt-3 leading-snug">
-        {t("server_health.data_note")}
+        {t("dashboard.health.footnote")}
       </p>
     </div>
   );

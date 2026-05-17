@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Star, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -19,6 +20,7 @@ import InfoTooltip from "@/components/InfoTooltip";
  * reviews_count are recomputed server-side by the existing handler.
  */
 export default function AdminReviewsPage() {
+  const t = useTranslations("admin");
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,7 +43,10 @@ export default function AdminReviewsPage() {
   const handleDelete = async (review) => {
     if (
       !window.confirm(
-        `למחוק את הביקורת של ${review.user_name || "משתמשת"} על ${review.producer_name || "העסק"}?`,
+        t("reviews.confirm_delete", {
+          user: review.user_name || t("reviews.default_user"),
+          producer: review.producer_name || t("reviews.default_producer"),
+        }),
       )
     ) {
       return;
@@ -50,9 +55,9 @@ export default function AdminReviewsPage() {
     try {
       await api.delete(`/reviews/${review.id}`);
       setReviews((prev) => prev.filter((r) => r.id !== review.id));
-      showToast("הביקורת נמחקה");
+      showToast(t("reviews.deleted_toast"));
     } catch {
-      showToast("משהו השתבש, נסי שוב", "error");
+      showToast(t("reviews.delete_error"), "error");
     } finally {
       setDeletingId(null);
     }
@@ -75,21 +80,21 @@ export default function AdminReviewsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
-          ביקורות
+          {t("reviews.title")}
           <InfoTooltip
-            content="Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך."
-            label="מידע על מודרציית ביקורות"
+            content={t("reviews.tooltip")}
+            label={t("reviews.tooltip_label")}
             position="bottom"
           />
         </h1>
         <span className="text-sm text-text-secondary">
-          {filtered.length} מתוך {reviews.length}
+          {t("reviews.count", { filtered: filtered.length, total: reviews.length })}
         </span>
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
         <input
-          placeholder="חיפוש לפי עסק, משתמש, כותרת או טקסט..."
+          placeholder={t("reviews.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
@@ -98,9 +103,9 @@ export default function AdminReviewsPage() {
           value={starFilter}
           onChange={(e) => setStarFilter(e.target.value)}
           className="border border-border rounded-[12px] px-3 py-2 bg-white"
-          aria-label="סינון לפי דירוג"
+          aria-label={t("reviews.filter_aria")}
         >
-          <option value="all">כל הדירוגים</option>
+          <option value="all">{t("reviews.all_ratings")}</option>
           <option value="1">⭐ 1</option>
           <option value="2">⭐ 2</option>
           <option value="3">⭐ 3</option>
@@ -114,26 +119,26 @@ export default function AdminReviewsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">עסק</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">משתמשת</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">דירוג</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">תוכן</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">תאריך</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">פעולות</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.producer")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.user")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.rating")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.content")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.date")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-text-secondary">
-                    טוענת ביקורות...
+                    {t("reviews.loading")}
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-text-secondary">
-                    אין ביקורות להצגה
+                    {t("reviews.empty")}
                   </td>
                 </tr>
               )}
@@ -150,7 +155,7 @@ export default function AdminReviewsPage() {
                     <td className="px-4 py-3">
                       <span
                         className="inline-flex items-center gap-1"
-                        aria-label={`${r.stars} כוכבים`}
+                        aria-label={t("reviews.stars_aria", { stars: r.stars })}
                       >
                         <Star size={14} weight="fill" className="text-yellow-500" />
                         {r.stars}
@@ -180,10 +185,10 @@ export default function AdminReviewsPage() {
                         onClick={() => handleDelete(r)}
                         disabled={deletingId === r.id}
                         className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
-                        aria-label={`מחקי ביקורת של ${r.user_name || "משתמשת"}`}
+                        aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
                       >
                         <Trash size={14} weight="duotone" />
-                        {deletingId === r.id ? "מוחקת..." : "מחקי"}
+                        {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
                       </button>
                     </td>
                   </tr>

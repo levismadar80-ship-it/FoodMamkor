@@ -1,19 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 
-const BADGE_LABELS = {
-  rabanut: "כשר מרבנות",
-  badatz: 'בדצ"ה',
-  chalak: "חלק",
-  mehadrin: "מהדרין",
-  "organic-kosher": "אורגני כשר",
-  shmitta: "שמיטה",
-  kilayim: "ללא כלאיים",
-  "artisan-dairy": "מוצרי חלב מהחווה",
+// Maps badge_code → admin.kashrut.badges.* key (note hyphen-to-underscore)
+const BADGE_KEYS = {
+  rabanut: "rabanut",
+  badatz: "badatz",
+  chalak: "chalak",
+  mehadrin: "mehadrin",
+  "organic-kosher": "organic_kosher",
+  shmitta: "shmitta",
+  kilayim: "kilayim",
+  "artisan-dairy": "artisan_dairy",
 };
 
 function formatDate(iso) {
@@ -30,6 +32,7 @@ function formatDate(iso) {
 }
 
 export default function AdminKashrutPage() {
+  const t = useTranslations("admin");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
@@ -42,9 +45,9 @@ export default function AdminKashrutPage() {
     api
       .get("/admin/kashrut", { params: { status: statusFilter } })
       .then((r) => setRows(r.data))
-      .catch(() => showToast("שגיאה בטעינת הבקשות", "error"))
+      .catch(() => showToast(t("kashrut.load_error"), "error"))
       .finally(() => setLoading(false));
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -52,10 +55,10 @@ export default function AdminKashrutPage() {
     setBusy(true);
     try {
       await api.post(`/admin/kashrut/${id}/approve`);
-      showToast("Badge אושר ✅", "success");
+      showToast(t("kashrut.approved_toast"), "success");
       load();
     } catch (e) {
-      showToast(e.response?.data?.detail || "שגיאה", "error");
+      showToast(e.response?.data?.detail || t("common.error_generic"), "error");
     }
     setBusy(false);
   }
@@ -64,12 +67,12 @@ export default function AdminKashrutPage() {
     setBusy(true);
     try {
       await api.post(`/admin/kashrut/${id}/reject`, { notes: rejectNotes });
-      showToast("בקשה נדחתה", "success");
+      showToast(t("kashrut.rejected_toast"), "success");
       setRejectModal(null);
       setRejectNotes("");
       load();
     } catch (e) {
-      showToast(e.response?.data?.detail || "שגיאה", "error");
+      showToast(e.response?.data?.detail || t("common.error_generic"), "error");
     }
     setBusy(false);
   }
@@ -78,15 +81,15 @@ export default function AdminKashrutPage() {
     <div dir="rtl">
       <div className="mb-5">
         <h1 className="text-2xl font-bold font-headline text-site-text mb-1">
-          אישור תעודות כשרות
+          {t("kashrut.title")}
           <InfoTooltip
-            content="בעל עסק ביקש תעודת כשרות. בדקי את התעודה המצורפת ואשרי/דחי."
-            label="מידע על בקשת תעודת כשרות"
+            content={t("kashrut.tooltip")}
+            label={t("kashrut.tooltip_label")}
             position="bottom"
           />
         </h1>
         <p className="text-sm text-site-muted">
-          בתי עסק מבקשות תעודות כשרות דרך הדשבורד שלהן. בדקי את קישור התעודה לפני אישור.
+          {t("kashrut.subtitle")}
         </p>
       </div>
       <div className="mb-6">
@@ -95,28 +98,28 @@ export default function AdminKashrutPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="border rounded-[8px] px-3 py-2 text-sm"
         >
-          <option value="pending">ממתינות</option>
-          <option value="approved">מאושרות</option>
-          <option value="rejected">נדחות</option>
+          <option value="pending">{t("kashrut.status.pending")}</option>
+          <option value="approved">{t("kashrut.status.approved")}</option>
+          <option value="rejected">{t("kashrut.status.rejected")}</option>
         </select>
       </div>
 
       {loading ? (
-        <p className="text-site-muted">טוענת...</p>
+        <p className="text-site-muted">{t("common.loading_f")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-site-muted">אין בקשות</p>
+        <p className="text-site-muted">{t("kashrut.no_requests")}</p>
       ) : (
         <div className="overflow-x-auto rounded-[12px] border border-border">
           <table className="w-full text-sm">
             <thead className="bg-light">
               <tr>
-                <th className="text-start px-4 py-3 font-semibold">בית עסק</th>
-                <th className="text-start px-4 py-3 font-semibold">Badge</th>
-                <th className="text-start px-4 py-3 font-semibold">תעודה</th>
-                <th className="text-start px-4 py-3 font-semibold">תאריך בקשה</th>
-                <th className="text-start px-4 py-3 font-semibold">הערות</th>
+                <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.producer")}</th>
+                <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.badge")}</th>
+                <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.cert")}</th>
+                <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.date")}</th>
+                <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.notes")}</th>
                 {statusFilter === "pending" && (
-                  <th className="text-start px-4 py-3 font-semibold">פעולות</th>
+                  <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.actions")}</th>
                 )}
               </tr>
             </thead>
@@ -126,7 +129,7 @@ export default function AdminKashrutPage() {
                   <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">
-                      {BADGE_LABELS[row.badge_code] || row.badge_code}
+                      {BADGE_KEYS[row.badge_code] ? t(`kashrut.badges.${BADGE_KEYS[row.badge_code]}`) : row.badge_code}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -137,10 +140,10 @@ export default function AdminKashrutPage() {
                         rel="noopener noreferrer"
                         className="text-primary hover:underline text-xs"
                       >
-                        צפי בתעודה ↗
+                        {t("kashrut.cert_view")}
                       </a>
                     ) : (
-                      <span className="text-site-muted text-xs">לא הועלתה</span>
+                      <span className="text-site-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-site-muted">{formatDate(row.created_at)}</td>
@@ -153,14 +156,14 @@ export default function AdminKashrutPage() {
                           disabled={busy}
                           className="bg-primary text-white text-xs px-3 py-1.5 rounded-full hover:bg-primary-dark transition disabled:opacity-50"
                         >
-                          אשרי
+                          {t("kashrut.actions.approve")}
                         </button>
                         <button
                           onClick={() => { setRejectModal(row.id); setRejectNotes(""); }}
                           disabled={busy}
                           className="bg-white border border-red-300 text-red-600 text-xs px-3 py-1.5 rounded-full hover:bg-red-50 transition disabled:opacity-50"
                         >
-                          דחי
+                          {t("kashrut.actions.reject")}
                         </button>
                       </div>
                     </td>
@@ -176,11 +179,11 @@ export default function AdminKashrutPage() {
       {rejectModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">דחיית בקשה</h2>
+            <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
-              placeholder="סיבת דחייה (אופציונלי)"
+              placeholder={t("kashrut.reject_modal.placeholder")}
               className="w-full border rounded-[8px] p-3 text-sm resize-none h-24"
             />
             <div className="flex gap-3 mt-4">
@@ -188,14 +191,14 @@ export default function AdminKashrutPage() {
                 onClick={() => setRejectModal(null)}
                 className="flex-1 border border-border rounded-full py-2 text-sm"
               >
-                ביטול
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => reject(rejectModal)}
                 disabled={busy}
                 className="flex-1 bg-red-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
               >
-                {busy ? "שולחת..." : "דחי"}
+                {busy ? t("kashrut.reject_modal.submitting") : t("kashrut.reject_modal.submit")}
               </button>
             </div>
           </div>

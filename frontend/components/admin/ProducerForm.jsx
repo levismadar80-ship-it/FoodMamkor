@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { Cow, Leaf, Seal } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -12,13 +12,15 @@ import {
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
 
-// Kosher options keyed for translation; value is the persisted string sent to API.
-const KOSHER_OPTIONS = [
-  { value: "",                labelKey: "none" },
-  { value: "כשר",             labelKey: "kosher" },
-  { value: "כשר למהדרין",     labelKey: "mehadrin" },
-  { value: "לא כשר",          labelKey: "not_kosher" },
-];
+const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
+
+// MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
+const KOSHER_LABEL_KEYS = {
+  "": "producers.form.fields.kosher_none",
+  "כשר": "producers.form.fields.kosher_kosher",
+  "כשר למהדרין": "producers.form.fields.kosher_mehadrin",
+  "לא כשר": "producers.form.fields.kosher_not_kosher",
+};
 
 /**
  * MEH-530: license-number input with the same required/optional branching
@@ -32,7 +34,7 @@ const KOSHER_OPTIONS = [
  * enforce the regex (manual-approval flow per MEH-530 spec).
  */
 function ProducerLicenseField({ form, categories, update, inputClass }) {
-  const t = useTranslations("admin.producer_form.license");
+  const t = useTranslations("admin");
   const [optionalExpanded, setOptionalExpanded] = useState(false);
   const required = requiresProducerLicense(categories, form.category_ids);
   const warning = hasLicenseFormatWarning(form.producer_license_number);
@@ -49,7 +51,7 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
           onClick={() => setOptionalExpanded(true)}
           className="text-xs text-primary underline hover:text-primary-light"
         >
-          {t("optional_toggle")}
+          {t("producers.form.fields.license_optional_toggle")}
         </button>
       </div>
     );
@@ -61,11 +63,12 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
         htmlFor="admin-producer-license"
         className="block text-sm text-text-secondary mb-1"
       >
-        {t("label")}{required ? t("required_suffix") : ""}
+        {t("producers.form.fields.license_label")}
+        {required ? t("producers.form.fields.license_required_suffix") : ""}
       </label>
       {required && (
         <p className="text-xs text-site-muted mb-2">
-          {t("required_note")}
+          {t("producers.form.fields.license_required_hint")}
         </p>
       )}
       <input
@@ -79,7 +82,7 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
       />
       {warning && (
         <p className="text-xs text-amber-600 mt-1">
-          {t("format_warning")}
+          {t("producers.form.fields.license_format_warning")}
         </p>
       )}
     </div>
@@ -133,7 +136,8 @@ const EMPTY = {
 };
 
 export default function ProducerForm({ initial = null, producerId = null }) {
-  const t = useTranslations("admin.producer_form");
+  const t = useTranslations("admin");
+  const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
   const [form, setForm] = useState(EMPTY);
   const [categories, setCategories] = useState([]);
@@ -221,7 +225,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       }
       setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
     } catch (err) {
-      setError(err.response?.data?.detail || t("errors.upload_image"));
+      setError(err.response?.data?.detail || t("producers.form.errors.image_upload"));
     } finally {
       setUploading(false);
     }
@@ -258,7 +262,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       }
       router.push("/admin?tab=producers");
     } catch (err) {
-      setError(err.response?.data?.detail || t("errors.save"));
+      setError(err.response?.data?.detail || t("producers.form.errors.save"));
     } finally {
       setSaving(false);
     }
@@ -289,9 +293,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </div>
       )}
 
-      <Section title={t("sections.basics")}>
+      <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("fields.name")}>
+          <Field label={t("producers.form.fields.name")}>
             <input
               required
               value={form.name}
@@ -299,84 +303,84 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={inputClass}
             />
           </Field>
-          <Field label={t("fields.contact_name")}>
+          <Field label={t("producers.form.fields.contact_name")}>
             <input
               value={form.contact_name}
               onChange={(e) => update("contact_name", e.target.value)}
               className={inputClass}
             />
           </Field>
-          <Field label={t("fields.phone")}>
+          <Field label={t("producers.form.fields.phone")}>
             <input
               value={form.phone}
               onChange={(e) => update("phone", e.target.value)}
               className={inputClass}
-              placeholder="050-1234567"
+              placeholder={t("producers.form.fields.phone_placeholder")}
             />
           </Field>
-          <Field label={t("fields.instagram")}>
+          <Field label={t("producers.form.fields.instagram")}>
             <input
               value={form.instagram}
               onChange={(e) => update("instagram", e.target.value)}
               className={inputClass}
-              placeholder="@username"
+              placeholder={t("producers.form.fields.instagram_placeholder")}
             />
           </Field>
-          <Field label={t("fields.website")}>
+          <Field label={t("producers.form.fields.website")}>
             <input
               value={form.website}
               onChange={(e) => update("website", e.target.value)}
               className={inputClass}
-              placeholder="https://..."
+              placeholder={t("producers.form.fields.website_placeholder")}
             />
           </Field>
-          <Field label={t("fields.whatsapp_group")}>
+          <Field label={t("producers.form.fields.whatsapp_group")}>
             <input
               value={form.whatsapp_group}
               onChange={(e) => update("whatsapp_group", e.target.value)}
               className={inputClass}
-              placeholder="https://chat.whatsapp.com/..."
+              placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
             />
           </Field>
           {/* MEH-17 — primary contact method + business email. */}
-          <Field label={t("fields.primary_contact_method")}>
+          <Field label={t("producers.form.fields.primary_contact")}>
             <select
               value={form.primary_contact_method}
               onChange={(e) => update("primary_contact_method", e.target.value)}
               className={inputClass}
             >
-              <option value="whatsapp">WhatsApp</option>
-              <option value="phone">{t("contact_methods.phone")}</option>
-              <option value="website">{t("contact_methods.website")}</option>
-              <option value="email">{t("contact_methods.email")}</option>
+              <option value="whatsapp">{t("producers.form.fields.primary_contact_whatsapp")}</option>
+              <option value="phone">{t("producers.form.fields.primary_contact_phone")}</option>
+              <option value="website">{t("producers.form.fields.primary_contact_website")}</option>
+              <option value="email">{t("producers.form.fields.primary_contact_email")}</option>
             </select>
           </Field>
-          <Field label={t("fields.contact_email")}>
+          <Field label={t("producers.form.fields.contact_email")}>
             <input
               type="email"
               value={form.contact_email}
               onChange={(e) => update("contact_email", e.target.value)}
               className={inputClass}
-              placeholder="business@example.com"
+              placeholder={t("producers.form.fields.contact_email_placeholder")}
               dir="ltr"
             />
           </Field>
-          <Field label={t("fields.city")}>
+          <Field label={t("producers.form.fields.city")}>
             <input
               value={form.city}
               onChange={(e) => update("city", e.target.value)}
               className={inputClass}
             />
           </Field>
-          <Field label="Slug (URL)">
+          <Field label={t("producers.form.fields.slug")}>
             <input
               value={form.slug}
               onChange={(e) => update("slug", e.target.value)}
               className={inputClass}
-              placeholder="auto-generated"
+              placeholder={t("producers.form.fields.slug_placeholder")}
             />
           </Field>
-          <Field label="Latitude">
+          <Field label={t("producers.form.fields.lat")}>
             <input
               type="number"
               step="any"
@@ -385,7 +389,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={inputClass}
             />
           </Field>
-          <Field label="Longitude">
+          <Field label={t("producers.form.fields.lng")}>
             <input
               type="number"
               step="any"
@@ -397,7 +401,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </div>
       </Section>
 
-      <Section title={t("sections.categories_tags")}>
+      <Section title={t("producers.form.sections.categories_tags")}>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
           {categories.map((c) => (
             <label
@@ -424,7 +428,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("organic_certified", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            <Leaf size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("tags.organic")}
+            <Leaf size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.organic_certified")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -433,7 +437,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("grass_fed", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            <Cow size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("tags.grass_fed")}
+            <Cow size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
           </label>
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -443,7 +447,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("is_verified", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            <Seal size={16} weight="fill" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("tags.verified")}
+            <Seal size={16} weight="fill" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.verified")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -452,17 +456,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("is_recommended", e.target.checked)}
               className="w-4 h-4 accent-accent"
             />
-            {t("tags.recommended")}
+            {t("producers.form.fields.recommended")}
           </label>
-          <Field label={t("fields.kosher")}>
+          <Field label={t("producers.form.fields.kosher")}>
             <select
               value={form.kosher}
               onChange={(e) => update("kosher", e.target.value)}
               className={inputClass}
             >
               {KOSHER_OPTIONS.map((k) => (
-                <option key={k.value} value={k.value}>
-                  {t(`kosher_options.${k.labelKey}`)}
+                <option key={k} value={k}>
+                  {kosherLabel(k)}
                 </option>
               ))}
             </select>
@@ -481,7 +485,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       {/* MEH-213 — location type */}
-      <Section title={t("sections.business_type")}>
+      <Section title={t("producers.form.sections.business_type")}>
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -490,7 +494,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("has_physical_location", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            {t("business_type.physical")}
+            {t("producers.form.fields.has_physical_location")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -499,10 +503,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("offers_delivery", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            {t("business_type.delivery")}
+            {t("producers.form.fields.offers_delivery")}
           </label>
           {!form.has_physical_location && !form.offers_delivery && (
-            <p className="text-xs text-red-600">{t("business_type.must_select_one")}</p>
+            <p className="text-xs text-red-600">{t("producers.form.fields.type_validation")}</p>
           )}
           {form.offers_delivery && (
             <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
@@ -516,17 +520,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   }}
                   className="w-4 h-4 accent-primary"
                 />
-                {t("business_type.nationwide")}
+                {t("producers.form.fields.delivery_nationwide")}
               </label>
               {!form.delivery_nationwide && (
                 <div>
-                  <span className="block text-sm text-text-secondary mb-1">{t("fields.delivery_cities")}</span>
+                  <span className="block text-sm text-text-secondary mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
                   <CitiesAutocomplete
                     value={form.delivery_cities}
                     onChange={(cities) => update("delivery_cities", cities)}
                   />
                   {form.delivery_cities.length === 0 && (
-                    <p className="text-xs text-red-600 mt-1">{t("business_type.must_select_city")}</p>
+                    <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
                   )}
                 </div>
               )}
@@ -535,7 +539,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         </div>
       </Section>
 
-      <Section title={t("sections.delivery")}>
+      <Section title={t("producers.form.sections.delivery_pickup")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -544,7 +548,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("has_delivery", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            {t("delivery.has_delivery")}
+            {t("producers.form.fields.has_delivery")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -553,55 +557,55 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("pickup_points", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            {t("delivery.pickup_points")}
+            {t("producers.form.fields.pickup_points")}
           </label>
-          <Field label={t("fields.delivery_area_cities")} full>
+          <Field label={t("producers.form.fields.delivery_area_cities")} full>
             <input
               value={form.delivery_area_cities}
               onChange={(e) => update("delivery_area_cities", e.target.value)}
               className={inputClass}
-              placeholder={t("placeholders.delivery_area_cities")}
+              placeholder={t("producers.form.fields.delivery_area_cities_placeholder")}
             />
           </Field>
         </div>
       </Section>
 
-      <Section title={t("sections.description_and_price")}>
+      <Section title={t("producers.form.sections.description_price")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("fields.short_description")} full>
+          <Field label={t("producers.form.fields.short_description")} full>
             <input
               value={form.short_description}
               onChange={(e) => update("short_description", e.target.value)}
               className={inputClass}
             />
           </Field>
-          <Field label={t("fields.description")} full>
+          <Field label={t("producers.form.fields.description_full")} full>
             <textarea
               value={form.description}
               onChange={(e) => update("description", e.target.value)}
               className={`${inputClass} h-28 resize-none`}
             />
           </Field>
-          <Field label={t("fields.top_product_name")}>
+          <Field label={t("producers.form.fields.top_product")}>
             <input
               value={form.top_product_name}
               onChange={(e) => update("top_product_name", e.target.value)}
               className={inputClass}
-              placeholder={t("placeholders.top_product_name")}
+              placeholder={t("producers.form.fields.top_product_placeholder")}
             />
           </Field>
-          <Field label={t("fields.price_range")}>
+          <Field label={t("producers.form.fields.price_range")}>
             <input
               value={form.price_range}
               onChange={(e) => update("price_range", e.target.value)}
               className={inputClass}
-              placeholder={t("placeholders.price_range")}
+              placeholder={t("producers.form.fields.price_range_placeholder")}
             />
           </Field>
         </div>
       </Section>
 
-      <Section title={t("sections.images")}>
+      <Section title={t("producers.form.sections.images")}>
         <input
           type="file"
           accept="image/*"
@@ -610,7 +614,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           disabled={uploading}
           className="text-sm"
         />
-        {uploading && <p className="text-sm text-text-secondary mt-2">{t("images.uploading")}</p>}
+        {uploading && <p className="text-sm text-text-secondary mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
@@ -634,25 +638,25 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         )}
       </Section>
 
-      <Section title={t("sections.hours")}>
-        <Field label={t("fields.hours_label")} full>
+      <Section title={t("producers.form.sections.hours")}>
+        <Field label={t("producers.form.fields.opening_hours_label")} full>
           <input
             value={form.opening_hours}
             onChange={(e) => update("opening_hours", e.target.value)}
             className={inputClass}
-            placeholder="Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+            placeholder={t("producers.form.fields.opening_hours_placeholder")}
             dir="ltr"
           />
         </Field>
       </Section>
 
-      <Section title={<>{t("sections.availability")} <InfoTooltip content={t("availability_tooltip.content")} label={t("availability_tooltip.label")} position="bottom" /></>}>
+      <Section title={<>{t("producers.form.sections.availability")} <InfoTooltip content={t("producers.form.sections.availability_tooltip")} label={t("producers.form.sections.availability_tooltip_label")} position="bottom" /></>}>
         <div className="flex flex-wrap gap-2 mb-3">
           {[
-            { value: "accepting_orders", labelKey: "accepting_orders" },
-            { value: "available_today",  labelKey: "available_today" },
-            { value: "full_this_week",   labelKey: "full_this_week" },
-            { value: "on_vacation",      labelKey: "on_vacation" },
+            { value: "accepting_orders", labelKey: "producers.form.fields.avail_accepting" },
+            { value: "available_today",  labelKey: "producers.form.fields.avail_today" },
+            { value: "full_this_week",   labelKey: "producers.form.fields.avail_full" },
+            { value: "on_vacation",      labelKey: "producers.form.fields.avail_vacation" },
           ].map(({ value, labelKey }) => (
             <button
               key={value}
@@ -664,12 +668,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   : "border-border text-site-text hover:border-primary"
               }`}
             >
-              {t(`availability_states.${labelKey}`)}
+              {t(labelKey)}
             </button>
           ))}
         </div>
         {form.availability_state === "on_vacation" && (
-          <Field label={t("fields.vacation_until")}>
+          <Field label={t("producers.form.fields.vacation_until")}>
             <input
               type="date"
               value={form.vacation_until}
@@ -682,7 +686,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         )}
       </Section>
 
-      <Section title={t("sections.internal_notes")}>
+      <Section title={t("producers.form.sections.admin_notes")}>
         <textarea
           value={form.admin_notes}
           onChange={(e) => update("admin_notes", e.target.value)}
@@ -700,14 +704,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           }
           className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
-          {saving ? t("submit.saving") : producerId ? t("submit.save_changes") : t("submit.create")}
+          {saving ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin?tab=producers")}
           className="bg-white border border-border px-8 py-3 rounded-[12px] hover:bg-background transition"
         >
-          {t("submit.cancel")}
+          {t("common.cancel")}
         </button>
       </div>
     </form>

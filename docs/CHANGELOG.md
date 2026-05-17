@@ -26,7 +26,32 @@
 
 Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: −213 strings, −3 files. CI: `npm run build` ✅ (101 pages), vitest net −9 failures vs staging (0 regressions). DoD exception: mobile QA on preview URL deferred to Smadar.
 
-### 2026-05-16 — MEH-475 PR-C1: i18n Wave 5 — recipes.* + group_buys.* (PR pending)
+### 2026-05-17 — MEH-475 PR-B: Admin panel i18n — full surface (supersedes PR-A1 namespace, PR pending)
+
+`i18n`: Full admin surface wired into next-intl `useTranslations("admin")` — all 22 admin files (21 under `frontend/app/[locale]/admin/**` + 1 under `frontend/components/admin/`) now resolve their UI strings from `admin.*` keys in `messages/he.json` / `messages/en.json`. 454 distinct keys added under `admin.*`, he/en parity verified (913 leaf keys per side, set-diff = ∅). Rebased onto staging after PR-A1 (#718) merged; PR-A1's 4 overlapping files were re-resolved to PR-B's namespace shape per the rebase contract.
+
+`scope`: Namespace mirrors directory: `admin.layout.*` (sidebar), `admin.dashboard.*` (home), `admin.producers.*` (list/form/toolbar/table/import/new/edit/use-hook), `admin.users/experiences/outreach/kashrut/reports/reviews/settings/help/content/category_requests/group_buys/analytics.*`, plus `admin.common.*` for shared verbs (loading, save, cancel, edit, view, etc.). Hebrew copy preserved verbatim; English translations idiomatic.
+
+`pattern`: `admin/help/page.jsx` uses `t.rich(key, { strong, code, em, placeholder })` for paragraphs with embedded `<strong>`/`<code>`/`<em>` markup. `admin/outreach/page.jsx` uses `t.raw()` for WhatsApp template bodies so `{name}` / `{prefillUrl}` placeholders survive untouched for downstream `replaceAll`. Module-scope label maps (STATUS_LABEL, WA_TEMPLATES) refactored to status-key arrays; labels resolved at render via `t(\`outreach.status.${s}\`)`.
+
+`residual`: 6 strings remain — all inside `KOSHER_OPTIONS` value-ID array in `ProducerForm.jsx` (deliberate; `kosherLabel()` helper resolves display). Pre-scan: 640 strings / 22 files → post-scan: 6 strings / 1 file (delta = −634, 99.06% extraction rate, well under the ≤50 residual budget).
+
+`verification`: `npm run build` green (101 static pages, both locales). `npm run lint` 0 errors. JSON parity check passes. No CSS classes touched, no metadata exports touched (Wave 6 territory), no non-admin files modified.
+
+`post-rebase fix`: Rebase against staging (after PR-A1 #718, PR #713 register-flow redo, and PR #719 passwordMessages i18n landed) resolved `messages/{he,en}.json` with `git checkout --theirs`, which silently dropped 104 Wave 4 `auth.*` keys (`auth.register.consumer.*` 29, `auth.register.producer.*` 68, `auth.passwordValidation.*` 4, `auth.toasts.*` 3). Surfaced by Playwright `11-password-policy.spec.ts` timing out on `getByLabel(/^שם מלא \*$/)` — `/register` rendered every label as the literal key path. Fixed via Path B rebuild: take staging baseline JSON, overlay PR-B's `admin.*` tree (`base['admin'] = pr_b['admin']`). Result: 1017 leaf keys per side, non-admin parity to staging (403=403), `auth.*` parity to staging (178=178), `admin.*` superseded (213 → 614). Playwright green; vitest 42/352 matches staging baseline.
+
+### 2026-05-16 — MEH-475 / PR-C2: i18n Wave 5 — events + experiences namespaces (**PR #714 MERGED**)
+
+`i18n`: wired `useTranslations()` into all events/** + experiences/** routes plus shared CalendarView and ExperienceCard components. Two new top-level namespaces added in parallel:
+
+- `events.*` — list/categories/experience_categories/detail/calendar (~75 keys; `events.calendar.events_count` is ICU plural `=0/one/two/other`; `events.calendar.days.*` for column headers, replacing `HEBREW_DAY_NAMES` const).
+- `experiences.*` — list/categories/detail/card/new (~100 keys; submit form, host card, detail status banners, ICU placeholders `{n}`, `{title}`, `{spots} / {max}`).
+
+Category arrays keep Hebrew API filter values (server enum) and look up display labels via `tCat(labelKey)`. Status banner object moved inside `ExperienceDetailClient` body so `t()` is in scope.
+
+Files touched (7): `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`, `ExperiencesClient.jsx`, `ExperienceCard.jsx`, `experiences/[id]/ExperienceDetailClient.jsx`, `experiences/new/NewExperienceClient.jsx`. JSON parity 439↔439. Build green, scanner residual 41 across in-scope paths — of which 27 are deliberate Hebrew API filter constants (wire format) and 14 are server-component metadata + Suspense fallbacks deferred to Wave 6. Runs in parallel with PR-C1 (`recipes.*` + `group_buys.*`); JSON merge expected as accept-both on different top-level keys.
+
+### 2026-05-16 — MEH-475 PR-C1: i18n Wave 5 — recipes.* + group_buys.* (**PR #715 MERGED**)
 
 `i18n`: Wired `useTranslations()` into 9 files / 136 strings across 2 namespaces. Recipes namespace (61 strings → 6 files): RecipeStatusBadge, RecipeCard, RecipeDetail, RecipeForm, producer/dashboard/recipes page + edit. Group-buys namespace (75 strings → 3 files): public list + detail clients + producer dashboard page. Internal refactor in `producer/dashboard/group-buys/page.js`: split `STATUS_LABELS` dict into `STATUS_CLS` (CSS-only) + `t("status.X")` lookup so no untranslated Hebrew labels remain in code constants.
 
@@ -37,17 +62,6 @@ Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: �
 `parity`: `frontend/messages/he.json` + `en.json` both at 445 keys, ICU plural parity clean. Residual scan returns 6 hits — all in deferred metadata files (under <20 acceptance threshold).
 
 `parallel coordination`: runs concurrent with PR-C2 (events + experiences). JSON merge expected on `messages/*.json` via accept-both (different top-level namespaces: recipes/group_buys here vs events/experiences there).
-
-### 2026-05-16 — MEH-475 / PR-C2: i18n Wave 5 — events + experiences namespaces (PR pending)
-
-`i18n`: wired `useTranslations()` into all events/** + experiences/** routes plus shared CalendarView and ExperienceCard components. Two new top-level namespaces added in parallel:
-
-- `events.*` — list/categories/experience_categories/detail/calendar (~75 keys; `events.calendar.events_count` is ICU plural `=0/one/two/other`; `events.calendar.days.*` for column headers, replacing `HEBREW_DAY_NAMES` const).
-- `experiences.*` — list/categories/detail/card/new (~100 keys; submit form, host card, detail status banners, ICU placeholders `{n}`, `{title}`, `{spots} / {max}`).
-
-Category arrays keep Hebrew API filter values (server enum) and look up display labels via `tCat(labelKey)`. Status banner object moved inside `ExperienceDetailClient` body so `t()` is in scope.
-
-Files touched (7): `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`, `ExperiencesClient.jsx`, `ExperienceCard.jsx`, `experiences/[id]/ExperienceDetailClient.jsx`, `experiences/new/NewExperienceClient.jsx`. JSON parity 439↔439. Build green, scanner residual 41 across in-scope paths — of which 27 are deliberate Hebrew API filter constants (wire format) and 14 are server-component metadata + Suspense fallbacks deferred to Wave 6. Runs in parallel with PR-C1 (`recipes.*` + `group_buys.*`); JSON merge expected as accept-both on different top-level keys.
 
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 

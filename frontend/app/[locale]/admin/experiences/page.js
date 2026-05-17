@@ -3,17 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { MapPin } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 
-const TABS = [
-  { value: "pending", label: "ממתינות" },
-  { value: "changes_requested", label: "שינויים נדרשים" },
-  { value: "approved", label: "מאושרות" },
-  { value: "rejected", label: "נדחו" },
-  { value: "all", label: "הכל" },
-];
+// Tab values map to admin.experiences.tabs.* keys; labels resolved in render
+const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -29,6 +25,7 @@ function formatDate(iso) {
 }
 
 export default function AdminExperiencesPage() {
+  const t = useTranslations("admin");
   const [tab, setTab] = useState("pending");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,10 +46,10 @@ export default function AdminExperiencesPage() {
         setError("");
       })
       .catch((e) =>
-        setError(e.response?.data?.detail || "שגיאה בטעינת החוויות")
+        setError(e.response?.data?.detail || t("experiences.error_loading"))
       )
       .finally(() => setLoading(false));
-  }, [tab]);
+  }, [tab, t]);
 
   useEffect(() => {
     load();
@@ -62,10 +59,10 @@ export default function AdminExperiencesPage() {
     setBusy(true);
     try {
       await api.post(`/admin/experiences/${ex.id}/approve`);
-      showToast("החוויה אושרה 🌿");
+      showToast(t("experiences.approve_toast"));
       load();
     } catch (e) {
-      alert(e.response?.data?.detail || "שגיאה באישור");
+      alert(e.response?.data?.detail || t("experiences.approve_error"));
     } finally {
       setBusy(false);
     }
@@ -86,7 +83,7 @@ export default function AdminExperiencesPage() {
   const submitModal = async () => {
     if (!modalEx || !modalAction) return;
     if (!feedback.trim()) {
-      alert("יש למלא הערה");
+      alert(t("experiences.validate_feedback"));
       return;
     }
     setBusy(true);
@@ -97,12 +94,12 @@ export default function AdminExperiencesPage() {
         feedback: feedback.trim(),
       });
       showToast(
-        modalAction === "changes" ? "נשלחה בקשה לשינויים" : "החוויה נדחתה"
+        modalAction === "changes" ? t("experiences.changes_toast") : t("experiences.reject_toast")
       );
       closeModal();
       load();
     } catch (e) {
-      alert(e.response?.data?.detail || "שגיאה בשליחה");
+      alert(e.response?.data?.detail || t("experiences.submit_error"));
     } finally {
       setBusy(false);
     }
@@ -113,10 +110,10 @@ export default function AdminExperiencesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-2xl font-bold text-site-text">
-            חוויות קהילתיות
+            {t("experiences.title")}
           </h1>
           <p className="text-site-muted text-sm mt-1">
-            מודרציה לחוויות שהגישו משתמשים
+            {t("experiences.subtitle")}
           </p>
         </div>
         <Link
@@ -124,23 +121,23 @@ export default function AdminExperiencesPage() {
           target="_blank"
           className="text-primary text-sm hover:underline"
         >
-          דף ציבורי →
+          {t("experiences.public_link")}
         </Link>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto">
-        {TABS.map((t) => (
+        {TAB_VALUES.map((value) => (
           <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
+            key={value}
+            onClick={() => setTab(value)}
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
-              tab === t.value
+              tab === value
                 ? "bg-primary text-white"
                 : "bg-white border border-border text-site-text hover:bg-light"
             }`}
           >
-            {t.label}
+            {t(`experiences.tabs.${value}`)}
           </button>
         ))}
       </div>
@@ -152,29 +149,29 @@ export default function AdminExperiencesPage() {
       )}
 
       {loading ? (
-        <p className="text-site-muted">טוענת...</p>
+        <p className="text-site-muted">{t("common.loading_f")}</p>
       ) : rows.length === 0 ? (
         <div className="bg-white border border-border rounded-[16px] p-8 text-center text-site-muted">
-          אין חוויות בסטטוס הזה 🌿
+          {t("experiences.empty")}
         </div>
       ) : (
         <div className="bg-white border border-border rounded-[16px] overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-light text-site-muted text-xs">
               <tr>
-                <th className="text-end p-3 font-medium">כותרת</th>
-                <th className="text-end p-3 font-medium">מארחת</th>
-                <th className="text-end p-3 font-medium">תאריך</th>
-                <th className="text-end p-3 font-medium">עיר</th>
+                <th className="text-end p-3 font-medium">{t("experiences.columns.title")}</th>
+                <th className="text-end p-3 font-medium">{t("experiences.columns.host")}</th>
+                <th className="text-end p-3 font-medium">{t("experiences.columns.date")}</th>
+                <th className="text-end p-3 font-medium">{t("experiences.columns.city")}</th>
                 <th className="text-end p-3 font-medium">
-                  Claude
+                  {t("experiences.columns.claude")}
                   <InfoTooltip
-                    content="Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך."
-                    label="מידע על מודרציית Claude"
+                    content={t("experiences.claude_tooltip")}
+                    label={t("experiences.claude_tooltip_label")}
                     position="bottom"
                   />
                 </th>
-                <th className="text-end p-3 font-medium">פעולות</th>
+                <th className="text-end p-3 font-medium">{t("experiences.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -183,6 +180,7 @@ export default function AdminExperiencesPage() {
                   key={ex.id}
                   ex={ex}
                   busy={busy}
+                  t={t}
                   onApprove={approve}
                   onChanges={(row) => openModal(row, "changes")}
                   onReject={(row) => openModal(row, "reject")}
@@ -198,13 +196,13 @@ export default function AdminExperiencesPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
             <h2 className="font-headline text-xl font-bold text-site-text mb-2">
-              {modalAction === "changes" ? "בקשי שינויים" : "דחי חוויה"}
+              {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
             <p className="text-site-muted text-sm mb-4">
               &quot;{modalEx.title}&quot; — {modalEx.host?.name}
             </p>
             <label className="block text-sm font-medium text-site-text mb-1">
-              {modalAction === "changes" ? "הערות לעריכה" : "סיבת הדחייה"}
+              {modalAction === "changes" ? t("experiences.modal.changes_label") : t("experiences.modal.reject_label")}
             </label>
             <textarea
               value={feedback}
@@ -213,8 +211,8 @@ export default function AdminExperiencesPage() {
               className="w-full border border-border rounded-[12px] px-3 py-2 text-sm bg-white"
               placeholder={
                 modalAction === "changes"
-                  ? "לדוגמה: התיאור קצר מדי, חסרה כתובת מדויקת..."
-                  : "לדוגמה: תוכן לא רלוונטי לפלטפורמה"
+                  ? t("experiences.modal.changes_placeholder")
+                  : t("experiences.modal.reject_placeholder")
               }
             />
             <div className="flex gap-2 justify-end mt-4">
@@ -223,7 +221,7 @@ export default function AdminExperiencesPage() {
                 disabled={busy}
                 className="px-4 py-2 rounded-[8px] border border-border text-site-text hover:bg-light"
               >
-                ביטול
+                {t("common.cancel")}
               </button>
               <button
                 onClick={submitModal}
@@ -234,7 +232,7 @@ export default function AdminExperiencesPage() {
                     : "bg-red-600 hover:bg-red-700"
                 } disabled:opacity-50`}
               >
-                {busy ? "שולחת..." : "אישור"}
+                {busy ? t("common.sending") : t("experiences.modal.submit")}
               </button>
             </div>
           </div>
@@ -244,7 +242,7 @@ export default function AdminExperiencesPage() {
   );
 }
 
-function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
+function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
   const [expanded, setExpanded] = useState(false);
   const modBadge =
     ex.moderation_status === "FLAGGED"
@@ -280,7 +278,7 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
                 disabled={busy}
                 className="bg-primary text-white px-3 py-1 rounded-full text-xs hover:bg-primary-light disabled:opacity-50"
               >
-                אשרי
+                {t("experiences.actions.approve")}
               </button>
             )}
             {ex.status !== "changes_requested" && (
@@ -289,7 +287,7 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
                 disabled={busy}
                 className="bg-accent text-white px-3 py-1 rounded-full text-xs hover:opacity-90 disabled:opacity-50"
               >
-                שינויים
+                {t("experiences.actions.changes")}
               </button>
             )}
             {ex.status !== "rejected" && (
@@ -298,7 +296,7 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
                 disabled={busy}
                 className="bg-red-600 text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 disabled:opacity-50"
               >
-                דחי
+                {t("experiences.actions.reject")}
               </button>
             )}
             <Link
@@ -306,7 +304,7 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
               target="_blank"
               className="text-primary text-xs px-2 py-1 hover:underline"
             >
-              צפי
+              {t("experiences.actions.view")}
             </Link>
           </div>
         </td>
@@ -326,19 +324,19 @@ function ExperienceRow({ ex, busy, onApprove, onChanges, onReject }) {
                 <p className="text-site-muted">
                   💰{" "}
                   {Number(ex.price_per_person) === 0
-                    ? "חינם"
-                    : `₪${ex.price_per_person} / אדם`}
+                    ? t("experiences.free")
+                    : t("experiences.price_per_person", { price: ex.price_per_person })}
                 </p>
               )}
               {ex.requirements && (
                 <p>
-                  <span className="font-medium">דרישות:</span> {ex.requirements}
+                  <span className="font-medium">{t("experiences.requirements_label")}</span> {ex.requirements}
                 </p>
               )}
               {ex.moderation_reason && (
                 <div className="mt-3 bg-white border border-border rounded-[12px] p-3">
                   <p className="font-medium text-xs mb-1">
-                    🤖 Claude Haiku pre-moderation
+                    {t("experiences.claude_preview")}
                   </p>
                   <p className="text-xs text-site-muted">
                     {ex.moderation_reason}

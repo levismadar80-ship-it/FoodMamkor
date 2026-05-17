@@ -18,6 +18,7 @@ import {
   Seal,
   Tag,
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
@@ -30,23 +31,24 @@ import api from "@/lib/api";
  * without changing the consumer aesthetic.
  */
 
-const NAV = [
-  { href: "/admin", label: "לוח מחוונים", Icon: Gauge },
-  { href: "/admin/producers", label: "בתי עסק", Icon: Storefront },
-  { href: "/admin/outreach", label: "גיוס", Icon: Megaphone },
-  { href: "/admin/experiences", label: "חוויות", Icon: Sparkle },
-  { href: "/admin/users", label: "משתמשים", Icon: Users },
-  { href: "/admin/content", label: "תוכן", Icon: Note },
-  { href: "/admin/reviews", label: "ביקורות", Icon: Star },
-  { href: "/admin/kashrut", label: "כשרות", Icon: Seal },
-  { href: "/admin/reports", label: "דיווחים", Icon: Warning },
-  { href: "/admin/category-requests", label: "בקשות קטגוריה", Icon: Tag },
-  { href: "/admin/analytics", label: "אנליטיקס", Icon: ChartLineUp },
-  { href: "/admin/settings", label: "הגדרות", Icon: GearSix },
-  { href: "/admin/help", label: "עזרה", Icon: Lifebuoy },
+const NAV_HREFS = [
+  { href: "/admin", key: "dashboard", Icon: Gauge },
+  { href: "/admin/producers", key: "producers", Icon: Storefront },
+  { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
+  { href: "/admin/experiences", key: "experiences", Icon: Sparkle },
+  { href: "/admin/users", key: "users", Icon: Users },
+  { href: "/admin/content", key: "content", Icon: Note },
+  { href: "/admin/reviews", key: "reviews", Icon: Star },
+  { href: "/admin/kashrut", key: "kashrut", Icon: Seal },
+  { href: "/admin/reports", key: "reports", Icon: Warning },
+  { href: "/admin/category-requests", key: "category_requests", Icon: Tag },
+  { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
+  { href: "/admin/settings", key: "settings", Icon: GearSix },
+  { href: "/admin/help", key: "help", Icon: Lifebuoy },
 ];
 
 export default function AdminLayout({ children }) {
+  const t = useTranslations("admin");
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -76,7 +78,7 @@ export default function AdminLayout({ children }) {
   if (loading || !user || user.role !== "admin") {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-site-muted">
-        טוענת...
+        {t("common.loading_f")}
       </div>
     );
   }
@@ -91,11 +93,11 @@ export default function AdminLayout({ children }) {
       {/* Dark-green sidebar — RTL, so it's on the right */}
       <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-light flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
-          <p className="font-headline text-xl text-white">מהמקור Admin</p>
+          <p className="font-headline text-xl text-white">{t("common.brand_admin")}</p>
           <p className="text-light/60 text-xs mt-1">{user.name}</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV.map((n) => {
+          {NAV_HREFS.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
             const showBadge =
@@ -114,12 +116,12 @@ export default function AdminLayout({ children }) {
                 aria-current={active ? "page" : undefined}
               >
                 <Icon size={18} weight={active ? "fill" : "duotone"} />
-                <span className="flex-1">{n.label}</span>
+                <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
                 {showBadge && (
                   <span
                     className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
-                    aria-label={`${badgeCount} פריטים לאישור`}
-                    title={`${badgeCount} פריטים ממתינים לאישור`}
+                    aria-label={t("common.items_pending_label", { count: badgeCount })}
+                    title={t("common.items_pending_title", { count: badgeCount })}
                   >
                     {badgeCount}
                   </span>
@@ -130,7 +132,7 @@ export default function AdminLayout({ children }) {
         </nav>
         <div className="px-5 py-4 border-t border-white/10 text-xs text-light/50">
           <Link href="/" className="hover:text-white transition">
-            ← חזרה לאתר
+            {t("common.back_home")}
           </Link>
         </div>
       </aside>
@@ -138,7 +140,7 @@ export default function AdminLayout({ children }) {
       {/* Mobile: horizontal scrollable nav */}
       <div className="md:hidden w-full bg-primary-dark sticky top-16 z-40 overflow-x-auto">
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
-          {NAV.map((n) => {
+          {NAV_HREFS.map((n) => {
             const active = isActive(n.href);
             const Icon = n.Icon;
             return (
@@ -150,7 +152,7 @@ export default function AdminLayout({ children }) {
                 }`}
               >
                 <Icon size={14} weight="duotone" />
-                {n.label}
+                {t(`layout.nav.${n.key}`)}
               </Link>
             );
           })}
