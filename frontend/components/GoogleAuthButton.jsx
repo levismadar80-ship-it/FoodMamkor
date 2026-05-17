@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 
 export default function GoogleAuthButton({ onSuccess, onError }) {
+  const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();
   const buttonRef = useRef(null);
   const clientId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -15,7 +17,7 @@ export default function GoogleAuthButton({ onSuccess, onError }) {
       await loginWithGoogle(response.credential);
       onSuccess?.();
     } catch (err) {
-      onError?.(err.response?.data?.detail || "שגיאה בהתחברות עם Google");
+      onError?.(err.response?.data?.detail || t("google_error"));
     }
   };
 

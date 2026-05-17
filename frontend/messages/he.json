@@ -70,6 +70,11 @@
       "sent": "✓ נשלח!",
       "rate_limited": "הגעת למגבלה — נסו שוב בעוד שעה"
     },
+    "toasts": {
+      "favoriteSaved": "נשמר למועדפים ❤️",
+      "sessionExpired": "פג תוקף ההתחברות — נא להתחבר מחדש",
+      "loginAgainCta": "התחברי"
+    },
     "passwordRecovery": {
       "forgot": {
         "title": "איפוס סיסמה",
