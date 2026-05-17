@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-05-17 — MEH-475 PR-A1: admin i18n top-4 files (PR pending)
+
+`i18n`: First implementation PR of Wave 5 (MEH-475). Wires `useTranslations()` into the 4 largest admin files: `admin/page.js` (dashboard, 41 strings), `admin/settings/page.js` (42), `components/admin/ProducerForm.jsx` (60+3 data residuals, refactored KOSHER_OPTIONS + availability states to `{value, labelKey}` shape), `admin/outreach/page.jsx` (70 — STATUS_LABEL + CALL_SCRIPT + WA_TEMPLATES constants deleted, resolved via `t()` at call sites). 213 strings → new `admin.*` namespace (admin.dashboard, admin.settings, admin.producer_form, admin.outreach) in `messages/he.json` + `messages/en.json` (515 keys each, full parity). ICU MessageFormat used for `{count}`/`{summary}`/`{total}`/`{name}` interpolations. English authored idiomatic (not literal); Hebrew preserved verbatim.
+
+`refactor`: Hardcoded display-only constants (`STATUS_LABEL`, `KOSHER_OPTIONS` labels, `WA_TEMPLATES`, `CALL_SCRIPT`) replaced with keyed lookups so the value/data axis (API contract) stays decoupled from the display/locale axis (translation).
+
+`test`: `AdminOutreach.test.jsx` + `AdminNullGuards.test.jsx` add `vi.mock("next-intl")` following the `ProducerCard.test.jsx` (MEH-471/473) pattern. AdminOutreach went from 9/9 failing post-wiring → 9/9 passing. NullGuards parse error in `admin/analytics/page.js:13` pre-existed PR-A1 and is unchanged (6 failures on both staging baseline and PR-A1 branch).
+
+`scope deferral`: `admin/help/page.jsx` (113 strings) deferred to PR-A1b/A2 — long-form rich-text docs with inline `<strong>`/`<code>`/`<em>` markup; codebase doesn't yet use `t.rich()` and introducing the pattern deserves its own architectural review. Per `over_engineering_guard` in the prompt, declined to introduce mid-PR. Remaining admin scope: 18 smaller files, 314 strings → PR-A2/A3. `ProducerForm` carries 3 residual Hebrew strings in `KOSHER_OPTIONS` value array (`"כשר"`, `"כשר למהדרין"`, `"לא כשר"`) — these are the persisted API values, not display strings (display resolves via `kosher_options.<labelKey>`).
+
+Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: −213 strings, −3 files. CI: `npm run build` ✅ (101 pages), vitest net −9 failures vs staging (0 regressions). DoD exception: mobile QA on preview URL deferred to Smadar.
+
 ### 2026-05-16 — MEH-475 PR-C1: i18n Wave 5 — recipes.* + group_buys.* (PR pending)
 
 `i18n`: Wired `useTranslations()` into 9 files / 136 strings across 2 namespaces. Recipes namespace (61 strings → 6 files): RecipeStatusBadge, RecipeCard, RecipeDetail, RecipeForm, producer/dashboard/recipes page + edit. Group-buys namespace (75 strings → 3 files): public list + detail clients + producer dashboard page. Internal refactor in `producer/dashboard/group-buys/page.js`: split `STATUS_LABELS` dict into `STATUS_CLS` (CSS-only) + `t("status.X")` lookup so no untranslated Hebrew labels remain in code constants.
