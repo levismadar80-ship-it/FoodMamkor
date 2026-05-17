@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-05-17 — MEH-627: Fix /register rate-limit doc drift (10/hour per MEH-417)
+
+`docs`: `.ai/diagrams/api-routes.md` RegConsumer node updated `3/hour → 10/hour` to match the actual `@limiter.limit("10/hour")` on `backend/app/routers/auth.py:248`. Drift introduced when MEH-417 (PR #423, commit `662ba8e`, April 2026) raised the cap but did not update the diagram. Added `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` HTML comment above the Mermaid block as grep anchor. Verified all other rate-limit annotations in the same diagram against backend code (whatsapp-click 10/min, login 5/min, newsletter 5/hour, contact 5/hour all match) — no additional drifts.
+
 ### 2026-05-17 — MEH-625: Delete RegisterResponse dead code (post-MEH-328)
 
 `cleanup`: Removed unused `RegisterResponse(Token)` Pydantic class from `backend/app/schemas/schemas.py` (4 lines). Class was deferred in MEH-328 Chunk A after the OWASP anti-enumeration refactor replaced its only caller (`/auth/register`) with `RegisterAck`. Phase 0 grep confirmed zero runtime callers prior to deletion. `RegisterAck`, `ProducerRegistrationResponse`, `GoogleAuthResponse`, `AppleAuthResponse`, and the parent `Token` class are untouched.
