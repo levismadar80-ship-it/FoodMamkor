@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Phone } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { getWhatsAppHref } from "@/lib/utils";
@@ -15,59 +16,26 @@ import { getWhatsAppHref } from "@/lib/utils";
  *      replied → registered (or declined).
  *   3. "הכן פרופיל" mints a single-use prefill token that pre-populates
  *      the /register/producer form — prospect's only friction is a password.
- *   4. Three WhatsApp templates per spec: חמותה / מקצועי / קצר.
+ *   4. Three WhatsApp templates per spec: warm / professional / short.
  *   5. Call-script modal shown before the admin picks up the phone.
- *   6. Top-of-page counters: פניתי / ענו / נרשמו.
+ *   6. Top-of-page counters: contacted / replied / registered.
  *
  * No Claude web search per plan Q1=b.
+ * MEH-475 (PR-A1): all display strings live under admin.outreach.* in
+ * messages/{he,en}.json; status labels resolved via t("statuses.<key>"),
+ * WA template bodies via t("templates.<key>.body").
  */
 
-const STATUS_LABEL = {
-  new: "חדש",
-  contacted: "פניתי",
-  replied: "ענו",
-  registered: "נרשמה",
-  declined: "סירבה",
-};
-
+// Status order is locale-independent; labels resolved via t("statuses.<key>").
 const STATUS_ORDER = ["new", "contacted", "replied", "registered", "declined"];
 
-// Spec asks for three WhatsApp templates. Each one has a title +
-// template body. Placeholders: {name}, {prefillUrl}. We do the
-// substitution client-side via replaceAll.
-const WA_TEMPLATES = [
-  {
-    key: "warm",
-    title: "חמותה",
-    body:
-      "היי {name} 🌿\n" +
-      "ראיתי אותך ואני ממש אוהבת מה שאת עושה. אני מהמקור — אתר שמחבר בין בעלות עסק קטנות לצרכניות שמחפשות אוכל אמיתי ומקומי.\n" +
-      "מוזמנת להצטרף אלינו בחינם — פשוט ללחוץ על הלינק והפרטים מחכים לך:\n{prefillUrl}",
-  },
-  {
-    key: "professional",
-    title: "מקצועי",
-    body:
-      "שלום {name}, אני יוצרת קשר מטעם מהמקור — פלטפורמת דירקטורי לבתי עסק מקומיים שמחפשים לקוחות קבועים.\n" +
-      "הכנו לך פרופיל מלא, נותר רק לאשר סיסמה:\n{prefillUrl}\n" +
-      "הרשמה חינמית, ללא התחייבות.",
-  },
-  {
-    key: "short",
-    title: "קצר",
-    body: "{name}, מצרפים אותך למהמקור 💚\n{prefillUrl}",
-  },
-];
-
-const CALL_SCRIPT = `1. פתיחה חמה: "היי, אני מדברת ממהמקור, זה שם טוב?"
-2. הסבר קצר: "אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל איכותי."
-3. הצעת ערך: "נרשמות בחינם, הפרופיל שלך יתפרסם, ואת מקבלת פניות ישירות מלקוחות דרך WhatsApp."
-4. שאלה פתוחה: "איך נשמע?"
-5. אם מתעניינת: "מעולה! אני שולחת לך קישור מוכן עם כל הפרטים שלך — פשוט מאשרת סיסמה."
-6. אם מסרבת: "אין בעיה, תודה על הזמן. אם תשני את דעתך, הכתובת שלנו mehamakor.online."
-7. בסוף: "יום מצוין, אצלך."`;
+// Spec asks for three WhatsApp templates. Bodies now live in
+// admin.outreach.templates.<key>.body with {name} + {prefillUrl}
+// placeholders; substitution happens client-side via replaceAll.
+const WA_TEMPLATE_KEYS = ["warm", "professional", "short"];
 
 export default function AdminOutreachPage() {
+  const t = useTranslations("admin.outreach");
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
@@ -106,10 +74,10 @@ export default function AdminOutreachPage() {
     await api
       .patch(`/admin/outreach/${id}`, { status })
       .then(() => {
-        showToast("הסטטוס עודכן");
+        showToast(t("toasts.status_updated"));
         load();
       })
-      .catch(() => showToast("לא הצלחנו לעדכן — נסי שוב", "error"));
+      .catch(() => showToast(t("toasts.status_update_failed"), "error"));
   };
 
   const handleMintToken = async (id) => {
@@ -120,20 +88,20 @@ export default function AdminOutreachPage() {
       // it into WhatsApp / the phone call.
       const url = `${window.location.origin}/register/producer?prefill=${r.data.prefill_token}`;
       await navigator.clipboard?.writeText?.(url).catch(() => {});
-      showToast("הלינק הועתק ללוח");
+      showToast(t("toasts.link_copied"));
     } catch {
-      showToast("לא הצלחנו להכין לינק — נסי שוב", "error");
+      showToast(t("toasts.link_copy_failed"), "error");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("למחוק את הליד הזה לצמיתות?")) return;
+    if (!window.confirm(t("toasts.delete_confirm"))) return;
     try {
       await api.delete(`/admin/outreach/${id}`);
-      showToast("הליד נמחק");
+      showToast(t("toasts.lead_deleted"));
       load();
     } catch {
-      showToast("לא הצלחנו למחוק — נסי שוב", "error");
+      showToast(t("toasts.delete_failed"), "error");
     }
   };
 
@@ -146,29 +114,29 @@ export default function AdminOutreachPage() {
     <div className="space-y-6">
       {/* Header + aggregate metrics */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">גיוס עסקים</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <button
           type="button"
           onClick={() => setScriptOpen(true)}
           className="text-sm text-primary hover:underline inline-flex items-center gap-1.5"
         >
           <Phone size={16} weight="duotone" aria-hidden="true" />
-          תסריט שיחה
+          {t("call_script_btn")}
         </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <MetricCard label="סה״כ" value={metrics.total} />
-        <MetricCard label="חדשים" value={metrics.new} />
-        <MetricCard label="פניתי" value={metrics.contacted} tone="accent" />
-        <MetricCard label="ענו" value={metrics.replied} tone="primary" />
-        <MetricCard label="נרשמו" value={metrics.registered} tone="success" />
+        <MetricCard label={t("metrics.total")} value={metrics.total} />
+        <MetricCard label={t("metrics.new")} value={metrics.new} />
+        <MetricCard label={t("metrics.contacted")} value={metrics.contacted} tone="accent" />
+        <MetricCard label={t("metrics.replied")} value={metrics.replied} tone="primary" />
+        <MetricCard label={t("metrics.registered")} value={metrics.registered} tone="success" />
       </div>
 
       {/* Filters + add */}
       <div className="flex flex-col md:flex-row gap-3">
         <input
-          placeholder="סננית לפי עיר..."
+          placeholder={t("filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
@@ -178,10 +146,10 @@ export default function AdminOutreachPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="border border-border rounded-[12px] px-3 py-2 bg-white"
         >
-          <option value="all">כל הסטטוסים</option>
+          <option value="all">{t("filters.status_all")}</option>
           {STATUS_ORDER.map((s) => (
             <option key={s} value={s}>
-              {STATUS_LABEL[s]}
+              {t(`statuses.${s}`)}
             </option>
           ))}
         </select>
@@ -190,7 +158,7 @@ export default function AdminOutreachPage() {
           onClick={() => setAddOpen(true)}
           className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-light transition"
         >
-          + ליד חדש
+          {t("add_lead_btn")}
         </button>
       </div>
 
@@ -200,27 +168,27 @@ export default function AdminOutreachPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">שם</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">עיר</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">קטגוריה</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">טלפון</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">אינסטגרם</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">סטטוס</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">פעולות</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_name")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_city")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_category")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_phone")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_instagram")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_status")}</th>
+                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("table.col_actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-text-secondary">
-                    טוענת לידים...
+                    {t("table.loading")}
                   </td>
                 </tr>
               )}
               {!loading && leads.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-text-secondary">
-                    אין לידים להצגה. לחצי על &quot;+ ליד חדש&quot; כדי להתחיל.
+                    {t("table.empty")}
                   </td>
                 </tr>
               )}
@@ -262,7 +230,7 @@ export default function AdminOutreachPage() {
                       >
                         {STATUS_ORDER.map((s) => (
                           <option key={s} value={s}>
-                            {STATUS_LABEL[s]}
+                            {t(`statuses.${s}`)}
                           </option>
                         ))}
                       </select>
@@ -273,9 +241,9 @@ export default function AdminOutreachPage() {
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
                           className="text-xs px-2 py-1 rounded bg-primary text-white hover:bg-primary-light"
-                          title="מכין פרופיל ומעתיק לינק"
+                          title={t("table.prep_profile_title")}
                         >
-                          הכן פרופיל
+                          {t("table.prep_profile")}
                         </button>
                         {lead.phone && (
                           <button
@@ -291,7 +259,7 @@ export default function AdminOutreachPage() {
                           onClick={() => handleDelete(lead.id)}
                           className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
                         >
-                          מחקי
+                          {t("table.delete_btn")}
                         </button>
                       </div>
                     </td>
@@ -311,9 +279,7 @@ export default function AdminOutreachPage() {
           }}
         />
       )}
-      {scriptOpen && (
-        <ScriptModal onClose={() => setScriptOpen(false)} script={CALL_SCRIPT} />
-      )}
+      {scriptOpen && <ScriptModal onClose={() => setScriptOpen(false)} />}
       {activeWaLead && (
         <WhatsAppModal
           lead={activeWaLead}
@@ -343,6 +309,7 @@ function MetricCard({ label, value, tone }) {
 }
 
 function AddLeadModal({ onClose, onCreated }) {
+  const t = useTranslations("admin.outreach");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -360,20 +327,20 @@ function AddLeadModal({ onClose, onCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      setError("שם הוא שדה חובה");
+      setError(t("add_modal.name_required"));
       return;
     }
     setSaving(true);
     try {
       await api.post("/admin/outreach", form);
-      showToast("ליד נוסף");
+      showToast(t("toasts.lead_added"));
       onCreated();
     } catch (err) {
       const detail = err?.response?.data?.detail;
       if (detail?.error === "duplicate_lead") {
-        setError(detail.message || "ליד דומה כבר קיים");
+        setError(detail.message || t("add_modal.duplicate"));
       } else {
-        setError(typeof detail === "string" ? detail : "משהו השתבש");
+        setError(typeof detail === "string" ? detail : t("add_modal.generic_error"));
       }
     } finally {
       setSaving(false);
@@ -392,9 +359,9 @@ function AddLeadModal({ onClose, onCreated }) {
         onSubmit={handleSubmit}
         className="bg-white rounded-[16px] p-6 max-w-md w-full space-y-3"
       >
-        <h2 className="font-headline text-xl font-bold">ליד חדש</h2>
+        <h2 className="font-headline text-xl font-bold">{t("add_modal.title")}</h2>
         <input
-          placeholder="שם העסק *"
+          placeholder={t("add_modal.placeholders.name")}
           value={form.name}
           onChange={set("name")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
@@ -402,41 +369,41 @@ function AddLeadModal({ onClose, onCreated }) {
         />
         <div className="grid grid-cols-2 gap-2">
           <input
-            placeholder="עיר"
+            placeholder={t("add_modal.placeholders.city")}
             value={form.city}
             onChange={set("city")}
             className="border border-border rounded-[12px] px-3 py-2"
           />
           <input
-            placeholder="קטגוריה"
+            placeholder={t("add_modal.placeholders.category")}
             value={form.category}
             onChange={set("category")}
             className="border border-border rounded-[12px] px-3 py-2"
           />
         </div>
         <input
-          placeholder="טלפון"
+          placeholder={t("add_modal.placeholders.phone")}
           value={form.phone}
           onChange={set("phone")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <input
-          placeholder="אינסטגרם (שם משתמשת, בלי @)"
+          placeholder={t("add_modal.placeholders.instagram")}
           value={form.instagram}
           onChange={set("instagram")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <input
-          placeholder="אתר (אופציונלי)"
+          placeholder={t("add_modal.placeholders.website")}
           value={form.website}
           onChange={set("website")}
           className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <textarea
-          placeholder="הערות פנימיות"
+          placeholder={t("add_modal.placeholders.notes")}
           value={form.notes}
           onChange={set("notes")}
           rows={2}
@@ -449,14 +416,14 @@ function AddLeadModal({ onClose, onCreated }) {
             onClick={onClose}
             className="flex-1 border border-border rounded-[12px] py-2 text-sm hover:bg-light"
           >
-            ביטול
+            {t("add_modal.cancel")}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="flex-1 bg-primary text-white rounded-[12px] py-2 text-sm font-medium disabled:opacity-60"
           >
-            {saving ? "שומרת..." : "הוסיפי"}
+            {saving ? t("add_modal.saving") : t("add_modal.submit")}
           </button>
         </div>
       </form>
@@ -464,7 +431,8 @@ function AddLeadModal({ onClose, onCreated }) {
   );
 }
 
-function ScriptModal({ onClose, script }) {
+function ScriptModal({ onClose }) {
+  const t = useTranslations("admin.outreach.script_modal");
   return (
     <div
       className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
@@ -478,17 +446,17 @@ function ScriptModal({ onClose, script }) {
       >
         <h2 className="font-headline text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
-          תסריט שיחה
+          {t("title")}
         </h2>
         <pre className="whitespace-pre-wrap text-sm text-site-text font-body leading-relaxed">
-          {script}
+          {t("body")}
         </pre>
         <button
           type="button"
           onClick={onClose}
           className="mt-4 w-full bg-primary text-white rounded-[12px] py-2 text-sm font-medium"
         >
-          סגור
+          {t("close")}
         </button>
       </div>
     </div>
@@ -496,6 +464,7 @@ function ScriptModal({ onClose, script }) {
 }
 
 function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
+  const t = useTranslations("admin.outreach");
   const [tokenBusy, setTokenBusy] = useState(false);
 
   const ensureToken = async () => {
@@ -510,28 +479,29 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
     }
   };
 
-  const openTemplate = async (tpl) => {
-    const fresh = await ensureToken();
-    const url = `${window.location.origin}/register/producer?prefill=${fresh.prefill_token}`;
-    const body = tpl.body
+  const renderTemplate = (key, fresh, url) =>
+    t(`templates.${key}.body`)
       .replaceAll("{name}", fresh.name)
       .replaceAll("{prefillUrl}", url);
+
+  const openTemplate = async (key) => {
+    const fresh = await ensureToken();
+    const url = `${window.location.origin}/register/producer?prefill=${fresh.prefill_token}`;
+    const body = renderTemplate(key, fresh, url);
     const phone = (fresh.phone || "").replace(/\D/g, "").replace(/^0/, "972");
     window.open(getWhatsAppHref(phone, body), "_blank", "noopener,noreferrer");
     onClose();
   };
 
-  const copyTemplate = async (tpl) => {
+  const copyTemplate = async (key) => {
     const fresh = await ensureToken();
     const url = `${window.location.origin}/register/producer?prefill=${fresh.prefill_token}`;
-    const body = tpl.body
-      .replaceAll("{name}", fresh.name)
-      .replaceAll("{prefillUrl}", url);
+    const body = renderTemplate(key, fresh, url);
     try {
       await navigator.clipboard.writeText(body);
-      showToast("הטקסט הועתק");
+      showToast(t("toasts.text_copied"));
     } catch {
-      showToast("לא הצלחנו להעתיק — העתיקי ידנית", "error");
+      showToast(t("toasts.copy_failed"), "error");
     }
   };
 
@@ -547,37 +517,37 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         className="bg-white rounded-[16px] p-6 max-w-lg w-full space-y-4"
       >
         <h2 className="font-headline text-xl font-bold">
-          הודעת WhatsApp אל {lead.name}
+          {t("whatsapp_modal.title", { name: lead.name })}
         </h2>
         {tokenBusy && (
-          <p className="text-sm text-site-muted">מכינה לינק פרופיל...</p>
+          <p className="text-sm text-site-muted">{t("whatsapp_modal.preparing_link")}</p>
         )}
-        {WA_TEMPLATES.map((tpl) => (
+        {WA_TEMPLATE_KEYS.map((key) => (
           <div
-            key={tpl.key}
+            key={key}
             className="border border-border rounded-[12px] p-3"
           >
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold">{tpl.title}</h3>
+              <h3 className="font-semibold">{t(`templates.${key}.title`)}</h3>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => copyTemplate(tpl)}
+                  onClick={() => copyTemplate(key)}
                   className="text-xs px-2 py-1 rounded border border-border hover:bg-light"
                 >
-                  העתק
+                  {t("whatsapp_modal.copy_btn")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => openTemplate(tpl)}
+                  onClick={() => openTemplate(key)}
                   className="btn-whatsapp text-xs px-2 py-1 rounded"
                 >
-                  פתח ב-WhatsApp
+                  {t("whatsapp_modal.open_btn")}
                 </button>
               </div>
             </div>
             <p className="text-sm text-site-text whitespace-pre-wrap leading-relaxed">
-              {tpl.body}
+              {t(`templates.${key}.body`)}
             </p>
           </div>
         ))}
@@ -586,7 +556,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
           onClick={onClose}
           className="w-full border border-border rounded-[12px] py-2 text-sm hover:bg-light"
         >
-          סגור
+          {t("whatsapp_modal.close")}
         </button>
       </div>
     </div>

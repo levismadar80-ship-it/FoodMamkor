@@ -12,34 +12,36 @@ import {
   Users,
   Warning,
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { getProducerStatusLabel } from "@/lib/producer-status";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminDashboard() {
+  const t = useTranslations("admin.dashboard");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     api.get("/admin/dashboard")
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.response?.data?.detail || "שגיאה בטעינת המידע"));
-  }, []);
+      .catch((e) => setError(e.response?.data?.detail || t("load_error")));
+  }, [t]);
 
   if (error) {
     return <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">{error}</div>;
   }
   if (!data) {
-    return <div className="text-text-secondary">טוען...</div>;
+    return <div className="text-text-secondary">{t("loading")}</div>;
   }
 
   const s = data.stats;
   const cards = [
-    { label: "סה״כ בתי עסק",      value: s.total_producers,     Icon: Storefront, href: "/admin/producers" },
-    { label: "ממתינים לאישור",   value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
-    { label: "משתמשים רשומים",   value: s.total_users,         Icon: Users, href: "/admin/users" },
-    { label: "מוצרים ביתיים",     value: s.total_home_products, Icon: CookingPot, href: "/admin/content" },
-    { label: "קבוצות רכש",       value: "›",                   Icon: Package, href: "/admin/group-buys" },
+    { key: "total_producers",   label: t("cards.total_producers"),   value: s.total_producers,     Icon: Storefront,      href: "/admin/producers" },
+    { key: "pending_producers", label: t("cards.pending_producers"), value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
+    { key: "total_users",       label: t("cards.total_users"),       value: s.total_users,         Icon: Users,           href: "/admin/users" },
+    { key: "home_products",     label: t("cards.home_products"),     value: s.total_home_products, Icon: CookingPot,      href: "/admin/content" },
+    { key: "group_buys",        label: t("cards.group_buys"),        value: "›",                   Icon: Package,         href: "/admin/group-buys" },
   ];
 
   // Simple inline SVG line chart for monthly producers
@@ -59,15 +61,15 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">לוח מחוונים</h1>
-        <p className="text-text-secondary text-sm mt-1">סקירה כללית של הפלטפורמה</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-text-secondary text-sm mt-1">{t("subtitle")}</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((c) => (
           <Link
-            key={c.label}
+            key={c.key}
             href={c.href}
             className={`bg-white border rounded-[12px] p-4 hover:shadow-sm transition ${
               c.warn ? "border-yellow-300 bg-yellow-50" : "border-border"
@@ -79,15 +81,15 @@ export default function AdminDashboard() {
             </div>
             <p className="text-xs text-text-secondary mt-2">
               {c.label}
-              {c.label === "קבוצות רכש" && (
+              {c.key === "group_buys" && (
                 <span
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <InfoTooltip
-                    content="ניהול קבוצות רכש של משתמשות. לא פעיל כרגע."
-                    label="מידע על קבוצות רכש"
+                    content={t("group_buys_tooltip")}
+                    label={t("group_buys_tooltip_label")}
                     position="bottom"
                   />
                 </span>
@@ -107,8 +109,8 @@ export default function AdminDashboard() {
             >
               <HourglassSimple size={28} weight="duotone" aria-hidden="true" className="text-yellow-600" />
               <div>
-                <p className="font-medium text-sm">{s.pending_producers} בתי עסק ממתינים לאישור</p>
-                <p className="text-xs text-text-secondary">לחץ לטיפול</p>
+                <p className="font-medium text-sm">{t("alerts.pending_producers", { count: s.pending_producers })}</p>
+                <p className="text-xs text-text-secondary">{t("alerts.pending_action")}</p>
               </div>
             </Link>
           )}
@@ -119,8 +121,8 @@ export default function AdminDashboard() {
             >
               <Warning size={28} weight="fill" aria-hidden="true" className="text-red-500" />
               <div>
-                <p className="font-medium text-sm">{s.open_reports} דיווחים פתוחים</p>
-                <p className="text-xs text-text-secondary">דורש בדיקה</p>
+                <p className="font-medium text-sm">{t("alerts.open_reports", { count: s.open_reports })}</p>
+                <p className="text-xs text-text-secondary">{t("alerts.open_reports_action")}</p>
               </div>
             </Link>
           )}
@@ -131,8 +133,8 @@ export default function AdminDashboard() {
             >
               <Package size={28} weight="duotone" aria-hidden="true" className="text-orange-500" />
               <div>
-                <p className="font-medium text-sm">{s.hidden_home_products} מוצרים ביתיים מוסתרים</p>
-                <p className="text-xs text-text-secondary">לבדיקה</p>
+                <p className="font-medium text-sm">{t("alerts.hidden_products", { count: s.hidden_home_products })}</p>
+                <p className="text-xs text-text-secondary">{t("alerts.hidden_products_action")}</p>
               </div>
             </Link>
           )}
@@ -142,7 +144,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Mini chart */}
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">בתי עסק חדשים — 6 חודשים אחרונים</h2>
+          <h2 className="font-semibold mb-3">{t("monthly_chart_title")}</h2>
           <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-32">
             <polyline
               fill="none"
@@ -168,13 +170,13 @@ export default function AdminDashboard() {
         {/* Pending preview */}
         <div className="bg-white border border-border rounded-[12px] p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">בקשות ממתינות</h2>
+            <h2 className="font-semibold">{t("pending_panel.title")}</h2>
             <Link href="/admin/producers?status=pending" className="text-primary text-xs hover:underline">
-              צפה בכל →
+              {t("pending_panel.view_all")}
             </Link>
           </div>
           {(data.pending_producers || []).length === 0 ? (
-            <p className="text-sm text-text-secondary">אין בקשות ממתינות</p>
+            <p className="text-sm text-text-secondary">{t("pending_panel.empty")}</p>
           ) : (
             <ul className="space-y-2">
               {(data.pending_producers || []).map((p) => (
@@ -187,7 +189,7 @@ export default function AdminDashboard() {
                     href={`/admin/producers/${p.id}/edit`}
                     className="text-xs text-primary hover:underline"
                   >
-                    בדוק
+                    {t("pending_panel.review")}
                   </Link>
                 </li>
               ))}
@@ -198,16 +200,16 @@ export default function AdminDashboard() {
 
       {/* Activity feed */}
       <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-3">פעילות אחרונה</h2>
+        <h2 className="font-semibold mb-3">{t("activity.title")}</h2>
         {(data.recent_activity || []).length === 0 && (
-          <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
+          <p className="text-sm text-text-secondary">{t("activity.empty")}</p>
         )}
         <ul className="space-y-2">
           {(data.recent_activity || []).map((a) => (
             <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
               <div className="flex items-center gap-2">
                 <span>🆕</span>
-                <span>נוסף בית עסק:</span>
+                <span>{t("activity.added_producer")}</span>
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}
                 </Link>
@@ -226,25 +228,25 @@ export default function AdminDashboard() {
       {/* Secondary stats row — weekly deltas + events + experiences */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <DeltaCard
-          label="משתמשים חדשים השבוע"
+          label={t("secondary.new_users_week")}
           value={s.new_users_this_week || 0}
           total={s.total_users || 0}
           Icon={Users}
         />
         <DeltaCard
-          label="עסקים חדשים השבוע"
+          label={t("secondary.new_producers_week")}
           value={s.new_producers_this_week || 0}
           total={s.total_producers || 0}
           Icon={Storefront}
         />
         <SimpleStat
-          label="אירועים"
+          label={t("secondary.events")}
           value={s.total_events || 0}
           Icon={CalendarBlank}
           href="/admin/content"
         />
         <SimpleStat
-          label="חוויות"
+          label={t("secondary.experiences")}
           value={s.total_experiences || 0}
           Icon={Sparkle}
           href="/admin/experiences"
@@ -254,11 +256,11 @@ export default function AdminDashboard() {
       {/* DAU + top cities */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">משתמשים פעילים — 30 ימים אחרונים</h2>
+          <h2 className="font-semibold mb-3">{t("dau_title")}</h2>
           <DauLineChart data={data.daily_active_users || []} />
         </div>
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">ערים מובילות</h2>
+          <h2 className="font-semibold mb-3">{t("top_cities_title")}</h2>
           <TopCitiesList data={data.top_cities || []} />
         </div>
       </div>
@@ -270,6 +272,7 @@ export default function AdminDashboard() {
 }
 
 function DeltaCard({ label, value, total, Icon }) {
+  const t = useTranslations("admin.dashboard");
   return (
     <div className="bg-white border border-border rounded-[12px] p-4">
       <div className="flex items-start justify-between mb-1">
@@ -277,7 +280,7 @@ function DeltaCard({ label, value, total, Icon }) {
         <span className="text-3xl font-bold text-primary">+{value}</span>
       </div>
       <p className="text-xs text-text-secondary">{label}</p>
-      <p className="text-xs text-text-secondary">מתוך {total} סה״כ</p>
+      <p className="text-xs text-text-secondary">{t("delta_of_total", { total })}</p>
     </div>
   );
 }
@@ -303,8 +306,9 @@ function SimpleStat({ label, value, Icon, href }) {
  * library, zero new dependencies.
  */
 function DauLineChart({ data }) {
+  const t = useTranslations("admin.dashboard");
   if (!data || data.length === 0) {
-    return <p className="text-sm text-text-secondary">אין נתונים עדיין</p>;
+    return <p className="text-sm text-text-secondary">{t("dau_empty")}</p>;
   }
   const W = 320;
   const H = 110;
@@ -321,7 +325,7 @@ function DauLineChart({ data }) {
   const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-36" role="img" aria-label="DAU 30 days">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-36" role="img" aria-label={t("dau_aria_label")}>
       <polyline fill="none" stroke="#2e6853" strokeWidth="2" points={points} />
       {data.map((d, i) => {
         const x = pad + i * stepX;
@@ -342,10 +346,11 @@ function DauLineChart({ data }) {
 }
 
 function TopCitiesList({ data }) {
+  const t = useTranslations("admin.dashboard");
   if (!data || data.length === 0) {
     return (
       <p className="text-sm text-text-secondary">
-        עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר.
+        {t("top_cities_empty")}
       </p>
     );
   }
@@ -371,26 +376,27 @@ function TopCitiesList({ data }) {
 }
 
 function ServerHealthPanel({ health }) {
+  const t = useTranslations("admin.dashboard");
   if (!health) return null;
   const empty = (health.sample_count || 0) === 0;
   return (
     <div className="bg-white border border-border rounded-[12px] p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold">בריאות שרת — שעה אחרונה</h2>
+        <h2 className="font-semibold">{t("server_health.title")}</h2>
         <span className="text-xs text-text-secondary">
-          {empty ? "מחכה לתנועה..." : `${health.sample_count} בקשות`}
+          {empty ? t("server_health.waiting") : t("server_health.samples", { count: health.sample_count })}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs text-text-secondary mb-1">זמן תגובה ממוצע</p>
+          <p className="text-xs text-text-secondary mb-1">{t("server_health.response_time")}</p>
           <p className="text-2xl font-bold text-primary">
             {health.response_time_avg_ms}
             <span className="text-sm text-text-secondary ms-1">ms</span>
           </p>
         </div>
         <div>
-          <p className="text-xs text-text-secondary mb-1">בקשות לדקה</p>
+          <p className="text-xs text-text-secondary mb-1">{t("server_health.requests_per_minute")}</p>
           <p className="text-2xl font-bold text-primary">
             {health.requests_per_minute}
             <span className="text-sm text-text-secondary ms-1">req/min</span>
@@ -398,7 +404,7 @@ function ServerHealthPanel({ health }) {
         </div>
       </div>
       <p className="text-[13px] text-text-secondary mt-3 leading-snug">
-        ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md).
+        {t("server_health.data_note")}
       </p>
     </div>
   );
