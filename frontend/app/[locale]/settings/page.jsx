@@ -19,6 +19,7 @@ import {
   X,
   Camera,
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
@@ -371,6 +372,8 @@ function SecurityTab() {
 }
 
 function PasswordChangeCard({ isOAuth }) {
+  // MEH-628: scoped translator for password-policy failure copy.
+  const tValidation = useTranslations("auth.passwordValidation");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -414,7 +417,7 @@ function PasswordChangeCard({ isOAuth }) {
         // Reuse (same_as_current) only fires from this endpoint (server has
         // current_hash); PasswordInput shows a "נבדק בשרת" pending tile
         // pre-submit so the user knows the check happens here.
-        setError(firstFailureMessage(detail.failures));
+        setError(firstFailureMessage(detail.failures, tValidation));
       } else if (typeof detail === "string") {
         setError(detail);
       } else {

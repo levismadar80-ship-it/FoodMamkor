@@ -75,6 +75,12 @@
       "sessionExpired": "Your session expired — please sign in again",
       "loginAgainCta": "Sign in"
     },
+    "passwordValidation": {
+      "too_short": "Your password must contain at least {min} characters",
+      "too_common": "This password was leaked online — please choose another",
+      "same_as_current": "Your new password is the same as the previous one — please choose a different one",
+      "fallback": "Your password doesn't meet the requirements, try something longer and more unique"
+    },
     "passwordRecovery": {
       "forgot": {
         "title": "Reset password",

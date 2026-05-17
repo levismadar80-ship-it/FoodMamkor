@@ -21,6 +21,8 @@ export default function ResetPasswordPage() {
 
 function ResetPasswordForm() {
   const t = useTranslations();
+  // MEH-628: scoped translator for password-policy failure copy.
+  const tValidation = useTranslations("auth.passwordValidation");
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") || "";
@@ -85,7 +87,7 @@ function ResetPasswordForm() {
         // MEH-306: backend ships {failures: ["too_short"|"too_common"|"same_as_current"]}.
         // same_as_current can only fire here (server-only check via current_hash) —
         // PasswordInput's checklist shows a "נבדק בשרת" pending tile pre-submit.
-        setError(firstFailureMessage(detail.failures));
+        setError(firstFailureMessage(detail.failures, tValidation));
       } else {
         setError(t("auth.passwordRecovery.reset.errors.generic"));
       }

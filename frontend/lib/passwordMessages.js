@@ -1,42 +1,61 @@
 /**
- * Hebrew failure-string lookup for the MEH-306 password policy.
+ * Failure-key → translation lookup for the MEH-306 password policy.
+ *
+ * Pure, locale-agnostic helpers. Callers pass a translator function `t`
+ * scoped to the `auth.passwordValidation` namespace (e.g. from
+ * `useTranslations("auth.passwordValidation")`); strings live in
+ * `frontend/messages/{he,en}.json` so /en users see English copy on
+ * 422 validation failures.
  *
  * Keys mirror the backend's `PolicyFailure` literals from
  * backend/app/services/password_policy.py:32:
  *   "too_short" | "too_common" | "same_as_current"
  *
- * The `fallback` entry covers any future failure key the backend adds
- * before this lookup is updated — forward-compat against silent UX
- * regression.
+ * Unknown / future keys fall back to the `fallback` message — forward-
+ * compat against silent UX regression if the backend ships a new code
+ * before this lookup is updated.
  *
- * Tone: feminine (per CLAUDE.md voice rules) and specific (per MEH-306
- * forbidden-list — no generic "סיסמה לא חוקית").
+ * MEH-628: lib was previously hardcoded Hebrew. Migrated to `t()`
+ * injection so the lib stays pure and locale-agnostic.
  */
 
 import { PASSWORD_MIN_LENGTH } from "./validators";
 
-export const PASSWORD_FAILURE_MESSAGES = {
-  too_short: `סיסמתך חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`,
-  too_common: "הסיסמה הזו דלפה ברשת — בחרי סיסמה אחרת",
-  same_as_current: "הסיסמה החדשה זהה לקודמת — בחרי סיסמה שונה",
-  fallback: "הסיסמה לא עומדת בדרישות, נסי משהו ארוך וייחודי יותר",
-};
+const KNOWN_KEYS = ["too_short", "too_common", "same_as_current"];
+
+function requireTranslator(t) {
+  if (typeof t !== "function") {
+    throw new Error(
+      "passwordMessages: caller must pass a translator function `t` scoped to auth.passwordValidation",
+    );
+  }
+}
 
 /**
- * Map a failure key to its Hebrew message. Unknown keys → fallback.
+ * Map a failure key to its translated message. Unknown keys → fallback.
+ * `too_short` is rendered with the PASSWORD_MIN_LENGTH ICU param so
+ * callers don't need to know the policy minimum.
  */
-export function failureMessage(key) {
-  return PASSWORD_FAILURE_MESSAGES[key] ?? PASSWORD_FAILURE_MESSAGES.fallback;
+export function failureMessage(key, t) {
+  requireTranslator(t);
+  if (key === "too_short") {
+    return t("too_short", { min: PASSWORD_MIN_LENGTH });
+  }
+  if (KNOWN_KEYS.includes(key)) {
+    return t(key);
+  }
+  return t("fallback");
 }
 
 /**
  * Map a backend 422 detail.failures array to the FIRST renderable
- * Hebrew message. Used by /reset-password and /settings catch blocks
- * to surface the most-relevant failure when multiple fire.
+ * message. Used by /reset-password, /register, and /settings catch
+ * blocks to surface the most-relevant failure when multiple fire.
  */
-export function firstFailureMessage(failures) {
+export function firstFailureMessage(failures, t) {
+  requireTranslator(t);
   if (!Array.isArray(failures) || failures.length === 0) {
-    return PASSWORD_FAILURE_MESSAGES.fallback;
+    return t("fallback");
   }
-  return failureMessage(failures[0]);
+  return failureMessage(failures[0], t);
 }

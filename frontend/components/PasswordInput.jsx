@@ -40,6 +40,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
@@ -60,6 +61,8 @@ export default function PasswordInput({
   autoComplete = "new-password",
   onValidityChange,
 }) {
+  // MEH-628: scoped translator for password-policy failure copy.
+  const tValidation = useTranslations("auth.passwordValidation");
   const [show, setShow] = useState(false);
   const [apiFailures, setApiFailures] = useState([]);
   const [isChecking, setIsChecking] = useState(false);
@@ -174,7 +177,7 @@ export default function PasswordInput({
           >
             <span aria-hidden="true">{tooShort ? "○" : "✓"}</span>
             {tooShort
-              ? failureMessage("too_short")
+              ? failureMessage("too_short", tValidation)
               : `לפחות ${PASSWORD_MIN_LENGTH} תווים`}
           </li>
           <li
@@ -192,7 +195,7 @@ export default function PasswordInput({
             {breachPending
               ? "בודק..."
               : apiFailures.includes("too_common")
-                ? failureMessage("too_common")
+                ? failureMessage("too_common", tValidation)
                 : "לא דלפה ברשת"}
           </li>
           {showCurrentPasswordReuse && (

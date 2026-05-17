@@ -17,6 +17,8 @@ import { env } from "@/lib/env";
 
 export default function RegisterPage() {
   const t = useTranslations();
+  // MEH-628: scoped translator for password-policy failure copy.
+  const tValidation = useTranslations("auth.passwordValidation");
   const { register } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({ email: "", name: "", password: "" });
@@ -98,7 +100,7 @@ export default function RegisterPage() {
       ) {
         // MEH-306: backend returns {failures: ["too_short"|"too_common"|...]}
         // on policy rejection. Map the first to the matching Hebrew string.
-        setError(firstFailureMessage(detail.failures));
+        setError(firstFailureMessage(detail.failures, tValidation));
       } else {
         setError(typeof detail === "string" ? detail : t("auth.register.consumer.errors.generic"));
       }
