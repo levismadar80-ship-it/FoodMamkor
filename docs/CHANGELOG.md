@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-05-17 — MEH-625: Delete RegisterResponse dead code (post-MEH-328)
+
+`cleanup`: Removed unused `RegisterResponse(Token)` Pydantic class from `backend/app/schemas/schemas.py` (4 lines). Class was deferred in MEH-328 Chunk A after the OWASP anti-enumeration refactor replaced its only caller (`/auth/register`) with `RegisterAck`. Phase 0 grep confirmed zero runtime callers prior to deletion. `RegisterAck`, `ProducerRegistrationResponse`, `GoogleAuthResponse`, `AppleAuthResponse`, and the parent `Token` class are untouched. Note: stale comment block (`# Kept for sibling endpoints; do not delete in this chunk.`) now incorrectly attached to `GoogleAuthResponse` — left in place per strict scope; pruning is a follow-up.
+
 ### 2026-05-17 — MEH-475 PR-A1: admin i18n top-4 files (PR pending)
 
 `i18n`: First implementation PR of Wave 5 (MEH-475). Wires `useTranslations()` into the 4 largest admin files: `admin/page.js` (dashboard, 41 strings), `admin/settings/page.js` (42), `components/admin/ProducerForm.jsx` (60+3 data residuals, refactored KOSHER_OPTIONS + availability states to `{value, labelKey}` shape), `admin/outreach/page.jsx` (70 — STATUS_LABEL + CALL_SCRIPT + WA_TEMPLATES constants deleted, resolved via `t()` at call sites). 213 strings → new `admin.*` namespace (admin.dashboard, admin.settings, admin.producer_form, admin.outreach) in `messages/he.json` + `messages/en.json` (515 keys each, full parity). ICU MessageFormat used for `{count}`/`{summary}`/`{total}`/`{name}` interpolations. English authored idiomatic (not literal); Hebrew preserved verbatim.

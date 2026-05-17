@@ -142,10 +142,6 @@ class RegisterAck(BaseModel):
 # False = missing config; frontend can show a diagnostic banner.
 # MEH-328: no longer returned by /auth/register (replaced by RegisterAck).
 # Kept for sibling endpoints; do not delete in this chunk.
-class RegisterResponse(Token):
-    email_sent: bool
-
-
 class GoogleAuthResponse(Token):
     email_sent: bool
 
