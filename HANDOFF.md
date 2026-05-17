@@ -1,6 +1,7 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
+> Last updated: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
 > Last updated: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
 > Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
@@ -16,6 +17,29 @@
 > Previously: 2026-05-16 (MEH-604 — HomepageMiniMap above the fold + perf defer; **PR #686 MERGED** at `cd51905`)
 > Previously: 2026-05-16 (MEH-599 — `/terms` brand-LOCK sweep; **PR #685 MERGED** at `e5aaacb`)
 
+### MEH-475 / PR-C2 — i18n Wave 5 events + experiences (PR pending, off `staging@d261eaf`)
+
+Branch: `feature/meh-475-pr-c2-events-experiences`. Off `d261eaf` (staging post-MEH-474 Wave 4 chunk 4). LOW-RISK per MEH-450 — mechanical extraction, no central components touched.
+
+**Scope.** 7 files / ~180 user-facing strings wired under two new top-level namespaces:
+- `events.*` — `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`
+- `experiences.*` — `ExperiencesClient.jsx`, `[id]/ExperienceDetailClient.jsx`, `new/NewExperienceClient.jsx`, `ExperienceCard.jsx`
+
+**Out of scope (deferred):**
+- server-component `page.js` metadata + Suspense fallbacks (Wave 6 owns `generateMetadata` + static `metadata`).
+- Hebrew API filter enum values in `CATEGORY_KEYS` (wire format — backend expects Hebrew; only `labelKey` localized via `t()`).
+- `Breadcrumb`, `CitySearch` — global components shared across many pages including PR-C1's group-buys; not in events/experiences-only scope.
+
+**Parallel coordination with PR-C1 (recipes/group_buys).** Both PRs modify `frontend/messages/he.json` + `en.json`. Different top-level namespaces (events/experiences vs recipes/group_buys) → trivial merge conflict expected at JSON-line level, resolve via accept-both.
+
+**Deliverables:**
+- 2 commits: `a30f4ce` (events.* namespace) + `44e5f9f` (experiences.* namespace)
+- JSON parity: 439 ↔ 439 keys (he/en)
+- Build: green (`next build` 101 static pages, 12.3s compile)
+- Vitest: 12 pre-existing failures (Header/BottomNav/Admin/ProducerCard) — same on baseline `git stash`; not caused by this branch
+- Scanner residual on in-scope paths: 41 strings — 27 are deliberate Hebrew enum constants + 14 are Wave-6 metadata. User-facing residual: ~0.
+- ICU plural: `events.calendar.events_count` (`=0/one/two/other`)
+- ICU placeholders: `experiences.detail.spots_count` (`{spots} / {max}`), `experiences.detail.whatsapp_message` (`{title}`), `events.detail.participants_limit` (`{n}`), `experiences.card.spots_left` (`{n}`)
 ### MEH-475 PR-C1 — i18n Wave 5 — recipes.* + group_buys.* (PR #715 pending, off `staging@7417b68`)
 
 Branch: `claude/i18n-recipes-group-buys-1JuoO`. Off `7417b68` (staging post-PR-#711 Wave 5 inventory). LOW-RISK per MEH-450 — mechanical i18n extraction, no auth/schema/central-component changes.
