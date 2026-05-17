@@ -7,7 +7,6 @@ import { showToast } from "@/lib/toast";
 
 export default function AdminCategoryRequestsPage() {
   const t = useTranslations("admin");
-  const tCommon = useTranslations("common");
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -55,7 +54,7 @@ export default function AdminCategoryRequestsPage() {
     }
   };
 
-  if (loading) return <div className="text-site-muted">{tCommon("loading_f")}</div>;
+  if (loading) return <div className="text-site-muted">{t("common.loading_f")}</div>;
 
   return (
     <div className="space-y-6" dir="rtl">

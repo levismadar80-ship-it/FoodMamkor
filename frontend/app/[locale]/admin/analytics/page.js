@@ -7,13 +7,12 @@ import api from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
   const t = useTranslations("admin");
-  const tCommon = useTranslations("common");
   const [data, setData] = useState(null);
   useEffect(() => {
     api.get("/admin/analytics").then((r) => setData(r.data)).catch(() => {});
   }, []);
 
-  if (!data) return <div className="text-text-secondary">{tCommon("loading")}</div>;
+  if (!data) return <div className="text-text-secondary">{t("common.loading")}</div>;
 
   // Two stacked line series for monthly chart
   const months = data.monthly || [];
