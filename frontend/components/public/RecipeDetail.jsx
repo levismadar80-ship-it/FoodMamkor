@@ -19,6 +19,7 @@
  */
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 function splitLines(text) {
   if (!text) return [];
@@ -29,6 +30,7 @@ function splitLines(text) {
 }
 
 export default function RecipeDetail({ recipe, producer, relatedProducts }) {
+  const t = useTranslations("recipes.detail");
   const ingredients = splitLines(recipe.ingredients);
   const steps = splitLines(recipe.instructions);
   const totalMin =
@@ -39,7 +41,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Breadcrumb */}
       <nav
         className="text-sm text-site-muted mb-6"
-        aria-label="ניווט קבצי שורש"
+        aria-label={t("breadcrumb_aria")}
       >
         <Link href={`/${producer.slug}`} className="hover:underline">
           {producer.name}
@@ -51,7 +53,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           href={`/${producer.slug}#recipes`}
           className="hover:underline"
         >
-          מתכונים
+          {t("breadcrumb_recipes")}
         </Link>
         <span className="mx-2" aria-hidden="true">
           {">"}
@@ -83,19 +85,19 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-site-muted mb-6 border-y border-border py-3">
           {recipe.prep_time_min ? (
             <span>
-              <strong className="text-site-text">זמן הכנה:</strong>{" "}
-              {recipe.prep_time_min} דק
+              <strong className="text-site-text">{t("prep_time_label")}</strong>{" "}
+              {recipe.prep_time_min} {t("minutes_unit")}
             </span>
           ) : null}
           {recipe.cook_time_min ? (
             <span>
-              <strong className="text-site-text">זמן בישול:</strong>{" "}
-              {recipe.cook_time_min} דק
+              <strong className="text-site-text">{t("cook_time_label")}</strong>{" "}
+              {recipe.cook_time_min} {t("minutes_unit")}
             </span>
           ) : null}
           {recipe.servings ? (
             <span>
-              <strong className="text-site-text">מנות:</strong>{" "}
+              <strong className="text-site-text">{t("servings_label")}</strong>{" "}
               {recipe.servings}
             </span>
           ) : null}
@@ -113,7 +115,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {ingredients.length > 0 && (
         <section className="mb-8">
           <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
-            רכיבים
+            {t("ingredients_heading")}
           </h2>
           <ul className="list-disc ps-6 space-y-1 text-site-text/90">
             {ingredients.map((line, i) => (
@@ -127,7 +129,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {steps.length > 0 && (
         <section className="mb-8">
           <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
-            הוראות הכנה
+            {t("instructions_heading")}
           </h2>
           <ol className="list-decimal ps-6 space-y-2 text-site-text/90">
             {steps.map((step, i) => (
@@ -143,7 +145,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {relatedProducts && relatedProducts.length > 0 && (
         <section className="mb-8">
           <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
-            המוצרים שלנו במתכון
+            {t("related_products_heading")}
           </h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {relatedProducts.map((p) => (
@@ -186,7 +188,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         href={`/${producer.slug}`}
         className="text-sm text-primary hover:underline"
       >
-        ← חזרה לדף בית העסק
+        {t("back_to_producer")}
       </Link>
     </article>
   );

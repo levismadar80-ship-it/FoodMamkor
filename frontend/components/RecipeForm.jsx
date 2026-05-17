@@ -23,6 +23,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
@@ -48,6 +49,7 @@ function toInt(v) {
 }
 
 export default function RecipeForm({ mode = "create", initial, onSaved, onCancel }) {
+  const t = useTranslations("recipes.form");
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -96,7 +98,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      showToast(err.response?.data?.detail || "שגיאה בהעלאת תמונה", "error");
+      showToast(err.response?.data?.detail || t("errors.upload_image_failed"), "error");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -123,16 +125,16 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         mode === "edit" && initial?.id
           ? await api.patch(`/producers/me/recipes/${initial.id}`, payload)
           : await api.post("/producers/me/recipes", payload);
-      showToast(mode === "edit" ? "המתכון עודכן" : "המתכון נשלח לאישור 🌿");
+      showToast(mode === "edit" ? t("toast_updated") : t("toast_created"));
       onSaved?.(res.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (detail?.error === "recipe_rejected") {
-        setError(detail.reason || "התוכן אינו עומד בקריטריונים שלנו");
+        setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
         setError(detail);
       } else {
-        setError("משהו השתבש, נסי שוב");
+        setError(t("errors.generic"));
       }
     } finally {
       setSubmitting(false);
@@ -145,12 +147,12 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       className="space-y-4 bg-white rounded-[16px] border border-border p-6"
     >
       <h2 className="font-headline text-lg font-bold text-site-text">
-        {mode === "edit" ? "עריכת מתכון" : "פרסום מתכון חדש"}
+        {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
 
       <div>
         <label className="block text-sm font-medium mb-1">
-          שם המתכון <span className="text-red-500">*</span>
+          {t("title_label")} <span className="text-red-500">*</span>
         </label>
         <input
           required
@@ -164,7 +166,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">תיאור קצר</label>
+        <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
         <textarea
           rows={2}
           value={form.description}
@@ -176,7 +178,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       <div>
         <label className="block text-sm font-medium mb-1">
-          רכיבים <span className="text-red-500">*</span>
+          {t("ingredients_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
           required
@@ -185,14 +187,14 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           value={form.ingredients}
           onChange={set("ingredients")}
           className={`${baseInput} resize-y`}
-          placeholder={"500 גרם קמח\n10 גרם מלח\n350 מל מים"}
+          placeholder={t("ingredients_placeholder")}
           dir="rtl"
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium mb-1">
-          הוראות הכנה <span className="text-red-500">*</span>
+          {t("instructions_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
           required
@@ -201,14 +203,14 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           value={form.instructions}
           onChange={set("instructions")}
           className={`${baseInput} resize-y`}
-          placeholder="ערבבי את הקמח עם המלח..."
+          placeholder={t("instructions_placeholder")}
           dir="rtl"
         />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1">זמן הכנה (דק)</label>
+          <label className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
           <input
             type="number"
             min={0}
@@ -220,7 +222,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">זמן בישול (דק)</label>
+          <label className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
           <input
             type="number"
             min={0}
@@ -232,7 +234,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">מספר מנות</label>
+          <label className="block text-sm font-medium mb-1">{t("servings_label")}</label>
           <input
             type="number"
             min={1}
@@ -246,7 +248,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">תמונה</label>
+        <label className="block text-sm font-medium mb-1">{t("image_label")}</label>
         {form.image_url ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -260,7 +262,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
               onClick={() => setForm({ ...form, image_url: "" })}
               className="text-sm text-red-600 hover:underline"
             >
-              הסירי תמונה
+              {t("image_remove")}
             </button>
           </div>
         ) : (
@@ -272,23 +274,23 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
               disabled={uploading}
               onChange={handleImageUpload}
             />
-            {uploading ? "מעלה..." : "העלאת תמונה"}
+            {uploading ? t("image_uploading") : t("image_upload")}
           </label>
         )}
       </div>
 
       <div>
         <label className="block text-sm font-medium mb-1">
-          מוצרים קשורים
+          {t("related_products_label")}
           <span className="ms-2 text-xs text-site-muted">
-            (מתכון מקדם מוצרים שלך)
+            {t("related_products_hint")}
           </span>
         </label>
         {productsLoading ? (
-          <p className="text-sm text-site-muted">טוענת מוצרים...</p>
+          <p className="text-sm text-site-muted">{t("products_loading")}</p>
         ) : products.length === 0 ? (
           <p className="text-sm text-site-muted">
-            עדיין אין מוצרים בעסק שלך. אפשר לפרסם את המתכון בלי קישור.
+            {t("no_products")}
           </p>
         ) : (
           <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-light">
@@ -321,7 +323,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           disabled={submitting || uploading}
           className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
-          {submitting ? "שומרת..." : "שמירת מתכון"}
+          {submitting ? t("submit_saving") : t("submit")}
         </button>
         {onCancel && (
           <button
@@ -329,7 +331,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             onClick={onCancel}
             className="text-site-muted hover:text-site-text"
           >
-            ביטול
+            {t("cancel")}
           </button>
         )}
       </div>

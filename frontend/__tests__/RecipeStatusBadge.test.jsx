@@ -1,5 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+// MEH-475 PR-C1: mock next-intl per Wave 3 precedent (ProducerCard.test.jsx).
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = {
+      pending: "ממתין לאישור",
+      approved: "אושר ופורסם",
+      rejected: "נדחה",
+      needs_revision: "צריך תיקון",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
 
 describe("RecipeStatusBadge", () => {

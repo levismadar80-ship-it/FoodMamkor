@@ -16,6 +16,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -24,6 +25,7 @@ import RecipeForm from "@/components/RecipeForm";
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
 
 export default function ProducerRecipesPage() {
+  const t = useTranslations("recipes.dashboard");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState(null);
@@ -49,13 +51,13 @@ export default function ProducerRecipesPage() {
   };
 
   const handleDelete = async (recipeId) => {
-    if (!window.confirm("למחוק את המתכון?")) return;
+    if (!window.confirm(t("delete_confirm"))) return;
     try {
       await api.delete(`/producers/me/recipes/${recipeId}`);
-      showToast("המתכון נמחק");
+      showToast(t("toast_deleted"));
       load();
     } catch (err) {
-      showToast(err.response?.data?.detail || "שגיאה במחיקה", "error");
+      showToast(err.response?.data?.detail || t("toast_delete_error"), "error");
     }
   };
 
@@ -69,17 +71,17 @@ export default function ProducerRecipesPage() {
             href="/producer/dashboard"
             className="text-sm text-primary hover:underline"
           >
-            ← לוח הבקרה
+            {t("back")}
           </Link>
           <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
-            המתכונים שלי
+            {t("heading")}
           </h1>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
         >
-          {showForm ? "סגרי" : "+ פרסום מתכון חדש"}
+          {showForm ? t("btn_close_form") : t("btn_open_form")}
         </button>
       </div>
 
@@ -97,13 +99,13 @@ export default function ProducerRecipesPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-site-muted">טוענת...</div>
+        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
           emoji="🍞"
-          title="עדיין לא פרסמת מתכונים"
-          description="מתכון מקדם את המוצרים שלך — שתפי איך הלקוחות שלך משתמשות בהם בבית."
-          ctaLabel="+ פרסום מתכון חדש"
+          title={t("empty_title")}
+          description={t("empty_description")}
+          ctaLabel={t("empty_cta")}
           ctaOnClick={() => setShowForm(true)}
         />
       ) : (
@@ -129,32 +131,32 @@ export default function ProducerRecipesPage() {
 
               {r.moderation_status === "needs_revision" && r.moderation_notes && (
                 <div className="rounded-[10px] p-3 text-sm mb-3 bg-orange-50 border border-orange-200 text-orange-800">
-                  <strong>הערת מנהלת:</strong> {r.moderation_notes}
+                  <strong>{t("notes_needs_revision")}</strong> {r.moderation_notes}
                 </div>
               )}
               {r.moderation_status === "rejected" && r.moderation_notes && (
                 <div className="rounded-[10px] p-3 text-sm mb-3 bg-red-50 border border-red-200 text-red-800">
-                  <strong>סיבת דחייה:</strong> {r.moderation_notes}
+                  <strong>{t("notes_rejected")}</strong> {r.moderation_notes}
                 </div>
               )}
 
               <div className="flex items-center gap-4 text-xs text-site-muted">
                 <span>
-                  {r.published ? "פורסם באתר" : "טרם פורסם"}
+                  {r.published ? t("published") : t("not_published")}
                 </span>
                 <span>·</span>
                 <Link
                   href={`/producer/dashboard/recipes/${r.id}/edit`}
                   className="text-primary hover:underline"
                 >
-                  עריכה
+                  {t("edit")}
                 </Link>
                 <span>·</span>
                 <button
                   onClick={() => handleDelete(r.id)}
                   className="text-red-600 hover:underline"
                 >
-                  מחיקה
+                  {t("delete")}
                 </button>
               </div>
             </div>

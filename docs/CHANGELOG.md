@@ -16,6 +16,18 @@
 
 Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: −213 strings, −3 files. CI: `npm run build` ✅ (101 pages), vitest net −9 failures vs staging (0 regressions). DoD exception: mobile QA on preview URL deferred to Smadar.
 
+### 2026-05-16 — MEH-475 PR-C1: i18n Wave 5 — recipes.* + group_buys.* (PR pending)
+
+`i18n`: Wired `useTranslations()` into 9 files / 136 strings across 2 namespaces. Recipes namespace (61 strings → 6 files): RecipeStatusBadge, RecipeCard, RecipeDetail, RecipeForm, producer/dashboard/recipes page + edit. Group-buys namespace (75 strings → 3 files): public list + detail clients + producer dashboard page. Internal refactor in `producer/dashboard/group-buys/page.js`: split `STATUS_LABELS` dict into `STATUS_CLS` (CSS-only) + `t("status.X")` lookup so no untranslated Hebrew labels remain in code constants.
+
+`scope`: skipped 3 Wave 6-deferred files (`group-buys/page.js` static metadata, `group-buys/[id]/page.js` server passthrough, `[slug]/recipes/[recipe_id]/page.jsx` generateMetadata). Pattern matches MEH-473 deferral of `map/page.js` metadata.
+
+`tests`: added `vi.mock("next-intl", ...)` to `__tests__/RecipeCard.test.jsx` + `__tests__/RecipeStatusBadge.test.jsx` per MEH-473 ProducerCard.test.jsx precedent. Pre-existing `RecipeJsonLd.test.jsx` failures (unrelated to this PR — confirmed against staging baseline) remain.
+
+`parity`: `frontend/messages/he.json` + `en.json` both at 445 keys, ICU plural parity clean. Residual scan returns 6 hits — all in deferred metadata files (under <20 acceptance threshold).
+
+`parallel coordination`: runs concurrent with PR-C2 (events + experiences). JSON merge expected on `messages/*.json` via accept-both (different top-level namespaces: recipes/group_buys here vs events/experiences there).
+
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 
 `security`: OWASP-strict anti-enumeration applied to both register endpoints. Both now return an identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` regardless of whether the email is new, belongs to an existing password user, or belongs to an existing OAuth user. Timing equalised by reordering — `validate_password` (HIBP) + `hash_password` (bcrypt) run before the existence check on both branches, so response time doesn't fork. Side-effect symmetry preserved on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea rows + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved inside the new-email branch only (no orphan rows or spurious admin notifications on collisions). A new `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate account owner out-of-band — two body variants (`password` / `google` / `apple`), identical Subject line so 3rd-party Subject-scanners can't distinguish provider.
