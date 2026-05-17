@@ -1,8 +1,9 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
-> Last updated: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
+> Last updated: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; PR pending; LOW-RISK cleanup; 4-line class deletion + CHANGELOG/HANDOFF; ruff clean; pytest sandbox-blocked by missing local Postgres)
+> Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
+> Previously: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
 > Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
@@ -332,7 +333,7 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 ### Follow-up tickets (for Smadar to file)
 
 1. **Per-email rate-limit key on `/register` + `/register/producer`** — `backend/app/routers/auth.py:249, 352`. Current decorators are per-IP only (10/hour on register, 3/hour on register/producer). MEH-191 `/forgot-password` reference uses an additional `@limiter.limit("5/15 minutes", key_func=email_from_body)`. Without it, a botnet rotating IPs can spray one victim email at 10 attempts/IP/hour. `email_from_body` is already imported (`auth.py:65`). Estimated 30 min.
-2. **`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup ticket.
+2. ~~**`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup ticket.~~ **DONE (MEH-625, PR #721).**
 3. **`/login` timing equalisation** — `backend/app/routers/auth.py:818-830`. Wrong-password runs `verify_password` (bcrypt ~100ms); wrong-email skips it. Same threat model as MEH-328 on a sibling endpoint. Fix shape: bcrypt against a fixed sentinel hash on the no-user branch.
 4. **`.ai/diagrams/api-routes.md` rate-limit drift** — pre-existing, surfaced during Chunk F. Diagram shows `/auth/register` rate as `3/hour` but the actual limit has been `10/hour` since MEH-417 (PR #423, commit `662ba8e`, April 2026). Not silently fixed inside Chunk F to keep scope clean — file as a tiny doc-sync ticket.
 
