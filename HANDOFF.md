@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
+> Last updated: 2026-05-17 (Routine C — Weekly Summary; draft PR opened; CHANGELOG + HANDOFF only)
+> Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
 > Previously: 2026-05-16 (MEH-623 — i18n-scanner `--diff` + `--self-test` flags; **PR #699 MERGED** at `89e436e`)
@@ -519,21 +520,29 @@ During Phase 0 grep sweep, 6 additional LOCK leak surfaces discovered beyond `/n
 **Mid-work sync (Rule 25):** Branched off `0f19a08` (post-PR #681). PR #682 (MEH-605/606/609 copy bundle) merged into staging at `3cb6503` while this work was in flight. Resolved via `git merge origin/staging` — clean auto-merge on all i18n + docs (PR #682 only touched `home.cta.body` / `home.categories.subheading` / `home.how_it_works.step03_text` — orthogonal to this PR's removed keys `nav.neighbor` + `nav.footer.neighbor_kitchen` + `home.kitchen.*`). Append-only conflict on `HANDOFF.md` resolved per resolve-conflicts skill (Accept-Both).
 ---
 
-## 🎯 Next sprint (recommended)
+## 🗓️ מצב עכשווי — שבוע של 2026-05-17
 
-The discovery-layer redesign epic (MEH-592) is closed. **Launch-blocker progress: 2 of 3 shipped** (MEH-605 + MEH-606 + MEH-609 via PR #682 on 2026-05-16). **Fast-follow progress: 1 shipped** (MEH-608 via PR #683 on 2026-05-16). Remaining work in priority order:
+> סיכום שבועי — Routine C (MEH-183). ספיר — אשרי ומזגי אם מדויק.
 
-- **MEH-604** — Move `<HomepageMiniMap>` above-the-fold + performance plan (last launch-blocker)
-- **MEH-607** — Counter + skeleton bundle (fast-follow, week 1-2) — Linear says `Backlog`; confirm status before starting (Sapir may have done it in a parallel session)
-- **MEH-616** — Reconcile ESLint pre-commit hook with MEH-443 warnings-as-feedback policy (P3 Medium, opened as a follow-up from MEH-608 — see "Post-launch tech debt" below)
+### 🟢 מה נשלח השבוע (Current state)
 
-**Recommended next session: MEH-604** — closes the launch-blocker batch. See synthesis Section 5.1 for the performance plan (skeleton + 200ms post-FCP defer via `requestIdleCallback` + tile-server preconnect).
+- **אפיק עיצוב מחדש (MEH-592) נסגר** — מפת המפיקות מעל הקפל (MEH-604), copy reframes בדף הבית (MEH-605/606/609), כותרת Hero חדשה (MEH-620), מונה stats מחודש עם skeleton (MEH-607). כל 3 launch-blockers נשלחו.
+- **אפיק Onboarding v2 (MEH-528) נסגר** — שדה רישיון (MEH-530), תג רישיון (MEH-531), description prominence (MEH-532), 4 מיילים ליווי + 3 מדריכות (MEH-539/MEH-615). תהליך ההצטרפות מלא מקצה לקצה.
+- **i18n גלים 2–5** — Header/Footer/Hero (MEH-472), כרטיסיות מפיקה ומפה (MEH-473, PR pending), אימות זהות (MEH-474), זנב ארוך + ממשק שפה (MEH-475). כ-2,000 מחרוזות.
+- **ניקוי Brand LOCK** — /neighbor הוסתרה (MEH-598), /terms + /privacy + meta נוקו מ"יצרני" ו"מהמטבח של השכן" (MEH-599), ESLint + ruff baseline נוקו (MEH-448).
+- **אבטחה: OWASP anti-enumeration ב-/register** (MEH-328, PR #696 ממתין) — תגובה גנרית + timing equalization + מחיקת `/email-exists` oracle.
 
-**Synthesis pointer:** [`docs/synthesis/2026-05-discovery-redesign-synthesis.md`](docs/synthesis/2026-05-discovery-redesign-synthesis.md) (14 findings, priority matrix, Hebrew copy options).
+### 🔮 בפתח (On the horizon)
 
-**Mockups:** [`docs/synthesis/mockups/`](docs/synthesis/mockups/) — F1-map-above-fold.txt for the MEH-604 layout.
+- **MEH-593** (Todo, High) — Mobile QA לפיצ'ר המתכונים — dashboard + public pages; ממתינה לבדיקה ידנית על Vercel preview
+- **MEH-624** (Backlog, High) — Rate limit per-email ב-/register + /register/producer (follow-up ישיר ל-MEH-328, אותה משפחת איומים)
+- **MEH-476** (Backlog, Medium) — i18n Wave 6 — SEO surfaces: sitemap.js per-locale, hreflang, OG meta (שלב הסיום של מסע ה-i18n)
 
-**Brand Hub v1.1 (16 May 2026)** — new copy rules now reflected in `docs/DESIGN.md`. Source of truth: [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view) sections 8-9, [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
+### 🚧 חסמים (Blockers)
+
+- **PR #696 (MEH-328)** — HIGH-RISK auth refactor ממתין למיזוג; דורש review ידני של Sapir לפני merge לstaging
+- **MEH-473 Wave 3 PR** — HIGH-RISK (3 central components); `npm run build` + adversarial review ממתינים לסביבה עם `node_modules` (sandbox חסומה — MEH-360)
+- **MEH-593 Mobile QA** — sandbox לא מגיעה ל-Vercel preview (MEH-360); ממתינה לבדיקה ידנית על הנייד
 
 ---
 

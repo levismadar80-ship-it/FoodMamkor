@@ -4,6 +4,37 @@
 
 ## Unreleased
 
+## [שבוע של 2026-05-17] — שני אפיקים נסגרו: עיצוב מחדש + i18n
+
+> סיכום שבועי — Routine C (MEH-183). 45 בעיות נסגרו, ~50 PRs נמזגו. ספיר — אשרי ומזגי אם מדויק.
+
+### ✨ נוסף
+- MEH-604: מפת המפיקות עברה מעל הקפל בדף הבית — skeleton מונע CLS, עיכוב ביצועים בעזרת `requestIdleCallback`
+- MEH-531: תג "רישיון יצרן ✓" נוסף למערכת התגיות (priority: recommended → new, badge #12)
+- MEH-539 / MEH-615: תשתית מיילים לליווי עסקי — 4 מיילים + 3 מדריכות עם URLs חיים תחת `/about/for-businesses/guides/`
+- MEH-328: הגנה מפני ספירת משתמשות ב-/register — תגובה גנרית לפי OWASP (PR #696 ממתין)
+- MEH-622: SessionEnd hook — עדכון HANDOFF.md אוטומטי אחרי כל session
+- MEH-621: SubagentStop trace hook — לוג מעקב sub-agents ב-`docs/audits/subagent-trace.log`
+
+### 🐛 תוקן
+- MEH-619: אפשרויות ביטול בטופס הרשמת עסק — "ערכי תיאור" מחזירה snapshot + כפתור ✕ לסגירת שדה רישיון
+- MEH-608: כותרת שלב 2 בהרשמת עסק — הוסרה ספירת שדות ישנה ("3 שדות בלבד" → ניסוח ללא מספר)
+- MEH-222: לחיצה על אווטאר בדף /settings לא הציגה affordance ברורה — תוקן
+- MEH-549: סלקטור Playwright רעוע ב-CI — `.leaflet-container:visible` הוחלף ב-`__MAP_CENTER`
+
+### 🔧 שיפורים
+- MEH-472–475: גלי i18n 2–5 — Header/Footer/Hero, כרטיסיות מפיקה ומפה, אימות זהות, זנב ארוך + ממשק בחירת שפה (~2,000 מחרוזות)
+- MEH-607: מונה הסטטיסטיקות עוצב מחדש — "גליון מאי — N בתי עסק" + skeleton למניעת CLS
+- MEH-605 / MEH-606 / MEH-609: שינוי נוסח 3 קטעים בדף הבית — CTA ("דירקטורי" → magazine voice), כותרת קטגוריות, שלב 3 ב"איך זה עובד"
+- MEH-620: כותרת משנה Hero — "ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך." (ניצחת MEH-522)
+- MEH-598 / MEH-599: ניקוי הפרות Brand LOCK — /neighbor הוסתרה ועוברת הפנייה לדף הבית; /terms, /privacy ומטא-keywords נוקו מ"יצרני" ו"מהמטבח של השכן"
+
+### 📝 תיעוד
+- MEH-501: ADR-008 — הדחיית הפעלת AutoDream (5 תנאי revisit, anti-pattern ל-Auto-dream:on מתועד)
+- MEH-502: ניתוח פערים — 17 hooks קיימים מול 8 אירועי Agent SDK (3 המלצות: ADOPT SubagentStop, SKIP UserPromptSubmit, DEFER SessionEnd)
+- MEH-592 אפיק (עיצוב מחדש): ✅ **נסגר** — כל 3 launch-blockers נשלחו (MEH-604 + MEH-605/606/609)
+- MEH-528 אפיק (Onboarding v2): ✅ **נסגר** — קטגוריות + רישיון + סיפור + ליווי עסקי
+
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 
 `security`: OWASP-strict anti-enumeration applied to both register endpoints. Both now return an identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` regardless of whether the email is new, belongs to an existing password user, or belongs to an existing OAuth user. Timing equalised by reordering — `validate_password` (HIBP) + `hash_password` (bcrypt) run before the existence check on both branches, so response time doesn't fork. Side-effect symmetry preserved on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea rows + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved inside the new-email branch only (no orphan rows or spurious admin notifications on collisions). A new `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate account owner out-of-band — two body variants (`password` / `google` / `apple`), identical Subject line so 3rd-party Subject-scanners can't distinguish provider.
