@@ -2,6 +2,7 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 > Last updated: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
+> Last updated: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
 > Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
@@ -39,6 +40,87 @@ Branch: `feature/meh-475-pr-c2-events-experiences`. Off `d261eaf` (staging post-
 - Scanner residual on in-scope paths: 41 strings — 27 are deliberate Hebrew enum constants + 14 are Wave-6 metadata. User-facing residual: ~0.
 - ICU plural: `events.calendar.events_count` (`=0/one/two/other`)
 - ICU placeholders: `experiences.detail.spots_count` (`{spots} / {max}`), `experiences.detail.whatsapp_message` (`{title}`), `events.detail.participants_limit` (`{n}`), `experiences.card.spots_left` (`{n}`)
+### MEH-475 PR-C1 — i18n Wave 5 — recipes.* + group_buys.* (PR #715 pending, off `staging@7417b68`)
+
+Branch: `claude/i18n-recipes-group-buys-1JuoO`. Off `7417b68` (staging post-PR-#711 Wave 5 inventory). LOW-RISK per MEH-450 — mechanical i18n extraction, no auth/schema/central-component changes.
+
+**Scope:** 9 files / 136 strings wired across 2 namespaces. Pre/post residual counts: recipes 61→2, group-buys 81→4. All 6 residuals are Wave 6-deferred metadata (group-buys/page.js static `metadata` export, [slug]/recipes/[recipe_id]/page.jsx generateMetadata) — pattern matches Wave 3 (MEH-473) map/page.js metadata deferral.
+
+**Files changed (12):**
+- Recipes commit (`90893e7`): 6 source files + 2 test files (vi.mock for next-intl) + 2 messages JSONs
+- Group-buys commit (`32dfce4`): 3 source files (messages already landed in recipes commit since both namespaces were added together)
+
+**Deliverables shipped:**
+- ✅ recipes.* namespace (status, card, detail, form, dashboard, edit)
+- ✅ group_buys.* namespace (list, card, detail, dashboard, dashboard.form)
+- ✅ Internal refactor: STATUS_LABELS dict in producer/dashboard/group-buys/page.js → STATUS_CLS + t() lookup (no hardcoded HE labels in code constants)
+- ✅ Test mocks for RecipeCard + RecipeStatusBadge (Wave 3 ProducerCard precedent)
+- ✅ he.json + en.json parity (445 keys each)
+- ✅ ICU parity check green
+- ✅ `npm run build` green (101 static pages)
+- ✅ Residual scan <20 (6 strings, all in deferred Wave 6 files)
+- ✅ `/adversarial-review` (Rule 5a) — 16 candidates → 0 real blockers (full FINDER/ADVERSARY/REFEREE in PR session log)
+
+**Parallel coordination:** PR-C2 (events + experiences) runs concurrently. Different top-level namespaces (recipes/group_buys vs events/experiences) — trivial accept-both merge on JSON files expected. No shared components touched.
+
+**Known pre-existing test failures:** `__tests__/RecipeJsonLd.test.jsx` (2 fails) + ~40 other failures across unrelated files (Settings, BottomNav, etc.) — confirmed against staging baseline before my edits, NOT introduced by PR-C1.
+
+**Followups:**
+- Wave 6: wire metadata strings in deferred files
+- PR-C2 sibling: events + experiences
+
+## 2026-05-17 — Wave 4 (MEH-474) COMPLETE + follow-up (MEH-628)
+
+**Insane productive day: 7 PRs shipped.**
+
+### Merged
+
+| # | PR | What | SHA | MEH |
+|---|---|---|---|---|
+| 1 | #704 | i18n ICU parity CI gate (MEH-473 reconstruction) | c2d56d8 | MEH-473 |
+| 2 | #705 | Q6 hybrid brand-name codification | 40d7720 | MEH-476 (description updated) |
+| 3 | #708 | Wave 4 chunk 1 — login + OAuth buttons (17 strings) | ff8bde9 | MEH-474 |
+| 4 | #709 | Wave 4 chunk 3 — password recovery + verify-email (17 strings) | b85f233 | MEH-474 |
+| 5 | #707 | Wave 4 chunk 4 — auth-context toasts (3 strings) | d261eaf | MEH-474 |
+| 6 | #713 | Wave 4 chunk 2 redo — register flows post-MEH-328 (25 strings) | 2707a5e | MEH-474 |
+| 7 | #719 | MEH-628 — passwordMessages.js i18n (cross-locale leak fix) | 887aeb8 | MEH-628 |
+
+### Wave 4 status: ✅ CLOSED
+
+All authenticated user flows (login, register, password recovery, email verification, OAuth) are now i18n-ready. MEH-474 auto-closed via "Closes:" annotations.
+
+### Process patterns that worked
+
+- **4 parallel CC sessions via git worktrees** — proved scalable; chunks 1+3 had zero conflicts since they targeted different namespaces under `auth.*`. Chunks 2+4 needed rebase due to MEH-328 mid-Wave merge but conflicts were trivial (additive).
+- **MEH-328 mid-Wave hazard** — register flow refactor landed mid-Wave-4. Strategy: merge non-conflicting chunks first (1+3), then resolve auth-context conflict (4 — trivial), then close stale chunk 2 and re-do on post-MEH-328 staging (#713). Better than rebasing 729-line file changes.
+- **Scope-check rule prevented disaster** — MEH-628 spec said "1 caller" (reset-password). Phase 0 grep revealed 4 callers + 1 test mock. CC stopped, surfaced options. Smadar approved scope expansion with strict guardrails (call-site-only changes in settings/PasswordInput, not full i18n migration there — those stay Wave 5).
+- **Adversarial review catching real bugs** — `JwtExpiryReauth.test.jsx` (chunk 4) and `SettingsPage.test.jsx` (MEH-628) both needed `vi.mock("next-intl", ...)` additions. CC caught both before merge.
+
+### Process pattern to fix in Wave 5
+
+**CC keeps subscribing to PR activity despite explicit `DO NOT subscribe` in prompts.** Happened on PRs #707, #708, #709, #713, #719. Token-wasteful, contributes to rate-limit pressure. Fix: add to CLAUDE.md `.claude/rules/` a stronger constraint — or use Anthropic Console settings to disable background polling at the org level.
+
+### Phase 0 estimation lesson
+
+Phase 0 string counts off by 3x for chunk 2. Initial estimate: 33 strings. CC actual count: 101 strings. Reason: regex `(['"][^'"]*[א-ת][^'"]*['"])` missed template literals, JSX text content, multi-line strings. **Update for Wave 5:** use better scanner (`.claude/scripts/i18n-scan.py` — already exists in repo, use it).
+
+### Open items / next session
+
+- **MEH-475 Wave 5 i18n discovery inventory (PR #711 merged)** — review what landed; align Wave 5 scope with discovery findings before starting
+- **`experiences/*` (5 sites) deferred to Wave 5** — included in MEH-475 scope decision
+- **settings/page.jsx + PasswordInput.jsx full i18n migration** — Wave 5 (only call-site signature changes shipped in MEH-628)
+- **Brand Hub manual paste** still pending — `02-מדריך-מותג.md` v1.1 → v1.2 with Q6 hybrid table (snippet from chat 2026-05-17 session, before merge of #705)
+- **CLAUDE.md update** — strengthen `DO NOT subscribe to PR activity` rule
+
+### Session totals
+
+- 7 PRs merged
+- 1 PR closed without merge (stale chunk 2 → re-done in #713)
+- 1 Linear ticket opened + closed (MEH-628)
+- Wave 4 (MEH-474) closed
+- ~150 Hebrew strings migrated to next-intl across auth flows
+- 4 parallel CC sessions ran without merge conflicts on chunk-level
+- 1 cross-locale bug fixed (EN users no longer see HE password validation errors)
 
 ### MEH-473 — i18n Wave 3 — producer detail / card + map widgets + ICU plural lint + Q7 carry-over (PR pending, off `staging@89e436e`)
 

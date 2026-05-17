@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "./api";
 import {
   clearPendingAction,
@@ -21,7 +22,7 @@ const AuthContext = createContext(null);
  * guest "save" tap replays exactly once. Failures are swallowed — the
  * action is best-effort, never blocking the login flow.
  */
-async function replayPostLoginAction() {
+async function replayPostLoginAction(t) {
   const pending = readPendingAction();
   if (!pending) return;
   clearPendingAction();
@@ -29,7 +30,7 @@ async function replayPostLoginAction() {
     try {
       await api.post(`/users/me/favorites/${pending.payload}`);
       setFavoritedLocal(pending.payload, true);
-      showToast("נשמר למועדפים ❤️");
+      showToast(t("favoriteSaved"));
     } catch {
       // Best-effort — if the API rejects we don't re-show the heart;
       // the next mount will read the real favorite state from the
@@ -41,6 +42,7 @@ async function replayPostLoginAction() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const t = useTranslations("auth.toasts");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -69,20 +71,20 @@ export function AuthProvider({ children }) {
       setUser(null);
       const redirect = encodeURIComponent(window.location.pathname);
       showToast(
-        "פג תוקף ההתחברות — נא להתחבר מחדש",
+        t("sessionExpired"),
         "info",
         5000,
-        { action: { label: "התחברי", href: `/login?redirect=${redirect}` } },
+        { action: { label: t("loginAgainCta"), href: `/login?redirect=${redirect}` } },
       );
     };
     window.addEventListener("auth:expired", handle);
     return () => window.removeEventListener("auth:expired", handle);
-  }, []);
+  }, [t]);
 
   const afterLogin = async (me) => {
     setUser(me);
     ensureFavoritesLoaded();
-    await replayPostLoginAction();
+    await replayPostLoginAction(t);
     return me;
   };
 

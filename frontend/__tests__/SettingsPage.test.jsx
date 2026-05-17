@@ -110,10 +110,18 @@ vi.mock("@/lib/validators", () => ({
 // Mock passwordMessages — settings imports firstFailureMessage in its
 // catch block. The unit tests don't drive 422 paths so a no-op mock
 // is sufficient.
+// MEH-628: PasswordChangeCard now calls useTranslations("auth.passwordValidation"),
+// so the security-tab tests need a next-intl mock that resolves to the bare key
+// (matches Header.test.jsx / ProducerCard.test.jsx / JwtExpiryReauth.test.jsx pattern).
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => key,
+}));
+
+// MEH-628: lib now requires a translator `t` as second arg; mock accepts
+// (failures, t) / (key, t) and returns a passthrough string regardless.
 vi.mock("@/lib/passwordMessages", () => ({
-  firstFailureMessage: () => "test-failure",
-  failureMessage: () => "test-failure",
-  PASSWORD_FAILURE_MESSAGES: {},
+  firstFailureMessage: (_failures, _t) => "test-failure",
+  failureMessage: (_key, _t) => "test-failure",
 }));
 
 const consumer = {

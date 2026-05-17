@@ -24,6 +24,57 @@ vi.mock("@/lib/toast", () => ({
   showToast: vi.fn(),
 }));
 
+// MEH-475 PR-A1: outreach page now reads useTranslations() from next-intl.
+// Map only the keys the tests assert on, matching the ProducerCard.test.jsx
+// pattern (MEH-471/473). Unmapped keys return the key itself.
+vi.mock("next-intl", () => {
+  const flat = {
+    "admin.outreach.title": "גיוס עסקים",
+    "admin.outreach.call_script_btn": "תסריט שיחה",
+    "admin.outreach.metrics.total": "סה״כ",
+    "admin.outreach.metrics.new": "חדשים",
+    "admin.outreach.metrics.contacted": "פניתי",
+    "admin.outreach.metrics.replied": "ענו",
+    "admin.outreach.metrics.registered": "נרשמו",
+    "admin.outreach.add_lead_btn": "+ ליד חדש",
+    "admin.outreach.statuses.new": "חדש",
+    "admin.outreach.statuses.contacted": "פניתי",
+    "admin.outreach.statuses.replied": "ענו",
+    "admin.outreach.statuses.registered": "נרשמה",
+    "admin.outreach.statuses.declined": "סירבה",
+    "admin.outreach.table.prep_profile": "הכן פרופיל",
+    "admin.outreach.table.delete_btn": "מחקי",
+    "admin.outreach.toasts.delete_confirm": "למחוק את הליד הזה לצמיתות?",
+    "admin.outreach.script_modal.title": "תסריט שיחה",
+    "admin.outreach.templates.warm.title": "חמותה",
+    "admin.outreach.templates.professional.title": "מקצועי",
+    "admin.outreach.templates.short.title": "קצר",
+    "admin.outreach.table.empty": 'אין לידים להצגה. לחצי על "+ ליד חדש" כדי להתחיל.',
+    "admin.outreach.add_modal.title": "ליד חדש",
+    "admin.outreach.add_modal.placeholders.name": "שם העסק *",
+    "admin.outreach.add_modal.placeholders.city": "עיר",
+    "admin.outreach.add_modal.placeholders.category": "קטגוריה",
+    "admin.outreach.add_modal.placeholders.phone": "טלפון",
+    "admin.outreach.add_modal.placeholders.instagram": "אינסטגרם (שם משתמשת, בלי @)",
+    "admin.outreach.add_modal.placeholders.website": "אתר (אופציונלי)",
+    "admin.outreach.add_modal.placeholders.notes": "הערות פנימיות",
+    "admin.outreach.add_modal.cancel": "ביטול",
+    "admin.outreach.add_modal.submit": "הוסיפי",
+    "admin.outreach.script_modal.body": '1. פתיחה חמה: "היי, אני מדברת ממהמקור, זה שם טוב?"',
+    "admin.outreach.script_modal.close": "סגור",
+  };
+  return {
+    useTranslations: (scope) => (key, values = {}) => {
+      const fullKey = scope ? `${scope}.${key}` : key;
+      const raw = flat[fullKey] ?? fullKey;
+      if (!values || Object.keys(values).length === 0) return raw;
+      let s = raw;
+      for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
+      return s;
+    },
+  };
+});
+
 const sampleLead = {
   id: "lead-1",
   name: "מאפיית אביב",
