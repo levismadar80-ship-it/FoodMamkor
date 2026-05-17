@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Leaf, MapPin } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -22,6 +23,7 @@ function formatDate(iso) {
 }
 
 export default function EventDetailPage() {
+  const t = useTranslations("events.detail");
   const { id } = useParams();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center text-site-muted">
-        טוענת את האירוע...
+        {t("loading")}
       </div>
     );
   }
@@ -48,9 +50,9 @@ export default function EventDetailPage() {
         <div className="mb-4 flex justify-center">
           <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
         </div>
-        <p className="text-site-muted mb-6">לא מצאנו את האירוע הזה</p>
+        <p className="text-site-muted mb-6">{t("not_found")}</p>
         <Link href="/events" className="text-primary hover:underline">
-          ← חזרה לכל האירועים
+          {t("back_to_all")}
         </Link>
       </div>
     );
@@ -70,8 +72,8 @@ export default function EventDetailPage() {
       <div className="max-w-3xl mx-auto px-4 py-12">
         <Breadcrumb
           items={[
-            { href: "/", label: "בית" },
-            { href: "/events", label: "אירועים" },
+            { href: "/", label: t("breadcrumb_home") },
+            { href: "/events", label: t("breadcrumb_events") },
             { label: event.title },
           ]}
           className="mb-4"
@@ -99,12 +101,12 @@ export default function EventDetailPage() {
           )}
           <p className="flex items-center gap-2 text-accent font-semibold">
             <span aria-hidden>💰</span>
-            {event.price > 0 ? `₪${event.price}` : "חינם"}
+            {event.price > 0 ? `₪${event.price}` : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">
               <span aria-hidden>👥</span>
-              עד {event.max_participants} משתתפים
+              {t("participants_limit", { n: event.max_participants })}
             </p>
           )}
         </div>
@@ -123,27 +125,27 @@ export default function EventDetailPage() {
               rel="noopener noreferrer"
               className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
-              להרשמה →
+              {t("register")}
             </a>
           ) : (
             <Link
               href={`/producer/${event.producer_id}`}
               className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
-              צור קשר עם בית העסק
+              {t("contact_producer")}
             </Link>
           )}
           <Link
             href="/events"
             className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
           >
-            ← כל האירועים
+            {t("all_events")}
           </Link>
         </div>
 
         {event.producer_name && (
           <p className="text-sm text-site-muted mt-8">
-            מאורגן על ידי{" "}
+            {t("organized_by")}{" "}
             <Link href={`/producer/${event.producer_id}`} className="text-primary hover:underline">
               {event.producer_name}
             </Link>
