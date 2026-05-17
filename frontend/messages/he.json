@@ -75,6 +75,12 @@
       "sessionExpired": "פג תוקף ההתחברות — נא להתחבר מחדש",
       "loginAgainCta": "התחברי"
     },
+    "passwordValidation": {
+      "too_short": "סיסמתך חייבת להכיל לפחות {min} תווים",
+      "too_common": "הסיסמה הזו דלפה ברשת — בחרי סיסמה אחרת",
+      "same_as_current": "הסיסמה החדשה זהה לקודמת — בחרי סיסמה שונה",
+      "fallback": "הסיסמה לא עומדת בדרישות, נסי משהו ארוך וייחודי יותר"
+    },
     "passwordRecovery": {
       "forgot": {
         "title": "איפוס סיסמה",
