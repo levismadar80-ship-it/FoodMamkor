@@ -14,8 +14,10 @@
  */
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function RecipeCard({ slug, recipe }) {
+  const t = useTranslations("recipes.card");
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
   return (
@@ -42,8 +44,8 @@ export default function RecipeCard({ slug, recipe }) {
         </h3>
         {totalMin && (
           <p className="text-xs text-site-muted">
-            {totalMin} דקות
-            {recipe.servings ? ` · ${recipe.servings} מנות` : ""}
+            {totalMin} {t("minutes_suffix")}
+            {recipe.servings ? ` · ${recipe.servings} ${t("servings_suffix")}` : ""}
           </p>
         )}
       </div>
