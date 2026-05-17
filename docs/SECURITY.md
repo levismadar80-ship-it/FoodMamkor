@@ -998,7 +998,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 
 Backend:
 - `backend/app/routers/auth.py` — `/register` rewritten (Chunk A); `/register/producer` non-upgrade rewritten + side-effect-symmetry (Chunk B); `/email-exists` handler deleted (Chunk C); `EmailStr` import removed.
-- `backend/app/schemas/schemas.py` — new `RegisterAck` model; `RegisterResponse` marked deprecated (kept for sibling endpoints).
+- `backend/app/schemas/schemas.py` — new `RegisterAck` model; `RegisterResponse` later deleted by MEH-625 (zero runtime callers post-MEH-328).
 - `backend/app/services/auth_emails.py` — new `send_duplicate_attempt_email(email, name, provider)` helper with Hebrew נקבה copy.
 
 Frontend:
@@ -1024,7 +1024,7 @@ Tests:
 Filed as separate Linear tickets:
 
 1. **Per-email rate-limit key on `/register` + `/register/producer`** — `backend/app/routers/auth.py:249, 352` use only the per-IP `@limiter.limit(...)`. The MEH-191 `/forgot-password` reference uses an additional `key_func=email_from_body` dual-key. Without it, a botnet rotating IPs can still spray one victim email with 10 attempts per IP per hour. `email_from_body` is already imported (`auth.py:65`). Estimated 30 min.
-2. **`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup.
+2. ~~**`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup.~~ **DONE (MEH-625, PR #721).**
 3. **`/login` timing equalisation** — `backend/app/routers/auth.py:818-830`. Wrong-password runs `verify_password` (bcrypt); wrong-email skips it. Same threat model as MEH-328 on a sibling endpoint; same fix shape (bcrypt against a fixed sentinel hash on the no-user branch). Out of scope for MEH-328 per Phase 0 plan.
 
 ### Deploy order

@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### 2026-05-17 — MEH-627: Fix /register rate-limit doc drift (10/hour per MEH-417)
+
+`docs`: `.ai/diagrams/api-routes.md` RegConsumer node updated `3/hour → 10/hour` to match the actual `@limiter.limit("10/hour")` on `backend/app/routers/auth.py:248`. Drift introduced when MEH-417 (PR #423, commit `662ba8e`, April 2026) raised the cap but did not update the diagram. Added `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` HTML comment above the Mermaid block as grep anchor. Verified all other rate-limit annotations in the same diagram against backend code (whatsapp-click 10/min, login 5/min, newsletter 5/hour, contact 5/hour all match) — no additional drifts.
+
+### 2026-05-17 — MEH-625: Delete RegisterResponse dead code (post-MEH-328)
+
+`cleanup`: Removed unused `RegisterResponse(Token)` Pydantic class from `backend/app/schemas/schemas.py` (4 lines). Class was deferred in MEH-328 Chunk A after the OWASP anti-enumeration refactor replaced its only caller (`/auth/register`) with `RegisterAck`. Phase 0 grep confirmed zero runtime callers prior to deletion. `RegisterAck`, `ProducerRegistrationResponse`, `GoogleAuthResponse`, `AppleAuthResponse`, and the parent `Token` class are untouched.
+
+`docs`: Inbound reference drift fixed in same PR per adversarial review — `schemas.py` comment block above `GoogleAuthResponse` rewritten (no longer references deleted class); `docs/SECURITY.md:1001` updated to reflect deletion; `docs/SECURITY.md:1027` + `HANDOFF.md:282` follow-up items marked DONE with PR #721 reference.
+
 ### 2026-05-17 — MEH-475 PR-A1: admin i18n top-4 files (PR pending)
 
 `i18n`: First implementation PR of Wave 5 (MEH-475). Wires `useTranslations()` into the 4 largest admin files: `admin/page.js` (dashboard, 41 strings), `admin/settings/page.js` (42), `components/admin/ProducerForm.jsx` (60+3 data residuals, refactored KOSHER_OPTIONS + availability states to `{value, labelKey}` shape), `admin/outreach/page.jsx` (70 — STATUS_LABEL + CALL_SCRIPT + WA_TEMPLATES constants deleted, resolved via `t()` at call sites). 213 strings → new `admin.*` namespace (admin.dashboard, admin.settings, admin.producer_form, admin.outreach) in `messages/he.json` + `messages/en.json` (515 keys each, full parity). ICU MessageFormat used for `{count}`/`{summary}`/`{total}`/`{name}` interpolations. English authored idiomatic (not literal); Hebrew preserved verbatim.
