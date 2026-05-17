@@ -516,6 +516,63 @@
         "requests_per_minute": "בקשות לדקה",
         "data_note": "ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md)."
       }
+    },
+    "settings": {
+      "title": "הגדרות",
+      "loading": "טוען...",
+      "load_error": "שגיאה בטעינת הגדרות — נסי לרענן את הדף.",
+      "confirm_save": "האם לשמור את השינויים הבאים?\n\n{summary}",
+      "notifications": {
+        "section_title": "התראות",
+        "admin_email_label": "אימייל אדמין לקבלת התראות",
+        "admin_whatsapp_label": "מספר ווטסאפ אדמין (E.164)"
+      },
+      "freemium": {
+        "section_title": "Freemium",
+        "monthly_price_label": "מחיר חודשי לפרמיום (₪)",
+        "free_image_limit_label": "מספר תמונות בחבילת חינם"
+      },
+      "holiday": {
+        "section_title": "חלון חג",
+        "tooltip_content": "הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג.",
+        "tooltip_label": "מידע על חלון חג",
+        "section_description": "הפעלי ידנית כדי לבדוק את הבאנר בדשבורד ובעמוד הבית לפני החג.",
+        "switch_label": "חלון חג פעיל",
+        "key_select_label": "מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)",
+        "key_none": "— ללא עקיפה —",
+        "key_pesach": "פסח",
+        "key_shavuot": "שבועות",
+        "key_rosh_hashana": "ראש השנה",
+        "key_sukkot": "סוכות",
+        "key_chanuka": "חנוכה",
+        "key_tu_bishvat": "ט״ו בשבט"
+      },
+      "friday": {
+        "section_title": "מצב שוק שישי",
+        "tooltip_content": "הפעילי בבוקר יום שישי. מקדימה באתר עסקים שמוכרים בשווקים. לאחר השבת - כבה אוטומטית.",
+        "tooltip_label": "מידע על מצב שוק שישי",
+        "section_description": "הפעלי ידנית כדי לבדוק את מצב שוק שישי (סרגל יצרניות, כותרת hero, badge 🛒) מחוץ לחלון הזמן הרגיל (ד׳ 18:00 — ו׳ 14:00). עקיפה זו פעילה בדפדפן הנוכחי בלבד.",
+        "switch_label": "מצב שוק שישי — override"
+      },
+      "tests": {
+        "section_title": "בדיקות חיבור",
+        "status_unconfigured": "✗ לא מוגדר",
+        "status_loading": "בודק...",
+        "status_ok": "✓ מחובר",
+        "test_button": "בדוק"
+      },
+      "categories": {
+        "section_title": "ניהול קטגוריות",
+        "section_description": "להוספה, עריכה ומחיקה — מסך התוכן.",
+        "link_to_content": "לעמוד תוכן ←"
+      },
+      "save": {
+        "no_changes_title": "אין שינויים לשמירה",
+        "saving": "שומר...",
+        "submit": "שמור הגדרות",
+        "unsaved_count": "{count} שינויים לא שמורים",
+        "saved_indicator": "נשמר ✓"
+      }
     }
   }
 }
