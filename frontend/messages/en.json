@@ -669,6 +669,99 @@
         "create": "Create business",
         "cancel": "Cancel"
       }
+    },
+    "outreach": {
+      "title": "Business outreach",
+      "call_script_btn": "Call script",
+      "metrics": {
+        "total": "Total",
+        "new": "New",
+        "contacted": "Contacted",
+        "replied": "Replied",
+        "registered": "Registered"
+      },
+      "filters": {
+        "city_placeholder": "Filter by city…",
+        "status_all": "All statuses"
+      },
+      "add_lead_btn": "+ New lead",
+      "statuses": {
+        "new": "New",
+        "contacted": "Contacted",
+        "replied": "Replied",
+        "registered": "Registered",
+        "declined": "Declined"
+      },
+      "table": {
+        "col_name": "Name",
+        "col_city": "City",
+        "col_category": "Category",
+        "col_phone": "Phone",
+        "col_instagram": "Instagram",
+        "col_status": "Status",
+        "col_actions": "Actions",
+        "loading": "Loading leads…",
+        "empty": "No leads to show. Click \"+ New lead\" to get started.",
+        "prep_profile": "Prep profile",
+        "prep_profile_title": "Prepares a profile and copies the link",
+        "delete_btn": "Delete"
+      },
+      "toasts": {
+        "status_updated": "Status updated",
+        "status_update_failed": "Update failed — please try again",
+        "link_copied": "Link copied to clipboard",
+        "link_copy_failed": "Could not prepare the link — please try again",
+        "delete_confirm": "Permanently delete this lead?",
+        "lead_deleted": "Lead deleted",
+        "delete_failed": "Delete failed — please try again",
+        "lead_added": "Lead added",
+        "text_copied": "Text copied",
+        "copy_failed": "Copy failed — please copy manually"
+      },
+      "add_modal": {
+        "title": "New lead",
+        "name_required": "Name is required",
+        "duplicate": "A similar lead already exists",
+        "generic_error": "Something went wrong",
+        "placeholders": {
+          "name": "Business name *",
+          "city": "City",
+          "category": "Category",
+          "phone": "Phone",
+          "instagram": "Instagram (username, without @)",
+          "website": "Website (optional)",
+          "notes": "Internal notes"
+        },
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "submit": "Add"
+      },
+      "script_modal": {
+        "title": "Call script",
+        "close": "Close",
+        "body": "1. Warm opening: \"Hi, I'm calling from Mehamakor — is now a good time?\"\n2. Brief intro: \"An Israeli site that connects local businesses with shoppers looking for high-quality food.\"\n3. Value proposition: \"Free to sign up, your profile gets published, and you receive customer inquiries directly via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'll send you a link with all your details ready — just confirm a password.\"\n6. If declining: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. To close: \"Have a great day.\""
+      },
+      "whatsapp_modal": {
+        "title": "WhatsApp message to {name}",
+        "preparing_link": "Preparing profile link…",
+        "copy_btn": "Copy",
+        "open_btn": "Open in WhatsApp",
+        "close": "Close"
+      },
+      "templates": {
+        "warm": {
+          "title": "Warm",
+          "body": "Hi {name} 🌿\nI saw your work and I really love what you do. I'm with Mehamakor — a site that connects small business owners with shoppers looking for real, local food.\nYou're invited to join us, free of charge — just click the link and your details are waiting:\n{prefillUrl}"
+        },
+        "professional": {
+          "title": "Professional",
+          "body": "Hello {name}, I'm reaching out on behalf of Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you; all that's left is to confirm a password:\n{prefillUrl}\nSign-up is free, no commitment."
+        },
+        "short": {
+          "title": "Short",
+          "body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
+        }
+      }
     }
   }
 }
