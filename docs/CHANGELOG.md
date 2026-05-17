@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-05-17 — MEH-475 PR-A1: admin i18n top-4 files (PR pending)
+
+`i18n`: First implementation PR of Wave 5 (MEH-475). Wires `useTranslations()` into the 4 largest admin files: `admin/page.js` (dashboard, 41 strings), `admin/settings/page.js` (42), `components/admin/ProducerForm.jsx` (60+3 data residuals, refactored KOSHER_OPTIONS + availability states to `{value, labelKey}` shape), `admin/outreach/page.jsx` (70 — STATUS_LABEL + CALL_SCRIPT + WA_TEMPLATES constants deleted, resolved via `t()` at call sites). 213 strings → new `admin.*` namespace (admin.dashboard, admin.settings, admin.producer_form, admin.outreach) in `messages/he.json` + `messages/en.json` (515 keys each, full parity). ICU MessageFormat used for `{count}`/`{summary}`/`{total}`/`{name}` interpolations. English authored idiomatic (not literal); Hebrew preserved verbatim.
+
+`refactor`: Hardcoded display-only constants (`STATUS_LABEL`, `KOSHER_OPTIONS` labels, `WA_TEMPLATES`, `CALL_SCRIPT`) replaced with keyed lookups so the value/data axis (API contract) stays decoupled from the display/locale axis (translation).
+
+`test`: `AdminOutreach.test.jsx` + `AdminNullGuards.test.jsx` add `vi.mock("next-intl")` following the `ProducerCard.test.jsx` (MEH-471/473) pattern. AdminOutreach went from 9/9 failing post-wiring → 9/9 passing. NullGuards parse error in `admin/analytics/page.js:13` pre-existed PR-A1 and is unchanged (6 failures on both staging baseline and PR-A1 branch).
+
+`scope deferral`: `admin/help/page.jsx` (113 strings) deferred to PR-A1b/A2 — long-form rich-text docs with inline `<strong>`/`<code>`/`<em>` markup; codebase doesn't yet use `t.rich()` and introducing the pattern deserves its own architectural review. Per `over_engineering_guard` in the prompt, declined to introduce mid-PR. Remaining admin scope: 18 smaller files, 314 strings → PR-A2/A3. `ProducerForm` carries 3 residual Hebrew strings in `KOSHER_OPTIONS` value array (`"כשר"`, `"כשר למהדרין"`, `"לא כשר"`) — these are the persisted API values, not display strings (display resolves via `kosher_options.<labelKey>`).
+
+Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: −213 strings, −3 files. CI: `npm run build` ✅ (101 pages), vitest net −9 failures vs staging (0 regressions). DoD exception: mobile QA on preview URL deferred to Smadar.
+
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 
 `security`: OWASP-strict anti-enumeration applied to both register endpoints. Both now return an identical `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}` regardless of whether the email is new, belongs to an existing password user, or belongs to an existing OAuth user. Timing equalised by reordering — `validate_password` (HIBP) + `hash_password` (bcrypt) run before the existence check on both branches, so response time doesn't fork. Side-effect symmetry preserved on `/auth/register/producer`: Producer / ProducerCategory / DeliveryArea rows + `notify_admin_new_producer` + `notify_producer_registered` background tasks all moved inside the new-email branch only (no orphan rows or spurious admin notifications on collisions). A new `send_duplicate_attempt_email(to, name, provider)` helper notifies the legitimate account owner out-of-band — two body variants (`password` / `google` / `apple`), identical Subject line so 3rd-party Subject-scanners can't distinguish provider.
