@@ -8,6 +8,49 @@ vi.mock("@phosphor-icons/react", () => ({
   Trash: (props) => <span data-testid="trash-icon" {...props} />,
 }));
 
+// MEH-475 PR-B: reviews/page.jsx reads useTranslations("admin") with PR-B's
+// nested key shape (reviews.title, reviews.count, reviews.search_placeholder,
+// reviews.filter_aria, reviews.empty, reviews.delete_aria, reviews.confirm_delete).
+// ICU substitution for {filtered}/{total}/{user}/{producer}.
+vi.mock("next-intl", () => {
+  const flat = {
+    "admin.reviews.title": "ביקורות",
+    "admin.reviews.count": "{filtered} מתוך {total}",
+    "admin.reviews.search_placeholder": "חיפוש לפי עסק, משתמש, כותרת או טקסט...",
+    "admin.reviews.filter_aria": "סינון לפי דירוג",
+    "admin.reviews.all_ratings": "כל הדירוגים",
+    "admin.reviews.empty": "אין ביקורות להצגה",
+    "admin.reviews.loading": "טוענת ביקורות...",
+    "admin.reviews.delete": "מחקי",
+    "admin.reviews.deleting": "מוחקת...",
+    "admin.reviews.default_user": "משתמשת",
+    "admin.reviews.default_producer": "העסק",
+    "admin.reviews.delete_aria": "מחקי ביקורת של {user}",
+    "admin.reviews.confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
+    "admin.reviews.stars_aria": "{stars} כוכבים",
+    "admin.reviews.deleted_toast": "הביקורת נמחקה",
+    "admin.reviews.delete_error": "משהו השתבש, נסי שוב",
+    "admin.reviews.tooltip": "Claude עבר על התוכן אוטומטית.",
+    "admin.reviews.tooltip_label": "מידע על מודרציית ביקורות",
+    "admin.reviews.columns.producer": "עסק",
+    "admin.reviews.columns.user": "משתמשת",
+    "admin.reviews.columns.rating": "דירוג",
+    "admin.reviews.columns.content": "תוכן",
+    "admin.reviews.columns.date": "תאריך",
+    "admin.reviews.columns.actions": "פעולות",
+  };
+  return {
+    useTranslations: (scope) => (key, values = {}) => {
+      const fullKey = scope ? `${scope}.${key}` : key;
+      const raw = flat[fullKey] ?? fullKey;
+      if (!values || Object.keys(values).length === 0) return raw;
+      let s = raw;
+      for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
+      return s;
+    },
+  };
+});
+
 // Mock API — mutable default response
 const mockResponse = { current: { data: [] } };
 vi.mock("@/lib/api", () => ({
