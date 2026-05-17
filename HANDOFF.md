@@ -1,8 +1,9 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); PR pending; LOW-RISK docs-only; 1 line + comment anchor; all other rate-limit annotations in diagram verified against backend code, no further drifts)
-> Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; PR pending; LOW-RISK cleanup; 4-line class deletion + CHANGELOG/HANDOFF; ruff clean; pytest sandbox-blocked by missing local Postgres)
+> Last updated: 2026-05-17 (MEH-624 — Per-email rate limit on /register + /register/producer; PR pending; SECURITY HIGH-RISK auth surface; stacked `5/15 minutes` per-email cap on top of existing per-IP caps; mirrors /forgot-password dual-key pattern from MEH-191; 2 new pytest cases; pytest sandbox-blocked, CI to verify)
+> Previously: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); PR #722 MERGED at c668bec)
+> Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; PR #721 MERGED at def4aa7)
 > Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
 > Previously: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
 > Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
