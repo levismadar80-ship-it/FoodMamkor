@@ -460,5 +460,62 @@
       },
       "heading_ssr": "בתי עסק על המפה"
     }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "לוח מחוונים",
+      "subtitle": "סקירה כללית של הפלטפורמה",
+      "loading": "טוען...",
+      "load_error": "שגיאה בטעינת המידע",
+      "cards": {
+        "total_producers": "סה״כ בתי עסק",
+        "pending_producers": "ממתינים לאישור",
+        "total_users": "משתמשים רשומים",
+        "home_products": "מוצרים ביתיים",
+        "group_buys": "קבוצות רכש"
+      },
+      "group_buys_tooltip": "ניהול קבוצות רכש של משתמשות. לא פעיל כרגע.",
+      "group_buys_tooltip_label": "מידע על קבוצות רכש",
+      "alerts": {
+        "pending_producers": "{count} בתי עסק ממתינים לאישור",
+        "pending_action": "לחץ לטיפול",
+        "open_reports": "{count} דיווחים פתוחים",
+        "open_reports_action": "דורש בדיקה",
+        "hidden_products": "{count} מוצרים ביתיים מוסתרים",
+        "hidden_products_action": "לבדיקה"
+      },
+      "monthly_chart_title": "בתי עסק חדשים — 6 חודשים אחרונים",
+      "pending_panel": {
+        "title": "בקשות ממתינות",
+        "view_all": "צפה בכל →",
+        "empty": "אין בקשות ממתינות",
+        "review": "בדוק"
+      },
+      "activity": {
+        "title": "פעילות אחרונה",
+        "empty": "אין נתונים להצגה",
+        "added_producer": "נוסף בית עסק:"
+      },
+      "secondary": {
+        "new_users_week": "משתמשים חדשים השבוע",
+        "new_producers_week": "עסקים חדשים השבוע",
+        "events": "אירועים",
+        "experiences": "חוויות"
+      },
+      "delta_of_total": "מתוך {total} סה״כ",
+      "dau_title": "משתמשים פעילים — 30 ימים אחרונים",
+      "dau_empty": "אין נתונים עדיין",
+      "dau_aria_label": "DAU 30 days",
+      "top_cities_title": "ערים מובילות",
+      "top_cities_empty": "עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר.",
+      "server_health": {
+        "title": "בריאות שרת — שעה אחרונה",
+        "waiting": "מחכה לתנועה...",
+        "samples": "{count} בקשות",
+        "response_time": "זמן תגובה ממוצע",
+        "requests_per_minute": "בקשות לדקה",
+        "data_note": "ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md)."
+      }
+    }
   }
 }

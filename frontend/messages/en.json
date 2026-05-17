@@ -460,5 +460,62 @@
       },
       "heading_ssr": "Businesses on the map"
     }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Platform overview",
+      "loading": "Loading…",
+      "load_error": "Could not load data",
+      "cards": {
+        "total_producers": "Total businesses",
+        "pending_producers": "Awaiting approval",
+        "total_users": "Registered users",
+        "home_products": "Home products",
+        "group_buys": "Group buys"
+      },
+      "group_buys_tooltip": "Manage user group buys. Currently inactive.",
+      "group_buys_tooltip_label": "Group buys info",
+      "alerts": {
+        "pending_producers": "{count} businesses awaiting approval",
+        "pending_action": "Click to review",
+        "open_reports": "{count} open reports",
+        "open_reports_action": "Needs review",
+        "hidden_products": "{count} hidden home products",
+        "hidden_products_action": "Review"
+      },
+      "monthly_chart_title": "New businesses — last 6 months",
+      "pending_panel": {
+        "title": "Pending requests",
+        "view_all": "View all →",
+        "empty": "No pending requests",
+        "review": "Review"
+      },
+      "activity": {
+        "title": "Recent activity",
+        "empty": "No data to display",
+        "added_producer": "Business added:"
+      },
+      "secondary": {
+        "new_users_week": "New users this week",
+        "new_producers_week": "New businesses this week",
+        "events": "Events",
+        "experiences": "Experiences"
+      },
+      "delta_of_total": "of {total} total",
+      "dau_title": "Active users — last 30 days",
+      "dau_empty": "No data yet",
+      "dau_aria_label": "DAU 30 days",
+      "top_cities_title": "Top cities",
+      "top_cities_empty": "No city data yet — guests don't report city.",
+      "server_health": {
+        "title": "Server health — last hour",
+        "waiting": "Waiting for traffic…",
+        "samples": "{count} requests",
+        "response_time": "Average response time",
+        "requests_per_minute": "Requests per minute",
+        "data_note": "ℹ️ Per-process in-memory data — reset on every deploy (docs/SECURITY.md)."
+      }
+    }
   }
 }
