@@ -1,10 +1,11 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); PR pending; LOW-RISK docs-only; 1 line + comment anchor; all other rate-limit annotations in diagram verified against backend code, no further drifts)
-> Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; PR pending; LOW-RISK cleanup; 4-line class deletion + CHANGELOG/HANDOFF; ruff clean; pytest sandbox-blocked by missing local Postgres)
-> Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
-> Previously: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
+> Last updated: 2026-05-17 (MEH-475 PR-B — Admin panel i18n; 640 strings / 22 files extracted to `admin.*` namespace; PR #716 ready for merge after rebase + Wave 4 auth.* key restore; Playwright /register green)
+> Previously: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); **PR #722 MERGED**; LOW-RISK docs-only)
+> Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; **PR #721 MERGED**; LOW-RISK cleanup; 4-line class deletion)
+> Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; **PR #714 MERGED**; LOW-RISK; 2 commits; ran in parallel with PR-C1 recipes/group_buys)
+> Previously: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; **PR #715 MERGED**; LOW-RISK mechanical extraction; 2 commits; ran parallel with PR-C2 events+experiences)
 > Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)
