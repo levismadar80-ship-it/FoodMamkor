@@ -70,6 +70,17 @@
       "sent": "✓ Sent!",
       "rate_limited": "Rate limited — try again in an hour"
     },
+    "toasts": {
+      "favoriteSaved": "Saved to favorites ❤️",
+      "sessionExpired": "Your session expired — please sign in again",
+      "loginAgainCta": "Sign in"
+    },
+    "passwordValidation": {
+      "too_short": "Your password must contain at least {min} characters",
+      "too_common": "This password was leaked online — please choose another",
+      "same_as_current": "Your new password is the same as the previous one — please choose a different one",
+      "fallback": "Your password doesn't meet the requirements, try something longer and more unique"
+    },
     "passwordRecovery": {
       "forgot": {
         "title": "Reset password",
@@ -157,6 +168,145 @@
       "rate_limited": "Too many attempts, try again in a minute",
       "connection_failed": "We couldn't connect, please try again",
       "generic_error": "Sign-in failed"
+    },
+    "register": {
+      "consumer": {
+        "heading": "Join the community",
+        "subtitle": "Welcome to מהמקור 🌿",
+        "referral_badge": "Invited by a friend 🌿 10% off your first order",
+        "email_hint": "A verification email will be sent after signup",
+        "oauth_divider": "or",
+        "have_account": "Already have an account?",
+        "login_link": "Sign in",
+        "cta_producer": "Want to add your business?",
+        "cta_producer_link": "Register as a business",
+        "value_props": {
+          "discover": "🗺️ Discover businesses",
+          "favorites": "❤️ Save favourites",
+          "rate": "⭐ Rate & share"
+        },
+        "fields": {
+          "name": "Full name *",
+          "email": "Email *",
+          "password": "Password *",
+          "password_aria": "Password"
+        },
+        "validation": {
+          "name_required": "Full name is required",
+          "email_invalid": "Invalid email",
+          "password_min": "Your password must be at least {min} characters",
+          "valid_hint": "✓ Valid"
+        },
+        "terms": {
+          "intro": "I have read and agree to",
+          "tos_link": "the Terms of Use",
+          "and": "and ",
+          "privacy_link": "the Privacy Policy"
+        },
+        "actions": {
+          "submit": "Join",
+          "submitting": "Signing up..."
+        },
+        "errors": {
+          "generic": "Something went wrong, try again"
+        },
+        "email_sent": {
+          "title": "Check your inbox 📬",
+          "body": "If the email is available, a verification message has been sent. Please check your inbox.",
+          "hint": "Didn't get it? Check spam or try again in a minute.",
+          "back_home": "Back to home"
+        }
+      },
+      "producer": {
+        "heading": "Give your business a home",
+        "subtitle": "5 minutes. No commissions. No middlemen.",
+        "loading": "Loading...",
+        "loading_form": "Loading registration form...",
+        "default_description": "Local business. More details coming soon.",
+        "prefill_notice": "We pre-filled your business details — you can update any field before continuing.",
+        "upgrade_banner": {
+          "connected_with": "You're signed in as {email}",
+          "attached_to_account": "The business will be attached to this account"
+        },
+        "draft": {
+          "prompt": "We saved a draft from a previous session — want to continue?",
+          "continue": "Yes, continue",
+          "dismiss": "No"
+        },
+        "steps": {
+          "account": {
+            "title": "1. Account details",
+            "email_section": "Sign up with email"
+          },
+          "business": {
+            "title": "2. Business details",
+            "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
+          }
+        },
+        "fields": {
+          "name": "Full name *",
+          "email": "Email *",
+          "password": "Password *",
+          "producer_name": "Business name *",
+          "description_label": "Tell us about your business",
+          "description_hint": "A 100-300 word story — how did you start? What makes you special? What's closest to your heart?",
+          "phone": "WhatsApp phone * (0501234567)",
+          "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
+          "license_required_label": "Producer license number (required)",
+          "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
+          "license_optional_label": "Producer license number"
+        },
+        "validation": {
+          "all_required": "Please fill all required fields",
+          "email_invalid": "Invalid email",
+          "password_complexity": "Password must be at least 8 characters, with one uppercase letter and one number",
+          "producer_name_required": "Please enter a business name",
+          "phone_required": "Please enter a valid phone number",
+          "phone_invalid": "❌ Invalid phone number",
+          "phone_valid": "✓ Valid number",
+          "category_required": "Please select at least one category",
+          "terms_required": "Please accept the Terms of Use before joining",
+          "license_format": "Producer license number is 7-10 digits"
+        },
+        "terms": {
+          "intro": "I have read and agree to",
+          "tos_link": "the Terms of Use",
+          "and": "and ",
+          "privacy_link": "the Privacy Policy",
+          "license_declaration": ", and I declare that I hold all licenses required to sell my products under the Business Licensing Law."
+        },
+        "actions": {
+          "next": "Next →",
+          "back": "Previous step",
+          "submit": "Join →",
+          "submitting": "Submitting...",
+          "write_later": "I'll write this later",
+          "edit_description": "Edit description",
+          "add_license": "I have a producer license ↓",
+          "close": "Close"
+        },
+        "errors": {
+          "already_has_producer": "You already have a business registered on this account.",
+          "generic": "Connection error — please try again."
+        },
+        "success": {
+          "heading": "You're in!",
+          "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
+          "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
+          "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
+          "next_heading": "What's next?",
+          "next_step1": "✓ Complete the profile from the dashboard — photos, description, deliveries",
+          "next_step2": "✓ Our team will review the request within 1-2 business days",
+          "next_step3": "✓ After approval — the business appears on the map and in search",
+          "dashboard_cta": "Go to my dashboard ←",
+          "share_msg": "Hi 🌿 I just joined Mehamakor — an Israeli directory connecting local businesses with people looking for real food. Come join: https://mehamakor.online/register/producer",
+          "share_cta": "Invite a neighbour",
+          "inbox_title": "Check your inbox 📬",
+          "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
+          "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
+          "back_home": "Back to home"
+        }
+      }
     }
   },
   "account": {
