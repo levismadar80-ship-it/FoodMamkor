@@ -137,15 +137,11 @@ class RegisterAck(BaseModel):
     detail: str
 
 
-# MEH-301: email pre-flight flags for registration endpoints.
+# MEH-301: email pre-flight flag for OAuth registration endpoints.
 # True = RESEND_API_KEY present and background task dispatched.
 # False = missing config; frontend can show a diagnostic banner.
-# MEH-328: no longer returned by /auth/register (replaced by RegisterAck).
-# Kept for sibling endpoints; do not delete in this chunk.
-class RegisterResponse(Token):
-    email_sent: bool
-
-
+# Password /auth/register returns RegisterAck (MEH-328); OAuth siblings
+# retain the email_sent flag because they auto-create users in one step.
 class GoogleAuthResponse(Token):
     email_sent: bool
 

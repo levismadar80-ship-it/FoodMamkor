@@ -8,6 +8,12 @@
 
 `docs`: `.ai/diagrams/api-routes.md` RegConsumer node updated `3/hour → 10/hour` to match the actual `@limiter.limit("10/hour")` on `backend/app/routers/auth.py:248`. Drift introduced when MEH-417 (PR #423, commit `662ba8e`, April 2026) raised the cap but did not update the diagram. Added `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` HTML comment above the Mermaid block as grep anchor. Verified all other rate-limit annotations in the same diagram against backend code (whatsapp-click 10/min, login 5/min, newsletter 5/hour, contact 5/hour all match) — no additional drifts.
 
+### 2026-05-17 — MEH-625: Delete RegisterResponse dead code (post-MEH-328)
+
+`cleanup`: Removed unused `RegisterResponse(Token)` Pydantic class from `backend/app/schemas/schemas.py` (4 lines). Class was deferred in MEH-328 Chunk A after the OWASP anti-enumeration refactor replaced its only caller (`/auth/register`) with `RegisterAck`. Phase 0 grep confirmed zero runtime callers prior to deletion. `RegisterAck`, `ProducerRegistrationResponse`, `GoogleAuthResponse`, `AppleAuthResponse`, and the parent `Token` class are untouched.
+
+`docs`: Inbound reference drift fixed in same PR per adversarial review — `schemas.py` comment block above `GoogleAuthResponse` rewritten (no longer references deleted class); `docs/SECURITY.md:1001` updated to reflect deletion; `docs/SECURITY.md:1027` + `HANDOFF.md:282` follow-up items marked DONE with PR #721 reference.
+
 ### 2026-05-17 — MEH-475 PR-A1: admin i18n top-4 files (PR pending)
 
 `i18n`: First implementation PR of Wave 5 (MEH-475). Wires `useTranslations()` into the 4 largest admin files: `admin/page.js` (dashboard, 41 strings), `admin/settings/page.js` (42), `components/admin/ProducerForm.jsx` (60+3 data residuals, refactored KOSHER_OPTIONS + availability states to `{value, labelKey}` shape), `admin/outreach/page.jsx` (70 — STATUS_LABEL + CALL_SCRIPT + WA_TEMPLATES constants deleted, resolved via `t()` at call sites). 213 strings → new `admin.*` namespace (admin.dashboard, admin.settings, admin.producer_form, admin.outreach) in `messages/he.json` + `messages/en.json` (515 keys each, full parity). ICU MessageFormat used for `{count}`/`{summary}`/`{total}`/`{name}` interpolations. English authored idiomatic (not literal); Hebrew preserved verbatim.
@@ -31,6 +37,17 @@ Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: �
 `parity`: `frontend/messages/he.json` + `en.json` both at 445 keys, ICU plural parity clean. Residual scan returns 6 hits — all in deferred metadata files (under <20 acceptance threshold).
 
 `parallel coordination`: runs concurrent with PR-C2 (events + experiences). JSON merge expected on `messages/*.json` via accept-both (different top-level namespaces: recipes/group_buys here vs events/experiences there).
+
+### 2026-05-16 — MEH-475 / PR-C2: i18n Wave 5 — events + experiences namespaces (PR pending)
+
+`i18n`: wired `useTranslations()` into all events/** + experiences/** routes plus shared CalendarView and ExperienceCard components. Two new top-level namespaces added in parallel:
+
+- `events.*` — list/categories/experience_categories/detail/calendar (~75 keys; `events.calendar.events_count` is ICU plural `=0/one/two/other`; `events.calendar.days.*` for column headers, replacing `HEBREW_DAY_NAMES` const).
+- `experiences.*` — list/categories/detail/card/new (~100 keys; submit form, host card, detail status banners, ICU placeholders `{n}`, `{title}`, `{spots} / {max}`).
+
+Category arrays keep Hebrew API filter values (server enum) and look up display labels via `tCat(labelKey)`. Status banner object moved inside `ExperienceDetailClient` body so `t()` is in scope.
+
+Files touched (7): `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`, `ExperiencesClient.jsx`, `ExperienceCard.jsx`, `experiences/[id]/ExperienceDetailClient.jsx`, `experiences/new/NewExperienceClient.jsx`. JSON parity 439↔439. Build green, scanner residual 41 across in-scope paths — of which 27 are deliberate Hebrew API filter constants (wire format) and 14 are server-component metadata + Suspense fallbacks deferred to Wave 6. Runs in parallel with PR-C1 (`recipes.*` + `group_buys.*`); JSON merge expected as accept-both on different top-level keys.
 
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 
