@@ -573,6 +573,102 @@
         "unsaved_count": "{count} unsaved changes",
         "saved_indicator": "Saved ✓"
       }
+    },
+    "producer_form": {
+      "errors": {
+        "upload_image": "Image upload failed",
+        "save": "Save failed"
+      },
+      "license": {
+        "optional_toggle": "I have a producer license ↓",
+        "label": "Producer license number",
+        "required_suffix": " (required)",
+        "required_note": "Food production in this category requires a Ministry of Health producer license",
+        "format_warning": "Producer license numbers are 7–10 digits"
+      },
+      "sections": {
+        "basics": "Basic details",
+        "categories_tags": "Categories & tags",
+        "business_type": "Business type",
+        "delivery": "Delivery & pickup",
+        "description_and_price": "Description & price",
+        "images": "Images",
+        "hours": "Hours",
+        "availability": "Availability",
+        "internal_notes": "Internal notes (not visible to users)"
+      },
+      "placeholders": {
+        "delivery_area_cities": "Tel Aviv, Haifa, Jerusalem",
+        "top_product_name": "Grass-fed beef",
+        "price_range": "from ₪65/kg"
+      },
+      "fields": {
+        "name": "Business name *",
+        "contact_name": "Contact name",
+        "phone": "Phone / WhatsApp",
+        "instagram": "Instagram",
+        "website": "Website",
+        "whatsapp_group": "WhatsApp group link",
+        "primary_contact_method": "Primary contact method",
+        "contact_email": "Contact email",
+        "city": "City / area",
+        "kosher": "Kosher",
+        "delivery_cities": "Cities you deliver to",
+        "delivery_area_cities": "Delivery cities (comma-separated)",
+        "short_description": "Short description (for the card)",
+        "description": "Full description",
+        "top_product_name": "Top product",
+        "price_range": "Starting price",
+        "hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
+        "vacation_until": "Return date (optional)"
+      },
+      "contact_methods": {
+        "phone": "Phone",
+        "website": "Website",
+        "email": "Email"
+      },
+      "kosher_options": {
+        "none": "—",
+        "kosher": "Kosher",
+        "mehadrin": "Kosher Mehadrin",
+        "not_kosher": "Not kosher"
+      },
+      "tags": {
+        "organic": "Certified organic",
+        "grass_fed": "Grass-fed",
+        "verified": "Verified",
+        "recommended": "⭐ Recommended (editor's pick)"
+      },
+      "business_type": {
+        "physical": "🏪 Physical storefront (in-person customers)",
+        "delivery": "🚚 Delivery",
+        "must_select_one": "Pick at least one of the two",
+        "nationwide": "Nationwide delivery",
+        "must_select_city": "Choose at least one city, or mark nationwide delivery"
+      },
+      "delivery": {
+        "has_delivery": "🚚 Delivery available",
+        "pickup_points": "📦 Pickup points around the country"
+      },
+      "availability_states": {
+        "accepting_orders": "Accepting orders",
+        "available_today": "Available today 🟢",
+        "full_this_week": "Fully booked this week 🟠",
+        "on_vacation": "On break ⏸"
+      },
+      "availability_tooltip": {
+        "content": "Mark the business owner as on vacation. The producer page shows a 'On vacation' badge, and the WhatsApp button is hidden until the return date.",
+        "label": "Vacation mode info"
+      },
+      "images": {
+        "uploading": "Uploading…"
+      },
+      "submit": {
+        "saving": "Saving…",
+        "save_changes": "Save changes",
+        "create": "Create business",
+        "cancel": "Cancel"
+      }
     }
   }
 }

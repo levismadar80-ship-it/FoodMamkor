@@ -573,6 +573,102 @@
         "unsaved_count": "{count} שינויים לא שמורים",
         "saved_indicator": "נשמר ✓"
       }
+    },
+    "producer_form": {
+      "errors": {
+        "upload_image": "שגיאה בהעלאת תמונה",
+        "save": "שגיאה בשמירה"
+      },
+      "license": {
+        "optional_toggle": "יש לי רישיון יצרן ↓",
+        "label": "מספר רישיון יצרן",
+        "required_suffix": " (חובה)",
+        "required_note": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
+        "format_warning": "מספר רישיון יצרן הוא 7-10 ספרות"
+      },
+      "sections": {
+        "basics": "פרטי בסיס",
+        "categories_tags": "קטגוריות ותגיות",
+        "business_type": "סוג העסק",
+        "delivery": "משלוחים ואיסוף",
+        "description_and_price": "תיאור ומחיר",
+        "images": "תמונות",
+        "hours": "שעות פעילות",
+        "availability": "זמינות",
+        "internal_notes": "הערות פנימיות (לא גלוי למשתמשים)"
+      },
+      "placeholders": {
+        "delivery_area_cities": "תל אביב, חיפה, ירושלים",
+        "top_product_name": "בשר בקר grass-fed",
+        "price_range": "מ-₪65/ק״ג"
+      },
+      "fields": {
+        "name": "שם העסק *",
+        "contact_name": "איש קשר",
+        "phone": "טלפון / ווטסאפ",
+        "instagram": "אינסטגרם",
+        "website": "אתר",
+        "whatsapp_group": "קישור לקבוצת ווטסאפ",
+        "primary_contact_method": "אמצעי קשר ראשי",
+        "contact_email": "אימייל ליצירת קשר",
+        "city": "עיר / אזור",
+        "kosher": "כשרות",
+        "delivery_cities": "ערים שמשלוחים אליהן",
+        "delivery_area_cities": "ערי משלוח (מופרדות בפסיק)",
+        "short_description": "תיאור קצר (לכרטיסייה)",
+        "description": "תיאור מלא",
+        "top_product_name": "מוצר עיקרי",
+        "price_range": "מחיר התחלתי",
+        "hours_label": "שעות פתיחה (פורמט: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
+        "vacation_until": "תאריך חזרה (אופציונלי)"
+      },
+      "contact_methods": {
+        "phone": "טלפון",
+        "website": "אתר",
+        "email": "אימייל"
+      },
+      "kosher_options": {
+        "none": "—",
+        "kosher": "כשר",
+        "mehadrin": "כשר למהדרין",
+        "not_kosher": "לא כשר"
+      },
+      "tags": {
+        "organic": "אורגני מוסמך",
+        "grass_fed": "גראס פד",
+        "verified": "מאומת",
+        "recommended": "⭐ מומלץ (תגית עורכת)"
+      },
+      "business_type": {
+        "physical": "🏪 חנות פיזית (קבלת לקוחות)",
+        "delivery": "🚚 משלוחים",
+        "must_select_one": "חייב לסמן לפחות אחד מהשניים",
+        "nationwide": "משלוחים לכל הארץ",
+        "must_select_city": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ"
+      },
+      "delivery": {
+        "has_delivery": "🚚 יש משלוחים",
+        "pickup_points": "📦 נקודות איסוף ברחבי הארץ"
+      },
+      "availability_states": {
+        "accepting_orders": "פתוח להזמנות",
+        "available_today": "זמינה היום 🟢",
+        "full_this_week": "עמוסה השבוע 🟠",
+        "on_vacation": "בהפסקה ⏸"
+      },
+      "availability_tooltip": {
+        "content": "סמני שבעל עסק בחופשה. מוצג badge 'בחופשה' בדף העסק, ולחצן WhatsApp מוסתר עד לתאריך החזרה.",
+        "label": "מידע על מצב חופשה"
+      },
+      "images": {
+        "uploading": "מעלה..."
+      },
+      "submit": {
+        "saving": "שומר...",
+        "save_changes": "שמור שינויים",
+        "create": "צור עסק",
+        "cancel": "ביטול"
+      }
     }
   }
 }
