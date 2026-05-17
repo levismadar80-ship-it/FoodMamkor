@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
 
@@ -11,6 +12,7 @@ function progressPct(commits, min, max) {
 }
 
 function GroupBuyCard({ gb }) {
+  const t = useTranslations("group_buys.card");
   const funded = gb.status === "funded";
   const pct = progressPct(gb.commits_count, gb.min_participants, gb.max_participants);
   const deadline = new Date(gb.deadline);
@@ -21,7 +23,7 @@ function GroupBuyCard({ gb }) {
       {/* Status banner */}
       {funded && (
         <div className="bg-primary text-white text-xs font-medium text-center py-1">
-          🎉 המחיר נפתח!
+          {t("funded_banner")}
         </div>
       )}
 
@@ -38,7 +40,7 @@ function GroupBuyCard({ gb }) {
         </div>
 
         {gb.producer_name && (
-          <p className="text-sm text-site-muted">מאת {gb.producer_name}</p>
+          <p className="text-sm text-site-muted">{t("by_producer", { name: gb.producer_name })}</p>
         )}
 
         {/* Price display */}
@@ -49,16 +51,16 @@ function GroupBuyCard({ gb }) {
           <span className="text-sm text-site-muted line-through">
             ₪{Number(gb.price_per_unit_regular).toFixed(0)}
           </span>
-          {gb.unit && <span className="text-xs text-site-muted">/ {gb.unit}</span>}
+          {gb.unit && <span className="text-xs text-site-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
         </div>
         <p className="text-xs text-site-muted">
-          במחיר הקבוצתי כשמגיעות ל‑{gb.min_participants} משתתפות
+          {t("min_hint", { min: gb.min_participants })}
         </p>
 
         {/* Progress bar */}
         <div>
           <div className="flex justify-between text-xs text-site-muted mb-1">
-            <span>{gb.commits_count} מתוך {gb.min_participants} משתתפות</span>
+            <span>{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
             <span>{pct}%</span>
           </div>
           <div className="w-full bg-border rounded-full h-2 overflow-hidden">
@@ -72,13 +74,13 @@ function GroupBuyCard({ gb }) {
         {/* Footer */}
         <div className="flex items-center justify-between mt-auto pt-2">
           <span className="text-xs text-site-muted">
-            {daysLeft > 0 ? `${daysLeft} ימים נותרו` : "פג התוקף"}
+            {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
           <Link
             href={`/group-buys/${gb.id}`}
             className="bg-primary text-white text-sm px-4 py-1.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
           >
-            {funded ? "פרטים" : "אני רוצה להצטרף!"}
+            {funded ? t("cta_funded_details") : t("cta_join")}
           </Link>
         </div>
       </div>
@@ -87,6 +89,7 @@ function GroupBuyCard({ gb }) {
 }
 
 export default function GroupBuysClient() {
+  const t = useTranslations("group_buys.list");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("");
@@ -131,10 +134,10 @@ export default function GroupBuysClient() {
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
-            קבוצות רכש
+            {t("hero_title")}
           </h1>
           <p className="text-light text-lg">
-            קנו ביחד וחסכו — מוצרים מקומיים במחיר קבוצתי
+            {t("hero_subtitle")}
           </p>
         </div>
       </section>
@@ -145,17 +148,17 @@ export default function GroupBuysClient() {
           <div className="w-56">
             <CitySearch
               id="group-buys-city"
-              label="סנני לפי עיר"
+              label={t("filter_city_label")}
               value={city}
               onChange={(v) => setCity(v)}
-              placeholder="כל הערים"
+              placeholder={t("filter_city_placeholder")}
             />
           </div>
           <div className="flex gap-2">
             {[
-              { key: "open", label: "פתוחות" },
-              { key: "funded", label: "ממומנות" },
-              { key: "fulfilled", label: "הושלמו" },
+              { key: "open", label: t("status_open") },
+              { key: "funded", label: t("status_funded") },
+              { key: "fulfilled", label: t("status_fulfilled") },
             ].map((s) => (
               <button
                 key={s.key}
@@ -181,8 +184,8 @@ export default function GroupBuysClient() {
         ) : items.length === 0 ? (
           <div className="text-center py-20 text-site-muted">
             <p className="text-4xl mb-4">🛒</p>
-            <p className="text-lg font-medium">אין קבוצות רכש כרגע</p>
-            <p className="text-sm mt-1">בדקי שוב בקרוב</p>
+            <p className="text-lg font-medium">{t("empty_title")}</p>
+            <p className="text-sm mt-1">{t("empty_subtitle")}</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

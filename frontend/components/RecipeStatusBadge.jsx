@@ -5,11 +5,7 @@
  *
  * Renders the moderation state of a producer recipe as a small pill.
  * Four states mirror the DB CHECK constraint declared in MEH-588
- * migration f4c8a91e2b07:
- *   pending          → gray   "ממתין לאישור"
- *   approved         → green  "אושר ופורסם"
- *   rejected         → red    "נדחה"
- *   needs_revision   → orange "צריך תיקון"
+ * migration f4c8a91e2b07: pending / approved / rejected / needs_revision.
  *
  * Pattern mirrored from STATUS_LABELS at
  * frontend/app/[locale]/producer/dashboard/group-buys/page.js:11-16
@@ -19,35 +15,24 @@
  * inline-flex container with logical padding.
  */
 
-const STATUS = {
-  pending: {
-    label: "ממתין לאישור",
-    cls: "bg-gray-100 text-gray-700 border-gray-200",
-  },
-  approved: {
-    label: "אושר ופורסם",
-    cls: "bg-[#EAF3DE] text-primary border-primary/30",
-  },
-  rejected: {
-    label: "נדחה",
-    cls: "bg-red-50 text-red-700 border-red-200",
-  },
-  needs_revision: {
-    label: "צריך תיקון",
-    cls: "bg-orange-50 text-orange-700 border-orange-200",
-  },
+import { useTranslations } from "next-intl";
+
+const STATUS_CLS = {
+  pending: "bg-gray-100 text-gray-700 border-gray-200",
+  approved: "bg-[#EAF3DE] text-primary border-primary/30",
+  rejected: "bg-red-50 text-red-700 border-red-200",
+  needs_revision: "bg-orange-50 text-orange-700 border-orange-200",
 };
 
 export default function RecipeStatusBadge({ status }) {
-  const s = STATUS[status] || {
-    label: status || "—",
-    cls: "bg-gray-100 text-gray-600 border-gray-200",
-  };
+  const t = useTranslations("recipes.status");
+  const cls = STATUS_CLS[status];
+  const label = cls ? t(status) : status || "—";
   return (
     <span
-      className={`inline-flex items-center text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${s.cls}`}
+      className={`inline-flex items-center text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${cls || "bg-gray-100 text-gray-600 border-gray-200"}`}
     >
-      {s.label}
+      {label}
     </span>
   );
 }

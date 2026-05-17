@@ -11,11 +11,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RecipeForm from "@/components/RecipeForm";
 
 export default function EditRecipePage() {
+  const t = useTranslations("recipes.edit");
   const router = useRouter();
   const params = useParams();
   const recipeId = params?.id;
@@ -32,7 +34,7 @@ export default function EditRecipePage() {
     api
       .get(`/producers/me/recipes/${recipeId}`)
       .then((r) => setRecipe(r.data))
-      .catch(() => setError("המתכון לא נמצא"));
+      .catch(() => setError(t("not_found")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, recipeId]);
 
@@ -45,7 +47,7 @@ export default function EditRecipePage() {
           href="/producer/dashboard/recipes"
           className="text-sm text-primary hover:underline"
         >
-          ← חזרה למתכונים
+          {t("back")}
         </Link>
         <p className="mt-4 text-site-muted">{error}</p>
       </div>
@@ -58,10 +60,10 @@ export default function EditRecipePage() {
         href="/producer/dashboard/recipes"
         className="text-sm text-primary hover:underline"
       >
-        ← חזרה למתכונים
+        {t("back")}
       </Link>
       <h1 className="font-headline text-2xl font-bold text-site-text mt-1 mb-6">
-        עריכת מתכון
+        {t("heading")}
       </h1>
       {recipe ? (
         <RecipeForm
@@ -71,7 +73,7 @@ export default function EditRecipePage() {
           onCancel={() => router.push("/producer/dashboard/recipes")}
         />
       ) : (
-        <div className="text-center py-16 text-site-muted">טוענת...</div>
+        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
       )}
     </div>
   );
