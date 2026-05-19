@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { MapPin, X } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
 export default function LocationBanner({ hasCity, onOpenModal }) {
+  const t = useTranslations("location.banner");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function LocationBanner({ hasCity, onOpenModal }) {
       <div className="flex items-center gap-2 min-w-0">
         <MapPin size={20} weight="fill" className="shrink-0" aria-hidden="true" />
         <p className="text-sm font-medium truncate">
-          איפה את? נמצא עסקים קרובים אליך
+          {t("message")}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -40,13 +42,13 @@ export default function LocationBanner({ hasCity, onOpenModal }) {
           onClick={onOpenModal}
           className="bg-primary text-white text-sm font-medium px-4 py-1.5 rounded-[8px] hover:bg-primary-light transition whitespace-nowrap"
         >
-          בחרי עיר
+          {t("choose_city")}
         </button>
         <button
           type="button"
           onClick={dismiss}
           className="w-7 h-7 rounded-full hover:bg-primary/10 flex items-center justify-center transition"
-          aria-label="סגור באנר"
+          aria-label={t("close_aria")}
         >
           <X size={14} weight="bold" />
         </button>

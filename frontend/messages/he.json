@@ -394,6 +394,21 @@
       "heading": "אירועים קרובים 📅",
       "all_events": "לכל האירועים ←",
       "free": "חינם"
+    },
+    "marquee": {
+      "tag_unprocessed": "🌿 ללא מעובד",
+      "tag_pasture": "🥩 ממרעה",
+      "tag_organic": "🧀 אורגני",
+      "tag_sourdough": "🍞 מחמצת",
+      "tag_extra_virgin": "🫒 כתית",
+      "tag_fresh_real": "🌱 טרי ואמיתי",
+      "tag_verified": "✅ מאומת",
+      "tag_local": "📍 מקומי"
+    },
+    "story_block": {
+      "founder_quote": "אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור.",
+      "founder_attribution": "— ספיר, מייסדת מהמקור",
+      "seasonal_heading": "כל עונה — טעם אחר"
     }
   },
   "common": {
@@ -413,6 +428,21 @@
       "page_aria": "עמוד {page}",
       "next_aria": "עמוד הבא",
       "next": "הבא →"
+    },
+    "breadcrumb": {
+      "aria": "נתיב ניווט"
+    },
+    "info_tooltip": {
+      "trigger_aria": "מידע נוסף"
+    },
+    "parallax_quote": {
+      "aria": "ציטוט"
+    },
+    "skeleton": {
+      "loading_businesses": "טוענת עסקים טריים"
+    },
+    "star_rating": {
+      "count_aria": "{count, plural, one {דירוג אחד} two {{count} דירוגים} other {({count} דירוגים)}}"
     }
   },
   "category": {
@@ -704,6 +734,44 @@
           "generic": "משהו השתבש, נסי שוב"
         }
       }
+    },
+    "availability": {
+      "status_label": {
+        "open_orders": "פתוח להזמנות",
+        "busy_week": "עמוס כרגע",
+        "on_vacation": "בהפסקה"
+      },
+      "card_label": {
+        "open_orders": "פתוח להזמנות",
+        "available_today": "זמינה היום 🟢",
+        "busy_week": "עמוסה השבוע 🟠",
+        "on_vacation": "בהפסקה ⏸"
+      }
+    },
+    "delivery": {
+      "heading": "משלוחים",
+      "nationwide": "משלוחים לכל הארץ",
+      "arranged": "משלוחים בתיאום מראש — צרי קשר לפרטים"
+    },
+    "follow": {
+      "error_generic": "משהו השתבש, נסי שוב",
+      "following": "עוקבת",
+      "follow_aria": "עקבי אחרי עסק זה",
+      "unfollowed_toast": "הפסקת לעקוב",
+      "followed_toast": "מעכשיו תקבלי עדכונים על מוצרים חדשים 🔔"
+    },
+    "badge_row": {
+      "aria": "תגיות בית עסק"
+    },
+    "friday_delivery": {
+      "today": "היום",
+      "title": "יצרניות עם משלוח היום",
+      "title_alt": "יצרניות עם משלוח היום"
+    },
+    "holiday_banner": {
+      "approaching": "{name} מתקרב {emoji}",
+      "aria": "הודעת חג",
+      "close_aria": "סגרי"
     }
   },
   "map": {
@@ -740,12 +808,6 @@
     "city_picker": {
       "heading": "לאן לשלוח?",
       "subheading": "בחרי עיר כדי לסנן לפי משלוח",
-      "popular": {
-        "tel_aviv": "תל אביב",
-        "jerusalem": "ירושלים",
-        "haifa": "חיפה",
-        "beersheba": "באר שבע"
-      },
       "other": {
         "label": "עיר אחרת",
         "placeholder": "הקלידי שם עיר..."
@@ -794,6 +856,39 @@
         "business_list": "רשימת בתי עסק על המפה"
       },
       "heading_ssr": "בתי עסק על המפה"
+    },
+    "homepage_mini": {
+      "loading": "טוענת מפה...",
+      "pre_launch_hint": "בקרוב מאוד — בתי עסק ראשונים מצטרפים השבוע",
+      "aria": "תצוגה מקדימה של המפה",
+      "dot_caption": "כל בית עסק על המפה",
+      "dot_subtitle": "גלי בתי עסק לפי מיקום",
+      "open_full": "פתחי מפה מלאה"
+    },
+    "component": {
+      "geo_invalid": "המיקום שהתקבל אינו תקין",
+      "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "marker_singular": "עסק",
+      "marker_plural": "עסק"
+    },
+    "producer_card": {
+      "verified": "✓ מאומת",
+      "distance_prefix": "ל",
+      "wa_message": "היי! מצאתי אותך במהמקור — {name}",
+      "full_profile": "פרופיל מלא"
+    },
+    "mini": {
+      "default_label": "מיקום",
+      "open_in_waze": "פתחי ב",
+      "open_in_google": "פתחי ב"
+    },
+    "bottom_sheet": {
+      "title": "בתי עסק באזור",
+      "show_map": "הצג מפה"
+    },
+    "chip_scroll": {
+      "category_aria": "סינון לפי קטגוריה",
+      "attribute_aria": "סינון לפי תכונה"
     }
   },
   "admin": {
@@ -2395,6 +2490,26 @@
       "recent_heading": "חיפושים אחרונים",
       "trending_heading": "חיפושים פופולריים",
       "remove_recent_aria": "הסר {q} מהחיפושים האחרונים"
+    },
+    "smart": {
+      "loading": "טוענת תוצאות...",
+      "no_results_for": "אין תוצאות עבור",
+      "section_producers": "בתי עסק",
+      "section_products": "מוצרים",
+      "product_by_prefix": "אצל",
+      "section_cities": "ערים",
+      "section_categories": "קטגוריות"
+    },
+    "cities_autocomplete": {
+      "remove_aria": "הסר {city}",
+      "placeholder": "הקלידי שם עיר..."
+    },
+    "city_search": {
+      "placeholder": "חפשי עיר...",
+      "clear_aria": "נקה עיר"
+    },
+    "address_search": {
+      "placeholder": "חפשי כתובת..."
     }
   },
   "favorites": {
@@ -2406,7 +2521,17 @@
     "empty_subtitle": "לחצי על הלב בכרטיסיית עסק כדי לשמור אותו כאן לגישה מהירה.",
     "first_visit_tip": "לחצי על ❤️ בכרטיס עסק כדי לשמור אותו כאן",
     "empty_cta": "גלי עסקים",
-    "list_alerts_hint": "לחצי על 🔔 בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים"
+    "list_alerts_hint": "לחצי על 🔔 בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים",
+    "button": {
+      "saved_toast_first_time": "נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית",
+      "saved_toast": "נשמר למועדפים ❤️",
+      "removed_toast": "הוסר מהמועדפים",
+      "error_generic": "משהו השתבש, נסי שוב",
+      "add_aria": "הוסף למועדפים",
+      "remove_aria": "הסר ממועדפים",
+      "inline_label": "שמור",
+      "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסי"
+    }
   },
   "rate": {
     "invalid_link": "קישור לא תקין",
@@ -2429,5 +2554,70 @@
     "success_title": "תודה על הדיווח",
     "success_message": "נבדוק ונטפל תוך 48 שעות.",
     "success_close": "סגור"
+  },
+  "share": {
+    "trigger": "שתף",
+    "modal_title": "שתף לינק לעסק",
+    "copy_link": "שתף לינק",
+    "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
+    "wa_message_business_fallback": "בית עסק",
+    "wa_meta_separator": " • ",
+    "copied_toast": "הקישור הועתק ✓"
+  },
+  "gallery": {
+    "open_aria": "הגדלי תמונה {current}",
+    "image_alt": "תמונה {current}",
+    "prev_aria": "תמונה קודמת",
+    "next_aria": "תמונה הבאה",
+    "thumb_aria": "עבור לתמונה {n}"
+  },
+  "whatsapp": {
+    "button": {
+      "default_message": "היי, ראיתי את \"{productTitle}\" במהמקור ואשמח לשמוע פרטים!",
+      "opening": "נפתח..."
+    },
+    "share_button": {
+      "default_message": "גיליתי את {name} במהמקור — {url}",
+      "share_aria": "שתפי את העסק בוואטסאפ",
+      "share_to_friend": "שלחי לחברה"
+    },
+    "question_chips": {
+      "my_area": "האזור שלי",
+      "city_placeholder": "[עיר]",
+      "ask_us": "שאלי אותנו",
+      "greeting_template": "שלום {name}, {q}"
+    }
+  },
+  "directory": {
+    "disclaimer": {
+      "brand_is_prefix": "היא פלטפורמת",
+      "directory_only": "דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר בלבד.",
+      "prices_set_by_businesses": "מחירים נקבעים על ידי בתי העסק."
+    }
+  },
+  "location": {
+    "banner": {
+      "message": "איפה את? נמצא עסקים קרובים אליך",
+      "choose_city": "בחרי עיר",
+      "close_aria": "סגור באנר"
+    }
+  },
+  "story": {
+    "canvas": {
+      "footer_url": "גלי עוד בתי עסק ב mehamakor.online",
+      "upload_error": "שגיאה בהעלאה לקלאודינרי",
+      "default_country": "ישראל",
+      "caption_prefix": "🌿 עסק חדש במהמקור!",
+      "title": "📸 כרטיס אינסטגרם מוכן",
+      "generating": "מייצר",
+      "download": "הורד",
+      "uploading": "מעלה...",
+      "save_cloudinary": "שמור ל-Cloudinary",
+      "copy_caption": "העתיקי caption",
+      "copied": "✅ הועתק!"
+    }
+  },
+  "footer": {
+    "copyright": "מהמקור · נעשה באהבה בישראל"
   }
 }

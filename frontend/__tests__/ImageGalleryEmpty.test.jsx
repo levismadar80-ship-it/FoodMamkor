@@ -1,5 +1,21 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+// MEH-475 PR-C4a chunk 4b: mock next-intl per established precedent.
+// ImageGallery uses gallery.* keys for ARIA labels and image alts.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key, vars) => {
+    const flat = {
+      open_aria: `הגדלי תמונה ${vars?.current ?? ""}`.trim(),
+      image_alt: `תמונה ${vars?.current ?? ""}`.trim(),
+      prev_aria: "תמונה קודמת",
+      next_aria: "תמונה הבאה",
+      thumb_aria: `עבור לתמונה ${vars?.n ?? ""}`.trim(),
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 import ImageGallery from "@/components/ImageGallery";
 
 // Mock FavoriteButton so we don't need auth context + api

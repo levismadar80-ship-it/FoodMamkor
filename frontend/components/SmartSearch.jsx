@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlight";
 
@@ -38,6 +39,7 @@ const DEBOUNCE_MS = 200;
 const EMPTY_RESULT = { producers: [], products: [], cities: [], categories: [] };
 
 export default function SmartSearch({ placeholder, srLabel, className = "" }) {
+  const t = useTranslations("search.smart");
   const router = useRouter();
   const [value, setValue] = useState("");
   const [results, setResults] = useState(EMPTY_RESULT);
@@ -193,16 +195,16 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
           dir="rtl"
         >
           {loading && !hasResults && (
-            <p className="px-3 py-3 text-xs text-site-muted">טוענת תוצאות...</p>
+            <p className="px-3 py-3 text-xs text-site-muted">{t("loading")}</p>
           )}
           {!loading && !hasResults && (
             <p className="px-3 py-3 text-xs text-site-muted">
-              אין תוצאות עבור &quot;{trimmed}&quot;
+              {t("no_results_for")} &quot;{trimmed}&quot;
             </p>
           )}
 
           {results.producers.length > 0 && (
-            <Section title="בתי עסק">
+            <Section title={t("section_producers")}>
               {results.producers.map((p) => {
                 const i = cursor++;
                 return (
@@ -228,7 +230,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
           )}
 
           {results.products.length > 0 && (
-            <Section title="מוצרים">
+            <Section title={t("section_products")}>
               {results.products.map((p) => {
                 const i = cursor++;
                 return (
@@ -243,7 +245,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
                       <Highlighted text={p.name} query={trimmed} />
                     </div>
                     <div className="text-xs text-site-muted mt-0.5">
-                      אצל {p.producer_name}
+                      {t("product_by_prefix")} {p.producer_name}
                     </div>
                   </Row>
                 );
@@ -252,7 +254,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
           )}
 
           {results.cities.length > 0 && (
-            <Section title="ערים">
+            <Section title={t("section_cities")}>
               {results.cities.map((c) => {
                 const i = cursor++;
                 return (
@@ -271,7 +273,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
           )}
 
           {results.categories.length > 0 && (
-            <Section title="קטגוריות">
+            <Section title={t("section_categories")}>
               {results.categories.map((c) => {
                 const i = cursor++;
                 return (

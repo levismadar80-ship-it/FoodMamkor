@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 import Lightbox from "./Lightbox";
 
 export default function ImageGallery({ images = [], producerId = null, categoryEmoji = null, producerInitials = "" }) {
+  const t = useTranslations("gallery");
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const touchStartX = useRef(null);
@@ -81,12 +83,12 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
         ref={imageButtonRef}
         type="button"
         onClick={() => setLightboxOpen(true)}
-        aria-label={`הגדלי תמונה ${current + 1}`}
+        aria-label={t("open_aria", { current: current + 1 })}
         className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
       >
         <ImageWithFallback
           src={images[current]}
-          alt={`תמונה ${current + 1}`}
+          alt={t("image_alt", { current: current + 1 })}
           fill
           priority={current === 0}
           className="object-cover"
@@ -105,7 +107,7 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
             onClick={() => setCurrent((current - 1 + images.length) % images.length)}
             // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="תמונה קודמת"
+            aria-label={t("prev_aria")}
           >
             <span aria-hidden="true">←</span>
           </button>
@@ -114,7 +116,7 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
             onClick={() => setCurrent((current + 1) % images.length)}
             // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
             className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label="תמונה הבאה"
+            aria-label={t("next_aria")}
           >
             <span aria-hidden="true">→</span>
           </button>
@@ -126,7 +128,7 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
                 type="button"
                 onClick={() => setCurrent(i)}
                 className="w-11 h-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
-                aria-label={`עבור לתמונה ${i + 1}`}
+                aria-label={t("thumb_aria", { n: i + 1 })}
                 aria-current={i === current ? "true" : undefined}
               >
                 <span

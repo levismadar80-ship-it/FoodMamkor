@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { NavigationArrow } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -30,6 +31,7 @@ function DisableInteraction() {
 }
 
 export default function MiniMap({ lat, lng, name }) {
+  const t = useTranslations("map.mini");
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
@@ -41,7 +43,7 @@ export default function MiniMap({ lat, lng, name }) {
 
   return (
     <section className="mt-8 border-t border-border pt-8">
-      <h2 className="font-headline text-2xl font-bold text-site-text mb-4">מיקום</h2>
+      <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("default_label")}</h2>
       {hasCoords && (
         <div className="rounded-[16px] overflow-hidden border border-border" style={{ height: 300 }}>
           <MapContainer
@@ -73,7 +75,7 @@ export default function MiniMap({ lat, lng, name }) {
               className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
             >
               <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-              פתחי ב-Waze
+              {t("open_in_waze")}-Waze
             </a>
           )}
           <a
@@ -83,7 +85,7 @@ export default function MiniMap({ lat, lng, name }) {
             className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
           >
             <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-            פתחי ב-Google Maps
+            {t("open_in_google")}-Google Maps
           </a>
         </div>
       )}

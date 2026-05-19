@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const PEEK = 14;
 const HALF = 55;
@@ -12,6 +13,7 @@ function closest(value) {
 }
 
 export default function MapBottomSheet({ snap, onSnapChange, children, count }) {
+  const t = useTranslations("map.bottom_sheet");
   const sheetRef = useRef(null);
   const startY = useRef(0);
   const startSnap = useRef(snap);
@@ -73,7 +75,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
       {/* Peek header */}
       <div className="px-4 pb-2 shrink-0 flex items-center justify-between">
         <p className="text-sm font-medium text-site-text">
-          {count} בתי עסק באזור
+          {count} {t("title")}
         </p>
         {snap === FULL && (
           <button
@@ -81,7 +83,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
             onClick={() => onSnapChange(PEEK)}
             className="text-sm text-primary font-medium hover:underline"
           >
-            הצג מפה
+            {t("show_map")}
           </button>
         )}
       </div>

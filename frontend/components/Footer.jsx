@@ -210,7 +210,7 @@ export default function Footer() {
           }}
         >
           <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
+            © {new Date().getFullYear()} {t("footer.copyright")} 🌿
           </p>
           <ul className="flex items-center gap-4">
             {[

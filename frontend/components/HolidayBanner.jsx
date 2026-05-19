@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { getActiveHoliday } from "@/lib/holidays";
 import api from "@/lib/api";
 
 const DISMISS_KEY = "holiday_banner_dismissed";
 
 export default function HolidayBanner() {
+  const t = useTranslations("producer.holiday_banner");
   const [holiday, setHoliday] = useState(null);
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
@@ -42,13 +44,13 @@ export default function HolidayBanner() {
 
   const searchHref = `/producers?q=${encodeURIComponent(holiday.searchParams.q)}`;
   const label = holiday.upcoming
-    ? `${holiday.name} מתקרב ${holiday.emoji}`
+    ? t("approaching", { name: holiday.name, emoji: holiday.emoji })
     : `${holiday.name} ${holiday.emoji}`;
 
   return (
     <div
       role="region"
-      aria-label="הודעת חג"
+      aria-label={t("aria")}
       className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
@@ -66,7 +68,7 @@ export default function HolidayBanner() {
       </Link>
       <button
         onClick={dismiss}
-        aria-label="סגרי"
+        aria-label={t("close_aria")}
         className="shrink-0 text-site-muted hover:text-site-text transition p-1 rounded"
       >
         <X size={16} weight="bold" aria-hidden="true" />

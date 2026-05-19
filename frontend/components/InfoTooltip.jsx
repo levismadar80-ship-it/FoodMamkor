@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const POSITION_CLASSES = {
   top: "bottom-full left-1/2 -translate-x-1/2 mb-2", // rtl-ok: horizontal center, direction-neutral
@@ -11,9 +12,11 @@ const POSITION_CLASSES = {
 
 export default function InfoTooltip({
   content,
-  label = "מידע נוסף",
+  label,
   position = "top",
 }) {
+  const t = useTranslations("common.info_tooltip");
+  const triggerLabel = label ?? t("trigger_aria");
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
   const tooltipId = useId();
@@ -42,7 +45,7 @@ export default function InfoTooltip({
     <span className="relative inline-block align-middle" ref={wrapperRef}>
       <button
         type="button"
-        aria-label={label}
+        aria-label={triggerLabel}
         aria-expanded={open}
         aria-describedby={open ? tooltipId : undefined}
         onClick={() => setOpen((v) => !v)}

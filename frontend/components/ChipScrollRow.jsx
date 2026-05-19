@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Scrollable chip row for filter bars.
@@ -27,6 +28,7 @@ export default function ChipScrollRow({
   fadeBg = "#ffffff",
   className = "",
 }) {
+  const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
   const scrollRef = useRef(null);
   const prevActiveKeysRef = useRef(null);
@@ -97,7 +99,7 @@ export default function ChipScrollRow({
         ref={scrollRef}
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-4"
         role={variant === "category" ? "radiogroup" : "toolbar"}
-        aria-label={variant === "category" ? "סינון לפי קטגוריה" : "סינון לפי תכונה"}
+        aria-label={variant === "category" ? t("category_aria") : t("attribute_aria")}
       >
         {chips.map((chip) => {
           const active = isActive(chip);
