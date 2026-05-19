@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 const VISIT_KEY = "pwa_visits";
 const DISMISS_KEY = "pwa_dismiss_until";
@@ -28,6 +29,7 @@ function lsSet(key, value) {
 }
 
 export default function InstallPrompt() {
+  const t = useTranslations("modals.install_prompt");
   const [show, setShow] = useState(false);
   const [ios, setIos] = useState(false);
   const promptRef = useRef(null);
@@ -91,33 +93,36 @@ export default function InstallPrompt() {
     <div
       role="dialog"
       aria-modal="false"
-      aria-label="הוסיפי לדף הבית"
+      aria-label={t("aria_label")}
       className="fixed bottom-24 md:bottom-6 start-4 end-4 md:start-auto md:end-6 md:w-80 bg-white rounded-[16px] shadow-xl border border-border p-4 z-[9997] flex items-start gap-3"
     >
       <span className="text-2xl shrink-0" aria-hidden="true">📲</span>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-site-text text-sm leading-snug">מהמקור על הדף הבית</p>
+        <p className="font-semibold text-site-text text-sm leading-snug">{t("title")}</p>
         {ios ? (
           <p className="text-xs text-site-muted mt-1 leading-snug">
-            לחצי על <strong>שתף</strong> ← <strong>הוסף למסך הבית</strong>
+            {t.rich("ios_instructions", {
+              share: (chunks) => <strong>{chunks}</strong>,
+              add: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         ) : (
           <>
             <p className="text-xs text-site-muted mt-1 leading-snug">
-              הוסיפי לדף הבית — חוויה כמו אפליקציה, בלי App Store
+              {t("android_subtitle")}
             </p>
             <button
               onClick={handleInstall}
               className="mt-2 text-xs font-semibold bg-primary text-white px-3 py-1.5 rounded-full hover:opacity-90 transition"
             >
-              הוסיפי
+              {t("android_cta")}
             </button>
           </>
         )}
       </div>
       <button
         onClick={handleDismiss}
-        aria-label="סגרי"
+        aria-label={t("dismiss_aria")}
         className="shrink-0 text-site-muted hover:text-site-text transition p-1 rounded"
       >
         <X size={16} weight="bold" aria-hidden="true" />

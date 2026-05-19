@@ -1,8 +1,12 @@
+"use client";
+
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const POPULAR_COUNT = 6;
 
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
+  const t = useTranslations("forms.category_selector");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
 
@@ -12,12 +16,12 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   const more = categories.slice(POPULAR_COUNT);
   const shown = q ? filtered : expanded ? categories : categories.slice(0, POPULAR_COUNT);
-  const sectionLabel = q ? "תוצאות" : "פופולריות";
+  const sectionLabel = q ? t("section_results") : t("section_popular");
 
   return (
     <div>
       <p className="font-medium mb-2 text-sm">
-        קטגוריה <span className="text-red-700">*</span>
+        {t("label")} <span className="text-red-700">*</span>
       </p>
 
       <div className="relative mb-3">
@@ -28,7 +32,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="חפשי קטגוריה..."
+          placeholder={t("search_placeholder")}
           className="w-full border border-[#e5e0d8] rounded-[10px] py-2 pr-9 pl-3 text-sm bg-[#faf8f4] focus:outline-none focus:border-primary transition"
           dir="rtl"
         />
@@ -36,9 +40,9 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
       {noResults ? (
         <p className="text-xs text-site-muted mt-1">
-          לא מצאת את הקטגוריה שלך?{" "}
+          {t("no_results_prefix")}{" "}
           <button type="button" onClick={onRequestCategory} className="text-primary underline">
-            ספרי לנו ←
+            {t("no_results_cta")}
           </button>
         </p>
       ) : (
@@ -71,7 +75,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               onClick={() => setExpanded((v) => !v)}
               className="mt-2 text-sm text-primary hover:underline block"
             >
-              {expanded ? "↑ פחות קטגוריות" : `← עוד קטגוריות (${more.length})`}
+              {expanded ? t("show_less") : t("show_more", { count: more.length })}
             </button>
           )}
         </>

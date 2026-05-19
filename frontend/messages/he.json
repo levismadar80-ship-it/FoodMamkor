@@ -403,6 +403,16 @@
     },
     "aria": {
       "close": "סגור"
+    },
+    "pagination": {
+      "aria_label": "עימוד",
+      "per_page_label": "הצגה לעמוד",
+      "per_page_aria": "פריטים לעמוד",
+      "prev_aria": "עמוד קודם",
+      "prev": "← הקודם",
+      "page_aria": "עמוד {page}",
+      "next_aria": "עמוד הבא",
+      "next": "הבא →"
     }
   },
   "category": {
@@ -2040,6 +2050,177 @@
         "success_toast": "תודה! נחזור אליך בקרוב 🌿",
         "error_toast": "משהו השתבש, נסי שוב"
       }
+    }
+  },
+  "modals": {
+    "location": {
+      "title": "איפה את?",
+      "subtitle": "נמצא עסקים קרובים אליך",
+      "search_label": "חיפוש עיר",
+      "search_placeholder": "הקלידי שם עיר...",
+      "aria_label": "בחירת עיר",
+      "close_aria": "סגור",
+      "geo_button": "קרוב אליי",
+      "geo_loading": "מחפשת...",
+      "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "current_location_fallback": "מיקום נוכחי",
+      "skip": "דלגי לעכשיו",
+      "popular_cities": {
+        "tel_aviv": "תל אביב",
+        "jerusalem": "ירושלים",
+        "haifa": "חיפה",
+        "beersheba": "באר שבע"
+      }
+    },
+    "category_request": {
+      "title": "איזו קטגוריה חסרה?",
+      "name_placeholder": "שם הקטגוריה המוצעת *",
+      "name_example": "לדוגמה: משקאות מותססים",
+      "examples_placeholder": "דוגמאות למוצרים (אופציונלי)",
+      "examples_hint": "קומבוצ'ה, קפיר, וואטר קפיר...",
+      "submit": "שלחי בקשה",
+      "submit_loading": "שולחת...",
+      "close": "סגרי",
+      "toasts": {
+        "success": "תודה! הבקשה התקבלה. בינתיים, בחרי את הקטגוריה הקרובה ביותר.",
+        "error": "שגיאה בשליחת הבקשה — נסי שוב"
+      }
+    },
+    "install_prompt": {
+      "aria_label": "הוסיפי לדף הבית",
+      "title": "מהמקור על הדף הבית",
+      "ios_instructions": "לחצי על <share>שתף</share> ← <add>הוסף למסך הבית</add>",
+      "android_subtitle": "הוסיפי לדף הבית — חוויה כמו אפליקציה, בלי App Store",
+      "android_cta": "הוסיפי",
+      "dismiss_aria": "סגרי"
+    },
+    "login_prompt": {
+      "default_message": "כדי לשמור עסקים אוהבים — היכנסי",
+      "close_aria": "סגרי חלונית",
+      "title": "רוצה לשמור? 🌿",
+      "login_cta": "היכנסי",
+      "dismiss_cta": "אולי אחר כך"
+    },
+    "cookie_banner": {
+      "aria_label": "הסכמה לעוגיות",
+      "message": "🍪 אנחנו משתמשים בעוגיות לשיפור החוויה — <link>מדיניות פרטיות</link>",
+      "accept_all": "קבלי הכל",
+      "essential_only": "רק הכרחיים"
+    },
+    "lightbox": {
+      "aria_label": "תצוגת תמונה",
+      "close_aria": "סגרי תצוגה",
+      "image_alt": "תמונה {current} מתוך {total}",
+      "prev_aria": "תמונה קודמת",
+      "next_aria": "תמונה הבאה"
+    },
+    "onboarding_tip": {
+      "cta_default": "הבנתי",
+      "close_aria": "סגירה"
+    }
+  },
+  "kashrut": {
+    "badges": {
+      "rabanut": {
+        "label": "כשר מרבנות",
+        "tooltip": "כשרות בפיקוח הרבנות המקומית"
+      },
+      "badatz": {
+        "label": "בדצ\"ה",
+        "tooltip": "כשרות מהדרין בפיקוח בית דין צדק"
+      },
+      "chalak": {
+        "label": "חלק",
+        "tooltip": "בשר חלק לפי המסורת הספרדית"
+      },
+      "mehadrin": {
+        "label": "מהדרין",
+        "tooltip": "כשרות מהדרין ברמת הידור גבוהה"
+      },
+      "organic_kosher": {
+        "label": "אורגני כשר",
+        "tooltip": "גידול אורגני מוסמך + כשרות"
+      },
+      "shmitta": {
+        "label": "שמיטה",
+        "tooltip": "תוצרת שנת השמיטה בהכשר מיוחד"
+      },
+      "kilayim": {
+        "label": "ללא כלאיים",
+        "tooltip": "ללא הרכבה אסורה בין מינים"
+      },
+      "artisan_dairy": {
+        "label": "מוצרי חלב מהחווה",
+        "tooltip": "חלב ומוצריו ישירות מהחווה, כשר"
+      }
+    },
+    "expiry": {
+      "valid_until": "תקף עד: {date}",
+      "near_expiry": "⚠️ תעודה פגה בקרוב"
+    }
+  },
+  "opening_hours": {
+    "heading": "שעות פעילות",
+    "open_now": "פתוח עכשיו",
+    "closes_at": "· סוגר ב-{time}",
+    "closed_now": "סגור",
+    "opens_at": "· פותח ב-{day} {time}",
+    "closed_day": "סגור",
+    "tomorrow": "מחר",
+    "weekdays": {
+      "sun": "יום ראשון",
+      "mon": "יום שני",
+      "tue": "יום שלישי",
+      "wed": "יום רביעי",
+      "thu": "יום חמישי",
+      "fri": "יום שישי",
+      "sat": "שבת"
+    }
+  },
+  "trust": {
+    "tier_2": {
+      "label": "✓ מספר מאומת",
+      "tooltip": "מספר הטלפון של בעלת העסק אומת באמצעות קוד חד-פעמי"
+    },
+    "tier_3": {
+      "label": "✅ עסק מאומת",
+      "tooltip": "בית העסק עבר אימות ידני על ידי צוות מהמקור"
+    },
+    "tier_4": {
+      "label": "⭐ מובילת קהילה",
+      "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
+    },
+    "tier_5": {
+      "label": "🏅 שגרירת מהמקור",
+      "tooltip": "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור"
+    }
+  },
+  "forms": {
+    "password": {
+      "placeholder_default": "סיסמה",
+      "aria_label_default": "סיסמה",
+      "toggle_show": "הציגי סיסמה",
+      "toggle_hide": "הסתירי סיסמה",
+      "min_length": "לפחות {min} תווים",
+      "checking": "בודק...",
+      "not_breached": "לא דלפה ברשת",
+      "different_from_current": "שונה מהקודמת — נבדק בשרת",
+      "strength": {
+        "weak": "חלשה",
+        "medium": "בינונית",
+        "strong": "חזקה",
+        "label": "חוזק סיסמה: {tier}"
+      }
+    },
+    "category_selector": {
+      "label": "קטגוריה",
+      "search_placeholder": "חפשי קטגוריה...",
+      "section_results": "תוצאות",
+      "section_popular": "פופולריות",
+      "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
+      "no_results_cta": "ספרי לנו ←",
+      "show_more": "← עוד קטגוריות ({count})",
+      "show_less": "↑ פחות קטגוריות"
     }
   }
 }
