@@ -1923,5 +1923,27 @@
       "error_date_required": "A date is required",
       "error_generic": "Error submitting the experience. Please try again."
     }
+  },
+  "errors": {
+    "boundary": {
+      "heading": "Something went wrong — please try again",
+      "message": "The page didn't load this time. It usually works on the second try.",
+      "retry": "Try again",
+      "home": "Back to home",
+      "contact_prefix": "If this continues,",
+      "contact_link": "contact us"
+    },
+    "not_found": {
+      "heading": "We couldn't find this page",
+      "message": "The link may have expired, or the page has moved.",
+      "home": "Back to home",
+      "discover": "Find businesses on the map"
+    },
+    "producer_not_found": {
+      "heading": "This business wasn't found",
+      "message": "The link may be old, or the business is no longer active. Find other businesses near you.",
+      "discover": "Find businesses on the map",
+      "home": "Back to home"
+    }
   }
 }
