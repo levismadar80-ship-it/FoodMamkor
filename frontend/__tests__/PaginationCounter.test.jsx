@@ -5,6 +5,32 @@
 import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import { render, act, screen } from "@testing-library/react";
 
+// MEH-475 PR-C4a chunk 4a: mock next-intl. ProducersClient + sub-components
+// (RecentlyViewedStrip / FilterEmptyState / CatalogEmptyState / PageOverflowState
+// / ServerPageLinks) all call useTranslations(). Map keys this test asserts on;
+// ICU plural strings resolve via simple substitution so {count} interpolations
+// render naturally.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key, vars) => {
+    const flat = {
+      "breadcrumb.home": "בית",
+      "breadcrumb.all": "כל בתי העסק",
+      "title.all": "כל בתי העסק",
+      "discovery.found_count": `נמצאו ${vars?.count ?? 0} בתי עסק`,
+      "discovery.all_count": `כל ${vars?.count ?? 0} בתי העסק`,
+      "discovery.showing_count": `מציגות ${vars?.loaded ?? 0} מתוך ${vars?.total ?? 0} בתי עסק`,
+      "discovery.all_shown": `הצגנו את כל ${vars?.count ?? 0} בתי העסק 🌿`,
+      "discovery.loading_more_aria": "טוענת עוד בתי עסק",
+      "filters.city_chip": "בעיר שלי",
+      "filters.filter_by": "מסנן לפי:",
+      "filters.clear_all": "נקי הכל",
+      "recently_viewed.aria": "ביקרת לאחרונה",
+      "recently_viewed.label": "ביקרת לאחרונה",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 // jsdom doesn't implement IntersectionObserver — stub it out.
 beforeAll(() => {
   global.IntersectionObserver = class {
