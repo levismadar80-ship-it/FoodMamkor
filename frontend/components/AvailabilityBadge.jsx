@@ -1,15 +1,15 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 /**
  * AvailabilityBadge — colored-dot + Hebrew-text badge for producer
  * availability status (MEH-12).
  *
- * Spec (Google/Etsy/Airbnb-style — NO emoji):
+ * Spec (Google/Etsy/Airbnb-style — NO emoji on legacy states):
  *   - available → green dot  #22c55e + "פתוח להזמנות"
  *   - full      → orange dot #f97316 + "עמוס כרגע"
  *   - vacation  → gray dot   #9ca3af + "בהפסקה"
- *
- * Dot CSS (literal from spec):
- *   width:8px; height:8px; border-radius:50%;
- *   display:inline-block; margin-left:6px
  *
  * Variants:
  *   - "card"   → card listings. Hides when status="available" so the
@@ -21,43 +21,22 @@
  *
  * Unknown / missing status is treated as "available" for forward
  * compat: if the backend adds a new status value, cards won't crash.
+ *
+ * MEH-475 PR-C4a chunk 4b: STATUS_CONFIG split into data axis
+ * ({color, labelKey, family}) and display axis (t()). Backend API contract
+ * (the status string) is untouched; only the displayed label is i18n-aware.
  */
 
-// MEH-12 legacy availability_status (3 keys) + MEH-291 availability_state
-// (4 keys). Both flow through the same component so callers can migrate
-// without a v2 component. Phase 4 will drop the legacy keys after the
-// 7-day overlap window.
 const STATUS_CONFIG = {
-  // Legacy availability_status keys (kept during overlap)
-  available: {
-    color: "#22c55e",
-    label: "פתוח להזמנות",
-  },
-  full: {
-    color: "#f97316",
-    label: "עמוס כרגע",
-  },
-  vacation: {
-    color: "#9ca3af",
-    label: "בהפסקה",
-  },
-  // MEH-291 — new 4-state availability_state. Labels verbatim per spec.
-  accepting_orders: {
-    color: "#22c55e",
-    label: "פתוח להזמנות",
-  },
-  available_today: {
-    color: "#4cb08b",
-    label: "זמינה היום 🟢",
-  },
-  full_this_week: {
-    color: "#f97316",
-    label: "עמוסה השבוע 🟠",
-  },
-  on_vacation: {
-    color: "#9ca3af",
-    label: "בהפסקה ⏸",
-  },
+  // Legacy availability_status (MEH-12)
+  available:        { color: "#22c55e", labelKey: "status_label.open_orders" },
+  full:             { color: "#f97316", labelKey: "status_label.busy_week" },
+  vacation:         { color: "#9ca3af", labelKey: "status_label.on_vacation" },
+  // MEH-291 — new 4-state availability_state with emojis on card label
+  accepting_orders: { color: "#22c55e", labelKey: "card_label.open_orders" },
+  available_today:  { color: "#4cb08b", labelKey: "card_label.available_today" },
+  full_this_week:   { color: "#f97316", labelKey: "card_label.busy_week" },
+  on_vacation:      { color: "#9ca3af", labelKey: "card_label.on_vacation" },
 };
 
 // "Default open" states — suppressed in card variant so listings don't
@@ -74,6 +53,7 @@ const DOT_STYLE = {
 };
 
 export default function AvailabilityBadge({ status, variant = "card" }) {
+  const t = useTranslations("producer.availability");
   const normalized = STATUS_CONFIG[status] ? status : "available";
   const config = STATUS_CONFIG[normalized];
 
@@ -84,10 +64,12 @@ export default function AvailabilityBadge({ status, variant = "card" }) {
     return null;
   }
 
+  const label = t(config.labelKey);
+
   return (
     <span
       role="status"
-      aria-label={config.label}
+      aria-label={label}
       data-testid="availability-badge"
       data-status={normalized}
       className="inline-flex items-center text-xs text-site-text"
@@ -96,7 +78,7 @@ export default function AvailabilityBadge({ status, variant = "card" }) {
         aria-hidden="true"
         style={{ ...DOT_STYLE, background: config.color }}
       />
-      {config.label}
+      {label}
     </span>
   );
 }

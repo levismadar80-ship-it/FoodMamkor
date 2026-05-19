@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ISRAEL_CITIES } from "@/data/cities";
 import api from "@/lib/api";
 
@@ -21,13 +22,15 @@ import api from "@/lib/api";
 export default function CitySearch({
   value,
   onChange,
-  placeholder = "חפשי עיר...",
+  placeholder,
   label,
   id,
   onSubmit,
   useBackend = true,
   className = "",
 }) {
+  const t = useTranslations("search.city_search");
+  const inputPlaceholder = placeholder ?? t("placeholder");
   const [isOpen, setIsOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [backendCities, setBackendCities] = useState([]);
@@ -124,7 +127,7 @@ export default function CitySearch({
           }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={inputPlaceholder}
           className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted text-right"
           dir="rtl"
           autoComplete="off"
@@ -138,7 +141,7 @@ export default function CitySearch({
             type="button"
             onClick={handleClear}
             className="text-site-muted hover:text-site-text"
-            aria-label="נקה עיר"
+            aria-label={t("clear_aria")}
           >
             ×
           </button>

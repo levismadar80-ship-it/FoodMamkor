@@ -16,14 +16,15 @@ import CitySearch from "@/components/CitySearch";
  * normal RTL flow; only the map canvas overlays need physical
  * positioning).
  */
-// MEH-473: popular-city slugs map to translation keys; raw HE label
-// is the value that's sent to onSelectCity (the filter API still
-// keys on Hebrew city names per Wave 2's category.<slug> pattern).
+// PR-C4a chunk 4b: consolidated with chunk-3 LocationModal — both surfaces
+// now share `modals.location.popular_cities.*` keys. The `canonical` HE value
+// is the data axis (sent to onSelectCity → backend search), distinct from
+// the displayed label which resolves via t(`modals.location.popular_cities.${key}`).
 const POPULAR_CITIES = [
-  { slug: "tel_aviv", he: "תל אביב" },
-  { slug: "jerusalem", he: "ירושלים" },
-  { slug: "haifa", he: "חיפה" },
-  { slug: "beersheba", he: "באר שבע" },
+  { key: "tel_aviv", canonical: "תל אביב" },
+  { key: "jerusalem", canonical: "ירושלים" },
+  { key: "haifa", canonical: "חיפה" },
+  { key: "beersheba", canonical: "באר שבע" },
 ];
 
 export default function CityPickerModal({ open, onClose, onSelectCity }) {
@@ -38,8 +39,8 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
         <h3 className="font-headline text-lg font-bold text-site-text mb-1">{t("map.city_picker.heading")}</h3>
         <p className="text-site-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         <div className="flex flex-wrap gap-2 mb-4">
-          {POPULAR_CITIES.map(({ slug, he }) => (
-            <button key={slug} type="button" onClick={() => onSelectCity(he)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition">{t(`map.city_picker.popular.${slug}`)}</button>
+          {POPULAR_CITIES.map(({ key, canonical }) => (
+            <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
           ))}
         </div>
         <CitySearch id="city-picker-search" label={t("map.city_picker.other.label")} value="" onChange={(v) => { if (v.trim()) onSelectCity(v.trim()); }} placeholder={t("map.city_picker.other.placeholder")} />

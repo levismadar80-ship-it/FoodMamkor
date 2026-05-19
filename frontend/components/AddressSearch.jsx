@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * AddressSearch — Israeli address autocomplete via OpenStreetMap Nominatim.
@@ -39,9 +40,11 @@ export default function AddressSearch({
   value,
   onChange,
   onSelect,
-  placeholder = "חפשי כתובת...",
+  placeholder,
   className = "",
 }) {
+  const t = useTranslations("search.address_search");
+  const inputPlaceholder = placeholder ?? t("placeholder");
   const [results, setResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -197,7 +200,7 @@ export default function AddressSearch({
           }}
           onFocus={() => results.length > 0 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={inputPlaceholder}
           className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted"
           autoComplete="off"
           role="combobox"
