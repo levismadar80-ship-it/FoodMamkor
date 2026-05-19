@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import StarSelector from "@/components/StarSelector";
 import api from "@/lib/api";
 
 export default function RatingPage() {
+  const t = useTranslations("rate");
   const { token } = useParams();
   const [info, setInfo] = useState(null);
   const [stars, setStars] = useState(0);
@@ -21,9 +23,9 @@ export default function RatingPage() {
         setInfo(r.data);
         if (r.data.already_rated) setSubmitted(true);
       })
-      .catch(() => setError("קישור לא תקין"))
+      .catch(() => setError(t("invalid_link")))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,14 +34,14 @@ export default function RatingPage() {
       await api.post(`/home-products/rate/${token}`, { stars, comment: comment || null });
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.detail || "שגיאה בשליחה");
+      setError(err.response?.data?.detail || t("error_generic"));
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-text-secondary">טוענת...</p>
+        <p className="text-text-secondary">{t("loading")}</p>
       </div>
     );
   }
@@ -60,8 +62,8 @@ export default function RatingPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white rounded-[12px] p-8 text-center max-w-sm">
           <p className="text-5xl mb-4">🙏</p>
-          <h1 className="text-2xl font-bold mb-2">תודה!</h1>
-          <p className="text-text-secondary">הדירוג שלך נשמר. זה עוזר לקהילה.</p>
+          <h1 className="text-2xl font-bold mb-2">{t("thanks_title")}</h1>
+          <p className="text-text-secondary">{t("thanks_message")}</p>
         </div>
       </div>
     );
@@ -70,10 +72,13 @@ export default function RatingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="bg-white rounded-[12px] p-8 max-w-sm w-full">
-        <h1 className="text-xl font-bold text-center mb-2">איך היה?</h1>
+        <h1 className="text-xl font-bold text-center mb-2">{t("heading")}</h1>
         {info?.seller_name && (
           <p className="text-center text-text-secondary mb-1">
-            קנית מ<strong>{info.seller_name}</strong>
+            {t.rich("bought_from", {
+              name: info.seller_name,
+              seller: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         )}
         {info?.product_title && (
@@ -86,7 +91,7 @@ export default function RatingPage() {
           <div>
             <input
               type="text"
-              placeholder="תגובה קצרה (אופציונלי)"
+              placeholder={t("comment_placeholder")}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               maxLength={100}
@@ -102,7 +107,7 @@ export default function RatingPage() {
             disabled={stars === 0}
             className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
           >
-            שלח דירוג
+            {t("submit")}
           </button>
         </form>
       </div>

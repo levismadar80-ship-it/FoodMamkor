@@ -4,13 +4,14 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 
 /**
- * /search results page — two sections (בתי עסק + מוצרים) (MEH-13).
+ * /search results page — two sections (businesses + products) (MEH-13).
  *
  * Reads ?q=<term> from the URL and fires both:
  *   - GET /producers?q=<term> — full producer list (same shape the homepage uses)
@@ -43,6 +44,7 @@ function SearchPageSkeleton() {
 }
 
 function SearchPageBody() {
+  const t = useTranslations("search");
   const params = useSearchParams();
   const router = useRouter();
   const q = (params.get("q") || "").trim();
@@ -91,13 +93,13 @@ function SearchPageBody() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <Breadcrumb
         items={[
-          { href: "/", label: "בית" },
-          { label: q ? `חיפוש: ${q}` : "חיפוש" },
+          { href: "/", label: t("breadcrumb_home") },
+          { label: q ? t("breadcrumb_query", { q }) : t("breadcrumb_search") },
         ]}
         className="mb-4"
       />
       <h1 className="font-headline text-3xl font-bold text-site-text mb-4">
-        {q ? `תוצאות חיפוש עבור "${q}"` : "חיפוש"}
+        {q ? t("title_results", { q }) : t("title_default")}
       </h1>
 
       {/* Search bar */}
@@ -109,31 +111,31 @@ function SearchPageBody() {
             type="search"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="לחם מחמצת, ביצים אורגניות, ירקות ופירות"
+            placeholder={t("input_placeholder")}
             dir="rtl"
             className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-sm"
-            aria-label="חיפוש"
+            aria-label={t("input_aria")}
           />
         </div>
         <button
           type="submit"
           className="bg-primary text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition"
         >
-          חפשי
+          {t("submit")}
         </button>
       </form>
 
       {!loading && q && (
         <p className="text-site-muted mb-8 text-sm">
           {totalHits === 0
-            ? "לא מצאנו התאמות — נסי מילה אחרת או גלי לפי קטגוריות 🌱"
-            : `${totalHits} תוצאות`}
+            ? t("no_results_hint")
+            : t("results_count", { totalHits })}
         </p>
       )}
 
       {!q && (
         <p className="text-site-muted">
-          הקלידי ביטוי בשדה החיפוש בראש הדף.
+          {t("empty_prompt")}
         </p>
       )}
 
@@ -141,11 +143,11 @@ function SearchPageBody() {
 
       {q && !loading && (
         <>
-          {/* -------- בתי עסק -------- */}
+          {/* -------- Businesses -------- */}
           {producers.length > 0 && (
             <section className="mb-12">
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
-                בתי עסק ({producers.length})
+                {t("section_producers")} ({producers.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {producers.map((p) => (
@@ -155,11 +157,11 @@ function SearchPageBody() {
             </section>
           )}
 
-          {/* -------- מוצרים -------- */}
+          {/* -------- Products -------- */}
           {products.length > 0 && (
             <section className="mb-12">
               <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
-                מוצרים ({products.length})
+                {t("section_products")} ({products.length})
               </h2>
               <ul className="divide-y divide-border bg-white rounded-[12px] border border-border overflow-hidden">
                 {products.map((prod) => {
@@ -181,7 +183,7 @@ function SearchPageBody() {
                           </span>
                         )}
                         <span className="text-xs text-primary">
-                          אצל {prod.producer_name}
+                          {t("product_by_prefix")} {prod.producer_name}
                         </span>
                       </Link>
                     </li>
@@ -200,16 +202,16 @@ function SearchPageBody() {
                 🌿
               </div>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
-                לא מצאנו התאמות — נסי מילה אחרת 🌱
+                {t("empty_title")}
               </h2>
               <p className="text-site-muted mb-6 max-w-md mx-auto">
-                נסי לשנות את החיפוש או לעיין בקטגוריות בדף הבית.
+                {t("empty_subtitle")}
               </p>
               <Link
                 href="/"
                 className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium"
               >
-                חזרה לדף הבית
+                {t("empty_home_cta")}
               </Link>
             </div>
           )}
