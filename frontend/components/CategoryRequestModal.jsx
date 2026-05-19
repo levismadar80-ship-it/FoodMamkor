@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
@@ -10,6 +11,7 @@ function countLetters(s) {
 }
 
 export default function CategoryRequestModal({ open, onClose, producerId }) {
+  const t = useTranslations("modals.category_request");
   const [name, setName] = useState("");
   const [examples, setExamples] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,12 +40,12 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
         examples: examples.trim() || null,
         producer_id: producerId || null,
       });
-      showToast("תודה! הבקשה התקבלה. בינתיים, בחרי את הקטגוריה הקרובה ביותר.", "success", 4000);
+      showToast(t("toasts.success"), "success", 4000);
       setName("");
       setExamples("");
       onClose();
     } catch {
-      showToast("שגיאה בשליחת הבקשה — נסי שוב", "error");
+      showToast(t("toasts.error"), "error");
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
     >
       <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-right" dir="rtl">
         <h2 id="cat-req-title" className="font-headline text-lg font-bold text-site-text mb-4">
-          איזו קטגוריה חסרה?
+          {t("title")}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,11 +72,11 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               maxLength={100}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="שם הקטגוריה המוצעת *"
+              placeholder={t("name_placeholder")}
               className="w-full border rounded-[12px] px-3 py-2 text-sm text-right"
               dir="rtl"
             />
-            <p className="text-xs text-site-muted mt-1">לדוגמה: משקאות מותססים</p>
+            <p className="text-xs text-site-muted mt-1">{t("name_example")}</p>
           </div>
 
           <div>
@@ -83,11 +85,11 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               rows={3}
               value={examples}
               onChange={(e) => setExamples(e.target.value)}
-              placeholder="דוגמאות למוצרים (אופציונלי)"
+              placeholder={t("examples_placeholder")}
               className="w-full border rounded-[12px] px-3 py-2 text-sm text-right resize-none"
               dir="rtl"
             />
-            <p className="text-xs text-site-muted mt-1">{'קומבוצ\'ה, קפיר, וואטר קפיר...'}</p>
+            <p className="text-xs text-site-muted mt-1">{t("examples_hint")}</p>
           </div>
 
           <div className="flex gap-3 pt-1">
@@ -96,14 +98,14 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               disabled={loading || !hasEnoughLetters}
               className="flex-1 bg-primary text-white py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
-              {loading ? "שולחת..." : "שלחי בקשה"}
+              {loading ? t("submit_loading") : t("submit")}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 rounded-[12px] text-sm text-site-muted hover:text-site-text border transition"
             >
-              סגרי
+              {t("close")}
             </button>
           </div>
         </form>

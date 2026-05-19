@@ -403,6 +403,16 @@
     },
     "aria": {
       "close": "Close"
+    },
+    "pagination": {
+      "aria_label": "Pagination",
+      "per_page_label": "Per page",
+      "per_page_aria": "Items per page",
+      "prev_aria": "Previous page",
+      "prev": "← Previous",
+      "page_aria": "Page {page}",
+      "next_aria": "Next page",
+      "next": "Next →"
     }
   },
   "category": {
@@ -2040,6 +2050,177 @@
         "success_toast": "Thanks! We'll get back to you soon 🌿",
         "error_toast": "Something went wrong, please try again"
       }
+    }
+  },
+  "modals": {
+    "location": {
+      "title": "Where are you?",
+      "subtitle": "We'll find businesses near you",
+      "search_label": "Search city",
+      "search_placeholder": "Type a city name...",
+      "aria_label": "Choose a city",
+      "close_aria": "Close",
+      "geo_button": "Near me",
+      "geo_loading": "Finding...",
+      "geo_failure": "We couldn't get your location",
+      "current_location_fallback": "Current location",
+      "skip": "Skip for now",
+      "popular_cities": {
+        "tel_aviv": "Tel Aviv",
+        "jerusalem": "Jerusalem",
+        "haifa": "Haifa",
+        "beersheba": "Be'er Sheva"
+      }
+    },
+    "category_request": {
+      "title": "Which category is missing?",
+      "name_placeholder": "Suggested category name *",
+      "name_example": "For example: fermented drinks",
+      "examples_placeholder": "Product examples (optional)",
+      "examples_hint": "Kombucha, kefir, water kefir...",
+      "submit": "Submit request",
+      "submit_loading": "Sending...",
+      "close": "Close",
+      "toasts": {
+        "success": "Thanks! Request received. In the meantime, pick the closest category.",
+        "error": "Error submitting the request — please try again"
+      }
+    },
+    "install_prompt": {
+      "aria_label": "Add to home screen",
+      "title": "Mehamakor on your home screen",
+      "ios_instructions": "Tap <share>Share</share> → <add>Add to Home Screen</add>",
+      "android_subtitle": "Add to home screen — app-like experience, no App Store",
+      "android_cta": "Install",
+      "dismiss_aria": "Close"
+    },
+    "login_prompt": {
+      "default_message": "To save businesses you love — sign in",
+      "close_aria": "Close dialog",
+      "title": "Want to save? 🌿",
+      "login_cta": "Sign in",
+      "dismiss_cta": "Maybe later"
+    },
+    "cookie_banner": {
+      "aria_label": "Cookie consent",
+      "message": "🍪 We use cookies to improve the experience — <link>privacy policy</link>",
+      "accept_all": "Accept all",
+      "essential_only": "Essential only"
+    },
+    "lightbox": {
+      "aria_label": "Image viewer",
+      "close_aria": "Close viewer",
+      "image_alt": "Image {current} of {total}",
+      "prev_aria": "Previous image",
+      "next_aria": "Next image"
+    },
+    "onboarding_tip": {
+      "cta_default": "Got it",
+      "close_aria": "Close"
+    }
+  },
+  "kashrut": {
+    "badges": {
+      "rabanut": {
+        "label": "Rabbanut kosher",
+        "tooltip": "Kosher supervised by the local Rabbinate"
+      },
+      "badatz": {
+        "label": "Badatz",
+        "tooltip": "Mehadrin kosher supervised by the Beit Din Tzedek"
+      },
+      "chalak": {
+        "label": "Chalak",
+        "tooltip": "Chalak beef per Sephardic tradition"
+      },
+      "mehadrin": {
+        "label": "Mehadrin",
+        "tooltip": "Mehadrin kosher to a higher standard"
+      },
+      "organic_kosher": {
+        "label": "Organic kosher",
+        "tooltip": "Certified organic farming + kosher"
+      },
+      "shmitta": {
+        "label": "Shmitta",
+        "tooltip": "Shmitta-year produce with special certification"
+      },
+      "kilayim": {
+        "label": "Kilayim-free",
+        "tooltip": "No forbidden cross-species grafting"
+      },
+      "artisan_dairy": {
+        "label": "Farm dairy",
+        "tooltip": "Milk and dairy directly from the farm, kosher"
+      }
+    },
+    "expiry": {
+      "valid_until": "Valid until: {date}",
+      "near_expiry": "⚠️ Certificate expires soon"
+    }
+  },
+  "opening_hours": {
+    "heading": "Opening hours",
+    "open_now": "Open now",
+    "closes_at": "· closes at {time}",
+    "closed_now": "Closed",
+    "opens_at": "· opens {day} {time}",
+    "closed_day": "Closed",
+    "tomorrow": "tomorrow",
+    "weekdays": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    }
+  },
+  "trust": {
+    "tier_2": {
+      "label": "✓ Phone verified",
+      "tooltip": "The business owner's phone number was verified via a one-time code"
+    },
+    "tier_3": {
+      "label": "✅ Verified business",
+      "tooltip": "The business was manually verified by the Mehamakor team"
+    },
+    "tier_4": {
+      "label": "⭐ Community leader",
+      "tooltip": "10+ reviews with an average rating of 4.5 or above"
+    },
+    "tier_5": {
+      "label": "🏅 Mehamakor ambassador",
+      "tooltip": "The leading business owner in the area — selected manually by Mehamakor"
+    }
+  },
+  "forms": {
+    "password": {
+      "placeholder_default": "Password",
+      "aria_label_default": "Password",
+      "toggle_show": "Show password",
+      "toggle_hide": "Hide password",
+      "min_length": "At least {min} characters",
+      "checking": "Checking...",
+      "not_breached": "Not breached online",
+      "different_from_current": "Different from current — verified on server",
+      "strength": {
+        "weak": "Weak",
+        "medium": "Medium",
+        "strong": "Strong",
+        "label": "Password strength: {tier}"
+      }
+    },
+    "category_selector": {
+      "label": "Category",
+      "search_placeholder": "Search categories...",
+      "section_results": "Results",
+      "section_popular": "Popular",
+      "no_results_prefix": "Can't find your category?",
+      "no_results_cta": "Tell us ←",
+      "show_more": "← More categories ({count})",
+      "show_less": "↑ Fewer categories"
     }
   }
 }

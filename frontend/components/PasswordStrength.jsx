@@ -1,25 +1,23 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { passwordRules } from "@/lib/validators";
 
 /**
  * Live password strength indicator + rule checklist.
  *
  * Shows two things when the password field has any content:
- *   1. **Strength tier** (חלשה / בינונית / חזקה) — an at-a-glance
+ *   1. Strength tier (weak / medium / strong) — an at-a-glance
  *      label + 3-segment bar based on how many of the password rules
- *      currently pass. This is the "add strength indicator" piece of
- *      tasks_for_claude_code.md task 8.
- *   2. **Rule checklist** — the existing one: one row per rule with a
- *      tick/empty-circle marker so the user sees exactly WHAT is
- *      missing. Kept because it's strictly more useful than the tier
- *      alone; the tier summarizes, the checklist diagnoses.
+ *      currently pass.
+ *   2. Rule checklist — one row per rule with a tick/empty-circle
+ *      marker so the user sees exactly WHAT is missing.
  *
  * Tier math:
  *   passed === 0 → no tier shown (field effectively empty)
- *   passed === 1 → חלשה (weak, red)
- *   passed === 2 → בינונית (medium, amber)
- *   passed === 3 → חזקה (strong, primary-green)
+ *   passed === 1 → weak (red)
+ *   passed === 2 → medium (amber)
+ *   passed === 3+ → strong (primary-green)
  *
  * Usage:
  *   <input type="password" value={pw} onChange={...} />
@@ -29,6 +27,7 @@ import { passwordRules } from "@/lib/validators";
  * before the user starts typing.
  */
 export default function PasswordStrength({ password }) {
+  const t = useTranslations("forms.password.strength");
   if (!password) return null;
 
   const passed = passwordRules.reduce(
@@ -45,22 +44,20 @@ export default function PasswordStrength({ password }) {
   // wins even when there's only one rule. Pre-MEH-306, `passwordRules`
   // had 4 entries and the `passed === 1` arm was unambiguously "weak";
   // post-MEH-306 the rules collapse to 1 (length only), and a single
-  // passing rule means the floor is met → "חזקה". Without this reorder
-  // a valid 12-char password would render as "חלשה" on /register/producer
-  // (the only remaining consumer of this component after sub-B).
+  // passing rule means the floor is met → "strong".
   let tierLabel = "";
   let tierTextClass = "";
   let tierBarColor = "";
   if (passed >= total) {
-    tierLabel = "חזקה";
+    tierLabel = t("strong");
     tierTextClass = "text-primary";
     tierBarColor = "#2e6853";
   } else if (passed === 1) {
-    tierLabel = "חלשה";
+    tierLabel = t("weak");
     tierTextClass = "text-red-500";
     tierBarColor = "#ef4444"; // tailwind red-500
   } else if (passed === 2) {
-    tierLabel = "בינונית";
+    tierLabel = t("medium");
     tierTextClass = "text-amber-500";
     tierBarColor = "#f59e0b"; // tailwind amber-500
   }
@@ -74,7 +71,7 @@ export default function PasswordStrength({ password }) {
           <div
             className="flex-1 flex gap-1"
             role="img"
-            aria-label={`חוזק סיסמה: ${tierLabel}`}
+            aria-label={t("label", { tier: tierLabel })}
           >
             {Array.from({ length: total }).map((_, i) => (
               <div
@@ -87,7 +84,7 @@ export default function PasswordStrength({ password }) {
             ))}
           </div>
           <span className={`text-xs font-medium ${tierTextClass}`}>
-            חוזק סיסמה: {tierLabel}
+            {t("label", { tier: tierLabel })}
           </span>
         </div>
       )}
