@@ -189,8 +189,8 @@ export default function HomePage() {
           ========================= */}
       <ParallaxQuote
         image={PARALLAX_IMAGE_1}
-        quote="אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור."
-        attribution="— ספיר, מייסדת מהמקור"
+        quote={t("home.story_block.founder_quote")}
+        attribution={t("home.story_block.founder_attribution")}
         overlayOpacity={0.6}
         height="400px"
       />
@@ -204,7 +204,7 @@ export default function HomePage() {
           ========================= */}
       <ParallaxQuote
         image={PARALLAX_IMAGE_2}
-        quote="כל עונה — טעם אחר"
+        quote={t("home.story_block.seasonal_heading")}
         overlayOpacity={0.55}
         height="340px"
       />

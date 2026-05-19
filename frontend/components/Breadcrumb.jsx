@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 /**
  * RTL-friendly breadcrumb trail.
@@ -13,11 +14,12 @@ import Link from "next/link";
  *   ]} />
  */
 export default function Breadcrumb({ items = [], className = "" }) {
+  const t = useTranslations("common.breadcrumb");
   if (!items.length) return null;
 
   return (
     <nav
-      aria-label="נתיב ניווט"
+      aria-label={t("aria")}
       className={`text-sm text-site-muted ${className}`}
     >
       <ol className="flex flex-wrap items-center gap-x-1">

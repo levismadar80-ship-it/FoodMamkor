@@ -394,6 +394,21 @@
       "heading": "Upcoming events 📅",
       "all_events": "All events →",
       "free": "Free"
+    },
+    "marquee": {
+      "tag_unprocessed": "🌿 Unprocessed",
+      "tag_pasture": "🥩 Pasture-raised",
+      "tag_organic": "🧀 Organic",
+      "tag_sourdough": "🍞 Sourdough",
+      "tag_extra_virgin": "🫒 Extra virgin",
+      "tag_fresh_real": "🌱 Fresh and real",
+      "tag_verified": "✅ Verified",
+      "tag_local": "📍 Local"
+    },
+    "story_block": {
+      "founder_quote": "Once you know where to buy from — there's no going back.",
+      "founder_attribution": "— Sapir, founder of Mehamakor",
+      "seasonal_heading": "Every season — a different flavor"
     }
   },
   "common": {
@@ -413,6 +428,21 @@
       "page_aria": "Page {page}",
       "next_aria": "Next page",
       "next": "Next →"
+    },
+    "breadcrumb": {
+      "aria": "Breadcrumb navigation"
+    },
+    "info_tooltip": {
+      "trigger_aria": "More info"
+    },
+    "parallax_quote": {
+      "aria": "Quote"
+    },
+    "skeleton": {
+      "loading_businesses": "Loading fresh businesses"
+    },
+    "star_rating": {
+      "count_aria": "{count, plural, one {1 rating} other {({count} ratings)}}"
     }
   },
   "category": {
@@ -704,6 +734,44 @@
           "generic": "Something went wrong, please try again"
         }
       }
+    },
+    "availability": {
+      "status_label": {
+        "open_orders": "Open for orders",
+        "busy_week": "Busy this week",
+        "on_vacation": "On break"
+      },
+      "card_label": {
+        "open_orders": "Open for orders",
+        "available_today": "Available today 🟢",
+        "busy_week": "Busy this week 🟠",
+        "on_vacation": "On break ⏸"
+      }
+    },
+    "delivery": {
+      "heading": "Delivery",
+      "nationwide": "Nationwide delivery",
+      "arranged": "Delivery by arrangement — contact for details"
+    },
+    "follow": {
+      "error_generic": "Something went wrong, please try again",
+      "following": "Following",
+      "follow_aria": "Follow this business",
+      "unfollowed_toast": "You've stopped following",
+      "followed_toast": "You'll now get updates about new products 🔔"
+    },
+    "badge_row": {
+      "aria": "Business badges"
+    },
+    "friday_delivery": {
+      "today": "today",
+      "title": "Businesses delivering today",
+      "title_alt": "Businesses delivering today"
+    },
+    "holiday_banner": {
+      "approaching": "{name} is approaching {emoji}",
+      "aria": "Holiday notice",
+      "close_aria": "Close"
     }
   },
   "map": {
@@ -740,12 +808,6 @@
     "city_picker": {
       "heading": "Where to deliver?",
       "subheading": "Choose a city to filter by delivery",
-      "popular": {
-        "tel_aviv": "Tel Aviv",
-        "jerusalem": "Jerusalem",
-        "haifa": "Haifa",
-        "beersheba": "Beersheba"
-      },
       "other": {
         "label": "Other city",
         "placeholder": "Type city name..."
@@ -794,6 +856,39 @@
         "business_list": "List of businesses on the map"
       },
       "heading_ssr": "Businesses on the map"
+    },
+    "homepage_mini": {
+      "loading": "Loading map...",
+      "pre_launch_hint": "Coming very soon — first businesses join this week",
+      "aria": "Map preview",
+      "dot_caption": "Every business on the map",
+      "dot_subtitle": "Discover businesses by location",
+      "open_full": "Open the full map"
+    },
+    "component": {
+      "geo_invalid": "The location received is invalid",
+      "geo_failure": "We couldn't get your location",
+      "marker_singular": "business",
+      "marker_plural": "businesses"
+    },
+    "producer_card": {
+      "verified": "✓ Verified",
+      "distance_prefix": "·",
+      "wa_message": "Hi! I found you on Mehamakor — {name}",
+      "full_profile": "Full profile"
+    },
+    "mini": {
+      "default_label": "Location",
+      "open_in_waze": "Open in",
+      "open_in_google": "Open in"
+    },
+    "bottom_sheet": {
+      "title": "Businesses in this area",
+      "show_map": "Show map"
+    },
+    "chip_scroll": {
+      "category_aria": "Filter by category",
+      "attribute_aria": "Filter by attribute"
     }
   },
   "admin": {
@@ -2395,6 +2490,26 @@
       "recent_heading": "Recent searches",
       "trending_heading": "Trending searches",
       "remove_recent_aria": "Remove {q} from recent searches"
+    },
+    "smart": {
+      "loading": "Loading results...",
+      "no_results_for": "No results for",
+      "section_producers": "Businesses",
+      "section_products": "Products",
+      "product_by_prefix": "at",
+      "section_cities": "Cities",
+      "section_categories": "Categories"
+    },
+    "cities_autocomplete": {
+      "remove_aria": "Remove {city}",
+      "placeholder": "Type a city name..."
+    },
+    "city_search": {
+      "placeholder": "Search city...",
+      "clear_aria": "Clear city"
+    },
+    "address_search": {
+      "placeholder": "Search address..."
     }
   },
   "favorites": {
@@ -2406,7 +2521,17 @@
     "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
     "first_visit_tip": "Tap ❤️ on a business card to save it here",
     "empty_cta": "Discover businesses",
-    "list_alerts_hint": "Tap 🔔 on any card to get alerts about new events and products"
+    "list_alerts_hint": "Tap 🔔 on any card to get alerts about new events and products",
+    "button": {
+      "saved_toast_first_time": "Saved! You'll find favorites under the ❤️ tab at the bottom",
+      "saved_toast": "Saved to favorites ❤️",
+      "removed_toast": "Removed from favorites",
+      "error_generic": "Something went wrong, please try again",
+      "add_aria": "Add to favorites",
+      "remove_aria": "Remove from favorites",
+      "inline_label": "Save",
+      "login_prompt_message": "To save businesses you love — sign in"
+    }
   },
   "rate": {
     "invalid_link": "Invalid link",
@@ -2429,5 +2554,70 @@
     "success_title": "Thanks for the report",
     "success_message": "We'll look into it within 48 hours.",
     "success_close": "Close"
+  },
+  "share": {
+    "trigger": "Share",
+    "modal_title": "Share a link to the business",
+    "copy_link": "Copy link",
+    "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
+    "wa_message_business_fallback": "a business",
+    "wa_meta_separator": " • ",
+    "copied_toast": "Link copied ✓"
+  },
+  "gallery": {
+    "open_aria": "Enlarge image {current}",
+    "image_alt": "Image {current}",
+    "prev_aria": "Previous image",
+    "next_aria": "Next image",
+    "thumb_aria": "Go to image {n}"
+  },
+  "whatsapp": {
+    "button": {
+      "default_message": "Hi, I saw \"{productTitle}\" on Mehamakor and would love to hear more!",
+      "opening": "Opening..."
+    },
+    "share_button": {
+      "default_message": "I found {name} on Mehamakor — {url}",
+      "share_aria": "Share the business on WhatsApp",
+      "share_to_friend": "Send to a friend"
+    },
+    "question_chips": {
+      "my_area": "My area",
+      "city_placeholder": "[city]",
+      "ask_us": "Ask us",
+      "greeting_template": "Hi {name}, {q}"
+    }
+  },
+  "directory": {
+    "disclaimer": {
+      "brand_is_prefix": "is a",
+      "directory_only": "directory-only platform. The seller bears full responsibility for products and licensing.",
+      "prices_set_by_businesses": "Prices are set by the businesses themselves."
+    }
+  },
+  "location": {
+    "banner": {
+      "message": "Where are you? We'll find businesses near you",
+      "choose_city": "Choose a city",
+      "close_aria": "Close banner"
+    }
+  },
+  "story": {
+    "canvas": {
+      "footer_url": "Discover more businesses at mehamakor.online",
+      "upload_error": "Cloudinary upload error",
+      "default_country": "Israel",
+      "caption_prefix": "🌿 A new business on Mehamakor!",
+      "title": "📸 Instagram card ready",
+      "generating": "Generating",
+      "download": "Download",
+      "uploading": "Uploading...",
+      "save_cloudinary": "Save to Cloudinary",
+      "copy_caption": "Copy caption",
+      "copied": "✅ Copied!"
+    }
+  },
+  "footer": {
+    "copyright": "Mehamakor · Made with love in Israel"
   }
 }

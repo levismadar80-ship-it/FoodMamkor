@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
 
@@ -54,7 +55,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   return currentY + lineHeight;
 }
 
-async function drawCard(canvas, producer) {
+async function drawCard(canvas, producer, strings) {
   await loadFonts();
 
   const ctx = canvas.getContext("2d");
@@ -165,13 +166,15 @@ async function drawCard(canvas, producer) {
   ctx.font = `bold 72px "Frank Ruhl Libre", serif`;
   ctx.fillText(BRAND_NAME, W / 2, H - 220);
 
-  // CTA text
+  // CTA text — strings passed from React component since canvas API doesn't
+  // go through next-intl context. Falls back to HE if missing for safety.
   ctx.fillStyle = "rgba(255,255,255,0.6)";
   ctx.font = `400 24px "DM Sans", sans-serif`;
-  ctx.fillText("גלי עוד בתי עסק ב mehamakor.online", W / 2, H - 150);
+  ctx.fillText(strings?.footer_url || "גלי עוד בתי עסק ב mehamakor.online", W / 2, H - 150);
 }
 
 export default function StoryCardCanvas({ producer, onUploaded }) {
+  const t = useTranslations("story.canvas");
   const canvasRef = useRef(null);
   const [rendered, setRendered] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -180,8 +183,8 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    drawCard(canvasRef.current, producer).then(() => setRendered(true));
-  }, [producer]);
+    drawCard(canvasRef.current, producer, { footer_url: t("footer_url") }).then(() => setRendered(true));
+  }, [producer, t]);
 
   const download = () => {
     if (!canvasRef.current) return;
@@ -202,13 +205,13 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       setUploadedUrl(r.data.url);
       onUploaded?.(r.data.url);
     } catch (err) {
-      alert(err.response?.data?.detail || "שגיאה בהעלאה לקלאודינרי");
+      alert(err.response?.data?.detail || t("upload_error"));
     } finally {
       setUploading(false);
     }
   };
 
-  const caption = `🌿 עסק חדש במהמקור!\n${producer.name} מ${producer.city || "ישראל"} — ${
+  const caption = `${t("caption_prefix")}\n${producer.name} מ${producer.city || t("default_country")} — ${
     producer.categories?.map((c) => c.name).join(", ") || ""
   }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 mehamakor.online/p/${producer.slug || ""}`;
 
@@ -221,7 +224,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <p className="text-sm font-semibold text-site-text">📸 כרטיס אינסטגרם מוכן</p>
+      <p className="text-sm font-semibold text-site-text">{t("title")}</p>
 
       {/* Canvas preview — scaled to fit */}
       <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
@@ -231,7 +234,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
         />
         {!rendered && (
           <div className="absolute inset-0 flex items-center justify-center text-white text-xs opacity-60">
-            מייצר...
+            {t("generating")}...
           </div>
         )}
       </div>
@@ -243,20 +246,20 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
           disabled={!rendered}
           className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition disabled:opacity-40"
         >
-          ⬇️ הורד
+          ⬇️ {t("download")}
         </button>
         <button
           onClick={uploadToCloudinary}
           disabled={!rendered || uploading}
           className="text-sm bg-primary text-white px-4 py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-40"
         >
-          {uploading ? "מעלה..." : "שמור ל-Cloudinary"}
+          {uploading ? t("uploading") : t("save_cloudinary")}
         </button>
         <button
           onClick={copyCaption}
           className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition"
         >
-          {captionCopied ? "✅ הועתק!" : "העתיקי caption"}
+          {captionCopied ? t("copied") : t("copy_caption")}
         </button>
       </div>
 
