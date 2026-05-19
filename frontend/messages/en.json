@@ -1945,5 +1945,101 @@
       "discover": "Find businesses on the map",
       "home": "Back to home"
     }
+  },
+  "about": {
+    "consumer": {
+      "hero": {
+        "heading": "You used to need to know who to ask. Not anymore."
+      },
+      "story": {
+        "image_aria": "Photo of Sapir, founder of Mehamakor",
+        "image_alt": "Sapir, founder of Mehamakor",
+        "greeting": "Hi, I'm Sapir.",
+        "p1": "It was always important to me to know where my food came from. I wanted to buy better — healthier, more local.",
+        "p2": "But I quickly discovered it wasn't accessible. To find truly quality food, I had to search for hours — ask the right people, join WhatsApp groups, search Google and Instagram.",
+        "p3": "Then I realized: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
+        "p4": "There are farmers selling fresh vegetables a few minutes from home. There's someone baking sourdough in the next neighborhood. There are small businesses with incredible products — that most people don't even know about. So people keep shopping at the supermarket — not because it's the best, but because it's the most convenient.",
+        "p5": "And that's how Mehamakor was born. One place that brings together real, local, healthy food for you — close to home. Without searching for hours.",
+        "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
+        "caption2": "I'm building the site on my own. I personally vet every business.",
+        "caption3": "The criteria — I write them from what I myself look for in food."
+      },
+      "parallax": {
+        "quote": "Because what you eat matters. And where you buy it matters more"
+      },
+      "benefits": {
+        "local": {
+          "title": "Real food close to you",
+          "body": "No hour-long drives. No weeks of searching.\nEverything close to you, in one place."
+        },
+        "trust": {
+          "title": "Trust what you eat",
+          "body": "Only verified businesses. We vet each one\nbefore they appear."
+        },
+        "community": {
+          "title": "Supporting small businesses",
+          "body": "Every local purchase is a choice — to keep money\nin your community, and support the people behind the food."
+        }
+      },
+      "tips": {
+        "heading": "Worth knowing",
+        "eggs": {
+          "question": "Why are organic eggs worth the price?",
+          "answer": "Organic hens grow up outdoors, eating food free of pesticides and antibiotics. Their eggs contain more omega-3, vitamin E, and antioxidants. Not a dramatic difference — but less exposure to chemicals, and more humane lives for the hens."
+        },
+        "grass_fed": {
+          "question": "What is grass-fed in Israel?",
+          "answer": "At the supermarket — most cattle are fattened on corn and supplements. Grass-fed = cows that lived their whole lives in pasture, eating natural grass. In Israel it's rare and more expensive — but the meat has deeper flavor, the distinctive yellowish fat, and more omega-3. Producers like Gilis from the Golan Heights and Mireh Golan are classic examples."
+        },
+        "honey": {
+          "question": "Supermarket honey vs. unheated honey — what's the difference?",
+          "answer": "Supermarket honey is pasteurized — heating destroys enzymes, antioxidants, and pollen. Unheated honey keeps it all — richer flavor, natural antibacterial properties. How to spot it? Thicker, not completely clear, sometimes crystallizes — and that's a good sign."
+        }
+      },
+      "testimonials": {
+        "heading": "What people say about us",
+        "subtitle": "Stories are coming soon 🌿",
+        "cta": "Want to share too? Write to us"
+      },
+      "values": {
+        "heading": "How we choose",
+        "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
+        "transparency": {
+          "title": "Transparency",
+          "body": "You should know who's behind the product you're buying. We'll always tell you who runs the business, where they're located, and how they work."
+        },
+        "proximity": {
+          "title": "Proximity",
+          "body": "We prefer businesses close to you, with the shortest possible chain — from the field to you."
+        },
+        "quality": {
+          "title": "Quality",
+          "body": "Real ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
+        },
+        "safety": {
+          "title": "Safety",
+          "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. No compromises here."
+        },
+        "closing": "If that's you — a business owner building something you're proud of — we'd love to meet you."
+      },
+      "cta": {
+        "heading": "Have a business? Come join us.",
+        "register": "Add your business",
+        "explore": "Discover businesses near you"
+      },
+      "contact": {
+        "heading": "Talk to us",
+        "subtitle": "Questions, ideas, or just hi — we'd love to hear from you",
+        "name_label": "Full name",
+        "name_placeholder": "Your full name",
+        "email_label": "Email",
+        "message_label": "How can we help?",
+        "message_placeholder": "Tell us what you'd like to talk about...",
+        "submit": "Send",
+        "submit_loading": "Sending...",
+        "success_toast": "Thanks! We'll get back to you soon 🌿",
+        "error_toast": "Something went wrong, please try again"
+      }
+    }
   }
 }
