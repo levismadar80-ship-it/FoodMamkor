@@ -1,5 +1,25 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+// MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
+// Pagination uses ICU interpolation for `page_aria`; the mock substitutes
+// {page} so aria-label assertions like "עמוד 3" continue to match.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key, vars) => {
+    const flat = {
+      aria_label: "עימוד",
+      per_page_label: "הצגה לעמוד",
+      per_page_aria: "פריטים לעמוד",
+      prev_aria: "עמוד קודם",
+      prev: "← הקודם",
+      page_aria: `עמוד ${vars?.page ?? ""}`.trim(),
+      next_aria: "עמוד הבא",
+      next: "הבא →",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 import Pagination from "@/components/Pagination";
 
 describe("Pagination", () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { buildPageRange, clampPage } from "@/lib/pagination";
 
 /**
@@ -15,7 +16,7 @@ import { buildPageRange, clampPage } from "@/lib/pagination";
  *   - perPageOptions             default [10, 25, 50]
  *
  * Accessibility:
- *   role="navigation", aria-label="עימוד"
+ *   role="navigation", aria-label="Pagination" (translated)
  *   aria-current="page" on the active button
  *   Disabled prev/next when at boundaries.
  */
@@ -27,6 +28,7 @@ export default function Pagination({
   onPerPageChange,
   perPageOptions = [10, 25, 50],
 }) {
+  const t = useTranslations("common.pagination");
   const safePage = clampPage(page, totalPages);
   const range = buildPageRange(safePage, totalPages);
   const showPerPage = typeof perPage === "number" && typeof onPerPageChange === "function";
@@ -39,18 +41,18 @@ export default function Pagination({
   return (
     <nav
       role="navigation"
-      aria-label="עימוד"
+      aria-label={t("aria_label")}
       className="flex flex-wrap items-center justify-between gap-3 mt-6"
       data-testid="pagination"
     >
       {showPerPage ? (
         <label className="inline-flex items-center gap-2 text-sm text-site-muted">
-          הצגה לעמוד
+          {t("per_page_label")}
           <select
             value={perPage}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
             className="border border-border rounded-[8px] px-2 py-1 bg-white text-site-text"
-            aria-label="פריטים לעמוד"
+            aria-label={t("per_page_aria")}
           >
             {perPageOptions.map((opt) => (
               <option key={opt} value={opt}>
@@ -68,10 +70,10 @@ export default function Pagination({
           type="button"
           onClick={() => go(safePage - 1)}
           disabled={safePage <= 1}
-          aria-label="עמוד קודם"
+          aria-label={t("prev_aria")}
           className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-light disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          ← הקודם
+          {t("prev")}
         </button>
 
         {range.map((entry, i) => {
@@ -93,7 +95,7 @@ export default function Pagination({
               type="button"
               onClick={() => go(entry)}
               aria-current={active ? "page" : undefined}
-              aria-label={`עמוד ${entry}`}
+              aria-label={t("page_aria", { page: entry })}
               className={`min-w-[36px] px-2 py-1.5 rounded-[8px] text-sm border transition ${
                 active
                   ? "bg-primary text-white border-primary"
@@ -109,10 +111,10 @@ export default function Pagination({
           type="button"
           onClick={() => go(safePage + 1)}
           disabled={safePage >= totalPages}
-          aria-label="עמוד הבא"
+          aria-label={t("next_aria")}
           className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-light disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          הבא →
+          {t("next")}
         </button>
       </div>
     </nav>

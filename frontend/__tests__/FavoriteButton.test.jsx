@@ -1,5 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+// MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
+// FavoriteButton mounts LoginPromptModal as a child; modal needs the mock too.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = {
+      default_message: "כדי לשמור עסקים אוהבים — היכנסי",
+      close_aria: "סגרי חלונית",
+      title: "רוצה לשמור? 🌿",
+      login_cta: "היכנסי",
+      dismiss_cta: "אולי אחר כך",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 import FavoriteButton from "@/components/FavoriteButton";
 
 // Mock auth context — default: no user (logged out)
