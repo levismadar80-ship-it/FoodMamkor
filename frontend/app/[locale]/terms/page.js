@@ -1,15 +1,19 @@
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { buildAlternates } from "@/lib/i18n-seo";
 
 // MEH-475 PR-C4b/chunk-3: terms of use i18n. SECTIONS-array shape
 // matches accessibility + privacy. Operator section (MEH-630) preserved
 // verbatim. Double-geresh (התשכ״ח, אביב–יפו en-dash) intact in
 // translation values.
-export async function generateMetadata() {
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
   const t = await getTranslations("terms");
   return {
-    title: t("meta_title"),
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: t("meta_title") },
     description: t("meta_description"),
+    alternates: buildAlternates("/terms", locale),
   };
 }
 
@@ -148,8 +152,11 @@ function renderBody(id, t) {
   }
 }
 
-export default function TermsPage() {
-  const t = useTranslations("terms");
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function TermsPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "terms" });
   return (
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">

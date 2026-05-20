@@ -1,41 +1,19 @@
 import { getTranslations } from "next-intl/server";
 import AboutClient from "./AboutClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { SITE_URL } from "@/lib/env";
-import { routing } from "@/i18n/routing";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
-// MEH-476 PR 3b1: per-page generateMetadata sample. Establishes the pattern
-// that replaces PR 2's layout-level headers()-based hreflang derivation.
-// PR 3b2 will propagate to the 11 other pages with alternates overrides.
-//
-// Helpers mirror layout.js (HREFLANG_CODES + OG_LOCALE + urlForLocale). When
-// PR 3b2 lands, candidate to extract into a shared lib/i18n-seo.js — kept
-// inline for now since this is the first/sample call site.
-// DO NOT add to routing.locales without adding the matching HREFLANG_CODES +
-// OG_LOCALE entries — silent drift class (MEH-271 smell #2).
-const HREFLANG_CODES = { he: "he-IL", en: "en" };
-const OG_LOCALE = { he: "he_IL", en: "en_US" };
-const ABOUT_PATH = "/about";
-
-function urlForLocale(locale) {
-  const base = locale === routing.defaultLocale ? SITE_URL : `${SITE_URL}/${locale}`;
-  return `${base}${ABOUT_PATH}`;
-}
-
+// MEH-476 PR 3b1: per-page generateMetadata established the pattern.
+// MEH-476 PR 3b2: inline helpers extracted to @/lib/i18n-seo so all 17
+// public routes share a single source of truth (was duplicated × 12+).
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.about" });
 
-  const languages = Object.fromEntries(
-    routing.locales.map((l) => [HREFLANG_CODES[l] ?? l, urlForLocale(l)]),
-  );
-  // x-default → HE per MEH-366 Q1 decision: Israeli audience is the primary market.
-  languages["x-default"] = urlForLocale(routing.defaultLocale);
-
-  const title = t("title");
-
   return {
-    title,
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending
+    // (seo.about.title already includes the brand suffix).
+    title: { absolute: t("title") },
     description: t("description"),
     openGraph: {
       title: t("og_title"),
@@ -45,10 +23,7 @@ export async function generateMetadata({ params }) {
       locale: OG_LOCALE[locale],
       images: ["/og-image.jpg"],
     },
-    alternates: {
-      canonical: urlForLocale(locale),
-      languages,
-    },
+    alternates: buildAlternates("/about", locale),
   };
 }
 

@@ -471,6 +471,24 @@
       "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir, our founder, our values, and how we vet the businesses we feature.",
       "og_title": "About Mehamakor — our vision and values",
       "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
+    },
+    "map": {
+      "title": "Map of local food businesses — Mehamakor",
+      "description": "Find local food businesses on the map. Real, fresh, healthy food near you.",
+      "og_title": "Map of local food businesses — Mehamakor",
+      "og_description": "Local businesses on the map — real food near you."
+    },
+    "experience": {
+      "title_fallback": "Culinary experience — Mehamakor",
+      "description_fallback": "Culinary experiences at local food businesses."
+    },
+    "group_buy": {
+      "title_fallback": "Group purchase — Mehamakor",
+      "description_fallback": "Group purchases from local food businesses."
+    },
+    "event": {
+      "title_fallback": "Culinary event — Mehamakor",
+      "description_fallback": "Culinary events at local food businesses."
     }
   },
   "producer": {
