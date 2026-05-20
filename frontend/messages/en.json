@@ -3346,6 +3346,27 @@
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
       "field_phone_hint": "Notifications coming soon"
+    },
+    "business": {
+      "tabpanel_aria": "My business",
+      "status_pending": "✋ Your application is under review — we'll get back to you shortly.",
+      "status_rejected_title": "Application not approved",
+      "rejected_tip_details": "Make sure all business details are complete and accurate",
+      "rejected_tip_photos": "Add clear product photos",
+      "rejected_tip_address": "Check that the business address is correct",
+      "support_cta": "Talk to us →",
+      "status_suspended": "Account temporarily suspended.",
+      "support_cta_short": "Contact us",
+      "stats_heading": "Statistics",
+      "stats_loading": "Loading…",
+      "stat_views": "Views",
+      "stat_favorites": "Favorites",
+      "stat_reviews": "Reviews",
+      "stat_avg_rating": "Average rating",
+      "stat_products": "Products",
+      "stat_orders": "Orders",
+      "stats_unavailable": "Data not available right now.",
+      "edit_profile_link": "Edit business profile →"
     }
   }
 }
