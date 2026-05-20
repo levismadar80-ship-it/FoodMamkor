@@ -1,15 +1,19 @@
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { buildAlternates } from "@/lib/i18n-seo";
 
 // MEH-475 PR-C4b/chunk-3: privacy policy i18n. SECTIONS-array shape
 // matches accessibility (chunk 2). Operator section (MEH-630) preserved
 // verbatim via dedicated leaf keys; double-geresh ״ + en-dash – + numeric
 // IDs intact in translation values.
-export async function generateMetadata() {
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
   const t = await getTranslations("privacy");
   return {
-    title: t("meta_title"),
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: t("meta_title") },
     description: t("meta_description"),
+    alternates: buildAlternates("/privacy", locale),
   };
 }
 
@@ -150,8 +154,11 @@ function renderBody(id, t) {
   }
 }
 
-export default function PrivacyPage() {
-  const t = useTranslations("privacy");
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function PrivacyPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "privacy" });
   return (
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">

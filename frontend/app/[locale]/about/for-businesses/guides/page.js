@@ -12,24 +12,27 @@
  *           wired to `guides.index.*` + per-guide title keys.
  */
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
-export async function generateMetadata() {
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
   const t = await getTranslations("guides.index");
   const title = t("meta_title");
   return {
-    title,
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: title },
     description: t("meta_description"),
     openGraph: {
       title,
       description: t("og_description"),
       type: "website",
       siteName: BRAND_NAME,
-      locale: "he_IL",
+      locale: OG_LOCALE[locale],
     },
-    alternates: { canonical: "/about/for-businesses/guides" },
+    alternates: buildAlternates("/about/for-businesses/guides", locale),
   };
 }
 
@@ -47,9 +50,12 @@ const GUIDES = [
   { slug: "customer-messages", nsKey: "customer_messages", readMinutes: 6 },
 ];
 
-export default function GuidesIndexPage() {
-  const t = useTranslations("guides");
-  const ti = useTranslations("guides.index");
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function GuidesIndexPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "guides" });
+  const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
     <main
       className="min-h-screen"

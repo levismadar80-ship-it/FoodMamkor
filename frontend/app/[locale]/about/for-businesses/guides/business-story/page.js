@@ -12,26 +12,29 @@
  *           MEH-475 PR-C4b/chunk-5 (i18n, 2026-05-20) — BLOCKS wired to
  *           `guides.business_story.*` namespace; HE verbatim from source.
  */
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import GuideArticle from "@/components/GuideArticle";
 import { BRAND_NAME } from "@/lib/constants";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
-export async function generateMetadata() {
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
   const t = await getTranslations("guides.business_story");
   const title = `${t("title")} | ${BRAND_NAME}`;
   const description = t("preview");
   return {
-    title,
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: title },
     description,
     openGraph: {
       title,
       description,
       type: "article",
       siteName: BRAND_NAME,
-      locale: "he_IL",
+      locale: OG_LOCALE[locale],
     },
-    alternates: { canonical: "/about/for-businesses/guides/business-story" },
+    alternates: buildAlternates("/about/for-businesses/guides/business-story", locale),
   };
 }
 
@@ -105,8 +108,11 @@ function buildBlocks(t) {
   });
 }
 
-export default function BusinessStoryGuidePage() {
-  const t = useTranslations("guides.business_story");
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function BusinessStoryGuidePage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "guides.business_story" });
   return (
     <GuideArticle
       title={t("title")}

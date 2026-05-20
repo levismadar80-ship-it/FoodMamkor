@@ -1,8 +1,11 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import ProducersClient from "@/components/ProducersClient";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
+import { buildAlternates } from "@/lib/i18n-seo";
+import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
 
 /**
  * Public paginated index (MEH-23). Server-rendered so crawlers can
@@ -32,22 +35,47 @@ async function fetchPage(page) {
   }
 }
 
+// MEH-476 PR 3b2: per-locale title + per-page hreflang. Canonical uses
+// buildAlternates for /producers root; ?page=N variants get their own
+// canonical built by hand since query strings aren't part of urlForLocalePath's
+// path argument convention.
 export async function generateMetadata(props) {
+  const params = await props.params;
+  const { locale } = params;
   const searchParams = await props.searchParams;
   const page = clampPage(Number(searchParams?.page) || 1, 999);
+
+  const t = await getTranslations({ locale, namespace: "producers" });
+  const indexLabel = t("title.all");
+  const brand = locale === "he" ? BRAND_NAME : BRAND_NAME_LATIN;
   const title =
     page === 1
-      ? "כל בתי העסק | מהמקור"
-      : `כל בתי העסק — עמוד ${page} | מהמקור`;
+      ? `${indexLabel} | ${brand}`
+      : locale === "he"
+        ? `${indexLabel} — עמוד ${page} | ${brand}`
+        : `${indexLabel} — page ${page} | ${brand}`;
 
-  // Canonical + rel=prev/next help Google consolidate paginated results.
-  const canonical =
-    page === 1 ? `${SITE_URL}/producers` : `${SITE_URL}/producers?page=${page}`;
+  // Build alternates from /producers, then for paginated variants append
+  // ?page=N to BOTH canonical and every languages URL so each EN/HE
+  // page-N variant declares the matching EN/HE page-N variant as its
+  // cross-locale alternate (instead of pointing to the page-1 root).
+  const alternates = buildAlternates("/producers", locale);
+  if (page > 1) {
+    const suffix = `?page=${page}`;
+    alternates.canonical = `${alternates.canonical}${suffix}`;
+    alternates.languages = Object.fromEntries(
+      Object.entries(alternates.languages).map(([k, v]) => [k, `${v}${suffix}`]),
+    );
+  }
 
   return {
-    title,
-    description: "דפדפי בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור.",
-    alternates: { canonical },
+    // title.absolute prevents layout's `%s | brand` template double-suffix.
+    title: { absolute: title },
+    description:
+      locale === "he"
+        ? "דפדפי בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
+        : "Browse all local food businesses, growers, and farms on Mehamakor.",
+    alternates,
   };
 }
 

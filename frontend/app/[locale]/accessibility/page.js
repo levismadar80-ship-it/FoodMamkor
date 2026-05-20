@@ -1,14 +1,19 @@
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { buildAlternates } from "@/lib/i18n-seo";
 
 // MEH-475 PR-C4b/chunk-2: accessibility statement i18n. Same pattern as
 // PR #736 (getTranslations in generateMetadata + namespace-scoped t())
 // extended with t.rich() for bodies that embed <strong>/<a> markup.
-export async function generateMetadata() {
-  const t = await getTranslations("accessibility");
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "accessibility" });
   return {
-    title: t("meta_title"),
+    // title.absolute prevents the layout's `%s | ${BRAND_NAME}` template
+    // from appending — the meta_title keys already include the brand suffix.
+    title: { absolute: t("meta_title") },
     description: t("meta_description"),
+    alternates: buildAlternates("/accessibility", locale),
   };
 }
 
@@ -106,8 +111,13 @@ const SECTIONS = [
   },
 ];
 
-export default function AccessibilityPage() {
-  const t = useTranslations("accessibility");
+// MEH-476 PR 3b2: setRequestLocale + getTranslations (async variant) enables
+// static rendering with next-intl per official docs. Previously this page
+// used useTranslations (sync hook) which forced ƒ Dynamic at the layout level.
+export default async function AccessibilityPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "accessibility" });
   return (
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">
