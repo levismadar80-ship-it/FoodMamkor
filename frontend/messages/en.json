@@ -3230,5 +3230,87 @@
         "error_save": "Bio save error"
       }
     }
+  },
+  "sweep_tail": {
+    "messages": {
+      "meta_title": "Messages | Mehamakor",
+      "meta_description": "Communication on Mehamakor happens directly on WhatsApp with the business.",
+      "heading": "How communication works on Mehamakor",
+      "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a WhatsApp button that connects you directly to the business owner or to the neighbor seller.",
+      "why_heading": "Why this way?",
+      "why_item_no_middlemen": "✓ No middlemen — you talk with the person who grew / prepared / baked it",
+      "why_item_direct_terms": "✓ Agree on price, delivery, and availability personally",
+      "why_item_trust": "✓ Build real trust with the business",
+      "cta_map": "🗺️ Discover businesses on the map",
+      "cta_favorites": "❤️ My favorites"
+    },
+    "followers": {
+      "back_link": "← Dashboard",
+      "heading": "My followers",
+      "loading": "Loading…",
+      "empty_title": "No followers yet — and that's fine",
+      "empty_description": "Followers are customers who want to stay updated on what's new with you. They'll appear here as soon as they start following. In the meantime — share your profile link on WhatsApp.",
+      "share_cta": "Copy share link",
+      "share_cta_copied": "Copied! ✓",
+      "share_toast": "Link copied! 🔗",
+      "followers_label": "followers",
+      "share_hint": "A detailed list of followers is coming soon — share your profile to reach more customers."
+    },
+    "alert_prefs": {
+      "loading": "Loading…",
+      "heading": "Notify me when…",
+      "close_aria": "Close",
+      "row_new_event": "New events",
+      "row_new_product": "New products",
+      "row_delivery_area": "New delivery areas",
+      "row_whatsapp_opt_in": "Send via WhatsApp",
+      "push_denied_toast": "Notifications permission denied",
+      "push_blocked": "Push notifications blocked in the browser",
+      "push_enable": "Enable push notifications (PWA)",
+      "push_active": "Push notifications active",
+      "save_cta": "Save settings",
+      "saving": "Saving…",
+      "save_success_toast": "Settings updated ✓",
+      "save_error_toast": "Save error, please try again"
+    },
+    "layout": {
+      "skip_to_main": "Skip to main content"
+    },
+    "event_new": {
+      "back_link": "← Dashboard",
+      "heading": "Publish a new event",
+      "field_title_label": "Title *",
+      "field_description_label": "Description",
+      "field_description_placeholder": "What the event is, what will happen, who it's for…",
+      "field_category_label": "Category *",
+      "field_date_label": "Date *",
+      "field_time_label": "Time",
+      "field_time_hint": "Optional — if blank, only the date is shown",
+      "field_location_label": "Specific location",
+      "field_location_placeholder": "Exact address or directions",
+      "field_city_label": "City *",
+      "field_price_label": "Price (₪)",
+      "field_price_hint": "0 = free",
+      "field_max_participants_label": "Max participants",
+      "field_max_participants_hint": "Blank = no limit",
+      "field_image_label": "Image URL (Cloudinary)",
+      "field_image_placeholder": "https://res.cloudinary.com/…",
+      "field_registration_url_label": "External registration link (optional)",
+      "field_registration_url_placeholder": "https://…",
+      "submit_publishing": "Publishing…",
+      "submit": "Publish event",
+      "cancel": "Cancel",
+      "error_generic": "Error creating the event — please try again.",
+      "crumb_dashboard": "Business management",
+      "crumb_current": "New event",
+      "subtitle": "Workshop, tour, market, harvest, or open days — publish here",
+      "info_paragraph": "Events = workshop, tour, open day, or any customer gathering. They show up on /events and on your page. Perfect for attracting new customers.",
+      "field_title_placeholder": "For example: cheese workshop",
+      "field_description_full_placeholder": "Events are shown to customers on /events and on your page. Describe: what will happen, who's invited, what's included in the price, what to bring.",
+      "field_city_placeholder": "Search a city…",
+      "field_location_simple_placeholder": "At our farm / full address",
+      "field_price_label_full": "Price (0 = free)",
+      "field_max_participants_label_full": "Max participants"
+    }
   }
 }

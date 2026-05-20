@@ -7,6 +7,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Bell, BellSlash } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
@@ -18,6 +19,7 @@ const DEFAULT_PREFS = {
 };
 
 export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
+  const t = useTranslations("sweep_tail.alert_prefs");
   const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,7 +60,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     const granted = await requestPushPermission();
     if (!granted) {
       setPushStatus("denied");
-      showToast("הרשאת התראות נדחתה", "error");
+      showToast(t("push_denied_toast"), "error");
       return;
     }
     setPushStatus("granted");
@@ -85,10 +87,10 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         whatsapp_opt_in: prefs.whatsapp_opt_in,
         push_subscription,
       });
-      showToast("הגדרות עודכנו ✓", "success");
+      showToast(t("save_success_toast"), "success");
       onClose?.();
     } catch {
-      showToast("שגיאה בשמירה, נסי שוב", "error");
+      showToast(t("save_error_toast"), "error");
     } finally {
       setSaving(false);
     }
@@ -96,7 +98,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
 
   if (loading) {
     return (
-      <div className="p-4 text-sm text-site-muted text-center animate-pulse">טוען...</div>
+      <div className="p-4 text-sm text-site-muted text-center animate-pulse">{t("loading")}</div>
     );
   }
 
@@ -128,14 +130,14 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-site-text text-sm flex items-center gap-1.5">
           <Bell size={16} weight="fill" className="text-primary" aria-hidden="true" />
-          הודעי לי כש...
+          {t("heading")}
           <span className="font-normal text-site-muted">({producerName})</span>
         </h3>
         {onClose && (
           <button
             onClick={onClose}
             className="text-site-muted hover:text-site-text text-lg leading-none"
-            aria-label="סגור"
+            aria-label={t("close_aria")}
           >
             ×
           </button>
@@ -143,10 +145,10 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       </div>
 
       <div className="divide-y divide-border/40">
-        {toggleRow("notify_new_event", "אירועים חדשים", "🎉")}
-        {toggleRow("notify_new_product", "מוצרים חדשים", "🛍️")}
-        {toggleRow("notify_delivery_area", "אזורי משלוח חדשים", "🚚")}
-        {toggleRow("whatsapp_opt_in", "שלחי ב-WhatsApp", "💬")}
+        {toggleRow("notify_new_event", t("row_new_event"), "🎉")}
+        {toggleRow("notify_new_product", t("row_new_product"), "🛍️")}
+        {toggleRow("notify_delivery_area", t("row_delivery_area"), "🚚")}
+        {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), "💬")}
       </div>
 
       {pushStatus !== "unsupported" && pushStatus !== "granted" && (
@@ -158,12 +160,12 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {pushStatus === "denied" ? (
             <>
               <BellSlash size={14} aria-hidden="true" />
-              התראות דחיפה חסומות בדפדפן
+              {t("push_blocked")}
             </>
           ) : (
             <>
               <Bell size={14} aria-hidden="true" />
-              הפעילי התראות דחיפה (PWA)
+              {t("push_enable")}
             </>
           )}
         </button>
@@ -172,7 +174,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       {pushStatus === "granted" && (
         <p className="text-xs text-primary flex items-center gap-1">
           <Bell size={12} weight="fill" aria-hidden="true" />
-          התראות דחיפה פעילות
+          {t("push_active")}
         </p>
       )}
 
@@ -181,7 +183,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         disabled={saving}
         className="w-full bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
       >
-        {saving ? "שומר..." : "שמור הגדרות"}
+        {saving ? t("saving") : t("save_cta")}
       </button>
     </div>
   );
