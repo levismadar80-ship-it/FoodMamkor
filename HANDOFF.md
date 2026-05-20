@@ -1,7 +1,8 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-20 (MEH-475 PR-C4b/chunk-1 — recipe server-page metadata i18n via `getTranslations` + `generateMetadata`; **PR #736 MERGED** at `a35a4da`; LOW-RISK; 2 strings / 1 file; first production use of the `getTranslations` from `"next-intl/server"` + `t()` interpolation pattern; pattern proof-of-concept for the rest of PR-C4b)
+> Last updated: 2026-05-20 (MEH-475 PR-C4b/chunk-2 — accessibility statement i18n via `getTranslations` + `useTranslations` + first production use of `t.rich()`; **PR #738 MERGED** at `58c5472`; LOW-RISK; 35 strings → 26 keys / 1 file; new `accessibility.*` top-level namespace with `t.rich()` for bodies that embed `<strong>` / `<a>` markup)
+> Previously: 2026-05-20 (MEH-475 PR-C4b/chunk-1 — recipe server-page metadata i18n via `getTranslations` + `generateMetadata`; **PR #736 MERGED** at `a35a4da`; LOW-RISK; 2 strings / 1 file; first production use of the `getTranslations` from `"next-intl/server"` + `t()` interpolation pattern; pattern proof-of-concept for the rest of PR-C4b)
 > Previously: 2026-05-20 (MEH-475 PR-C4b inventory doc — per-file complexity catalog, 5-pattern catalog, SEO risk per file, proposed 5-chunk split, STOP criteria, brand-LOCK grep across all 9 candidate files; **PR #735 MERGED** at `599c23e`; LOW-RISK docs-only; planning artifact for the remaining 4 PR-C4b chunks)
 > Previously: 2026-05-20 (MEH-630 — site operator legal disclosure ("פרטי מפעיל האתר": שנף טופז 325120939 / מהמקור / Mehamakor / noreply@mehamakor.co.il) added to top of `/terms` + `/privacy`; **PR #728 MERGED** at `d08fdf8`; LOW-RISK; inline HE per scope agreement (full terms/privacy i18n deferred to follow-up); existing `levismadar80@gmail.com` references in §6/§11 and §5/§10 left untouched per scope)
 > Previously: 2026-05-20 (MEH-475 — Language toggle UI (Globe icon, desktop + mobile drawer); **PR #731 MERGED** at `3a877ed2`; LOW-RISK end-to-end; **closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b + toggle); 3 follow-up hygiene items folded into <issue id="MEH-629">MEH-629</issue> (now 7 items))
@@ -9,14 +10,15 @@
 
 ## Next session pickup
 
-**MEH-475 PR-C4b remaining chunks** (per `docs/wave-5-pr-c4b-inventory.md` §4, now that Chunk 1 has proven the `getTranslations` + `generateMetadata` pattern):
+**MEH-475 PR-C4b remaining chunks** (per `docs/wave-5-pr-c4b-inventory.md` §4). Chunks 1 + 2 are DONE; chunks 3-5 are HIGH-RISK and need a fresh session each:
 
-- **Chunk 2** — `accessibility/page.js` (35 strings) — `useTranslations` in a SECTIONS-array shape; no JSON-LD, no markdown.
-- **Chunk 3** — `privacy/page.js` + `terms/page.js` combined (147 strings) — second `generateMetadata` use; legal-sensitivity guardrails apply (HE values must be byte-identical to current strings for first pass; MEH-630 operator section ships verbatim).
-- **Chunk 4** — `about/for-businesses/page.js` (31 strings + FAQPage JSON-LD) — highest active SEO risk; requires body keys extracted first, then `buildFaqJsonLd()` re-pointed to the same keys. Do not merge until Chunks 1–3 prove the upstream patterns are stable in production.
-- **Chunk 5** — Guides (3 files, 283 strings combined) + selective sweep tail (only files ≤30 strings from the Top-10 tail; ranks 1-3 `producer/dashboard` 106 / `settings/page.jsx` 105 / `HomeProductForm.jsx` 89 are per-feature surfaces and get their own future ticket).
+- ✅ **Chunk 1** — `recipes/[recipe_id]/page.jsx` (2 strings → 2 keys) — MERGED in PR #736 at `a35a4da`. `getTranslations` + `generateMetadata` + `t()` interpolation pattern proven.
+- ✅ **Chunk 2** — `accessibility/page.js` (35 strings → 26 keys) — MERGED in PR #738 at `58c5472`. New `accessibility.*` top-level namespace + first production use of `t.rich()` for JSX-fragmented bodies.
+- ⚠️ **Chunk 3 — HIGH-RISK** — `privacy/page.js` + `terms/page.js` combined (147 strings). **Legal sensitivity**: HE values must be byte-identical to current strings for first pass; the MEH-630 operator section ("שנף טופז 325120939") ships verbatim. Will introduce a new `legal.*` top-level namespace with `legal.privacy.*` + `legal.terms.*` siblings.
+- ⚠️ **Chunk 4 — HIGH-RISK** — `about/for-businesses/page.js` (31 strings + active FAQPage JSON-LD). **Highest active SEO risk**: schema submission live since 2026-05-14. Requires body keys extracted first, then `buildFaqJsonLd()` re-pointed to the same keys with `**bold**` markdown preserved through translation. Do not merge until Chunk 3 proves the legal-page pattern is stable in production.
+- ⚠️ **Chunk 5 — HIGH-RISK** — Guides (3 files, 283 strings combined) + selective sweep tail. **Mixed-block-type BLOCKS arrays** (`p`, `h3`, `ol`, `ul`, `hr`, `blockquote`, `callout`) plus `**bold**` markdown inside data. Sweep tail: only files ≤30 strings from the Top-10 tail; ranks 1-3 (`producer/dashboard` 106 / `settings/page.jsx` 105 / `HomeProductForm.jsx` 89) are per-feature surfaces and get their own future ticket.
 
-STOP criteria specific to PR-C4b are in `docs/wave-5-pr-c4b-inventory.md` §5.
+STOP criteria specific to PR-C4b are in `docs/wave-5-pr-c4b-inventory.md` §5. The inventory's "Status" section also tracks chunk-by-chunk merge state.
 > Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4a — public discovery top-10; 182 strings / 10 files; **PR #729 MERGED** at `151bebd`; ICU plurals on 5 groups; EMPTY_CATEGORY_CHIPS data/display split for backend canonical-HE preservation)
 > Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-3 — modals + forms/badge; 120 strings / 14 files; **PR #727 MERGED** at `0556db6`; CityPickerModal duplicate-namespace consolidation; PasswordInput voice-local feminine keys)
 > Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-2 — about.consumer.* AboutClient.jsx; 57 strings; **PR #726 MERGED** at `43174d0`; about/for-businesses re-bucketed to PR-C4b; about/page.js deferred to Wave 6)
