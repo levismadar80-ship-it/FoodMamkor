@@ -12,19 +12,30 @@
 ## Status (last updated 2026-05-20)
 
 - **Chunk 1 — Recipe server-page metadata** — ✅ **MERGED** in PR #736 at
-  `a35a4da`. First production use of `getTranslations` from
-  `"next-intl/server"` + `generateMetadata` + `t()` interpolation is now
-  proven in staging. 2 strings extracted to `recipes.detail.meta_*`.
-  `<RecipeJsonLd>` untouched (data-sourced).
-- **Chunk 2 — Accessibility (35 strings)** — PENDING.
-- **Chunk 3 — Privacy + Terms combined (147 strings)** — PENDING.
-- **Chunk 4 — For-businesses FAQ + JSON-LD (31 strings)** — PENDING.
-  Gated on Chunks 2-3 proving the pattern in legal copy before adding
-  the JSON-LD layer on top.
-- **Chunk 5 — Guides (3 files, 283 strings) + selective sweep tail** —
-  PENDING.
+  `a35a4da`. First production use of `getTranslations` + `generateMetadata`
+  + `t()` interpolation. `<RecipeJsonLd>` untouched (data-sourced).
+- **Chunk 2 — Accessibility (35 strings → 26 keys)** — ✅ **MERGED** in
+  PR #738 at `58c5472`. New `accessibility.*` top-level namespace +
+  first production use of `t.rich()` for JSX-fragmented bodies.
+- **Chunk 3 — Privacy + Terms (147 strings → 102 keys)** — ✅ **MERGED**
+  in PR #740 at `280cdb5`. New `privacy.*` + `terms.*` top-level
+  namespaces. MEH-630 operator section preserved verbatim (double-geresh ״ +
+  single-geresh ׳ + en-dash – byte-identical).
+- **Chunk 4 — For-businesses FAQ + FAQPage JSON-LD (31 strings → 29 keys)** —
+  ✅ **MERGED** in PR #741 at `807ff2e`. New `about_business.*`
+  top-level namespace. **First production pattern for JSON-LD consuming
+  translation keys**: `buildFaqJsonLd(t)` builds the schema from the
+  same translation keys the visible `<details>` rendering uses;
+  `**bold**` markdown preserved in source, stripped before schema
+  emission.
+- **Chunk 5 — Guides (3 files + index, ~300 strings)** — 🔜 **DEFERRED**
+  to a fresh session. Pattern well understood (BLOCKS-array → per-position
+  translation keys), but volume + EN prose-translation quality bar
+  exceeds single-session runtime budget. Files: `guides/page.js` (17),
+  `business-story/page.js` (~83), `product-photography/page.js` (~92),
+  `customer-messages/page.js` (~91).
 
-Future sessions pick up Chunks 2-5 per §4 below.
+Cumulative ICU key parity after chunks 1-4: **1922 / 1922** (HE / EN).
 
 ---
 
