@@ -374,6 +374,9 @@ function SecurityTab() {
 function PasswordChangeCard({ isOAuth }) {
   // MEH-628: scoped translator for password-policy failure copy.
   const tValidation = useTranslations("auth.passwordValidation");
+  // MEH-629 item 2: re-uses the existing reset-flow key for the
+  // "new password" label + aria-label (same canonical HE string).
+  const tReset = useTranslations("auth.passwordRecovery.reset");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -479,14 +482,14 @@ function PasswordChangeCard({ isOAuth }) {
             "נבדק בשרת" pending tile because reuse-vs-current_hash is
             enforced inside the change_password handler (server-only). */}
         <div>
-          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">סיסמה חדשה *</label>
+          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">{tReset("password_aria")} *</label>
           <PasswordInput
             id="pw-new"
             name="new"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             placeholder=""
-            ariaLabel="סיסמה חדשה"
+            ariaLabel={tReset("password_aria")}
             showCurrentPasswordReuse={true}
             onValidityChange={setNextOk}
           />
