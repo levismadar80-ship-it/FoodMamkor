@@ -2663,5 +2663,56 @@
         "body": "For more information about online accessibility rights, you can reach the <link>government accessibility site</link>."
       }
     }
+  },
+  "about_business": {
+    "meta_title": "FAQ for businesses — Mehamakor",
+    "meta_description": "8 frequently-asked questions from local business owners about Mehamakor: cost, value, time, platform trust, and customer control. Direct, transparent answers.",
+    "og_title": "FAQ for businesses — Mehamakor",
+    "og_description": "8 common questions + direct answers for business owners deciding whether to join.",
+    "eyebrow": "For business owners",
+    "heading": "Frequently-asked questions for business owners",
+    "categories": {
+      "money_value": "Money and value",
+      "time_effort": "Time and effort",
+      "trust": "Platform trust",
+      "control": "Control and stance"
+    },
+    "faq": {
+      "cost": {
+        "q": "How much does it cost to sign up?",
+        "a": "Zero. You don't pay us anything — no order commission, no subscription fee. Customers reach you directly on WhatsApp or by phone, and you keep 100% of their payment."
+      },
+      "value": {
+        "q": "What do I get out of it?",
+        "a": "Two things you didn't have before:\n\n**That people will find you on Google.** Someone searching Google for local food — finds you. Today, if you're not buying an ad budget, you're nearly invisible. With us every business gets a page that ranks in search.\n\n**A stable page that doesn't disappear.** Instagram disappears after 24 hours. WhatsApp disappears when someone isn't in the group. Your page on Mehamakor — stays. With your story, your photos, and the contact channels you choose. You can share it as a link and put it in your Instagram bio."
+      },
+      "time": {
+        "q": "How long will this take me?",
+        "a": "About 10 minutes for the initial setup. After that — you don't manage anything else with us. You keep working the way you work. If something changes — opening hours, a new product, a break — you update it with one tap, or send me a message on WhatsApp and I'll update."
+      },
+      "writing": {
+        "q": "I don't know how to write about myself. Will the page look thin?",
+        "a": "You don't have to write it alone. Tell me about your business in whatever way you usually write — WhatsApp, Instagram, however is comfortable — and I'll help phrase it. Phone photos are great, you don't need a professional photographer. If you want — we can spend 15 minutes on the phone and build it together."
+      },
+      "founder": {
+        "q": "Who's behind Mehamakor?",
+        "a": "I'm Sapir, 21, from Zikhron Ya'akov. I built Mehamakor because I was also looking for places to buy real, local food, and it was hard — WhatsApp groups, Instagram searches. I wanted one place. I'm on my own for now, no investors, no big company. You can talk to me on WhatsApp directly and ask anything you want."
+      },
+      "leads": {
+        "q": "The customers who arrive through you — yours or mine?",
+        "a": "Yours. Completely. Customers reach out to you directly on WhatsApp or by phone — you get their details, you manage the relationship. We're not in the middle, we don't see the messages, we don't take their info. Even if Mehamakor closed tomorrow, the customers who reached you through us stay yours. It's the opposite of Wolt or Yango."
+      },
+      "visibility": {
+        "q": "I'm already on Instagram and WhatsApp — why do I need another place?",
+        "a": "Instagram only works when someone already follows you. WhatsApp groups only work when someone is already in the group. Mehamakor works even when you're not thinking about it — someone searching Google for local food finds you. It's not instead of your channels, it's in addition.\n\nAnd it matters to know — on Mehamakor there is no comparison. No prices side by side, no star ratings, no \"see 10 similar businesses\" button. Each business stands on its own. The customer sees you, not you-versus-others."
+      },
+      "control": {
+        "q": "I want to decide who I work with and when.",
+        "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
+      }
+    },
+    "footer_intro_prefix": "Still have a question? Write to me on Instagram",
+    "footer_intro_suffix": "or join now:",
+    "cta": "Add your business"
   }
 }
