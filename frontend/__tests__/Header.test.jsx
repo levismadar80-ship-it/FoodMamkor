@@ -24,7 +24,9 @@ vi.mock("@/lib/language-context", () => ({
 }));
 
 // MEH-471: Header reads useTranslations() from next-intl directly.
+// MEH-475: LanguageToggle adds useLocale() — current locale fixture is "he".
 vi.mock("next-intl", () => ({
+  useLocale: () => "he",
   useTranslations: () => (key) =>
     ({
       "nav.discover": "גלה",
@@ -37,6 +39,10 @@ vi.mock("next-intl", () => ({
       "nav.favorites": "מועדפים",
       "nav.admin": "אדמין",
       "nav.mobile_label": "ניווט מובייל",
+      "nav.lang_switch_to_en": "Switch to English",
+      "nav.lang_switch_to_he": "החלף לעברית",
+      "nav.lang_he": "עברית",
+      "nav.lang_en": "EN",
     }[key] || key),
 }));
 
@@ -58,6 +64,17 @@ vi.mock("@phosphor-icons/react", () => ({
   List: (props) => <span data-testid="icon-hamburger" {...props} />,
   MagnifyingGlass: (props) => <span data-testid="icon-search" {...props} />,
   X: (props) => <span data-testid="icon-close" {...props} />,
+  // MEH-475: Globe used by the new LanguageToggle child component.
+  Globe: (props) => <span data-testid="icon-globe" {...props} />,
+}));
+
+// MEH-475: LanguageToggle pulls useRouter/usePathname from "@/i18n/navigation"
+// (the next-intl-aware router that handles locale prefix routing). The
+// next/navigation mock above covers Header's own router calls; this mock
+// covers the toggle's locale-aware router.
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => "/about",
 }));
 
 describe("Header", () => {
