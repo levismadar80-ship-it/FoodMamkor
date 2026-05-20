@@ -28,21 +28,25 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { env } from "@/lib/env";
 import EmptyState from "@/components/ui/EmptyState";
 
+function SettingsLoadingFallback() {
+  const tCommon = useTranslations("settings.common");
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-12 text-site-muted">
+      {tCommon("loading")}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-3xl mx-auto px-4 py-12 text-site-muted">
-          טוענת...
-        </div>
-      }
-    >
+    <Suspense fallback={<SettingsLoadingFallback />}>
       <SettingsPageBody />
     </Suspense>
   );
 }
 
 function SettingsPageBody() {
+  const tCommon = useTranslations("settings.common");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -83,13 +87,13 @@ function SettingsPageBody() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
-        הגדרות חשבון
+        {tCommon("page_heading")}
       </h1>
 
       {/* Tab bar — overflow-x-auto so business tab stays reachable at 375px */}
       <div
         role="tablist"
-        aria-label="טאבים"
+        aria-label={tCommon("tabs_aria")}
         className="flex gap-1 bg-white border border-border rounded-full p-1 mb-8 overflow-x-auto"
       >
         <TabButton
@@ -102,7 +106,7 @@ function SettingsPageBody() {
             />
           }
         >
-          פרופיל
+          {tCommon("tab_profile")}
         </TabButton>
         <TabButton
           active={tab === "security"}
@@ -111,7 +115,7 @@ function SettingsPageBody() {
             <Lock size={16} weight={tab === "security" ? "fill" : "duotone"} />
           }
         >
-          אבטחה
+          {tCommon("tab_security")}
         </TabButton>
         {isProducer && (
           <TabButton
@@ -125,7 +129,7 @@ function SettingsPageBody() {
               />
             }
           >
-            העסק שלי
+            {tCommon("tab_business")}
           </TabButton>
         )}
       </div>
@@ -167,6 +171,8 @@ const TabButton = forwardRef(function TabButton(
 
 function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
+  const tCommon = useTranslations("settings.common");
+  const t = useTranslations("settings.profile");
   const [name, setName] = useState(user.name || "");
   const [city, setCity] = useState(user.city || "");
   const [phone, setPhone] = useState(user.phone || "");
@@ -194,10 +200,10 @@ function ProfileTab() {
       if (trimmedName !== user.name) patch.name = trimmedName;
       if (city.trim() !== (user.city || "")) patch.city = city.trim();
       await updateProfile(patch);
-      setMessage("הפרטים נשמרו");
+      setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || "לא הצלחנו לשמור. נסי שוב.");
+      setError(err?.response?.data?.detail || t("save_error_fallback"));
     } finally {
       setSaving(false);
     }
@@ -208,12 +214,12 @@ function ProfileTab() {
     if (!file) return;
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
-      setError("רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF");
+      setError(t("upload_type_error"));
       e.target.value = "";
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("הקובץ גדול מדי — מקסימום 5MB");
+      setError(t("upload_size_error"));
       e.target.value = "";
       return;
     }
@@ -226,10 +232,10 @@ function ProfileTab() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       await refreshUser();
-      setMessage("תמונת הפרופיל עודכנה");
+      setMessage(t("avatar_uploaded_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה בהעלאת התמונה — נסי שוב");
+      setError(err?.response?.data?.detail || t("avatar_upload_error_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -239,14 +245,14 @@ function ProfileTab() {
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
 
   return (
-    <section role="tabpanel" aria-label="פרופיל" className="bg-white border border-border rounded-[16px] p-6">
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label
           htmlFor="avatar-upload"
-          title="לחצי לשינוי התמונה"
+          title={t("avatar_title")}
           className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
-          aria-label="שינוי תמונת פרופיל"
+          aria-label={t("avatar_aria")}
         >
           {user.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -273,13 +279,13 @@ function ProfileTab() {
         <div>
           <p className="font-semibold text-site-text">{user.name}</p>
           <p className="text-sm text-site-muted" dir="ltr">{user.email}</p>
-          <p className="text-xs text-site-muted mt-0.5">לחצי על התמונה לשינוי</p>
+          <p className="text-xs text-site-muted mt-0.5">{t("avatar_hint")}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="profile-name" className="block text-sm font-medium mb-1">שם מלא *</label>
+          <label htmlFor="profile-name" className="block text-sm font-medium mb-1">{t("field_name_label")} *</label>
           <input
             id="profile-name"
             type="text"
@@ -292,20 +298,20 @@ function ProfileTab() {
         </div>
         <div>
           <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
-            עיר <span className="text-site-muted font-normal">(אופציונלי)</span>
+            {t("field_city_label")} <span className="text-site-muted font-normal">{tCommon("optional_suffix")}</span>
           </label>
           <CitySearch
             id="profile-city"
             value={city}
             onChange={setCity}
-            placeholder="לדוגמה: תל אביב"
+            placeholder={t("field_city_placeholder")}
           />
           <p className="text-xs text-site-muted mt-1 text-right">
-            כדי שנציג לך עסקים באזורך
+            {t("field_city_hint")}
           </p>
         </div>
         <div>
-          <label htmlFor="profile-email" className="block text-sm font-medium mb-1">אימייל</label>
+          <label htmlFor="profile-email" className="block text-sm font-medium mb-1">{t("field_email_label")}</label>
           <input
             id="profile-email"
             type="email"
@@ -317,13 +323,13 @@ function ProfileTab() {
           />
           <p className="text-xs text-site-muted mt-1 text-right">
             {isOAuth
-              ? `האימייל מחובר לחשבון ${oAuthProvider ?? "חיצוני"} — לשינוי עדכני שם`
-              : "לשינוי אימייל, פני לתמיכה"}
+              ? t("email_oauth_hint", { provider: oAuthProvider ?? t("email_oauth_provider_fallback") })
+              : t("email_change_hint")}
           </p>
         </div>
         <div>
           <label htmlFor="profile-phone" className="block text-sm font-medium mb-1">
-            טלפון <span className="text-site-muted font-normal">(אופציונלי)</span>
+            {t("field_phone_label")} <span className="text-site-muted font-normal">{tCommon("optional_suffix")}</span>
           </label>
           <input
             id="profile-phone"
@@ -335,7 +341,7 @@ function ProfileTab() {
             dir="ltr"
           />
           <p className="text-xs text-site-muted mt-1 text-right">
-            נוסיף בקרוב notifications
+            {t("field_phone_hint")}
           </p>
         </div>
 
@@ -347,7 +353,7 @@ function ProfileTab() {
           disabled={!canSave || saving}
           className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
-          {saving ? "שומרת..." : "שמרי"}
+          {saving ? tCommon("saving") : tCommon("save_cta")}
         </button>
       </form>
     </section>
