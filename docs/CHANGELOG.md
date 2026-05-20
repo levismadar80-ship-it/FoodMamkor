@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-20 — Session close: MEH-475 PR-C4b chunks 3 + 4 merged, chunk 5 deferred
+
+**Two PRs merged via autopilot.** Total: 178 source strings extracted to 131 translation keys across 3 files, 2 new top-level namespaces, 1 new architectural pattern proven.
+
+- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ 325120939.` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
+- **PR #741 MERGED** at `807ff2e` — `feat(MEH-475 PR-C4b/chunk-4)`: for-businesses FAQ + FAQPage JSON-LD i18n (31 strings → 29 keys). New `about_business.*` top-level namespace. **First production pattern for JSON-LD consuming translation keys**: `buildFaqJsonLd(t)` builds the schema from the same translation keys the visible `<details>` rendering uses; `**bold**` markdown preserved in source values, stripped before schema emission. Accept-both JSON merge resolved against PR #740's privacy/terms additions.
+
+**Chunk 5 (3 guide pages + index, ~300 strings) DEFERRED** to a fresh session. Pattern is well understood (BLOCKS-array → per-position translation keys), but volume + EN-prose-translation quality bar exceeds remaining session runtime. See `HANDOFF.md` → "Next session pickup" for the resume instructions.
+
+**Cumulative MEH-475 PR-C4b**: chunks 1+2+3+4 = 215 source strings → 159 translation keys across 4 namespaces (`recipes.detail.*` extension, `accessibility.*`, `privacy.*`, `terms.*`, `about_business.*`). ICU key parity 1922/1922 HE↔EN.
+
 ### 2026-05-20 — Session close: MEH-475 PR-C4b chunk 2 merged + HANDOFF sync
 
 PR-C4b/chunk-2 (#738) merged at `58c5472`. HANDOFF.md "Last updated" + "Next session pickup" updated to mark chunks 1+2 done and flag chunks 3-5 as HIGH-RISK (legal text / FAQPage JSON-LD / guides with mixed BLOCKS arrays + `**bold**` markdown). Stale chunk-2 branch deleted. Chunks 3, 4, 5 explicitly untouched — fresh session required for each.
