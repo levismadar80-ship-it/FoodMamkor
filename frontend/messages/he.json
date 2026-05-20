@@ -3230,5 +3230,87 @@
         "error_save": "שגיאה בשמירת הביו"
       }
     }
+  },
+  "sweep_tail": {
+    "messages": {
+      "meta_title": "הודעות | מהמקור",
+      "meta_description": "התקשורת במהמקור מתבצעת ישירות בווטסאפ עם בית העסק.",
+      "heading": "איך עובדת התקשורת במהמקור?",
+      "intro": "אין צ׳אט פנימי באפליקציה — אנחנו מאמינים בקשר ישיר ואמיתי בין הקונה לבית העסק. בכל כרטיסיית עסק תמצאו כפתור ווטסאפ שיחבר אתכם ישירות לבעל העסק או לשכן המוכר.",
+      "why_heading": "למה ככה?",
+      "why_item_no_middlemen": "✓ אין מתווכים — אתם מדברים עם האדם שגידל / הכין / אופה",
+      "why_item_direct_terms": "✓ מסכמים על מחיר, משלוח וזמינות באופן אישי",
+      "why_item_trust": "✓ בונים יחסי אמון אמיתיים עם בית העסק",
+      "cta_map": "🗺️ גלי בתי עסק במפה",
+      "cta_favorites": "❤️ המועדפים שלי"
+    },
+    "followers": {
+      "back_link": "← לוח הבקרה",
+      "heading": "העוקבות שלי",
+      "loading": "טוענת...",
+      "empty_title": "עוד אין עוקבות — וזה בסדר",
+      "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפי את הקישור לפרופיל שלך בוואטסאפ.",
+      "share_cta": "העתיקי קישור לשיתוף",
+      "share_cta_copied": "הועתק! ✓",
+      "share_toast": "הקישור הועתק! 🔗",
+      "followers_label": "עוקבות",
+      "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפי את הפרופיל שלך כדי להגיע ליותר לקוחות."
+    },
+    "alert_prefs": {
+      "loading": "טוען...",
+      "heading": "הודעי לי כש...",
+      "close_aria": "סגור",
+      "row_new_event": "אירועים חדשים",
+      "row_new_product": "מוצרים חדשים",
+      "row_delivery_area": "אזורי משלוח חדשים",
+      "row_whatsapp_opt_in": "שלחי ב-WhatsApp",
+      "push_denied_toast": "הרשאת התראות נדחתה",
+      "push_blocked": "התראות דחיפה חסומות בדפדפן",
+      "push_enable": "הפעילי התראות דחיפה (PWA)",
+      "push_active": "התראות דחיפה פעילות",
+      "save_cta": "שמור הגדרות",
+      "saving": "שומר...",
+      "save_success_toast": "הגדרות עודכנו ✓",
+      "save_error_toast": "שגיאה בשמירה, נסי שוב"
+    },
+    "layout": {
+      "skip_to_main": "דלג לתוכן הראשי"
+    },
+    "event_new": {
+      "back_link": "← לוח הבקרה",
+      "heading": "פרסום אירוע חדש",
+      "field_title_label": "כותרת *",
+      "field_description_label": "תיאור",
+      "field_description_placeholder": "מה האירוע, מה יקרה, למי הוא מיועד...",
+      "field_category_label": "קטגוריה *",
+      "field_date_label": "תאריך *",
+      "field_time_label": "שעה",
+      "field_time_hint": "אופציונלי — אם לא הוזן, יוצג רק תאריך",
+      "field_location_label": "מיקום ספציפי",
+      "field_location_placeholder": "כתובת מדויקת או הוראות הגעה",
+      "field_city_label": "עיר *",
+      "field_price_label": "מחיר (₪)",
+      "field_price_hint": "0 = חינם",
+      "field_max_participants_label": "מקסימום משתתפות",
+      "field_max_participants_hint": "ריק = ללא הגבלה",
+      "field_image_label": "קישור לתמונה (Cloudinary)",
+      "field_image_placeholder": "https://res.cloudinary.com/...",
+      "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
+      "field_registration_url_placeholder": "https://...",
+      "submit_publishing": "מפרסמת...",
+      "submit": "פרסם אירוע",
+      "cancel": "ביטול",
+      "error_generic": "שגיאה ביצירת האירוע — נסי שוב.",
+      "crumb_dashboard": "ניהול העסק",
+      "crumb_current": "אירוע חדש",
+      "subtitle": "סדנה, סיור, שוק, קטיף או ימי פתיחה — פרסמי כאן",
+      "info_paragraph": "אירועים = סדנה, סיור, יום פתיחה, או כל מפגש עם לקוחות. יופיעו ב-/events ובעמוד שלך. מושלם להבאת לקוחות חדשות.",
+      "field_title_placeholder": "למשל: סדנת גבינה",
+      "field_description_full_placeholder": "אירועים נחשפים ללקוחות ב-/events ובעמוד שלך. ספרי: מה יקרה, מי מוזמנת, מה כלול במחיר, מה להביא.",
+      "field_city_placeholder": "חפשי עיר...",
+      "field_location_simple_placeholder": "בחווה שלנו / כתובת מלאה",
+      "field_price_label_full": "מחיר (0 = חינם)",
+      "field_max_participants_label_full": "מקסימום משתתפים"
+    }
   }
 }
