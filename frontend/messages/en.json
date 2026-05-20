@@ -465,6 +465,12 @@
       "og_description": "Real food from local businesses — all in one place.",
       "twitter_title": "Mehamakor — real food, straight from the source",
       "twitter_description": "Real food from local businesses — all in one place."
+    },
+    "about": {
+      "title": "About Mehamakor — our vision and values",
+      "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir, our founder, our values, and how we vet the businesses we feature.",
+      "og_title": "About Mehamakor — our vision and values",
+      "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
     }
   },
   "producer": {
