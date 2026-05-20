@@ -1,78 +1,75 @@
-export const metadata = {
-  title: "הצהרת נגישות | מהמקור",
-  description:
-    "הצהרת נגישות של אתר מהמקור — אנו מחויבות לאפשר שימוש באתר לכל המשתמשות והמשתמשים, לרבות אנשים עם מוגבלות.",
-};
+import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+
+// MEH-475 PR-C4b/chunk-2: accessibility statement i18n. Same pattern as
+// PR #736 (getTranslations in generateMetadata + namespace-scoped t())
+// extended with t.rich() for bodies that embed <strong>/<a> markup.
+export async function generateMetadata() {
+  const t = await getTranslations("accessibility");
+  return {
+    title: t("meta_title"),
+    description: t("meta_description"),
+  };
+}
+
+const FEATURE_KEYS = [
+  "rtl",
+  "contrast",
+  "alt",
+  "keyboard",
+  "labels",
+  "fonts",
+  "semantic",
+];
 
 const SECTIONS = [
   {
     id: "commitment",
-    title: "מחויבות לנגישות",
-    body: (
-      <>
-        אתר &quot;מהמקור&quot; מחויב לאפשר גלישה נוחה ושוויונית לכלל המשתמשות
-        והמשתמשים, לרבות אנשים עם מוגבלות, בהתאם ל
-        <strong>חוק שוויון זכויות לאנשים עם מוגבלות, התשנ״ח–1998</strong>{" "}
-        ותקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות),
-        התשע״ג–2013.
-      </>
-    ),
+    renderBody: (t) =>
+      t.rich("sections.commitment.body", {
+        law: (chunks) => <strong>{chunks}</strong>,
+      }),
   },
   {
     id: "standard",
-    title: "רמת תקן",
-    body: (
-      <>
-        אנו פועלות להתאים את האתר לתקן הישראלי <strong>ת״י 5568</strong> ברמת
-        AA, המבוסס על הנחיות{" "}
-        <a
-          href="https://www.w3.org/WAI/WCAG21/quickref/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:underline"
-          dir="ltr"
-        >
-          WCAG 2.1
-        </a>
-        .
-      </>
-    ),
+    renderBody: (t) =>
+      t.rich("sections.standard.body", {
+        standard: (chunks) => <strong>{chunks}</strong>,
+        wcag: (chunks) => (
+          <a
+            href="https://www.w3.org/WAI/WCAG21/quickref/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+            dir="ltr"
+          >
+            {chunks}
+          </a>
+        ),
+      }),
   },
   {
     id: "features",
-    title: "התאמות שבוצעו באתר",
-    body: (
+    renderBody: (t) => (
       <ul className="list-disc ps-6 space-y-2">
-        <li>תמיכה מלאה ב-RTL ובקריאת מסך בעברית.</li>
-        <li>ניגודיות צבעים סבירה בין טקסט לרקע.</li>
-        <li>טקסטים חלופיים (alt) לתמונות משמעותיות.</li>
-        <li>ניווט מקלדת בכל הדפים.</li>
-        <li>תוויות ברורות לטפסים וכפתורים.</li>
-        <li>גדלי גופנים הניתנים להגדלה בדפדפן.</li>
-        <li>מבנה סמנטי (landmarks, headings) לתמיכה בטכנולוגיות מסייעות.</li>
+        {FEATURE_KEYS.map((k) => (
+          <li key={k}>{t(`sections.features.item_${k}`)}</li>
+        ))}
       </ul>
     ),
   },
   {
     id: "gaps",
-    title: "חלקים שאינם נגישים במלואם",
-    body: (
-      <>
-        ייתכנו דפים, תכנים או פונקציות שטרם הונגשו במלואם, לרבות תכנים שהועלו על
-        ידי משתמשות (לדוגמה תמונות ללא תיאור חלופי). אנו פועלות באופן שוטף
-        לשפר ולהרחיב את ההנגשה.
-      </>
-    ),
+    renderBody: (t) => t("sections.gaps.body"),
   },
   {
     id: "contact",
-    title: "פנייה לרכזת נגישות",
-    body: (
+    renderBody: (t) => (
       <>
-        נתקלת בבעיית נגישות? נשמח לסייע ולתקן. ניתן לפנות לרכזת הנגישות של
-        האתר:
+        {t("sections.contact.intro")}
         <br />
-        <strong>רכזת נגישות:</strong> צוות מהמקור
+        <strong>{t("sections.contact.coordinator_label")}</strong>{" "}
+        {t("sections.contact.coordinator_value")}
         <br />
         📧{" "}
         <a
@@ -83,41 +80,41 @@ const SECTIONS = [
           levismadar80@gmail.com
         </a>
         <br />
-        📞 להשלים
+        📞 {t("sections.contact.phone_placeholder")}
         <br />
         <span className="text-sm text-site-muted">
-          בפנייה נא לתאר את הבעיה, את הדף שבו נתקלת בה ואת סוג הטכנולוגיה
-          המסייעת שבה את/ה משתמש/ת. נחזור אלייך תוך 3 ימי עסקים.
+          {t("sections.contact.footnote")}
         </span>
       </>
     ),
   },
   {
     id: "authority",
-    title: "רשות ממשלתית לנגישות",
-    body: (
-      <>
-        לפרטים נוספים על זכויות נגישות ברשת, ניתן לפנות ל
-        <a
-          href="https://www.gov.il/he/departments/accessibility"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:underline"
-        >
-          אתר הנגישות הממשלתי
-        </a>
-        .
-      </>
-    ),
+    renderBody: (t) =>
+      t.rich("sections.authority.body", {
+        link: (chunks) => (
+          <a
+            href="https://www.gov.il/he/departments/accessibility"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {chunks}
+          </a>
+        ),
+      }),
   },
 ];
 
 export default function AccessibilityPage() {
+  const t = useTranslations("accessibility");
   return (
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="font-headline text-5xl font-bold text-site-text mb-2">הצהרת נגישות</h1>
-        <p className="text-site-muted mb-12">תאריך בדיקה אחרונה: אפריל 2026</p>
+        <h1 className="font-headline text-5xl font-bold text-site-text mb-2">
+          {t("heading")}
+        </h1>
+        <p className="text-site-muted mb-12">{t("date_label")}</p>
 
         <div className="space-y-4">
           {SECTIONS.map((section) => (
@@ -127,9 +124,11 @@ export default function AccessibilityPage() {
               className="bg-white rounded-[16px] p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
             >
               <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
-                {section.title}
+                {t(`sections.${section.id}.title`)}
               </h2>
-              <div className="text-site-text/85 leading-relaxed">{section.body}</div>
+              <div className="text-site-text/85 leading-relaxed">
+                {section.renderBody(t)}
+              </div>
             </section>
           ))}
         </div>

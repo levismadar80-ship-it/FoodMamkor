@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-05-20 — MEH-475 PR-C4b/chunk-2: accessibility statement i18n (35 strings → 26 keys)
+
+`feat`: Extracts the IS 5568 accessibility statement page (`frontend/app/[locale]/accessibility/page.js`) to a new top-level `accessibility.*` namespace. Same pattern as PR #736 (`getTranslations` in `generateMetadata` + `useTranslations` in the default export) plus first production use of `t.rich()` for bodies that embed `<strong>` / `<a>` markup.
+
+`namespace`: `accessibility.*` new top-level (chosen over a sub of `legal.*` because no `legal.*` namespace exists yet — the future legal chunk 3 will land `legal.privacy.*` + `legal.terms.*` siblings). Sub-keys: `meta_title`, `meta_description`, `heading`, `date_label`, plus `sections.{commitment,standard,features,gaps,contact,authority}.{title, body or items}`. 26 keys consolidated from 35 scanner-detected strings — `t.rich()` collapses JSX-fragmented bodies (e.g. commitment body L13–17) into single rich-text messages with placeholder tags (`<law>`, `<standard>`, `<wcag>`, `<link>`).
+
+`pattern`: `t.rich(key, { tag: (chunks) => <Component>{chunks}</Component> })` per next-intl v4 rich-text API. Each section body that contains embedded markup uses a single key with named tag placeholders; the render function in the SECTIONS array maps tag names to React elements (keeping the data-driven shape of the original SECTIONS array, just routing the body through `t` instead of inlining JSX).
+
+`scope`: 3 files touched — page.js (151/-76 LOC churn, net +75 from inlined JSX to the t.rich tag-renderer dispatch), messages/he.json (+42 lines / 26 new keys), messages/en.json (+42 lines / 26 new keys). No JSON-LD, no markdown-in-data, no renderInline.
+
+`verification`: `npm run build` green (101 SSG pages). ICU key parity 1791/1791 HE↔EN (+26 from prior 1765). Scanner residual on this file 35→0. Brand-LOCK clean — all "מהמקור" / "Mehamakor" references in commitment + contact + meta are now in translation values. HE values byte-identical to source: double-geresh (`״` U+05F4) preserved in `התשנ״ח` / `התשע״ג` / `ת״י`, en-dash (`–` U+2013) preserved in `התשנ״ח–1998` / `התשע״ג–2013`, embedded `&quot;` HTML entities resolved to literal `"` in JSON. No physical RTL classes introduced; `ps-6` (logical) preserved on the features ul.
+
 ### 2026-05-20 — Session summary: MEH-475 PR-C4b foundation shipped
 
 Three PRs merged this session, all tracking toward closing MEH-475 user-facing string scope:
