@@ -2621,5 +2621,47 @@
   },
   "footer": {
     "copyright": "Mehamakor · Made with love in Israel"
+  },
+  "accessibility": {
+    "meta_title": "Accessibility Statement | Mehamakor",
+    "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
+    "heading": "Accessibility Statement",
+    "date_label": "Last reviewed: April 2026",
+    "sections": {
+      "commitment": {
+        "title": "Accessibility commitment",
+        "body": "The \"Mehamakor\" site is committed to providing comfortable and equitable browsing for all users, including people with disabilities, in accordance with the <law>Equal Rights for Persons with Disabilities Law, 1998</law> and the Equal Rights for Persons with Disabilities Regulations (Accessibility Adjustments for Service), 2013."
+      },
+      "standard": {
+        "title": "Standard level",
+        "body": "We work to bring the site into conformance with the Israeli standard <standard>IS 5568</standard> at level AA, which is based on the <wcag>WCAG 2.1</wcag> guidelines."
+      },
+      "features": {
+        "title": "Accessibility features in this site",
+        "item_rtl": "Full RTL and Hebrew screen-reader support.",
+        "item_contrast": "Reasonable color contrast between text and background.",
+        "item_alt": "Alternative text (alt) for meaningful images.",
+        "item_keyboard": "Keyboard navigation across all pages.",
+        "item_labels": "Clear labels for forms and buttons.",
+        "item_fonts": "Font sizes that can be enlarged in the browser.",
+        "item_semantic": "Semantic structure (landmarks, headings) to support assistive technologies."
+      },
+      "gaps": {
+        "title": "Areas not yet fully accessible",
+        "body": "Some pages, content, or features may not yet be fully accessible, including content uploaded by users (for example, images without alternative text). We work continuously to improve and expand accessibility."
+      },
+      "contact": {
+        "title": "Contact the accessibility coordinator",
+        "intro": "Encountered an accessibility issue? We would be glad to help and fix it. You can reach the site's accessibility coordinator:",
+        "coordinator_label": "Accessibility coordinator:",
+        "coordinator_value": "The Mehamakor team",
+        "phone_placeholder": "TBD",
+        "footnote": "When contacting us, please describe the issue, the page where you encountered it, and the assistive technology you use. We will respond within 3 business days."
+      },
+      "authority": {
+        "title": "Government accessibility authority",
+        "body": "For more information about online accessibility rights, you can reach the <link>government accessibility site</link>."
+      }
+    }
   }
 }
