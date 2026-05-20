@@ -2663,5 +2663,199 @@
         "body": "For more information about online accessibility rights, you can reach the <link>government accessibility site</link>."
       }
     }
+  },
+  "privacy": {
+    "meta_title": "Privacy Policy | Mehamakor",
+    "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
+    "heading": "Privacy Policy",
+    "date_label": "Last updated: April 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "sections": {
+      "operator": {
+        "title": "Site operator details",
+        "operator_label": "Site operator:",
+        "operator_value": "Shanaf Topaz, exempt small business no. 325120939.",
+        "trade_label": "Trade name:",
+        "trade_value": "Mehamakor / מהמקור.",
+        "contact_label": "Contact:"
+      },
+      "who": {
+        "title": "1. Who we are",
+        "body": "\"Mehamakor\" (the \"site\" or \"platform\") is a directory platform that connects local food businesses and natural-care producers with buyers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
+      },
+      "data": {
+        "title": "2. What data we collect",
+        "items": {
+          "identity": {
+            "label": "Identity and contact details:",
+            "value": "Full name, email address, phone number, city of residence."
+          },
+          "business": {
+            "label": "Business details (for sellers):",
+            "value": "Business name, description, address, categories, delivery areas, social links."
+          },
+          "technical": {
+            "label": "Technical data:",
+            "value": "IP address, browser type, operating system, device identifier."
+          },
+          "location": {
+            "label": "Location data:",
+            "value": "Approximate location (only if you grant browser permission), to display nearby businesses on the map."
+          },
+          "cookies": {
+            "label": "Cookies and behavioral data:",
+            "value": "Pages you visited, searches, clicks, products viewed, and businesses you saved to favorites."
+          },
+          "ugc": {
+            "label": "Content you create:",
+            "value": "Posts in the \"Neighbor's Kitchen\" section, ratings, comments, and inquiries through contact forms."
+          }
+        }
+      },
+      "why": {
+        "title": "3. Why we collect this data",
+        "items": {
+          "service": {
+            "label": "Running the service:",
+            "value": "Authenticating users, managing accounts, displaying businesses, processing registrations, and connecting buyers with sellers."
+          },
+          "analytics": {
+            "label": "Analytics and improvement:",
+            "value": "Understanding site usage, improving the experience, fixing bugs, and developing new features."
+          },
+          "notifications": {
+            "label": "Notifications and communication:",
+            "value": "Essential account messages, registration confirmations, admin alerts, and the newsletter (only if you opted in)."
+          },
+          "compliance": {
+            "label": "Legal compliance:",
+            "value": "Meeting privacy-law requirements, handling reports, and preventing abuse."
+          }
+        }
+      },
+      "third_parties": {
+        "title": "4. Third parties",
+        "intro": "We use external service providers to operate the platform. Each is subject to its own privacy policy:",
+        "items": {
+          "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
+          "google": "<b>Google</b> — Google OAuth for sign-in, Google Fonts, and analytics services.",
+          "anthropic": "<b>Anthropic</b> — AI models for support, content moderation, and experience improvements.",
+          "twilio": "<b>Twilio</b> — WhatsApp messages for admin alerts and customers.",
+          "infra": "<b>Vercel & Railway</b> — hosting and servers."
+        },
+        "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
+      },
+      "rights": {
+        "title": "5. Your rights (under Amendment 13, 2025)",
+        "intro": "The Protection of Privacy Law grants you the following rights. You can exercise any of them at no cost by contacting <email>levismadar80@gmail.com</email>:",
+        "items": {
+          "access": {
+            "label": "Right of access:",
+            "value": "Request to view the personal information we hold about you."
+          },
+          "rectify": {
+            "label": "Right to rectification:",
+            "value": "Request correction of information that is inaccurate, incomplete, or out of date."
+          },
+          "erase": {
+            "label": "Right to erasure:",
+            "value": "Request deletion of your account and personal data. You can also do this through your account settings."
+          },
+          "object": {
+            "label": "Right to object:",
+            "value": "Object to processing for certain marketing or analytics purposes."
+          },
+          "portability": {
+            "label": "Right to portability:",
+            "value": "Receive a copy of your data in an accessible digital format."
+          }
+        },
+        "outro": "We will respond to your request within 30 days. You may also file a complaint with the Privacy Protection Authority at the Ministry of Justice."
+      },
+      "cookies": {
+        "title": "6. Cookies",
+        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time through your browser settings."
+      },
+      "retention": {
+        "title": "7. Data retention and security",
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+      },
+      "minors": {
+        "title": "8. Minors",
+        "body": "The service is intended for users aged 18 and over. We do not knowingly collect personal information from minors under this age. If we become aware that we have, we will delete it promptly."
+      },
+      "changes": {
+        "title": "9. Changes to this policy",
+        "body": "We will update this policy from time to time. An updated version will be published on this page with the update date. Continued use of the service constitutes acceptance of the updated version."
+      },
+      "contact": {
+        "title": "10. Contact",
+        "intro": "For any privacy question, rights request, or issue report:"
+      }
+    }
+  },
+  "terms": {
+    "meta_title": "Terms of Use | Mehamakor",
+    "meta_description": "Terms of use for Mehamakor — a directory platform connecting local food businesses with buyers across Israel.",
+    "heading": "Terms of Use",
+    "date_label": "Last updated: April 2026",
+    "sections": {
+      "operator": {
+        "title": "Site operator details",
+        "operator_label": "Site operator:",
+        "operator_value": "Shanaf Topaz, exempt small business no. 325120939.",
+        "trade_label": "Trade name:",
+        "trade_value": "Mehamakor / מהמקור.",
+        "contact_label": "Contact:"
+      },
+      "service": {
+        "title": "1. Nature of the service",
+        "body": "\"Mehamakor\" (the \"platform\" or \"site\") is a <b>directory-only</b> platform connecting local food businesses with buyers across Israel. The platform <b>does not sell</b> products, is not a party to any transaction, is not responsible for delivery or payment, and does not mediate transactions. Every transaction takes place directly between the seller and the buyer, at their sole responsibility."
+      },
+      "licensing": {
+        "title": "2. Seller responsibility for licensing",
+        "intro": "Every seller listed on the platform bears <b>sole responsibility</b> for holding all licenses, approvals, and permits required by law, including (but not limited to): the Business Licensing Law (1968), public-health (food) regulations, Ministry of Health directives, and relevant kashrut and labeling provisions.",
+        "outro": "On registering as a business, the seller declares that she holds all required licenses for the products she sells and that she will keep them valid throughout her use of the platform. Mehamakor <b>does not inspect, verify, or approve</b> these licenses, and compliance responsibility lies solely with the seller."
+      },
+      "age": {
+        "title": "3. Minimum age",
+        "body": "Use of the site is permitted only for users aged <b>18 and over</b>. By registering or using the platform you confirm that you are 18+ and have legal capacity to be bound by these terms."
+      },
+      "responsibility": {
+        "title": "4. Product and transaction responsibility",
+        "body": "Every product listed on the site is the sole responsibility of the seller. Mehamakor is not responsible for product quality, safety, freshness, kashrut, fit to description, delivery times, or any damage — direct or indirect — arising from use or reliance on them. The buyer purchases at her own responsibility directly from the seller."
+      },
+      "verified": {
+        "title": "5. Verified businesses",
+        "body": "The \"Verified by Mehamakor\" badge indicates that the business passed an initial review of platform criteria (seller identity, active operation, category fit). The verification <b>does not guarantee</b> product quality, license validity, or any specific purchase."
+      },
+      "report": {
+        "title": "6. Reporting violations",
+        "intro": "Encountered a product or business that does not comply with the law or these terms? You can report it in one of the following ways:",
+        "item_button": "Click the \"Report\" button on the business or product page.",
+        "item_email": "Email directly to <email>levismadar80@gmail.com</email>.",
+        "item_form": "Use the <contactlink>contact form</contactlink>.",
+        "outro": "We will review every report within <b>3 business days</b>. The platform reserves the right to remove content, suspend accounts, and refer matters to authorities in case of a violation."
+      },
+      "ip": {
+        "title": "7. Intellectual property",
+        "body": "All content on the platform, including the brand name, logo, and design, is the property of Mehamakor. Content uploaded by users remains theirs, but the user grants Mehamakor a non-exclusive license to display and distribute it for operating the service."
+      },
+      "changes": {
+        "title": "8. Changes to these terms",
+        "body": "Mehamakor may update these terms from time to time. The updated version will be published on this page with the update date. Continued use after an update constitutes acceptance of the updated terms."
+      },
+      "law": {
+        "title": "9. Governing law and jurisdiction",
+        "body": "These terms, use of the platform, and any dispute arising from them are governed exclusively by the laws of <b>the State of Israel</b>. Exclusive jurisdiction in any matter concerning these terms is vested in the competent courts of the Tel Aviv–Jaffa district."
+      },
+      "privacy": {
+        "title": "10. Privacy",
+        "body": "Use of the platform is also subject to the <privacylink>privacy policy</privacylink>, which forms an integral part of these terms."
+      },
+      "contact": {
+        "title": "11. Contact",
+        "intro": "For any question or inquiry regarding the terms of use:"
+      }
+    }
   }
 }
