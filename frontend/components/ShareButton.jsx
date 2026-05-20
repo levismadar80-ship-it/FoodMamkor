@@ -1,15 +1,19 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { showToast } from "@/lib/toast";
 import { ShareNetwork } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 
 export default function ShareButton({ url, title, description, city, category }) {
+  const t = useTranslations("share");
+  const resolvedTitle = title || t("wa_message_business_fallback");
+  const metaSep = t("wa_meta_separator");
   const shareText = [
-    `גיליתי את ${title || "בית עסק"} במהמקור 🌿`,
+    t("wa_message_with_meta", { title: resolvedTitle }),
     description ? `${description.slice(0, 80)}...` : "",
     city || category
-      ? `ב${city || ""}${city && category ? " • " : ""}${category || ""}`
+      ? `${city || ""}${city && category ? metaSep : ""}${category || ""}`
       : "",
     `👉 ${url}`,
   ]
@@ -29,7 +33,7 @@ export default function ShareButton({ url, title, description, city, category })
     }
     try {
       await navigator.clipboard.writeText(shareText);
-      showToast("הקישור הועתק ✓");
+      showToast(t("copied_toast"));
     } catch {
       // last-resort fallback
       const ta = document.createElement("textarea");
@@ -38,7 +42,7 @@ export default function ShareButton({ url, title, description, city, category })
       ta.select();
       try {
         document.execCommand("copy");
-        showToast("הקישור הועתק ✓");
+        showToast(t("copied_toast"));
       } finally {
         document.body.removeChild(ta);
       }
@@ -49,11 +53,11 @@ export default function ShareButton({ url, title, description, city, category })
     <button
       onClick={handleShare}
       className="inline-flex items-center gap-2 bg-white border border-border px-3 py-2 min-h-[44px] rounded-[8px] hover:bg-light transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
-      title="שתף לינק"
-      aria-label="שתף לינק לעסק"
+      title={t("copy_link")}
+      aria-label={t("modal_title")}
     >
       <ShareNetwork size={16} weight="duotone" aria-hidden="true" />
-      <span className="hidden sm:inline">שתף</span>
+      <span className="hidden sm:inline">{t("trigger")}</span>
     </button>
   );
 }

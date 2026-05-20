@@ -491,6 +491,7 @@ function AnalyticsSection({ analytics, profile }) {
           value={average_rating ? average_rating.toFixed(1) : "—"}
           sub={`מתוך ${total_reviews} ביקורות`}
         />
+        {/* TODO MEH-543: i18n after /neighbor activation post-launch */}
         <SimpleCard
           label="מוצרים פעילים במטבח"
           icon="🥕"

@@ -5,6 +5,49 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, act, screen, fireEvent } from "@testing-library/react";
 import { useState } from "react";
+
+// MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
+// Covers strings from LocationModal + LoginPromptModal that this file
+// renders. Test assertions use Hebrew strings, so map them explicitly.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = {
+      // modals.location
+      title: "איפה את?",
+      subtitle: "נמצא עסקים קרובים אליך",
+      search_label: "חיפוש עיר",
+      search_placeholder: "הקלידי שם עיר...",
+      aria_label: "בחירת עיר",
+      close_aria: "סגור",
+      geo_button: "קרוב אליי",
+      geo_loading: "מחפשת...",
+      geo_failure: "לא הצלחנו לקבל את המיקום שלך",
+      current_location_fallback: "מיקום נוכחי",
+      skip: "דלגי לעכשיו",
+      "popular_cities.tel_aviv": "תל אביב",
+      "popular_cities.jerusalem": "ירושלים",
+      "popular_cities.haifa": "חיפה",
+      "popular_cities.beersheba": "באר שבע",
+      // modals.login_prompt
+      default_message: "כדי לשמור עסקים אוהבים — היכנסי",
+      title: "רוצה לשמור? 🌿",
+      login_cta: "היכנסי",
+      dismiss_cta: "אולי אחר כך",
+      // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
+      trigger: "🚩 דווח על עסק",
+      form_heading: "דווח על עסק",
+      reason_placeholder: "ספר/י מה הבעיה...",
+      submit: "שלח דיווח",
+      cancel: "ביטול",
+      error_generic: "שגיאה בשליחה",
+      success_title: "תודה על הדיווח",
+      success_message: "נבדוק ונטפל תוך 48 שעות.",
+      success_close: "סגור",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 import LocationModal from "@/components/LocationModal";
 import LoginPromptModal from "@/components/LoginPromptModal";
 import ReportButton from "@/components/ReportButton";

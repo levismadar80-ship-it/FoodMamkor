@@ -8,7 +8,7 @@ import api from "@/lib/api";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminSettingsPage() {
-  const t = useTranslations("admin.settings");
+  const t = useTranslations("admin");
   const [settings, setSettings] = useState(null);
   // MEH-250 — pristine copy of what the server returned; compared to
   // `settings` to compute the diff for the confirm dialog + disable the
@@ -40,8 +40,8 @@ export default function AdminSettingsPage() {
       .catch(() => setLoadError(true));
   }, []);
 
-  if (loadError) return <div className="text-red-600 text-sm">{t("load_error")}</div>;
-  if (!settings) return <div className="text-text-secondary">{t("loading")}</div>;
+  if (loadError) return <div className="text-red-600 text-sm">{t("settings.load_error")}</div>;
+  if (!settings) return <div className="text-text-secondary">{t("common.loading")}</div>;
 
   const update = (key, value) => {
     setSettings({ ...settings, [key]: value });
@@ -60,7 +60,7 @@ export default function AdminSettingsPage() {
     const summary = changedKeys
       .map((key) => `• ${key}: ${originalSettings[key] || "∅"} → ${settings[key] || "∅"}`)
       .join("\n");
-    if (!globalThis.confirm(t("confirm_save", { summary }))) {
+    if (!globalThis.confirm(`${t("settings.save.confirm_prefix")}\n\n${summary}`)) {
       return;
     }
     setSaving(true);
@@ -85,11 +85,11 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold">{t("title")}</h1>
+      <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">{t("notifications.section_title")}</h2>
-        <Field label={t("notifications.admin_email_label")}>
+        <h2 className="font-semibold">{t("settings.sections.notifications")}</h2>
+        <Field label={t("settings.fields.admin_email")}>
           <input
             type="email"
             dir="ltr"
@@ -99,7 +99,7 @@ export default function AdminSettingsPage() {
             placeholder="admin@mehamakor.co.il"
           />
         </Field>
-        <Field label={t("notifications.admin_whatsapp_label")}>
+        <Field label={t("settings.fields.admin_whatsapp")}>
           <input
             value={settings.admin_whatsapp || ""}
             onChange={(event) => update("admin_whatsapp", event.target.value)}
@@ -110,8 +110,8 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">{t("freemium.section_title")}</h2>
-        <Field label={t("freemium.monthly_price_label")}>
+        <h2 className="font-semibold">{t("settings.sections.freemium")}</h2>
+        <Field label={t("settings.fields.premium_price")}>
           <input
             type="number"
             value={settings.freemium_premium_price || ""}
@@ -120,7 +120,7 @@ export default function AdminSettingsPage() {
             placeholder="49"
           />
         </Field>
-        <Field label={t("freemium.free_image_limit_label")}>
+        <Field label={t("settings.fields.free_image_limit")}>
           <input
             type="number"
             value={settings.freemium_free_image_limit || ""}
@@ -133,16 +133,16 @@ export default function AdminSettingsPage() {
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">
-          {t("holiday.section_title")}
+          {t("settings.sections.holiday")}
           <InfoTooltip
-            content={t("holiday.tooltip_content")}
-            label={t("holiday.tooltip_label")}
+            content={t("settings.sections.holiday_tooltip")}
+            label={t("settings.sections.holiday_tooltip_label")}
             position="bottom"
           />
         </h2>
-        <p className="text-xs text-text-secondary">{t("holiday.section_description")}</p>
+        <p className="text-xs text-text-secondary">{t("settings.sections.holiday_hint")}</p>
         <div className="flex items-center justify-between">
-          <span className="text-sm">{t("holiday.switch_label")}</span>
+          <span className="text-sm">{t("settings.sections.holiday_active")}</span>
           <button
             role="switch"
             aria-checked={settings.holiday_override_enabled === "true"}
@@ -152,37 +152,37 @@ export default function AdminSettingsPage() {
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
-        <Field label={t("holiday.key_select_label")}>
+        <Field label={t("settings.fields.holiday_key_label")}>
           <select
             value={settings.holiday_override_key || ""}
             onChange={(event) => update("holiday_override_key", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
           >
-            <option value="">{t("holiday.key_none")}</option>
-            <option value="pesach">{t("holiday.key_pesach")}</option>
-            <option value="shavuot">{t("holiday.key_shavuot")}</option>
-            <option value="rosh_hashana">{t("holiday.key_rosh_hashana")}</option>
-            <option value="sukkot">{t("holiday.key_sukkot")}</option>
-            <option value="chanuka">{t("holiday.key_chanuka")}</option>
-            <option value="tu_bishvat">{t("holiday.key_tu_bishvat")}</option>
+            <option value="">{t("settings.fields.holiday_none")}</option>
+            <option value="pesach">{t("settings.fields.holiday_pesach")}</option>
+            <option value="shavuot">{t("settings.fields.holiday_shavuot")}</option>
+            <option value="rosh_hashana">{t("settings.fields.holiday_rosh_hashana")}</option>
+            <option value="sukkot">{t("settings.fields.holiday_sukkot")}</option>
+            <option value="chanuka">{t("settings.fields.holiday_chanuka")}</option>
+            <option value="tu_bishvat">{t("settings.fields.holiday_tu_bishvat")}</option>
           </select>
         </Field>
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">
-          {t("friday.section_title")}
+          {t("settings.sections.friday_mode")}
           <InfoTooltip
-            content={t("friday.tooltip_content")}
-            label={t("friday.tooltip_label")}
+            content={t("settings.sections.friday_tooltip")}
+            label={t("settings.sections.friday_tooltip_label")}
             position="bottom"
           />
         </h2>
         <p className="text-xs text-text-secondary">
-          {t("friday.section_description")}
+          {t("settings.sections.friday_hint")}
         </p>
         <div className="flex items-center justify-between">
-          <span className="text-sm">{t("friday.switch_label")}</span>
+          <span className="text-sm">{t("settings.sections.friday_active")}</span>
           <button
             role="switch"
             aria-checked={settings.friday_mode_override === "true"}
@@ -204,15 +204,15 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
-        <h2 className="font-semibold">{t("tests.section_title")}</h2>
+        <h2 className="font-semibold">{t("settings.sections.tests")}</h2>
         {[
           { key: "whatsapp", label: "WhatsApp" },
           { key: "cloudinary", label: "Cloudinary" },
         ].map(({ key, label }) => {
           const result = tests[key];
-          let statusText = t("tests.status_unconfigured");
-          if (result?.loading) statusText = t("tests.status_loading");
-          else if (result?.ok) statusText = t("tests.status_ok");
+          let statusText = t("settings.tests.not_configured");
+          if (result?.loading) statusText = t("settings.tests.testing");
+          else if (result?.ok) statusText = t("settings.tests.connected");
           return (
             <div key={key} className="flex items-center justify-between gap-3 border-b border-border last:border-0 pb-2 last:pb-0">
               <span className="text-sm">{label}</span>
@@ -226,7 +226,7 @@ export default function AdminSettingsPage() {
                   onClick={() => testService(key)}
                   className="text-xs bg-secondary text-white px-3 py-1 rounded-[12px]"
                 >
-                  {t("tests.test_button")}
+                  {t("settings.tests.test_btn")}
                 </button>
               </div>
             </div>
@@ -235,10 +235,10 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-2">{t("categories.section_title")}</h2>
-        <p className="text-sm text-text-secondary mb-3">{t("categories.section_description")}</p>
+        <h2 className="font-semibold mb-2">{t("settings.sections.categories")}</h2>
+        <p className="text-sm text-text-secondary mb-3">{t("settings.sections.categories_hint")}</p>
         <Link href="/admin/content" className="text-primary text-sm hover:underline">
-          {t("categories.link_to_content")}
+          {t("settings.sections.categories_link")}
         </Link>
       </div>
 
@@ -247,16 +247,16 @@ export default function AdminSettingsPage() {
           onClick={save}
           disabled={saving || !isDirty}
           className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
-          title={isDirty ? undefined : t("save.no_changes_title")}
+          title={isDirty ? undefined : t("settings.save.nothing_to_save_title")}
         >
-          {saving ? t("save.saving") : t("save.submit")}
+          {saving ? t("settings.save.saving") : t("settings.save.submit")}
         </button>
         {isDirty && !saving && (
           <span className="text-xs text-site-muted">
-            {t("save.unsaved_count", { count: changedKeys.length })}
+            {t("settings.save.unsaved_count", { count: changedKeys.length })}
           </span>
         )}
-        {saved && !isDirty && <span className="text-sm text-primary">{t("save.saved_indicator")}</span>}
+        {saved && !isDirty && <span className="text-sm text-primary">{t("common.saved_check")}</span>}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 /**
  * Lightbox — full-screen image viewer opened from ImageGallery.
@@ -15,6 +16,7 @@ import { X } from "@phosphor-icons/react";
  * z-index 9000 — below chat (9999) + cookie (9998) + login-prompt (9500).
  */
 export default function Lightbox({ images = [], startIndex = 0, onClose }) {
+  const t = useTranslations("modals.lightbox");
   const [index, setIndex] = useState(startIndex);
   const closeRef = useRef(null);
   const dialogRef = useRef(null);
@@ -91,7 +93,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="תצוגת תמונה"
+        aria-label={t("aria_label")}
         onClick={(e) => e.stopPropagation()}
         className="relative flex items-center justify-center w-full h-full"
       >
@@ -100,7 +102,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
           ref={closeRef}
           type="button"
           onClick={onClose}
-          aria-label="סגרי תצוגה"
+          aria-label={t("close_aria")}
           className="absolute top-4 end-4 z-10 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition focus-visible:ring-2 focus-visible:ring-white/40"
         >
           <X size={22} weight="bold" aria-hidden="true" />
@@ -112,7 +114,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
           <img
             key={index}
             src={images[index]}
-            alt={`תמונה ${index + 1} מתוך ${images.length}`}
+            alt={t("image_alt", { current: index + 1, total: images.length })}
             className="max-w-[95vw] max-h-[90vh] object-contain"
             style={{ animation: "lightboxImgFade 150ms ease" }}
           />
@@ -124,7 +126,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
             <button
               type="button"
               onClick={goPrev}
-              aria-label="תמונה קודמת"
+              aria-label={t("prev_aria")}
               className="absolute top-1/2 -translate-y-1/2 end-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xl transition focus-visible:ring-2 focus-visible:ring-white/40"
             >
               <span aria-hidden="true">→</span>
@@ -133,7 +135,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
             <button
               type="button"
               onClick={goNext}
-              aria-label="תמונה הבאה"
+              aria-label={t("next_aria")}
               className="absolute top-1/2 -translate-y-1/2 start-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xl transition focus-visible:ring-2 focus-visible:ring-white/40"
             >
               <span aria-hidden="true">←</span>

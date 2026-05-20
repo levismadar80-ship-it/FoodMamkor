@@ -21,6 +21,7 @@ import api from "@/lib/api";
  * CookieBanner to reposition. Reads "cookieConsent" from localStorage.
  */
 
+// TODO MEH-543: i18n after /neighbor activation post-launch
 const OPENING_MESSAGE = {
   role: "assistant",
   content: "היי 🌿 אני כאן לעזור! אפשר לשאול אותי איך נרשמים, איך מוצאים בתי עסק, או איך מפרסמים מוצר ביתי. מה תרצי לדעת?",

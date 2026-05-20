@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 /**
  * Shimmer skeleton placeholder. Use in place of a spinner while fetching
  * lists of cards. The shimmer animation is keyframed inline so we don't
@@ -58,11 +60,12 @@ function SkeletonProducerCard() {
  * Grid of skeleton cards — matches the producer grid layout.
  */
 export function SkeletonProducerGrid({ count = 8 }) {
+  const t = useTranslations("common.skeleton");
   return (
     <div
       className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4"
       role="status"
-      aria-label="טוענת עסקים טריים"
+      aria-label={t("loading_businesses")}
     >
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonProducerCard key={i} />

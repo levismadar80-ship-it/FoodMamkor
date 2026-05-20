@@ -4,6 +4,93 @@
 
 ## Unreleased
 
+### 2026-05-20 — MEH-475 PR-C4b COMPLETE — chunk 5 (guides) merged
+
+**Final chunk of PR-C4b shipped.** PR #743 merged at `0fbf52a`: 4 guide pages (index + 3 onboarding guides) translated into a new `guides.*` top-level namespace with per-guide sub-namespaces (`guides.index.*`, `guides.business_story.*`, `guides.product_photography.*`, `guides.customer_messages.*`). 283 source strings consolidated to 243 translation keys across the 4 files.
+
+**Pattern**: BLOCKS-array structure decoupled from translation values. Each guide page swaps its inline `BLOCKS = [{type, text, items}]` for a structure-only `BLOCKS_STRUCTURE = [{type, key, count?}]` consumed by `buildBlocks(t)` at render time. The shared `GuideArticle.jsx` chrome is untouched — only its consumers change. HE values were machine-extracted from source via a Python parser, guaranteeing byte-identical preservation of `**bold**` markdown, special punctuation, emoji prefixes, and `\n\n` paragraph splits.
+
+**PR-C4b cumulative**: chunks 1+2+3+4+5 = 498 source strings → 402 translation keys across 6 new namespaces (`recipes.detail.meta_*` extension, `accessibility.*`, `privacy.*`, `terms.*`, `about_business.*`, `guides.*`). ICU key parity **2165 / 2165** HE↔EN. MEH-475 user-facing string scope is now closed; remaining work is Wave 6 metadata + robots.txt `/en` lift (separate tickets).
+
+### 2026-05-20 — Session close: MEH-475 PR-C4b chunks 3 + 4 merged, chunk 5 deferred
+
+**Two PRs merged via autopilot.** Total: 178 source strings extracted to 131 translation keys across 3 files, 2 new top-level namespaces, 1 new architectural pattern proven.
+
+- **PR #740 MERGED** at `280cdb5` — `feat(MEH-475 PR-C4b/chunk-3)`: privacy + terms i18n (147 strings → 102 keys). New `privacy.*` + `terms.*` top-level namespaces. **MEH-630 operator section preserved verbatim** (`שנף טופז, עוסקת פטורה מס׳ 325120939.` + `מהמקור / Mehamakor.` + `noreply@mehamakor.co.il`). Double-geresh ״ + single-geresh ׳ + en-dash – all byte-identical (`התשמ״א–1981`, `התשכ״ח–1968`, `התשע״ג–2013`, `תל אביב–יפו`, `מאומת ע״י מהמקור`).
+- **PR #741 MERGED** at `807ff2e` — `feat(MEH-475 PR-C4b/chunk-4)`: for-businesses FAQ + FAQPage JSON-LD i18n (31 strings → 29 keys). New `about_business.*` top-level namespace. **First production pattern for JSON-LD consuming translation keys**: `buildFaqJsonLd(t)` builds the schema from the same translation keys the visible `<details>` rendering uses; `**bold**` markdown preserved in source values, stripped before schema emission. Accept-both JSON merge resolved against PR #740's privacy/terms additions.
+
+**Chunk 5 (3 guide pages + index, ~300 strings) DEFERRED** to a fresh session. Pattern is well understood (BLOCKS-array → per-position translation keys), but volume + EN-prose-translation quality bar exceeds remaining session runtime. See `HANDOFF.md` → "Next session pickup" for the resume instructions.
+
+**Cumulative MEH-475 PR-C4b**: chunks 1+2+3+4 = 215 source strings → 159 translation keys across 4 namespaces (`recipes.detail.*` extension, `accessibility.*`, `privacy.*`, `terms.*`, `about_business.*`). ICU key parity 1922/1922 HE↔EN.
+
+### 2026-05-20 — Session close: MEH-475 PR-C4b chunk 2 merged + HANDOFF sync
+
+PR-C4b/chunk-2 (#738) merged at `58c5472`. HANDOFF.md "Last updated" + "Next session pickup" updated to mark chunks 1+2 done and flag chunks 3-5 as HIGH-RISK (legal text / FAQPage JSON-LD / guides with mixed BLOCKS arrays + `**bold**` markdown). Stale chunk-2 branch deleted. Chunks 3, 4, 5 explicitly untouched — fresh session required for each.
+
+### 2026-05-20 — MEH-475 PR-C4b/chunk-2: accessibility statement i18n (35 strings → 26 keys)
+
+`feat`: Extracts the IS 5568 accessibility statement page (`frontend/app/[locale]/accessibility/page.js`) to a new top-level `accessibility.*` namespace. Same pattern as PR #736 (`getTranslations` in `generateMetadata` + `useTranslations` in the default export) plus first production use of `t.rich()` for bodies that embed `<strong>` / `<a>` markup.
+
+`namespace`: `accessibility.*` new top-level (chosen over a sub of `legal.*` because no `legal.*` namespace exists yet — the future legal chunk 3 will land `legal.privacy.*` + `legal.terms.*` siblings). Sub-keys: `meta_title`, `meta_description`, `heading`, `date_label`, plus `sections.{commitment,standard,features,gaps,contact,authority}.{title, body or items}`. 26 keys consolidated from 35 scanner-detected strings — `t.rich()` collapses JSX-fragmented bodies (e.g. commitment body L13–17) into single rich-text messages with placeholder tags (`<law>`, `<standard>`, `<wcag>`, `<link>`).
+
+`pattern`: `t.rich(key, { tag: (chunks) => <Component>{chunks}</Component> })` per next-intl v4 rich-text API. Each section body that contains embedded markup uses a single key with named tag placeholders; the render function in the SECTIONS array maps tag names to React elements (keeping the data-driven shape of the original SECTIONS array, just routing the body through `t` instead of inlining JSX).
+
+`scope`: 3 files touched — page.js (151/-76 LOC churn, net +75 from inlined JSX to the t.rich tag-renderer dispatch), messages/he.json (+42 lines / 26 new keys), messages/en.json (+42 lines / 26 new keys). No JSON-LD, no markdown-in-data, no renderInline.
+
+`verification`: `npm run build` green (101 SSG pages). ICU key parity 1791/1791 HE↔EN (+26 from prior 1765). Scanner residual on this file 35→0. Brand-LOCK clean — all "מהמקור" / "Mehamakor" references in commitment + contact + meta are now in translation values. HE values byte-identical to source: double-geresh (`״` U+05F4) preserved in `התשנ״ח` / `התשע״ג` / `ת״י`, en-dash (`–` U+2013) preserved in `התשנ״ח–1998` / `התשע״ג–2013`, embedded `&quot;` HTML entities resolved to literal `"` in JSON. No physical RTL classes introduced; `ps-6` (logical) preserved on the features ul.
+
+### 2026-05-20 — Session summary: MEH-475 PR-C4b foundation shipped
+
+Three PRs merged this session, all tracking toward closing MEH-475 user-facing string scope:
+
+- **PR #731 MERGED** at `3a877ed` — `feat(MEH-475)`: language toggle UI (Globe icon, desktop + mobile drawer). next-intl locale router preserves pathname + query + hash. **Closes MEH-475 PR-C4a + toggle.** (Detailed entry below.)
+- **PR #735 MERGED** at `599c23e` — `docs(MEH-475)`: PR-C4b pre-implementation inventory (`docs/wave-5-pr-c4b-inventory.md`). Per-file complexity catalog for the 9 remaining server pages, 5-pattern architectural catalog with prior-art `file:line` citations, SEO risk per file (cross-checked against `robots.txt` + `sitemap.js`), proposed 5-chunk PR-C4b split, STOP criteria, full brand-LOCK grep classifying every "מהמקור"/"Mehamakor" hit as UI-text vs metadata vs JSDoc.
+- **PR #736 MERGED** at `a35a4da` — `feat(MEH-475 PR-C4b/chunk-1)`: recipe server-page metadata i18n via `getTranslations` + `generateMetadata`. First production use of the pattern; pattern proof-of-concept for the rest of PR-C4b. (Detailed entry below.)
+
+Next session pickup is documented in `HANDOFF.md` → "Next session pickup" (Chunks 2-5 per the inventory §4).
+
+### 2026-05-20 — MEH-475 PR-C4b/chunk-1: recipe metadata i18n (2 strings)
+
+`feat`: First production use of `getTranslations` from `"next-intl/server"` + `generateMetadata` with `t()` interpolation. `frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx` extracts 2 hardcoded Hebrew strings (404 fallback title + success title template) into the existing `recipes.detail.*` namespace.
+
+`namespace`: `recipes.detail.meta_title_not_found` + `recipes.detail.meta_title_template`. Chose extension of existing `recipes.detail.*` (currently houses the page's breadcrumb + body labels) over a new `recipes.metadata.*` sub — one namespace per page surface keeps related keys colocated.
+
+`pattern`: Pattern proof-of-concept for the rest of MEH-475 PR-C4b. Per the planning doc `docs/wave-5-pr-c4b-inventory.md`, this is the lowest-risk introduction site for both `getTranslations` (prior art: 1 site, `map/page.js:47`) and `getTranslations` + `generateMetadata` together (prior art: zero sites). 2 strings + no body / JSON-LD / markdown changes = smallest possible surface to prove the pattern.
+
+`scope`: 3 files touched — page.jsx (+10/-5), messages/he.json (+2 keys), messages/en.json (+2 keys). `<RecipeJsonLd>` left untouched; the component sources every schema field from API data, not translation keys, so this PR has zero JSON-LD impact (Rich Results unaffected).
+
+`verification`: `npm run build` green. ICU key parity 1765/1765 HE↔EN. Scanner residual on this file = 0 (was 2). Brand-LOCK grep clean (no remaining "מהמקור" or "Mehamakor" in the file body — moved entirely to translation values). RTL: no positional class changes. Vercel preview QA (HE `<title>` + EN `<title>` + JSON-LD shape unchanged) deferred to Smadar.
+
+### 2026-05-20 — MEH-475: Language toggle UI (Globe icon, desktop + mobile drawer) — PR #731 MERGED
+
+`feat`: New `frontend/components/LanguageToggle.jsx` (78 LOC) — Phosphor `Globe` icon button that flips HE ⇄ EN via next-intl's locale-aware router (`@/i18n/navigation`) while preserving the current `pathname`, query params (`window.location.search`), and hash (`window.location.hash`). Mounted in `Header.jsx` twice: desktop top-right cluster (between Search and LoginPill/UserMenu) and inside the mobile drawer (replacing the legacy text button-group toggle that dropped query params via `router.replace(pathname)`). `data-testid="language-toggle"` + `data-current-locale={locale}` exposed for future E2E coverage.
+
+`fix`: localStorage shim race — `LanguageProvider`'s one-shot hydration effect (`lib/language-context.js:35-42`) reads `localStorage.lang` on mount and force-redirects to the saved locale. Without writing localStorage inside the toggle's `onToggle`, the next full page load after a toggle click would bounce the user back to the prior locale. Toggle now writes `window.localStorage.setItem("lang", nextLocale)` (try/catch for private-mode/quota safety) so both paths agree until <issue id="MEH-472">MEH-472</issue> deletes the shim entirely.
+
+`fix`: CSR-bailout regression — initial implementation used `useSearchParams()` from `next/navigation`, which forced statically prerendered pages mounting the global Header (`/privacy`, `/admin/producers`, `/about/for-businesses/guides`) into CSR bailout (build failure: "useSearchParams should be wrapped in a suspense boundary"). Rewritten to read `window.location.search` + `window.location.hash` inside the click event handler — same behavior, no hook usage at render time, build passes.
+
+`refactor`: Removed `setLang` from the `useLanguage()` destructure in `Header.jsx` — the toggle bypasses the legacy `setLang` (which dropped query params silently) in favor of direct next-intl `router.replace(href, {locale})`. `lang` still subscribed for the mobile drawer's adjacent text label.
+
+`test`: `frontend/__tests__/Header.test.jsx` mock additions (4 new `nav.lang_*` keys, `useLocale: () => "he"`, Phosphor `Globe`, `@/i18n/navigation` router/pathname mock). Vitest baseline parity confirmed (13 failed | 14 passed (27) — identical to staging pre-PR; zero regressions). The 13 pre-existing failures stem from a separate mock weakness (`useTranslations` ignoring namespace argument) tracked as item 5 in <issue id="MEH-629">MEH-629</issue>.
+
+`scope`: Excluded from this PR — lifting `Disallow: /en/` from `frontend/public/robots.txt`. Deferred to a post-PR-C4b / post-Wave-6 separate PR because EN surface still has untranslated server pages (recipes, legal, about/for-businesses).
+
+CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + brand-LOCK clean; adversarial review 14 candidates → 13 disproved, 1 cosmetic (date typo). Vercel preview QA: `/he` root `<html lang="he" dir="rtl">` with `aria-label="Switch to English"`; `/en` root `<html lang="en" dir="ltr">` with `aria-label="Switch to Hebrew"`; toggle positioned correctly in top-right cluster on both. Squash-merged at `3a877ed2`.
+
+**Closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b — 5 PRs / ~500 strings extracted to `useTranslations()` — plus this toggle). Remaining MEH-475 work deferred to future sessions: PR-C4b (~600 strings — server pages + legal + recipe + sweep), Wave 6 (~64 strings — metadata exports), `robots.txt /en` lift (after PR-C4b + Wave 6 close). Hygiene follow-ups (3 items: test mock namespace, dead `setLang` mock, optional Globe contrast on transparent hero) folded into <issue id="MEH-629">MEH-629</issue> (now 7 items, ~47 min total, P3).
+
+### 2026-05-17 — MEH-630: Site operator legal disclosure on /terms + /privacy
+
+`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number (325120939), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
+
+`scope`: 2 files touched — `frontend/app/[locale]/terms/page.js` + `frontend/app/[locale]/privacy/page.js`. Inline Hebrew JSX as a new `SECTIONS` entry (id `operator`), matching the existing pattern verbatim — same card layout, same `<strong>` markup, same `dir="ltr"` email link convention. New section is unnumbered and sits before §1 of each page.
+
+`deferral`: Spec asked for the copy in `messages/*.json` i18n keys; pages are not currently internationalized (zero `useTranslations()` calls, no `terms.*` / `privacy.*` namespaces). Per agreement with Smadar, shipping inline HE now; full terms/privacy i18n tracked as a separate follow-up ticket (Wave 6 candidate alongside the existing metadata deferrals).
+
+`out of scope`: Existing `levismadar80@gmail.com` references in terms §6/§11 and privacy §5/§10 left untouched per scope agreement. New section uses `noreply@mehamakor.co.il` as specified.
+
+`verification`: `npm run build` green (101 static pages, both locales). RTL: `ps-6` already used by sibling sections; new section uses `dir="ltr"` only inside the email anchor (matches existing pattern). Mobile + desktop QA on Vercel preview deferred to Smadar.
+
 ### 2026-05-17 — MEH-624: Per-email rate limit on /register + /register/producer
 
 `security`: Stacked `@limiter.limit("5/15 minutes", key_func=email_from_body)` on top of the existing per-IP limits on both register endpoints. Mirrors the `/forgot-password` dual-key pattern from MEH-191. Closes the gap MEH-328 left open — a botnet rotating IPs could previously spray the OWASP duplicate-attempt email at a single victim at `(per-IP limit × N botnet hosts)` per hour. With dual-key throttling enabled, a single email can receive at most 5 register attempts per 15 minutes regardless of IP source. Per-IP limits unchanged (`/register` 10/hour, `/register/producer` 3/hour). Upgrade path (authenticated user, `email=None` payload) falls into the shared empty-string bucket — acceptable because that path already required a valid JWT.
@@ -32,7 +119,32 @@
 
 Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: −213 strings, −3 files. CI: `npm run build` ✅ (101 pages), vitest net −9 failures vs staging (0 regressions). DoD exception: mobile QA on preview URL deferred to Smadar.
 
-### 2026-05-16 — MEH-475 PR-C1: i18n Wave 5 — recipes.* + group_buys.* (PR pending)
+### 2026-05-17 — MEH-475 PR-B: Admin panel i18n — full surface (supersedes PR-A1 namespace, PR pending)
+
+`i18n`: Full admin surface wired into next-intl `useTranslations("admin")` — all 22 admin files (21 under `frontend/app/[locale]/admin/**` + 1 under `frontend/components/admin/`) now resolve their UI strings from `admin.*` keys in `messages/he.json` / `messages/en.json`. 454 distinct keys added under `admin.*`, he/en parity verified (913 leaf keys per side, set-diff = ∅). Rebased onto staging after PR-A1 (#718) merged; PR-A1's 4 overlapping files were re-resolved to PR-B's namespace shape per the rebase contract.
+
+`scope`: Namespace mirrors directory: `admin.layout.*` (sidebar), `admin.dashboard.*` (home), `admin.producers.*` (list/form/toolbar/table/import/new/edit/use-hook), `admin.users/experiences/outreach/kashrut/reports/reviews/settings/help/content/category_requests/group_buys/analytics.*`, plus `admin.common.*` for shared verbs (loading, save, cancel, edit, view, etc.). Hebrew copy preserved verbatim; English translations idiomatic.
+
+`pattern`: `admin/help/page.jsx` uses `t.rich(key, { strong, code, em, placeholder })` for paragraphs with embedded `<strong>`/`<code>`/`<em>` markup. `admin/outreach/page.jsx` uses `t.raw()` for WhatsApp template bodies so `{name}` / `{prefillUrl}` placeholders survive untouched for downstream `replaceAll`. Module-scope label maps (STATUS_LABEL, WA_TEMPLATES) refactored to status-key arrays; labels resolved at render via `t(\`outreach.status.${s}\`)`.
+
+`residual`: 6 strings remain — all inside `KOSHER_OPTIONS` value-ID array in `ProducerForm.jsx` (deliberate; `kosherLabel()` helper resolves display). Pre-scan: 640 strings / 22 files → post-scan: 6 strings / 1 file (delta = −634, 99.06% extraction rate, well under the ≤50 residual budget).
+
+`verification`: `npm run build` green (101 static pages, both locales). `npm run lint` 0 errors. JSON parity check passes. No CSS classes touched, no metadata exports touched (Wave 6 territory), no non-admin files modified.
+
+`post-rebase fix`: Rebase against staging (after PR-A1 #718, PR #713 register-flow redo, and PR #719 passwordMessages i18n landed) resolved `messages/{he,en}.json` with `git checkout --theirs`, which silently dropped 104 Wave 4 `auth.*` keys (`auth.register.consumer.*` 29, `auth.register.producer.*` 68, `auth.passwordValidation.*` 4, `auth.toasts.*` 3). Surfaced by Playwright `11-password-policy.spec.ts` timing out on `getByLabel(/^שם מלא \*$/)` — `/register` rendered every label as the literal key path. Fixed via Path B rebuild: take staging baseline JSON, overlay PR-B's `admin.*` tree (`base['admin'] = pr_b['admin']`). Result: 1017 leaf keys per side, non-admin parity to staging (403=403), `auth.*` parity to staging (178=178), `admin.*` superseded (213 → 614). Playwright green; vitest 42/352 matches staging baseline.
+
+### 2026-05-16 — MEH-475 / PR-C2: i18n Wave 5 — events + experiences namespaces (**PR #714 MERGED**)
+
+`i18n`: wired `useTranslations()` into all events/** + experiences/** routes plus shared CalendarView and ExperienceCard components. Two new top-level namespaces added in parallel:
+
+- `events.*` — list/categories/experience_categories/detail/calendar (~75 keys; `events.calendar.events_count` is ICU plural `=0/one/two/other`; `events.calendar.days.*` for column headers, replacing `HEBREW_DAY_NAMES` const).
+- `experiences.*` — list/categories/detail/card/new (~100 keys; submit form, host card, detail status banners, ICU placeholders `{n}`, `{title}`, `{spots} / {max}`).
+
+Category arrays keep Hebrew API filter values (server enum) and look up display labels via `tCat(labelKey)`. Status banner object moved inside `ExperienceDetailClient` body so `t()` is in scope.
+
+Files touched (7): `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`, `ExperiencesClient.jsx`, `ExperienceCard.jsx`, `experiences/[id]/ExperienceDetailClient.jsx`, `experiences/new/NewExperienceClient.jsx`. JSON parity 439↔439. Build green, scanner residual 41 across in-scope paths — of which 27 are deliberate Hebrew API filter constants (wire format) and 14 are server-component metadata + Suspense fallbacks deferred to Wave 6. Runs in parallel with PR-C1 (`recipes.*` + `group_buys.*`); JSON merge expected as accept-both on different top-level keys.
+
+### 2026-05-16 — MEH-475 PR-C1: i18n Wave 5 — recipes.* + group_buys.* (**PR #715 MERGED**)
 
 `i18n`: Wired `useTranslations()` into 9 files / 136 strings across 2 namespaces. Recipes namespace (61 strings → 6 files): RecipeStatusBadge, RecipeCard, RecipeDetail, RecipeForm, producer/dashboard/recipes page + edit. Group-buys namespace (75 strings → 3 files): public list + detail clients + producer dashboard page. Internal refactor in `producer/dashboard/group-buys/page.js`: split `STATUS_LABELS` dict into `STATUS_CLS` (CSS-only) + `t("status.X")` lookup so no untranslated Hebrew labels remain in code constants.
 
@@ -43,17 +155,6 @@ Pre-PR-A1 admin scanner total: 640 strings / 22 files. Post: 427 / 19. Delta: �
 `parity`: `frontend/messages/he.json` + `en.json` both at 445 keys, ICU plural parity clean. Residual scan returns 6 hits — all in deferred metadata files (under <20 acceptance threshold).
 
 `parallel coordination`: runs concurrent with PR-C2 (events + experiences). JSON merge expected on `messages/*.json` via accept-both (different top-level namespaces: recipes/group_buys here vs events/experiences there).
-
-### 2026-05-16 — MEH-475 / PR-C2: i18n Wave 5 — events + experiences namespaces (PR pending)
-
-`i18n`: wired `useTranslations()` into all events/** + experiences/** routes plus shared CalendarView and ExperienceCard components. Two new top-level namespaces added in parallel:
-
-- `events.*` — list/categories/experience_categories/detail/calendar (~75 keys; `events.calendar.events_count` is ICU plural `=0/one/two/other`; `events.calendar.days.*` for column headers, replacing `HEBREW_DAY_NAMES` const).
-- `experiences.*` — list/categories/detail/card/new (~100 keys; submit form, host card, detail status banners, ICU placeholders `{n}`, `{title}`, `{spots} / {max}`).
-
-Category arrays keep Hebrew API filter values (server enum) and look up display labels via `tCat(labelKey)`. Status banner object moved inside `ExperienceDetailClient` body so `t()` is in scope.
-
-Files touched (7): `EventsClient.jsx`, `events/[id]/page.js`, `CalendarView.jsx`, `ExperiencesClient.jsx`, `ExperienceCard.jsx`, `experiences/[id]/ExperienceDetailClient.jsx`, `experiences/new/NewExperienceClient.jsx`. JSON parity 439↔439. Build green, scanner residual 41 across in-scope paths — of which 27 are deliberate Hebrew API filter constants (wire format) and 14 are server-component metadata + Suspense fallbacks deferred to Wave 6. Runs in parallel with PR-C1 (`recipes.*` + `group_buys.*`); JSON merge expected as accept-both on different top-level keys.
 
 ### 2026-05-16 — MEH-328: OWASP anti-enumeration on /auth/register + /auth/register/producer (PR pending)
 

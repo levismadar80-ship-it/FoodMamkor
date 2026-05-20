@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -25,6 +26,7 @@ import AlertPrefsPanel from "./AlertPrefsPanel";
  * MEH-54: after favoriting, shows AlertPrefsPanel inline (default + inline variants).
  */
 export default function FavoriteButton({ producerId, producerName = "", variant = "default" }) {
+  const t = useTranslations("favorites.button");
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,25 +56,25 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         await api.delete(`/users/me/favorites/${producerId}`);
         setFavorited(false);
         setShowAlertPanel(false);
-        showToast("הוסר מהמועדפים");
+        showToast(t("removed_toast"));
       } else {
         await api.post(`/users/me/favorites/${producerId}`);
         setFavorited(true);
         if (variant !== "gallery") setShowAlertPanel(true);
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
-          showToast('נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית', "success", 4000);
+          showToast(t("saved_toast_first_time"), "success", 4000);
         } else {
-          showToast("נשמר למועדפים ❤️");
+          showToast(t("saved_toast"));
         }
       }
     } catch {
-      showToast("משהו השתבש, נסי שוב", "error");
+      showToast(t("error_generic"), "error");
     }
     setLoading(false);
   };
 
-  const label = favorited ? "הסר ממועדפים" : "הוסף למועדפים";
+  const label = favorited ? t("remove_aria") : t("add_aria");
   const commonProps = {
     onClick: toggle,
     disabled: loading,
@@ -119,7 +121,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
           weight={favorited ? "fill" : "regular"}
           aria-hidden="true"
         />
-        שמור
+        {t("inline_label")}
       </button>
     );
   } else {
@@ -149,7 +151,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
       <LoginPromptModal
         open={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        message="כדי לשמור עסקים אוהבים — היכנסי"
+        message={t("login_prompt_message")}
         nextPath={nextPath}
       />
     </>

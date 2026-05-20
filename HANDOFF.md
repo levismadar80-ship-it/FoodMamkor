@@ -1,11 +1,44 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-17 (MEH-624 — Per-email rate limit on /register + /register/producer; PR pending; SECURITY HIGH-RISK auth surface; stacked `5/15 minutes` per-email cap on top of existing per-IP caps; mirrors /forgot-password dual-key pattern from MEH-191; 2 new pytest cases; pytest sandbox-blocked, CI to verify)
-> Previously: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); PR #722 MERGED at c668bec)
-> Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; PR #721 MERGED at def4aa7)
-> Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; PR pending; LOW-RISK; 2 commits; runs in parallel with PR-C1 recipes/group_buys)
-> Previously: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; PR pending; LOW-RISK mechanical extraction; 2 commits on `claude/i18n-recipes-group-buys-1JuoO`; runs parallel with PR-C2 events+experiences)
+> Last updated: 2026-05-20 (MEH-475 PR-C4b chunk 5 shipped — all 5 PR-C4b chunks now MERGED ✅; **PR #743 MERGED** at `0fbf52a` (guides i18n — index + 3 onboarding guides, 283 strings → 243 keys); new `guides.*` top-level namespace with sub-namespaces per guide; BLOCKS-array → structure-only-with-key pattern reused from chunk 4 (#741); MEH-475 user-facing string scope now CLOSED — remaining for full ticket closure is Wave 6 metadata + robots.txt `/en` lift)
+> Previously: 2026-05-20 (MEH-475 PR-C4b chunks 3 + 4 shipped end-to-end via autopilot; **PR #740 MERGED** at `280cdb5` (privacy + terms, 147→102 keys); **PR #741 MERGED** at `807ff2e` (for-businesses FAQ + FAQPage JSON-LD, 31→29 keys); byte-identical MEH-630 operator section preserved + JSON-LD-from-translation-keys proven safe in production)
+> Previously: 2026-05-20 (MEH-475 PR-C4b/chunk-2 — accessibility statement i18n via `getTranslations` + `useTranslations` + first production use of `t.rich()`; **PR #738 MERGED** at `58c5472`; LOW-RISK; 35 strings → 26 keys / 1 file)
+> Previously: 2026-05-20 (MEH-475 PR-C4b/chunk-1 — recipe server-page metadata i18n via `getTranslations` + `generateMetadata`; **PR #736 MERGED** at `a35a4da`; LOW-RISK; 2 strings / 1 file; first production use of the `getTranslations` from `"next-intl/server"` + `t()` interpolation pattern; pattern proof-of-concept for the rest of PR-C4b)
+> Previously: 2026-05-20 (MEH-475 PR-C4b inventory doc — per-file complexity catalog, 5-pattern catalog, SEO risk per file, proposed 5-chunk split, STOP criteria, brand-LOCK grep across all 9 candidate files; **PR #735 MERGED** at `599c23e`; LOW-RISK docs-only; planning artifact for the remaining 4 PR-C4b chunks)
+> Previously: 2026-05-20 (MEH-630 — site operator legal disclosure ("פרטי מפעיל האתר": שנף טופז 325120939 / מהמקור / Mehamakor / noreply@mehamakor.co.il) added to top of `/terms` + `/privacy`; **PR #728 MERGED** at `d08fdf8`; LOW-RISK; inline HE per scope agreement (full terms/privacy i18n deferred to follow-up); existing `levismadar80@gmail.com` references in §6/§11 and §5/§10 left untouched per scope)
+> Previously: 2026-05-20 (MEH-475 — Language toggle UI (Globe icon, desktop + mobile drawer); **PR #731 MERGED** at `3a877ed2`; LOW-RISK end-to-end; **closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b + toggle); 3 follow-up hygiene items folded into <issue id="MEH-629">MEH-629</issue> (now 7 items))
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4b — tail components + wired-remaining sweep; 118 strings / 36 files; **PR #730 MERGED** at `22cce33`; final chunk of PR-C4a series; Brand-LOCK STOP triggered on 2 JSDoc comments → folded inline with MEH-543-aware rewrite)
+
+## Next session pickup
+
+**MEH-475 PR-C4b — ALL CHUNKS MERGED ✅** (per `docs/wave-5-pr-c4b-inventory.md` §4).
+
+- ✅ **Chunk 1** — `recipes/[recipe_id]/page.jsx` (2 → 2 keys) — PR #736 at `a35a4da`. `getTranslations` + `generateMetadata` + `t()` interpolation.
+- ✅ **Chunk 2** — `accessibility/page.js` (35 → 26 keys) — PR #738 at `58c5472`. `accessibility.*` top-level + first `t.rich()`.
+- ✅ **Chunk 3** — `privacy/page.js` + `terms/page.js` (147 → 102 keys) — PR #740 at `280cdb5`. `privacy.*` + `terms.*` top-levels. MEH-630 operator section byte-identical.
+- ✅ **Chunk 4** — `about/for-businesses/page.js` (31 → 29 keys) — PR #741 at `807ff2e`. `about_business.*`. First JSON-LD-from-translation-keys pattern.
+- ✅ **Chunk 5** — Guides (4 files: index + 3 onboarding guides, 283 → 243 keys) — PR #743 at `0fbf52a`. `guides.*` top-level with sub-namespaces per guide. BLOCKS-array → structure-only-with-key pattern; HE machine-extracted byte-identical from source.
+
+**Cumulative PR-C4b**: 498 source strings → 402 translation keys across 6 new namespaces. ICU key parity **2165 / 2165** HE↔EN.
+
+**Remaining MEH-475 work** (out of PR-C4b scope; need own tickets):
+
+- 🔜 **Wave 6 metadata** — ~64 strings in `sitemap.js` + hreflang + remaining server-side metadata exports. Separate ticket.
+- 🔜 **robots.txt `/en` lift** — single-line change, gated on Wave 6 hreflang landing first. Separate ticket.
+- 🔜 **Sweep tail per-feature tickets** — `producer/dashboard` (106), `settings/page.jsx` (105), `HomeProductForm.jsx` (89). Each its own ticket — not part of PR-C4b sweep per inventory §4.
+
+STOP criteria for PR-C4b are in `docs/wave-5-pr-c4b-inventory.md` §5.
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4a — public discovery top-10; 182 strings / 10 files; **PR #729 MERGED** at `151bebd`; ICU plurals on 5 groups; EMPTY_CATEGORY_CHIPS data/display split for backend canonical-HE preservation)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-3 — modals + forms/badge; 120 strings / 14 files; **PR #727 MERGED** at `0556db6`; CityPickerModal duplicate-namespace consolidation; PasswordInput voice-local feminine keys)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-2 — about.consumer.* AboutClient.jsx; 57 strings; **PR #726 MERGED** at `43174d0`; about/for-businesses re-bucketed to PR-C4b; about/page.js deferred to Wave 6)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-1 — first chunk of HIGH-risk i18n delivery; **MERGED**; established sub-namespace + brand-LOCK pre-check + EN-voice-idiomatic conventions)
+> Previously: 2026-05-17 (MEH-475 PR-B — Admin panel i18n; 640 strings / 22 files extracted to `admin.*` namespace; PR #716 ready for merge after rebase + Wave 4 auth.* key restore; Playwright /register green)
+> Previously: 2026-05-17 (MEH-624 — Per-email rate limit on /register + /register/producer; PR #723 pending merge; SECURITY HIGH-RISK auth surface; stacked `5/15 minutes` per-email cap on top of existing per-IP caps; mirrors /forgot-password dual-key pattern from MEH-191; 2 new pytest cases; pytest sandbox-blocked, CI to verify)
+> Previously: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); **PR #722 MERGED**; LOW-RISK docs-only)
+> Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; **PR #721 MERGED**; LOW-RISK cleanup; 4-line class deletion)
+> Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; **PR #714 MERGED**; LOW-RISK; 2 commits; ran in parallel with PR-C1 recipes/group_buys)
+> Previously: 2026-05-16 (MEH-475 PR-C1 — i18n Wave 5 recipes + group_buys; **PR #715 MERGED**; LOW-RISK mechanical extraction; 2 commits; ran parallel with PR-C2 events+experiences)
 > Previously: 2026-05-16 (MEH-328 — OWASP anti-enumeration on /auth/register + /auth/register/producer; **PR #696 PENDING**; HIGH-RISK auth refactor; 6 commits across Chunks A→B→fix→C→early-D→D-prime→F)
 > Previously: 2026-05-16 (MEH-473 — i18n Wave 3 producer detail/card/map + ICU plural lint + Q7 carry-over + map-state hooks; HIGH-RISK, ~104 strings, 22 files; PR pending)
 > Previously: 2026-05-16 (MEH-622 — SessionEnd hook for HANDOFF.md ledger auto-append; **PR #701 MERGED** at `86a8bbf`; manual wiring pending)

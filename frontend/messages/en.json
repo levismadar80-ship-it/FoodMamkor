@@ -394,6 +394,21 @@
       "heading": "Upcoming events 📅",
       "all_events": "All events →",
       "free": "Free"
+    },
+    "marquee": {
+      "tag_unprocessed": "🌿 Unprocessed",
+      "tag_pasture": "🥩 Pasture-raised",
+      "tag_organic": "🧀 Organic",
+      "tag_sourdough": "🍞 Sourdough",
+      "tag_extra_virgin": "🫒 Extra virgin",
+      "tag_fresh_real": "🌱 Fresh and real",
+      "tag_verified": "✅ Verified",
+      "tag_local": "📍 Local"
+    },
+    "story_block": {
+      "founder_quote": "Once you know where to buy from — there's no going back.",
+      "founder_attribution": "— Sapir, founder of Mehamakor",
+      "seasonal_heading": "Every season — a different flavor"
     }
   },
   "common": {
@@ -403,6 +418,31 @@
     },
     "aria": {
       "close": "Close"
+    },
+    "pagination": {
+      "aria_label": "Pagination",
+      "per_page_label": "Per page",
+      "per_page_aria": "Items per page",
+      "prev_aria": "Previous page",
+      "prev": "← Previous",
+      "page_aria": "Page {page}",
+      "next_aria": "Next page",
+      "next": "Next →"
+    },
+    "breadcrumb": {
+      "aria": "Breadcrumb navigation"
+    },
+    "info_tooltip": {
+      "trigger_aria": "More info"
+    },
+    "parallax_quote": {
+      "aria": "Quote"
+    },
+    "skeleton": {
+      "loading_businesses": "Loading fresh businesses"
+    },
+    "star_rating": {
+      "count_aria": "{count, plural, one {1 rating} other {({count} ratings)}}"
     }
   },
   "category": {
@@ -417,6 +457,20 @@
   "seo": {
     "home": {
       "description": "Local food businesses, all in one place. Find real, fresh, and healthy food near you."
+    },
+    "site": {
+      "title": "Mehamakor — real food, straight from the source",
+      "description": "Real, fresh, healthy food from local businesses — all in one place.",
+      "og_title": "Mehamakor — real food, straight from the source",
+      "og_description": "Real food from local businesses — all in one place.",
+      "twitter_title": "Mehamakor — real food, straight from the source",
+      "twitter_description": "Real food from local businesses — all in one place."
+    },
+    "about": {
+      "title": "About Mehamakor — our vision and values",
+      "description": "Mehamakor was born from a real need — to find real food, straight from the source. The story of Sapir, our founder, our values, and how we vet the businesses we feature.",
+      "og_title": "About Mehamakor — our vision and values",
+      "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
     }
   },
   "producer": {
@@ -537,7 +591,9 @@
       "ingredients_heading": "Ingredients",
       "instructions_heading": "Instructions",
       "related_products_heading": "Our products in this recipe",
-      "back_to_producer": "← Back to business page"
+      "back_to_producer": "← Back to business page",
+      "meta_title_not_found": "Recipe not found | Mehamakor",
+      "meta_title_template": "{recipeTitle} | {producerName} | Mehamakor"
     },
     "form": {
       "heading_edit": "Edit recipe",
@@ -694,6 +750,44 @@
           "generic": "Something went wrong, please try again"
         }
       }
+    },
+    "availability": {
+      "status_label": {
+        "open_orders": "Open for orders",
+        "busy_week": "Busy this week",
+        "on_vacation": "On break"
+      },
+      "card_label": {
+        "open_orders": "Open for orders",
+        "available_today": "Available today 🟢",
+        "busy_week": "Busy this week 🟠",
+        "on_vacation": "On break ⏸"
+      }
+    },
+    "delivery": {
+      "heading": "Delivery",
+      "nationwide": "Nationwide delivery",
+      "arranged": "Delivery by arrangement — contact for details"
+    },
+    "follow": {
+      "error_generic": "Something went wrong, please try again",
+      "following": "Following",
+      "follow_aria": "Follow this business",
+      "unfollowed_toast": "You've stopped following",
+      "followed_toast": "You'll now get updates about new products 🔔"
+    },
+    "badge_row": {
+      "aria": "Business badges"
+    },
+    "friday_delivery": {
+      "today": "today",
+      "title": "Businesses delivering today",
+      "title_alt": "Businesses delivering today"
+    },
+    "holiday_banner": {
+      "approaching": "{name} is approaching {emoji}",
+      "aria": "Holiday notice",
+      "close_aria": "Close"
     }
   },
   "map": {
@@ -730,12 +824,6 @@
     "city_picker": {
       "heading": "Where to deliver?",
       "subheading": "Choose a city to filter by delivery",
-      "popular": {
-        "tel_aviv": "Tel Aviv",
-        "jerusalem": "Jerusalem",
-        "haifa": "Haifa",
-        "beersheba": "Beersheba"
-      },
       "other": {
         "label": "Other city",
         "placeholder": "Type city name..."
@@ -784,220 +872,432 @@
         "business_list": "List of businesses on the map"
       },
       "heading_ssr": "Businesses on the map"
+    },
+    "homepage_mini": {
+      "loading": "Loading map...",
+      "pre_launch_hint": "Coming very soon — first businesses join this week",
+      "aria": "Map preview",
+      "dot_caption": "Every business on the map",
+      "dot_subtitle": "Discover businesses by location",
+      "open_full": "Open the full map"
+    },
+    "component": {
+      "geo_invalid": "The location received is invalid",
+      "geo_failure": "We couldn't get your location",
+      "marker_singular": "business",
+      "marker_plural": "businesses"
+    },
+    "producer_card": {
+      "verified": "✓ Verified",
+      "distance_prefix": "·",
+      "wa_message": "Hi! I found you on Mehamakor — {name}",
+      "full_profile": "Full profile"
+    },
+    "mini": {
+      "default_label": "Location",
+      "open_in_waze": "Open in",
+      "open_in_google": "Open in"
+    },
+    "bottom_sheet": {
+      "title": "Businesses in this area",
+      "show_map": "Show map"
+    },
+    "chip_scroll": {
+      "category_aria": "Filter by category",
+      "attribute_aria": "Filter by attribute"
     }
   },
   "admin": {
+    "common": {
+      "loading": "Loading...",
+      "loading_f": "Loading...",
+      "saving": "Saving...",
+      "saving_f": "Saving...",
+      "sending": "Sending...",
+      "save": "Save",
+      "saved": "✓ Saved",
+      "saved_check": "Saved ✓",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "delete_f": "Delete",
+      "edit": "Edit",
+      "view": "View",
+      "view_f": "View",
+      "approve": "Approve",
+      "approve_f": "Approve",
+      "reject": "Reject",
+      "reject_f": "Reject",
+      "search": "Search",
+      "submit": "Confirm",
+      "back": "← Back to admin panel",
+      "back_to_dashboard": "← Admin dashboard",
+      "back_home": "← Back to site",
+      "error_loading": "Error loading data",
+      "error_generic": "Error",
+      "no_data": "No data to display",
+      "no_results": "No data",
+      "items_pending_label": "{count} items awaiting approval",
+      "items_pending_title": "{count} items awaiting approval",
+      "brand_admin": "Mehamakor Admin"
+    },
+    "layout": {
+      "nav": {
+        "dashboard": "Dashboard",
+        "producers": "Businesses",
+        "outreach": "Outreach",
+        "experiences": "Experiences",
+        "users": "Users",
+        "content": "Content",
+        "reviews": "Reviews",
+        "kashrut": "Kashrut",
+        "reports": "Reports",
+        "category_requests": "Category requests",
+        "analytics": "Analytics",
+        "settings": "Settings",
+        "help": "Help"
+      }
+    },
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Platform overview",
-      "loading": "Loading…",
-      "load_error": "Could not load data",
-      "cards": {
+      "stats": {
         "total_producers": "Total businesses",
-        "pending_producers": "Awaiting approval",
-        "total_users": "Registered users",
+        "pending_approval": "Awaiting approval",
+        "registered_users": "Registered users",
         "home_products": "Home products",
-        "group_buys": "Group buys"
+        "group_buys": "Group buys",
+        "group_buys_tooltip": "Manage user group buys. Not active currently.",
+        "group_buys_tooltip_label": "Group buys info"
       },
-      "group_buys_tooltip": "Manage user group buys. Currently inactive.",
-      "group_buys_tooltip_label": "Group buys info",
       "alerts": {
-        "pending_producers": "{count} businesses awaiting approval",
-        "pending_action": "Click to review",
+        "producers_waiting": "{count} businesses awaiting approval",
+        "click_to_handle": "Click to handle",
         "open_reports": "{count} open reports",
-        "open_reports_action": "Needs review",
-        "hidden_products": "{count} hidden home products",
-        "hidden_products_action": "Review"
+        "needs_review": "Needs review",
+        "hidden_home_products": "{count} hidden home products",
+        "for_review": "For review"
       },
-      "monthly_chart_title": "New businesses — last 6 months",
+      "chart": {
+        "new_producers_6_months": "New businesses — last 6 months"
+      },
       "pending_panel": {
-        "title": "Pending requests",
+        "heading": "Pending requests",
         "view_all": "View all →",
         "empty": "No pending requests",
-        "review": "Review"
+        "check": "Review"
       },
       "activity": {
-        "title": "Recent activity",
+        "heading": "Recent activity",
         "empty": "No data to display",
         "added_producer": "Business added:"
       },
-      "secondary": {
+      "weekly": {
         "new_users_week": "New users this week",
         "new_producers_week": "New businesses this week",
+        "out_of_total": "out of {total} total",
         "events": "Events",
         "experiences": "Experiences"
       },
-      "delta_of_total": "of {total} total",
-      "dau_title": "Active users — last 30 days",
-      "dau_empty": "No data yet",
-      "dau_aria_label": "DAU 30 days",
-      "top_cities_title": "Top cities",
-      "top_cities_empty": "No city data yet — guests don't report city.",
-      "server_health": {
-        "title": "Server health — last hour",
-        "waiting": "Waiting for traffic…",
-        "samples": "{count} requests",
-        "response_time": "Average response time",
+      "dau": {
+        "heading": "Active users — last 30 days",
+        "empty": "No data yet",
+        "aria": "DAU 30 days"
+      },
+      "top_cities": {
+        "heading": "Top cities",
+        "empty": "No city data yet — users who aren't logged in don't report their city."
+      },
+      "health": {
+        "heading": "Server health — last hour",
+        "waiting_traffic": "Waiting for traffic...",
+        "requests_count": "{count} requests",
+        "response_time_avg": "Average response time",
         "requests_per_minute": "Requests per minute",
-        "data_note": "ℹ️ Per-process in-memory data — reset on every deploy (docs/SECURITY.md)."
+        "footnote": "ℹ️ Per-process in-memory data — resets on every deploy (docs/SECURITY.md)."
       }
     },
-    "settings": {
-      "title": "Settings",
-      "loading": "Loading…",
-      "load_error": "Could not load settings — please refresh the page.",
-      "confirm_save": "Save the following changes?\n\n{summary}",
-      "notifications": {
-        "section_title": "Notifications",
-        "admin_email_label": "Admin email for notifications",
-        "admin_whatsapp_label": "Admin WhatsApp number (E.164)"
+    "producers": {
+      "list": {
+        "title": "Businesses",
+        "records_count": "{count} records"
       },
-      "freemium": {
-        "section_title": "Freemium",
-        "monthly_price_label": "Monthly premium price (₪)",
-        "free_image_limit_label": "Image limit on the free plan"
+      "toolbar": {
+        "search_placeholder": "Search by name or city...",
+        "all_statuses": "All statuses",
+        "active": "Active",
+        "pending": "Pending",
+        "suspended": "Suspended",
+        "rejected": "Rejected",
+        "incomplete_title": "Show only businesses missing required details",
+        "show_all": "Show all",
+        "incomplete_label": "Missing details",
+        "export": "📤 Export",
+        "import_excel": "📥 Import from Excel",
+        "new_producer": "+ New business"
       },
-      "holiday": {
-        "section_title": "Holiday window",
-        "tooltip_content": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses won't be taking orders this week'. Turn off after the holiday.",
-        "tooltip_label": "Holiday window info",
-        "section_description": "Enable manually to preview the banner on the dashboard and home page before the holiday.",
-        "switch_label": "Holiday window active",
-        "key_select_label": "Test holiday key (empty = auto-detect by date)",
-        "key_none": "— No override —",
-        "key_pesach": "Passover",
-        "key_shavuot": "Shavuot",
-        "key_rosh_hashana": "Rosh Hashana",
-        "key_sukkot": "Sukkot",
-        "key_chanuka": "Hanukkah",
-        "key_tu_bishvat": "Tu BiShvat"
+      "import": {
+        "errors_loading": "Error reading file",
+        "errors_importing": "Import error"
       },
-      "friday": {
-        "section_title": "Friday-market mode",
-        "tooltip_content": "Enable on Friday morning. Promotes market-selling businesses on the site. Turns off automatically after Shabbat.",
-        "tooltip_label": "Friday-market mode info",
-        "section_description": "Enable manually to preview Friday-market mode (producer strip, hero heading, 🛒 badge) outside the regular window (Wed 18:00 — Fri 14:00). This override is local to the current browser only.",
-        "switch_label": "Friday-market mode — override"
+      "preview": {
+        "title": "Import preview",
+        "importing": "Importing...",
+        "confirm": "Confirm import ({count})",
+        "stats": {
+          "to_import": "To import",
+          "skipped": "Skipped",
+          "errors": "Errors"
+        },
+        "table": {
+          "row": "Row",
+          "name": "Name",
+          "city": "City",
+          "category": "Category",
+          "slug": "Slug",
+          "status": "Status"
+        }
       },
-      "tests": {
-        "section_title": "Connection tests",
-        "status_unconfigured": "✗ Not configured",
-        "status_loading": "Testing…",
-        "status_ok": "✓ Connected",
-        "test_button": "Test"
+      "table": {
+        "status_tooltip_pending": "pending = awaiting initial approval",
+        "status_tooltip_approved": "approved = approved and shown on site",
+        "status_tooltip_rejected": "rejected = denied, hidden",
+        "status_tooltip_suspended": "suspended = temporarily suspended",
+        "status_tooltip_label": "Business status values info",
+        "completeness": {
+          "missing_critical_aria": "Critical details missing",
+          "missing_aria": "Details missing",
+          "complete_aria": "Complete",
+          "complete_title": "All details filled",
+          "missing_title": "Missing details: {fields}"
+        },
+        "tags": {
+          "verified": "Verified",
+          "organic_certified": "Certified organic",
+          "grass_fed": "Grass-fed",
+          "delivery": "Delivery",
+          "pickup_points": "Pickup points"
+        },
+        "actions": {
+          "approve_short": "✓ Approve",
+          "edit": "Edit",
+          "view": "View",
+          "suspend": "Suspend",
+          "activate": "Activate",
+          "remove_ambassador_title": "Remove ambassador role",
+          "set_ambassador_title": "Set as ambassador",
+          "ambassador_active": "⭐ Ambassador",
+          "ambassador_inactive": "☆ Ambassador",
+          "story_card_title": "Create Instagram card",
+          "story_card": "📸 Story",
+          "delete": "Delete"
+        },
+        "columns": {
+          "name": "Name",
+          "city": "City",
+          "categories": "Categories",
+          "tags": "Tags",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "all_complete": "All businesses are complete 🎉",
+        "empty": "No businesses to display",
+        "confirm_delete": "Delete \"{name}\"? This action cannot be undone."
       },
-      "categories": {
-        "section_title": "Category management",
-        "section_description": "To add, edit or delete — see the content page.",
-        "link_to_content": "Go to content ←"
+      "new": {
+        "title": "Add new business",
+        "subtitle": "The business will be saved immediately as approved (status=approved) and appear on the site."
       },
-      "save": {
-        "no_changes_title": "No changes to save",
-        "saving": "Saving…",
-        "submit": "Save settings",
-        "unsaved_count": "{count} unsaved changes",
-        "saved_indicator": "Saved ✓"
+      "edit": {
+        "title": "Edit: {name}",
+        "not_found": "Business not found"
+      },
+      "form": {
+        "errors": {
+          "image_upload": "Image upload error",
+          "save": "Save error"
+        },
+        "submit_create": "Create business",
+        "submit_update": "Save changes",
+        "uploading": "Uploading...",
+        "sections": {
+          "basic": "Basic details",
+          "categories_tags": "Categories and tags",
+          "business_type": "Business type",
+          "delivery_pickup": "Delivery and pickup",
+          "description_price": "Description and pricing",
+          "images": "Images",
+          "hours": "Opening hours",
+          "availability": "Availability",
+          "admin_notes": "Internal notes (not visible to users)",
+          "availability_tooltip": "Mark the business owner as on vacation. Shows a 'vacation' badge on their page and hides the WhatsApp button until the return date.",
+          "availability_tooltip_label": "Vacation mode info"
+        },
+        "fields": {
+          "name": "Business name *",
+          "contact_name": "Contact name",
+          "phone": "Phone / WhatsApp",
+          "phone_placeholder": "050-1234567",
+          "instagram": "Instagram",
+          "instagram_placeholder": "@username",
+          "website": "Website",
+          "website_placeholder": "https://...",
+          "whatsapp_group": "WhatsApp group link",
+          "whatsapp_group_placeholder": "https://chat.whatsapp.com/...",
+          "primary_contact": "Primary contact method",
+          "primary_contact_whatsapp": "WhatsApp",
+          "primary_contact_phone": "Phone",
+          "primary_contact_website": "Website",
+          "primary_contact_email": "Email",
+          "contact_email": "Contact email",
+          "contact_email_placeholder": "business@example.com",
+          "city": "City / region",
+          "slug": "Slug (URL)",
+          "slug_placeholder": "auto-generated",
+          "lat": "Latitude",
+          "lng": "Longitude",
+          "organic_certified": "Certified organic",
+          "grass_fed": "Grass-fed",
+          "verified": "Verified",
+          "recommended": "⭐ Recommended (editor's pick)",
+          "kosher": "Kosher",
+          "kosher_none": "—",
+          "kosher_kosher": "Kosher",
+          "kosher_mehadrin": "Kosher mehadrin",
+          "kosher_not_kosher": "Not kosher",
+          "license_label": "Producer license number",
+          "license_required_suffix": " (required)",
+          "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
+          "license_format_warning": "Producer license number is 7-10 digits",
+          "license_optional_toggle": "I have a producer license ↓",
+          "has_physical_location": "🏪 Physical store (welcomes customers)",
+          "offers_delivery": "🚚 Delivery",
+          "type_validation": "Must select at least one of the two",
+          "delivery_nationwide": "Delivery nationwide",
+          "delivery_cities_label": "Cities delivered to",
+          "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+          "has_delivery": "🚚 Offers delivery",
+          "pickup_points": "📦 Pickup points across the country",
+          "delivery_area_cities": "Delivery cities (comma-separated)",
+          "delivery_area_cities_placeholder": "Tel Aviv, Haifa, Jerusalem",
+          "short_description": "Short description (for the card)",
+          "description_full": "Full description",
+          "top_product": "Top product",
+          "top_product_placeholder": "Grass-fed beef",
+          "price_range": "Starting price",
+          "price_range_placeholder": "from ₪65/kg",
+          "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
+          "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+          "avail_accepting": "Accepting orders",
+          "avail_today": "Available today 🟢",
+          "avail_full": "Busy this week 🟠",
+          "avail_vacation": "On break ⏸",
+          "vacation_until": "Return date (optional)"
+        }
       }
     },
-    "producer_form": {
-      "errors": {
-        "upload_image": "Image upload failed",
-        "save": "Save failed"
+    "users": {
+      "title": "Users",
+      "count": "{count} users",
+      "search_placeholder": "Search by email or name...",
+      "role_filter": {
+        "all": "All roles",
+        "consumer": "Consumer",
+        "producer": "Business",
+        "admin": "Admin"
       },
-      "license": {
-        "optional_toggle": "I have a producer license ↓",
-        "label": "Producer license number",
-        "required_suffix": " (required)",
-        "required_note": "Food production in this category requires a Ministry of Health producer license",
-        "format_warning": "Producer license numbers are 7–10 digits"
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "city": "City",
+        "role": "Role",
+        "favorites": "Favorites",
+        "joined": "Joined",
+        "actions": "Actions"
       },
-      "sections": {
-        "basics": "Basic details",
-        "categories_tags": "Categories & tags",
-        "business_type": "Business type",
-        "delivery": "Delivery & pickup",
-        "description_and_price": "Description & price",
-        "images": "Images",
-        "hours": "Hours",
-        "availability": "Availability",
-        "internal_notes": "Internal notes (not visible to users)"
+      "empty": "No users",
+      "roles": {
+        "admin": "Admin",
+        "admin_protected": "Protected",
+        "producer": "Business",
+        "consumer": "Consumer"
       },
-      "placeholders": {
-        "delivery_area_cities": "Tel Aviv, Haifa, Jerusalem",
-        "top_product_name": "Grass-fed beef",
-        "price_range": "from ₪65/kg"
+      "actions": {
+        "promote": "Promote to admin",
+        "demote": "Remove permissions",
+        "protected_title": "Cannot remove permissions from the primary admin",
+        "unblock": "🚫 Unblock",
+        "block": "Block"
       },
-      "fields": {
-        "name": "Business name *",
-        "contact_name": "Contact name",
-        "phone": "Phone / WhatsApp",
-        "instagram": "Instagram",
-        "website": "Website",
-        "whatsapp_group": "WhatsApp group link",
-        "primary_contact_method": "Primary contact method",
-        "contact_email": "Contact email",
-        "city": "City / area",
-        "kosher": "Kosher",
-        "delivery_cities": "Cities you deliver to",
-        "delivery_area_cities": "Delivery cities (comma-separated)",
-        "short_description": "Short description (for the card)",
-        "description": "Full description",
-        "top_product_name": "Top product",
-        "price_range": "Starting price",
-        "hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
-        "vacation_until": "Return date (optional)"
+      "favorites": {
+        "of": "Favorites of {name}:",
+        "empty": "No favorites"
       },
-      "contact_methods": {
-        "phone": "Phone",
-        "website": "Website",
-        "email": "Email"
-      },
-      "kosher_options": {
-        "none": "—",
-        "kosher": "Kosher",
-        "mehadrin": "Kosher Mehadrin",
-        "not_kosher": "Not kosher"
-      },
-      "tags": {
-        "organic": "Certified organic",
-        "grass_fed": "Grass-fed",
-        "verified": "Verified",
-        "recommended": "⭐ Recommended (editor's pick)"
-      },
-      "business_type": {
-        "physical": "🏪 Physical storefront (in-person customers)",
-        "delivery": "🚚 Delivery",
-        "must_select_one": "Pick at least one of the two",
-        "nationwide": "Nationwide delivery",
-        "must_select_city": "Choose at least one city, or mark nationwide delivery"
-      },
-      "delivery": {
-        "has_delivery": "🚚 Delivery available",
-        "pickup_points": "📦 Pickup points around the country"
-      },
-      "availability_states": {
-        "accepting_orders": "Accepting orders",
-        "available_today": "Available today 🟢",
-        "full_this_week": "Fully booked this week 🟠",
-        "on_vacation": "On break ⏸"
-      },
-      "availability_tooltip": {
-        "content": "Mark the business owner as on vacation. The producer page shows a 'On vacation' badge, and the WhatsApp button is hidden until the return date.",
-        "label": "Vacation mode info"
-      },
-      "images": {
-        "uploading": "Uploading…"
-      },
-      "submit": {
-        "saving": "Saving…",
-        "save_changes": "Save changes",
-        "create": "Create business",
-        "cancel": "Cancel"
+      "confirm": {
+        "promote": "Are you sure you want to grant admin permissions to {name}?",
+        "demote": "Are you sure you want to remove admin permissions from {name}?",
+        "submitting": "...",
+        "confirm": "Confirm"
       }
+    },
+    "experiences": {
+      "title": "Community experiences",
+      "subtitle": "Moderation for user-submitted experiences",
+      "public_link": "Public page →",
+      "tabs": {
+        "pending": "Pending",
+        "changes_requested": "Changes requested",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+      },
+      "error_loading": "Error loading experiences",
+      "empty": "No experiences in this status 🌿",
+      "columns": {
+        "title": "Title",
+        "host": "Host",
+        "date": "Date",
+        "city": "City",
+        "claude": "Claude",
+        "actions": "Actions"
+      },
+      "claude_tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
+      "claude_tooltip_label": "Claude moderation info",
+      "actions": {
+        "approve": "Approve",
+        "changes": "Changes",
+        "reject": "Reject",
+        "view": "View"
+      },
+      "approve_toast": "Experience approved 🌿",
+      "approve_error": "Approval error",
+      "validate_feedback": "Please fill in a note",
+      "changes_toast": "Change request sent",
+      "reject_toast": "Experience rejected",
+      "submit_error": "Submission error",
+      "modal": {
+        "changes_title": "Request changes",
+        "reject_title": "Reject experience",
+        "changes_label": "Notes for editing",
+        "reject_label": "Reason for rejection",
+        "changes_placeholder": "e.g.: Description is too short, exact address missing...",
+        "reject_placeholder": "e.g.: Content not relevant to the platform",
+        "submit": "Confirm"
+      },
+      "free": "Free",
+      "price_per_person": "₪{price} / person",
+      "requirements_label": "Requirements:",
+      "claude_preview": "🤖 Claude Haiku pre-moderation"
     },
     "outreach": {
       "title": "Business outreach",
       "call_script_btn": "Call script",
+      "status": {
+        "new": "New",
+        "contacted": "Contacted",
+        "replied": "Replied",
+        "registered": "Registered",
+        "declined": "Declined"
+      },
       "metrics": {
         "total": "Total",
         "new": "New",
@@ -1006,87 +1306,411 @@
         "registered": "Registered"
       },
       "filters": {
-        "city_placeholder": "Filter by city…",
-        "status_all": "All statuses"
+        "city_placeholder": "Filter by city...",
+        "all_statuses": "All statuses",
+        "new_lead": "+ New lead"
       },
-      "add_lead_btn": "+ New lead",
-      "statuses": {
-        "new": "New",
-        "contacted": "Contacted",
-        "replied": "Replied",
-        "registered": "Registered",
-        "declined": "Declined"
+      "columns": {
+        "name": "Name",
+        "city": "City",
+        "category": "Category",
+        "phone": "Phone",
+        "instagram": "Instagram",
+        "status": "Status",
+        "actions": "Actions"
       },
-      "table": {
-        "col_name": "Name",
-        "col_city": "City",
-        "col_category": "Category",
-        "col_phone": "Phone",
-        "col_instagram": "Instagram",
-        "col_status": "Status",
-        "col_actions": "Actions",
-        "loading": "Loading leads…",
-        "empty": "No leads to show. Click \"+ New lead\" to get started.",
-        "prep_profile": "Prep profile",
-        "prep_profile_title": "Prepares a profile and copies the link",
-        "delete_btn": "Delete"
+      "loading_leads": "Loading leads...",
+      "empty": "No leads to display. Click \"+ New lead\" to start.",
+      "actions": {
+        "prefill": "Prep profile",
+        "prefill_title": "Prepares a profile and copies a link",
+        "whatsapp": "WhatsApp",
+        "delete": "Delete"
       },
       "toasts": {
         "status_updated": "Status updated",
-        "status_update_failed": "Update failed — please try again",
+        "status_failed": "Could not update — try again",
         "link_copied": "Link copied to clipboard",
-        "link_copy_failed": "Could not prepare the link — please try again",
-        "delete_confirm": "Permanently delete this lead?",
+        "prefill_failed": "Could not prepare link — try again",
         "lead_deleted": "Lead deleted",
-        "delete_failed": "Delete failed — please try again",
+        "delete_failed": "Could not delete — try again",
         "lead_added": "Lead added",
-        "text_copied": "Text copied",
-        "copy_failed": "Copy failed — please copy manually"
-      },
-      "add_modal": {
-        "title": "New lead",
-        "name_required": "Name is required",
         "duplicate": "A similar lead already exists",
         "generic_error": "Something went wrong",
-        "placeholders": {
-          "name": "Business name *",
-          "city": "City",
-          "category": "Category",
-          "phone": "Phone",
-          "instagram": "Instagram (username, without @)",
-          "website": "Website (optional)",
-          "notes": "Internal notes"
-        },
-        "cancel": "Cancel",
-        "saving": "Saving…",
+        "copied": "Text copied",
+        "copy_failed": "Could not copy — copy manually"
+      },
+      "confirm_delete": "Permanently delete this lead?",
+      "modal_add": {
+        "title": "New lead",
+        "name_placeholder": "Business name *",
+        "city_placeholder": "City",
+        "category_placeholder": "Category",
+        "phone_placeholder": "Phone",
+        "instagram_placeholder": "Instagram (username, without @)",
+        "website_placeholder": "Website (optional)",
+        "notes_placeholder": "Internal notes",
+        "name_required": "Name is required",
+        "submit_saving": "Saving...",
         "submit": "Add"
       },
-      "script_modal": {
+      "modal_script": {
         "title": "Call script",
-        "close": "Close",
-        "body": "1. Warm opening: \"Hi, I'm calling from Mehamakor — is now a good time?\"\n2. Brief intro: \"An Israeli site that connects local businesses with shoppers looking for high-quality food.\"\n3. Value proposition: \"Free to sign up, your profile gets published, and you receive customer inquiries directly via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'll send you a link with all your details ready — just confirm a password.\"\n6. If declining: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. To close: \"Have a great day.\""
-      },
-      "whatsapp_modal": {
-        "title": "WhatsApp message to {name}",
-        "preparing_link": "Preparing profile link…",
-        "copy_btn": "Copy",
-        "open_btn": "Open in WhatsApp",
         "close": "Close"
       },
-      "templates": {
-        "warm": {
-          "title": "Warm",
-          "body": "Hi {name} 🌿\nI saw your work and I really love what you do. I'm with Mehamakor — a site that connects small business owners with shoppers looking for real, local food.\nYou're invited to join us, free of charge — just click the link and your details are waiting:\n{prefillUrl}"
-        },
-        "professional": {
-          "title": "Professional",
-          "body": "Hello {name}, I'm reaching out on behalf of Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you; all that's left is to confirm a password:\n{prefillUrl}\nSign-up is free, no commitment."
-        },
-        "short": {
-          "title": "Short",
-          "body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
-        }
+      "modal_wa": {
+        "title": "WhatsApp message to {name}",
+        "preparing": "Preparing profile link...",
+        "copy": "Copy",
+        "open": "Open in WhatsApp",
+        "close": "Close"
+      },
+      "wa_templates": {
+        "warm_title": "Warm",
+        "warm_body": "Hi {name} 🌿\nI saw you and I really love what you do. I'm from Mehamakor — a site that connects small business owners with consumers looking for real local food.\nYou're welcome to join us for free — just click the link and your details are waiting:\n{prefillUrl}",
+        "professional_title": "Professional",
+        "professional_body": "Hello {name}, I'm reaching out from Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.",
+        "short_title": "Short",
+        "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
+      },
+      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. Closing: \"Have a great day.\""
+    },
+    "kashrut": {
+      "title": "Kashrut certificate approvals",
+      "tooltip": "A business owner requested a kashrut certificate. Review the attached certificate and approve/reject.",
+      "tooltip_label": "Kashrut certificate request info",
+      "subtitle": "Businesses request kashrut certificates from their dashboard. Review the certificate link before approving.",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "load_error": "Error loading requests",
+      "no_requests": "No requests",
+      "approved_toast": "Badge approved ✅",
+      "rejected_toast": "Request rejected",
+      "columns": {
+        "producer": "Business",
+        "badge": "Badge",
+        "cert": "Certificate",
+        "date": "Request date",
+        "notes": "Notes",
+        "actions": "Actions"
+      },
+      "cert_view": "View certificate ↗",
+      "no_cert": "Not uploaded",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "reject_modal": {
+        "title": "Reject request",
+        "placeholder": "Reason for rejection (optional)",
+        "submitting": "Sending...",
+        "submit": "Reject"
+      },
+      "badges": {
+        "rabanut": "Rabbinate kosher",
+        "badatz": "Badatz",
+        "chalak": "Chalak",
+        "mehadrin": "Mehadrin",
+        "organic_kosher": "Organic kosher",
+        "shmitta": "Shmita",
+        "kilayim": "Without kilayim",
+        "artisan_dairy": "Farm dairy products"
       }
+    },
+    "reports": {
+      "title": "Reports and issues",
+      "tabs": {
+        "reports": "User reports",
+        "flagged": "Home products under review",
+        "hidden": "Auto-hidden"
+      },
+      "section_3plus": "Businesses with 3+ reports",
+      "no_reports": "No open reports 🎉",
+      "report_count": "{count} reports",
+      "actions": {
+        "suspend": "⏸️ Suspend business",
+        "ignore": "Ignore"
+      },
+      "remove_reason_prompt": "Removal reason (will be sent to the seller)",
+      "flagged": {
+        "heading": "Home products that the AI flagged for review",
+        "subtitle": "These are products published with an \"under review\" tag because the AI identified something unclear — health claims, suspicious pricing, or a business posing as homemade.",
+        "empty": "No products under review right now 🌿",
+        "default_reason": "Flagged for review",
+        "approve": "Approve",
+        "remove": "❌ Remove"
+      },
+      "hidden": {
+        "heading": "Auto-hidden home products",
+        "empty": "No hidden products",
+        "restore": "Restore"
+      }
+    },
+    "reviews": {
+      "title": "Reviews",
+      "tooltip": "Claude automatically reviewed the content. 'Changes required' = Claude flagged an issue but didn't block. 'Pending' = passed pre-check, awaiting your manual approval.",
+      "tooltip_label": "Reviews moderation info",
+      "count": "{filtered} of {total}",
+      "search_placeholder": "Search by business, user, title or text...",
+      "filter_aria": "Filter by rating",
+      "all_ratings": "All ratings",
+      "columns": {
+        "producer": "Business",
+        "user": "User",
+        "rating": "Rating",
+        "content": "Content",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "loading": "Loading reviews...",
+      "empty": "No reviews to display",
+      "stars_aria": "{stars} stars",
+      "delete_aria": "Delete review by {user}",
+      "deleting": "Deleting...",
+      "delete": "Delete",
+      "confirm_delete": "Delete the review by {user} on {producer}?",
+      "default_user": "User",
+      "default_producer": "the business",
+      "deleted_toast": "Review deleted",
+      "delete_error": "Something went wrong, please try again"
+    },
+    "settings": {
+      "title": "Settings",
+      "load_error": "Error loading settings — try refreshing the page.",
+      "sections": {
+        "notifications": "Notifications",
+        "freemium": "Freemium",
+        "holiday": "Holiday window",
+        "holiday_tooltip": "Enable before holidays. Shows a site banner: 'Happy holiday — some businesses are not accepting orders this week'. Disable after the holiday.",
+        "holiday_tooltip_label": "Holiday window info",
+        "holiday_hint": "Enable manually to test the banner on the dashboard and homepage before the holiday.",
+        "holiday_active": "Holiday window active",
+        "friday_mode": "Friday market mode",
+        "friday_tooltip": "Enable Friday mornings. Prioritises businesses selling at markets. Disables automatically after Shabbat.",
+        "friday_tooltip_label": "Friday market mode info",
+        "friday_hint": "Enable manually to test Friday market mode (producers strip, hero heading, 🛒 badge) outside the regular window (Wed 18:00 — Fri 14:00). This override applies in the current browser only.",
+        "friday_active": "Friday market mode — override",
+        "tests": "Connection tests",
+        "categories": "Manage categories",
+        "categories_hint": "To add, edit, and delete — the content screen.",
+        "categories_link": "Go to content ←"
+      },
+      "fields": {
+        "admin_email": "Admin email for notifications",
+        "admin_whatsapp": "Admin WhatsApp number (E.164)",
+        "premium_price": "Monthly premium price (₪)",
+        "free_image_limit": "Number of images in the free plan",
+        "holiday_key_label": "Holiday key for testing (empty = auto-detect by date)",
+        "holiday_none": "— No override —",
+        "holiday_pesach": "Passover",
+        "holiday_shavuot": "Shavuot",
+        "holiday_rosh_hashana": "Rosh Hashanah",
+        "holiday_sukkot": "Sukkot",
+        "holiday_chanuka": "Hanukkah",
+        "holiday_tu_bishvat": "Tu Bishvat"
+      },
+      "tests": {
+        "not_configured": "✗ Not configured",
+        "testing": "Testing...",
+        "connected": "✓ Connected",
+        "test_btn": "Test"
+      },
+      "save": {
+        "confirm_prefix": "Save the following changes?",
+        "saving": "Saving...",
+        "submit": "Save settings",
+        "nothing_to_save_title": "No changes to save",
+        "unsaved_count": "{count} unsaved changes"
+      }
+    },
+    "content": {
+      "title": "Content",
+      "tabs": {
+        "categories": "Categories",
+        "home_products": "Home products",
+        "about": "Vision page",
+        "terms": "Terms of service"
+      },
+      "categories": {
+        "emoji_placeholder": "Emoji",
+        "name_placeholder": "Category name",
+        "add": "+ Add",
+        "empty": "No data to display",
+        "save": "Save",
+        "delete": "Delete",
+        "confirm_delete": "Delete category?"
+      },
+      "home_products": {
+        "heading": "Hidden home products",
+        "empty": "No hidden products",
+        "restore": "Restore",
+        "delete": "Delete",
+        "confirm_delete": "Delete this product?"
+      },
+      "page_editor": {
+        "title_placeholder": "Title",
+        "body_placeholder": "Content (Markdown supported)",
+        "saving": "Saving...",
+        "save": "Save",
+        "saved": "Saved ✓"
+      }
+    },
+    "category_requests": {
+      "title": "Category requests",
+      "subtitle": "Categories that businesses asked to add — grouped by name. {count} groups",
+      "load_error": "Error loading",
+      "status_updated": "Status updated",
+      "update_error": "Update error",
+      "empty": "No category requests yet",
+      "request_one": "request",
+      "request_many": "requests",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "merged": "Merged"
+      },
+      "columns": {
+        "id": "ID",
+        "business": "Business",
+        "date": "Date",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "merge": "Merge",
+        "reset": "Reset"
+      }
+    },
+    "group_buys": {
+      "title": "Group buys",
+      "status": {
+        "open": "Open",
+        "funded": "Funded",
+        "cancelled": "Cancelled",
+        "fulfilled": "Fulfilled"
+      },
+      "load_error": "Error loading data",
+      "update_error": "Status update error",
+      "all": "All",
+      "empty": "No group buys",
+      "until": "until {date}",
+      "change_status": "Change status:",
+      "view_page": "View page ←"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "subtitle": "Platform insights",
+      "monthly_growth": "Monthly growth",
+      "legend_producers": "Businesses",
+      "legend_users": "Users",
+      "top_categories": "Popular categories",
+      "no_data": "No data",
+      "no_data_display": "No data to display",
+      "top_cities": "Top cities",
+      "top_producers_favorites": "Businesses with the most favorites",
+      "geographic": "Geographic distribution",
+      "map_count": "{count} businesses with map location"
+    },
+    "help": {
+      "title": "Admin help",
+      "intro": "This guide summarises the admin panel tools, key approval processes, and incident responses. Maintained manually — if something here is wrong, open a PR with a fix rather than leaving the next direction in the dark.",
+      "toc_label": "Contents",
+      "toc": {
+        "dashboard": "Dashboard overview",
+        "producers": "Approving and rejecting businesses",
+        "users": "Managing users",
+        "reviews": "Reviews",
+        "reports": "Reports",
+        "experiences": "Experiences",
+        "emergency": "Emergencies",
+        "urls": "Important URLs"
+      },
+      "sections": {
+        "dashboard": {
+          "title": "Dashboard overview",
+          "p1": "<strong>/admin</strong> — the main page. Four top metrics (users, businesses, events, open reports) + a weekly delta row beneath them.",
+          "li1": "<strong>Yellow pill on \"Dashboard\" in the sidebar</strong> — number of items awaiting approval (businesses + reports + flagged products + experiences). Refreshes on every internal navigation.",
+          "li2": "<strong>DAU 30-day chart</strong> — based on <code>users.last_active_at</code> which updates on every authenticated request (5-min throttle).",
+          "li3": "<strong>Top cities</strong> — aggregated from <code>producer_page_views</code> (rows without city are not counted).",
+          "li4": "<strong>Server health</strong> — average response time + requests per minute over the last hour. Per-process only (resets on every deploy)."
+        },
+        "producers": {
+          "title": "Approving and rejecting businesses",
+          "p1": "<strong>/admin/producers</strong> — table + search + Excel import.",
+          "li1": "Filter by status <strong>pending</strong>.",
+          "li2": "Click the business name → full details page, including licensing declarations, photos, and description.",
+          "li3": "<strong>To approve:</strong> click <em>\"Quick approve\"</em>. The business moves to <code>approved</code>, appears on the homepage, and shows on the map.",
+          "li4": "<strong>To reject:</strong> <em>\"Reject\"</em> + a short reason that will be emailed to the business owner.",
+          "li5": "<strong>Edit (pencil):</strong> goes to <code>/admin/producers/[id]/edit</code> — all fields including \"verified\" / \"recommended\" / \"availability status\" / \"primary contact method\".",
+          "footnote": "A business does not need to be verified to be <em>approved</em> — <strong>verified</strong> adds a blue tag after you've checked licensing and identity, usually in a monthly audit."
+        },
+        "users": {
+          "title": "Managing users",
+          "p1": "<strong>/admin/users</strong> — search by email/name, filter by role.",
+          "li1": "<strong>role:</strong> consumer / producer / admin — applied immediately, with no further confirmation.",
+          "li2": "<strong>Block:</strong> a blocked login returns 403. The user doesn't know immediately, they only see a message on their next login attempt.",
+          "li3": "<strong>Favorites:</strong> click the count next to a user to see the businesses they saved — useful for tracking suspicious activity.",
+          "footnote": "Reminder: blocking is reversible, a role change affects the next JWT immediately. <strong>Do not promote a user to admin</strong> without verifying identity outside the system."
+        },
+        "reviews": {
+          "title": "Reviews",
+          "p1": "<strong>/admin/reviews</strong> — all reviews in a single list (newest first).",
+          "li1": "Filter by rating (1–5) or free-text search across business/user/title/body.",
+          "li2": "Deletion requires confirmation (window.confirm). After deletion the business's <code>avg_rating</code> and review count update automatically.",
+          "li3": "Deletion is the correct pattern for: defamatory language, personal information, spam, a review about a different business."
+        },
+        "reports": {
+          "title": "Reports",
+          "p1": "<strong>/admin/reports</strong> — sorted by urgency (new + multiple-reports first).",
+          "li1": "<strong>Resolve</strong> — close the report, optionally with a follow-up action (block / delete).",
+          "li2": "<strong>Hold</strong> — keeps it open but moves it to the bottom of the list. Use when more information is needed.",
+          "li3": "<strong>Ignore</strong> — close with no action, for reports that don't substantiate an issue.",
+          "footnote": "Rule of thumb: <strong>respond within 24 hours</strong>. Product-safety reports (allergens, expiration dates) — immediately."
+        },
+        "experiences": {
+          "title": "Experiences",
+          "p1": "<strong>/admin/experiences</strong> — 5 tabs: pending / changes required / approved / rejected / all.",
+          "li1": "On click: approve / reject / request changes. The host receives an email.",
+          "li2": "Haiku pre-check runs before an experience reaches the \"pending\" tab — the \"changes required\" tab is when the AI flagged a warning but did not block."
+        },
+        "emergency": {
+          "title": "Emergencies",
+          "site_down_title": "Site is down",
+          "site_down_body": "Check <code>mehamakor.online/health</code>. If it's not 200 OK, check Railway → healthcheck + logs. See CLAUDE.md §\"Railway runtime port = 8080\" before any debugging — this is the most common source of 502.",
+          "migration_title": "Migration failed after deploy",
+          "migration_body": "Symptom: the container starts but endpoints return 500 with <code>UndefinedColumn</code>. Fix: verify that <code>_migrate_columns</code> in main.py lists the new column. If not, add it and push a hotfix commit.",
+          "login_broken_title": "Login is broken for everyone",
+          "login_broken_body": "Verify that <code>JWT_SECRET_KEY</code> exists in Railway Variables. If it was changed by mistake — old JWTs are invalidated and every user has to log in again. Do not rotate the key without alerting the team.",
+          "spam_title": "Spam storm / fake registrations",
+          "spam_body": "/register/producer is already rate-limited to 3/hour (slowapi). If that isn't enough, tighten to 1/hour temporarily in <code>auth.py</code> + hotfix push. Block suspicious IPs at Railway edge if traffic is unusual.",
+          "ai_silent_title": "AI features return silent errors",
+          "ai_silent_body": "Check <code>ANTHROPIC_API_KEY</code>. Fail-open is not infinite — if the key expired, moderation approves everything (APPROVED default). CLAUDE.md §\"Anthropic client init\" describes the httpx 0.28+ bug that may return TypeError via the green button."
+        },
+        "urls": {
+          "title": "Important URLs",
+          "intro": "The specific addresses (project IDs, tokens) are not here — they are in the team password manager. The list here points you where to look, it does not provide credentials.",
+          "prod_label": "Production site",
+          "staging_label": "Staging site",
+          "github_label": "Source code",
+          "github_text": "GitHub",
+          "railway_label": "Railway",
+          "railway_text": "<placeholder>fill in</placeholder> — project: <code>believable-tenderness</code>, service: backend",
+          "vercel_label": "Vercel",
+          "vercel_text": "<placeholder>fill in</placeholder> — project: <code>food-mamkor</code>",
+          "cloudinary_label": "Cloudinary",
+          "cloudinary_text": "<placeholder>fill in</placeholder> — cloud: <code>dvtcojtye</code> (approx.)",
+          "anthropic_label": "Anthropic Console",
+          "anthropic_text": "<placeholder>fill in</placeholder> — workspace: mehamakor"
+        }
+      },
+      "footer": "Daily/weekly/monthly checklist + emergency contacts — see <code>docs/ADMIN.md</code> (\"Handover checklist\" section).",
+      "footer_back": "← Back to dashboard"
     }
   },
   "events": {
@@ -1253,6 +1877,1189 @@
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
       "error_generic": "Error submitting the experience. Please try again."
+    }
+  },
+  "errors": {
+    "boundary": {
+      "heading": "Something went wrong — please try again",
+      "message": "The page didn't load this time. It usually works on the second try.",
+      "retry": "Try again",
+      "home": "Back to home",
+      "contact_prefix": "If this continues,",
+      "contact_link": "contact us"
+    },
+    "not_found": {
+      "heading": "We couldn't find this page",
+      "message": "The link may have expired, or the page has moved.",
+      "home": "Back to home",
+      "discover": "Find businesses on the map"
+    },
+    "producer_not_found": {
+      "heading": "This business wasn't found",
+      "message": "The link may be old, or the business is no longer active. Find other businesses near you.",
+      "discover": "Find businesses on the map",
+      "home": "Back to home"
+    }
+  },
+  "about": {
+    "consumer": {
+      "hero": {
+        "heading": "You used to need to know who to ask. Not anymore."
+      },
+      "story": {
+        "image_aria": "Photo of Sapir, founder of Mehamakor",
+        "image_alt": "Sapir, founder of Mehamakor",
+        "greeting": "Hi, I'm Sapir.",
+        "p1": "It was always important to me to know where my food came from. I wanted to buy better — healthier, more local.",
+        "p2": "But I quickly discovered it wasn't accessible. To find truly quality food, I had to search for hours — ask the right people, join WhatsApp groups, search Google and Instagram.",
+        "p3": "Then I realized: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
+        "p4": "There are farmers selling fresh vegetables a few minutes from home. There's someone baking sourdough in the next neighborhood. There are small businesses with incredible products — that most people don't even know about. So people keep shopping at the supermarket — not because it's the best, but because it's the most convenient.",
+        "p5": "And that's how Mehamakor was born. One place that brings together real, local, healthy food for you — close to home. Without searching for hours.",
+        "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
+        "caption2": "I'm building the site on my own. I personally vet every business.",
+        "caption3": "The criteria — I write them from what I myself look for in food."
+      },
+      "parallax": {
+        "quote": "Because what you eat matters. And where you buy it matters more"
+      },
+      "benefits": {
+        "local": {
+          "title": "Real food close to you",
+          "body": "No hour-long drives. No weeks of searching.\nEverything close to you, in one place."
+        },
+        "trust": {
+          "title": "Trust what you eat",
+          "body": "Only verified businesses. We vet each one\nbefore they appear."
+        },
+        "community": {
+          "title": "Supporting small businesses",
+          "body": "Every local purchase is a choice — to keep money\nin your community, and support the people behind the food."
+        }
+      },
+      "tips": {
+        "heading": "Worth knowing",
+        "eggs": {
+          "question": "Why are organic eggs worth the price?",
+          "answer": "Organic hens grow up outdoors, eating food free of pesticides and antibiotics. Their eggs contain more omega-3, vitamin E, and antioxidants. Not a dramatic difference — but less exposure to chemicals, and more humane lives for the hens."
+        },
+        "grass_fed": {
+          "question": "What is grass-fed in Israel?",
+          "answer": "At the supermarket — most cattle are fattened on corn and supplements. Grass-fed = cows that lived their whole lives in pasture, eating natural grass. In Israel it's rare and more expensive — but the meat has deeper flavor, the distinctive yellowish fat, and more omega-3. Producers like Gilis from the Golan Heights and Mireh Golan are classic examples."
+        },
+        "honey": {
+          "question": "Supermarket honey vs. unheated honey — what's the difference?",
+          "answer": "Supermarket honey is pasteurized — heating destroys enzymes, antioxidants, and pollen. Unheated honey keeps it all — richer flavor, natural antibacterial properties. How to spot it? Thicker, not completely clear, sometimes crystallizes — and that's a good sign."
+        }
+      },
+      "testimonials": {
+        "heading": "What people say about us",
+        "subtitle": "Stories are coming soon 🌿",
+        "cta": "Want to share too? Write to us"
+      },
+      "values": {
+        "heading": "How we choose",
+        "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
+        "transparency": {
+          "title": "Transparency",
+          "body": "You should know who's behind the product you're buying. We'll always tell you who runs the business, where they're located, and how they work."
+        },
+        "proximity": {
+          "title": "Proximity",
+          "body": "We prefer businesses close to you, with the shortest possible chain — from the field to you."
+        },
+        "quality": {
+          "title": "Quality",
+          "body": "Real ingredients you can recognize — no food coloring, no unnecessary preservatives, no artificial additives."
+        },
+        "safety": {
+          "title": "Safety",
+          "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. No compromises here."
+        },
+        "closing": "If that's you — a business owner building something you're proud of — we'd love to meet you."
+      },
+      "cta": {
+        "heading": "Have a business? Come join us.",
+        "register": "Add your business",
+        "explore": "Discover businesses near you"
+      },
+      "contact": {
+        "heading": "Talk to us",
+        "subtitle": "Questions, ideas, or just hi — we'd love to hear from you",
+        "name_label": "Full name",
+        "name_placeholder": "Your full name",
+        "email_label": "Email",
+        "message_label": "How can we help?",
+        "message_placeholder": "Tell us what you'd like to talk about...",
+        "submit": "Send",
+        "submit_loading": "Sending...",
+        "success_toast": "Thanks! We'll get back to you soon 🌿",
+        "error_toast": "Something went wrong, please try again"
+      }
+    }
+  },
+  "modals": {
+    "location": {
+      "title": "Where are you?",
+      "subtitle": "We'll find businesses near you",
+      "search_label": "Search city",
+      "search_placeholder": "Type a city name...",
+      "aria_label": "Choose a city",
+      "close_aria": "Close",
+      "geo_button": "Near me",
+      "geo_loading": "Finding...",
+      "geo_failure": "We couldn't get your location",
+      "current_location_fallback": "Current location",
+      "skip": "Skip for now",
+      "popular_cities": {
+        "tel_aviv": "Tel Aviv",
+        "jerusalem": "Jerusalem",
+        "haifa": "Haifa",
+        "beersheba": "Be'er Sheva"
+      }
+    },
+    "category_request": {
+      "title": "Which category is missing?",
+      "name_placeholder": "Suggested category name *",
+      "name_example": "For example: fermented drinks",
+      "examples_placeholder": "Product examples (optional)",
+      "examples_hint": "Kombucha, kefir, water kefir...",
+      "submit": "Submit request",
+      "submit_loading": "Sending...",
+      "close": "Close",
+      "toasts": {
+        "success": "Thanks! Request received. In the meantime, pick the closest category.",
+        "error": "Error submitting the request — please try again"
+      }
+    },
+    "install_prompt": {
+      "aria_label": "Add to home screen",
+      "title": "Mehamakor on your home screen",
+      "ios_instructions": "Tap <share>Share</share> → <add>Add to Home Screen</add>",
+      "android_subtitle": "Add to home screen — app-like experience, no App Store",
+      "android_cta": "Install",
+      "dismiss_aria": "Close"
+    },
+    "login_prompt": {
+      "default_message": "To save businesses you love — sign in",
+      "close_aria": "Close dialog",
+      "title": "Want to save? 🌿",
+      "login_cta": "Sign in",
+      "dismiss_cta": "Maybe later"
+    },
+    "cookie_banner": {
+      "aria_label": "Cookie consent",
+      "message": "🍪 We use cookies to improve the experience — <link>privacy policy</link>",
+      "accept_all": "Accept all",
+      "essential_only": "Essential only"
+    },
+    "lightbox": {
+      "aria_label": "Image viewer",
+      "close_aria": "Close viewer",
+      "image_alt": "Image {current} of {total}",
+      "prev_aria": "Previous image",
+      "next_aria": "Next image"
+    },
+    "onboarding_tip": {
+      "cta_default": "Got it",
+      "close_aria": "Close"
+    }
+  },
+  "kashrut": {
+    "badges": {
+      "rabanut": {
+        "label": "Rabbanut kosher",
+        "tooltip": "Kosher supervised by the local Rabbinate"
+      },
+      "badatz": {
+        "label": "Badatz",
+        "tooltip": "Mehadrin kosher supervised by the Beit Din Tzedek"
+      },
+      "chalak": {
+        "label": "Chalak",
+        "tooltip": "Chalak beef per Sephardic tradition"
+      },
+      "mehadrin": {
+        "label": "Mehadrin",
+        "tooltip": "Mehadrin kosher to a higher standard"
+      },
+      "organic_kosher": {
+        "label": "Organic kosher",
+        "tooltip": "Certified organic farming + kosher"
+      },
+      "shmitta": {
+        "label": "Shmitta",
+        "tooltip": "Shmitta-year produce with special certification"
+      },
+      "kilayim": {
+        "label": "Kilayim-free",
+        "tooltip": "No forbidden cross-species grafting"
+      },
+      "artisan_dairy": {
+        "label": "Farm dairy",
+        "tooltip": "Milk and dairy directly from the farm, kosher"
+      }
+    },
+    "expiry": {
+      "valid_until": "Valid until: {date}",
+      "near_expiry": "⚠️ Certificate expires soon"
+    }
+  },
+  "opening_hours": {
+    "heading": "Opening hours",
+    "open_now": "Open now",
+    "closes_at": "· closes at {time}",
+    "closed_now": "Closed",
+    "opens_at": "· opens {day} {time}",
+    "closed_day": "Closed",
+    "tomorrow": "tomorrow",
+    "weekdays": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    }
+  },
+  "trust": {
+    "tier_2": {
+      "label": "✓ Phone verified",
+      "tooltip": "The business owner's phone number was verified via a one-time code"
+    },
+    "tier_3": {
+      "label": "✅ Verified business",
+      "tooltip": "The business was manually verified by the Mehamakor team"
+    },
+    "tier_4": {
+      "label": "⭐ Community leader",
+      "tooltip": "10+ reviews with an average rating of 4.5 or above"
+    },
+    "tier_5": {
+      "label": "🏅 Mehamakor ambassador",
+      "tooltip": "The leading business owner in the area — selected manually by Mehamakor"
+    }
+  },
+  "forms": {
+    "password": {
+      "placeholder_default": "Password",
+      "aria_label_default": "Password",
+      "toggle_show": "Show password",
+      "toggle_hide": "Hide password",
+      "min_length": "At least {min} characters",
+      "checking": "Checking...",
+      "not_breached": "Not breached online",
+      "different_from_current": "Different from current — verified on server",
+      "strength": {
+        "weak": "Weak",
+        "medium": "Medium",
+        "strong": "Strong",
+        "label": "Password strength: {tier}"
+      }
+    },
+    "category_selector": {
+      "label": "Category",
+      "search_placeholder": "Search categories...",
+      "section_results": "Results",
+      "section_popular": "Popular",
+      "no_results_prefix": "Can't find your category?",
+      "no_results_cta": "Tell us ←",
+      "show_more": "← More categories ({count})",
+      "show_less": "↑ Fewer categories"
+    }
+  },
+  "producers": {
+    "breadcrumb": {
+      "home": "Home",
+      "all": "All businesses",
+      "search": "Search: {q}"
+    },
+    "title": {
+      "all": "All businesses",
+      "search_results": "Results for:"
+    },
+    "discovery": {
+      "found_count": "{count, plural, =0 {No businesses found} one {1 business found} other {{count} businesses found}}",
+      "all_count": "{count, plural, one {The only business} other {All {count} businesses}}",
+      "showing_count": "Showing {loaded} of {total} businesses",
+      "all_shown": "{count, plural, one {Showed the only business 🌿} other {Showed all {count} businesses 🌿}}",
+      "loading_more_aria": "Loading more businesses"
+    },
+    "recently_viewed": {
+      "aria": "Recently viewed",
+      "label": "Recently viewed"
+    },
+    "filters": {
+      "city_chip": "In my city",
+      "filter_by": "Filter by:",
+      "clear_all": "Clear all"
+    },
+    "empty": {
+      "no_match_search": "We couldn't find any businesses for \"{q}\"",
+      "no_match_filters": "No businesses match this filter",
+      "search_hint": "Try another word or browse by category",
+      "filters_hint": "Try removing one of the filters",
+      "category_chips": {
+        "beef": "Beef",
+        "cheese": "Cheese",
+        "bread": "Bread",
+        "vegetables": "Vegetables",
+        "oil": "Oil",
+        "honey": "Honey"
+      },
+      "clear_all_show_all": "Clear all and show everything"
+    },
+    "catalog_empty": {
+      "title": "The list is on the way",
+      "subtitle": "Suggest a business you love, or sign up to hear when new ones join",
+      "add_cta": "Add your business 🌿",
+      "notify_cta": "Notify me when new ones join"
+    },
+    "page_overflow": {
+      "message": "You've reached the end of the list",
+      "back_cta": "Back to first page"
+    },
+    "pagination": {
+      "aria": "Pagination",
+      "prev": "← Previous",
+      "next": "Next →",
+      "page_of": "Page {page} of {totalPages}"
+    }
+  },
+  "reviews": {
+    "section_heading": "What customers say",
+    "owner_heading": "Customer reviews",
+    "anonymous_fallback": "Customer",
+    "user_anonymous": "Anonymous",
+    "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
+    "summary_based_on": "{total, plural, one {Based on 1 review} other {Based on {total} reviews}}",
+    "write_cta": "Write a review",
+    "edit_cta": "Update your review",
+    "form_heading": "Write a review",
+    "rating_label": "Rating",
+    "body_label": "Your experience",
+    "body_label_alt": "Tell us about your experience",
+    "body_placeholder": "How was your experience?",
+    "body_placeholder_alt": "What did you love? How was the delivery? Would you recommend?",
+    "submit": "Publish review",
+    "submit_update": "Update review",
+    "submit_saving": "Saving...",
+    "cancel": "Cancel",
+    "error_invalid_stars": "Pick a rating between 1 and 5 stars",
+    "error_body_too_short": "Reviews need at least 10 characters",
+    "error_generic": "Something went wrong, please try again",
+    "saved_toast": "Your review was saved ⭐",
+    "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
+    "login_prompt": "<login>Sign in</login> to write a review",
+    "loading": "Loading reviews...",
+    "owner_empty_title": "First reviews come after a few customers",
+    "owner_empty_description": "Reviews are created automatically after a customer sends you a WhatsApp message. 24 hours after the click, she gets a link to rate you. No reviews yet because no one has clicked yet.",
+    "owner_empty_cta": "Share your profile on WhatsApp",
+    "empty_message": "No reviews yet — be the first!",
+    "pagination": {
+      "prev_aria": "Previous page",
+      "next_aria": "Next page"
+    }
+  },
+  "upgrade": {
+    "title": "Upgrade to premium",
+    "subtitle": "Get more exposure and more options for your business",
+    "free_plan": {
+      "name": "Free",
+      "feature_map": "✓ Appears on the map",
+      "feature_3_images": "✓ Up to 3 images",
+      "feature_contact": "✓ Contact details",
+      "feature_delivery": "✓ Delivery zones",
+      "missing_products": "✗ Unlimited products",
+      "missing_images": "✗ Unlimited images",
+      "missing_stats": "✗ Statistics"
+    },
+    "premium_plan": {
+      "recommended": "Recommended",
+      "name": "Premium",
+      "price_pending": "Coming soon",
+      "feature_map": "✓ Appears on the map",
+      "feature_unlimited_images": "✓ Unlimited images",
+      "feature_contact": "✓ Contact details",
+      "feature_delivery": "✓ Delivery zones",
+      "feature_unlimited_products": "✓ Full product list",
+      "feature_stats": "✓ View statistics",
+      "feature_badge": "✓ Premium badge"
+    },
+    "notify_success": "🎉 You're signed up! We'll let you know when premium launches.",
+    "email_placeholder": "Your email",
+    "notify_cta": "Notify me at launch",
+    "notify_submitting": "Sending..."
+  },
+  "contact": {
+    "title": "Talk to us",
+    "subtitle": "Questions, ideas, or just hi — we'd love to hear 🌿",
+    "response_time_inline": "We'll get back to you within <strong>3 business days</strong>.",
+    "email_label": "Email address:",
+    "response_sla": "Response time: up to 3 business days",
+    "success_title": "Thanks! We got your message.",
+    "success_message": "We'll get back to you within 3 business days",
+    "success_send_another": "Send another message",
+    "field_name_label": "Full name *",
+    "field_email_label": "Email *",
+    "field_message_label": "How can we help? *",
+    "submit": "Send",
+    "submit_loading": "Sending...",
+    "open_mail_fallback": "Open email directly →",
+    "error_default": "The form failed to send. You can email us directly at the address below.",
+    "mailto_subject": "Inquiry via the website",
+    "mailto_body_prefix": "Name:",
+    "mailto_body_email": "Email:",
+    "privacy_notice": "By submitting the form you confirm you have read the <link>privacy policy</link>."
+  },
+  "search": {
+    "breadcrumb_home": "Home",
+    "breadcrumb_search": "Search",
+    "breadcrumb_query": "Search: {q}",
+    "title_default": "Search",
+    "title_results": "Search results for \"{q}\"",
+    "input_placeholder": "Sourdough bread, organic eggs, vegetables and fruit",
+    "input_aria": "Search",
+    "submit": "Search",
+    "no_results_hint": "We couldn't find a match — try another word or browse by category 🌱",
+    "results_count": "{totalHits, plural, one {1 result} other {{totalHits} results}}",
+    "empty_prompt": "Type a query in the search field at the top of the page.",
+    "section_producers": "Businesses",
+    "section_products": "Products",
+    "product_by_prefix": "at",
+    "empty_title": "We couldn't find a match — try another word 🌱",
+    "empty_subtitle": "Try changing the search or browsing categories on the homepage.",
+    "empty_home_cta": "Back to home",
+    "hero": {
+      "submit_aria": "Search",
+      "loading": "Loading results...",
+      "no_results_for": "No results for",
+      "section_producers": "🏪 Businesses",
+      "section_categories": "🏷️ Categories",
+      "section_cities": "📍 Cities",
+      "recent_heading": "Recent searches",
+      "trending_heading": "Trending searches",
+      "remove_recent_aria": "Remove {q} from recent searches"
+    },
+    "smart": {
+      "loading": "Loading results...",
+      "no_results_for": "No results for",
+      "section_producers": "Businesses",
+      "section_products": "Products",
+      "product_by_prefix": "at",
+      "section_cities": "Cities",
+      "section_categories": "Categories"
+    },
+    "cities_autocomplete": {
+      "remove_aria": "Remove {city}",
+      "placeholder": "Type a city name..."
+    },
+    "city_search": {
+      "placeholder": "Search city...",
+      "clear_aria": "Clear city"
+    },
+    "address_search": {
+      "placeholder": "Search address..."
+    }
+  },
+  "favorites": {
+    "alerts_aria": "Set up alerts",
+    "breadcrumb_home": "Home",
+    "breadcrumb_favorites": "Favorites",
+    "title": "My favorites",
+    "empty_title": "You haven't saved any businesses yet 🌿",
+    "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
+    "first_visit_tip": "Tap ❤️ on a business card to save it here",
+    "empty_cta": "Discover businesses",
+    "list_alerts_hint": "Tap 🔔 on any card to get alerts about new events and products",
+    "button": {
+      "saved_toast_first_time": "Saved! You'll find favorites under the ❤️ tab at the bottom",
+      "saved_toast": "Saved to favorites ❤️",
+      "removed_toast": "Removed from favorites",
+      "error_generic": "Something went wrong, please try again",
+      "add_aria": "Add to favorites",
+      "remove_aria": "Remove from favorites",
+      "inline_label": "Save",
+      "login_prompt_message": "To save businesses you love — sign in"
+    }
+  },
+  "rate": {
+    "invalid_link": "Invalid link",
+    "error_generic": "Submission error",
+    "loading": "Loading...",
+    "thanks_title": "Thanks!",
+    "thanks_message": "Your rating has been saved. It helps the community.",
+    "heading": "How was it?",
+    "bought_from": "You bought from <seller>{name}</seller>",
+    "comment_placeholder": "Short comment (optional)",
+    "submit": "Send rating"
+  },
+  "report": {
+    "trigger": "🚩 Report business",
+    "form_heading": "Report business",
+    "reason_placeholder": "Tell us what the issue is...",
+    "submit": "Send report",
+    "cancel": "Cancel",
+    "error_generic": "Submission error",
+    "success_title": "Thanks for the report",
+    "success_message": "We'll look into it within 48 hours.",
+    "success_close": "Close"
+  },
+  "share": {
+    "trigger": "Share",
+    "modal_title": "Share a link to the business",
+    "copy_link": "Copy link",
+    "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
+    "wa_message_business_fallback": "a business",
+    "wa_meta_separator": " • ",
+    "copied_toast": "Link copied ✓"
+  },
+  "gallery": {
+    "open_aria": "Enlarge image {current}",
+    "image_alt": "Image {current}",
+    "prev_aria": "Previous image",
+    "next_aria": "Next image",
+    "thumb_aria": "Go to image {n}"
+  },
+  "whatsapp": {
+    "button": {
+      "default_message": "Hi, I saw \"{productTitle}\" on Mehamakor and would love to hear more!",
+      "opening": "Opening..."
+    },
+    "share_button": {
+      "default_message": "I found {name} on Mehamakor — {url}",
+      "share_aria": "Share the business on WhatsApp",
+      "share_to_friend": "Send to a friend"
+    },
+    "question_chips": {
+      "my_area": "My area",
+      "city_placeholder": "[city]",
+      "ask_us": "Ask us",
+      "greeting_template": "Hi {name}, {q}"
+    }
+  },
+  "directory": {
+    "disclaimer": {
+      "brand_is_prefix": "is a",
+      "directory_only": "directory-only platform. The seller bears full responsibility for products and licensing.",
+      "prices_set_by_businesses": "Prices are set by the businesses themselves."
+    }
+  },
+  "location": {
+    "banner": {
+      "message": "Where are you? We'll find businesses near you",
+      "choose_city": "Choose a city",
+      "close_aria": "Close banner"
+    }
+  },
+  "story": {
+    "canvas": {
+      "footer_url": "Discover more businesses at mehamakor.online",
+      "upload_error": "Cloudinary upload error",
+      "default_country": "Israel",
+      "caption_prefix": "🌿 A new business on Mehamakor!",
+      "title": "📸 Instagram card ready",
+      "generating": "Generating",
+      "download": "Download",
+      "uploading": "Uploading...",
+      "save_cloudinary": "Save to Cloudinary",
+      "copy_caption": "Copy caption",
+      "copied": "✅ Copied!"
+    }
+  },
+  "footer": {
+    "copyright": "Mehamakor · Made with love in Israel"
+  },
+  "accessibility": {
+    "meta_title": "Accessibility Statement | Mehamakor",
+    "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
+    "heading": "Accessibility Statement",
+    "date_label": "Last reviewed: April 2026",
+    "sections": {
+      "commitment": {
+        "title": "Accessibility commitment",
+        "body": "The \"Mehamakor\" site is committed to providing comfortable and equitable browsing for all users, including people with disabilities, in accordance with the <law>Equal Rights for Persons with Disabilities Law, 1998</law> and the Equal Rights for Persons with Disabilities Regulations (Accessibility Adjustments for Service), 2013."
+      },
+      "standard": {
+        "title": "Standard level",
+        "body": "We work to bring the site into conformance with the Israeli standard <standard>IS 5568</standard> at level AA, which is based on the <wcag>WCAG 2.1</wcag> guidelines."
+      },
+      "features": {
+        "title": "Accessibility features in this site",
+        "item_rtl": "Full RTL and Hebrew screen-reader support.",
+        "item_contrast": "Reasonable color contrast between text and background.",
+        "item_alt": "Alternative text (alt) for meaningful images.",
+        "item_keyboard": "Keyboard navigation across all pages.",
+        "item_labels": "Clear labels for forms and buttons.",
+        "item_fonts": "Font sizes that can be enlarged in the browser.",
+        "item_semantic": "Semantic structure (landmarks, headings) to support assistive technologies."
+      },
+      "gaps": {
+        "title": "Areas not yet fully accessible",
+        "body": "Some pages, content, or features may not yet be fully accessible, including content uploaded by users (for example, images without alternative text). We work continuously to improve and expand accessibility."
+      },
+      "contact": {
+        "title": "Contact the accessibility coordinator",
+        "intro": "Encountered an accessibility issue? We would be glad to help and fix it. You can reach the site's accessibility coordinator:",
+        "coordinator_label": "Accessibility coordinator:",
+        "coordinator_value": "The Mehamakor team",
+        "phone_placeholder": "TBD",
+        "footnote": "When contacting us, please describe the issue, the page where you encountered it, and the assistive technology you use. We will respond within 3 business days."
+      },
+      "authority": {
+        "title": "Government accessibility authority",
+        "body": "For more information about online accessibility rights, you can reach the <link>government accessibility site</link>."
+      }
+    }
+  },
+  "about_business": {
+    "meta_title": "FAQ for businesses — Mehamakor",
+    "meta_description": "8 frequently-asked questions from local business owners about Mehamakor: cost, value, time, platform trust, and customer control. Direct, transparent answers.",
+    "og_title": "FAQ for businesses — Mehamakor",
+    "og_description": "8 common questions + direct answers for business owners deciding whether to join.",
+    "eyebrow": "For business owners",
+    "heading": "Frequently-asked questions for business owners",
+    "categories": {
+      "money_value": "Money and value",
+      "time_effort": "Time and effort",
+      "trust": "Platform trust",
+      "control": "Control and stance"
+    },
+    "faq": {
+      "cost": {
+        "q": "How much does it cost to sign up?",
+        "a": "Zero. You don't pay us anything — no order commission, no subscription fee. Customers reach you directly on WhatsApp or by phone, and you keep 100% of their payment."
+      },
+      "value": {
+        "q": "What do I get out of it?",
+        "a": "Two things you didn't have before:\n\n**That people will find you on Google.** Someone searching Google for local food — finds you. Today, if you're not buying an ad budget, you're nearly invisible. With us every business gets a page that ranks in search.\n\n**A stable page that doesn't disappear.** Instagram disappears after 24 hours. WhatsApp disappears when someone isn't in the group. Your page on Mehamakor — stays. With your story, your photos, and the contact channels you choose. You can share it as a link and put it in your Instagram bio."
+      },
+      "time": {
+        "q": "How long will this take me?",
+        "a": "About 10 minutes for the initial setup. After that — you don't manage anything else with us. You keep working the way you work. If something changes — opening hours, a new product, a break — you update it with one tap, or send me a message on WhatsApp and I'll update."
+      },
+      "writing": {
+        "q": "I don't know how to write about myself. Will the page look thin?",
+        "a": "You don't have to write it alone. Tell me about your business in whatever way you usually write — WhatsApp, Instagram, however is comfortable — and I'll help phrase it. Phone photos are great, you don't need a professional photographer. If you want — we can spend 15 minutes on the phone and build it together."
+      },
+      "founder": {
+        "q": "Who's behind Mehamakor?",
+        "a": "I'm Sapir, 21, from Zikhron Ya'akov. I built Mehamakor because I was also looking for places to buy real, local food, and it was hard — WhatsApp groups, Instagram searches. I wanted one place. I'm on my own for now, no investors, no big company. You can talk to me on WhatsApp directly and ask anything you want."
+      },
+      "leads": {
+        "q": "The customers who arrive through you — yours or mine?",
+        "a": "Yours. Completely. Customers reach out to you directly on WhatsApp or by phone — you get their details, you manage the relationship. We're not in the middle, we don't see the messages, we don't take their info. Even if Mehamakor closed tomorrow, the customers who reached you through us stay yours. It's the opposite of Wolt or Yango."
+      },
+      "visibility": {
+        "q": "I'm already on Instagram and WhatsApp — why do I need another place?",
+        "a": "Instagram only works when someone already follows you. WhatsApp groups only work when someone is already in the group. Mehamakor works even when you're not thinking about it — someone searching Google for local food finds you. It's not instead of your channels, it's in addition.\n\nAnd it matters to know — on Mehamakor there is no comparison. No prices side by side, no star ratings, no \"see 10 similar businesses\" button. Each business stands on its own. The customer sees you, not you-versus-others."
+      },
+      "control": {
+        "q": "I want to decide who I work with and when.",
+        "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
+      }
+    },
+    "footer_intro_prefix": "Still have a question? Write to me on Instagram",
+    "footer_intro_suffix": "or join now:",
+    "cta": "Add your business"
+  },
+  "privacy": {
+    "meta_title": "Privacy Policy | Mehamakor",
+    "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
+    "heading": "Privacy Policy",
+    "date_label": "Last updated: April 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "sections": {
+      "operator": {
+        "title": "Site operator details",
+        "operator_label": "Site operator:",
+        "operator_value": "Shanaf Topaz, exempt small business no. 325120939.",
+        "trade_label": "Trade name:",
+        "trade_value": "Mehamakor / מהמקור.",
+        "contact_label": "Contact:"
+      },
+      "who": {
+        "title": "1. Who we are",
+        "body": "\"Mehamakor\" (the \"site\" or \"platform\") is a directory platform that connects local food businesses and natural-care producers with buyers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
+      },
+      "data": {
+        "title": "2. What data we collect",
+        "items": {
+          "identity": {
+            "label": "Identity and contact details:",
+            "value": "Full name, email address, phone number, city of residence."
+          },
+          "business": {
+            "label": "Business details (for sellers):",
+            "value": "Business name, description, address, categories, delivery areas, social links."
+          },
+          "technical": {
+            "label": "Technical data:",
+            "value": "IP address, browser type, operating system, device identifier."
+          },
+          "location": {
+            "label": "Location data:",
+            "value": "Approximate location (only if you grant browser permission), to display nearby businesses on the map."
+          },
+          "cookies": {
+            "label": "Cookies and behavioral data:",
+            "value": "Pages you visited, searches, clicks, products viewed, and businesses you saved to favorites."
+          },
+          "ugc": {
+            "label": "Content you create:",
+            "value": "Posts in the \"Neighbor's Kitchen\" section, ratings, comments, and inquiries through contact forms."
+          }
+        }
+      },
+      "why": {
+        "title": "3. Why we collect this data",
+        "items": {
+          "service": {
+            "label": "Running the service:",
+            "value": "Authenticating users, managing accounts, displaying businesses, processing registrations, and connecting buyers with sellers."
+          },
+          "analytics": {
+            "label": "Analytics and improvement:",
+            "value": "Understanding site usage, improving the experience, fixing bugs, and developing new features."
+          },
+          "notifications": {
+            "label": "Notifications and communication:",
+            "value": "Essential account messages, registration confirmations, admin alerts, and the newsletter (only if you opted in)."
+          },
+          "compliance": {
+            "label": "Legal compliance:",
+            "value": "Meeting privacy-law requirements, handling reports, and preventing abuse."
+          }
+        }
+      },
+      "third_parties": {
+        "title": "4. Third parties",
+        "intro": "We use external service providers to operate the platform. Each is subject to its own privacy policy:",
+        "items": {
+          "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
+          "google": "<b>Google</b> — Google OAuth for sign-in, Google Fonts, and analytics services.",
+          "anthropic": "<b>Anthropic</b> — AI models for support, content moderation, and experience improvements.",
+          "twilio": "<b>Twilio</b> — WhatsApp messages for admin alerts and customers.",
+          "infra": "<b>Vercel & Railway</b> — hosting and servers."
+        },
+        "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
+      },
+      "rights": {
+        "title": "5. Your rights (under Amendment 13, 2025)",
+        "intro": "The Protection of Privacy Law grants you the following rights. You can exercise any of them at no cost by contacting <email>levismadar80@gmail.com</email>:",
+        "items": {
+          "access": {
+            "label": "Right of access:",
+            "value": "Request to view the personal information we hold about you."
+          },
+          "rectify": {
+            "label": "Right to rectification:",
+            "value": "Request correction of information that is inaccurate, incomplete, or out of date."
+          },
+          "erase": {
+            "label": "Right to erasure:",
+            "value": "Request deletion of your account and personal data. You can also do this through your account settings."
+          },
+          "object": {
+            "label": "Right to object:",
+            "value": "Object to processing for certain marketing or analytics purposes."
+          },
+          "portability": {
+            "label": "Right to portability:",
+            "value": "Receive a copy of your data in an accessible digital format."
+          }
+        },
+        "outro": "We will respond to your request within 30 days. You may also file a complaint with the Privacy Protection Authority at the Ministry of Justice."
+      },
+      "cookies": {
+        "title": "6. Cookies",
+        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time through your browser settings."
+      },
+      "retention": {
+        "title": "7. Data retention and security",
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+      },
+      "minors": {
+        "title": "8. Minors",
+        "body": "The service is intended for users aged 18 and over. We do not knowingly collect personal information from minors under this age. If we become aware that we have, we will delete it promptly."
+      },
+      "changes": {
+        "title": "9. Changes to this policy",
+        "body": "We will update this policy from time to time. An updated version will be published on this page with the update date. Continued use of the service constitutes acceptance of the updated version."
+      },
+      "contact": {
+        "title": "10. Contact",
+        "intro": "For any privacy question, rights request, or issue report:"
+      }
+    }
+  },
+  "terms": {
+    "meta_title": "Terms of Use | Mehamakor",
+    "meta_description": "Terms of use for Mehamakor — a directory platform connecting local food businesses with buyers across Israel.",
+    "heading": "Terms of Use",
+    "date_label": "Last updated: April 2026",
+    "sections": {
+      "operator": {
+        "title": "Site operator details",
+        "operator_label": "Site operator:",
+        "operator_value": "Shanaf Topaz, exempt small business no. 325120939.",
+        "trade_label": "Trade name:",
+        "trade_value": "Mehamakor / מהמקור.",
+        "contact_label": "Contact:"
+      },
+      "service": {
+        "title": "1. Nature of the service",
+        "body": "\"Mehamakor\" (the \"platform\" or \"site\") is a <b>directory-only</b> platform connecting local food businesses with buyers across Israel. The platform <b>does not sell</b> products, is not a party to any transaction, is not responsible for delivery or payment, and does not mediate transactions. Every transaction takes place directly between the seller and the buyer, at their sole responsibility."
+      },
+      "licensing": {
+        "title": "2. Seller responsibility for licensing",
+        "intro": "Every seller listed on the platform bears <b>sole responsibility</b> for holding all licenses, approvals, and permits required by law, including (but not limited to): the Business Licensing Law (1968), public-health (food) regulations, Ministry of Health directives, and relevant kashrut and labeling provisions.",
+        "outro": "On registering as a business, the seller declares that she holds all required licenses for the products she sells and that she will keep them valid throughout her use of the platform. Mehamakor <b>does not inspect, verify, or approve</b> these licenses, and compliance responsibility lies solely with the seller."
+      },
+      "age": {
+        "title": "3. Minimum age",
+        "body": "Use of the site is permitted only for users aged <b>18 and over</b>. By registering or using the platform you confirm that you are 18+ and have legal capacity to be bound by these terms."
+      },
+      "responsibility": {
+        "title": "4. Product and transaction responsibility",
+        "body": "Every product listed on the site is the sole responsibility of the seller. Mehamakor is not responsible for product quality, safety, freshness, kashrut, fit to description, delivery times, or any damage — direct or indirect — arising from use or reliance on them. The buyer purchases at her own responsibility directly from the seller."
+      },
+      "verified": {
+        "title": "5. Verified businesses",
+        "body": "The \"Verified by Mehamakor\" badge indicates that the business passed an initial review of platform criteria (seller identity, active operation, category fit). The verification <b>does not guarantee</b> product quality, license validity, or any specific purchase."
+      },
+      "report": {
+        "title": "6. Reporting violations",
+        "intro": "Encountered a product or business that does not comply with the law or these terms? You can report it in one of the following ways:",
+        "item_button": "Click the \"Report\" button on the business or product page.",
+        "item_email": "Email directly to <email>levismadar80@gmail.com</email>.",
+        "item_form": "Use the <contactlink>contact form</contactlink>.",
+        "outro": "We will review every report within <b>3 business days</b>. The platform reserves the right to remove content, suspend accounts, and refer matters to authorities in case of a violation."
+      },
+      "ip": {
+        "title": "7. Intellectual property",
+        "body": "All content on the platform, including the brand name, logo, and design, is the property of Mehamakor. Content uploaded by users remains theirs, but the user grants Mehamakor a non-exclusive license to display and distribute it for operating the service."
+      },
+      "changes": {
+        "title": "8. Changes to these terms",
+        "body": "Mehamakor may update these terms from time to time. The updated version will be published on this page with the update date. Continued use after an update constitutes acceptance of the updated terms."
+      },
+      "law": {
+        "title": "9. Governing law and jurisdiction",
+        "body": "These terms, use of the platform, and any dispute arising from them are governed exclusively by the laws of <b>the State of Israel</b>. Exclusive jurisdiction in any matter concerning these terms is vested in the competent courts of the Tel Aviv–Jaffa district."
+      },
+      "privacy": {
+        "title": "10. Privacy",
+        "body": "Use of the platform is also subject to the <privacylink>privacy policy</privacylink>, which forms an integral part of these terms."
+      },
+      "contact": {
+        "title": "11. Contact",
+        "intro": "For any question or inquiry regarding the terms of use:"
+      }
+    }
+  },
+  "guides": {
+    "index": {
+      "meta_title": "Guides for business owners | Mehamakor",
+      "meta_description": "Three short guides for business owners on Mehamakor: how to write your story, how to photograph your products, and how to reply to customer messages.",
+      "og_description": "Three short guides for business owners on Mehamakor — story, photography, messages.",
+      "eyebrow": "Guides for business owners",
+      "heading": "Three guides for your first month",
+      "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
+      "minutes_label": "About {minutes} min read",
+      "cta": "Read the guide →",
+      "footer_prefix": "Is there a question a guide didn't answer? Write to me on Instagram",
+      "footer_suffix": ".",
+      "card_previews": {
+        "business_story": "The one field that changes everything on your profile — how to write it once, right, without it reading like an ad.",
+        "product_photography": "No professional camera, no studio. 5 principles + a 30-minute workflow enough for a full page.",
+        "customer_messages": "Response time, tone, and 5 ready-made templates. The small things that decide whether a conversation closes in an order."
+      }
+    },
+    "business_story": {
+      "title": "How to write a good story about your business",
+      "subtitle": "Write the story once, properly. The rest takes care of itself.",
+      "preview": "The one field that changes everything on your profile — how to write it once, right, without it reading like an ad.",
+      "body": {
+        "b0": "There's one field on your profile page on Mehamakor that changes everything: **the description**.",
+        "b1": "A new customer arriving at your page through Mehamakor sees the first photo, then the first 2-3 lines of text. What's written there decides whether she keeps reading or goes back to the search page.",
+        "b2": "On other food sites, this field is a place to list products. On Mehamakor it's different. Mehamakor isn't built like a marketplace — it's built to give every business a full page, with photos, a map, and a story. **The story is the reason someone will remember you two weeks from now.**",
+        "b4": "Why a story — and not a product list?",
+        "b5": "Because **products sell one transaction. A story sells the return.**",
+        "b6": "A customer who read your story — how you started, why you chose the category, what's special about your approach — will remember you. Will tell a friend. Will come back in a month. A customer who only saw a product list bought once, if at all, and forgot.",
+        "b7": "That's not an opinion. That's how human memory works. Numbers take up short-term memory. Stories get etched in.",
+        "b9": "Three questions that build a good story",
+        "b10": "Before you open the description field — take 10 minutes and answer these questions. In writing, for real. Don't skip this.",
+        "b11": "**1. Why did you start?**",
+        "b12": "Not \"why I opened a business\" — that's the generic answer everyone gives (\"I wanted to be independent,\" \"I always loved the field\"). Rather: **what made you choose this category specifically?**",
+        "b13": {
+          "i0": "Baker? Was there a moment you realized supermarket bread isn't enough?",
+          "i1": "Farmer? Studied agriculture in the US? Inherited from your grandfather?",
+          "i2": "Vintner? Tasted a specific wine that made you think \"I can make better than this\"?"
+        },
+        "b14": "**The first moment** — that's what makes a story.",
+        "b15": "**2. What's special about you?**",
+        "b16": "Not relative to competitors. **Relative to the baseline in the category.**",
+        "b17": "If you bake bread, you're not comparing yourself to another baker. You're comparing yourself to the average bread someone can buy at the supermarket. What's the difference?",
+        "b18": {
+          "i0": "Organic flour from a specific mill?",
+          "i1": "A 48-hour fermentation process?",
+          "i2": "The oven your late grandfather worked on?"
+        },
+        "b19": "Specificity. **One specific thing with details** beats 5 generic claims (\"high quality, fresh, local\").",
+        "b20": "**3. Who are you making this for?**",
+        "b21": "Not \"for everyone.\" That's an answer that speaks to no one.",
+        "b22": "Think of one real customer who bought from you in the last month. Picture her. You're writing to her. If you run a sourdough bakery — maybe she's the mother of a child with a digestive sensitivity to regular bread, and sourdough is the only one that works for him. If you run a small dairy — maybe it's a couple paying a premium for milk because they believe in ethical farming.",
+        "b23": "When you know who — the text writes itself.",
+        "b25": "Example: before and after",
+        "b26": "(Pseudonym for the example.)",
+        "b27": "**❌ Before (generic, no story):**",
+        "b28": "Galit's Bread Bakery — a quality boutique bakery. We specialize in sourdough breads, pastries, and pita bread. All our products are from organic flour, premium quality. Order now!",
+        "b29": "Parts that don't work:",
+        "b30": {
+          "i0": "\"Quality boutique\" — every bakery writes this",
+          "i1": "\"All products from organic flour\" — doesn't say which flour, from where",
+          "i2": "\"Premium\" — empty word",
+          "i3": "\"Order now\" — marketing speak"
+        },
+        "b31": "**✅ After (a story):**",
+        "b32": "Galit started baking in 2019, after a year at a bakery in France. The first loaf came out burnt. Two years later, she opened the bakery. The flour comes from a small mill in the north — organic, milled the day it reaches her. 36-hour fermentation. A small bakery, 4 loaves a day. If you came late — come back tomorrow.",
+        "b33": "What changed:",
+        "b34": {
+          "i0": "A person's name → human story",
+          "i1": "Regional details (France, north) → sense of place without inventing fake businesses",
+          "i2": "Technical details (36-hour fermentation) → credibility",
+          "i3": "\"4 loaves a day\" → scarcity, authenticity",
+          "i4": "\"If you came late — come back tomorrow\" → personality"
+        },
+        "b36": "5 practical rules",
+        "b37": "**1. Avoid balloon words:**",
+        "b38": "\"Quality,\" \"premium,\" \"natural,\" \"professional,\" \"authentic.\" They say nothing. **Show** instead of **declare**.",
+        "b39": "**2. Names and cities — essential:**",
+        "b40": "\"Karmiel\" beats \"the north.\" \"A mill at Kibbutz X\" beats \"local flour.\" Specifics = credibility. (Just make sure you're using real names — customers will check.)",
+        "b41": "**3. Start date — always.**",
+        "b42": "\"Since 2019\" helps a customer know you're not brand-new. Even if you are new — \"since June 2024\" beats nothing.",
+        "b43": "**4. Right length: 150-300 words.**",
+        "b44": "No more. The first story is just the opening. The rest of the details go to the full \"about\" page or the product catalog.",
+        "b45": "**5. Read it out loud before you save.**",
+        "b46": "If it sounds like an ad — start over. If it sounds like you're telling a friend — you're ready.",
+        "b48": "What not to do",
+        "b49": {
+          "i0": "❌ **Don't open with \"Welcome.\"** That's wasted space. Use it for the story.",
+          "i1": "❌ **Don't write in passive voice.** \"We believe...\" or \"I started in 2019...\" beats \"The company was founded in 2019...\"",
+          "i2": "❌ **Don't mention competitors.** \"Better than X\" signals insecurity.",
+          "i3": "❌ **Don't promise things you can't prove.** \"The best product in the area\" — you can be sued for that.",
+          "i4": "❌ **No emojis inside the body text.** They're fine in a category heading (🌿, 🥖) but not inside the story."
+        },
+        "b51": "Help if you're stuck",
+        "b52": "If you're sitting in front of the field and can't get started — write to me. I'll read the story, point out where it's strong and where it's weak, and help edit. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b53": "This isn't an offer for everyone. It's an option for new business owners who don't yet know what it looks like. After you've written it once — you'll always know."
+      }
+    },
+    "product_photography": {
+      "title": "How to photograph your products properly",
+      "subtitle": "No professional camera. No studio. On the phone you already have.",
+      "preview": "5 principles + a 30-minute workflow. How to produce 15 quality photos for the profile using your phone.",
+      "body": {
+        "b0": "On your profile page on Mehamakor, **the first photo is the moment a customer decides whether to stay**. Before they read the story. Before they see the price. Before everything.",
+        "b1": "And yet — many business owners open the upload field, look at the photos on their phone, and feel they're \"not professional enough.\" They upload one photo from their Instagram from two years ago, and hope for the best.",
+        "b2": "This is the guide that explains why you don't need to shoot in a studio, and what you do need.",
+        "b4": "The first rule: you don't need a professional camera",
+        "b5": "Your phone is enough. **Completely.**",
+        "b6": "Professional shots of boutique bakeries you see on Instagram — a large share of them were shot on a phone. The difference isn't the gear. The difference is:",
+        "b7": {
+          "i0": "Light",
+          "i1": "Patience",
+          "i2": "Selection"
+        },
+        "b8": "This guide is about those.",
+        "b10": "The 5 principles",
+        "b11": "**1. Natural light only. No flash.**",
+        "b12": "Flash flattens the photo and turns food into plastic. A ceiling bulb creates harsh shadows from above. Direct noon sun does the same.",
+        "b13": "**What does work:**",
+        "b14": {
+          "i0": "Natural light through a window, between 9:00-11:00 a.m. or 15:00-17:00",
+          "i1": "Overcast days — actually excellent. Diffuse, soft light",
+          "i2": "Shade outside (not direct sun)"
+        },
+        "b15": "**Simple technique:** place the product next to a window — light should fall from the side, not from above and not facing you. You'll see the side near the window is bright and the other side in light shadow — that's exactly what you want.",
+        "b17": "**2. People — not only products.**",
+        "b18": "This is the tip that works hardest, and business owners are the most embarrassed by it.",
+        "b19": "**The strongest photo on your profile is you, with the products, in your hands.** Not a professional portrait in an office. You at work. In work clothes. With flour on your hands. With fruit in a basket.",
+        "b20": "Why it works:",
+        "b21": {
+          "i0": "**People buy from people.** Seeing a face → feeling trust.",
+          "i1": "**This is what Mehamakor is.** Not a transactional platform, a place that shows who's behind every business.",
+          "i2": "**Big chains can't show the \"owner at work.\" You can.**"
+        },
+        "b22": "Examples:",
+        "b23": {
+          "i0": "A farmer holding vegetables she just picked",
+          "i1": "A baker pulling bread out of the oven",
+          "i2": "A dairy farmer next to the cows during milking",
+          "i3": "A vintner looking at grapes in the vineyard"
+        },
+        "b25": "**3. Process — not only result.**",
+        "b26": "Most business owners only photograph **the finished product**. But the customer also wants to see how it was made.",
+        "b27": "**The simple method:** think about a regular workday at your place. From start to finish. **3 moments worth a photo:**",
+        "b28": {
+          "i0": "**The preparation moment** — before the product is ready. The raw ingredients, the equipment, the first hand that touches it.",
+          "i1": "**The transformation moment** — when the raw material becomes a product. (It's different in every category — but it's always there.)",
+          "i2": "**The finishing moment** — the product is ready. A moment before it leaves the business."
+        },
+        "b29": "**A 5-minute exercise:** take a piece of paper. Write your day in your business in one line — from morning to end. Mark 3 points where there's something to see. They don't have to be pretty, they have to be real. Next time that day happens — shoot the 3 points.",
+        "b30": "**Why it works:** the customer sees what's actually happening, not only the polished end result. **Process = transparency = trust.**",
+        "b32": "**4. Environment — sense of place.**",
+        "b33": "Your place is part of the story.",
+        "b34": {
+          "i0": "A farm in the Galilee → let the Galilee show in the photos",
+          "i1": "A bakery in Tel Aviv → photograph the street from outside",
+          "i2": "A dairy in the Negev → the Negev landscape is part of your story"
+        },
+        "b35": "**Tip:** don't be afraid of \"background noise\" — an old wooden crate, a linen tablecloth, an empty bench. It's not distracting. It **gives the photo character**. The opposite of a stock photo.",
+        "b37": "**5. Don't over-filter.**",
+        "b38": "Minimal editing only:",
+        "b39": {
+          "i0": "✅ Gentle brightness and contrast",
+          "i1": "✅ Light sharpening",
+          "i2": "✅ Crop if needed",
+          "i3": "❌ Vintage filter",
+          "i4": "❌ VSCO look",
+          "i5": "❌ HDR",
+          "i6": "❌ Over-saturated"
+        },
+        "b40": "**The reason:** a filter changes the product's color. The customer will get the product at home and see something else. Disappointment = bad review = customer who doesn't come back.",
+        "b41": "Mehamakor isn't \"Instagram aesthetics.\" We're real.",
+        "b43": "3 angles for every product",
+        "b44": "For every main product in your catalog — shoot at least 3 photos:",
+        "b45": {
+          "i0": "**The product alone** — on a wood surface, a linen cloth, or a simple background. No over-styling. Just the product.",
+          "i1": "**The product in a hand** — your hand, a customer's hand, a hand holding the product. **Scale** (size relative to a hand) plus **human life**.",
+          "i2": "**The product in context** — on a dining table, next to a coffee cup, in the shipping packaging, in a gift box. **Real use.**"
+        },
+        "b47": "Examples — what works, what doesn't",
+        "b48": "**✅ Works:**",
+        "b49": {
+          "i0": "A baker holding warm bread, you can see the crust, natural light from the window",
+          "i1": "A farmer in the vineyard holding a cluster of grapes, with evening sky behind",
+          "i2": "A hand touching a jar of yogurt, you can see the thick texture"
+        },
+        "b50": "**❌ Doesn't work:**",
+        "b51": {
+          "i0": "A product on a sterile white background (Amazon vibes)",
+          "i1": "An overhead flatlay that's too tidy (Pinterest vibes)",
+          "i2": "A glossy macro with dripping sauce (aggressive food styling)",
+          "i3": "Heavily filtered (Instagram filter vibes)",
+          "i4": "Industrial packaging under studio lighting (Whole Foods vibes)"
+        },
+        "b52": "Mehamakor's style: **like a photo a close friend would take when she came to visit your business, not like a brand-shot paid for by a professional photographer.**",
+        "b54": "A practical workflow — 30 minutes",
+        "b55": "If you have 30 free minutes in the morning, here's how you'll get a solid set of photos:",
+        "b56": {
+          "i0": "**Pick 5 products** from the catalog. The most important to you.",
+          "i1": "**Find a window** in your kitchen / business with nice side light.",
+          "i2": "**For each product** — shoot 20 photos. 3 angles × a few takes each.",
+          "i3": "**Come back later** and pick the 3 best for each product."
+        },
+        "b57": "That's it. 15 photos for the profile — more than 90% of the businesses on the site have.",
+        "b59": "What if I don't have good photos right now?",
+        "b60": "3 options:",
+        "b61": {
+          "i0": "**Use a placeholder until you shoot** — Mehamakor shows a small category icon (🌾, 🥖, 🧀) instead of a missing photo. Not attractive, but not invisible.",
+          "i1": "**Schedule one short shoot** — if you have half a day free, shoot everything at once. A few hours of watching the light = many photos.",
+          "i2": "**Hire a local photographer** — sometimes worth the investment. A local photographer can give you many quality photos in half a day. Prices vary — ask for 2-3 quotes before deciding. If you're in for the year — it's a worthwhile investment."
+        },
+        "b63": "Help if you're stuck",
+        "b64": "Send me 2-3 photos you've taken. I'll look and explain which one works, which doesn't, and why. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b65": "It's not a regular service — it's an option for new business owners still learning what works."
+      }
+    },
+    "customer_messages": {
+      "title": "How to reply to messages from customers",
+      "subtitle": "Response time, tone, and what to write when you don't know what to write.",
+      "preview": "The small things that decide between a conversation ending in an order and one ending in \"I'll get back to you.\" 5 principles + 5 ready-made templates.",
+      "body": {
+        "b0": "The first message from a new customer is a small moment that decides a lot.",
+        "b1": "The person writing to you doesn't know you personally. Doesn't know if you'll reply. Doesn't know if you're serious. **The first three lines you send back decide whether they keep going, or look elsewhere.**",
+        "b2": "This guide isn't about being \"polite\" or \"professional.\" It's about the small things that make a real difference between a conversation that ends in an order and a conversation that ends with \"thanks, I'll get back to you\" that never comes back.",
+        "b4": "The first rule: response time matters more than the response itself",
+        "b5": "A woman writes to you in the evening. Asks about a product. Looking for confirmation that you're available, that the product exists, that you're serious.",
+        "b6": "If she didn't get a reply by the next afternoon — she's **already looked elsewhere**. Not because your product is less good. But because **she doesn't know you're still there**.",
+        "b7": "This is the most important rule: **fast response > perfect response.**",
+        "b9": "The 5 principles",
+        "b10": "**1. Four hours. That's the threshold.**",
+        "b11": "Not instant — you're a business owner, not a chatbot. But within 4 hours during working hours, **reply with something**.",
+        "b12": "\"Something\" can be:",
+        "b13": {
+          "i0": "\"Hi, saw your message. I'll reply with details this evening.\"",
+          "i1": "\"Thanks for reaching out! I'm at work right now, I'll get back to you within two hours.\"",
+          "i2": "\"Got your message. Just finishing a delivery, I'll be free at 14:00.\""
+        },
+        "b14": "This isn't a full reply. It's an **acknowledgement**. A customer who knows you saw the message waits. A customer who doesn't know — leaves.",
+        "b16": "**2. After hours — set expectations.**",
+        "b17": "Message came in at 22:00? Don't feel obligated to reply immediately. But **one line in the morning changes everything**:",
+        "b18": "Good morning! Saw your message last night. Replying in detail now.",
+        "b19": "**The reason:** the customer woke up and opened her phone. If the first thing she saw was a reply from you — you'll be on her mind all day.",
+        "b20": "**Another tip:** set a WhatsApp status with your business hours:",
+        "b21": "Active 9:00-17:00. I reply to every message in the morning.",
+        "b22": "This doesn't replace a personal reply — it sets expectations before someone writes.",
+        "b24": "**3. Personal beats template. But not completely.**",
+        "b25": "Two extremes that don't work:",
+        "b26": "**The first extreme:** an over-formatted reply. \"Greetings. Thank you for your inquiry. The full catalog will be sent in a separate file. For any further questions, please email us.\"",
+        "b27": "**The problem:** the customer feels like she's talking to a robot. Or to a company that doesn't have time.",
+        "b28": "**The second extreme:** a completely ad-libbed reply. \"Hi Dana! How fun that you asked. So we make pita every day at 6 in the morning, we have 3 kinds — whole wheat, regular, and a new green pita with zaatar we just tried this week and it really came out tasty, if you want I can send you a photo...\"",
+        "b29": "**The problem:** it takes you 10 minutes per message. Not sustainable.",
+        "b30": "**The right mix:**",
+        "b31": {
+          "i0": "**Personal opening** (\"Hi Dana! Thanks for reaching out.\") — one line, personal.",
+          "i1": "**Body of the message in a template** (catalog, price list, delivery times) — what repeats.",
+          "i2": "**Personal closing** (\"Looking forward to your order — message when you're ready.\") — one line, personal."
+        },
+        "b33": "**4. Ask before you tell.**",
+        "b34": "This is the tip that changes the closing rate.",
+        "b35": "Customer writes: \"Do you have cheeses?\"",
+        "b36": "**❌ The poor approach:** sending the whole catalog right away. 12 cheeses, prices, descriptions. The customer sees a wall of text and closes the chat.",
+        "b37": "**✅ The good approach:** asking one question. \"Yes! For dinner for two, or hosting a group? I have different recommendations for each.\"",
+        "b38": "**Why it works:**",
+        "b39": {
+          "i0": "**Starts a conversation** instead of closing it.",
+          "i1": "**Makes the customer feel cared for.** She didn't get a catalog — she got attention.",
+          "i2": "**Shortens the decision.** After she replies \"dinner for two\" — you have 2-3 cheeses to recommend, not 12."
+        },
+        "b40": "**The rule:** before you send information — ask **one focused question** that helps narrow it down.",
+        "b42": "**5. A conversation doesn't have to end in a sale.**",
+        "b43": "Sometimes a customer asks and doesn't buy. Asks for a price list, explores options, then goes quiet. That's fine.",
+        "b44": "**The reason:** a good reply today = an order in 3 months. Or a recommendation to a friend. Or a return when the situation changes.",
+        "b45": "If you try to \"close at all costs\" — asking \"so what did you decide?\", pushing, offering — you **lose those 3 months**.",
+        "b46": "**What to do after a conversation that didn't end in an order:**",
+        "b47": {
+          "i0": "Send a short thanks. \"Thanks for asking! If you need anything in the future, I'm here.\"",
+          "i1": "**Don't** follow up a week later. **Don't** remind them of yourself again \"by chance.\" **Don't** send a newsletter if they didn't ask for one."
+        },
+        "b48": "The customer knows where to find you. If she wants to — she'll come back.",
+        "b50": "Templates — 5 ready-made templates",
+        "b51": "Save these in WhatsApp Business (the \"quick replies\" feature) or in a note on your phone. To save time:",
+        "b52": "**1. Acknowledgement (as needed):**",
+        "b53": "Hi [name]! Got your message. I'll reply in detail within [X] hours.",
+        "b54": "**2. Filtering question (customer asks \"what do you have?\"):**",
+        "b55": "One short question — what are you looking for? [two options to pick from]. That way I know what to recommend.",
+        "b56": "**3. Full price list (after filtering):**",
+        "b57": "Sending the price list 📋 Delivery to your area [X] NIS. Delivery within [Z] days. Tell me what to pick and I'll prepare.",
+        "b58": "**4. Order confirmation (adapt to your workflow):**",
+        "b59": "Great! Got your order. I'll prepare [details].\n[If pickup:] Come pick up on [day, time] at [address].\n[If delivery:] Delivery on [day] for [Y] NIS.",
+        "b60": "**5. Closing a conversation that didn't end in an order:**",
+        "b61": "Thanks for asking! If you need anything in the future — I'm here.",
+        "b63": "What not to do",
+        "b64": {
+          "i0": "❌ **Don't apologize if you replied within the standard (4 hours during work hours).** An apology creates the impression of \"I hurt something.\" If you replied in a reasonable time — give a direct reply without \"sorry that...\"",
+          "i1": "❌ **Don't send a \"?\" if the customer hasn't replied.** It feels pressured. Send a full sentence or nothing.",
+          "i2": "❌ **Don't post private customer messages in WhatsApp statuses** — even without a name. Others will see it, understand that you share private chats, and won't write to you.",
+          "i3": "❌ **Don't write in all caps.** In English it's shouting. In Hebrew it reads as angry.",
+          "i4": "❌ **Don't send 5 separate messages** (\"Hi\" → \"I saw\" → \"Give me a minute\" → \"I'm at work\" → \"I'll get back later\"). Send one complete message."
+        },
+        "b66": "Help if you're stuck",
+        "b67": "Have a message you don't know how to reply to? **Send me a screenshot** (without the customer's identifying details — blur the name and phone). I'll reply with how I'd write it. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b68": "It's not a regular service — it's an option for new business owners still learning the rhythm."
+      }
     }
   }
 }

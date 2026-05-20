@@ -16,6 +16,7 @@ function formatDate(iso) {
   }
 }
 
+// TODO MEH-543: i18n after /neighbor activation post-launch
 function storageEmoji(type) {
   if (type === "מקרר") return "❄️";
   if (type === "מקפיא") return "🧊";

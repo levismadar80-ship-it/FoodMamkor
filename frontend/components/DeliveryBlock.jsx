@@ -1,6 +1,7 @@
 "use client";
 
 import { Truck } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
 /**
@@ -14,17 +15,18 @@ import WhatsAppButton from "@/components/WhatsAppButton";
  * Uses WhatsAppButton (existing) for the CTA — no beacon duplication.
  */
 export default function DeliveryBlock({ nationwide, cities = [], producer }) {
+  const t = useTranslations("producer.delivery");
   return (
     <section className="mt-8 border-t border-border pt-6">
       <h2 className="font-headline text-2xl font-bold text-site-text mb-4 flex items-center gap-2">
         <Truck size={22} weight="duotone" className="text-primary" aria-hidden="true" />
-        משלוחים
+        {t("heading")}
       </h2>
 
       <div className="flex flex-wrap gap-2 mb-4">
         {nationwide ? (
           <span className="inline-flex items-center gap-1.5 bg-light text-site-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium">
-            🚚 משלוחים לכל הארץ
+            🚚 {t("nationwide")}
           </span>
         ) : cities.length > 0 ? (
           cities.map((city) => (
@@ -36,7 +38,7 @@ export default function DeliveryBlock({ nationwide, cities = [], producer }) {
             </span>
           ))
         ) : (
-          <p className="text-sm text-site-muted">משלוחים בתיאום מראש — צרי קשר לפרטים</p>
+          <p className="text-sm text-site-muted">{t("arranged")}</p>
         )}
       </div>
 

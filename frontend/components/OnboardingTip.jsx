@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 /**
  * OnboardingTip — small tooltip bubble for first-visit tours.
@@ -15,11 +16,13 @@ import { AnimatePresence, motion } from "framer-motion";
 export default function OnboardingTip({
   show,
   text,
-  cta = "הבנתי",
+  cta,
   onNext,
   onDismiss,
   placement = "inline",
 }) {
+  const t = useTranslations("modals.onboarding_tip");
+  const ctaLabel = cta ?? t("cta_default");
   const isAbove = placement === "above";
 
   return (
@@ -44,7 +47,7 @@ export default function OnboardingTip({
               type="button"
               onClick={onDismiss}
               className="absolute top-2 end-3 text-white/60 hover:text-white text-base leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
-              aria-label="סגירה"
+              aria-label={t("close_aria")}
             >
               ×
             </button>
@@ -54,7 +57,7 @@ export default function OnboardingTip({
               onClick={onNext ?? onDismiss}
               className="mt-2 text-xs font-semibold text-light hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
             >
-              {cta} ←
+              {ctaLabel} ←
             </button>
           </div>
           {/* Caret — points down toward the BottomNav tab */}
