@@ -2,7 +2,7 @@ import "../globals.css";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
@@ -32,6 +32,18 @@ const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 // DO NOT add to routing.locales without adding the matching HREFLANG_CODES
 // entry — silent drift class (MEH-271 smell #2).
 const HREFLANG_CODES = { he: "he-IL", en: "en" };
+
+// MEH-476 PR 3a: OG locale codes per Facebook's spec (underscored region).
+// DO NOT add to routing.locales without adding the matching OG_LOCALE entry.
+const OG_LOCALE = { he: "he_IL", en: "en_US" };
+const OG_ALTERNATE_LOCALES = ["he_IL", "en_US"];
+
+// MEH-476 PR 3b will move hreflang into per-page generateMetadata, removing
+// the headers() read from this layout. When that ships, this revalidate
+// will activate automatically and routes will return to ● SSG with 1h ISR.
+// Until then this is a forward-compatible no-op; DO NOT remove. Tracked at:
+// MEH-476 PR 3b — per-page metadata sweep.
+export const revalidate = 3600;
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get
 // /<locale>. Normalize "/" to "" so the home URL has no trailing slash
@@ -145,7 +157,11 @@ const BASE_METADATA = {
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "seo.site" });
   const { canonical } = await getLocaleUrls(locale);
+
+  const title = t("title");
+  const description = t("description");
 
   // Self-referencing canonical per locale. Linear MEH-476 <spec> says
   // "canonical = he_url (canonical to default locale)" but that's incorrect
@@ -158,8 +174,35 @@ export async function generateMetadata({ params }) {
   // their own canonical-only object, which would shallow-merge over any
   // `languages` map set here. JSX `<head>` children render alongside the
   // metadata API and don't conflict with that merge.
+  //
+  // Q6 hybrid: openGraph.siteName + appleWebApp.title stay BRAND_NAME
+  // ("מהמקור") even on /en/* (UI metadata / platform chrome). Per-locale
+  // title / description / og / twitter content comes from seo.site.* keys.
   return {
     ...BASE_METADATA,
+    title: {
+      default: title,
+      template: `%s | ${BRAND_NAME}`,
+    },
+    description,
+    openGraph: {
+      ...BASE_METADATA.openGraph,
+      title: t("og_title"),
+      description: t("og_description"),
+      locale: OG_LOCALE[locale],
+      alternateLocale: OG_ALTERNATE_LOCALES.filter((l) => l !== OG_LOCALE[locale]),
+      images: [
+        {
+          ...BASE_METADATA.openGraph.images[0],
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      ...BASE_METADATA.twitter,
+      title: t("twitter_title"),
+      description: t("twitter_description"),
+    },
     alternates: { canonical },
   };
 }
