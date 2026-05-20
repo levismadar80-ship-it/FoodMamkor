@@ -4,7 +4,32 @@ export const metadata = {
     "תנאי שימוש באתר מהמקור — פלטפורמת דירקטורי המחברת בין בתי עסק שמייצרים אוכל בריא לבין קונות וקונים בישראל.",
 };
 
+// MEH-630: site operator legal disclosure (Israeli commercial-site compliance).
 const SECTIONS = [
+  {
+    id: "operator",
+    title: "פרטי מפעיל האתר",
+    body: (
+      <>
+        <p className="mb-3">
+          <strong>מפעילת האתר:</strong> שנף טופז, עוסקת פטורה מס׳ 325120939.
+        </p>
+        <p className="mb-3">
+          <strong>השם המסחרי:</strong> מהמקור / Mehamakor.
+        </p>
+        <p>
+          <strong>ליצירת קשר:</strong>{" "}
+          <a
+            href="mailto:noreply@mehamakor.co.il"
+            className="text-primary hover:underline"
+            dir="ltr"
+          >
+            noreply@mehamakor.co.il
+          </a>
+        </p>
+      </>
+    ),
+  },
   {
     id: "service",
     title: "1. מהות השירות",

@@ -22,6 +22,18 @@ CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + br
 
 **Closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b — 5 PRs / ~500 strings extracted to `useTranslations()` — plus this toggle). Remaining MEH-475 work deferred to future sessions: PR-C4b (~600 strings — server pages + legal + recipe + sweep), Wave 6 (~64 strings — metadata exports), `robots.txt /en` lift (after PR-C4b + Wave 6 close). Hygiene follow-ups (3 items: test mock namespace, dead `setLang` mock, optional Globe contrast on transparent hero) folded into <issue id="MEH-629">MEH-629</issue> (now 7 items, ~47 min total, P3).
 
+### 2026-05-17 — MEH-630: Site operator legal disclosure on /terms + /privacy
+
+`compliance`: Added a "פרטי מפעיל האתר" section to the top of both `/terms` and `/privacy`. Discloses operator legal name (שנף טופז), עוסקת פטורה number (325120939), trade name (מהמקור / Mehamakor), and contact email (`noreply@mehamakor.co.il`). Israeli commercial-site compliance best practice.
+
+`scope`: 2 files touched — `frontend/app/[locale]/terms/page.js` + `frontend/app/[locale]/privacy/page.js`. Inline Hebrew JSX as a new `SECTIONS` entry (id `operator`), matching the existing pattern verbatim — same card layout, same `<strong>` markup, same `dir="ltr"` email link convention. New section is unnumbered and sits before §1 of each page.
+
+`deferral`: Spec asked for the copy in `messages/*.json` i18n keys; pages are not currently internationalized (zero `useTranslations()` calls, no `terms.*` / `privacy.*` namespaces). Per agreement with Smadar, shipping inline HE now; full terms/privacy i18n tracked as a separate follow-up ticket (Wave 6 candidate alongside the existing metadata deferrals).
+
+`out of scope`: Existing `levismadar80@gmail.com` references in terms §6/§11 and privacy §5/§10 left untouched per scope agreement. New section uses `noreply@mehamakor.co.il` as specified.
+
+`verification`: `npm run build` green (101 static pages, both locales). RTL: `ps-6` already used by sibling sections; new section uses `dir="ltr"` only inside the email anchor (matches existing pattern). Mobile + desktop QA on Vercel preview deferred to Smadar.
+
 ### 2026-05-17 — MEH-627: Fix /register rate-limit doc drift (10/hour per MEH-417)
 
 `docs`: `.ai/diagrams/api-routes.md` RegConsumer node updated `3/hour → 10/hour` to match the actual `@limiter.limit("10/hour")` on `backend/app/routers/auth.py:248`. Drift introduced when MEH-417 (PR #423, commit `662ba8e`, April 2026) raised the cap but did not update the diagram. Added `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` HTML comment above the Mermaid block as grep anchor. Verified all other rate-limit annotations in the same diagram against backend code (whatsapp-click 10/min, login 5/min, newsletter 5/hour, contact 5/hour all match) — no additional drifts.

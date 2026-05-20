@@ -4,7 +4,32 @@ export const metadata = {
     "מדיניות פרטיות של מהמקור — אילו נתונים אנו אוספות, כיצד אנו משתמשות בהם, ומהן זכויותייך לפי חוק הגנת הפרטיות (תיקון 13, 2025).",
 };
 
+// MEH-630: site operator legal disclosure (Israeli commercial-site compliance).
 const SECTIONS = [
+  {
+    id: "operator",
+    title: "פרטי מפעיל האתר",
+    body: (
+      <>
+        <p className="mb-3">
+          <strong>מפעילת האתר:</strong> שנף טופז, עוסקת פטורה מס׳ 325120939.
+        </p>
+        <p className="mb-3">
+          <strong>השם המסחרי:</strong> מהמקור / Mehamakor.
+        </p>
+        <p>
+          <strong>ליצירת קשר:</strong>{" "}
+          <a
+            href="mailto:noreply@mehamakor.co.il"
+            className="text-primary hover:underline"
+            dir="ltr"
+          >
+            noreply@mehamakor.co.il
+          </a>
+        </p>
+      </>
+    ),
+  },
   {
     id: "who",
     title: "1. מי אנחנו",
