@@ -3346,6 +3346,56 @@
       "email_change_hint": "לשינוי אימייל, פני לתמיכה",
       "field_phone_label": "טלפון",
       "field_phone_hint": "נוסיף בקרוב notifications"
+    },
+    "products": {
+      "section_heading": "מוצרים",
+      "add_cta": "הוסיפי מוצר",
+      "errors": {
+        "upload_type": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
+        "upload_size": "הקובץ גדול מדי — מקסימום 5MB",
+        "upload_failed_fallback": "שגיאה בהעלאת תמונה — נסי שוב",
+        "name_required": "שם המוצר הוא שדה חובה",
+        "price_required": "הכניסי מחיר",
+        "price_min_too_low": "המחיר חייב להיות לפחות 1 ₪",
+        "price_too_high": "המחיר לא יכול לעבור 10,000 ₪",
+        "price_max_below_min": "מחיר עד חייב להיות גבוה ממחיר מ-",
+        "save_failed": "שגיאה בשמירת המוצר",
+        "delete_failed": "שגיאה במחיקת המוצר"
+      },
+      "empty": {
+        "title": "מוצר ראשון = בית עסק חי",
+        "description": "בלי מוצרים, הפרופיל שלך נראה ריק ולקוחות לא יודעות מה יש לך. הוסיפי 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות.",
+        "cta": "+ הוסיפי מוצר ראשון"
+      },
+      "edit_heading": "עריכת מוצר",
+      "edit_legacy_price_note": "המחיר הקיים: {range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)",
+      "add_heading": "מוצר חדש",
+      "cancel_aria": "ביטול",
+      "form": {
+        "name_label": "שם המוצר *",
+        "description_label": "תיאור קצר",
+        "price_min_label": "מחיר מ- (₪)",
+        "price_max_label": "מחיר עד- (₪)",
+        "price_max_optional_suffix": "אופציונלי",
+        "diet_heading": "סימוני תזונה (אופציונלי)",
+        "diet_gluten_free": "🌾 ללא גלוטן",
+        "diet_vegan": "🥦 טבעוני",
+        "diet_lactose_free": "🥛 ללא לקטוז",
+        "image_label": "תמונת מוצר",
+        "image_alt": "תמונה",
+        "image_remove": "הסר",
+        "image_upload_cta": "העלי תמונה",
+        "image_uploading": "מעלה..."
+      },
+      "save_edit_cta": "שמרי שינויים",
+      "save_edit_saving": "שומרת...",
+      "cancel_edit_cta": "בטלי",
+      "add_submit_cta": "הוסיפי מוצר",
+      "add_submitting": "מוסיפה...",
+      "card": {
+        "edit_aria_template": "ערכי {name}",
+        "delete_aria_template": "מחקי {name}"
+      }
     }
   }
 }
