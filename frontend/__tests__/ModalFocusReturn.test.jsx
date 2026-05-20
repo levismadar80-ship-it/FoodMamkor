@@ -10,41 +10,43 @@ import { useState } from "react";
 // Covers strings from LocationModal + LoginPromptModal that this file
 // renders. Test assertions use Hebrew strings, so map them explicitly.
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key) => {
+  // MEH-629 item 3: namespace-aware mock so each modal's `title` resolves
+  // distinctly instead of colliding via JS object-literal "last wins".
+  useTranslations: (ns) => (key) => {
     const flat = {
-      // modals.location
-      title: "איפה את?",
-      subtitle: "נמצא עסקים קרובים אליך",
-      search_label: "חיפוש עיר",
-      search_placeholder: "הקלידי שם עיר...",
-      aria_label: "בחירת עיר",
-      close_aria: "סגור",
-      geo_button: "קרוב אליי",
-      geo_loading: "מחפשת...",
-      geo_failure: "לא הצלחנו לקבל את המיקום שלך",
-      current_location_fallback: "מיקום נוכחי",
-      skip: "דלגי לעכשיו",
-      "popular_cities.tel_aviv": "תל אביב",
-      "popular_cities.jerusalem": "ירושלים",
-      "popular_cities.haifa": "חיפה",
-      "popular_cities.beersheba": "באר שבע",
-      // modals.login_prompt
-      default_message: "כדי לשמור עסקים אוהבים — היכנסי",
-      title: "רוצה לשמור? 🌿",
-      login_cta: "היכנסי",
-      dismiss_cta: "אולי אחר כך",
+      // modals.location.*
+      "modals.location.title": "איפה את?",
+      "modals.location.subtitle": "נמצא עסקים קרובים אליך",
+      "modals.location.search_label": "חיפוש עיר",
+      "modals.location.search_placeholder": "הקלידי שם עיר...",
+      "modals.location.aria_label": "בחירת עיר",
+      "modals.location.close_aria": "סגור",
+      "modals.location.geo_button": "קרוב אליי",
+      "modals.location.geo_loading": "מחפשת...",
+      "modals.location.geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "modals.location.current_location_fallback": "מיקום נוכחי",
+      "modals.location.skip": "דלגי לעכשיו",
+      "modals.location.popular_cities.tel_aviv": "תל אביב",
+      "modals.location.popular_cities.jerusalem": "ירושלים",
+      "modals.location.popular_cities.haifa": "חיפה",
+      "modals.location.popular_cities.beersheba": "באר שבע",
+      // modals.login_prompt.*
+      "modals.login_prompt.default_message": "כדי לשמור עסקים אוהבים — היכנסי",
+      "modals.login_prompt.title": "רוצה לשמור? 🌿",
+      "modals.login_prompt.login_cta": "היכנסי",
+      "modals.login_prompt.dismiss_cta": "אולי אחר כך",
       // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
-      trigger: "🚩 דווח על עסק",
-      form_heading: "דווח על עסק",
-      reason_placeholder: "ספר/י מה הבעיה...",
-      submit: "שלח דיווח",
-      cancel: "ביטול",
-      error_generic: "שגיאה בשליחה",
-      success_title: "תודה על הדיווח",
-      success_message: "נבדוק ונטפל תוך 48 שעות.",
-      success_close: "סגור",
+      "report.trigger": "🚩 דווח על עסק",
+      "report.form_heading": "דווח על עסק",
+      "report.reason_placeholder": "ספר/י מה הבעיה...",
+      "report.submit": "שלח דיווח",
+      "report.cancel": "ביטול",
+      "report.error_generic": "שגיאה בשליחה",
+      "report.success_title": "תודה על הדיווח",
+      "report.success_message": "נבדוק ונטפל תוך 48 שעות.",
+      "report.success_close": "סגור",
     };
-    return flat[key] ?? key;
+    return flat[ns ? `${ns}.${key}` : key] ?? key;
   },
 }));
 

@@ -104,8 +104,8 @@
         "password_placeholder": "סיסמה חדשה",
         "password_aria": "סיסמה חדשה",
         "confirm_placeholder": "אישור סיסמה",
-        "toggle_show": "הצג סיסמה",
-        "toggle_hide": "הסתר סיסמה",
+        "toggle_show": "הציגי סיסמה",
+        "toggle_hide": "הסתירי סיסמה",
         "success_title": "✓ הסיסמה עודכנה בהצלחה",
         "success_subtitle": "מעבירים אותך לדף הכניסה...",
         "submit_updating": "מעדכן...",
@@ -2328,7 +2328,7 @@
     "mailto_subject": "פנייה דרך האתר",
     "mailto_body_prefix": "שם:",
     "mailto_body_email": "אימייל:",
-    "privacy_notice": "בשליחת הטופס את/ה מאשר/ת שקראת את <link>מדיניות הפרטיות</link>."
+    "privacy_notice": "בשליחת הטופס את מאשרת שקראת את <link>מדיניות הפרטיות</link>."
   },
   "search": {
     "breadcrumb_home": "בית",

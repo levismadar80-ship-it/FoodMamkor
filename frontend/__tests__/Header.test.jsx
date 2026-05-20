@@ -18,33 +18,41 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
-const setLang = vi.fn();
+// MEH-629 item 6: the setLang mock was removed — PR #731 dropped the
+// setLang destructure from useLanguage(). Header no longer touches it;
+// locale changes flow through next-intl's router.
 vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({ lang: "he", setLang }),
+  useLanguage: () => ({ lang: "he" }),
 }));
 
 // MEH-471: Header reads useTranslations() from next-intl directly.
 // MEH-475: LanguageToggle adds useLocale() — current locale fixture is "he".
-vi.mock("next-intl", () => ({
-  useLocale: () => "he",
-  useTranslations: () => (key) =>
-    ({
-      "nav.discover": "גלה",
-      "nav.map": "מפה",
-      "nav.neighbor": "מהשכן",
-      "nav.about": "אודות",
-      "nav.login": "כניסה לחשבון",
-      "nav.logout": "התנתק",
-      "nav.add_business": "הוסיפי את העסק שלך",
-      "nav.favorites": "מועדפים",
-      "nav.admin": "אדמין",
-      "nav.mobile_label": "ניווט מובייל",
-      "nav.lang_switch_to_en": "Switch to English",
-      "nav.lang_switch_to_he": "החלף לעברית",
-      "nav.lang_he": "עברית",
-      "nav.lang_en": "EN",
-    }[key] || key),
-}));
+// MEH-629 item 5: the mock now respects the namespace argument so tests
+// can rely on `t("nav.X")` from useTranslations() AND `t("X")` from
+// useTranslations("nav") resolving identically.
+vi.mock("next-intl", () => {
+  const DICT = {
+    "nav.discover": "גלה",
+    "nav.map": "מפה",
+    "nav.neighbor": "מהשכן",
+    "nav.about": "אודות",
+    "nav.login": "כניסה לחשבון",
+    "nav.logout": "התנתק",
+    "nav.add_business": "הוסיפי את העסק שלך",
+    "nav.favorites": "מועדפים",
+    "nav.admin": "אדמין",
+    "nav.mobile_label": "ניווט מובייל",
+    "nav.lang_switch_to_en": "Switch to English",
+    "nav.lang_switch_to_he": "החלף לעברית",
+    "nav.lang_he": "עברית",
+    "nav.lang_en": "EN",
+  };
+  return {
+    useLocale: () => "he",
+    useTranslations: (ns) => (key) =>
+      DICT[ns ? `${ns}.${key}` : key] ?? DICT[key] ?? key,
+  };
+});
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
@@ -82,7 +90,6 @@ describe("Header", () => {
     userRef.current = null;
     pathnameRef.current = "/about";
     mockLogout.mockClear();
-    setLang.mockClear();
   });
 
   describe("navigation", () => {
