@@ -721,6 +721,7 @@ function DangerZoneCard() {
 
 function BusinessTab() {
   const { user } = useAuth();
+  const t = useTranslations("settings.business");
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -742,59 +743,59 @@ function BusinessTab() {
       {/* Status banner */}
       {status === "pending" && (
         <div className="rounded-[12px] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
-          ✋ הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.
+          {t("status_pending")}
         </div>
       )}
       {status === "rejected" && (
         <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-4 space-y-3">
-          <p className="text-sm font-semibold text-red-700">הבקשה לא אושרה</p>
+          <p className="text-sm font-semibold text-red-700">{t("status_rejected_title")}</p>
           {rejectionReason && (
             <p className="text-sm text-red-600">{rejectionReason}</p>
           )}
           <ul className="space-y-1 text-sm text-red-700">
-            <li className="flex items-start gap-2"><span>•</span><span>ודאי שכל פרטי העסק מלאים ומדויקים</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>הוסיפי תמונות ברורות של המוצרים</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>בדקי שכתובת העסק נכונה</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_details")}</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_photos")}</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_address")}</span></li>
           </ul>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
             className="text-sm text-primary hover:underline"
           >
-            דברי איתנו &rarr;
+            {t("support_cta")}
           </button>
         </div>
       )}
       {status === "suspended" && (
         <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
           <span>⚠️</span>
-          <span className="font-medium">החשבון מושעה זמנית.</span>
+          <span className="font-medium">{t("status_suspended")}</span>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
             className="ms-auto text-primary hover:underline text-xs"
           >
-            צרי קשר
+            {t("support_cta_short")}
           </button>
         </div>
       )}
 
       {/* Stats grid */}
       <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
-        <h2 className="font-semibold text-site-text mb-4">סטטיסטיקות</h2>
+        <h2 className="font-semibold text-site-text mb-4">{t("stats_heading")}</h2>
         {loadingStats ? (
-          <p className="text-sm text-site-muted">טוענת...</p>
+          <p className="text-sm text-site-muted">{t("stats_loading")}</p>
         ) : stats ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <StatCard label="צפיות" value={stats.views ?? 0} />
-            <StatCard label="מועדפים" value={stats.favorites ?? 0} />
-            <StatCard label="ביקורות" value={stats.reviews ?? 0} />
-            <StatCard label="דירוג ממוצע" value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
-            <StatCard label="מוצרים" value={stats.products ?? 0} />
-            <StatCard label="הזמנות" value={stats.orders ?? 0} />
+            <StatCard label={t("stat_views")} value={stats.views ?? 0} />
+            <StatCard label={t("stat_favorites")} value={stats.favorites ?? 0} />
+            <StatCard label={t("stat_reviews")} value={stats.reviews ?? 0} />
+            <StatCard label={t("stat_avg_rating")} value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
+            <StatCard label={t("stat_products")} value={stats.products ?? 0} />
+            <StatCard label={t("stat_orders")} value={stats.orders ?? 0} />
           </div>
         ) : (
-          <p className="text-sm text-site-muted">הנתונים אינם זמינים כרגע.</p>
+          <p className="text-sm text-site-muted">{t("stats_unavailable")}</p>
         )}
       </section>
 
@@ -802,7 +803,7 @@ function BusinessTab() {
       {status === "approved" && (
         <div className="text-center">
           <Link href="/producer/edit" className="text-sm text-primary hover:underline">
-            ערכי פרופיל עסק &rarr;
+            {t("edit_profile_link")}
           </Link>
         </div>
       )}
