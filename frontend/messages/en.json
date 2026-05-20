@@ -457,6 +457,14 @@
   "seo": {
     "home": {
       "description": "Local food businesses, all in one place. Find real, fresh, and healthy food near you."
+    },
+    "site": {
+      "title": "Mehamakor — real food, straight from the source",
+      "description": "Real, fresh, healthy food from local businesses — all in one place.",
+      "og_title": "Mehamakor — real food, straight from the source",
+      "og_description": "Real food from local businesses — all in one place.",
+      "twitter_title": "Mehamakor — real food, straight from the source",
+      "twitter_description": "Real food from local businesses — all in one place."
     }
   },
   "producer": {
