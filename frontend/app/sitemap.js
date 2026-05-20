@@ -1,21 +1,54 @@
 // Dynamic sitemap (LAUNCH_CHECKLIST week 1 — SEO).
 // Next.js App Router reads the default export and serves it at /sitemap.xml.
 // SITE_URL + API_URL helpers are validated by Zod at build time (lib/env.js).
+// MEH-476: emits one entry per locale (HE no prefix, EN /en prefix) with
+// alternates.languages on every entry so Google reads <xhtml:link> hreflang
+// inline; complements <head> hreflang from MEH-476 PR 2.
 import { SITE_URL, API_URL } from "@/lib/env";
+import { routing } from "@/i18n/routing";
+
+// localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
+function urlForLocale(path, locale) {
+  const base = locale === routing.defaultLocale ? SITE_URL : `${SITE_URL}/${locale}`;
+  return `${base}${path}`;
+}
+
+// MEH-476: hreflang codes emitted to Google. "he-IL" geo-targets the Israeli
+// audience (mehamakor.online is IL-only); matches the <head> hreflang shipping
+// in MEH-476 PR 2 for cross-signal consistency. Routing locale codes ("he",
+// "en") stay unchanged in middleware + URL building above.
+const HREFLANG_CODES = { he: "he-IL", en: "en" };
+
+// Expands one logical path into one sitemap entry per locale. Every entry
+// carries the full alternates.languages map so Next.js emits an <xhtml:link>
+// per locale inside every <url> block.
+function localizeEntry(path, meta) {
+  const languages = Object.fromEntries(
+    routing.locales.map((l) => [HREFLANG_CODES[l], urlForLocale(path, l)]),
+  );
+  return routing.locales.map((locale) => ({
+    url: urlForLocale(path, locale),
+    ...meta,
+    alternates: { languages },
+  }));
+}
 
 export default async function sitemap() {
   const now = new Date();
 
-  const staticPages = [
-    { url: `${SITE_URL}`, lastModified: now, priority: 1.0, changeFrequency: "daily" },
-    { url: `${SITE_URL}/map`, lastModified: now, priority: 0.9, changeFrequency: "daily" },
-    { url: `${SITE_URL}/events`, lastModified: now, priority: 0.8, changeFrequency: "daily" },
-    { url: `${SITE_URL}/about`, lastModified: now, priority: 0.6, changeFrequency: "monthly" },
-    { url: `${SITE_URL}/register/producer`, lastModified: now, priority: 0.7, changeFrequency: "monthly" },
-    { url: `${SITE_URL}/register`, lastModified: now, priority: 0.5, changeFrequency: "monthly" },
-    { url: `${SITE_URL}/login`, lastModified: now, priority: 0.3, changeFrequency: "monthly" },
-    { url: `${SITE_URL}/terms`, lastModified: now, priority: 0.2, changeFrequency: "yearly" },
+  const staticDefs = [
+    { path: "", priority: 1.0, changeFrequency: "daily" },
+    { path: "/map", priority: 0.9, changeFrequency: "daily" },
+    { path: "/events", priority: 0.8, changeFrequency: "daily" },
+    { path: "/about", priority: 0.6, changeFrequency: "monthly" },
+    { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/register", priority: 0.5, changeFrequency: "monthly" },
+    { path: "/login", priority: 0.3, changeFrequency: "monthly" },
+    { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
   ];
+  const staticPages = staticDefs.flatMap(({ path, priority, changeFrequency }) =>
+    localizeEntry(path, { lastModified: now, priority, changeFrequency }),
+  );
 
   // Producer pages — prefer slug URLs (SEO-friendly) when available.
   let producerPages = [];
@@ -26,22 +59,26 @@ export default async function sitemap() {
     const res = await fetch(`${API_URL}/producers`);
     if (res.ok) {
       const producers = await res.json();
-      producerPages = producers.map((p) => ({
-        url: p.slug ? `${SITE_URL}/${p.slug}` : `${SITE_URL}/producer/${p.id}`,
-        lastModified: now,
-        priority: 0.9,
-        changeFrequency: "weekly",
-      }));
+      producerPages = producers.flatMap((p) => {
+        const path = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+        return localizeEntry(path, {
+          lastModified: now,
+          priority: 0.9,
+          changeFrequency: "weekly",
+        });
+      });
 
       const PER_PAGE = 24;
       const totalPages = Math.max(1, Math.ceil(producers.length / PER_PAGE));
       for (let p = 1; p <= totalPages; p++) {
-        producerIndexPages.push({
-          url: p === 1 ? `${SITE_URL}/producers` : `${SITE_URL}/producers?page=${p}`,
-          lastModified: now,
-          priority: 0.8,
-          changeFrequency: "daily",
-        });
+        const path = p === 1 ? "/producers" : `/producers?page=${p}`;
+        producerIndexPages.push(
+          ...localizeEntry(path, {
+            lastModified: now,
+            priority: 0.8,
+            changeFrequency: "daily",
+          }),
+        );
       }
     }
   } catch {
@@ -54,12 +91,13 @@ export default async function sitemap() {
     const res = await fetch(`${API_URL}/events`);
     if (res.ok) {
       const events = await res.json();
-      eventPages = events.map((e) => ({
-        url: `${SITE_URL}/events/${e.id}`,
-        lastModified: now,
-        priority: 0.7,
-        changeFrequency: "weekly",
-      }));
+      eventPages = events.flatMap((e) =>
+        localizeEntry(`/events/${e.id}`, {
+          lastModified: now,
+          priority: 0.7,
+          changeFrequency: "weekly",
+        }),
+      );
     }
   } catch {
     // ignore
