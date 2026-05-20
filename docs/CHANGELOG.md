@@ -4,6 +4,19 @@
 
 ## Unreleased
 
+### 2026-05-20 — Settings sweep S1 merged (chunk 1 of 4)
+
+**PR #755 MERGED** at `2b5bd18` — `feat(MEH-475 settings/S1)`: chrome + ProfileTab i18n (15→29 keys). First chunk of the settings sweep — file is 1371 LOC + auth-sensitive, so chunked into 4 sequential PRs (S1 chrome + Profile / S2 SecurityTab / S3a BusinessTab / S3b ProductsSection) for small blast radius. S1 namespace shape:
+
+- `settings.common.*` (8 keys): page heading, Suspense fallback, tabs aria, 3 tab labels, save/saving, optional_suffix — **shared with upcoming S2/S3 chunks**.
+- `settings.profile.*` (21 keys): tabpanel aria, avatar handlers (title/aria/hint), save/upload toasts, 4 form fields with placeholders/hints/ICU `{provider}` template for OAuth email hint.
+
+Auth-flow safety preserved: form `onSubmit` / `onChange` handlers untouched, API call signatures unchanged, `id`/`htmlFor` pairs preserved (screen-reader linkage), MEH-629 #2 fix at L377-492 verified intact.
+
+**STOP at S1/S2 boundary** per cumulative-runtime guardrail. S2/S3a/S3b deferred to next session with full inventory in HANDOFF.md.
+
+**Cumulative MEH-475**: 668 strings (PR-C4b + dashboard + sweep-tail final) + 15 (S1) = **683 strings extracted**. Remaining: ~88 in settings/page.jsx (S2 + S3a + S3b) + MEH-543-deferred surfaces.
+
 ### 2026-05-20 — Sweep tail final (5-file batch) merged
 
 **PR #753 MERGED** at `7d45eed` — `feat(MEH-475 sweep/tail-final)`: wires 5 live surfaces (64 strings) into new `sweep_tail.*` top-level namespace with per-file sub-namespaces (`messages`, `followers`, `alert_prefs`, `layout`, `event_new`). After this PR, ICU key parity 2350/2350 HE↔EN (+185 from prior 2165).
