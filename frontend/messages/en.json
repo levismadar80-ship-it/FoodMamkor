@@ -3079,5 +3079,156 @@
         "b68": "It's not a regular service — it's an option for new business owners still learning the rhythm."
       }
     }
+  },
+  "dashboard": {
+    "producer": {
+      "loading_data": "Loading…",
+      "loading_analytics": "Loading analytics…",
+      "error_availability_update": "We couldn't update your availability — try again in a moment",
+      "error_questions_save": "Save error — please try again",
+      "vanity_link": {
+        "label": "🔗 My link",
+        "copied": "✅ Copied!",
+        "copy_cta": "Copy link",
+        "share_cta": "Share on WhatsApp",
+        "wa_text_template": "My profile on Mehamakor: {url}"
+      },
+      "greeting": "Hi {name} 👋",
+      "welcome_subtitle": "Welcome to managing the business {business}",
+      "status": {
+        "pending": {
+          "title": "🌿 Your profile is under review",
+          "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster.",
+          "cta": "Complete profile ←"
+        },
+        "rejected": {
+          "title": "⚠️ Application not approved",
+          "body": "Contact us for more details and a re-review.",
+          "cta": "Contact us ←"
+        },
+        "pending_whatsapp": {
+          "title": "🌿 Welcome! Almost there.",
+          "body": "Complete your profile to speed up the review — complete profiles are approved faster.",
+          "cta": "Complete profile ←",
+          "companion_link": "Edit profile"
+        }
+      },
+      "holiday_catalog_cta": "Update the catalog ←",
+      "availability": {
+        "tooltip_line_default": "Open to orders = default.",
+        "tooltip_line_today": "Available today = fresh inventory now.",
+        "tooltip_line_full": "Busy this week = appears but marked.",
+        "tooltip_line_vacation": "On a break = hidden until a date you choose.",
+        "heading": "Availability",
+        "info_label": "What's the difference between the states?",
+        "intro": "Choose the status to display to customers on the card and the business page.",
+        "group_aria": "Availability",
+        "options": {
+          "accepting_orders": "Open to orders",
+          "available_today": "Available today 🟢",
+          "full_this_week": "Busy this week 🟠",
+          "on_vacation": "On a break ⏸"
+        },
+        "vacation_return_label": "Returning on:",
+        "remove_vacation_date_aria": "Remove return date"
+      },
+      "quick_links": {
+        "settings": {
+          "title": "Edit profile",
+          "sub": "Update business details, deliveries, and photos"
+        },
+        "add_event": {
+          "title": "Add an event",
+          "sub": "Workshop, tour, open days, etc."
+        },
+        "view_business": {
+          "title": "View your business on the site",
+          "sub": "This is how customers see it"
+        },
+        "group_buys": {
+          "title": "My group buys",
+          "sub": "Manage group buys and open new ones"
+        },
+        "recipes": {
+          "title": "Recipes",
+          "sub": "Publish and manage recipes that promote your products"
+        }
+      },
+      "analytics": {
+        "stats_window_label": "7 days / 30 days / total",
+        "hero": {
+          "views_week_label": "Views this week",
+          "views_week_sub": "Last 7 days",
+          "whatsapp_clicks_label": "WhatsApp clicks",
+          "whatsapp_clicks_sub": "Last 7 days",
+          "conversion_label": "Conversion %",
+          "conversion_tooltip": "Share of views that turned into a WhatsApp click in the last 30 days. The higher it goes, the more persuasive the profile.",
+          "conversion_sub": "View → WhatsApp (30 days)",
+          "rank_label": "City rank",
+          "rank_tooltip": "Your rank in the city by views in the last 30 days. Updates automatically.",
+          "rank_sub": "By views (30 days)"
+        },
+        "eligible_weekly_title": "You're a candidate for business of the week 🌟 Contact the team",
+        "eligible_weekly_tooltip": "The team picks a business of the week from those ranked first in their city with high profile strength. If you're a candidate, a message will appear here.",
+        "eligible_weekly_sub": "First in your city + strong profile — well done!",
+        "windowed": {
+          "profile_views": "Profile views",
+          "profile_views_tooltip": "How many times customers visited your business page. One view per customer per day.",
+          "search_appearances": "Search appearances",
+          "search_appearances_tooltip": "How many times your business appeared in search results, even if the customer didn't click.",
+          "whatsapp_clicks": "WhatsApp clicks",
+          "contact_clicks": "Contact clicks"
+        },
+        "simple_cards": {
+          "followers_label": "Followers",
+          "followers_sub_template": "+{count} this week",
+          "rating_label": "Average rating",
+          "rating_sub_template": "From {count} reviews"
+        },
+        "views_chart_title": "Views over the last 30 days",
+        "views_chart_tooltip": "Daily graph of profile views. Each point = one day. Compare to your marketing days on Instagram or in groups.",
+        "views_chart_aria": "Views over the last 30 days chart",
+        "views_chart_empty": "No data yet",
+        "top_cities_title": "Top cities",
+        "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city."
+      },
+      "strength": {
+        "heading": "Profile strength",
+        "tooltip": "Score across 6 criteria: photo, description, active product, delivery area, first review, verified phone. Above 80% — customers trust more.",
+        "label_weak": "Your profile is weak — customers don't see you",
+        "label_ok": "OK, but there's room to improve",
+        "label_strong": "Strong profile 💪",
+        "label_perfect": "Perfect profile ⭐",
+        "items": {
+          "image": "Profile photo",
+          "desc": "Business description (50+ chars)",
+          "delivery": "Delivery area",
+          "review": "First review",
+          "phone": "Verified phone"
+        }
+      },
+      "custom_questions": {
+        "heading": "Questions that appear on your page",
+        "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
+        "subtitle": "Leave blank to show default questions based on your category",
+        "placeholder": "Example: What types of cheese do you have this week?",
+        "save_cta": "Save questions",
+        "saving": "Saving…",
+        "saved": "✓ Saved"
+      },
+      "bio": {
+        "heading": "✍️ AI bio",
+        "intro": "Enter an Instagram handle, a link, or a free-form description — we'll create a Hebrew bio of up to 150 characters.",
+        "source_placeholder": "@handle / Instagram link / free description",
+        "generate_cta": "Create bio",
+        "generating": "Creating…",
+        "save_cta": "Save bio",
+        "saving": "Saving…",
+        "saved": "✓ Saved",
+        "error_empty_bio": "We couldn't generate a bio — try again with different text",
+        "error_generate": "Bio generation error — try again",
+        "error_save": "Bio save error"
+      }
+    }
   }
 }
