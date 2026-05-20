@@ -13,12 +13,18 @@ function urlForLocale(path, locale) {
   return `${base}${path}`;
 }
 
+// MEH-476: hreflang codes emitted to Google. "he-IL" geo-targets the Israeli
+// audience (mehamakor.online is IL-only); matches the <head> hreflang shipping
+// in MEH-476 PR 2 for cross-signal consistency. Routing locale codes ("he",
+// "en") stay unchanged in middleware + URL building above.
+const HREFLANG_CODES = { he: "he-IL", en: "en" };
+
 // Expands one logical path into one sitemap entry per locale. Every entry
 // carries the full alternates.languages map so Next.js emits an <xhtml:link>
 // per locale inside every <url> block.
 function localizeEntry(path, meta) {
   const languages = Object.fromEntries(
-    routing.locales.map((l) => [l, urlForLocale(path, l)]),
+    routing.locales.map((l) => [HREFLANG_CODES[l], urlForLocale(path, l)]),
   );
   return routing.locales.map((locale) => ({
     url: urlForLocale(path, locale),
