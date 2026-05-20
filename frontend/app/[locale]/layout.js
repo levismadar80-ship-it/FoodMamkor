@@ -170,6 +170,7 @@ export default async function LocaleLayout({ children, params }) {
     notFound();
   }
   setRequestLocale(locale);
+  const tSweep = await getTranslations({ locale, namespace: "sweep_tail.layout" });
 
   // MEH-476 PR 3b2: the JSX <link rel="alternate"> fallback block that
   // PR 3b1 left behind has been removed. All 17 public routes now emit
@@ -196,7 +197,7 @@ export default async function LocaleLayout({ children, params }) {
       <body className="font-body bg-background text-site-text min-h-screen flex flex-col pb-20 md:pb-0">
         {/* rtl-ok: focus position for accessibility */}
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
-          דלג לתוכן הראשי
+          {tSweep("skip_to_main")}
         </a>
         <NextIntlClientProvider>
           <AuthProvider>
