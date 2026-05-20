@@ -1,5 +1,4 @@
 import "../globals.css";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -38,11 +37,10 @@ const HREFLANG_CODES = { he: "he-IL", en: "en" };
 const OG_LOCALE = { he: "he_IL", en: "en_US" };
 const OG_ALTERNATE_LOCALES = ["he_IL", "en_US"];
 
-// MEH-476 PR 3b will move hreflang into per-page generateMetadata, removing
-// the headers() read from this layout. When that ships, this revalidate
-// will activate automatically and routes will return to ● SSG with 1h ISR.
-// Until then this is a forward-compatible no-op; DO NOT remove. Tracked at:
-// MEH-476 PR 3b — per-page metadata sweep.
+// MEH-476 PR 3b1: now ACTIVE. PR 2's headers() read has been removed in favor
+// of per-page generateMetadata (sample: app/[locale]/about/page.js). Layout
+// itself only emits root-level hreflang as fallback; ISR cache hint is honored
+// for routes whose generateMetadata is locale-stable (no request-time APIs).
 export const revalidate = 3600;
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get
@@ -54,37 +52,21 @@ function urlForLocale(path, locale) {
   return `${base}${normalized}`;
 }
 
-// Strip the /{locale} prefix from a request pathname so it can be re-applied
-// per locale. "/en/about" → "/about"; "/about" → "/about"; "/" → "/".
-// Only non-default locales carry a prefix under localePrefix:"as-needed".
-function stripLocalePrefix(pathname) {
-  for (const locale of routing.locales) {
-    if (locale === routing.defaultLocale) continue;
-    const prefix = `/${locale}`;
-    if (pathname === prefix) return "/";
-    if (pathname.startsWith(`${prefix}/`)) return pathname.slice(prefix.length);
-  }
-  return pathname;
-}
-
-// Resolve the canonical + per-locale hreflang URLs for the current request.
-// Reads x-pathname (set by middleware.js) and strips the locale segment so
-// each locale's URL can be reconstructed. Shared by generateMetadata + the
-// LocaleLayout component so canonical and hreflang derive from the same
-// path on every render.
-async function getLocaleUrls(locale) {
-  const h = await headers();
-  const rawPath = h.get("x-pathname") || "/";
-  const pathWithoutLocale = stripLocalePrefix(rawPath);
-
+// Resolve the root-level canonical + per-locale hreflang URLs. After MEH-476
+// PR 3b1, layout no longer derives the request pathname (was: headers()).
+// This produces root URLs ("/" / "/en") as fallback signal for routes without
+// their own per-page generateMetadata. Pages with overrides (e.g. /about post
+// 3b1) emit per-page URLs from their own generateMetadata; 11 other pages
+// still use this fallback until PR 3b2 sweeps them.
+function getLocaleUrls(locale) {
   const languages = Object.fromEntries(
-    routing.locales.map((l) => [HREFLANG_CODES[l] ?? l, urlForLocale(pathWithoutLocale, l)]),
+    routing.locales.map((l) => [HREFLANG_CODES[l] ?? l, urlForLocale("/", l)]),
   );
   // x-default → HE per MEH-366 Q1 decision: Israeli audience is the primary market.
-  languages["x-default"] = urlForLocale(pathWithoutLocale, routing.defaultLocale);
+  languages["x-default"] = urlForLocale("/", routing.defaultLocale);
 
   return {
-    canonical: urlForLocale(pathWithoutLocale, locale),
+    canonical: urlForLocale("/", locale),
     languages,
   };
 }
@@ -158,7 +140,7 @@ const BASE_METADATA = {
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.site" });
-  const { canonical } = await getLocaleUrls(locale);
+  const { canonical } = getLocaleUrls(locale);
 
   const title = t("title");
   const description = t("description");
@@ -169,11 +151,12 @@ export async function generateMetadata({ params }) {
   // ranking signals into HE, defeating the purpose of hreflang. Self-canonical
   // + hreflang is Google's documented best practice for multilingual sites.
   //
-  // Hreflang `<link rel="alternate">` tags are emitted from LocaleLayout
-  // JSX below (not here) because 12 child pages override `alternates` with
-  // their own canonical-only object, which would shallow-merge over any
-  // `languages` map set here. JSX `<head>` children render alongside the
-  // metadata API and don't conflict with that merge.
+  // MEH-476 PR 3b1: hreflang now in metadata.alternates.languages (was JSX
+  // <head> children in PR 2). Pages with their own alternates.languages map
+  // (e.g. /about post PR 3b1) emit per-page URLs that override these root-
+  // level fallback values via Next.js metadata-API merge semantics. Pages
+  // still using only `alternates: { canonical: '/path' }` retain layout's
+  // root-URL languages signal until PR 3b2 sweeps them.
   //
   // Q6 hybrid: openGraph.siteName + appleWebApp.title stay BRAND_NAME
   // ("מהמקור") even on /en/* (UI metadata / platform chrome). Per-locale
@@ -203,6 +186,10 @@ export async function generateMetadata({ params }) {
       title: t("twitter_title"),
       description: t("twitter_description"),
     },
+    // alternates.languages intentionally NOT set on layout's metadata API
+    // post PR 3b1: child pages with `alternates: { canonical }` shallow-merge
+    // and would drop the languages map anyway. Hreflang fallback for those
+    // pages comes from the JSX <link> emission in LocaleLayout below.
     alternates: { canonical },
   };
 }
@@ -224,12 +211,15 @@ export default async function LocaleLayout({ children, params }) {
   }
   setRequestLocale(locale);
 
-  // MEH-476 PR 2: compute hreflang URLs here (JSX path) rather than in
-  // generateMetadata so the tags survive page-level `alternates` overrides
-  // (12 pages set their own `alternates.canonical` which shallow-merges
-  // over the layout's metadata.alternates). JSX `<head>` children render
-  // independently of the metadata API merge.
-  const { languages } = await getLocaleUrls(locale);
+  // MEH-476 PR 3b1: hreflang via JSX <link> here is the FALLBACK signal for
+  // pages that override `alternates` but didn't add their own `languages` map
+  // (currently 11 of 12 alternates-override pages). Emits root URLs since
+  // layout no longer derives the request pathname (was: PR 2's headers()).
+  // Pages that DO set their own `alternates.languages` (post PR 3b1: /about;
+  // post PR 3b2: all 12) get per-page URLs via the metadata API in addition
+  // to these root-URL JSX tags. The duplicate is accepted carry-over until
+  // PR 3b2 finishes the sweep — at which point this JSX block can be deleted.
+  const { languages } = getLocaleUrls(locale);
 
   const dir = locale === "he" ? "rtl" : "ltr";
 
@@ -247,8 +237,8 @@ export default async function LocaleLayout({ children, params }) {
           href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
-        {/* MEH-476 PR 2: hreflang signals to Google. Matches sitemap.js (PR 1)
-            for cross-signal consistency. x-default → HE per MEH-366 Q1. */}
+        {/* MEH-476 PR 3b1: root-URL hreflang fallback for 11 pages without
+            per-page generateMetadata yet. PR 3b2 removes this block. */}
         {Object.entries(languages).map(([code, href]) => (
           <link key={code} rel="alternate" hrefLang={code} href={href} />
         ))}
