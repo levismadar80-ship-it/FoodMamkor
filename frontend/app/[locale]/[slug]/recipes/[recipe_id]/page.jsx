@@ -18,6 +18,7 @@ import { getTranslations } from "next-intl/server";
 import RecipeDetail from "@/components/public/RecipeDetail";
 import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
 async function getJson(path) {
   try {
@@ -43,29 +44,39 @@ async function getProducerAndRecipe(slug, recipeId) {
 
 // MEH-475 PR-C4b/chunk-1: first production use of getTranslations +
 // generateMetadata. Pattern proof-of-concept for the rest of PR-C4b.
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata(props) {
   const params = await props.params;
+  const { locale, slug, recipe_id } = params;
   const [{ producer, recipe }, t] = await Promise.all([
-    getProducerAndRecipe(params.slug, params.recipe_id),
+    getProducerAndRecipe(slug, recipe_id),
     getTranslations("recipes.detail"),
   ]);
+  const path = `/${slug}/recipes/${recipe_id}`;
+  const alternates = buildAlternates(path, locale);
   if (!producer || !recipe) {
-    return { title: t("meta_title_not_found") };
+    // title.absolute prevents layout's `%s | brand` template double-suffix.
+    return { title: { absolute: t("meta_title_not_found") }, alternates };
   }
   const truncate = (s, n) =>
     s && s.length > n ? `${s.slice(0, n - 1)}…` : s || "";
   return {
-    title: t("meta_title_template", {
-      recipeTitle: recipe.title,
-      producerName: producer.name,
-    }),
+    // title.absolute — recipes.detail.meta_title_template already ends "| מהמקור".
+    title: {
+      absolute: t("meta_title_template", {
+        recipeTitle: recipe.title,
+        producerName: producer.name,
+      }),
+    },
     description: truncate(recipe.description, 160),
     openGraph: {
       title: `${recipe.title} | ${producer.name}`,
       description: truncate(recipe.description, 160),
       images: recipe.image_url ? [recipe.image_url] : undefined,
       type: "article",
+      locale: OG_LOCALE[locale],
     },
+    alternates,
   };
 }
 

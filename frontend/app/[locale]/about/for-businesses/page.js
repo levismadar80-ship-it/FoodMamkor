@@ -1,26 +1,29 @@
-import { getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL } from "@/lib/seo";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
 // pattern for JSON-LD that consumes translation keys via a t() pass.
 // FAQPage schema shape unchanged: name + acceptedAnswer.text built from
 // the same source keys the visible <details> rendering uses.
-export async function generateMetadata() {
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
   const t = await getTranslations("about_business");
   return {
-    title: t("meta_title"),
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: t("meta_title") },
     description: t("meta_description"),
     openGraph: {
       title: t("og_title"),
       description: t("og_description"),
       type: "article",
       siteName: BRAND_NAME,
-      locale: "he_IL",
+      locale: OG_LOCALE[locale],
       images: ["/og-image.jpg"],
     },
-    alternates: { canonical: "/about/for-businesses" },
+    alternates: buildAlternates("/about/for-businesses", locale),
   };
 }
 
@@ -92,8 +95,11 @@ function renderAnswer(text) {
   ));
 }
 
-export default function FaqForBusinessesPage() {
-  const t = useTranslations("about_business");
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function FaqForBusinessesPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "about_business" });
   const jsonLd = buildFaqJsonLd(t);
   return (
     <main
