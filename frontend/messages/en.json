@@ -577,7 +577,9 @@
       "ingredients_heading": "Ingredients",
       "instructions_heading": "Instructions",
       "related_products_heading": "Our products in this recipe",
-      "back_to_producer": "← Back to business page"
+      "back_to_producer": "← Back to business page",
+      "meta_title_not_found": "Recipe not found | Mehamakor",
+      "meta_title_template": "{recipeTitle} | {producerName} | Mehamakor"
     },
     "form": {
       "heading_edit": "Edit recipe",

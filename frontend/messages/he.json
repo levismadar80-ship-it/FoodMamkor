@@ -577,7 +577,9 @@
       "ingredients_heading": "רכיבים",
       "instructions_heading": "הוראות הכנה",
       "related_products_heading": "המוצרים שלנו במתכון",
-      "back_to_producer": "← חזרה לדף בית העסק"
+      "back_to_producer": "← חזרה לדף בית העסק",
+      "meta_title_not_found": "מתכון לא נמצא | מהמקור",
+      "meta_title_template": "{recipeTitle} | {producerName} | מהמקור"
     },
     "form": {
       "heading_edit": "עריכת מתכון",

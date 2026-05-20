@@ -14,6 +14,7 @@
  */
 
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import RecipeDetail from "@/components/public/RecipeDetail";
 import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
@@ -40,19 +41,24 @@ async function getProducerAndRecipe(slug, recipeId) {
   return { producer, recipe };
 }
 
+// MEH-475 PR-C4b/chunk-1: first production use of getTranslations +
+// generateMetadata. Pattern proof-of-concept for the rest of PR-C4b.
 export async function generateMetadata(props) {
   const params = await props.params;
-  const { producer, recipe } = await getProducerAndRecipe(
-    params.slug,
-    params.recipe_id
-  );
+  const [{ producer, recipe }, t] = await Promise.all([
+    getProducerAndRecipe(params.slug, params.recipe_id),
+    getTranslations("recipes.detail"),
+  ]);
   if (!producer || !recipe) {
-    return { title: "מתכון לא נמצא | מהמקור" };
+    return { title: t("meta_title_not_found") };
   }
   const truncate = (s, n) =>
     s && s.length > n ? `${s.slice(0, n - 1)}…` : s || "";
   return {
-    title: `${recipe.title} | ${producer.name} | מהמקור`,
+    title: t("meta_title_template", {
+      recipeTitle: recipe.title,
+      producerName: producer.name,
+    }),
     description: truncate(recipe.description, 160),
     openGraph: {
       title: `${recipe.title} | ${producer.name}`,
