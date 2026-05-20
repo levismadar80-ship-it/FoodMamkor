@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### 2026-05-20 — Sweep tail final (5-file batch) merged
+
+**PR #753 MERGED** at `7d45eed` — `feat(MEH-475 sweep/tail-final)`: wires 5 live surfaces (64 strings) into new `sweep_tail.*` top-level namespace with per-file sub-namespaces (`messages`, `followers`, `alert_prefs`, `layout`, `event_new`). After this PR, ICU key parity 2350/2350 HE↔EN (+185 from prior 2165).
+
+Phase 0 finding: the 432 scanner-residual string count was inflated by **intentional Hebrew API wire-format data constants** (`CATEGORY_KEYS`, `KOSHER_OPTIONS`, `POPULAR_CITIES` etc. — all wired via `labelKey` indirection to translation keys; the Hebrew enum values stay because backend writes accept them as-is). Real wire work = 64 strings shipped + 7 wire-format kept (events/new CATEGORIES, documented per MEH-475 PR-C2 convention).
+
+Adversarial review (FINDER → ADVERSARY → REFEREE) found one non-blocking carry-over: `events/new` bare CATEGORIES dropdown shows Hebrew option text to EN locale users (producer-side form, not customer-facing; P3 follow-up if needed).
+
+**Cumulative MEH-475**: PR-C4b chunks 1-5 (498 → 402 keys) + dashboard sweep E1 (106 → 125) + sweep-tail final 5-file batch (64 → 185) = **668 strings extracted**. Remaining MEH-475 work: settings sweep (103 strings, HIGH-RISK auth tier — separate ticket/session) + MEH-543-deferred surfaces (auto-resolves when /neighbor activates post-launch).
+
 ### 2026-05-20 — Sweep tail E1 + MEH-629 hygiene bundle merged (post-PR-C4b)
 
 Two PRs landed end-to-end via autopilot, plus this docs closeout:
