@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-05-20 — Session close: MEH-475 PR-C4b chunk 2 merged + HANDOFF sync
+
+PR-C4b/chunk-2 (#738) merged at `58c5472`. HANDOFF.md "Last updated" + "Next session pickup" updated to mark chunks 1+2 done and flag chunks 3-5 as HIGH-RISK (legal text / FAQPage JSON-LD / guides with mixed BLOCKS arrays + `**bold**` markdown). Stale chunk-2 branch deleted. Chunks 3, 4, 5 explicitly untouched — fresh session required for each.
+
 ### 2026-05-20 — MEH-475 PR-C4b/chunk-2: accessibility statement i18n (35 strings → 26 keys)
 
 `feat`: Extracts the IS 5568 accessibility statement page (`frontend/app/[locale]/accessibility/page.js`) to a new top-level `accessibility.*` namespace. Same pattern as PR #736 (`getTranslations` in `generateMetadata` + `useTranslations` in the default export) plus first production use of `t.rich()` for bodies that embed `<strong>` / `<a>` markup.
