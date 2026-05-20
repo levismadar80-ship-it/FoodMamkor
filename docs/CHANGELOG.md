@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-05-20 — MEH-475 PR-C4b COMPLETE — chunk 5 (guides) merged
+
+**Final chunk of PR-C4b shipped.** PR #743 merged at `0fbf52a`: 4 guide pages (index + 3 onboarding guides) translated into a new `guides.*` top-level namespace with per-guide sub-namespaces (`guides.index.*`, `guides.business_story.*`, `guides.product_photography.*`, `guides.customer_messages.*`). 283 source strings consolidated to 243 translation keys across the 4 files.
+
+**Pattern**: BLOCKS-array structure decoupled from translation values. Each guide page swaps its inline `BLOCKS = [{type, text, items}]` for a structure-only `BLOCKS_STRUCTURE = [{type, key, count?}]` consumed by `buildBlocks(t)` at render time. The shared `GuideArticle.jsx` chrome is untouched — only its consumers change. HE values were machine-extracted from source via a Python parser, guaranteeing byte-identical preservation of `**bold**` markdown, special punctuation, emoji prefixes, and `\n\n` paragraph splits.
+
+**PR-C4b cumulative**: chunks 1+2+3+4+5 = 498 source strings → 402 translation keys across 6 new namespaces (`recipes.detail.meta_*` extension, `accessibility.*`, `privacy.*`, `terms.*`, `about_business.*`, `guides.*`). ICU key parity **2165 / 2165** HE↔EN. MEH-475 user-facing string scope is now closed; remaining work is Wave 6 metadata + robots.txt `/en` lift (separate tickets).
+
 ### 2026-05-20 — Session close: MEH-475 PR-C4b chunks 3 + 4 merged, chunk 5 deferred
 
 **Two PRs merged via autopilot.** Total: 178 source strings extracted to 131 translation keys across 3 files, 2 new top-level namespaces, 1 new architectural pattern proven.

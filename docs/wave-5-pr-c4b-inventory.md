@@ -28,14 +28,14 @@
   same translation keys the visible `<details>` rendering uses;
   `**bold**` markdown preserved in source, stripped before schema
   emission.
-- **Chunk 5 — Guides (3 files + index, ~300 strings)** — 🔜 **DEFERRED**
-  to a fresh session. Pattern well understood (BLOCKS-array → per-position
-  translation keys), but volume + EN prose-translation quality bar
-  exceeds single-session runtime budget. Files: `guides/page.js` (17),
-  `business-story/page.js` (~83), `product-photography/page.js` (~92),
-  `customer-messages/page.js` (~91).
+- **Chunk 5 — Guides (4 files: index + 3 onboarding guides, 283 strings → 243 keys)** —
+  ✅ **MERGED** in PR #743 at `0fbf52a`. New `guides.*` top-level with
+  sub-namespaces per guide. BLOCKS-array → structure-only-with-key pattern;
+  HE machine-extracted byte-identical from source; `GuideArticle.jsx`
+  untouched.
 
-Cumulative ICU key parity after chunks 1-4: **1922 / 1922** (HE / EN).
+Cumulative ICU key parity after chunks 1-5: **2165 / 2165** (HE / EN).
+**PR-C4b CLOSED.**
 
 ---
 
