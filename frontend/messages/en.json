@@ -1865,172 +1865,6 @@
       "error_generic": "Error submitting the experience. Please try again."
     }
   },
-  "events": {
-    "list": {
-      "title": "Events at farms and local businesses",
-      "subtitle": "Workshops, tours, open days and tastings — straight from the source",
-      "breadcrumb_home": "Home",
-      "breadcrumb_events": "Events",
-      "tab_events": "🌾 Farm events",
-      "tab_experiences": "🍳 Workshops & experiences",
-      "add_event": "Add event",
-      "submit_experience": "Submit experience",
-      "view_mode_label": "View mode",
-      "view_list": "List",
-      "view_calendar": "Calendar",
-      "filter_city_label": "Filter by city",
-      "filter_city_placeholder": "Search city...",
-      "loading_events": "Loading events...",
-      "loading_experiences": "Loading experiences...",
-      "empty_events": "No events match this filter — yet 🌱",
-      "empty_experiences": "No experiences match this filter — yet",
-      "free": "Free"
-    },
-    "categories": {
-      "all": "All",
-      "workshop": "Workshop",
-      "tour": "Tour",
-      "market": "Market",
-      "harvest": "Harvest",
-      "tasting": "Tasting",
-      "other": "Other"
-    },
-    "experience_categories": {
-      "all": "All",
-      "cooking": "Cooking",
-      "nutrition": "Nutrition",
-      "food_tour": "Food tour",
-      "agriculture": "Agriculture",
-      "tasting": "Tasting",
-      "workshop": "Workshop",
-      "other": "Other"
-    },
-    "detail": {
-      "loading": "Loading event...",
-      "not_found": "We couldn't find this event",
-      "back_to_all": "← Back to all events",
-      "register": "Register →",
-      "contact_producer": "Contact the business",
-      "all_events": "← All events",
-      "organized_by": "Organized by",
-      "participants_limit": "Up to {n} participants",
-      "free": "Free",
-      "breadcrumb_home": "Home",
-      "breadcrumb_events": "Events"
-    },
-    "calendar": {
-      "previous_month": "Previous month",
-      "next_month": "Next month",
-      "label": "Calendar",
-      "events_count": "{count, plural, =0 {No events} one {# event} other {# events}}",
-      "days": {
-        "sun": "Sun",
-        "mon": "Mon",
-        "tue": "Tue",
-        "wed": "Wed",
-        "thu": "Thu",
-        "fri": "Fri",
-        "sat": "Sat"
-      }
-    }
-  },
-  "experiences": {
-    "list": {
-      "title": "Community workshops & experiences",
-      "subtitle": "Cooking workshops, food tours, nutrition classes — local hosts, real experiences",
-      "submit_cta": "Submit your own experience 🌿",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "cross_link_events": "Also looking for farm events? See all events and experiences together ←",
-      "filter_city_label": "Filter by city",
-      "filter_city_placeholder": "Search city...",
-      "loading": "Loading experiences...",
-      "empty_title": "No experiences match this filter — yet",
-      "empty_cta": "Submit the first experience ←"
-    },
-    "categories": {
-      "all": "All",
-      "cooking": "Cooking",
-      "nutrition": "Nutrition",
-      "food_tour": "Food tour",
-      "agriculture": "Agriculture",
-      "tasting": "Tasting",
-      "workshop": "Workshop",
-      "other": "Other"
-    },
-    "detail": {
-      "loading": "Loading experience...",
-      "not_found": "We couldn't find this experience",
-      "back_to_all": "← Back to all experiences",
-      "all_experiences": "← All experiences",
-      "status_pending": "Your experience is waiting for review by the Mehamakor team 🌿",
-      "status_changes_requested": "Changes are required before we can publish",
-      "status_rejected": "This experience was not approved for publication",
-      "just_submitted": "✅ Experience submitted for review! You'll get an email when it's published 🌿",
-      "team_notes": "Team notes:",
-      "reason": "Reason:",
-      "requirements_title": "What to bring / requirements",
-      "whatsapp_cta": "Contact host on WhatsApp",
-      "whatsapp_message": "Hi! I'd like to register for \"{title}\"",
-      "host_label": "Host:",
-      "free": "Free",
-      "sold_out": "Sold out",
-      "spots_count": "{spots} of {max}",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences"
-    },
-    "card": {
-      "host_fallback": "Community host",
-      "spots_left": "{n} spots left",
-      "sold_out": "Sold out",
-      "free": "Free"
-    },
-    "new": {
-      "auth_loading": "Loading...",
-      "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences",
-      "breadcrumb_submit": "Submit",
-      "title": "Submit a new experience",
-      "subtitle": "All submissions are reviewed by the Mehamakor team. We aim to respond within 24–48 hours 🌿",
-      "field_title": "Experience title *",
-      "field_title_placeholder": "Example: Sourdough bread baking workshop",
-      "field_description": "Detailed description *",
-      "field_description_placeholder": "Tell us about the experience — what you'll learn, what to expect, who it's for...",
-      "checking_content": "🤖 Checking content...",
-      "rejected_fallback": "This content isn't a fit for the platform",
-      "field_category": "Category",
-      "category_none": "None",
-      "field_image": "Image (URL — Cloudinary recommended)",
-      "field_date": "Date *",
-      "field_time": "Start time",
-      "field_duration": "Duration (minutes)",
-      "field_duration_placeholder": "180",
-      "field_location_type": "Location type *",
-      "location_home": "Private home",
-      "location_public": "Public venue",
-      "field_city": "City *",
-      "field_city_placeholder": "Search city...",
-      "field_address": "Address (private — only you and the team see it)",
-      "field_address_placeholder": "Street, number",
-      "field_price": "Price per person (₪) — leave empty for free",
-      "field_price_placeholder": "150",
-      "field_max_participants": "Maximum participants",
-      "field_max_participants_placeholder": "10",
-      "field_requirements": "What to bring / prerequisites",
-      "field_requirements_placeholder": "Apron, closed shoes, ability to stand for two hours...",
-      "is_recurring": "Recurring experience (weekly / monthly)",
-      "recurring_placeholder": "Example: Every Friday 9:00–12:00",
-      "cancel": "Cancel",
-      "submitting": "Submitting...",
-      "cannot_publish": "Cannot publish",
-      "submit_cta": "Submit for review 🌿",
-      "toast_submitted": "Experience submitted for review 🌿",
-      "error_title_short": "Title is too short",
-      "error_description_short": "Description must be at least 20 characters",
-      "error_date_required": "A date is required",
-      "error_generic": "Error submitting the experience. Please try again."
-    }
-  },
   "errors": {
     "boundary": {
       "heading": "Something went wrong — please try again",
@@ -2906,6 +2740,311 @@
       "contact": {
         "title": "11. Contact",
         "intro": "For any question or inquiry regarding the terms of use:"
+      }
+    }
+  },
+  "guides": {
+    "index": {
+      "meta_title": "Guides for business owners | Mehamakor",
+      "meta_description": "Three short guides for business owners on Mehamakor: how to write your story, how to photograph your products, and how to reply to customer messages.",
+      "og_description": "Three short guides for business owners on Mehamakor — story, photography, messages.",
+      "eyebrow": "Guides for business owners",
+      "heading": "Three guides for your first month",
+      "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
+      "minutes_label": "About {minutes} min read",
+      "cta": "Read the guide →",
+      "footer_prefix": "Is there a question a guide didn't answer? Write to me on Instagram",
+      "footer_suffix": ".",
+      "card_previews": {
+        "business_story": "The one field that changes everything on your profile — how to write it once, right, without it reading like an ad.",
+        "product_photography": "No professional camera, no studio. 5 principles + a 30-minute workflow enough for a full page.",
+        "customer_messages": "Response time, tone, and 5 ready-made templates. The small things that decide whether a conversation closes in an order."
+      }
+    },
+    "business_story": {
+      "title": "How to write a good story about your business",
+      "subtitle": "Write the story once, properly. The rest takes care of itself.",
+      "preview": "The one field that changes everything on your profile — how to write it once, right, without it reading like an ad.",
+      "body": {
+        "b0": "There's one field on your profile page on Mehamakor that changes everything: **the description**.",
+        "b1": "A new customer arriving at your page through Mehamakor sees the first photo, then the first 2-3 lines of text. What's written there decides whether she keeps reading or goes back to the search page.",
+        "b2": "On other food sites, this field is a place to list products. On Mehamakor it's different. Mehamakor isn't built like a marketplace — it's built to give every business a full page, with photos, a map, and a story. **The story is the reason someone will remember you two weeks from now.**",
+        "b4": "Why a story — and not a product list?",
+        "b5": "Because **products sell one transaction. A story sells the return.**",
+        "b6": "A customer who read your story — how you started, why you chose the category, what's special about your approach — will remember you. Will tell a friend. Will come back in a month. A customer who only saw a product list bought once, if at all, and forgot.",
+        "b7": "That's not an opinion. That's how human memory works. Numbers take up short-term memory. Stories get etched in.",
+        "b9": "Three questions that build a good story",
+        "b10": "Before you open the description field — take 10 minutes and answer these questions. In writing, for real. Don't skip this.",
+        "b11": "**1. Why did you start?**",
+        "b12": "Not \"why I opened a business\" — that's the generic answer everyone gives (\"I wanted to be independent,\" \"I always loved the field\"). Rather: **what made you choose this category specifically?**",
+        "b13": {
+          "i0": "Baker? Was there a moment you realized supermarket bread isn't enough?",
+          "i1": "Farmer? Studied agriculture in the US? Inherited from your grandfather?",
+          "i2": "Vintner? Tasted a specific wine that made you think \"I can make better than this\"?"
+        },
+        "b14": "**The first moment** — that's what makes a story.",
+        "b15": "**2. What's special about you?**",
+        "b16": "Not relative to competitors. **Relative to the baseline in the category.**",
+        "b17": "If you bake bread, you're not comparing yourself to another baker. You're comparing yourself to the average bread someone can buy at the supermarket. What's the difference?",
+        "b18": {
+          "i0": "Organic flour from a specific mill?",
+          "i1": "A 48-hour fermentation process?",
+          "i2": "The oven your late grandfather worked on?"
+        },
+        "b19": "Specificity. **One specific thing with details** beats 5 generic claims (\"high quality, fresh, local\").",
+        "b20": "**3. Who are you making this for?**",
+        "b21": "Not \"for everyone.\" That's an answer that speaks to no one.",
+        "b22": "Think of one real customer who bought from you in the last month. Picture her. You're writing to her. If you run a sourdough bakery — maybe she's the mother of a child with a digestive sensitivity to regular bread, and sourdough is the only one that works for him. If you run a small dairy — maybe it's a couple paying a premium for milk because they believe in ethical farming.",
+        "b23": "When you know who — the text writes itself.",
+        "b25": "Example: before and after",
+        "b26": "(Pseudonym for the example.)",
+        "b27": "**❌ Before (generic, no story):**",
+        "b28": "Galit's Bread Bakery — a quality boutique bakery. We specialize in sourdough breads, pastries, and pita bread. All our products are from organic flour, premium quality. Order now!",
+        "b29": "Parts that don't work:",
+        "b30": {
+          "i0": "\"Quality boutique\" — every bakery writes this",
+          "i1": "\"All products from organic flour\" — doesn't say which flour, from where",
+          "i2": "\"Premium\" — empty word",
+          "i3": "\"Order now\" — marketing speak"
+        },
+        "b31": "**✅ After (a story):**",
+        "b32": "Galit started baking in 2019, after a year at a bakery in France. The first loaf came out burnt. Two years later, she opened the bakery. The flour comes from a small mill in the north — organic, milled the day it reaches her. 36-hour fermentation. A small bakery, 4 loaves a day. If you came late — come back tomorrow.",
+        "b33": "What changed:",
+        "b34": {
+          "i0": "A person's name → human story",
+          "i1": "Regional details (France, north) → sense of place without inventing fake businesses",
+          "i2": "Technical details (36-hour fermentation) → credibility",
+          "i3": "\"4 loaves a day\" → scarcity, authenticity",
+          "i4": "\"If you came late — come back tomorrow\" → personality"
+        },
+        "b36": "5 practical rules",
+        "b37": "**1. Avoid balloon words:**",
+        "b38": "\"Quality,\" \"premium,\" \"natural,\" \"professional,\" \"authentic.\" They say nothing. **Show** instead of **declare**.",
+        "b39": "**2. Names and cities — essential:**",
+        "b40": "\"Karmiel\" beats \"the north.\" \"A mill at Kibbutz X\" beats \"local flour.\" Specifics = credibility. (Just make sure you're using real names — customers will check.)",
+        "b41": "**3. Start date — always.**",
+        "b42": "\"Since 2019\" helps a customer know you're not brand-new. Even if you are new — \"since June 2024\" beats nothing.",
+        "b43": "**4. Right length: 150-300 words.**",
+        "b44": "No more. The first story is just the opening. The rest of the details go to the full \"about\" page or the product catalog.",
+        "b45": "**5. Read it out loud before you save.**",
+        "b46": "If it sounds like an ad — start over. If it sounds like you're telling a friend — you're ready.",
+        "b48": "What not to do",
+        "b49": {
+          "i0": "❌ **Don't open with \"Welcome.\"** That's wasted space. Use it for the story.",
+          "i1": "❌ **Don't write in passive voice.** \"We believe...\" or \"I started in 2019...\" beats \"The company was founded in 2019...\"",
+          "i2": "❌ **Don't mention competitors.** \"Better than X\" signals insecurity.",
+          "i3": "❌ **Don't promise things you can't prove.** \"The best product in the area\" — you can be sued for that.",
+          "i4": "❌ **No emojis inside the body text.** They're fine in a category heading (🌿, 🥖) but not inside the story."
+        },
+        "b51": "Help if you're stuck",
+        "b52": "If you're sitting in front of the field and can't get started — write to me. I'll read the story, point out where it's strong and where it's weak, and help edit. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b53": "This isn't an offer for everyone. It's an option for new business owners who don't yet know what it looks like. After you've written it once — you'll always know."
+      }
+    },
+    "product_photography": {
+      "title": "How to photograph your products properly",
+      "subtitle": "No professional camera. No studio. On the phone you already have.",
+      "preview": "5 principles + a 30-minute workflow. How to produce 15 quality photos for the profile using your phone.",
+      "body": {
+        "b0": "On your profile page on Mehamakor, **the first photo is the moment a customer decides whether to stay**. Before they read the story. Before they see the price. Before everything.",
+        "b1": "And yet — many business owners open the upload field, look at the photos on their phone, and feel they're \"not professional enough.\" They upload one photo from their Instagram from two years ago, and hope for the best.",
+        "b2": "This is the guide that explains why you don't need to shoot in a studio, and what you do need.",
+        "b4": "The first rule: you don't need a professional camera",
+        "b5": "Your phone is enough. **Completely.**",
+        "b6": "Professional shots of boutique bakeries you see on Instagram — a large share of them were shot on a phone. The difference isn't the gear. The difference is:",
+        "b7": {
+          "i0": "Light",
+          "i1": "Patience",
+          "i2": "Selection"
+        },
+        "b8": "This guide is about those.",
+        "b10": "The 5 principles",
+        "b11": "**1. Natural light only. No flash.**",
+        "b12": "Flash flattens the photo and turns food into plastic. A ceiling bulb creates harsh shadows from above. Direct noon sun does the same.",
+        "b13": "**What does work:**",
+        "b14": {
+          "i0": "Natural light through a window, between 9:00-11:00 a.m. or 15:00-17:00",
+          "i1": "Overcast days — actually excellent. Diffuse, soft light",
+          "i2": "Shade outside (not direct sun)"
+        },
+        "b15": "**Simple technique:** place the product next to a window — light should fall from the side, not from above and not facing you. You'll see the side near the window is bright and the other side in light shadow — that's exactly what you want.",
+        "b17": "**2. People — not only products.**",
+        "b18": "This is the tip that works hardest, and business owners are the most embarrassed by it.",
+        "b19": "**The strongest photo on your profile is you, with the products, in your hands.** Not a professional portrait in an office. You at work. In work clothes. With flour on your hands. With fruit in a basket.",
+        "b20": "Why it works:",
+        "b21": {
+          "i0": "**People buy from people.** Seeing a face → feeling trust.",
+          "i1": "**This is what Mehamakor is.** Not a transactional platform, a place that shows who's behind every business.",
+          "i2": "**Big chains can't show the \"owner at work.\" You can.**"
+        },
+        "b22": "Examples:",
+        "b23": {
+          "i0": "A farmer holding vegetables she just picked",
+          "i1": "A baker pulling bread out of the oven",
+          "i2": "A dairy farmer next to the cows during milking",
+          "i3": "A vintner looking at grapes in the vineyard"
+        },
+        "b25": "**3. Process — not only result.**",
+        "b26": "Most business owners only photograph **the finished product**. But the customer also wants to see how it was made.",
+        "b27": "**The simple method:** think about a regular workday at your place. From start to finish. **3 moments worth a photo:**",
+        "b28": {
+          "i0": "**The preparation moment** — before the product is ready. The raw ingredients, the equipment, the first hand that touches it.",
+          "i1": "**The transformation moment** — when the raw material becomes a product. (It's different in every category — but it's always there.)",
+          "i2": "**The finishing moment** — the product is ready. A moment before it leaves the business."
+        },
+        "b29": "**A 5-minute exercise:** take a piece of paper. Write your day in your business in one line — from morning to end. Mark 3 points where there's something to see. They don't have to be pretty, they have to be real. Next time that day happens — shoot the 3 points.",
+        "b30": "**Why it works:** the customer sees what's actually happening, not only the polished end result. **Process = transparency = trust.**",
+        "b32": "**4. Environment — sense of place.**",
+        "b33": "Your place is part of the story.",
+        "b34": {
+          "i0": "A farm in the Galilee → let the Galilee show in the photos",
+          "i1": "A bakery in Tel Aviv → photograph the street from outside",
+          "i2": "A dairy in the Negev → the Negev landscape is part of your story"
+        },
+        "b35": "**Tip:** don't be afraid of \"background noise\" — an old wooden crate, a linen tablecloth, an empty bench. It's not distracting. It **gives the photo character**. The opposite of a stock photo.",
+        "b37": "**5. Don't over-filter.**",
+        "b38": "Minimal editing only:",
+        "b39": {
+          "i0": "✅ Gentle brightness and contrast",
+          "i1": "✅ Light sharpening",
+          "i2": "✅ Crop if needed",
+          "i3": "❌ Vintage filter",
+          "i4": "❌ VSCO look",
+          "i5": "❌ HDR",
+          "i6": "❌ Over-saturated"
+        },
+        "b40": "**The reason:** a filter changes the product's color. The customer will get the product at home and see something else. Disappointment = bad review = customer who doesn't come back.",
+        "b41": "Mehamakor isn't \"Instagram aesthetics.\" We're real.",
+        "b43": "3 angles for every product",
+        "b44": "For every main product in your catalog — shoot at least 3 photos:",
+        "b45": {
+          "i0": "**The product alone** — on a wood surface, a linen cloth, or a simple background. No over-styling. Just the product.",
+          "i1": "**The product in a hand** — your hand, a customer's hand, a hand holding the product. **Scale** (size relative to a hand) plus **human life**.",
+          "i2": "**The product in context** — on a dining table, next to a coffee cup, in the shipping packaging, in a gift box. **Real use.**"
+        },
+        "b47": "Examples — what works, what doesn't",
+        "b48": "**✅ Works:**",
+        "b49": {
+          "i0": "A baker holding warm bread, you can see the crust, natural light from the window",
+          "i1": "A farmer in the vineyard holding a cluster of grapes, with evening sky behind",
+          "i2": "A hand touching a jar of yogurt, you can see the thick texture"
+        },
+        "b50": "**❌ Doesn't work:**",
+        "b51": {
+          "i0": "A product on a sterile white background (Amazon vibes)",
+          "i1": "An overhead flatlay that's too tidy (Pinterest vibes)",
+          "i2": "A glossy macro with dripping sauce (aggressive food styling)",
+          "i3": "Heavily filtered (Instagram filter vibes)",
+          "i4": "Industrial packaging under studio lighting (Whole Foods vibes)"
+        },
+        "b52": "Mehamakor's style: **like a photo a close friend would take when she came to visit your business, not like a brand-shot paid for by a professional photographer.**",
+        "b54": "A practical workflow — 30 minutes",
+        "b55": "If you have 30 free minutes in the morning, here's how you'll get a solid set of photos:",
+        "b56": {
+          "i0": "**Pick 5 products** from the catalog. The most important to you.",
+          "i1": "**Find a window** in your kitchen / business with nice side light.",
+          "i2": "**For each product** — shoot 20 photos. 3 angles × a few takes each.",
+          "i3": "**Come back later** and pick the 3 best for each product."
+        },
+        "b57": "That's it. 15 photos for the profile — more than 90% of the businesses on the site have.",
+        "b59": "What if I don't have good photos right now?",
+        "b60": "3 options:",
+        "b61": {
+          "i0": "**Use a placeholder until you shoot** — Mehamakor shows a small category icon (🌾, 🥖, 🧀) instead of a missing photo. Not attractive, but not invisible.",
+          "i1": "**Schedule one short shoot** — if you have half a day free, shoot everything at once. A few hours of watching the light = many photos.",
+          "i2": "**Hire a local photographer** — sometimes worth the investment. A local photographer can give you many quality photos in half a day. Prices vary — ask for 2-3 quotes before deciding. If you're in for the year — it's a worthwhile investment."
+        },
+        "b63": "Help if you're stuck",
+        "b64": "Send me 2-3 photos you've taken. I'll look and explain which one works, which doesn't, and why. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b65": "It's not a regular service — it's an option for new business owners still learning what works."
+      }
+    },
+    "customer_messages": {
+      "title": "How to reply to messages from customers",
+      "subtitle": "Response time, tone, and what to write when you don't know what to write.",
+      "preview": "The small things that decide between a conversation ending in an order and one ending in \"I'll get back to you.\" 5 principles + 5 ready-made templates.",
+      "body": {
+        "b0": "The first message from a new customer is a small moment that decides a lot.",
+        "b1": "The person writing to you doesn't know you personally. Doesn't know if you'll reply. Doesn't know if you're serious. **The first three lines you send back decide whether they keep going, or look elsewhere.**",
+        "b2": "This guide isn't about being \"polite\" or \"professional.\" It's about the small things that make a real difference between a conversation that ends in an order and a conversation that ends with \"thanks, I'll get back to you\" that never comes back.",
+        "b4": "The first rule: response time matters more than the response itself",
+        "b5": "A woman writes to you in the evening. Asks about a product. Looking for confirmation that you're available, that the product exists, that you're serious.",
+        "b6": "If she didn't get a reply by the next afternoon — she's **already looked elsewhere**. Not because your product is less good. But because **she doesn't know you're still there**.",
+        "b7": "This is the most important rule: **fast response > perfect response.**",
+        "b9": "The 5 principles",
+        "b10": "**1. Four hours. That's the threshold.**",
+        "b11": "Not instant — you're a business owner, not a chatbot. But within 4 hours during working hours, **reply with something**.",
+        "b12": "\"Something\" can be:",
+        "b13": {
+          "i0": "\"Hi, saw your message. I'll reply with details this evening.\"",
+          "i1": "\"Thanks for reaching out! I'm at work right now, I'll get back to you within two hours.\"",
+          "i2": "\"Got your message. Just finishing a delivery, I'll be free at 14:00.\""
+        },
+        "b14": "This isn't a full reply. It's an **acknowledgement**. A customer who knows you saw the message waits. A customer who doesn't know — leaves.",
+        "b16": "**2. After hours — set expectations.**",
+        "b17": "Message came in at 22:00? Don't feel obligated to reply immediately. But **one line in the morning changes everything**:",
+        "b18": "Good morning! Saw your message last night. Replying in detail now.",
+        "b19": "**The reason:** the customer woke up and opened her phone. If the first thing she saw was a reply from you — you'll be on her mind all day.",
+        "b20": "**Another tip:** set a WhatsApp status with your business hours:",
+        "b21": "Active 9:00-17:00. I reply to every message in the morning.",
+        "b22": "This doesn't replace a personal reply — it sets expectations before someone writes.",
+        "b24": "**3. Personal beats template. But not completely.**",
+        "b25": "Two extremes that don't work:",
+        "b26": "**The first extreme:** an over-formatted reply. \"Greetings. Thank you for your inquiry. The full catalog will be sent in a separate file. For any further questions, please email us.\"",
+        "b27": "**The problem:** the customer feels like she's talking to a robot. Or to a company that doesn't have time.",
+        "b28": "**The second extreme:** a completely ad-libbed reply. \"Hi Dana! How fun that you asked. So we make pita every day at 6 in the morning, we have 3 kinds — whole wheat, regular, and a new green pita with zaatar we just tried this week and it really came out tasty, if you want I can send you a photo...\"",
+        "b29": "**The problem:** it takes you 10 minutes per message. Not sustainable.",
+        "b30": "**The right mix:**",
+        "b31": {
+          "i0": "**Personal opening** (\"Hi Dana! Thanks for reaching out.\") — one line, personal.",
+          "i1": "**Body of the message in a template** (catalog, price list, delivery times) — what repeats.",
+          "i2": "**Personal closing** (\"Looking forward to your order — message when you're ready.\") — one line, personal."
+        },
+        "b33": "**4. Ask before you tell.**",
+        "b34": "This is the tip that changes the closing rate.",
+        "b35": "Customer writes: \"Do you have cheeses?\"",
+        "b36": "**❌ The poor approach:** sending the whole catalog right away. 12 cheeses, prices, descriptions. The customer sees a wall of text and closes the chat.",
+        "b37": "**✅ The good approach:** asking one question. \"Yes! For dinner for two, or hosting a group? I have different recommendations for each.\"",
+        "b38": "**Why it works:**",
+        "b39": {
+          "i0": "**Starts a conversation** instead of closing it.",
+          "i1": "**Makes the customer feel cared for.** She didn't get a catalog — she got attention.",
+          "i2": "**Shortens the decision.** After she replies \"dinner for two\" — you have 2-3 cheeses to recommend, not 12."
+        },
+        "b40": "**The rule:** before you send information — ask **one focused question** that helps narrow it down.",
+        "b42": "**5. A conversation doesn't have to end in a sale.**",
+        "b43": "Sometimes a customer asks and doesn't buy. Asks for a price list, explores options, then goes quiet. That's fine.",
+        "b44": "**The reason:** a good reply today = an order in 3 months. Or a recommendation to a friend. Or a return when the situation changes.",
+        "b45": "If you try to \"close at all costs\" — asking \"so what did you decide?\", pushing, offering — you **lose those 3 months**.",
+        "b46": "**What to do after a conversation that didn't end in an order:**",
+        "b47": {
+          "i0": "Send a short thanks. \"Thanks for asking! If you need anything in the future, I'm here.\"",
+          "i1": "**Don't** follow up a week later. **Don't** remind them of yourself again \"by chance.\" **Don't** send a newsletter if they didn't ask for one."
+        },
+        "b48": "The customer knows where to find you. If she wants to — she'll come back.",
+        "b50": "Templates — 5 ready-made templates",
+        "b51": "Save these in WhatsApp Business (the \"quick replies\" feature) or in a note on your phone. To save time:",
+        "b52": "**1. Acknowledgement (as needed):**",
+        "b53": "Hi [name]! Got your message. I'll reply in detail within [X] hours.",
+        "b54": "**2. Filtering question (customer asks \"what do you have?\"):**",
+        "b55": "One short question — what are you looking for? [two options to pick from]. That way I know what to recommend.",
+        "b56": "**3. Full price list (after filtering):**",
+        "b57": "Sending the price list 📋 Delivery to your area [X] NIS. Delivery within [Z] days. Tell me what to pick and I'll prepare.",
+        "b58": "**4. Order confirmation (adapt to your workflow):**",
+        "b59": "Great! Got your order. I'll prepare [details].\n[If pickup:] Come pick up on [day, time] at [address].\n[If delivery:] Delivery on [day] for [Y] NIS.",
+        "b60": "**5. Closing a conversation that didn't end in an order:**",
+        "b61": "Thanks for asking! If you need anything in the future — I'm here.",
+        "b63": "What not to do",
+        "b64": {
+          "i0": "❌ **Don't apologize if you replied within the standard (4 hours during work hours).** An apology creates the impression of \"I hurt something.\" If you replied in a reasonable time — give a direct reply without \"sorry that...\"",
+          "i1": "❌ **Don't send a \"?\" if the customer hasn't replied.** It feels pressured. Send a full sentence or nothing.",
+          "i2": "❌ **Don't post private customer messages in WhatsApp statuses** — even without a name. Others will see it, understand that you share private chats, and won't write to you.",
+          "i3": "❌ **Don't write in all caps.** In English it's shouting. In Hebrew it reads as angry.",
+          "i4": "❌ **Don't send 5 separate messages** (\"Hi\" → \"I saw\" → \"Give me a minute\" → \"I'm at work\" → \"I'll get back later\"). Send one complete message."
+        },
+        "b66": "Help if you're stuck",
+        "b67": "Have a message you don't know how to reply to? **Send me a screenshot** (without the customer's identifying details — blur the name and phone). I'll reply with how I'd write it. **Free, personal, but it takes me a few days — I work with every business by myself.**",
+        "b68": "It's not a regular service — it's an option for new business owners still learning the rhythm."
       }
     }
   }
