@@ -9,6 +9,23 @@
 > **No code in this document.** Inventory → plan → execute in
 > subsequent PRs.
 
+## Status (last updated 2026-05-20)
+
+- **Chunk 1 — Recipe server-page metadata** — ✅ **MERGED** in PR #736 at
+  `a35a4da`. First production use of `getTranslations` from
+  `"next-intl/server"` + `generateMetadata` + `t()` interpolation is now
+  proven in staging. 2 strings extracted to `recipes.detail.meta_*`.
+  `<RecipeJsonLd>` untouched (data-sourced).
+- **Chunk 2 — Accessibility (35 strings)** — PENDING.
+- **Chunk 3 — Privacy + Terms combined (147 strings)** — PENDING.
+- **Chunk 4 — For-businesses FAQ + JSON-LD (31 strings)** — PENDING.
+  Gated on Chunks 2-3 proving the pattern in legal copy before adding
+  the JSON-LD layer on top.
+- **Chunk 5 — Guides (3 files, 283 strings) + selective sweep tail** —
+  PENDING.
+
+Future sessions pick up Chunks 2-5 per §4 below.
+
 ---
 
 ## 1. Per-file complexity catalog

@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### 2026-05-20 — Session summary: MEH-475 PR-C4b foundation shipped
+
+Three PRs merged this session, all tracking toward closing MEH-475 user-facing string scope:
+
+- **PR #731 MERGED** at `3a877ed` — `feat(MEH-475)`: language toggle UI (Globe icon, desktop + mobile drawer). next-intl locale router preserves pathname + query + hash. **Closes MEH-475 PR-C4a + toggle.** (Detailed entry below.)
+- **PR #735 MERGED** at `599c23e` — `docs(MEH-475)`: PR-C4b pre-implementation inventory (`docs/wave-5-pr-c4b-inventory.md`). Per-file complexity catalog for the 9 remaining server pages, 5-pattern architectural catalog with prior-art `file:line` citations, SEO risk per file (cross-checked against `robots.txt` + `sitemap.js`), proposed 5-chunk PR-C4b split, STOP criteria, full brand-LOCK grep classifying every "מהמקור"/"Mehamakor" hit as UI-text vs metadata vs JSDoc.
+- **PR #736 MERGED** at `a35a4da` — `feat(MEH-475 PR-C4b/chunk-1)`: recipe server-page metadata i18n via `getTranslations` + `generateMetadata`. First production use of the pattern; pattern proof-of-concept for the rest of PR-C4b. (Detailed entry below.)
+
+Next session pickup is documented in `HANDOFF.md` → "Next session pickup" (Chunks 2-5 per the inventory §4).
+
 ### 2026-05-20 — MEH-475 PR-C4b/chunk-1: recipe metadata i18n (2 strings)
 
 `feat`: First production use of `getTranslations` from `"next-intl/server"` + `generateMetadata` with `t()` interpolation. `frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx` extracts 2 hardcoded Hebrew strings (404 fallback title + success title template) into the existing `recipes.detail.*` namespace.
