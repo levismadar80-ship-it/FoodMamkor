@@ -3312,5 +3312,40 @@
       "field_price_label_full": "Price (0 = free)",
       "field_max_participants_label_full": "Max participants"
     }
+  },
+  "settings": {
+    "common": {
+      "page_heading": "Account settings",
+      "loading": "Loading…",
+      "tabs_aria": "Tabs",
+      "tab_profile": "Profile",
+      "tab_security": "Security",
+      "tab_business": "My business",
+      "saving": "Saving…",
+      "save_cta": "Save",
+      "optional_suffix": "(optional)"
+    },
+    "profile": {
+      "tabpanel_aria": "Profile",
+      "avatar_title": "Tap to change photo",
+      "avatar_aria": "Change profile photo",
+      "avatar_hint": "Tap the photo to change",
+      "saved_msg": "Details saved",
+      "save_error_fallback": "We couldn't save. Please try again.",
+      "upload_type_error": "Only image files allowed: JPG, PNG, WEBP, GIF",
+      "upload_size_error": "File too large — 5MB maximum",
+      "avatar_uploaded_msg": "Profile photo updated",
+      "avatar_upload_error_fallback": "Upload error — please try again",
+      "field_name_label": "Full name",
+      "field_city_label": "City",
+      "field_city_placeholder": "For example: Tel Aviv",
+      "field_city_hint": "So we can show you businesses in your area",
+      "field_email_label": "Email",
+      "email_oauth_hint": "The email is linked to a {provider} account — to change, update your name",
+      "email_oauth_provider_fallback": "external",
+      "email_change_hint": "To change email, contact support",
+      "field_phone_label": "Phone",
+      "field_phone_hint": "Notifications coming soon"
+    }
   }
 }
