@@ -37,10 +37,12 @@ const HREFLANG_CODES = { he: "he-IL", en: "en" };
 const OG_LOCALE = { he: "he_IL", en: "en_US" };
 const OG_ALTERNATE_LOCALES = ["he_IL", "en_US"];
 
-// MEH-476 PR 3b1: now ACTIVE. PR 2's headers() read has been removed in favor
-// of per-page generateMetadata (sample: app/[locale]/about/page.js). Layout
-// itself only emits root-level hreflang as fallback; ISR cache hint is honored
-// for routes whose generateMetadata is locale-stable (no request-time APIs).
+// MEH-476 PR 3b1: now ACTIVE for routes that don't read request APIs in
+// their own page components (e.g. /[locale], /[locale]/about, /[locale]/events).
+// PR 2's headers() read has been removed in favor of per-page generateMetadata
+// (sample: app/[locale]/about/page.js). Routes whose page.js still consumes
+// headers/cookies/searchParams (currently /map, /producers, /about/for-businesses/*)
+// remain ƒ Dynamic and silently ignore this hint until those pages are refactored.
 export const revalidate = 3600;
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get
