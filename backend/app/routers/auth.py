@@ -245,7 +245,12 @@ _REGISTER_ACK_DETAIL = (
 # (corporate NAT, CGNAT, CI runners) without meaningfully weakening
 # brute-force protection. Backend rate-limit complements frontend
 # PasswordPolicy which already enforces 12-char + HIBP (MEH-306).
+# MEH-624: dual-key throttling. Per-IP cap above + per-email cap below
+# stops a botnet rotating IPs from spamming the OWASP duplicate-attempt
+# email at one victim. Mirrors /forgot-password (MEH-191).
+# REUSES: backend/app/routers/auth.py:972-973 — same dual-key shape.
 @limiter.limit("10/hour")
+@limiter.limit("5/15 minutes", key_func=email_from_body)
 async def register(
     request: Request,
     data: UserRegister,
@@ -348,7 +353,14 @@ async def register(
 # decorator-level response_model is single-shape and would strip fields
 # from one of the two — we let Pydantic serialise each return as-is.
 @router.post("/register/producer")
+# MEH-624: dual-key throttling. Per-IP cap (3/hour) below + per-email cap
+# stops a botnet rotating IPs from spamming the OWASP duplicate-attempt
+# email at one victim. Upgrade path (authenticated user, email=None on
+# payload) falls into the shared empty-string bucket — acceptable because
+# that path already required a valid JWT.
+# REUSES: backend/app/routers/auth.py:972-973 — same dual-key shape.
 @limiter.limit("3/hour")  # SECURITY FIX #2
+@limiter.limit("5/15 minutes", key_func=email_from_body)
 async def register_producer(
     request: Request,
     response: Response,

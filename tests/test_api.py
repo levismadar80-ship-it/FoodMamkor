@@ -548,6 +548,88 @@ class TestAuth:
         assert resp.status_code == 422
 
 
+class TestRegisterPerEmailRateLimit:
+    """MEH-624 — per-email cap stacked on top of per-IP cap on both
+    /auth/register and /auth/register/producer. Closes the gap MEH-328
+    left open: without a per-email key, a botnet rotating IPs could spam
+    the OWASP duplicate-attempt email at a single victim. Mirrors the
+    /forgot-password dual-key pattern from MEH-191 (TestForgotPasswordRateLimits
+    in tests/test_auth.py).
+    """
+
+    def test_register_per_email_rate_limit_blocks_after_5_attempts(
+        self, client, monkeypatch
+    ):
+        """Per-IP=10/hour (loose) + per-email=5/15min (tight). Six requests
+        with the same email from a single test IP — per-IP bucket stays
+        at 6 of 10, per-email bucket trips on the 6th request.
+        """
+        # Stub email side-effects so we exercise only the limiter chain.
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        payload = {
+            "email": "rl_victim_register@test.com",
+            "name": "Victim",
+            "password": "Zx7Yp9Mq2Lr4",
+        }
+        statuses = [
+            client.post("/auth/register", json=payload).status_code
+            for _ in range(6)
+        ]
+        assert statuses[:5] == [200] * 5
+        assert statuses[5] == 429
+
+    def test_register_producer_per_email_rate_limit_blocks_after_5_attempts(
+        self, client, monkeypatch
+    ):
+        """Per-IP=3/hour (tight) + per-email=5/15min. Per-IP would trip
+        first from a single client, so this test rotates IPs via X-Real-IP
+        (TRUSTED_PROXY=1 to honor the header in get_real_client_ip).
+        Each request hits a fresh per-IP bucket; only per-email accumulates.
+        Sixth request from a 6th distinct IP, same email → 429.
+        """
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+        monkeypatch.setattr(
+            "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_duplicate_attempt_email",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth.notify_admin_new_producer",
+            lambda *a, **kw: None,
+        )
+        monkeypatch.setattr(
+            "app.routers.auth.notify_producer_registered",
+            lambda *a, **kw: None,
+        )
+        payload = {
+            "email": "rl_victim_producer@test.com",
+            "name": "שרה",
+            "password": "Zx7Yp9Mq2Lr4",
+            "producer_name": "חוות שרה",
+            "phone": "0501234567",
+            "category_ids": [],
+            "primary_contact_method": "whatsapp",
+        }
+        statuses = [
+            client.post(
+                "/auth/register/producer",
+                json=payload,
+                headers={"X-Real-IP": f"203.0.113.{i}"},
+            ).status_code
+            for i in range(6)
+        ]
+        assert statuses[:5] == [200] * 5
+        assert statuses[5] == 429
+
+
 # ---------- Producers ----------
 
 class TestProducers:

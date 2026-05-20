@@ -91,6 +91,12 @@ CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + br
 
 `verification`: `npm run build` green (101 static pages, both locales). RTL: `ps-6` already used by sibling sections; new section uses `dir="ltr"` only inside the email anchor (matches existing pattern). Mobile + desktop QA on Vercel preview deferred to Smadar.
 
+### 2026-05-17 — MEH-624: Per-email rate limit on /register + /register/producer
+
+`security`: Stacked `@limiter.limit("5/15 minutes", key_func=email_from_body)` on top of the existing per-IP limits on both register endpoints. Mirrors the `/forgot-password` dual-key pattern from MEH-191. Closes the gap MEH-328 left open — a botnet rotating IPs could previously spray the OWASP duplicate-attempt email at a single victim at `(per-IP limit × N botnet hosts)` per hour. With dual-key throttling enabled, a single email can receive at most 5 register attempts per 15 minutes regardless of IP source. Per-IP limits unchanged (`/register` 10/hour, `/register/producer` 3/hour). Upgrade path (authenticated user, `email=None` payload) falls into the shared empty-string bucket — acceptable because that path already required a valid JWT.
+
+`tests`: 2 new pytest cases in `TestRegisterPerEmailRateLimit` (tests/test_api.py) — `test_register_per_email_rate_limit_blocks_after_5_attempts` uses a single test IP since per-IP=10/hour stays loose; `test_register_producer_per_email_rate_limit_blocks_after_5_attempts` rotates `X-Real-IP` (TRUSTED_PROXY=1) to keep per-IP at 1 per request while per-email accumulates and trips on the 6th. Both follow the `TestForgotPasswordRateLimits` pattern from MEH-191.
+
 ### 2026-05-17 — MEH-627: Fix /register rate-limit doc drift (10/hour per MEH-417)
 
 `docs`: `.ai/diagrams/api-routes.md` RegConsumer node updated `3/hour → 10/hour` to match the actual `@limiter.limit("10/hour")` on `backend/app/routers/auth.py:248`. Drift introduced when MEH-417 (PR #423, commit `662ba8e`, April 2026) raised the cap but did not update the diagram. Added `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` HTML comment above the Mermaid block as grep anchor. Verified all other rate-limit annotations in the same diagram against backend code (whatsapp-click 10/min, login 5/min, newsletter 5/hour, contact 5/hour all match) — no additional drifts.
