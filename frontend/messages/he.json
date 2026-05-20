@@ -3347,6 +3347,27 @@
       "field_phone_label": "טלפון",
       "field_phone_hint": "נוסיף בקרוב notifications"
     },
+    "business": {
+      "tabpanel_aria": "העסק שלי",
+      "status_pending": "✋ הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.",
+      "status_rejected_title": "הבקשה לא אושרה",
+      "rejected_tip_details": "ודאי שכל פרטי העסק מלאים ומדויקים",
+      "rejected_tip_photos": "הוסיפי תמונות ברורות של המוצרים",
+      "rejected_tip_address": "בדקי שכתובת העסק נכונה",
+      "support_cta": "דברי איתנו →",
+      "status_suspended": "החשבון מושעה זמנית.",
+      "support_cta_short": "צרי קשר",
+      "stats_heading": "סטטיסטיקות",
+      "stats_loading": "טוענת...",
+      "stat_views": "צפיות",
+      "stat_favorites": "מועדפים",
+      "stat_reviews": "ביקורות",
+      "stat_avg_rating": "דירוג ממוצע",
+      "stat_products": "מוצרים",
+      "stat_orders": "הזמנות",
+      "stats_unavailable": "הנתונים אינם זמינים כרגע.",
+      "edit_profile_link": "ערכי פרופיל עסק →"
+    },
     "products": {
       "section_heading": "מוצרים",
       "add_cta": "הוסיפי מוצר",
