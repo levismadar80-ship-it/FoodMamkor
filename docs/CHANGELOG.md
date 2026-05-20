@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+### 2026-05-20 — MEH-475: Language toggle UI (Globe icon, desktop + mobile drawer) — PR #731 MERGED
+
+`feat`: New `frontend/components/LanguageToggle.jsx` (78 LOC) — Phosphor `Globe` icon button that flips HE ⇄ EN via next-intl's locale-aware router (`@/i18n/navigation`) while preserving the current `pathname`, query params (`window.location.search`), and hash (`window.location.hash`). Mounted in `Header.jsx` twice: desktop top-right cluster (between Search and LoginPill/UserMenu) and inside the mobile drawer (replacing the legacy text button-group toggle that dropped query params via `router.replace(pathname)`). `data-testid="language-toggle"` + `data-current-locale={locale}` exposed for future E2E coverage.
+
+`fix`: localStorage shim race — `LanguageProvider`'s one-shot hydration effect (`lib/language-context.js:35-42`) reads `localStorage.lang` on mount and force-redirects to the saved locale. Without writing localStorage inside the toggle's `onToggle`, the next full page load after a toggle click would bounce the user back to the prior locale. Toggle now writes `window.localStorage.setItem("lang", nextLocale)` (try/catch for private-mode/quota safety) so both paths agree until <issue id="MEH-472">MEH-472</issue> deletes the shim entirely.
+
+`fix`: CSR-bailout regression — initial implementation used `useSearchParams()` from `next/navigation`, which forced statically prerendered pages mounting the global Header (`/privacy`, `/admin/producers`, `/about/for-businesses/guides`) into CSR bailout (build failure: "useSearchParams should be wrapped in a suspense boundary"). Rewritten to read `window.location.search` + `window.location.hash` inside the click event handler — same behavior, no hook usage at render time, build passes.
+
+`refactor`: Removed `setLang` from the `useLanguage()` destructure in `Header.jsx` — the toggle bypasses the legacy `setLang` (which dropped query params silently) in favor of direct next-intl `router.replace(href, {locale})`. `lang` still subscribed for the mobile drawer's adjacent text label.
+
+`test`: `frontend/__tests__/Header.test.jsx` mock additions (4 new `nav.lang_*` keys, `useLocale: () => "he"`, Phosphor `Globe`, `@/i18n/navigation` router/pathname mock). Vitest baseline parity confirmed (13 failed | 14 passed (27) — identical to staging pre-PR; zero regressions). The 13 pre-existing failures stem from a separate mock weakness (`useTranslations` ignoring namespace argument) tracked as item 5 in <issue id="MEH-629">MEH-629</issue>.
+
+`scope`: Excluded from this PR — lifting `Disallow: /en/` from `frontend/public/robots.txt`. Deferred to a post-PR-C4b / post-Wave-6 separate PR because EN surface still has untranslated server pages (recipes, legal, about/for-businesses).
+
+CI: `npm run build` ✅ 12.9s / 101 static; ICU + key parity 1762/1762; RTL + brand-LOCK clean; adversarial review 14 candidates → 13 disproved, 1 cosmetic (date typo). Vercel preview QA: `/he` root `<html lang="he" dir="rtl">` with `aria-label="Switch to English"`; `/en` root `<html lang="en" dir="ltr">` with `aria-label="Switch to Hebrew"`; toggle positioned correctly in top-right cluster on both. Squash-merged at `3a877ed2`.
+
+**Closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b — 5 PRs / ~500 strings extracted to `useTranslations()` — plus this toggle). Remaining MEH-475 work deferred to future sessions: PR-C4b (~600 strings — server pages + legal + recipe + sweep), Wave 6 (~64 strings — metadata exports), `robots.txt /en` lift (after PR-C4b + Wave 6 close). Hygiene follow-ups (3 items: test mock namespace, dead `setLang` mock, optional Globe contrast on transparent hero) folded into <issue id="MEH-629">MEH-629</issue> (now 7 items, ~47 min total, P3).
+
 ### 2026-05-17 — MEH-627: Fix /register rate-limit doc drift (10/hour per MEH-417)
 
 `docs`: `.ai/diagrams/api-routes.md` RegConsumer node updated `3/hour → 10/hour` to match the actual `@limiter.limit("10/hour")` on `backend/app/routers/auth.py:248`. Drift introduced when MEH-417 (PR #423, commit `662ba8e`, April 2026) raised the cap but did not update the diagram. Added `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` HTML comment above the Mermaid block as grep anchor. Verified all other rate-limit annotations in the same diagram against backend code (whatsapp-click 10/min, login 5/min, newsletter 5/hour, contact 5/hour all match) — no additional drifts.
