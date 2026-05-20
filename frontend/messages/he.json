@@ -3312,5 +3312,40 @@
       "field_price_label_full": "מחיר (0 = חינם)",
       "field_max_participants_label_full": "מקסימום משתתפים"
     }
+  },
+  "settings": {
+    "common": {
+      "page_heading": "הגדרות חשבון",
+      "loading": "טוענת...",
+      "tabs_aria": "טאבים",
+      "tab_profile": "פרופיל",
+      "tab_security": "אבטחה",
+      "tab_business": "העסק שלי",
+      "saving": "שומרת...",
+      "save_cta": "שמרי",
+      "optional_suffix": "(אופציונלי)"
+    },
+    "profile": {
+      "tabpanel_aria": "פרופיל",
+      "avatar_title": "לחצי לשינוי התמונה",
+      "avatar_aria": "שינוי תמונת פרופיל",
+      "avatar_hint": "לחצי על התמונה לשינוי",
+      "saved_msg": "הפרטים נשמרו",
+      "save_error_fallback": "לא הצלחנו לשמור. נסי שוב.",
+      "upload_type_error": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
+      "upload_size_error": "הקובץ גדול מדי — מקסימום 5MB",
+      "avatar_uploaded_msg": "תמונת הפרופיל עודכנה",
+      "avatar_upload_error_fallback": "שגיאה בהעלאת התמונה — נסי שוב",
+      "field_name_label": "שם מלא",
+      "field_city_label": "עיר",
+      "field_city_placeholder": "לדוגמה: תל אביב",
+      "field_city_hint": "כדי שנציג לך עסקים באזורך",
+      "field_email_label": "אימייל",
+      "email_oauth_hint": "האימייל מחובר לחשבון {provider} — לשינוי עדכני שם",
+      "email_oauth_provider_fallback": "חיצוני",
+      "email_change_hint": "לשינוי אימייל, פני לתמיכה",
+      "field_phone_label": "טלפון",
+      "field_phone_hint": "נוסיף בקרוב notifications"
+    }
   }
 }
