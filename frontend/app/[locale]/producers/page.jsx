@@ -5,7 +5,7 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
 import { buildAlternates } from "@/lib/i18n-seo";
-import { BRAND_NAME } from "@/lib/constants";
+import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
 
 /**
  * Public paginated index (MEH-23). Server-rendered so crawlers can
@@ -47,7 +47,7 @@ export async function generateMetadata(props) {
 
   const t = await getTranslations({ locale, namespace: "producers" });
   const indexLabel = t("title.all");
-  const brand = locale === "he" ? BRAND_NAME : "Mehamakor";
+  const brand = locale === "he" ? BRAND_NAME : BRAND_NAME_LATIN;
   const title =
     page === 1
       ? `${indexLabel} | ${brand}`
@@ -55,12 +55,17 @@ export async function generateMetadata(props) {
         ? `${indexLabel} — עמוד ${page} | ${brand}`
         : `${indexLabel} — page ${page} | ${brand}`;
 
-  // For page 1 use buildAlternates (canonical + languages); for paginated
-  // variants, override canonical to include ?page=N while keeping the same
-  // hreflang languages map (each locale's /producers root is the alternate).
+  // Build alternates from /producers, then for paginated variants append
+  // ?page=N to BOTH canonical and every languages URL so each EN/HE
+  // page-N variant declares the matching EN/HE page-N variant as its
+  // cross-locale alternate (instead of pointing to the page-1 root).
   const alternates = buildAlternates("/producers", locale);
   if (page > 1) {
-    alternates.canonical = `${alternates.canonical}?page=${page}`;
+    const suffix = `?page=${page}`;
+    alternates.canonical = `${alternates.canonical}${suffix}`;
+    alternates.languages = Object.fromEntries(
+      Object.entries(alternates.languages).map(([k, v]) => [k, `${v}${suffix}`]),
+    );
   }
 
   return {

@@ -56,7 +56,11 @@ export async function generateMetadata(props) {
   const alternates = buildAlternates(path, locale);
   if (!producer || !recipe) {
     // title.absolute prevents layout's `%s | brand` template double-suffix.
-    return { title: { absolute: t("meta_title_not_found") }, alternates };
+    return {
+      title: { absolute: t("meta_title_not_found") },
+      openGraph: { locale: OG_LOCALE[locale] },
+      alternates,
+    };
   }
   const truncate = (s, n) =>
     s && s.length > n ? `${s.slice(0, n - 1)}…` : s || "";

@@ -20,7 +20,7 @@
  */
 
 import { SITE_URL } from "./env";
-import { BRAND_NAME } from "./constants";
+import { BRAND_NAME, BRAND_NAME_LATIN } from "./constants";
 import { routing } from "@/i18n/routing";
 
 // MEH-476 PR 1 + 3b2: hreflang codes emitted to Google. "he-IL" geo-targets
@@ -33,9 +33,10 @@ export const OG_LOCALE = { he: "he_IL", en: "en_US" };
 export const OG_ALTERNATE_LOCALES = ["he_IL", "en_US"];
 
 // MEH-476 PR 3b2: brand suffix per locale for dynamic entity titles.
-// Q6 hybrid: outbound prose (page titles ARE outbound) → Latin "Mehamakor"
-// on EN; HE brand name "מהמקור" on HE.
-const BRAND_SUFFIX = { he: BRAND_NAME, en: "Mehamakor" };
+// Q6 hybrid: outbound prose (page titles ARE outbound) → BRAND_NAME_LATIN
+// on EN; BRAND_NAME (HE) on HE. Both constants live in lib/constants.js
+// so a future rebrand updates both forms in one place.
+const BRAND_SUFFIX = { he: BRAND_NAME, en: BRAND_NAME_LATIN };
 
 /**
  * Build a fully-qualified URL for a given path under a locale.
