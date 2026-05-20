@@ -28,13 +28,26 @@ export async function generateMetadata(props) {
   const path = `/group-buys/${id}`;
   const alternates = buildAlternates(path, locale);
   const entityName = groupBuy?.title || groupBuy?.name;
+
+  if (!entityName) {
+    // MEH-476 followup: 404 paths should not be indexed even though they
+    // still emit valid hreflang (so cross-locale 404s are linked).
+    return {
+      title: { absolute: t("title_fallback") },
+      description: t("description_fallback"),
+      robots: { index: false, follow: false },
+      openGraph: {
+        type: "article",
+        locale: OG_LOCALE[locale],
+        images: ["/og-image.jpg"],
+      },
+      alternates,
+    };
+  }
+
   return {
-    // title.absolute — buildEntityTitle / title_fallback both already include brand.
-    title: {
-      absolute: entityName
-        ? buildEntityTitle(entityName, locale)
-        : t("title_fallback"),
-    },
+    // title.absolute — buildEntityTitle already includes brand.
+    title: { absolute: buildEntityTitle(entityName, locale) },
     description: groupBuy?.description || t("description_fallback"),
     openGraph: {
       type: "article",

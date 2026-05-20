@@ -56,8 +56,11 @@ export async function generateMetadata(props) {
   const alternates = buildAlternates(path, locale);
   if (!producer || !recipe) {
     // title.absolute prevents layout's `%s | brand` template double-suffix.
+    // MEH-476 followup: 404 paths should not be indexed even though they
+    // still emit valid hreflang (so cross-locale 404s are linked).
     return {
       title: { absolute: t("meta_title_not_found") },
+      robots: { index: false, follow: false },
       openGraph: { locale: OG_LOCALE[locale] },
       alternates,
     };

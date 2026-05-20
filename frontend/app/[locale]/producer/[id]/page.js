@@ -27,6 +27,9 @@ export async function generateMetadata(props) {
     return {
       // title.absolute prevents layout's `%s | brand` template double-suffix.
       title: { absolute: buildEntityTitle(null, locale) },
+      // MEH-476 followup: 404 paths should not be indexed even though
+      // they still emit valid hreflang (so cross-locale 404s are linked).
+      robots: { index: false, follow: false },
       alternates,
     };
   }
