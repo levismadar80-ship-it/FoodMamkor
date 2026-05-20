@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-05-20 — MEH-475 PR-C4b/chunk-1: recipe metadata i18n (2 strings)
+
+`feat`: First production use of `getTranslations` from `"next-intl/server"` + `generateMetadata` with `t()` interpolation. `frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx` extracts 2 hardcoded Hebrew strings (404 fallback title + success title template) into the existing `recipes.detail.*` namespace.
+
+`namespace`: `recipes.detail.meta_title_not_found` + `recipes.detail.meta_title_template`. Chose extension of existing `recipes.detail.*` (currently houses the page's breadcrumb + body labels) over a new `recipes.metadata.*` sub — one namespace per page surface keeps related keys colocated.
+
+`pattern`: Pattern proof-of-concept for the rest of MEH-475 PR-C4b. Per the planning doc `docs/wave-5-pr-c4b-inventory.md`, this is the lowest-risk introduction site for both `getTranslations` (prior art: 1 site, `map/page.js:47`) and `getTranslations` + `generateMetadata` together (prior art: zero sites). 2 strings + no body / JSON-LD / markdown changes = smallest possible surface to prove the pattern.
+
+`scope`: 3 files touched — page.jsx (+10/-5), messages/he.json (+2 keys), messages/en.json (+2 keys). `<RecipeJsonLd>` left untouched; the component sources every schema field from API data, not translation keys, so this PR has zero JSON-LD impact (Rich Results unaffected).
+
+`verification`: `npm run build` green. ICU key parity 1765/1765 HE↔EN. Scanner residual on this file = 0 (was 2). Brand-LOCK grep clean (no remaining "מהמקור" or "Mehamakor" in the file body — moved entirely to translation values). RTL: no positional class changes. Vercel preview QA (HE `<title>` + EN `<title>` + JSON-LD shape unchanged) deferred to Smadar.
+
 ### 2026-05-20 — MEH-475: Language toggle UI (Globe icon, desktop + mobile drawer) — PR #731 MERGED
 
 `feat`: New `frontend/components/LanguageToggle.jsx` (78 LOC) — Phosphor `Globe` icon button that flips HE ⇄ EN via next-intl's locale-aware router (`@/i18n/navigation`) while preserving the current `pathname`, query params (`window.location.search`), and hash (`window.location.hash`). Mounted in `Header.jsx` twice: desktop top-right cluster (between Search and LoginPill/UserMenu) and inside the mobile drawer (replacing the legacy text button-group toggle that dropped query params via `router.replace(pathname)`). `data-testid="language-toggle"` + `data-current-locale={locale}` exposed for future E2E coverage.
