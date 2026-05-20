@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-20 — Sweep tail E1 + MEH-629 hygiene bundle merged (post-PR-C4b)
+
+Two PRs landed end-to-end via autopilot, plus this docs closeout:
+
+- **PR #750 MERGED** at `f49390a` — `feat(MEH-475 sweep/E1)`: producer/dashboard i18n (106→125 keys, 3 MEH-543 deferred). New `dashboard.producer.*` namespace with sub-shapes for vanity_link, status banners, availability, quick_links, analytics, strength, custom_questions, bio. MEH-543 carve-out preserved on L504/L507 SimpleCard + L683 STRENGTH_ITEMS product entry — existing `// TODO MEH-543` markers kept.
+- **PR #751 MERGED** at `ea830a6` — `fix(MEH-629)`: pre-launch hygiene bundle (items 1-6). Item 1 toggle_show/hide → feminine; item 2 settings PasswordChangeCard L483 ariaLabel + label → `tReset("password_aria")` (existing key reused); item 3 ModalFocusReturn mock namespace-aware (`modals.location.*`, `modals.login_prompt.*`, `report.*`); item 4 contact.privacy_notice → feminine; item 5 Header.test.jsx mock respects namespace; item 6 Header.test.jsx dead `setLang` mock removed. **Item 7 (Globe icon contrast on homepage hero) pending Smadar's mobile QA**.
+
+**Cumulative MEH-475**: PR-C4b chunks 1-5 (498 strings → 402 keys) + sweep E1 (106 → 125) = 604 strings extracted. Settings sweep (105 strings) + HomeProductForm (89, MEH-543 deferred) + 24-file sweep tail (~145, half MEH-543-deferred) remain — see `HANDOFF.md` → "Sweep tail status".
+
+**MEH-476 Wave 6**: confirmed Done (completed 2026-05-20 19:27 UTC per Linear `get_issue`). No further work needed.
+
 ### 2026-05-20 — MEH-475 PR-C4b COMPLETE — chunk 5 (guides) merged
 
 **Final chunk of PR-C4b shipped.** PR #743 merged at `0fbf52a`: 4 guide pages (index + 3 onboarding guides) translated into a new `guides.*` top-level namespace with per-guide sub-namespaces (`guides.index.*`, `guides.business_story.*`, `guides.product_photography.*`, `guides.customer_messages.*`). 283 source strings consolidated to 243 translation keys across the 4 files.
