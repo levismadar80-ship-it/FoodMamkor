@@ -1,5 +1,14 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+// MEH-475 PR-C4a chunk 4b: mock next-intl per established precedent.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = { aria: "תגיות בית עסק" };
+    return flat[key] ?? key;
+  },
+}));
+
 import BadgeRow from "@/components/BadgeRow";
 
 describe("BadgeRow", () => {

@@ -6,11 +6,21 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
     const flat = {
+      // modals.login_prompt (chunk 3)
       default_message: "כדי לשמור עסקים אוהבים — היכנסי",
       close_aria: "סגרי חלונית",
       title: "רוצה לשמור? 🌿",
       login_cta: "היכנסי",
       dismiss_cta: "אולי אחר כך",
+      // favorites.button (chunk 4b)
+      saved_toast_first_time: "נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית",
+      saved_toast: "נשמר למועדפים ❤️",
+      removed_toast: "הוסר מהמועדפים",
+      error_generic: "משהו השתבש, נסי שוב",
+      add_aria: "הוסף למועדפים",
+      remove_aria: "הסר ממועדפים",
+      inline_label: "שמור",
+      login_prompt_message: "כדי לשמור עסקים אוהבים — היכנסי",
     };
     return flat[key] ?? key;
   },

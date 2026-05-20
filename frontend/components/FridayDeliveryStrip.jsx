@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import api from "@/lib/api";
 
 function ProducerMiniCard({ producer }) {
+  const t = useTranslations("producer.friday_delivery");
   const img = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], "w_160,h_160,c_fill,f_auto,q_auto")
     : null;
@@ -26,7 +28,7 @@ function ProducerMiniCard({ producer }) {
           </div>
         )}
         <span className="absolute top-1.5 end-1.5 bg-secondary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-          🛒 היום
+          🛒 {t("today")}
         </span>
       </div>
       <div className="px-2 py-1.5">
@@ -38,6 +40,7 @@ function ProducerMiniCard({ producer }) {
 }
 
 export default function FridayDeliveryStrip({ city }) {
+  const t = useTranslations("producer.friday_delivery");
   const [producers, setProducers] = useState([]);
   const scrollRef = useRef(null);
 
@@ -57,14 +60,14 @@ export default function FridayDeliveryStrip({ city }) {
   return (
     <section
       className="bg-[#F5F0E8] border-b border-border py-4 px-4"
-      aria-label="יצרניות עם משלוח היום"
+      aria-label={t("title")}
       dir="rtl"
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-lg">🛒</span>
           <h2 className="font-headline font-semibold text-primary text-base">
-            יצרניות עם משלוח היום
+            {t("title_alt")}
           </h2>
           {city && (
             <span className="text-xs text-site-muted border border-border rounded-full px-2 py-0.5">

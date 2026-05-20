@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle, Leaf } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 
 // Single source of truth for the public contact inbox shown on this page.
@@ -11,6 +12,7 @@ import api from "@/lib/api";
 const CONTACT_EMAIL = "levismadar80@gmail.com";
 
 export default function ContactPage() {
+  const t = useTranslations("contact");
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
@@ -27,17 +29,14 @@ export default function ContactPage() {
       setForm({ name: "", email: "", message: "" });
     } catch (err) {
       setStatus("error");
-      setErrorMsg(
-        err.response?.data?.detail ||
-          "שליחת הטופס נכשלה. ניתן לשלוח אלינו מייל ישירות לכתובת למטה."
-      );
+      setErrorMsg(err.response?.data?.detail || t("error_default"));
     }
   };
 
   const mailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-    "פנייה דרך האתר"
+    t("mailto_subject")
   )}&body=${encodeURIComponent(
-    `שם: ${form.name}\nאימייל: ${form.email}\n\n${form.message}`
+    `${t("mailto_body_prefix")} ${form.name}\n${t("mailto_body_email")} ${form.email}\n\n${form.message}`
   )}`;
 
   return (
@@ -45,19 +44,21 @@ export default function ContactPage() {
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div className="bg-white rounded-[16px] p-8 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
           <h1 className="font-headline text-5xl font-bold text-site-text mb-2 text-center">
-            דברי איתנו
+            {t("title")}
           </h1>
           <p className="text-site-muted text-center mb-2">
-            שאלות, רעיונות, או סתם שלום — נשמח לשמוע 🌿
+            {t("subtitle")}
           </p>
           <p className="text-sm text-site-muted text-center mb-8">
-            נחזור אלייך תוך <strong>3 ימי עסקים</strong>.
+            {t.rich("response_time_inline", {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
 
           <div className="bg-light/60 border border-border rounded-[12px] p-4 mb-6 text-sm">
             <p className="flex items-center gap-2 flex-wrap">
               <span>📧</span>
-              <span>כתובת מייל:</span>
+              <span>{t("email_label")}</span>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
                 className="text-primary hover:underline font-medium break-all"
@@ -68,7 +69,7 @@ export default function ContactPage() {
             </p>
             <p className="flex items-center gap-2 mt-2">
               <span>⏱️</span>
-              <span>זמן מענה: עד 3 ימי עסקים</span>
+              <span>{t("response_sla")}</span>
             </p>
           </div>
 
@@ -78,10 +79,10 @@ export default function ContactPage() {
                 <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
               </div>
               <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
-                תודה! קיבלנו את הפנייה.
+                {t("success_title")}
               </h2>
               <p className="text-site-muted inline-flex items-center gap-1.5">
-                נחזור אלייך תוך 3 ימי עסקים
+                {t("success_message")}
                 <Leaf size={14} weight="duotone" className="text-primary" aria-hidden="true" />
               </p>
               <button
@@ -89,14 +90,14 @@ export default function ContactPage() {
                 onClick={() => setStatus("idle")}
                 className="mt-6 text-primary hover:underline text-sm"
               >
-                שליחת פנייה נוספת
+                {t("success_send_another")}
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1 text-site-text">
-                  שם מלא *
+                  {t("field_name_label")}
                 </label>
                 <input
                   type="text"
@@ -108,7 +109,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-site-text">
-                  אימייל *
+                  {t("field_email_label")}
                 </label>
                 <input
                   type="email"
@@ -121,7 +122,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-site-text">
-                  איך נוכל לעזור? *
+                  {t("field_message_label")}
                 </label>
                 <textarea
                   value={form.message}
@@ -139,7 +140,7 @@ export default function ContactPage() {
                     href={mailtoHref}
                     className="text-primary hover:underline inline-block mt-2"
                   >
-                    פתיחת מייל ישירות →
+                    {t("open_mail_fallback")}
                   </a>
                 </div>
               )}
@@ -149,15 +150,17 @@ export default function ContactPage() {
                 disabled={status === "loading"}
                 className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
               >
-                {status === "loading" ? "שולחת..." : "שליחה"}
+                {status === "loading" ? t("submit_loading") : t("submit")}
               </button>
 
               <p className="text-xs text-site-muted text-center">
-                בשליחת הטופס את/ה מאשר/ת שקראת את{" "}
-                <a href="/privacy" className="text-primary hover:underline">
-                  מדיניות הפרטיות
-                </a>
-                .
+                {t.rich("privacy_notice", {
+                  link: (chunks) => (
+                    <a href="/privacy" className="text-primary hover:underline">
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </p>
             </form>
           )}

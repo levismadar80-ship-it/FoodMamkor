@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
+import LanguageToggle from "@/components/LanguageToggle";
 
 /**
  * Header (MEH-29 sticky / active / transparent) — layered on top of the
@@ -40,7 +41,7 @@ import { BRAND_NAME } from "@/lib/constants";
  */
 export default function Header() {
   const { user, logout } = useAuth();
-  const { lang, setLang } = useLanguage();
+  const { lang } = useLanguage();
   const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
@@ -244,6 +245,8 @@ export default function Header() {
           >
             <MagnifyingGlass size={20} color="#6B6B6B" weight="regular" aria-hidden="true" />
           </button>
+          {/* MEH-475 — Globe toggle preserves path + query params on locale flip */}
+          <LanguageToggle />
           {user ? (
             <UserMenu
               user={user}
@@ -311,15 +314,15 @@ export default function Header() {
             </Link>
           )}
 
-          <button
-            onClick={() => setLang(lang === "he" ? "en" : "he")}
-            className="text-sm text-site-muted border border-[#e8e0d0] rounded-full px-3 py-1 inline-flex items-center gap-1.5"
-            aria-label={lang === "he" ? t("nav.lang_switch_to_en") : t("nav.lang_switch_to_he")}
-          >
-            <span className={lang === "he" ? "font-bold text-primary" : ""}>{t("nav.lang_he")}</span>
-            <span className="text-border">/</span>
-            <span className={lang === "en" ? "font-bold text-primary" : ""}>{t("nav.lang_en")}</span>
-          </button>
+          {/* MEH-475 — same Globe component as desktop; closes mobile-only-drawer regression
+              from Wave 1. The button-group text variant lived here historically — replaced
+              with the icon for visual consistency between desktop + mobile. */}
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <span className="text-sm text-site-muted">
+              {lang === "he" ? t("nav.lang_en") : t("nav.lang_he")}
+            </span>
+          </div>
 
           {user ? (
             <>

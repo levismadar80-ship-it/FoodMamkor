@@ -394,6 +394,21 @@
       "heading": "Upcoming events 📅",
       "all_events": "All events →",
       "free": "Free"
+    },
+    "marquee": {
+      "tag_unprocessed": "🌿 Unprocessed",
+      "tag_pasture": "🥩 Pasture-raised",
+      "tag_organic": "🧀 Organic",
+      "tag_sourdough": "🍞 Sourdough",
+      "tag_extra_virgin": "🫒 Extra virgin",
+      "tag_fresh_real": "🌱 Fresh and real",
+      "tag_verified": "✅ Verified",
+      "tag_local": "📍 Local"
+    },
+    "story_block": {
+      "founder_quote": "Once you know where to buy from — there's no going back.",
+      "founder_attribution": "— Sapir, founder of Mehamakor",
+      "seasonal_heading": "Every season — a different flavor"
     }
   },
   "common": {
@@ -413,6 +428,21 @@
       "page_aria": "Page {page}",
       "next_aria": "Next page",
       "next": "Next →"
+    },
+    "breadcrumb": {
+      "aria": "Breadcrumb navigation"
+    },
+    "info_tooltip": {
+      "trigger_aria": "More info"
+    },
+    "parallax_quote": {
+      "aria": "Quote"
+    },
+    "skeleton": {
+      "loading_businesses": "Loading fresh businesses"
+    },
+    "star_rating": {
+      "count_aria": "{count, plural, one {1 rating} other {({count} ratings)}}"
     }
   },
   "category": {
@@ -704,6 +734,44 @@
           "generic": "Something went wrong, please try again"
         }
       }
+    },
+    "availability": {
+      "status_label": {
+        "open_orders": "Open for orders",
+        "busy_week": "Busy this week",
+        "on_vacation": "On break"
+      },
+      "card_label": {
+        "open_orders": "Open for orders",
+        "available_today": "Available today 🟢",
+        "busy_week": "Busy this week 🟠",
+        "on_vacation": "On break ⏸"
+      }
+    },
+    "delivery": {
+      "heading": "Delivery",
+      "nationwide": "Nationwide delivery",
+      "arranged": "Delivery by arrangement — contact for details"
+    },
+    "follow": {
+      "error_generic": "Something went wrong, please try again",
+      "following": "Following",
+      "follow_aria": "Follow this business",
+      "unfollowed_toast": "You've stopped following",
+      "followed_toast": "You'll now get updates about new products 🔔"
+    },
+    "badge_row": {
+      "aria": "Business badges"
+    },
+    "friday_delivery": {
+      "today": "today",
+      "title": "Businesses delivering today",
+      "title_alt": "Businesses delivering today"
+    },
+    "holiday_banner": {
+      "approaching": "{name} is approaching {emoji}",
+      "aria": "Holiday notice",
+      "close_aria": "Close"
     }
   },
   "map": {
@@ -740,12 +808,6 @@
     "city_picker": {
       "heading": "Where to deliver?",
       "subheading": "Choose a city to filter by delivery",
-      "popular": {
-        "tel_aviv": "Tel Aviv",
-        "jerusalem": "Jerusalem",
-        "haifa": "Haifa",
-        "beersheba": "Beersheba"
-      },
       "other": {
         "label": "Other city",
         "placeholder": "Type city name..."
@@ -794,6 +856,39 @@
         "business_list": "List of businesses on the map"
       },
       "heading_ssr": "Businesses on the map"
+    },
+    "homepage_mini": {
+      "loading": "Loading map...",
+      "pre_launch_hint": "Coming very soon — first businesses join this week",
+      "aria": "Map preview",
+      "dot_caption": "Every business on the map",
+      "dot_subtitle": "Discover businesses by location",
+      "open_full": "Open the full map"
+    },
+    "component": {
+      "geo_invalid": "The location received is invalid",
+      "geo_failure": "We couldn't get your location",
+      "marker_singular": "business",
+      "marker_plural": "businesses"
+    },
+    "producer_card": {
+      "verified": "✓ Verified",
+      "distance_prefix": "·",
+      "wa_message": "Hi! I found you on Mehamakor — {name}",
+      "full_profile": "Full profile"
+    },
+    "mini": {
+      "default_label": "Location",
+      "open_in_waze": "Open in",
+      "open_in_google": "Open in"
+    },
+    "bottom_sheet": {
+      "title": "Businesses in this area",
+      "show_map": "Show map"
+    },
+    "chip_scroll": {
+      "category_aria": "Filter by category",
+      "attribute_aria": "Filter by attribute"
     }
   },
   "admin": {
@@ -2222,5 +2317,307 @@
       "show_more": "← More categories ({count})",
       "show_less": "↑ Fewer categories"
     }
+  },
+  "producers": {
+    "breadcrumb": {
+      "home": "Home",
+      "all": "All businesses",
+      "search": "Search: {q}"
+    },
+    "title": {
+      "all": "All businesses",
+      "search_results": "Results for:"
+    },
+    "discovery": {
+      "found_count": "{count, plural, =0 {No businesses found} one {1 business found} other {{count} businesses found}}",
+      "all_count": "{count, plural, one {The only business} other {All {count} businesses}}",
+      "showing_count": "Showing {loaded} of {total} businesses",
+      "all_shown": "{count, plural, one {Showed the only business 🌿} other {Showed all {count} businesses 🌿}}",
+      "loading_more_aria": "Loading more businesses"
+    },
+    "recently_viewed": {
+      "aria": "Recently viewed",
+      "label": "Recently viewed"
+    },
+    "filters": {
+      "city_chip": "In my city",
+      "filter_by": "Filter by:",
+      "clear_all": "Clear all"
+    },
+    "empty": {
+      "no_match_search": "We couldn't find any businesses for \"{q}\"",
+      "no_match_filters": "No businesses match this filter",
+      "search_hint": "Try another word or browse by category",
+      "filters_hint": "Try removing one of the filters",
+      "category_chips": {
+        "beef": "Beef",
+        "cheese": "Cheese",
+        "bread": "Bread",
+        "vegetables": "Vegetables",
+        "oil": "Oil",
+        "honey": "Honey"
+      },
+      "clear_all_show_all": "Clear all and show everything"
+    },
+    "catalog_empty": {
+      "title": "The list is on the way",
+      "subtitle": "Suggest a business you love, or sign up to hear when new ones join",
+      "add_cta": "Add your business 🌿",
+      "notify_cta": "Notify me when new ones join"
+    },
+    "page_overflow": {
+      "message": "You've reached the end of the list",
+      "back_cta": "Back to first page"
+    },
+    "pagination": {
+      "aria": "Pagination",
+      "prev": "← Previous",
+      "next": "Next →",
+      "page_of": "Page {page} of {totalPages}"
+    }
+  },
+  "reviews": {
+    "section_heading": "What customers say",
+    "owner_heading": "Customer reviews",
+    "anonymous_fallback": "Customer",
+    "user_anonymous": "Anonymous",
+    "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
+    "summary_based_on": "{total, plural, one {Based on 1 review} other {Based on {total} reviews}}",
+    "write_cta": "Write a review",
+    "edit_cta": "Update your review",
+    "form_heading": "Write a review",
+    "rating_label": "Rating",
+    "body_label": "Your experience",
+    "body_label_alt": "Tell us about your experience",
+    "body_placeholder": "How was your experience?",
+    "body_placeholder_alt": "What did you love? How was the delivery? Would you recommend?",
+    "submit": "Publish review",
+    "submit_update": "Update review",
+    "submit_saving": "Saving...",
+    "cancel": "Cancel",
+    "error_invalid_stars": "Pick a rating between 1 and 5 stars",
+    "error_body_too_short": "Reviews need at least 10 characters",
+    "error_generic": "Something went wrong, please try again",
+    "saved_toast": "Your review was saved ⭐",
+    "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
+    "login_prompt": "<login>Sign in</login> to write a review",
+    "loading": "Loading reviews...",
+    "owner_empty_title": "First reviews come after a few customers",
+    "owner_empty_description": "Reviews are created automatically after a customer sends you a WhatsApp message. 24 hours after the click, she gets a link to rate you. No reviews yet because no one has clicked yet.",
+    "owner_empty_cta": "Share your profile on WhatsApp",
+    "empty_message": "No reviews yet — be the first!",
+    "pagination": {
+      "prev_aria": "Previous page",
+      "next_aria": "Next page"
+    }
+  },
+  "upgrade": {
+    "title": "Upgrade to premium",
+    "subtitle": "Get more exposure and more options for your business",
+    "free_plan": {
+      "name": "Free",
+      "feature_map": "✓ Appears on the map",
+      "feature_3_images": "✓ Up to 3 images",
+      "feature_contact": "✓ Contact details",
+      "feature_delivery": "✓ Delivery zones",
+      "missing_products": "✗ Unlimited products",
+      "missing_images": "✗ Unlimited images",
+      "missing_stats": "✗ Statistics"
+    },
+    "premium_plan": {
+      "recommended": "Recommended",
+      "name": "Premium",
+      "price_pending": "Coming soon",
+      "feature_map": "✓ Appears on the map",
+      "feature_unlimited_images": "✓ Unlimited images",
+      "feature_contact": "✓ Contact details",
+      "feature_delivery": "✓ Delivery zones",
+      "feature_unlimited_products": "✓ Full product list",
+      "feature_stats": "✓ View statistics",
+      "feature_badge": "✓ Premium badge"
+    },
+    "notify_success": "🎉 You're signed up! We'll let you know when premium launches.",
+    "email_placeholder": "Your email",
+    "notify_cta": "Notify me at launch",
+    "notify_submitting": "Sending..."
+  },
+  "contact": {
+    "title": "Talk to us",
+    "subtitle": "Questions, ideas, or just hi — we'd love to hear 🌿",
+    "response_time_inline": "We'll get back to you within <strong>3 business days</strong>.",
+    "email_label": "Email address:",
+    "response_sla": "Response time: up to 3 business days",
+    "success_title": "Thanks! We got your message.",
+    "success_message": "We'll get back to you within 3 business days",
+    "success_send_another": "Send another message",
+    "field_name_label": "Full name *",
+    "field_email_label": "Email *",
+    "field_message_label": "How can we help? *",
+    "submit": "Send",
+    "submit_loading": "Sending...",
+    "open_mail_fallback": "Open email directly →",
+    "error_default": "The form failed to send. You can email us directly at the address below.",
+    "mailto_subject": "Inquiry via the website",
+    "mailto_body_prefix": "Name:",
+    "mailto_body_email": "Email:",
+    "privacy_notice": "By submitting the form you confirm you have read the <link>privacy policy</link>."
+  },
+  "search": {
+    "breadcrumb_home": "Home",
+    "breadcrumb_search": "Search",
+    "breadcrumb_query": "Search: {q}",
+    "title_default": "Search",
+    "title_results": "Search results for \"{q}\"",
+    "input_placeholder": "Sourdough bread, organic eggs, vegetables and fruit",
+    "input_aria": "Search",
+    "submit": "Search",
+    "no_results_hint": "We couldn't find a match — try another word or browse by category 🌱",
+    "results_count": "{totalHits, plural, one {1 result} other {{totalHits} results}}",
+    "empty_prompt": "Type a query in the search field at the top of the page.",
+    "section_producers": "Businesses",
+    "section_products": "Products",
+    "product_by_prefix": "at",
+    "empty_title": "We couldn't find a match — try another word 🌱",
+    "empty_subtitle": "Try changing the search or browsing categories on the homepage.",
+    "empty_home_cta": "Back to home",
+    "hero": {
+      "submit_aria": "Search",
+      "loading": "Loading results...",
+      "no_results_for": "No results for",
+      "section_producers": "🏪 Businesses",
+      "section_categories": "🏷️ Categories",
+      "section_cities": "📍 Cities",
+      "recent_heading": "Recent searches",
+      "trending_heading": "Trending searches",
+      "remove_recent_aria": "Remove {q} from recent searches"
+    },
+    "smart": {
+      "loading": "Loading results...",
+      "no_results_for": "No results for",
+      "section_producers": "Businesses",
+      "section_products": "Products",
+      "product_by_prefix": "at",
+      "section_cities": "Cities",
+      "section_categories": "Categories"
+    },
+    "cities_autocomplete": {
+      "remove_aria": "Remove {city}",
+      "placeholder": "Type a city name..."
+    },
+    "city_search": {
+      "placeholder": "Search city...",
+      "clear_aria": "Clear city"
+    },
+    "address_search": {
+      "placeholder": "Search address..."
+    }
+  },
+  "favorites": {
+    "alerts_aria": "Set up alerts",
+    "breadcrumb_home": "Home",
+    "breadcrumb_favorites": "Favorites",
+    "title": "My favorites",
+    "empty_title": "You haven't saved any businesses yet 🌿",
+    "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
+    "first_visit_tip": "Tap ❤️ on a business card to save it here",
+    "empty_cta": "Discover businesses",
+    "list_alerts_hint": "Tap 🔔 on any card to get alerts about new events and products",
+    "button": {
+      "saved_toast_first_time": "Saved! You'll find favorites under the ❤️ tab at the bottom",
+      "saved_toast": "Saved to favorites ❤️",
+      "removed_toast": "Removed from favorites",
+      "error_generic": "Something went wrong, please try again",
+      "add_aria": "Add to favorites",
+      "remove_aria": "Remove from favorites",
+      "inline_label": "Save",
+      "login_prompt_message": "To save businesses you love — sign in"
+    }
+  },
+  "rate": {
+    "invalid_link": "Invalid link",
+    "error_generic": "Submission error",
+    "loading": "Loading...",
+    "thanks_title": "Thanks!",
+    "thanks_message": "Your rating has been saved. It helps the community.",
+    "heading": "How was it?",
+    "bought_from": "You bought from <seller>{name}</seller>",
+    "comment_placeholder": "Short comment (optional)",
+    "submit": "Send rating"
+  },
+  "report": {
+    "trigger": "🚩 Report business",
+    "form_heading": "Report business",
+    "reason_placeholder": "Tell us what the issue is...",
+    "submit": "Send report",
+    "cancel": "Cancel",
+    "error_generic": "Submission error",
+    "success_title": "Thanks for the report",
+    "success_message": "We'll look into it within 48 hours.",
+    "success_close": "Close"
+  },
+  "share": {
+    "trigger": "Share",
+    "modal_title": "Share a link to the business",
+    "copy_link": "Copy link",
+    "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
+    "wa_message_business_fallback": "a business",
+    "wa_meta_separator": " • ",
+    "copied_toast": "Link copied ✓"
+  },
+  "gallery": {
+    "open_aria": "Enlarge image {current}",
+    "image_alt": "Image {current}",
+    "prev_aria": "Previous image",
+    "next_aria": "Next image",
+    "thumb_aria": "Go to image {n}"
+  },
+  "whatsapp": {
+    "button": {
+      "default_message": "Hi, I saw \"{productTitle}\" on Mehamakor and would love to hear more!",
+      "opening": "Opening..."
+    },
+    "share_button": {
+      "default_message": "I found {name} on Mehamakor — {url}",
+      "share_aria": "Share the business on WhatsApp",
+      "share_to_friend": "Send to a friend"
+    },
+    "question_chips": {
+      "my_area": "My area",
+      "city_placeholder": "[city]",
+      "ask_us": "Ask us",
+      "greeting_template": "Hi {name}, {q}"
+    }
+  },
+  "directory": {
+    "disclaimer": {
+      "brand_is_prefix": "is a",
+      "directory_only": "directory-only platform. The seller bears full responsibility for products and licensing.",
+      "prices_set_by_businesses": "Prices are set by the businesses themselves."
+    }
+  },
+  "location": {
+    "banner": {
+      "message": "Where are you? We'll find businesses near you",
+      "choose_city": "Choose a city",
+      "close_aria": "Close banner"
+    }
+  },
+  "story": {
+    "canvas": {
+      "footer_url": "Discover more businesses at mehamakor.online",
+      "upload_error": "Cloudinary upload error",
+      "default_country": "Israel",
+      "caption_prefix": "🌿 A new business on Mehamakor!",
+      "title": "📸 Instagram card ready",
+      "generating": "Generating",
+      "download": "Download",
+      "uploading": "Uploading...",
+      "save_cloudinary": "Save to Cloudinary",
+      "copy_caption": "Copy caption",
+      "copied": "✅ Copied!"
+    }
+  },
+  "footer": {
+    "copyright": "Mehamakor · Made with love in Israel"
   }
 }

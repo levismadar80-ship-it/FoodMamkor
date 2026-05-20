@@ -1,7 +1,13 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
-> Last updated: 2026-05-17 (MEH-475 PR-B — Admin panel i18n; 640 strings / 22 files extracted to `admin.*` namespace; PR #716 ready for merge after rebase + Wave 4 auth.* key restore; Playwright /register green)
+> Last updated: 2026-05-20 (MEH-475 — Language toggle UI (Globe icon, desktop + mobile drawer); **PR #731 MERGED** at `3a877ed2`; LOW-RISK end-to-end; **closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b + toggle); 3 follow-up hygiene items folded into <issue id="MEH-629">MEH-629</issue> (now 7 items))
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4b — tail components + wired-remaining sweep; 118 strings / 36 files; **PR #730 MERGED** at `22cce33`; final chunk of PR-C4a series; Brand-LOCK STOP triggered on 2 JSDoc comments → folded inline with MEH-543-aware rewrite)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4a — public discovery top-10; 182 strings / 10 files; **PR #729 MERGED** at `151bebd`; ICU plurals on 5 groups; EMPTY_CATEGORY_CHIPS data/display split for backend canonical-HE preservation)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-3 — modals + forms/badge; 120 strings / 14 files; **PR #727 MERGED** at `0556db6`; CityPickerModal duplicate-namespace consolidation; PasswordInput voice-local feminine keys)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-2 — about.consumer.* AboutClient.jsx; 57 strings; **PR #726 MERGED** at `43174d0`; about/for-businesses re-bucketed to PR-C4b; about/page.js deferred to Wave 6)
+> Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-1 — first chunk of HIGH-risk i18n delivery; **MERGED**; established sub-namespace + brand-LOCK pre-check + EN-voice-idiomatic conventions)
+> Previously: 2026-05-17 (MEH-475 PR-B — Admin panel i18n; 640 strings / 22 files extracted to `admin.*` namespace; PR #716 ready for merge after rebase + Wave 4 auth.* key restore; Playwright /register green)
 > Previously: 2026-05-17 (MEH-627 — Fix /register rate-limit doc drift in api-routes.md diagram (3/hour → 10/hour per MEH-417 April 2026); **PR #722 MERGED**; LOW-RISK docs-only)
 > Previously: 2026-05-17 (MEH-625 — Delete RegisterResponse dead code; **PR #721 MERGED**; LOW-RISK cleanup; 4-line class deletion)
 > Previously: 2026-05-16 (MEH-475 / PR-C2 — i18n Wave 5 events + experiences; **PR #714 MERGED**; LOW-RISK; 2 commits; ran in parallel with PR-C1 recipes/group_buys)

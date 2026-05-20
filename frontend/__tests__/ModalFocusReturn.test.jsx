@@ -33,6 +33,16 @@ vi.mock("next-intl", () => ({
       title: "רוצה לשמור? 🌿",
       login_cta: "היכנסי",
       dismiss_cta: "אולי אחר כך",
+      // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
+      trigger: "🚩 דווח על עסק",
+      form_heading: "דווח על עסק",
+      reason_placeholder: "ספר/י מה הבעיה...",
+      submit: "שלח דיווח",
+      cancel: "ביטול",
+      error_generic: "שגיאה בשליחה",
+      success_title: "תודה על הדיווח",
+      success_message: "נבדוק ונטפל תוך 48 שעות.",
+      success_close: "סגור",
     };
     return flat[key] ?? key;
   },
