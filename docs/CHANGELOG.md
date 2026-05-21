@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-631: Replace private email with contact@mehamakor.co.il in /terms + /privacy
+
+`feat`: Replace the private `levismadar80@gmail.com` placeholder with the business `contact@mehamakor.co.il` address across the public legal pages and the dead i18n literals that mirror them.
+
+- `frontend/app/[locale]/terms/page.js:20` — `CONTACT_EMAIL` constant flipped. Drives 2 display points (`<MailLink>` at L106 + L147) covering §6 + §11.
+- `frontend/app/[locale]/privacy/page.js:20` — `CONTACT_EMAIL` constant flipped. Drives 2 display points (`<MailLink>` at L122 + L149) covering §5 + §10.
+- `frontend/messages/en.json:2666,2752` + `frontend/messages/he.json:2666,2752` — `<email>…</email>` rich-text slot children updated for consistency. These literals are not rendered (the `email: () => <MailLink email={CONTACT_EMAIL} />` callback replaces slot children with the prop value), but keeping them in sync prevents future grep confusion.
+
+**Scope-match note**: original spec (MEH-631) cited 4 hits in /terms+/privacy. Discovery grep returned 13 site-wide. Linear description was updated mid-task to the actual 6-hit scope (2 constants + 4 dead i18n literals). Out-of-scope hits in `forgot-password`, `accessibility`, `contact` deferred to a follow-up that introduces `NEXT_PUBLIC_CONTACT_EMAIL` env var + `lib/env.client.js` centralization. Do-not-touch: `admin/users` `SUPER_ADMIN_EMAIL` (auth gate) and `admin/help` GitHub repo URL (username, not email).
+
+Build green; 0 hits of `levismadar80` in the 4 scoped files post-edit; 7 remaining site-wide hits all match the documented out-of-scope/do-not-touch list.
+
 ### 2026-05-21 — MEH-475: Settings sweep S2 SecurityTab complete — MEH-475 user-facing scope CLOSED
 
 `feat`: Three sequential PRs land the auth-sensitive SecurityTab chunk of the settings sweep:
