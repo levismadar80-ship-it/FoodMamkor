@@ -17,7 +17,7 @@ export async function generateMetadata({ params }) {
   };
 }
 
-const CONTACT_EMAIL = "levismadar80@gmail.com";
+const CONTACT_EMAIL = "contact@mehamakor.co.il";
 const OPERATOR_EMAIL = "noreply@mehamakor.co.il";
 
 const SECTION_IDS = [
