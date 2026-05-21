@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-label="Mehamakor — wordmark with dot system monochrome">
+  <title>Mehamakor — Wordmark + Dot System (single-color)</title>
+  <desc>Monochrome variant: three dots kept (now in foreground color) so the punctuation-as-identity move still reads even without color contrast.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; letter-spacing: 0.025em; }
+    .tag { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.22em; }
+  </style>
+  <rect class="bg" width="800" height="240"/>
+  <circle class="fg" cx="318" cy="62" r="10"/>
+  <circle class="fg" cx="346" cy="62" r="10"/>
+  <circle class="fg" cx="374" cy="62" r="10"/>
+  <text class="wm fg" x="148" y="148" font-size="78">Mehamakor</text>
+  <text class="tag fg" x="148" y="180" font-size="11" opacity="0.7">LOCAL FOOD · REAL PRODUCERS · ISRAEL</text>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Mehamakor — circle of producers icon">
+  <title>Mehamakor icon — Circle of Producers</title>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C8632E; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+  </style>
+  
+  <circle class="accent" cx="100" cy="35" r="11"/>
+  <circle class="fg" cx="146" cy="54" r="11"/>
+  <circle class="fg" cx="165" cy="100" r="11"/>
+  <circle class="fg" cx="146" cy="146" r="11"/>
+  <circle class="fg" cx="100" cy="165" r="11"/>
+  <circle class="fg" cx="54" cy="146" r="11"/>
+  <circle class="fg" cx="35" cy="100" r="11"/>
+  <circle class="fg" cx="54" cy="54" r="11"/>
+</svg>

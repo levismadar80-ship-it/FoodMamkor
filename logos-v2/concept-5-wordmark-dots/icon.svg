@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Mehamakor three-dot icon">
+  <title>Mehamakor icon — Three-dot mark</title>
+  <desc>The three brand-color dots arranged vertically (stacked) — recognizable at favicon sizes because the color contrast survives.</desc>
+  <style>
+    :root { --bg: #F5F0E8; --orange: #C8632E; --gold: #C99846; --green: #2E6853; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #1A1A1A; --green: #6FB89A; } }
+    .bg { fill: var(--bg); }
+    .d-orange { fill: var(--orange); } .d-gold { fill: var(--gold); } .d-green { fill: var(--green); }
+  </style>
+  
+  <!-- Stacked vertically so all three dots survive at 16px -->
+  <circle class="d-orange" cx="100" cy="55" r="22"/>
+  <circle class="d-gold" cx="100" cy="100" r="22"/>
+  <circle class="d-green" cx="100" cy="145" r="22"/>
+</svg>

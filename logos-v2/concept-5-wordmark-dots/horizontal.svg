@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-label="Mehamakor — wordmark with dot system">
+  <title>Mehamakor — Wordmark + Dot System</title>
+  <desc>Wordmark anchored by three colored dots in burnt orange, mustard gold, and deep green — used as punctuation-level identity. Echoes the three core values of the directory.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --orange: #C8632E; --gold: #C99846; --green: #2E6853; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #F5F0E8; --bg: #1A1A1A; --orange: #C8632E; --gold: #C99846; --green: #6FB89A; }
+    }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); }
+    .d-orange { fill: var(--orange); } .d-gold { fill: var(--gold); } .d-green { fill: var(--green); }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; letter-spacing: 0.025em; }
+    .he { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif; font-weight: 500; }
+    .tag { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.22em; }
+  </style>
+  <rect class="bg" width="800" height="240"/>
+  <g id="dots">
+    <!-- Three dots positioned above the wordmark — punctuation-as-identity -->
+    <circle class="d-orange" cx="318" cy="62" r="10"/>
+    <circle class="d-gold" cx="346" cy="62" r="10"/>
+    <circle class="d-green" cx="374" cy="62" r="10"/>
+  </g>
+  <text class="wm fg" x="148" y="148" font-size="78">Mehamakor</text>
+  <text class="tag fg" x="148" y="180" font-size="11" opacity="0.62">LOCAL FOOD · REAL PRODUCERS · ISRAEL</text>
+  <text class="he fg" x="148" y="213" font-size="22" opacity="0.55">מהמקור</text>
+</svg>

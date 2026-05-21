@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Mehamakor open vessel icon">
+  <title>Mehamakor icon — Open Vessel</title>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C8632E; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+  </style>
+  
+  <path d="M 50 115 A 50 50 0 0 0 150 115" stroke="var(--fg)" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <line x1="50" y1="115" x2="150" y2="115" stroke="var(--fg)" stroke-width="5" stroke-linecap="round"/>
+  <circle class="accent" cx="100" cy="60" r="13"/>
+</svg>

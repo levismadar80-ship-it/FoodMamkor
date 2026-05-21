@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Mehamakor — Logo v2 · 5 graphic-mark + wordmark concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500&family=Frank+Ruhl+Libre:wght@500;700&display=swap');
+
+    :root {
+      --page-bg: #F5F0E8;
+      --page-text: #1C1A17;
+      --muted: #6b6660;
+      --border: rgba(28,26,23,0.12);
+      --card-bg: #FFFFFF;
+      --light-bg: #F5F0E8;
+      --light-fg: #2E6853;
+      --dark-bg: #1A1A1A;
+      --dark-fg: #F5F0E8;
+      --green: #2E6853;
+      --orange: #C8632E;
+      --gold: #C99846;
+    }
+    html[data-theme="dark"] {
+      --page-bg: #14130f;
+      --page-text: #F5F0E8;
+      --muted: #9a948b;
+      --border: rgba(245,240,232,0.14);
+      --card-bg: #1f1d19;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: var(--page-text);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 400;
+      transition: background 200ms ease, color 200ms ease;
+    }
+
+    header {
+      padding: 28px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    header h1 { margin: 0; font-size: 20px; font-weight: 500; letter-spacing: 0.04em; }
+    header .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    button.toggle {
+      appearance: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--page-text);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.toggle:hover { border-color: var(--green); color: var(--green); }
+
+    main { padding: 32px 40px 80px; max-width: 1500px; margin: 0 auto; }
+    section.concept { margin-bottom: 72px; }
+    section.concept .head { display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+    section.concept h2 {
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--muted); margin: 0;
+    }
+    section.concept h3 { font-size: 22px; font-weight: 500; margin: 0; }
+    section.concept p.tech {
+      color: var(--muted); font-size: 14px;
+      margin: 6px 0 22px; max-width: 760px; line-height: 1.55;
+    }
+
+    .lockup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 920px) { .lockup-grid { grid-template-columns: 1fr; } }
+    .lockup-panel {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+    }
+    .lockup-panel .corner-label {
+      position: absolute;
+      top: 10px;
+      inset-inline-start: 14px;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.55;
+    }
+    .lockup-panel.light { background: var(--light-bg); color: var(--light-fg); color-scheme: light; }
+    .lockup-panel.dark  { background: var(--dark-bg);  color: var(--dark-fg);  color-scheme: dark; }
+    .lockup-panel object,
+    .lockup-panel img { width: 100%; max-width: 580px; height: auto; display: block; }
+
+    /* variants strip: icon / wordmark / monochrome */
+    .variants-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 920px) { .variants-grid { grid-template-columns: 1fr; } }
+    .variant-panel {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      background: var(--card-bg);
+      display: flex; flex-direction: column; gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    .variant-panel .v-label {
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .variant-panel .v-img-wrap {
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 130px;
+    }
+    .variant-panel object,
+    .variant-panel img { max-width: 100%; height: auto; display: block; }
+
+    /* favicon strip */
+    .favicon-row {
+      display: flex; gap: 28px; align-items: end;
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      flex-wrap: wrap;
+    }
+    .fav-cell { text-align: center; }
+    .fav-cell .frame {
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      overflow: hidden;
+      border-radius: 3px;
+    }
+    .fav-cell .lbl {
+      display: block;
+      margin-top: 8px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      font-weight: 500;
+    }
+    .fav-16 .frame { width: 16px; height: 16px; }
+    .fav-32 .frame { width: 32px; height: 32px; }
+    .fav-48 .frame { width: 48px; height: 48px; }
+    .fav-cell object,
+    .fav-cell img { width: 100%; height: 100%; display: block; }
+
+    /* app icon row */
+    .app-icon-row {
+      display: flex; gap: 24px; align-items: center;
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-top: 14px;
+    }
+    .app-icon {
+      width: 160px; height: 160px; flex: 0 0 160px;
+      border-radius: 36px;
+      background: var(--green);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+    .app-icon object,
+    .app-icon img { width: 132px; height: auto; display: block; }
+    .app-icon-row .text { color: var(--muted); font-size: 12px; line-height: 1.5; max-width: 420px; }
+
+    footer {
+      padding: 28px 40px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 12px; text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Mehamakor — Logo v2</h1>
+    <div class="meta">MEH-637 · 5 graphic-mark + wordmark concepts · light/dark · favicon &amp; app-icon previews</div>
+  </div>
+  <div><button class="toggle" id="theme-toggle" type="button" aria-pressed="false">Switch to dark mode</button></div>
+</header>
+
+<main id="concepts"></main>
+
+<footer>
+  Internal preview · MEH-637 · open each SVG directly to inspect source · see README.md for one-paragraph rationale per concept
+</footer>
+
+<script>
+(function () {
+  // Theme toggle — page chrome only; the light/dark concept panels are always
+  // shown side-by-side for direct comparison.
+  var btn = document.getElementById('theme-toggle');
+  var root = document.documentElement;
+  try { if (localStorage.getItem('mehamakor-logo-v2-theme') === 'dark') root.setAttribute('data-theme', 'dark'); } catch (e) {}
+  function sync() {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    btn.textContent = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  }
+  sync();
+  btn.addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    if (dark) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', 'dark');
+    try { localStorage.setItem('mehamakor-logo-v2-theme', dark ? 'light' : 'dark'); } catch (e) {}
+    sync();
+  });
+
+  var concepts = [
+    { dir: 'concept-1-circle-of-producers', n: 1,
+      title: 'Circle of Producers',
+      tech: 'Mark: a ring of 8 small dots with one accent dot (burnt orange) signalling an individual within a community. Suggests the community of small Israeli food businesses that mehamakor.online curates.' },
+    { dir: 'concept-2-open-vessel', n: 2,
+      title: 'Open Vessel',
+      tech: 'Mark: an open semicircle (bowl) with a single accent dot above the rim — a source drop entering the vessel. The container metaphor maps to a directory that holds and presents.' },
+    { dir: 'concept-3-origin-point', n: 3,
+      title: 'Origin Point',
+      tech: 'Mark: a filled center dot with 4–5 asymmetric short rays radiating outward. The asymmetry is intentional — suggests organic growth from a single source, not a perfect-symmetry sun/star icon.' },
+    { dir: 'concept-4-pure-wordmark', n: 4,
+      title: 'Pure Wordmark with Custom Detail',
+      tech: 'No separate mark. The second "o" in Mehamakor is replaced with a filled colored circle — the dot becomes the brand signature. Aesop/Hearst restraint pattern; the typography carries the entire identity.' },
+    { dir: 'concept-5-wordmark-dots', n: 5,
+      title: 'Wordmark + Dot System',
+      tech: 'Mark: three dots in burnt orange / mustard gold / deep green positioned above the wordmark. Punctuation-as-identity — the dots are reusable across collateral (favicon, social, section dividers) without the wordmark.' }
+  ];
+
+  var html = concepts.map(function (c) {
+    return [
+      '<section class="concept" id="', c.dir, '">',
+        '<div class="head">',
+          '<h2>Concept ', c.n, '</h2>',
+          '<h3>', c.title, '</h3>',
+        '</div>',
+        '<p class="tech">', c.tech, '</p>',
+
+        // Horizontal lockup — light + dark side-by-side
+        '<div class="lockup-grid">',
+          '<div class="lockup-panel light"><span class="corner-label">Horizontal · Light</span>',
+            '<object type="image/svg+xml" data="', c.dir, '/horizontal.svg" aria-label="', c.title, ' horizontal light"></object>',
+          '</div>',
+          '<div class="lockup-panel dark"><span class="corner-label">Horizontal · Dark</span>',
+            // Dark rendering relies on prefers-color-scheme inside the SVG. If user's
+            // system is light, the SVG itself stays light; we tint the panel chrome.
+            // For accurate dark colors, view this page on a system with dark mode ON,
+            // or open the SVG directly with the OS-level appearance set to dark.
+            '<object type="image/svg+xml" data="', c.dir, '/horizontal.svg" aria-label="', c.title, ' horizontal dark"></object>',
+          '</div>',
+        '</div>',
+
+        // Variants strip: icon / wordmark / monochrome
+        '<div class="variants-grid">',
+          '<div class="variant-panel"><span class="v-label">Icon · square</span>',
+            '<div class="v-img-wrap" style="max-width:160px;"><object type="image/svg+xml" data="', c.dir, '/icon.svg"></object></div>',
+          '</div>',
+          '<div class="variant-panel"><span class="v-label">Wordmark · text-only</span>',
+            '<div class="v-img-wrap"><object type="image/svg+xml" data="', c.dir, '/wordmark.svg"></object></div>',
+          '</div>',
+          '<div class="variant-panel"><span class="v-label">Monochrome · single-color</span>',
+            '<div class="v-img-wrap"><object type="image/svg+xml" data="', c.dir, '/monochrome.svg"></object></div>',
+          '</div>',
+        '</div>',
+
+        // Favicon strip — uses icon.svg at 16/32/48
+        '<div class="favicon-row">',
+          ['16','32','48'].map(function (sz) {
+            return '<div class="fav-cell fav-' + sz + '"><div class="frame"><object type="image/svg+xml" data="' + c.dir + '/icon.svg"></object></div><span class="lbl">' + sz + 'px favicon</span></div>';
+          }).join(''),
+          '<div class="fav-cell"><span class="lbl" style="margin-top:0;line-height:1.4;text-align:start">Legibility test<br>16px is the floor</span></div>',
+        '</div>',
+
+        // App icon row
+        '<div class="app-icon-row">',
+          '<div class="app-icon"><object type="image/svg+xml" data="', c.dir, '/icon.svg"></object></div>',
+          '<div class="text">App icon preview · 1024×1024 (shown at 160px) · brand-green rounded-square frame with the concept icon centered. The frame is the OS app-icon shape; the SVG mark sits at ~82% of the frame width.</div>',
+        '</div>',
+
+      '</section>'
+    ].join('');
+  }).join('');
+
+  document.getElementById('concepts').innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

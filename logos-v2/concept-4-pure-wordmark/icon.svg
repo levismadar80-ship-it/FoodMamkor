@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Mehamakor monogram icon">
+  <title>Mehamakor icon — Monogram M with signature dot</title>
+  <desc>For the wordmark-only concept, the favicon derivative is the letter M with the signature accent dot positioned to its lower-right corner.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C8632E; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; }
+  </style>
+  
+  <text class="wm fg" x="100" y="140" font-size="170" text-anchor="middle">M</text>
+  <circle class="accent" cx="155" cy="135" r="15"/>
+</svg>

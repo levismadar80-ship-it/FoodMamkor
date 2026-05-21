@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-label="Mehamakor — circle of producers lockup">
+  <title>Mehamakor — Circle of Producers</title>
+  <desc>Combination mark + wordmark. Mark is a ring of 8 small dots; one accent dot suggests an individual within a community of small producers.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C8632E; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; }
+    }
+    .bg { fill: var(--bg); }
+    .fg { fill: var(--fg); }
+    .accent { fill: var(--accent); }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; letter-spacing: 0.025em; }
+    .he { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif; font-weight: 500; }
+    .tag { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.22em; }
+  </style>
+  <rect class="bg" width="800" height="240"/>
+  <g id="mark">
+    <circle class="accent" cx="160" cy="70" r="8"/>
+    <circle class="fg" cx="195" cy="85" r="8"/>
+    <circle class="fg" cx="210" cy="120" r="8"/>
+    <circle class="fg" cx="195" cy="155" r="8"/>
+    <circle class="fg" cx="160" cy="170" r="8"/>
+    <circle class="fg" cx="125" cy="155" r="8"/>
+    <circle class="fg" cx="110" cy="120" r="8"/>
+    <circle class="fg" cx="125" cy="85" r="8"/>
+  </g>
+  <g id="wordmark">
+    <text class="wm fg" x="280" y="132" font-size="68">Mehamakor</text>
+    <text class="tag fg" x="280" y="162" font-size="11" opacity="0.62">LOCAL FOOD · REAL PRODUCERS · ISRAEL</text>
+    <text class="he fg" x="280" y="195" font-size="22" opacity="0.55">מהמקור</text>
+  </g>
+</svg>

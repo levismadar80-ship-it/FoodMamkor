@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-label="Mehamakor — pure wordmark with custom detail">
+  <title>Mehamakor — Pure Wordmark with Custom Detail</title>
+  <desc>Wordmark-only logo. The second "o" in Mehamakor is replaced with a small filled circle in burnt orange. The colored dot becomes the brand's signature — Aesop/Hearst restraint.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C8632E; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; letter-spacing: 0.025em; }
+    .he { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif; font-weight: 500; }
+    .tag { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.22em; }
+  </style>
+  <rect class="bg" width="800" height="240"/>
+  <g id="wordmark">
+    <!-- Wordmark split into two text spans so the second "o" can be replaced with a colored dot.
+         "Mehamak" + filled accent dot (the "o") + "r" -->
+    <text class="wm fg" x="148" y="135" font-size="84">Mehamak</text>
+    <!-- Accent dot replacing the second "o" — positioned at ~520 with letter height ~84 -->
+    <circle class="accent" cx="540" cy="116" r="22"/>
+    <text class="wm fg" x="568" y="135" font-size="84">r</text>
+    <text class="tag fg" x="148" y="170" font-size="11" opacity="0.62">LOCAL FOOD · REAL PRODUCERS · ISRAEL</text>
+    <text class="he fg" x="148" y="205" font-size="22" opacity="0.55">מהמקור</text>
+  </g>
+</svg>

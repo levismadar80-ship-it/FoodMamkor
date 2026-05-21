@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-label="Mehamakor — origin point lockup">
+  <title>Mehamakor — Origin Point</title>
+  <desc>Combination mark + wordmark. Mark is a central filled circle with four asymmetric short rays radiating outward — suggests a starting point, source, or growth from a single origin.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C99846; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+    .stroke-fg { stroke: var(--fg); stroke-linecap: round; fill: none; }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; letter-spacing: 0.025em; }
+    .he { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif; font-weight: 500; }
+    .tag { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.22em; }
+  </style>
+  <rect class="bg" width="800" height="240"/>
+  <g id="mark">
+    <!-- Asymmetric rays radiating from center (160, 120) — intentionally not perfectly symmetric -->
+    <line class="stroke-fg" x1="160" y1="120" x2="160" y2="64" stroke-width="6"/>
+    <line class="stroke-fg" x1="160" y1="120" x2="216" y2="92" stroke-width="6"/>
+    <line class="stroke-fg" x1="160" y1="120" x2="222" y2="148" stroke-width="6"/>
+    <line class="stroke-fg" x1="160" y1="120" x2="116" y2="166" stroke-width="6"/>
+    <line class="stroke-fg" x1="160" y1="120" x2="102" y2="108" stroke-width="6"/>
+    <!-- Center origin dot -->
+    <circle class="accent" cx="160" cy="120" r="11"/>
+  </g>
+  <text class="wm fg" x="280" y="132" font-size="68">Mehamakor</text>
+  <text class="tag fg" x="280" y="162" font-size="11" opacity="0.62">LOCAL FOOD · REAL PRODUCERS · ISRAEL</text>
+  <text class="he fg" x="280" y="195" font-size="22" opacity="0.55">מהמקור</text>
+</svg>

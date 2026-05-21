@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Mehamakor origin point icon">
+  <title>Mehamakor icon — Origin Point</title>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C99846; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+    .stroke-fg { stroke: var(--fg); stroke-linecap: round; fill: none; }
+  </style>
+  
+  <line class="stroke-fg" x1="100" y1="100" x2="100" y2="32" stroke-width="9"/>
+  <line class="stroke-fg" x1="100" y1="100" x2="170" y2="68" stroke-width="9"/>
+  <line class="stroke-fg" x1="100" y1="100" x2="178" y2="138" stroke-width="9"/>
+  <line class="stroke-fg" x1="100" y1="100" x2="48" y2="158" stroke-width="9"/>
+  <line class="stroke-fg" x1="100" y1="100" x2="28" y2="88" stroke-width="9"/>
+  <circle class="accent" cx="100" cy="100" r="16"/>
+</svg>

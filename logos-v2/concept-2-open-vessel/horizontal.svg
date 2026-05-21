@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" role="img" aria-label="Mehamakor — open vessel lockup">
+  <title>Mehamakor — Open Vessel</title>
+  <desc>Combination mark + wordmark. Mark is an open semicircle (bowl/vessel) with a single dot above suggesting a source drop entering the container.</desc>
+  <style>
+    :root { --fg: #2E6853; --bg: #F5F0E8; --accent: #C8632E; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #F5F0E8; --bg: #1A1A1A; --accent: #C99846; } }
+    .bg { fill: var(--bg); } .fg { fill: var(--fg); } .accent { fill: var(--accent); }
+    .stroke-fg { stroke: var(--fg); fill: none; }
+    .wm { font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif; font-weight: 500; letter-spacing: 0.025em; }
+    .he { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', serif; font-weight: 500; }
+    .tag { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.22em; }
+  </style>
+  <rect class="bg" width="800" height="240"/>
+  <g id="mark">
+    <!-- Open bowl: half-circle arc opening upward -->
+    <path class="stroke-fg" d="M 100 130 A 60 60 0 0 0 220 130" stroke-width="11" stroke-linecap="round"/>
+    <!-- Source drop above the rim -->
+    <circle class="accent" cx="160" cy="80" r="9"/>
+    <!-- Rim line connecting the bowl ends -->
+    <line x1="100" y1="130" x2="220" y2="130" stroke="var(--fg)" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <text class="wm fg" x="280" y="132" font-size="68">Mehamakor</text>
+  <text class="tag fg" x="280" y="162" font-size="11" opacity="0.62">LOCAL FOOD · REAL PRODUCERS · ISRAEL</text>
+  <text class="he fg" x="280" y="195" font-size="22" opacity="0.55">מהמקור</text>
+</svg>
