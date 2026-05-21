@@ -9,7 +9,7 @@ Coverage:
 - Contact: POST /contact — DB save, validation, email sending, fail-open
 """
 import pytest
-from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage
+from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage, User
 from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
 
 
@@ -628,6 +628,129 @@ class TestRegisterPerEmailRateLimit:
         ]
         assert statuses[:5] == [200] * 5
         assert statuses[5] == 429
+
+
+class TestLoginTimingEqualization:
+    """MEH-626 — /login's three failure branches (wrong-email,
+    OAuth-only user, wrong-password) must take indistinguishable
+    time so an attacker cannot enumerate users via timing diff.
+
+    Methodology:
+        - TRUSTED_PROXY=1 + rotating X-Real-IP per iteration so the
+          per-IP 5/min rate limit on /login does not short-circuit
+          any iteration (55 requests per branch would otherwise trip it).
+        - 5 warmup iterations (discarded) + 50 measured iterations per
+          branch. Warmup absorbs first-call passlib/bcrypt module-init
+          variance.
+        - p95 latency computed per branch via statistics.quantiles.
+        - Assertion: max(p95) - min(p95) < 20ms across the 3 branches.
+
+    Flakiness note:
+        On slow or contended CI runners, bcrypt timing variance may
+        exceed 20ms across iterations even with the fix in place. If
+        this test fails: (1) verify on a quieter machine, (2) a
+        follow-up ticket tracks adding pytest-rerunfailures + applying
+        @pytest.mark.flaky(reruns=2, reruns_delay=1). Do NOT silently
+        raise the 20ms threshold — that hides regressions in the
+        timing-equalization fix.
+    """
+
+    def test_login_timing_equivalence_across_failure_modes(
+        self, client, db, monkeypatch
+    ):
+        import statistics
+        import time
+        import uuid
+
+        # Bypass slowapi's 5/min per-IP cap on /login by rotating
+        # X-Real-IP per request. TRUSTED_PROXY=1 makes get_real_client_ip
+        # honor the header (rate_limit.py:52-53).
+        monkeypatch.setenv("TRUSTED_PROXY", "1")
+
+        # Branch 2 fixture — OAuth-only user (password_hash=None).
+        # make_user always sets a hash, so insert directly.
+        oauth_only_user = User(
+            email="oauth-only-victim@example.com",
+            name="OAuth User",
+            password_hash=None,
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(oauth_only_user)
+        db.commit()
+
+        # Branch 3 fixture — user with a valid password; test will
+        # submit wrong passwords.
+        make_user(
+            db,
+            email="wrong-pw-victim@example.com",
+            password="Zx7Yp9Mq2Lr4",
+        )
+
+        WARMUP = 5
+        N = 50
+
+        def measure(branch_id: int, email_for, password_for) -> float:
+            """Return p95 of N measured iterations after WARMUP warmups.
+
+            email_for(i) and password_for(i) build per-iteration payloads.
+            """
+            times = []
+            for i in range(WARMUP + N):
+                payload = {"email": email_for(i), "password": password_for(i)}
+                headers = {
+                    "X-Real-IP": (
+                        f"10.{branch_id}.{(i >> 8) & 0xFF}.{i & 0xFF}"
+                    )
+                }
+                start = time.perf_counter()
+                resp = client.post("/auth/login", json=payload, headers=headers)
+                elapsed = time.perf_counter() - start
+                assert resp.status_code == 401, (
+                    f"branch {branch_id} iter {i}: "
+                    f"expected 401, got {resp.status_code}"
+                )
+                if i >= WARMUP:
+                    times.append(elapsed)
+            return statistics.quantiles(times, n=100)[94]
+
+        # Branch 1 — wrong-email. Each iteration uses a unique
+        # nonexistent address so no DB-cache effects.
+        p95_wrong_email = measure(
+            branch_id=1,
+            email_for=lambda i: f"nx-{uuid.uuid4().hex[:8]}@example.com",
+            password_for=lambda i: "anyPassword123!",
+        )
+
+        # Branch 2 — OAuth-only (same row each iter, password ignored
+        # at the OAuth-only short-circuit).
+        p95_oauth_only = measure(
+            branch_id=2,
+            email_for=lambda i: "oauth-only-victim@example.com",
+            password_for=lambda i: "anyPassword123!",
+        )
+
+        # Branch 3 — wrong-password (same row, fresh wrong password
+        # per iter to avoid any caching).
+        p95_wrong_password = measure(
+            branch_id=3,
+            email_for=lambda i: "wrong-pw-victim@example.com",
+            password_for=lambda i: f"wrongPw-{i}-Zz!",
+        )
+
+        p95s = {
+            "wrong_email": p95_wrong_email,
+            "oauth_only": p95_oauth_only,
+            "wrong_password": p95_wrong_password,
+        }
+        spread = max(p95s.values()) - min(p95s.values())
+        assert spread < 0.020, (
+            f"p95 spread {spread * 1000:.1f}ms exceeds 20ms threshold. "
+            f"per-branch p95 (ms): "
+            f"wrong_email={p95_wrong_email * 1000:.1f}, "
+            f"oauth_only={p95_oauth_only * 1000:.1f}, "
+            f"wrong_password={p95_wrong_password * 1000:.1f}"
+        )
 
 
 # ---------- Producers ----------

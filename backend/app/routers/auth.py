@@ -84,6 +84,13 @@ from app.schemas.schemas import (
 logger = logging.getLogger(__name__)
 
 
+# SENTINEL_HASH: precomputed bcrypt hash for /login timing
+# equalization (MEH-626). Used in wrong-email and OAuth-only
+# branches to match wrong-password branch's bcrypt cost.
+# Computed once at import time.
+SENTINEL_HASH = hash_password("sentinel-password-do-not-use")
+
+
 def _set_refresh_cookie(response: Response, user: User) -> None:
     """MEH-326: attach a fresh refresh-token cookie to the outgoing response.
 
@@ -823,11 +830,25 @@ def login(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == data.email).first()
-    if (
-        not user
-        or not user.password_hash
-        or not verify_password(data.password, user.password_hash)
-    ):
+    # MEH-626: three failure branches must take indistinguishable time
+    # before the 401. Each runs exactly one bcrypt-cost operation so an
+    # attacker cannot enumerate users via timing diff between wrong-email,
+    # OAuth-only, and wrong-password branches.
+    if user is None:
+        # Timing parity: run bcrypt against sentinel so this branch
+        # matches wrong-password timing (MEH-626).
+        verify_password(data.password, SENTINEL_HASH)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
+        )
+    if user.password_hash is None:
+        # Timing parity: OAuth-only user — same sentinel bcrypt to
+        # match wrong-password timing (MEH-626).
+        verify_password(data.password, SENTINEL_HASH)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
+        )
+    if not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="אימייל או סיסמה שגויים"
         )

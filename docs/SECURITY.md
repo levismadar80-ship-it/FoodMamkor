@@ -584,7 +584,43 @@ is_valid = pwd_context.verify(plain_password, hashed_password)
 # ✅ רק: bcrypt, argon2, scrypt
 ```
 
-### 13. Logging — אל תרשמי מידע רגיש
+### 13. Timing equalization (anti-enumeration)
+
+**Threat:** even with uniform status codes and bodies (per OWASP),
+an auth endpoint can leak which emails exist via response-time
+variance between branches that DO run bcrypt and branches that
+DON'T. ~50-200ms vs ~5-10ms is enough signal on most networks.
+
+**Rule:** every failure branch of an auth endpoint that could have
+run bcrypt MUST run an equivalent bcrypt operation before
+responding. No `time.sleep()` substitutes — CPU vs IO profile
+differs and the timing distribution shape gives the substitution
+away on enough samples.
+
+**Patterns in use:**
+
+- **Timing reorder** (MEH-328) — `/auth/register` and
+  `/auth/register/producer`. The handlers' branch order was rewritten
+  so HIBP + `hash_password` both run on the collision branches before
+  the response shape diverges. See the `/register` and
+  `/register/producer` handlers in `backend/app/routers/auth.py`.
+- **Sentinel hash** (MEH-626) — `/auth/login`. A pre-computed
+  `SENTINEL_HASH` module constant (created at import via
+  `hash_password("sentinel-password-do-not-use")`) gives the
+  wrong-email and OAuth-only branches a bcrypt-cost-parity verify
+  call before the 401. See the `SENTINEL_HASH` constant and the
+  three `/login` failure branches in `backend/app/routers/auth.py`.
+
+**Test invariant:**
+`tests/test_api.py::TestLoginTimingEqualization::test_login_timing_equivalence_across_failure_modes`
+asserts `max(p95) − min(p95) < 20ms` across the 3 `/login` failure
+branches. 5 warmup + 50 measured iterations per branch; p95 via
+`statistics.quantiles`. A `@pytest.mark.flaky(reruns=2)` marker is
+pending a follow-up ticket adding `pytest-rerunfailures` to dev deps.
+
+**Cross-refs:** MEH-328 (PR #696), MEH-626 (this PR).
+
+### 14. Logging — אל תרשמי מידע רגיש
 
 ```python
 import logging
@@ -603,7 +639,7 @@ logger.warning(f"Rate limit exceeded for IP: {ip}")
 
 ## 🟢 כדאי — תוסיפי בהדרגה
 
-### 14. 2FA / אימות דו-שלבי לאדמין
+### 15. 2FA / אימות דו-שלבי לאדמין
 
 ```python
 # pip install pyotp qrcode
@@ -618,7 +654,7 @@ totp = pyotp.TOTP(secret)
 is_valid = totp.verify(user_entered_code)  # קוד מ-Google Authenticator
 ```
 
-### 15. Account Lockout — לאחר ניסיונות כושלים
+### 16. Account Lockout — לאחר ניסיונות כושלים
 
 ```python
 # ב-Redis או DB:
@@ -640,7 +676,7 @@ async def clear_attempts(email: str):
     await redis.delete(f"login_attempts:{email}")
 ```
 
-### 16. Audit Log — מי עשה מה
+### 17. Audit Log — מי עשה מה
 
 ```sql
 CREATE TABLE audit_log (
@@ -656,7 +692,7 @@ CREATE TABLE audit_log (
 
 ---
 
-## 17. Skills supply chain (MEH-397)
+## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
 mechanism. Each load is an opportunity for a malicious skill to read
