@@ -3346,6 +3346,77 @@
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
       "field_phone_hint": "Notifications coming soon"
+    },
+    "business": {
+      "tabpanel_aria": "My business",
+      "status_pending": "✋ Your application is under review — we'll get back to you shortly.",
+      "status_rejected_title": "Application not approved",
+      "rejected_tip_details": "Make sure all business details are complete and accurate",
+      "rejected_tip_photos": "Add clear product photos",
+      "rejected_tip_address": "Check that the business address is correct",
+      "support_cta": "Talk to us →",
+      "status_suspended": "Account temporarily suspended.",
+      "support_cta_short": "Contact us",
+      "stats_heading": "Statistics",
+      "stats_loading": "Loading…",
+      "stat_views": "Views",
+      "stat_favorites": "Favorites",
+      "stat_reviews": "Reviews",
+      "stat_avg_rating": "Average rating",
+      "stat_products": "Products",
+      "stat_orders": "Orders",
+      "stats_unavailable": "Data not available right now.",
+      "edit_profile_link": "Edit business profile →"
+    },
+    "products": {
+      "section_heading": "Products",
+      "add_cta": "Add product",
+      "errors": {
+        "upload_type": "Only image files allowed: JPG, PNG, WEBP, GIF",
+        "upload_size": "File too large — 5MB maximum",
+        "upload_failed_fallback": "Upload error — please try again",
+        "name_required": "Product name is required",
+        "price_required": "Please enter a price",
+        "price_min_too_low": "Price must be at least 1 ₪",
+        "price_too_high": "Price can't exceed 10,000 ₪",
+        "price_max_below_min": "Max price must be higher than min price",
+        "save_failed": "Save error",
+        "delete_failed": "Delete error"
+      },
+      "empty": {
+        "title": "First product = a living business",
+        "description": "Without products, your profile looks empty and customers don't know what you offer. Add 3 popular products with a photo and price — it takes 5 minutes.",
+        "cta": "+ Add first product"
+      },
+      "edit_heading": "Edit product",
+      "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
+      "add_heading": "New product",
+      "cancel_aria": "Cancel",
+      "form": {
+        "name_label": "Product name *",
+        "description_label": "Short description",
+        "price_min_label": "Price from (₪)",
+        "price_max_label": "Price to (₪)",
+        "price_max_optional_suffix": "optional",
+        "diet_heading": "Dietary tags (optional)",
+        "diet_gluten_free": "🌾 Gluten-free",
+        "diet_vegan": "🥦 Vegan",
+        "diet_lactose_free": "🥛 Lactose-free",
+        "image_label": "Product image",
+        "image_alt": "Photo",
+        "image_remove": "Remove",
+        "image_upload_cta": "Upload photo",
+        "image_uploading": "Uploading…"
+      },
+      "save_edit_cta": "Save changes",
+      "save_edit_saving": "Saving…",
+      "cancel_edit_cta": "Cancel",
+      "add_submit_cta": "Add product",
+      "add_submitting": "Adding…",
+      "card": {
+        "edit_aria_template": "Edit {name}",
+        "delete_aria_template": "Delete {name}"
+      }
     }
   }
 }
