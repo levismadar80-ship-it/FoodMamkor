@@ -572,7 +572,11 @@ async def admin_only(
 # pip install passlib[bcrypt]
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
+# default at time of pinning + all existing user.password_hash rows.
+# Prevents future drift if passlib bumps its default — see SENTINEL_HASH
+# at backend/app/routers/auth.py (used by §13 timing equalization).
+pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
 
 # שמירה:
 hashed = pwd_context.hash(plain_password)
@@ -583,6 +587,14 @@ is_valid = pwd_context.verify(plain_password, hashed_password)
 # ❌ אל תשתמשי ב: MD5, SHA1, SHA256 (מהירים מדי = ניתן לפצח)
 # ✅ רק: bcrypt, argon2, scrypt
 ```
+
+**Why explicit `bcrypt__rounds=12`?** passlib's default rounds can change
+between library versions. Without an explicit pin, a passlib upgrade
+that bumps the default would re-generate `SENTINEL_HASH` (§13) at a
+higher cost than the existing `user.password_hash` rows still on the
+older cost — breaking the timing-equalization invariant. Any future
+rounds bump must be a deliberate decision with a migration plan to
+re-hash existing rows.
 
 ### 13. Timing equalization (anti-enumeration)
 
