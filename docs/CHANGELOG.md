@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-648: Pin bcrypt rounds explicitly in CryptContext
+
+`security`: Changed `pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")` to `CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")` in `backend/app/auth.py`. Pins the bcrypt cost factor to 12 — matching the passlib default at time of pinning AND all existing `user.password_hash` rows in production — so a future passlib release that bumps the default cost cannot create a drift between `SENTINEL_HASH` (re-generated at module import on each boot) and stored hashes (frozen at their write-time cost). Closes MEH-626 adversarial review finding A7 (REFEREE verdict: FOLLOW-UP, NOT BLOCKING).
+
+`verification`: Pre-change `hash_password()` produced `$2b$12$...` and `pwd_context.handler("bcrypt").default_rounds == 12`. Post-change same. `SENTINEL_HASH` still imports cleanly with rounds=12. No DB row regeneration needed — all existing hashes already at cost 12.
+
+`docs`: SECURITY.md §12 augmented with bcrypt-rounds-pin rationale.
+
 ### 2026-05-21 — MEH-650: tests/test_api.py — ruff F401/F841 cleanup
 
 `cleanup`: Removed 7 unused imports (F401) + 1 unused variable assignment (F841) flagged in MEH-624 + MEH-626 adversarial reviews and deferred per scope discipline (security PRs kept clean of hygiene). 7/8 auto-fixed via `ruff check --fix`; 1 manual edit at `tests/test_api.py:1975` removed `p = ` assignment from `make_producer(...)` side-effect call to match sibling test's fire-and-forget pattern on L1981. `ruff check tests/test_api.py` now clean. 192 tests collect cleanly post-fix.
