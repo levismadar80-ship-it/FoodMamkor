@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-649: Argon2id migration evaluation (research) — DECISION: DEFER
+
+`research`: New decision document at `docs/research/argon2id-migration-evaluation.md`. Triggered by the passlib maintenance gap (last PyPI release 2020) + Python 3.13 `crypt` deprecation flagged in MEH-626 CVE check. Evaluates migrating from passlib + bcrypt to argon2-cffi (OWASP 2026 primary recommendation).
+
+**Decision: DEFER** until Python 3.13 upgrade trigger fires (estimated 2027+). Rationale:
+
+- Mehamakor target value (Israeli food directory, no PHI/payment data) does not justify the marginal Argon2id crack-cost improvement at cost of 3-4 dev days mid-launch
+- MEH-306 password policy (12-char floor + HIBP + common-blocklist) already neutralizes the easy ~30% of weak-password cracking
+- Migration window would weaken the just-shipped MEH-626 timing-equalization 20ms invariant (mixed-hash transition period)
+- Python 3.13 → 3.14 (where `crypt` is removed) is multi-year out; deferral has slack
+- passlib may revive (ecosystem still settling)
+
+Full migration plan documented in §3 of the research doc for the Python 3.13 trigger — no re-research needed when the time comes.
+
+**Re-evaluation triggers** (any one flips the decision to Go): active CVE on passlib OR bcrypt 4.0.1, Python 3.13 upgrade within 12 months, Mehamakor pivot to higher-value data class, passlib GitHub archive / PyPI removal, compliance mandate.
+
+No code changes in this ticket — implementation tickets get opened separately if/when the trigger fires.
+
 ### 2026-05-21 — MEH-646: MEH-624 follow-up — register endpoint hygiene + diagram drift
 
 Closes 5 non-blocking items deferred from MEH-624 PR #723 adversarial review + 2 pre-existing diagram-drift items surfaced in MEH-624 Chunk 3.
