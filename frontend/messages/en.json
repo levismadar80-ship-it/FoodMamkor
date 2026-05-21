@@ -3417,6 +3417,30 @@
         "edit_aria_template": "Edit {name}",
         "delete_aria_template": "Delete {name}"
       }
+    },
+    "security": {
+      "common": {
+        "cancel": "Cancel",
+        "error_retry": "An error occurred — please try again"
+      },
+      "password": {
+        "oauth_tabpanel_aria": "Change password",
+        "oauth_heading": "Password",
+        "oauth_body": "Your account is signed in via OAuth — no separate password needed.",
+        "heading": "Change password",
+        "forgot_link": "Forgot your current password?",
+        "current_label": "Current password *",
+        "eye_hide_current": "Hide current password",
+        "eye_show_current": "Show current password",
+        "confirm_label": "Confirm new password *",
+        "eye_hide_confirm": "Hide confirm password",
+        "eye_show_confirm": "Show confirm password",
+        "mismatch_error": "Passwords do not match",
+        "save_toast": "Password updated successfully",
+        "error_fallback": "Error updating password",
+        "submit_cta": "Update password",
+        "submit_saving": "Saving…"
+      }
     }
   }
 }
