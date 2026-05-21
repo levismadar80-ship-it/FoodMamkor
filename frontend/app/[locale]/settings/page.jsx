@@ -383,6 +383,8 @@ function PasswordChangeCard({ isOAuth }) {
   // MEH-629 item 2: re-uses the existing reset-flow key for the
   // "new password" label + aria-label (same canonical HE string).
   const tReset = useTranslations("auth.passwordRecovery.reset");
+  // MEH-475 S2-a: card-scoped translator (security.common reserved for S2-b/c).
+  const t = useTranslations("settings.security.password");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -410,7 +412,7 @@ function PasswordChangeCard({ isOAuth }) {
       // 204 — backend reissued refresh + fingerprint cookies via Set-Cookie
       // (sub-A commit 52bb5f5). Browser auto-stores; /auth/refresh on this
       // device keeps working with the new cookies.
-      setMessage("הסיסמה עודכנה בהצלחה");
+      setMessage(t("save_toast"));
       setCurrent(""); setNext(""); setConfirm("");
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
@@ -430,7 +432,7 @@ function PasswordChangeCard({ isOAuth }) {
       } else if (typeof detail === "string") {
         setError(detail);
       } else {
-        setError("שגיאה בעדכון הסיסמה");
+        setError(t("error_fallback"));
       }
     } finally {
       setSaving(false);
@@ -439,9 +441,9 @@ function PasswordChangeCard({ isOAuth }) {
 
   if (isOAuth) {
     return (
-      <section role="tabpanel" aria-label="שינוי סיסמה" className="bg-white border border-border rounded-[16px] p-6">
-        <h2 className="font-semibold text-site-text mb-2">סיסמה</h2>
-        <p className="text-sm text-site-muted">החשבון שלך מחובר דרך OAuth — אין צורך בסיסמה נפרדת.</p>
+      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+        <h2 className="font-semibold text-site-text mb-2">{t("oauth_heading")}</h2>
+        <p className="text-sm text-site-muted">{t("oauth_body")}</p>
       </section>
     );
   }
@@ -449,16 +451,16 @@ function PasswordChangeCard({ isOAuth }) {
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-site-text">שינוי סיסמה</h2>
+        <h2 className="font-semibold text-site-text">{t("heading")}</h2>
         <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-          שכחת סיסמה נוכחית?
+          {t("forgot_link")}
         </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Current password */}
         <div>
-          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">סיסמה נוכחית *</label>
+          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">{t("current_label")}</label>
           <div className="relative">
             <input
               id="sec-current"
@@ -475,7 +477,7 @@ function PasswordChangeCard({ isOAuth }) {
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
               className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label={showCurrent ? "הסתירי סיסמה נוכחית" : "הציגי סיסמה נוכחית"}
+              aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
               {showCurrent ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
@@ -503,7 +505,7 @@ function PasswordChangeCard({ isOAuth }) {
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">אימות סיסמה חדשה *</label>
+          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">{t("confirm_label")}</label>
           <div className="relative">
             <input
               id="sec-confirm"
@@ -521,14 +523,14 @@ function PasswordChangeCard({ isOAuth }) {
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
               className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label={showConfirm ? "הסתירי אימות סיסמה" : "הציגי אימות סיסמה"}
+              aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >
               {showConfirm ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             </button>
           </div>
           {mismatch && (
-            <p className="text-xs text-red-500 mt-1 text-right" role="alert">הסיסמאות לא זהות</p>
+            <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("mismatch_error")}</p>
           )}
         </div>
 
@@ -540,7 +542,7 @@ function PasswordChangeCard({ isOAuth }) {
           disabled={!canSave || saving}
           className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
-          {saving ? "שומרת..." : "עדכני סיסמה"}
+          {saving ? t("submit_saving") : t("submit_cta")}
         </button>
       </form>
     </section>

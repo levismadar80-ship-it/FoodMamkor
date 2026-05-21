@@ -3417,6 +3417,30 @@
         "edit_aria_template": "ערכי {name}",
         "delete_aria_template": "מחקי {name}"
       }
+    },
+    "security": {
+      "common": {
+        "cancel": "ביטול",
+        "error_retry": "שגיאה — נסי שוב"
+      },
+      "password": {
+        "oauth_tabpanel_aria": "שינוי סיסמה",
+        "oauth_heading": "סיסמה",
+        "oauth_body": "החשבון שלך מחובר דרך OAuth — אין צורך בסיסמה נפרדת.",
+        "heading": "שינוי סיסמה",
+        "forgot_link": "שכחת סיסמה נוכחית?",
+        "current_label": "סיסמה נוכחית *",
+        "eye_hide_current": "הסתירי סיסמה נוכחית",
+        "eye_show_current": "הציגי סיסמה נוכחית",
+        "confirm_label": "אימות סיסמה חדשה *",
+        "eye_hide_confirm": "הסתירי אימות סיסמה",
+        "eye_show_confirm": "הציגי אימות סיסמה",
+        "mismatch_error": "הסיסמאות לא זהות",
+        "save_toast": "הסיסמה עודכנה בהצלחה",
+        "error_fallback": "שגיאה בעדכון הסיסמה",
+        "submit_cta": "עדכני סיסמה",
+        "submit_saving": "שומרת..."
+      }
     }
   }
 }
