@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-646: MEH-624 follow-up — register endpoint hygiene + diagram drift
+
+Closes 5 non-blocking items deferred from MEH-624 PR #723 adversarial review + 2 pre-existing diagram-drift items surfaced in MEH-624 Chunk 3.
+
+- **`tests/test_api.py`** — `TestRegisterPerEmailRateLimit` adds `_send_welcome_email` stub to both `test_register_per_email_rate_limit_blocks_after_5_attempts` and `test_register_producer_per_email_rate_limit_blocks_after_5_attempts`. Resend fails-open in sandbox CI today; the stub closes the side-effect leak if `RESEND_API_KEY` ever lands in CI for other test paths.
+- **`backend/app/routers/auth.py` (`/register/producer` comment block)** — direction wording at line 363 fixed (no more "below" attached to "(3/hour)" reading oddly); empty-string-bucket trade-off comment expanded to explicitly cite JWT-gate as the mitigating factor so future readers don't re-litigate (anonymous traffic on this endpoint hits the new-registration branch where ProducerRegister schema validation REQUIRES email).
+- **`.ai/diagrams/api-routes.md` line 64** — RegProducer Mermaid node now includes `🌐 rate-limited 3/hour` annotation alongside the existing `🌐 multi-step form` + per-email annotation. Closes pre-existing drift (RegConsumer had the per-IP annotation, RegProducer didn't).
+- **`.ai/diagrams/api-routes.md` line 59** — HTML comment anchor expanded from `<!-- Rate limit: 10/hour per MEH-417, April 2026 -->` to `<!-- Rate limit: per-IP 10/hour (MEH-417, April 2026) + per-email 5/15min (MEH-624, May 2026) -->` so future grep on MEH-624 surfaces this context too.
+
+Verification: `ruff check backend/app/routers/auth.py tests/test_api.py` clean. No code-logic changes (rate-limit decorators, response shapes, status codes all untouched).
+
 ### 2026-05-21 — MEH-647: Activate pytest-rerunfailures + @flaky marker on MEH-626 timing test
 
 `deps`: Added `pytest-rerunfailures>=14.0` to `backend/pyproject.toml` `[dependency-groups].dev` (uv installed v16.2). `backend/uv.lock` regenerated.
