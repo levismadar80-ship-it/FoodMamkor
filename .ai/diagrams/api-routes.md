@@ -56,12 +56,12 @@ graph TD
 
 ## 3. Auth + account self-service
 
-<!-- Rate limit: 10/hour per MEH-417, April 2026 -->
+<!-- Rate limit: per-IP 10/hour (MEH-417, April 2026) + per-email 5/15min (MEH-624, May 2026) -->
 
 ```mermaid
 graph TD
     SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
-    SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
+    SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 3/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token]
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token<br/>App Store requirement]
 

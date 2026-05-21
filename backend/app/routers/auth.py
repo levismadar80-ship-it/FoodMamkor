@@ -360,11 +360,17 @@ async def register(
 # decorator-level response_model is single-shape and would strip fields
 # from one of the two — we let Pydantic serialise each return as-is.
 @router.post("/register/producer")
-# MEH-624: dual-key throttling. Per-IP cap (3/hour) below + per-email cap
+# MEH-624: dual-key throttling. Per-IP cap (3/hour) + per-email cap
 # stops a botnet rotating IPs from spamming the OWASP duplicate-attempt
-# email at one victim. Upgrade path (authenticated user, email=None on
-# payload) falls into the shared empty-string bucket — acceptable because
-# that path already required a valid JWT.
+# email at one victim.
+#
+# Upgrade path trade-off (acknowledged, not blocking): authenticated
+# producer upgrades send email=None in the payload, so they all share
+# the empty-string per-email bucket. A botnet cannot abuse this pool
+# because the upgrade path requires a valid JWT — anonymous traffic
+# falls into the new-registration branch where ProducerRegister schema
+# validation REQUIRES email and the per-email key is meaningful.
+# JWT-gate makes the empty bucket uninteresting to attackers.
 # REUSES: backend/app/routers/auth.py:972-973 — same dual-key shape.
 @limiter.limit("3/hour")  # SECURITY FIX #2
 @limiter.limit("5/15 minutes", key_func=email_from_body)

@@ -569,6 +569,9 @@ class TestRegisterPerEmailRateLimit:
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
+            "app.routers.auth._send_welcome_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
             lambda *a, **kw: None,
         )
@@ -596,6 +599,9 @@ class TestRegisterPerEmailRateLimit:
         monkeypatch.setenv("TRUSTED_PROXY", "1")
         monkeypatch.setattr(
             "app.routers.auth._send_verify_email", lambda *a, **kw: None
+        )
+        monkeypatch.setattr(
+            "app.routers.auth._send_welcome_email", lambda *a, **kw: None
         )
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
