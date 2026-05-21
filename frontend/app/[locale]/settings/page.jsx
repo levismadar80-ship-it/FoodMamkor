@@ -555,6 +555,9 @@ function PasswordChangeCard({ isOAuth }) {
 
 function LogoutAllDevicesCard() {
   const { logoutAllDevices } = useAuth();
+  // MEH-475 S2-b: card-scoped + shared-common translators.
+  const t = useTranslations("settings.security.logout_all");
+  const tCommon = useTranslations("settings.security.common");
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -566,7 +569,7 @@ function LogoutAllDevicesCard() {
       await logoutAllDevices();
       setConfirming(false);
     } catch {
-      setError("שגיאה — נסי שוב");
+      setError(tCommon("error_retry"));
     } finally {
       setLoading(false);
     }
@@ -574,9 +577,9 @@ function LogoutAllDevicesCard() {
 
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
-      <h2 className="font-semibold text-site-text mb-1">יציאה מכל המכשירים</h2>
+      <h2 className="font-semibold text-site-text mb-1">{t("heading")}</h2>
       <p className="text-sm text-site-muted mb-4">
-        מבטלת את כל הסשנים הפעילים ומחדשת את האסימון — כולל המכשיר הנוכחי.
+        {t("body")}
       </p>
 
       {!confirming ? (
@@ -585,11 +588,11 @@ function LogoutAllDevicesCard() {
           onClick={() => setConfirming(true)}
           className="border border-amber-500 text-amber-700 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-50 transition"
         >
-          יציאה מכל המכשירים
+          {t("heading")}
         </button>
       ) : (
         <div className="rounded-[12px] bg-amber-50 border border-amber-200 p-4 space-y-3">
-          <p className="text-sm text-amber-800 font-medium">לאשר יציאה מכל המכשירים?</p>
+          <p className="text-sm text-amber-800 font-medium">{t("confirm_prompt")}</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -597,14 +600,14 @@ function LogoutAllDevicesCard() {
               disabled={loading}
               className="bg-amber-500 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
             >
-              {loading ? "מתנתקת..." : "כן, יציאה"}
+              {loading ? t("confirm_submitting") : t("confirm_submit")}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
               className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
             >
-              ביטול
+              {tCommon("cancel")}
             </button>
           </div>
           {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
