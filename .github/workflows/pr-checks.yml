@@ -51,6 +51,7 @@ jobs:
               - 'package-lock.json'
             backend:
               - 'backend/**'
+              - 'tests/**'
             workflows:
               - '.github/workflows/**'
 
