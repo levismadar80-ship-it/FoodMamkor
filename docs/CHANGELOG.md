@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-647: Activate pytest-rerunfailures + @flaky marker on MEH-626 timing test
+
+`deps`: Added `pytest-rerunfailures>=14.0` to `backend/pyproject.toml` `[dependency-groups].dev` (uv installed v16.2). `backend/uv.lock` regenerated.
+
+`tests`: Applied `@pytest.mark.flaky(reruns=2, reruns_delay=1)` to `TestLoginTimingEqualization.test_login_timing_equivalence_across_failure_modes` in `tests/test_api.py`. On slow/contended CI runners bcrypt timing variance may push p95 spread over 20ms on a single run — the marker absorbs that with up to 2 reruns at 1s delay. A third failure remains a real signal worth investigating (do NOT silently raise the threshold).
+
+`docs`: Test docstring "Flakiness note" rewritten as "Flakiness mitigation (MEH-647)" reflecting the now-active marker. `docs/SECURITY.md §13` "Test invariant" block updated — removed the "pending follow-up ticket" sentence, now describes the active `@pytest.mark.flaky` behavior.
+
 ### 2026-05-21 — MEH-648: Pin bcrypt rounds explicitly in CryptContext
 
 `security`: Changed `pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")` to `CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")` in `backend/app/auth.py`. Pins the bcrypt cost factor to 12 — matching the passlib default at time of pinning AND all existing `user.password_hash` rows in production — so a future passlib release that bumps the default cost cannot create a drift between `SENTINEL_HASH` (re-generated at module import on each boot) and stored hashes (frozen at their write-time cost). Closes MEH-626 adversarial review finding A7 (REFEREE verdict: FOLLOW-UP, NOT BLOCKING).

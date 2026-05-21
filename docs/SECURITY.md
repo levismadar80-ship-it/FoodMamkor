@@ -627,8 +627,10 @@ away on enough samples.
 `tests/test_api.py::TestLoginTimingEqualization::test_login_timing_equivalence_across_failure_modes`
 asserts `max(p95) − min(p95) < 20ms` across the 3 `/login` failure
 branches. 5 warmup + 50 measured iterations per branch; p95 via
-`statistics.quantiles`. A `@pytest.mark.flaky(reruns=2)` marker is
-pending a follow-up ticket adding `pytest-rerunfailures` to dev deps.
+`statistics.quantiles`. Decorated with `@pytest.mark.flaky(reruns=2,
+reruns_delay=1)` (MEH-647) so bcrypt timing variance on contended CI
+runners doesn't cause spurious failures — 2 reruns absorb noise; a
+third failure is a real signal worth investigating.
 
 **Cross-refs:** MEH-328 (PR #696), MEH-626 (this PR).
 
