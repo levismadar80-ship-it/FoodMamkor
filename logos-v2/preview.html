@@ -268,41 +268,41 @@
         // Horizontal lockup — light + dark side-by-side
         '<div class="lockup-grid">',
           '<div class="lockup-panel light"><span class="corner-label">Horizontal · Light</span>',
-            '<object type="image/svg+xml" data="', c.dir, '/horizontal.svg" aria-label="', c.title, ' horizontal light"></object>',
+            '<img src="', c.dir, '/horizontal.svg" alt="', c.title, ' horizontal light">',
           '</div>',
           '<div class="lockup-panel dark"><span class="corner-label">Horizontal · Dark</span>',
             // Dark rendering relies on prefers-color-scheme inside the SVG. If user's
             // system is light, the SVG itself stays light; we tint the panel chrome.
             // For accurate dark colors, view this page on a system with dark mode ON,
             // or open the SVG directly with the OS-level appearance set to dark.
-            '<object type="image/svg+xml" data="', c.dir, '/horizontal.svg" aria-label="', c.title, ' horizontal dark"></object>',
+            '<img src="', c.dir, '/horizontal.svg" alt="', c.title, ' horizontal dark">',
           '</div>',
         '</div>',
 
         // Variants strip: icon / wordmark / monochrome
         '<div class="variants-grid">',
           '<div class="variant-panel"><span class="v-label">Icon · square</span>',
-            '<div class="v-img-wrap" style="max-width:160px;"><object type="image/svg+xml" data="', c.dir, '/icon.svg"></object></div>',
+            '<div class="v-img-wrap" style="max-width:160px;"><img src="', c.dir, '/icon.svg"></div>',
           '</div>',
           '<div class="variant-panel"><span class="v-label">Wordmark · text-only</span>',
-            '<div class="v-img-wrap"><object type="image/svg+xml" data="', c.dir, '/wordmark.svg"></object></div>',
+            '<div class="v-img-wrap"><img src="', c.dir, '/wordmark.svg"></div>',
           '</div>',
           '<div class="variant-panel"><span class="v-label">Monochrome · single-color</span>',
-            '<div class="v-img-wrap"><object type="image/svg+xml" data="', c.dir, '/monochrome.svg"></object></div>',
+            '<div class="v-img-wrap"><img src="', c.dir, '/monochrome.svg"></div>',
           '</div>',
         '</div>',
 
         // Favicon strip — uses icon.svg at 16/32/48
         '<div class="favicon-row">',
           ['16','32','48'].map(function (sz) {
-            return '<div class="fav-cell fav-' + sz + '"><div class="frame"><object type="image/svg+xml" data="' + c.dir + '/icon.svg"></object></div><span class="lbl">' + sz + 'px favicon</span></div>';
+            return '<div class="fav-cell fav-' + sz + '"><div class="frame"><img src="' + c.dir + '/icon.svg"></div><span class="lbl">' + sz + 'px favicon</span></div>';
           }).join(''),
           '<div class="fav-cell"><span class="lbl" style="margin-top:0;line-height:1.4;text-align:start">Legibility test<br>16px is the floor</span></div>',
         '</div>',
 
         // App icon row
         '<div class="app-icon-row">',
-          '<div class="app-icon"><object type="image/svg+xml" data="', c.dir, '/icon.svg"></object></div>',
+          '<div class="app-icon"><img src="', c.dir, '/icon.svg"></div>',
           '<div class="text">App icon preview · 1024×1024 (shown at 160px) · brand-green rounded-square frame with the concept icon centered. The frame is the OS app-icon shape; the SVG mark sits at ~82% of the frame width.</div>',
         '</div>',
 
