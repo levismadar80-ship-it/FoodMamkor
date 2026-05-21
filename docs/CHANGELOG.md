@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-475: Settings sweep S2 SecurityTab complete — MEH-475 user-facing scope CLOSED
+
+`feat`: Three sequential PRs land the auth-sensitive SecurityTab chunk of the settings sweep:
+
+- **PR #766 MERGED** at `3014c62` — `feat(MEH-475 settings/S2-a)`: PasswordChangeCard i18n (16→18 keys, `settings.security.password.*` + 2 `settings.security.common.*` pre-seeded for S2-b/S2-c reuse).
+- **PR #767 MERGED** at `d0e34ef` — `feat(MEH-475 settings/S2-b)`: LogoutAllDevicesCard i18n (8→5 keys, `settings.security.logout_all.*` + reuse of `common.{cancel, error_retry}`).
+- **PR #768 MERGED** at `7d746af` — `feat(MEH-475 settings/S2-c)`: DangerZoneCard i18n (11→9 keys, `settings.security.danger_zone.*` + reuse of `common.{cancel, error_retry}`). "30" preserved as numeric digit in `grace_body` per contract.
+
+Auth-flow safety preserved across all 3 chunks: `PATCH /users/me/password` + 422 `detail.failures` parsing path + `firstFailureMessage` extraction; `logoutAllDevices()` redirect side-effect + confirming state machine; `deleteAccount()` + `emailMatch` case-insensitive comparison + `phase` state machine (idle → confirm → grace) + grace-phase 30-day window. MEH-629 #2 fix at L385/493/500 (`tReset("password_aria")`) intact across all 3 chunks.
+
+ICU key parity 2448 → **2480** HE↔EN across the 3 PRs (+32). **MEH-475 user-facing string scope CLOSED.** Final residual = 7 strings in SupportModal (L1355-1388, **MEH-652** filed for follow-up — UI-level, not auth-sensitive, separate risk profile from the S2 chunks).
+
+**Cumulative MEH-475**: 735 (after S3a + S3b) + 32 (S2-a + S2-b + S2-c) = **767 strings extracted** across `recipes.detail.meta_*` + `accessibility.*` + `privacy.*` + `terms.*` + `about_business.*` + `guides.*` + `dashboard.producer.*` + `sweep_tail.*` + `settings.{common,profile,business,products,security}.*` namespaces.
+
 ### 2026-05-21 — MEH-649: Argon2id migration evaluation (research) — DECISION: DEFER
 
 `research`: New decision document at `docs/research/argon2id-migration-evaluation.md`. Triggered by the passlib maintenance gap (last PyPI release 2020) + Python 3.13 `crypt` deprecation flagged in MEH-626 CVE check. Evaluates migrating from passlib + bcrypt to argon2-cffi (OWASP 2026 primary recommendation).
