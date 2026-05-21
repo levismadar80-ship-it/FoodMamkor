@@ -4,6 +4,30 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-626: /login timing equalization
+
+`security`: Added `SENTINEL_HASH` module constant in `backend/app/routers/auth.py`
+(precomputed via `hash_password("sentinel-password-do-not-use")` at import
+time) and refactored the `/login` OR-chain into 3 explicit branches. Each
+failure branch (wrong-email / OAuth-only / wrong-password) now runs exactly
+one bcrypt operation before the generic 401, eliminating user enumeration
+via response-time diff between branches that did vs did not run bcrypt.
+Sibling fix to MEH-328 (`/register` timing reorder) — same threat model,
+different mechanism: sentinel-hash on `/login` vs branch-reorder on
+`/register`.
+
+`tests`: New `TestLoginTimingEqualization.test_login_timing_equivalence_across_failure_modes`
+in `tests/test_api.py`. 5 warmup + 50 measured iterations per branch,
+`X-Real-IP` rotation with `TRUSTED_PROXY=1` to bypass `/login`'s 5/min
+per-IP cap, asserts `max(p95) − min(p95) < 20ms` across the 3 branches.
+Flakiness limitation documented inline pending pytest-rerunfailures
+follow-up.
+
+`docs`: New SECURITY.md §13 "Timing equalization (anti-enumeration)"
+jointly anchored to MEH-328 (timing-reorder) + MEH-626 (sentinel-hash).
+Existing §13-16 renumbered to §14-17; §17 Skills supply chain renumbered
+to §18.
+
 ### 2026-05-20 — Settings sweep S3a + S3b merged (chunks 2 + 3 of 4)
 
 Two PRs landed end-to-end in same session, S2 deliberately deferred:
