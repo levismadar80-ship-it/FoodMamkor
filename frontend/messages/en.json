@@ -3447,6 +3447,17 @@
         "confirm_prompt": "Confirm logging out of all devices?",
         "confirm_submit": "Yes, log out",
         "confirm_submitting": "Logging out…"
+      },
+      "danger_zone": {
+        "heading": "Delete account",
+        "body": "This action is irreversible. All data, reviews, and favorites will be permanently deleted.",
+        "delete_cta": "Delete account",
+        "confirm_email_label": "Type your email to confirm",
+        "submit_cta": "Confirm deletion",
+        "submit_deleting": "Deleting…",
+        "grace_heading": "Deletion request received",
+        "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
+        "back_to_login": "Back to login"
       }
     }
   }
