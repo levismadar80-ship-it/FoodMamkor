@@ -3440,6 +3440,13 @@
         "error_fallback": "Error updating password",
         "submit_cta": "Update password",
         "submit_saving": "Saving…"
+      },
+      "logout_all": {
+        "heading": "Log out of all devices",
+        "body": "Revokes all active sessions and reissues the token — including the current device.",
+        "confirm_prompt": "Confirm logging out of all devices?",
+        "confirm_submit": "Yes, log out",
+        "confirm_submitting": "Logging out…"
       }
     }
   }
