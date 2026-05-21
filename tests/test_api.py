@@ -482,7 +482,7 @@ class TestAuth:
 
     def test_logged_in_user_can_upgrade_to_producer(self, client, db):
         """Authenticated consumer → POST without email/name/password → 200 + producer created."""
-        from app.models.models import User, Producer
+        from app.models.models import User
         user = make_user(db, email="consumer@upgrade.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
@@ -1071,7 +1071,6 @@ class TestMeh56BioGenerator:
         bg._client = None
 
         from conftest import make_user, auth_header
-        from app.models.models import Producer
         p = make_producer(db, name="ביו חוות")
         user = make_user(db, email="biouser@test.com", role="producer")
         user.producer_id = p.id
@@ -1091,7 +1090,6 @@ class TestMeh56BioGenerator:
 
     def test_bio_generate_rejects_empty_source(self, client, db):
         from conftest import make_user
-        from app.models.models import Producer
         p = make_producer(db, name="ביו2")
         user = make_user(db, email="biouser2@test.com", role="producer")
         user.producer_id = p.id
@@ -1972,7 +1970,7 @@ class TestProducersCount:
 
     def test_count_reflects_approved_producers(self, client, db):
         before = client.get("/producers/count").json()["count"]
-        p = make_producer(db, status="approved")
+        make_producer(db, status="approved")
         after = client.get("/producers/count").json()["count"]
         assert after == before + 1
 
@@ -2551,7 +2549,6 @@ class TestRefreshTokenFlow:
         assert "max-age=1209600" in low
 
     def test_refresh_returns_new_access_token(self, client, db):
-        from datetime import datetime, timedelta
         from joserfc import jwt as jose_jwt
         from joserfc.jwk import OctKey
         from joserfc.jwt import JWTClaimsRegistry
@@ -3278,7 +3275,6 @@ class TestBOLA:
 
     def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A deactivated listing (is_active=False) must 404 for anonymous callers."""
-        from app.models.models import HomeProduct
         monkeypatch.setattr(
             "app.routers.home_products.validate_home_product",
             lambda data: {"status": "APPROVED", "reason": None, "suggestion": None},
@@ -3314,7 +3310,6 @@ class TestBOLA:
     def test_category_request_uses_authenticated_producer_id(self, client, db):
         """An authenticated producer's own producer_id is used, not one from the body."""
         import uuid as uuid_mod
-        from app.models.models import Producer as ProducerModel
         producer = make_producer(db, name="בית קפה בודהה")
         user = make_user(db, email="bola-producer@test.com")
         user.producer_id = producer.id

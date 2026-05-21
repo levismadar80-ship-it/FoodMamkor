@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-05-21 — MEH-650: tests/test_api.py — ruff F401/F841 cleanup
+
+`cleanup`: Removed 7 unused imports (F401) + 1 unused variable assignment (F841) flagged in MEH-624 + MEH-626 adversarial reviews and deferred per scope discipline (security PRs kept clean of hygiene). 7/8 auto-fixed via `ruff check --fix`; 1 manual edit at `tests/test_api.py:1975` removed `p = ` assignment from `make_producer(...)` side-effect call to match sibling test's fire-and-forget pattern on L1981. `ruff check tests/test_api.py` now clean. 192 tests collect cleanly post-fix.
+
 ### 2026-05-21 — MEH-626: /login timing equalization
 
 `security`: Added `SENTINEL_HASH` module constant in `backend/app/routers/auth.py`
