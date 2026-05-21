@@ -3459,6 +3459,15 @@
         "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
         "back_to_login": "Back to login"
       }
+    },
+    "support_modal": {
+      "section_aria": "Contact support",
+      "heading": "Contact us",
+      "body": "We're happy to help. Pick the channel that suits you:",
+      "whatsapp_label": "WhatsApp",
+      "whatsapp_hours": "Available Sun–Thu 9:00–17:00",
+      "email_label": "Email",
+      "close_cta": "Close"
     }
   }
 }

@@ -1347,17 +1347,19 @@ function StatCard({ label, value }) {
 }
 
 function SupportModal({ onClose }) {
+  // MEH-652: SupportModal i18n — final settings/page.jsx residual.
+  const t = useTranslations("settings.support_modal");
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="צרי קשר עם התמיכה"
+      aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-site-text text-lg">צרי קשר</h2>
-        <p className="text-sm text-site-muted">נשמח לעזור. בחרי את הדרך הנוחה לך:</p>
+        <h2 className="font-semibold text-site-text text-lg">{t("heading")}</h2>
+        <p className="text-sm text-site-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
@@ -1366,8 +1368,8 @@ function SupportModal({ onClose }) {
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
-            <p className="text-sm font-medium">וואטסאפ</p>
-            <p className="text-xs text-site-muted">זמינות ב׳–ה׳ 9:00–17:00</p>
+            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
+            <p className="text-xs text-site-muted">{t("whatsapp_hours")}</p>
           </div>
         </a>
         <a
@@ -1376,7 +1378,7 @@ function SupportModal({ onClose }) {
         >
           <EnvelopeSimple size={22} weight="duotone" className="text-primary shrink-0" />
           <div>
-            <p className="text-sm font-medium">אימייל</p>
+            <p className="text-sm font-medium">{t("email_label")}</p>
             <p className="text-xs text-site-muted">support@mehamakor.online</p>
           </div>
         </a>
@@ -1385,7 +1387,7 @@ function SupportModal({ onClose }) {
           onClick={onClose}
           className="w-full py-2.5 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
         >
-          סגרי
+          {t("close_cta")}
         </button>
       </div>
     </div>
