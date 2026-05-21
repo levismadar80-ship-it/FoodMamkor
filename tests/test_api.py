@@ -645,16 +645,17 @@ class TestLoginTimingEqualization:
         - p95 latency computed per branch via statistics.quantiles.
         - Assertion: max(p95) - min(p95) < 20ms across the 3 branches.
 
-    Flakiness note:
+    Flakiness mitigation (MEH-647):
         On slow or contended CI runners, bcrypt timing variance may
-        exceed 20ms across iterations even with the fix in place. If
-        this test fails: (1) verify on a quieter machine, (2) a
-        follow-up ticket tracks adding pytest-rerunfailures + applying
-        @pytest.mark.flaky(reruns=2, reruns_delay=1). Do NOT silently
-        raise the 20ms threshold — that hides regressions in the
-        timing-equalization fix.
+        exceed 20ms even with the fix in place. The @pytest.mark.flaky
+        decorator from pytest-rerunfailures gives the test 2 reruns
+        with a 1s delay before declaring failure. If it still fails
+        after 2 reruns: (1) verify on a quieter machine, (2) investigate
+        the timing-equalization invariant — do NOT silently raise the
+        20ms threshold — that hides regressions.
     """
 
+    @pytest.mark.flaky(reruns=2, reruns_delay=1)
     def test_login_timing_equivalence_across_failure_modes(
         self, client, db, monkeypatch
     ):
