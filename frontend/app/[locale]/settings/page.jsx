@@ -624,6 +624,9 @@ function LogoutAllDevicesCard() {
 function DangerZoneCard() {
   const { user, deleteAccount } = useAuth();
   const router = useRouter();
+  // MEH-475 S2-c: card-scoped + shared-common translators.
+  const t = useTranslations("settings.security.danger_zone");
+  const tCommon = useTranslations("settings.security.common");
   const [phase, setPhase] = useState("idle"); // idle | confirm | grace
   const [emailInput, setEmailInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -640,7 +643,7 @@ function DangerZoneCard() {
       await deleteAccount(); // clears token + user state via auth context
       setPhase("grace");
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה — נסי שוב");
+      setError(err?.response?.data?.detail || tCommon("error_retry"));
     } finally {
       setLoading(false);
     }
@@ -650,16 +653,16 @@ function DangerZoneCard() {
     return (
       <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
         <p className="text-2xl">⏳</p>
-        <h2 className="font-semibold text-site-text">בקשת המחיקה התקבלה</h2>
+        <h2 className="font-semibold text-site-text">{t("grace_heading")}</h2>
         <p className="text-sm text-site-muted">
-          החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.
+          {t("grace_body")}
         </p>
         <button
           type="button"
           onClick={() => router.push("/login")}
           className="mt-2 text-sm text-primary hover:underline"
         >
-          חזרי לדף הכניסה
+          {t("back_to_login")}
         </button>
       </section>
     );
@@ -667,9 +670,9 @@ function DangerZoneCard() {
 
   return (
     <section className="bg-white border border-red-200 rounded-[16px] p-6">
-      <h2 className="font-semibold text-red-700 mb-1">מחיקת חשבון</h2>
+      <h2 className="font-semibold text-red-700 mb-1">{t("heading")}</h2>
       <p className="text-sm text-site-muted mb-4">
-        פעולה זו בלתי הפיכה. כל הנתונים, הביקורות והמועדפים יימחקו לצמיתות.
+        {t("body")}
       </p>
 
       {phase === "idle" && (
@@ -678,14 +681,14 @@ function DangerZoneCard() {
           onClick={() => setPhase("confirm")}
           className="border border-red-400 text-red-600 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-50 transition"
         >
-          מחקי חשבון
+          {t("delete_cta")}
         </button>
       )}
 
       {phase === "confirm" && (
         <form onSubmit={handleDelete} className="space-y-3">
           <label htmlFor="danger-email" className="block text-sm font-medium text-red-700">
-            הקלידי את האימייל שלך לאישור
+            {t("confirm_email_label")}
           </label>
           <input
             id="danger-email"
@@ -704,14 +707,14 @@ function DangerZoneCard() {
               disabled={!emailMatch || loading}
               className="bg-red-600 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
             >
-              {loading ? "מוחקת..." : "אישור מחיקה"}
+              {loading ? t("submit_deleting") : t("submit_cta")}
             </button>
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
               className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
             >
-              ביטול
+              {tCommon("cancel")}
             </button>
           </div>
         </form>
