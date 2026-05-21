@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Mehamakor — 5 SVG wordmark concepts (MEH-637)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Frank+Ruhl+Libre:wght@900&display=swap');
+
+    :root {
+      --page-bg: #F5F0E8;
+      --page-text: #1C1A17;
+      --muted: #6b6660;
+      --border: rgba(28,26,23,0.12);
+      --card-bg: #ffffff;
+      --light-fg: #2E6853;
+      --light-bg: #F5F0E8;
+      --dark-fg: #F5F0E8;
+      --dark-bg: #1A1A1A;
+      --green: #2E6853;
+      --shadow: #1f4a3a;
+      --shadow-on-dark: #c9c0ad;
+    }
+    html[data-theme="dark"] {
+      --page-bg: #14130f;
+      --page-text: #F5F0E8;
+      --muted: #9a948b;
+      --border: rgba(245,240,232,0.14);
+      --card-bg: #1f1d19;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: var(--page-text);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-weight: 400;
+      transition: background 240ms ease, color 240ms ease;
+    }
+
+    header {
+      padding: 28px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    header .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    button.toggle {
+      appearance: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--page-text);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.toggle:hover { border-color: var(--green); color: var(--green); }
+
+    main { padding: 32px 40px 80px; max-width: 1400px; margin: 0 auto; }
+    section.concept { margin-bottom: 64px; }
+    section.concept h2 {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+    section.concept h3 {
+      font-size: 22px;
+      font-weight: 500;
+      margin: 0 0 6px;
+    }
+    section.concept p.tech {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 22px;
+      max-width: 760px;
+      line-height: 1.55;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 880px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      padding: 36px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+    }
+    .panel .label {
+      position: absolute;
+      top: 10px;
+      inset-inline-start: 14px;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.5;
+    }
+    .panel.light {
+      --logo-fg: var(--light-fg);
+      --logo-bg: var(--light-bg);
+      --logo-shadow: var(--shadow);
+      background: var(--light-bg);
+      color: var(--light-fg);
+    }
+    .panel.dark {
+      --logo-fg: var(--dark-fg);
+      --logo-bg: var(--dark-bg);
+      --logo-shadow: var(--shadow-on-dark);
+      background: var(--dark-bg);
+      color: var(--dark-fg);
+    }
+    .panel svg.wordmark { width: 100%; max-width: 580px; height: auto; display: block; }
+
+    /* favicon + app icon row */
+    .extras {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 880px) { .extras { grid-template-columns: 1fr; } }
+
+    .favicon-row {
+      display: flex;
+      gap: 24px;
+      align-items: end;
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .fav-cell { text-align: center; }
+    .fav-cell .frame {
+      background: var(--light-bg);
+      color: var(--light-fg);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 3px;
+    }
+    .fav-cell .lbl {
+      display: block;
+      margin-top: 8px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      font-weight: 500;
+    }
+    .fav-16 .frame { width: 16px; height: 16px; }
+    .fav-32 .frame { width: 32px; height: 32px; }
+    .fav-48 .frame { width: 48px; height: 48px; }
+    .fav-cell svg { width: 100%; height: 100%; display: block; }
+
+    .app-icon-cell {
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      gap: 22px;
+      align-items: center;
+    }
+    .app-icon {
+      width: 160px;
+      height: 160px;
+      flex: 0 0 160px;
+      border-radius: 36px;
+      background: var(--green);
+      color: var(--dark-fg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    }
+    .app-icon svg { width: 132px; height: auto; display: block; }
+    .app-icon-cell .text { color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    footer {
+      padding: 28px 40px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    /* The inline SVG symbols below use currentColor for the wordmark and
+       var(--logo-bg) for any "erase" / counter-cutout shapes. Panel CSS
+       controls both. */
+    svg .erase { fill: var(--logo-bg); }
+    svg .shadow { fill: var(--logo-shadow, currentColor); opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<!-- =========================================================
+     Inline symbol library — each concept defined once, used
+     in both light + dark panels. The symbol viewBox matches
+     the standalone .svg file. Foreground = currentColor.
+     ========================================================= -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+
+    <!-- The shared base wordmark text — used inside each concept symbol -->
+    <!-- Each symbol re-declares the text to keep the per-concept overlays inline -->
+
+    <symbol id="c1" viewBox="0 0 1000 400">
+      <text fill="currentColor" x="850" y="240" font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="720" y="240" font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', serif" font-weight="900" font-size="220" text-anchor="middle">ה</text>
+      <text fill="currentColor" x="590" y="240" font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="460" y="240" font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', serif" font-weight="900" font-size="220" text-anchor="middle">ק</text>
+      <text fill="currentColor" x="340" y="240" font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', serif" font-weight="900" font-size="220" text-anchor="middle">ו</text>
+      <text fill="currentColor" x="230" y="240" font-family="'Frank Ruhl Libre', 'Noto Serif Hebrew', serif" font-weight="900" font-size="220" text-anchor="middle">ר</text>
+      <!-- C1 mod: thickened stem on second מ + inset counter wedge -->
+      <rect fill="currentColor" x="618" y="120" width="22" height="130" rx="2"/>
+      <rect fill="var(--logo-bg)" x="558" y="178" width="48" height="20"/>
+      <text fill="currentColor" x="540" y="320" font-family="'DM Sans', sans-serif" font-weight="500" font-size="34" letter-spacing="11" text-anchor="middle">MEHAMAKOR</text>
+    </symbol>
+
+    <symbol id="c2" viewBox="0 0 1000 400">
+      <text fill="currentColor" x="850" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="720" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ה</text>
+      <text fill="currentColor" x="590" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="460" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ק</text>
+      <text fill="currentColor" x="340" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ו</text>
+      <text fill="currentColor" x="230" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ר</text>
+      <!-- C2 mod: ה+מ ligature bridge -->
+      <rect fill="currentColor" x="612" y="218" width="98" height="14" rx="3"/>
+      <path fill="currentColor" d="M 612 218 q 6 -10 16 -10 l 0 14 z"/>
+      <path fill="currentColor" d="M 710 218 q -6 -10 -16 -10 l 0 14 z"/>
+      <text fill="currentColor" x="540" y="320" font-family="'DM Sans', sans-serif" font-weight="500" font-size="34" letter-spacing="11" text-anchor="middle">MEHAMAKOR</text>
+    </symbol>
+
+    <symbol id="c3" viewBox="0 0 1000 400">
+      <text fill="currentColor" x="850" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="720" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ה</text>
+      <text fill="currentColor" x="590" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="460" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ק</text>
+      <text fill="currentColor" x="340" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ו</text>
+      <text fill="currentColor" x="230" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ר</text>
+      <!-- C3 mod A: ק descender curl -->
+      <path fill="currentColor" d="M 480 240 q 0 60 -4 90 q -6 22 -24 22 q -14 0 -22 -12 l 14 -10 q 6 8 12 8 q 6 0 8 -12 q 2 -28 4 -86 z"/>
+      <!-- C3 mod B: bracket terminal on ר top corner -->
+      <rect fill="currentColor" x="262" y="130" width="34" height="14"/>
+      <rect fill="currentColor" x="282" y="130" width="14" height="32"/>
+      <text fill="currentColor" x="540" y="340" font-family="'DM Sans', sans-serif" font-weight="500" font-size="34" letter-spacing="11" text-anchor="middle">MEHAMAKOR</text>
+    </symbol>
+
+    <symbol id="c4" viewBox="0 0 1000 400">
+      <text fill="currentColor" x="850" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="720" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ה</text>
+      <text fill="currentColor" x="590" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="460" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ק</text>
+      <text fill="currentColor" x="340" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ו</text>
+      <text fill="currentColor" x="230" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ר</text>
+      <!-- C4 mod: rounded terminal pills + horizontal cap rule -->
+      <ellipse fill="currentColor" cx="880" cy="248" rx="22" ry="9"/>
+      <ellipse fill="currentColor" cx="752" cy="248" rx="22" ry="9"/>
+      <ellipse fill="currentColor" cx="622" cy="248" rx="22" ry="9"/>
+      <ellipse fill="currentColor" cx="488" cy="248" rx="22" ry="9"/>
+      <ellipse fill="currentColor" cx="346" cy="248" rx="20" ry="9"/>
+      <ellipse fill="currentColor" cx="262" cy="248" rx="22" ry="9"/>
+      <rect fill="currentColor" x="180" y="118" width="720" height="6" rx="2"/>
+      <text fill="currentColor" x="540" y="340" font-family="'DM Sans', sans-serif" font-weight="500" font-size="34" letter-spacing="11" text-anchor="middle">MEHAMAKOR</text>
+    </symbol>
+
+    <symbol id="c5" viewBox="0 0 1000 400">
+      <rect fill="var(--logo-shadow)" opacity="0.85" x="195" y="206" width="690" height="36"/>
+      <text fill="currentColor" x="850" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="720" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ה</text>
+      <text fill="currentColor" x="590" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+      <text fill="currentColor" x="460" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ק</text>
+      <text fill="currentColor" x="340" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ו</text>
+      <text fill="currentColor" x="230" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">ר</text>
+      <polygon fill="var(--logo-shadow)" opacity="0.85" points="852,180 866,194 852,208 838,194"/>
+      <polygon fill="var(--logo-shadow)" opacity="0.85" points="722,180 736,194 722,208 708,194"/>
+      <polygon fill="var(--logo-shadow)" opacity="0.85" points="592,180 606,194 592,208 578,194"/>
+      <polygon fill="var(--logo-shadow)" opacity="0.85" points="232,180 246,194 232,208 218,194"/>
+      <text fill="currentColor" x="540" y="320" font-family="'DM Sans', sans-serif" font-weight="500" font-size="34" letter-spacing="11" text-anchor="middle">MEHAMAKOR</text>
+    </symbol>
+
+    <!-- Single מ derivative for favicon use -->
+    <symbol id="mem-mark" viewBox="780 100 140 170">
+      <text fill="currentColor" x="850" y="240" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="220" text-anchor="middle">מ</text>
+    </symbol>
+
+    <!-- App icon — wordmark on green, used inside the rounded square -->
+    <symbol id="appicon-wordmark" viewBox="0 0 1000 320">
+      <text fill="currentColor" x="500" y="220" font-family="'Frank Ruhl Libre', serif" font-weight="900" font-size="240" text-anchor="middle">מהמקור</text>
+      <text fill="currentColor" x="500" y="290" font-family="'DM Sans', sans-serif" font-weight="500" font-size="42" letter-spacing="14" text-anchor="middle">MEHAMAKOR</text>
+    </symbol>
+
+  </defs>
+</svg>
+
+<header>
+  <div>
+    <h1>מהמקור · Mehamakor — 5 SVG wordmark concepts</h1>
+    <div class="meta">MEH-637 · Frank Ruhl Libre 900 base · brand green #2E6853 / cream #F5F0E8 · concept overlays drawn inline</div>
+  </div>
+  <div>
+    <button class="toggle" id="theme-toggle" type="button" aria-pressed="false">Switch to dark mode</button>
+  </div>
+</header>
+
+<main id="concepts"></main>
+
+<footer>
+  Internal preview · MEH-637 · each concept defines its modifications as inline SVG overlays — see README.md for the default Frank Ruhl test results and uncertainty flags
+</footer>
+
+<script>
+(function () {
+  // ---- Theme toggle (changes page chrome only; both light + dark panels
+  // are always visible per concept for direct comparison) ----
+  var btn = document.getElementById('theme-toggle');
+  var root = document.documentElement;
+  try {
+    if (localStorage.getItem('mehamakor-logo-theme') === 'dark')
+      root.setAttribute('data-theme', 'dark');
+  } catch (e) {}
+  function sync() {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    btn.textContent = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  }
+  sync();
+  btn.addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    if (dark) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', 'dark');
+    try { localStorage.setItem('mehamakor-logo-theme', dark ? 'light' : 'dark'); } catch (e) {}
+    sync();
+  });
+
+  // ---- Render each concept block from a small data array ----
+  var concepts = [
+    { id: 'c1', n: 1,
+      title: 'Contextual Alternates — two distinct מ glyphs',
+      tech: 'Visible modification: the second מ (middle of the wordmark in RTL reading order) carries a thickened vertical stem and an inset counter wedge. The first מ stays standard Frank Ruhl Libre 900. The two mems read as a designed pair rather than a duplicated glyph.' },
+    { id: 'c2', n: 2,
+      title: 'Custom Ligature — ה+מ stroke bridge',
+      tech: 'Visible modification: a short horizontal bar bridges the lower-third of the gap between ה (heh) and the second מ (mem), with small fillet wedges on each end. References Israeli editorial masthead ligature tradition (טבע, Hen Macabi hand lettering).' },
+    { id: 'c3', n: 3,
+      title: 'Custom Letterform — ק descender + ר bracket terminal',
+      tech: 'Visible modification: the ק descender is extended below the baseline with a slight curl inward (Oded Ezer Alchemist reference). The top corner of ר is given a flat bracket terminal rather than Frank Ruhl’s default rounded transition.' },
+    { id: 'c4', n: 4,
+      title: 'Serif Termination Refinement — rounded feet + connecting cap',
+      tech: 'Visible modification: rounded terminal pills at the base of every letter’s main vertical stem, plus a single thin editorial rule connecting the top serifs across the wordmark — recalls a masthead horizon line.' },
+    { id: 'c5', n: 5,
+      title: 'Stress Contrast + Counter Modification',
+      tech: 'Visible modification: a darker stress band sits across the lower-third of every letter where the visual weight concentrates, plus small diamond counter wedges inset into the interior of each letter that has a counter (מ ה ק ר). The wordmark reads as one carved block rather than 6 separate glyphs.' }
+  ];
+
+  var html = concepts.map(function (c) {
+    return [
+      '<section class="concept" id="', c.id, '">',
+        '<h2>Concept ', c.n, '</h2>',
+        '<h3>', c.title, '</h3>',
+        '<p class="tech">', c.tech, '</p>',
+        '<div class="grid-2">',
+          '<div class="panel light"><span class="label">Light · #2E6853 on #F5F0E8</span>',
+            '<svg class="wordmark" viewBox="0 0 1000 400" aria-label="Mehamakor concept ', c.n, ' light"><use href="#', c.id, '"/></svg>',
+          '</div>',
+          '<div class="panel dark"><span class="label">Dark · #F5F0E8 on #1A1A1A</span>',
+            '<svg class="wordmark" viewBox="0 0 1000 400" aria-label="Mehamakor concept ', c.n, ' dark"><use href="#', c.id, '"/></svg>',
+          '</div>',
+        '</div>',
+        '<div class="extras">',
+          '<div class="favicon-row">',
+            ['16','32','48'].map(function (sz) {
+              return '<div class="fav-cell fav-' + sz + '"><div class="frame"><svg viewBox="780 100 140 170"><use href="#mem-mark"/></svg></div><span class="lbl">' + sz + 'px</span></div>';
+            }).join(''),
+            '<div class="fav-cell"><span class="lbl" style="margin-top:0;line-height:1.4;text-align:start">Favicon mark<br>single מ derivative<br>from wordmark</span></div>',
+          '</div>',
+          '<div class="app-icon-cell">',
+            '<div class="app-icon"><svg viewBox="0 0 1000 320"><use href="#appicon-wordmark"/></svg></div>',
+            '<div class="text">App icon 1024&times;1024<br>(preview at 160px)<br>full wordmark, green bg<br>Q17e inverse variant</div>',
+          '</div>',
+        '</div>',
+      '</section>'
+    ].join('');
+  }).join('');
+
+  document.getElementById('concepts').innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

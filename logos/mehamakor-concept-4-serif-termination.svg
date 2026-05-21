@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" role="img" aria-label="מהמקור" preserveAspectRatio="xMidYMid meet">
+  <title>Mehamakor — Concept 4: Serif Termination Refinement</title>
+  <desc>Hebrew wordmark מהמקור with reshaped serif terminals across all 6 letters. Default Frank Ruhl Libre 900 serif feet are squared-off; this concept adds rounded terminals at the base of every vertical stem and extended horizontal caps at the top of each letter. References I Love Typography "Designing Hebrew Type" Greta Text exploration. Each terminal modification is positioned at the base/top of where the letter's main vertical stem would sit. Uncertainty: positioning is approximate against Frank Ruhl Libre 900 webfont metrics — if a fallback Hebrew serif renders, the terminal overlays may sit slightly off the stem and should be re-tuned for the production cut.</desc>
+  <style>
+    :root { --primary: #2E6853; --background: #F5F0E8; }
+    @media (prefers-color-scheme: dark) {
+      :root { --primary: #F5F0E8; --background: #1A1A1A; }
+    }
+    .bg { fill: var(--background); }
+    .fg { fill: var(--primary); }
+    .wordmark { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', 'David Libre', serif; font-weight: 900; }
+    .eyebrow { font-family: 'DM Sans', 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.32em; }
+  </style>
+  <rect class="bg" width="1000" height="400"/>
+  <g id="wordmark">
+    <text class="wordmark fg" x="850" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="720" y="240" font-size="220" text-anchor="middle">ה</text>
+    <text class="wordmark fg" x="590" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="460" y="240" font-size="220" text-anchor="middle">ק</text>
+    <text class="wordmark fg" x="340" y="240" font-size="220" text-anchor="middle">ו</text>
+    <text class="wordmark fg" x="230" y="240" font-size="220" text-anchor="middle">ר</text>
+    <!-- rtl-ok: prose describing Hebrew stem anchoring direction, not Tailwind classes -->
+    <!-- Concept-4 modification: rounded terminal pills at the BASE of each letter's main stem (Hebrew stems anchor on the trailing side of the glyph in RTL reading order) -->
+    <ellipse class="fg" cx="880" cy="248" rx="22" ry="9"/>
+    <ellipse class="fg" cx="752" cy="248" rx="22" ry="9"/>
+    <ellipse class="fg" cx="622" cy="248" rx="22" ry="9"/>
+    <ellipse class="fg" cx="488" cy="248" rx="22" ry="9"/>
+    <ellipse class="fg" cx="346" cy="248" rx="20" ry="9"/>
+    <ellipse class="fg" cx="262" cy="248" rx="22" ry="9"/>
+    <!-- Extended horizontal cap above the wordmark — a single thin editorial rule connecting all top serifs -->
+    <rect class="fg" x="180" y="118" width="720" height="6" rx="2"/>
+  </g>
+  <g id="eyebrow">
+    <text class="eyebrow fg" x="540" y="340" font-size="34" text-anchor="middle">MEHAMAKOR</text>
+  </g>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" role="img" aria-label="מהמקור" preserveAspectRatio="xMidYMid meet">
+  <title>Mehamakor — Concept 1: Contextual Alternates (two distinct מ glyphs)</title>
+  <desc>Hebrew wordmark מהמקור with custom letterform modification on the second מ. The first מ (rightmost in RTL reading order) uses standard Frank Ruhl Libre 900 shape. The second מ is weighted heavier via a vertical stem thickener overlay and an inset counter wedge, giving the wordmark internal rhythm rather than two identical glyphs. Uncertainty: native Hebrew typographer should verify that the modified second מ still reads cleanly as mem and not as another letter — this technique is borrowed from Latin contextual alternates and the Hebrew tradition is thinner.</desc>
+  <style>
+    :root { --primary: #2E6853; --background: #F5F0E8; }
+    @media (prefers-color-scheme: dark) {
+      :root { --primary: #F5F0E8; --background: #1A1A1A; }
+    }
+    .bg { fill: var(--background); }
+    .fg { fill: var(--primary); }
+    .wordmark { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', 'David Libre', serif; font-weight: 900; }
+    .eyebrow { font-family: 'DM Sans', 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.32em; }
+    .erase { fill: var(--background); }
+  </style>
+  <rect class="bg" width="1000" height="400"/>
+  <g id="wordmark">
+    <!-- Hebrew letters positioned RTL: first letter (מ) rightmost, last letter (ר) leftmost -->
+    <text class="wordmark fg" x="850" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="720" y="240" font-size="220" text-anchor="middle">ה</text>
+    <text class="wordmark fg" x="590" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="460" y="240" font-size="220" text-anchor="middle">ק</text>
+    <text class="wordmark fg" x="340" y="240" font-size="220" text-anchor="middle">ו</text>
+    <text class="wordmark fg" x="230" y="240" font-size="220" text-anchor="middle">ר</text>
+    <!-- Concept-1 modification: thicken the right vertical stem of the SECOND mem and inset a counter wedge -->
+    <rect class="fg" x="618" y="120" width="22" height="130" rx="2"/>
+    <rect class="erase" x="558" y="178" width="48" height="20"/>
+  </g>
+  <g id="eyebrow">
+    <text class="eyebrow fg" x="540" y="320" font-size="34" text-anchor="middle">MEHAMAKOR</text>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" role="img" aria-label="מהמקור" preserveAspectRatio="xMidYMid meet">
+  <title>Mehamakor — Concept 5: Stress Contrast + Counter Modification</title>
+  <desc>Hebrew wordmark מהמקור treated as a single designed unit. A consistent shadow-stress band sits across the bottom-third of every letter (where the visual weight concentrates), and each counter (interior negative space) is inset with a small darker wedge to deepen the editorial contrast. References Israeli masthead הארץ tradition where the wordmark feels carved from one block rather than 6 separate letters. Uncertainty: the stress-band placement assumes Frank Ruhl Libre 900 baseline metrics — native Hebrew typographer should verify the band does not visually clip the bottom of any letter unintentionally.</desc>
+  <style>
+    :root { --primary: #2E6853; --background: #F5F0E8; --shadow: #1f4a3a; }
+    @media (prefers-color-scheme: dark) {
+      :root { --primary: #F5F0E8; --background: #1A1A1A; --shadow: #c9c0ad; }
+    }
+    .bg { fill: var(--background); }
+    .fg { fill: var(--primary); }
+    .stress { fill: var(--shadow); }
+    .erase { fill: var(--background); }
+    .wordmark { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', 'David Libre', serif; font-weight: 900; }
+    .eyebrow { font-family: 'DM Sans', 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.32em; }
+  </style>
+  <rect class="bg" width="1000" height="400"/>
+  <g id="wordmark">
+    <!-- Stress band beneath all letters — sits in the lower-third weight zone of Frank Ruhl Libre 900 -->
+    <rect class="stress" x="195" y="206" width="690" height="36"/>
+    <text class="wordmark fg" x="850" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="720" y="240" font-size="220" text-anchor="middle">ה</text>
+    <text class="wordmark fg" x="590" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="460" y="240" font-size="220" text-anchor="middle">ק</text>
+    <text class="wordmark fg" x="340" y="240" font-size="220" text-anchor="middle">ו</text>
+    <text class="wordmark fg" x="230" y="240" font-size="220" text-anchor="middle">ר</text>
+    <!-- Counter wedges — small diamonds inset into the interior negative space of letters that have counters (מ, ה, ק, ר) -->
+    <polygon class="stress" points="852,180 866,194 852,208 838,194"/>
+    <polygon class="stress" points="722,180 736,194 722,208 708,194"/>
+    <polygon class="stress" points="592,180 606,194 592,208 578,194"/>
+    <polygon class="stress" points="232,180 246,194 232,208 218,194"/>
+  </g>
+  <g id="eyebrow">
+    <text class="eyebrow fg" x="540" y="320" font-size="34" text-anchor="middle">MEHAMAKOR</text>
+  </g>
+</svg>

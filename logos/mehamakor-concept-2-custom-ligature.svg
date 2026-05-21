@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" role="img" aria-label="מהמקור" preserveAspectRatio="xMidYMid meet">
+  <title>Mehamakor — Concept 2: Custom ה+מ Ligature</title>
+  <desc>Hebrew wordmark מהמקור with a custom ligature between the first ה (heh) and the second מ (mem). A short horizontal bar bridges the lower-third of the gap between the two letters, plus a small fillet curve that softens the join. References the Israeli editorial masthead ligature tradition (טבע, הארץ subtitle work, Hen Macabi hand lettering). Uncertainty: tested for visual continuity only — native Hebrew reader should confirm the bridge does not produce a perceived dagesh or unintended letterform.</desc>
+  <style>
+    :root { --primary: #2E6853; --background: #F5F0E8; }
+    @media (prefers-color-scheme: dark) {
+      :root { --primary: #F5F0E8; --background: #1A1A1A; }
+    }
+    .bg { fill: var(--background); }
+    .fg { fill: var(--primary); }
+    .wordmark { font-family: 'Frank Ruhl Libre', 'Noto Serif Hebrew', 'David Libre', serif; font-weight: 900; }
+    .eyebrow { font-family: 'DM Sans', 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: 0.32em; }
+  </style>
+  <rect class="bg" width="1000" height="400"/>
+  <g id="wordmark">
+    <text class="wordmark fg" x="850" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="720" y="240" font-size="220" text-anchor="middle">ה</text>
+    <text class="wordmark fg" x="590" y="240" font-size="220" text-anchor="middle">מ</text>
+    <text class="wordmark fg" x="460" y="240" font-size="220" text-anchor="middle">ק</text>
+    <text class="wordmark fg" x="340" y="240" font-size="220" text-anchor="middle">ו</text>
+    <text class="wordmark fg" x="230" y="240" font-size="220" text-anchor="middle">ר</text>
+    <!-- Concept-2 modification: ligature bridge between ה (heh, x≈720) and second מ (mem, x≈590) -->
+    <rect class="fg" x="612" y="218" width="98" height="14" rx="3"/>
+    <path class="fg" d="M 612 218 q 6 -10 16 -10 l 0 14 z"/>
+    <path class="fg" d="M 710 218 q -6 -10 -16 -10 l 0 14 z"/>
+  </g>
+  <g id="eyebrow">
+    <text class="eyebrow fg" x="540" y="320" font-size="34" text-anchor="middle">MEHAMAKOR</text>
+  </g>
+</svg>
