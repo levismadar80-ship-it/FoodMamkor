@@ -1,33 +1,45 @@
 """
 WhatsApp + email notifications for the producer-registration flow.
 
-Both functions are fire-and-forget background-task targets; both
-fail-open so a WhatsApp outage cannot break producer signup. MEH-287
-retained: every skip path emits logger.error with the exact missing
-piece (phone, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN) so
-Railway / Sentry surfaces the misconfiguration instead of silently
-failing.
+Producer-facing notifications fail-open so a WhatsApp outage cannot
+break producer signup or admin approval. MEH-287 retained: every skip
+path emits logger.error with the exact missing piece (phone,
+WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN) so Railway / Sentry
+surfaces the misconfiguration instead of silently failing.
 
 Lifted verbatim from backend/app/routers/auth.py during the MEH-440
-refactor; SDK swapped Twilio → Meta Cloud API in MEH-508.
+refactor; SDK swapped Twilio → Meta Cloud API in MEH-508; MEH-509 PR1
+swapped the producer-facing welcome from free-text send_text to the
+pre-approved producer_welcome_v1 template and added the symmetric
+producer_approved_v1 hook for admin approval (works outside the 24h
+customer-service window — required since approval can land days after
+signup).
 """
 
 import logging
+from uuid import UUID
 
 from app.config import settings
 from app.services.email import send_email
-from app.services.whatsapp import send_text
+from app.services.whatsapp import send_template, send_text
 from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
 
 
-def notify_producer_registered(name: str, phone: str | None) -> bool:
-    """Send WhatsApp welcome + profile-completion link to the new producer.
+def _normalize_il_phone(phone: str) -> str:
+    """Strip hyphens/whitespace; prepend +972 if local 0… format."""
+    phone = phone.replace("-", "").strip()
+    if not phone.startswith("+"):
+        phone = "+972" + phone.lstrip("0")
+    return phone
 
-    MEH-287: returns True on success, False on skip/failure. Any skip
-    now emits logger.error with the exact missing piece so Railway /
-    Sentry surfaces the misconfiguration instead of silently failing.
+
+def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
+    """Shared MEH-287 skip-and-log gate for producer-facing WhatsApp.
+
+    `kind` is "welcome" / "approved" — only used in the log line so
+    Railway/Sentry can distinguish which template was suppressed.
     """
     missing = []
     if not phone:
@@ -38,26 +50,81 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
         missing.append("WHATSAPP_ACCESS_TOKEN")
     if missing:
         logger.error(
-            f"[WHATSAPP] Producer welcome SKIPPED for '{name}' — missing: {', '.join(missing)}"
+            f"[WHATSAPP] Producer {kind} SKIPPED for '{name}' — missing: {', '.join(missing)}"
         )
         return False
-    phone = phone.replace("-", "").strip()
-    if not phone.startswith("+"):
-        phone = "+972" + phone.lstrip("0")
-    message = (
-        f"ברוכה הבאה למהמקור! 🌿\n"
-        f"העסק '{name}' נרשם בהצלחה.\n"
-        f"השלימי את הפרופיל כדי שלקוחות יוכלו למצוא אותך:\n"
-        f"{settings.frontend_url}/producer/dashboard"
-    )
-    if send_text(phone, message):
-        logger.info("[WHATSAPP] Producer welcome sent")
+    return True
+
+
+def notify_producer_registered(name: str, phone: str | None) -> bool:
+    """Send WhatsApp welcome template to the new producer (MEH-509 PR1).
+
+    Fires the Meta-approved ``producer_welcome_v1`` template with two
+    positional params: business name + dashboard URL. Returns True on
+    success, False on skip/failure (MEH-287 contract preserved).
+    """
+    if not _producer_wa_preflight(name, phone, "welcome"):
+        return False
+    normalized = _normalize_il_phone(phone)
+    profile_url = f"{settings.frontend_url}/producer/dashboard"
+    try:
+        ok = send_template(
+            normalized,
+            "producer_welcome_v1",
+            [name, profile_url],
+            lang="he",
+        )
+    except Exception as e:  # belt-and-suspenders; send_template is fail-open
+        logger.warning(
+            f"[WHATSAPP] Producer welcome unexpected error for {mask_phone(normalized)}: {e}"
+        )
+        return False
+    if ok:
+        logger.info("[WHATSAPP] Producer welcome template sent")
         return True
-    # send_text already logs the HTTP-error path with mask_phone; this
-    # MEH-287 line preserves the per-recipient error trail at this layer.
-    logger.error(
-        f"[WHATSAPP] Producer welcome FAILED for {mask_phone(phone)}",
-    )
+    logger.error(f"[WHATSAPP] Producer welcome FAILED for {mask_phone(normalized)}")
+    return False
+
+
+def notify_producer_approved(
+    name: str,
+    phone: str | None,
+    slug: str | None,
+    producer_id: UUID | str,
+) -> bool:
+    """Send WhatsApp approval template once admin approves the producer.
+
+    Fires ``producer_approved_v1`` with [name, page_url]. ``page_url``
+    prefers ``slug`` (public custom URL); falls back to
+    ``/producer/{producer_id}`` when slug is null, with a log.info so
+    fallback frequency is monitorable in prod.
+    """
+    if not _producer_wa_preflight(name, phone, "approved"):
+        return False
+    normalized = _normalize_il_phone(phone)
+    if slug:
+        page_url = f"{settings.frontend_url}/{slug}"
+    else:
+        page_url = f"{settings.frontend_url}/producer/{producer_id}"
+        logger.info(
+            f"[WHATSAPP] Producer approved fallback URL used for '{name}' (no slug set)"
+        )
+    try:
+        ok = send_template(
+            normalized,
+            "producer_approved_v1",
+            [name, page_url],
+            lang="he",
+        )
+    except Exception as e:  # belt-and-suspenders; send_template is fail-open
+        logger.warning(
+            f"[WHATSAPP] Producer approved unexpected error for {mask_phone(normalized)}: {e}"
+        )
+        return False
+    if ok:
+        logger.info("[WHATSAPP] Producer approved template sent")
+        return True
+    logger.error(f"[WHATSAPP] Producer approved FAILED for {mask_phone(normalized)}")
     return False
 
 
