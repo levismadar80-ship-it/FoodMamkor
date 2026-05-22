@@ -4,6 +4,33 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 PR2a: vacation mode (typed toggle over AdminSetting store)
+
+`feat(admin)`: MEH-509 PR2a of 4 — add a vacation-mode toggle to the admin settings page. State is persisted via two new keys on the existing `admin_settings` key-value table (NOT a parallel `system_settings` table — Phase 0 caught the architectural-smell collision per `.claude/rules/db.md` MEH-271). PR2b watchdog will consume `vacation_mode_active` to swap `after_hours_response_he` → `vacation_mode_response_he`.
+
+**Scope shift vs original spec (Option A, user-approved in Phase 0):** the original spec asked for a new `SystemSettings` model + Alembic migration + `EXPECTED_REV` bump. Discovery found `AdminSetting` (`models.py:269-274`) + `GET/PUT /admin/settings` (`admin_extra.py:357-389`) already implement that exact key-value pattern, with `friday_mode_override` as a working boolean-toggle precedent. Reused the existing store; **no new model, no Alembic migration, no `EXPECTED_REV` bump**.
+
+- `backend/app/schemas/schemas.py` (+15) — new `VacationModeState(BaseModel)` with `active: bool` + `return_date: date | None`. `model_validator` rejects `active=true` without `return_date` (Hebrew error `"חובה לציין תאריך חזרה כשמצב חופשה מופעל"` → 422 at FastAPI boundary).
+- `backend/app/routers/admin_extra.py` (+70) — 2 new keys in `DEFAULT_SETTINGS` (`vacation_mode_active: "false"`, `vacation_return_date: ""`) so the generic `GET /admin/settings` continues to surface them with defaults. New `GET /admin/settings/vacation` + `POST /admin/settings/vacation` (both `require_admin`) wrap the str↔bool/date conversion. POST normalizes deactivation by always clearing `return_date`, preventing "active=false with stale date" drift.
+- `tests/test_meh_509_pr2a_vacation.py` (new, 10 tests) — defaults, round-trip, 422 guard, deactivation clears date, deactivation without date OK, both auth gates, generic-GET defaults cross-check. All 10 green.
+- `frontend/app/[locale]/admin/settings/page.js` (+90) — new vacation section between Friday mode and the integration tests block. Toggle + conditional date input + dedicated save button (independent of the existing multi-field save). i18n via existing `admin.settings.sections.*` namespace; no physical RTL classes.
+- `frontend/messages/he.json` + `frontend/messages/en.json` — 12 new keys each under `admin.settings.sections.vacation*`. HE↔EN parity preserved.
+- `docs/DATA.md` — 2 new endpoints listed under `/admin` block.
+- `.ai/diagrams/api-routes.md` — `AdminVacation` node added to the admin-settings cluster.
+
+**Phase 0 stops surfaced + resolved (user-approved):**
+- _Two parallel KV stores would violate MEH-271_ → reused `AdminSetting`.
+- _Spec's `frontend/app/admin/settings/page.jsx` doesn't exist_ → extended `frontend/app/[locale]/admin/settings/page.js` (272 LOC, JS not JSX) per i18n routing layout.
+- _Spec's "inline BaseModel in admin.py is fine" contradicts ADR-006 R1_ → `VacationModeState` lives in `schemas/schemas.py`.
+
+Local verification:
+- `pytest tests/test_meh_509_pr2a_vacation.py -v` → 10 passed in 5.57s.
+- `pytest tests/test_meh_509_pr1_hooks.py tests/test_whatsapp_notify.py tests/test_api.py` → **202 passed** in 140s (no regressions).
+- `cd frontend && npm run build` → `Compiled successfully in 11.4s`, 101/101 pages generated, no warnings.
+- Physical-RTL grep on `frontend/app/[locale]/admin/settings/` → 0 hits outside the existing `translate-x-*` toggle thumb idioms.
+
+**Out of scope (PR2b/PR3 territory):** no APScheduler / no `auto_reply_watchdog.py` / no template sending / no business-hours constants / no `Producer.risk_score`. PR2a is pure state-management — the watchdog in PR2b will consume `vacation_mode_active` via the same typed endpoint.
+
 ### 2026-05-22 — MEH-509 PR1: producer welcome + approval WhatsApp template hooks
 
 `feat(whatsapp)`: MEH-509 PR1 of 3 — switch the producer-facing welcome from the MEH-287/508 free-text `send_text` path to the Meta-approved `producer_welcome_v1` template, and add a symmetric `producer_approved_v1` hook fired when admin approves a pending producer. Both calls are fail-open at the service layer (`send_template` already swallows `httpx.HTTPError`) with an additional belt-and-suspenders `try/except` at the consumer so an unexpected raise cannot break signup or the approval 200.

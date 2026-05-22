@@ -494,6 +494,11 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] על בוט עם traffic בסיסי (curl /producers), ספירת `sample_count` עולה, avg וכו׳ מתעדכנים
 - [ ] אחרי redeploy של Railway — הפאנל מתאפס (ok)
 
+### Vacation mode toggle (/admin/settings) — MEH-509 PR2a
+- [ ] מצב חופשה — /admin/settings → toggle on → set date → save → toast → refresh → state persists. Toggle off → toast → refresh → date cleared. — תוצאה מצופה: state persists, date cleared on deactivate.
+- [ ] Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תאריך חזרה כשמצב חופשה מופעל". — תוצאה מצופה: cannot submit until date is set.
+- [ ] Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` → 422. — תוצאה מצופה: Pydantic model_validator rejects.
+
 ### Sidebar pending moderation badge
 - [ ] צרי יצרנית חדשה עם status=pending + דיווח פתוח אחד + מוצר ביתי FLAGGED אחד + חוויה pending אחת
 - [ ] /admin/dashboard — כרטיסיות alerts מפרטות את ה-4
