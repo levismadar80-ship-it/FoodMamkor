@@ -2,6 +2,37 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-22 — MEH-509 PR3 (AI risk-score) — all 5 MEH-509 features ✓
+
+**MED-RISK additive backend + frontend — new Anthropic surface, new schema columns, internal-admin UI only.**
+
+Producer signup fires FastAPI BackgroundTasks `score_producer(p_id)` adjacent to PR1's welcome hook (`backend/app/routers/auth.py:474,575`). `app/services/producer_risk.py` opens a fresh `SessionLocal`, builds a PII-safe profile (phone reduced to last-4 only — never the full number), calls `claude-haiku-4-5-20251001` via `anthropic.Anthropic(api_key=..., http_client=httpx.Client(timeout=10s))` per `.claude/rules/backend.md`. Clamps score to `[0,100]`, truncates reasoning to 500 chars. Fail-open at every step (`log.warning` + NULL on any error — signup never blocked, badge falls back to grey "אין מידע"). Alembic `92afa3cb76e2` adds 2 nullable columns (`risk_score`, `risk_reasoning`); `EXPECTED_REV` bumped, `EXPECTED_TABLES` stays 35. Admin `GET /admin/producers/{id}/risk-score` exposes the typed shape; `GET /admin/producers` response model flipped to `ProducerAdminOut` so the table populates. Frontend `AdminProducersTable.jsx` adds a `RiskBadge` column (green ≤30 / yellow 31-70 / red >70 / grey NULL) with tooltip surfacing the full Hebrew reasoning. 14 new tests all green; full backend regression 206/206; frontend build clean.
+
+### Post-PR3 ops checklist (MUST follow in order)
+
+1. **Verify** `ANTHROPIC_API_KEY` is set in Railway **staging** env. It's already set in production for the chat router (MEH-XXX), but verify staging separately — `railway variables --environment staging | grep ANTHROPIC` from your terminal.
+2. **Wait** for Railway redeploy to complete after PR2 merges to staging.
+3. **Smoke 1 — fresh signup:** sign up a brand-new test producer at `https://<staging-railway-url>/auth/register/producer` with a phone number you control. Wait ~10 seconds for the BackgroundTask + Anthropic round-trip.
+4. **Smoke 2 — admin badge:** refresh `/admin/producers` in staging. The new test producer's row shows a color-coded risk badge with a tooltip describing the reasoning in Hebrew. If the badge stays grey "אין מידע" for >30 seconds, check Railway logs for `[RISK]` entries — most likely an Anthropic auth failure or rate limit.
+5. **Smoke 3 — direct endpoint:** `curl -H "Authorization: Bearer <admin-jwt>" https://<staging-railway-url>/admin/producers/<test-producer-id>/risk-score` → expect `{"score": <int>, "reasoning": "<hebrew>"}`. If NULL on both, retry once (Anthropic transient); if persistently NULL, escalate (likely missing key in staging).
+6. **Promote to production:** verify `ANTHROPIC_API_KEY` is set in Railway production (it should be, from chat router). No frontend env vars needed (admin UI is server-rendered). Merge the staging→main bring-up PR.
+
+### MEH-509 epic status — ALL FEATURES SHIPPED
+
+- ✅ PR1 — Producer welcome + approval template hooks (#776)
+- ✅ PR2a — Vacation mode toggle (#778)
+- ✅ PR2b — After-hours watchdog (#780)
+- ✅ PR2c — WhatsApp webhook receiver + HMAC verification (#781)
+- ✅ Vacation template rename → `vacation_response_he_v2` (#782, post-PR2c hotfix)
+- ✅ PR3 — AI risk-score (this PR)
+
+Open follow-ups (Backlog, Low priority, not blocking launch):
+- **MEH-662** — Extract shared `read_vacation_state()` helper to deduplicate `admin_extra.py:402` ↔ `auto_reply_watchdog.py:75`.
+- **MEH-663** — Add `Content-Length` early-return on POST `/webhook/whatsapp` for DoS defense-in-depth.
+
+---
+
+
 ## 2026-05-22 — S3 Design closure + Phase 4 LOCK
 
 ### Completed today

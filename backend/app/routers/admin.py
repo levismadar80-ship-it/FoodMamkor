@@ -24,7 +24,6 @@ from app.models import (
 from app.schemas.schemas import (
     ProducerAdminCreate,
     ProducerAdminOut,
-    ProducerDetailOut,
     ProducerUpdate,
     RemoveListingBody,
     StoryCardUploadRequest,
@@ -96,7 +95,7 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
         db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
-@router.get("/producers", response_model=list[ProducerDetailOut])
+@router.get("/producers", response_model=list[ProducerAdminOut])
 def list_producers(
     status: str | None = Query(
         None, pattern="^(pending|pending_whatsapp|approved|rejected|inactive|all)$"

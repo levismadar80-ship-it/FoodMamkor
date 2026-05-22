@@ -4,6 +4,47 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 PR3: AI risk-score (Anthropic Haiku 4.5 + admin badge)
+
+`feat(MEH-509)`: PR3 of 4 — **all 5 MEH-509 features now shipped.** Producer signup fires a FastAPI BackgroundTasks job that calls Anthropic Claude Haiku 4.5 with a PII-safe profile JSON; the response (score 0-100 + one-sentence Hebrew reasoning) lands in two new nullable columns on `producers`. Admin `/admin/producers` shows a color-coded badge per producer (green ≤30, yellow 31-70, red >70, grey "אין מידע" if NULL). Fail-open at every step — Anthropic failure leaves both columns NULL, signup never blocked, badge gracefully shows the grey state.
+
+Phase 0 scope reductions (vs original spec):
+- `backend/app/config.py` — `anthropic_api_key` ALREADY present (chat router uses it). No config change.
+- `backend/.env.example` — `ANTHROPIC_API_KEY` ALREADY in root `.env.example`. Env-drift CI satisfied via union.
+
+Backend:
+- `backend/app/models/models.py:99-107` — `Producer.risk_score` (Integer, nullable) + `Producer.risk_reasoning` (Text, nullable). NULL on both = "not scored yet OR fail-open NULL". No CHECK constraint (clamp lives at app layer so corrupt persisted values stay readable in the admin "out of range" grey state).
+- `backend/alembic/versions/20260522_1700_92afa3cb76e2_meh_509_pr3_producer_risk.py` (new) — `down_revision="d4046deb0dc1"`. Adds 2 nullable columns; no backfill (existing producers stay NULL = "not scored"). Roundtrip verified: `upgrade head → downgrade -1 → upgrade head` clean.
+- `.github/workflows/pr-checks.yml:160` — `EXPECTED_REV="92afa3cb76e2"`. `EXPECTED_TABLES` stays 35 (additive, no new table).
+- `backend/app/services/producer_risk.py` (new, ~190 LOC) — `score_producer(producer_id: UUID)` opens fresh `SessionLocal`, builds PII-safe profile (phone reduced to `last-4` only, never the full number), calls `claude-haiku-4-5-20251001` via `anthropic.Anthropic(api_key=..., http_client=httpx.Client(timeout=10s))` per `.claude/rules/backend.md`. Clamps score to [0,100]; truncates reasoning to 500 chars; fail-open with `log.warning` on every error path. Three private helpers (`_build_profile_payload` / `_clamp_score` / `_truncate_reasoning` / `_call_anthropic`) keep the public surface minimal.
+- `backend/app/schemas/schemas.py` — new `RiskScoreResponse(BaseModel)` with `score: int | None` + `reasoning: str | None`. Extended `ProducerAdminOut` (admin-only response) with `risk_score` + `risk_reasoning` — admin list endpoint surfaces them; `ProducerDetailOut` (public) intentionally does NOT.
+- `backend/app/routers/auth.py:474, 575` — new `background_tasks.add_task(score_producer, p_id)` adjacent to PR1's welcome hook, both upgrade and new-email signup paths. PR1 primitives-only pattern preserved (no ORM-after-commit risk).
+- `backend/app/routers/admin_extra.py` — new `GET /admin/producers/{producer_id}/risk-score` (require_admin), returns `RiskScoreResponse`. 404 if producer missing.
+- `backend/app/routers/admin.py:99` — `GET /admin/producers` `response_model` flipped from `list[ProducerDetailOut]` → `list[ProducerAdminOut]` so risk fields reach the admin table.
+
+Frontend:
+- `frontend/app/[locale]/admin/producers/AdminProducersTable.jsx` (+~40 LOC) — new `RiskBadge` component renders the color-coded pill with tooltip surfacing full `risk_reasoning`. Score thresholds (`RISK_LOW_MAX=30`, `RISK_MED_MAX=70`) hardcoded per spec. Table column count bumped 6 → 7. RTL-clean (no physical `ml-/mr-/left-/right-` outside the existing toggle-thumb idiom).
+- `frontend/messages/{he,en}.json` — new `admin.producers.table.columns.risk` + `admin.producers.table.risk.{low,medium,high,unknown,no_reasoning}` keys per locale. HE↔EN parity preserved.
+
+Tests:
+- `tests/test_meh_509_pr3_risk_score.py` (new, 14 tests):
+  - 9 unit tests on `score_producer`: success persists, Anthropic 5xx leaves NULL, timeout leaves NULL, invalid JSON leaves NULL, score>100 clamped to 100, negative score clamped to 0, reasoning truncated to 500 chars, empty API key fail-closed before SDK invocation, unknown producer ID no-op.
+  - 5 integration tests on `GET /admin/producers/{id}/risk-score`: returns score when present, returns NULLs when not scored, 404 for unknown producer ID, requires admin auth, consumer role rejected (403).
+
+Verification:
+- `pytest tests/test_meh_509_pr3_risk_score.py` → **14/14 green** in 5.01s.
+- `pytest tests/test_meh_509_pr3_risk_score.py tests/test_api.py` → **206 passed** in 130s (full MEH-509 + API regression-clean).
+- `alembic upgrade head → downgrade -1 → upgrade head` → clean roundtrip.
+- `ruff check + ruff format --check` clean.
+- `cd frontend && npm run build` → `Compiled successfully in 15.7s`, 101/101 pages generated.
+- `bash scripts/check_env_drift.sh` → 55/55 documented, no missing vars.
+- `grep "twilio" backend/app/services/producer_risk.py` → 0 results.
+- RTL physical-class grep on the modified frontend file → 0 violations.
+
+**Post-merge ops checklist (HANDOFF.md):** add `ANTHROPIC_API_KEY` to Railway **staging** env vars first (production already has it for chat) → wait for redeploy → sign up a test producer with phone → wait ~10 seconds → refresh `/admin/producers` → expect the new producer's risk badge to populate within 10s. Manual smoke target: at least one of the dashboard's existing pending producers gets a non-NULL score on their next visit to `/admin`. Promote to production with the same env var (or confirm it's already set).
+
+**MEH-509 status:** **all 5 features ✓** — PR1 producer welcome + approval (#776) · PR2a vacation mode (#778) · PR2b after-hours watchdog (#780) · PR2c WhatsApp webhook receiver (#781) · PR3 AI risk-score (this PR). Plus the #782 hotfix renaming `vacation_response_he_v2` to Hebrew. Two open follow-ups: **MEH-662** (extract shared `read_vacation_state()` helper) + **MEH-663** (`Content-Length` early-return on webhook for DoS defense-in-depth).
+
 ### 2026-05-22 — MEH-509: rename vacation template to `vacation_response_he_v2` (Hebrew)
 
 `fix(MEH-509)`: production smoke against the post-PR2c staging deploy revealed that the original `vacation_mode_response_he` template was registered with Meta in **English**, not Hebrew. A new template `vacation_response_he_v2` was approved in Hebrew with the correct copy. This PR swaps the constant in the watchdog so the next send hits the Hebrew variant.

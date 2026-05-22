@@ -57,6 +57,8 @@ erDiagram
         boolean grass_fed
         boolean organic_certified
         string kosher
+        int risk_score "nullable — MEH-509 PR3, Anthropic Haiku 0-100, fail-open NULL"
+        text risk_reasoning "nullable — one-sentence Hebrew explanation, truncated to 500 chars"
         timestamp created_at
     }
 

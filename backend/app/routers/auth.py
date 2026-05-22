@@ -41,6 +41,7 @@ from app.services.auth_notifications import (
     notify_admin_new_producer,
     notify_producer_registered,
 )
+from app.services.producer_risk import score_producer
 from app.services.oauth_verifiers import (
     # Aliases preserve the legacy underscore-prefixed module attribute
     # surface so tests that monkeypatch / import
@@ -470,8 +471,12 @@ async def register_producer(
         p_name = producer.name
         p_city = producer.city
         p_phone = producer.phone
+        p_id = producer.id
         background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+        # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
+        # signup is never blocked by Anthropic latency or errors.
+        background_tasks.add_task(score_producer, p_id)
         # No verify/welcome email — the user already has a verified consumer
         # account; she's just adding producer capability.
 
@@ -571,8 +576,12 @@ async def register_producer(
         p_name = producer.name
         p_city = producer.city
         p_phone = producer.phone
+        p_id = producer.id
         background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
         background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+        # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
+        # signup is never blocked by Anthropic latency or errors.
+        background_tasks.add_task(score_producer, p_id)
         background_tasks.add_task(
             _send_verify_email, user.email, user.name, verify_token
         )

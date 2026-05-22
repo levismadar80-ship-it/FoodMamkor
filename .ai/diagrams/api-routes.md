@@ -134,6 +134,7 @@ graph TD
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
     Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
     Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
+    AdminProducers[/admin/producers page] --> AdminRiskScore[GET /admin/producers/&#123;id&#125;/risk-score<br/>🛡️ MEH-509 PR3 Anthropic Haiku risk score<br/>NULL when not scored / fail-open]
 ```
 
 ## 6. Marketing + misc (anonymous, rate-limited)

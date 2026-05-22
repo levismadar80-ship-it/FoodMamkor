@@ -1115,7 +1115,15 @@
           "categories": "Categories",
           "tags": "Tags",
           "status": "Status",
+          "risk": "Risk",
           "actions": "Actions"
+        },
+        "risk": {
+          "low": "Low risk",
+          "medium": "Medium risk",
+          "high": "High risk",
+          "unknown": "No data",
+          "no_reasoning": "Not yet scored"
         },
         "all_complete": "All businesses are complete 🎉",
         "empty": "No businesses to display",

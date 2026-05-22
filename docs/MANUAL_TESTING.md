@@ -499,6 +499,13 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תאריך חזרה כשמצב חופשה מופעל". — תוצאה מצופה: cannot submit until date is set.
 - [ ] Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` → 422. — תוצאה מצופה: Pydantic model_validator rejects.
 
+### AI risk-score badge (MEH-509 PR3 — admin only)
+- [ ] Fresh signup — sign up a new test producer with phone via `/auth/register/producer` → wait ~10 seconds → `/admin/producers` — תוצאה מצופה: new row appears with color-coded risk badge (green ≤30 / yellow 31-70 / red >70 / grey "אין מידע" if Anthropic was down).
+- [ ] Tooltip — hover the risk badge → תוצאה מצופה: tooltip surfaces the full Hebrew reasoning text (or "טרם דורג" if score is NULL).
+- [ ] Direct endpoint — `curl -H "Authorization: Bearer <admin-jwt>" https://<staging>/admin/producers/<id>/risk-score` → תוצאה מצופה: `{"score": <0-100 or null>, "reasoning": "<hebrew or null>"}`.
+- [ ] Auth gate — same curl without JWT → תוצאה מצופה: 401/403; with consumer-role JWT → 403.
+- [ ] Fail-open smoke — temporarily unset `ANTHROPIC_API_KEY` in Railway staging, sign up a producer, restore the key. תוצאה מצופה: signup completes 200, badge shows grey "אין מידע", logs show `[RISK] ANTHROPIC_API_KEY not set — skipping score`.
+
 ### WhatsApp webhook receiver (MEH-509 PR2c)
 - [ ] GET challenge in staging — `curl 'https://<staging-railway-url>/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=hello'` — תוצאה מצופה: `200 hello` (plain text). Wrong token → 403.
 - [ ] Meta Console verify — Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL `https://<staging-railway-url>/webhook/whatsapp` + Verify Token = the env value → click "Verify and save". תוצאה מצופה: ✅ green checkmark; if 403, double-check `WHATSAPP_VERIFY_TOKEN` matches exactly (no whitespace, no quotes).
