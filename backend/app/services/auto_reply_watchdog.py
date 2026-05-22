@@ -137,6 +137,8 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
         logger.debug("[WATCHDOG] no candidates in last %dm", WATCHDOG_LOOKBACK_MINUTES)
         return counters
 
+    # REUSES: app/services/vacation_state.py:read_vacation_state — shared
+    # with admin_extra._read_vacation_state (MEH-662 dedup).
     vacation_active, vacation_return_date = read_vacation_state(db)
     template_name, params = _decide_template(
         vacation_active=vacation_active,
