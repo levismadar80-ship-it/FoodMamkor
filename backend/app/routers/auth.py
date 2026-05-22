@@ -423,6 +423,16 @@ async def register_producer(
         # the caller already proved control of the account. Still returns
         # a token + whatsapp_sent so the dashboard flow keeps working.
         user = current_user
+        # MEH-669: admin accounts must never self-upgrade to producer.
+        # Without this guard, line `user.role = "producer"` below silently
+        # demotes the admin and locks them out of /admin (vertical privilege
+        # loss — OWASP A01 Broken Access Control). Separation-of-duties:
+        # admins use a dedicated account, never their daily-work account.
+        if user.role == "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="מנהל מערכת לא יכול להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+            )
         # Check both: producer_id (current link) and is_producer (durable flag).
         # is_producer stays True even if an admin manually clears producer_id,
         # preventing silent re-registration without an explicit admin reset.
@@ -800,6 +810,18 @@ def register_producer_oauth(
             db.commit()
             db.refresh(user)
             is_new = True
+
+    # MEH-669: admin accounts must never enter the producer signup flow,
+    # even via the OAuth Step 0. Although this endpoint does not itself
+    # write role="producer" (Step 2 at POST /auth/register/producer does
+    # that — also guarded), reject upfront so the frontend cannot advance
+    # to Step 2 and the JWT issued here cannot be used as an upgrade
+    # token. Defense-in-depth — see sibling guard at auth.py upgrade_path.
+    if user.role == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="מנהל מערכת לא יכול להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+        )
 
     # 3. If this account is already a producer, bail out — the producer
     # signup flow is for NEW producers. Existing ones should log in and
