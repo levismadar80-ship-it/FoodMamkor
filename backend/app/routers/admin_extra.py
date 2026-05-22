@@ -40,6 +40,7 @@ from app.schemas.schemas import (
     VacationModeState,
 )
 from app.services.analytics import server_health
+from app.services.vacation_state import read_vacation_state
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
@@ -401,30 +402,12 @@ def update_settings(
 
 
 def _read_vacation_state(db: Session) -> VacationModeState:
-    rows = {
-        r.key: r.value
-        for r in db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["vacation_mode_active", "vacation_return_date"])
-        )
-    }
-    active = (rows.get("vacation_mode_active") or "false").lower() == "true"
-    return_date_raw = rows.get("vacation_return_date") or ""
-    return_date: date | None = None
-    if active and return_date_raw:
-        try:
-            return_date = date.fromisoformat(return_date_raw)
-        except ValueError:
-            # Corrupt persisted value — surface as inactive rather than 500
-            # the GET. PR2b watchdog will skip vacation send if active=false.
-            return VacationModeState(active=False, return_date=None)
-    elif active and not return_date_raw:
-        # Inconsistent state: active="true" but return_date empty/missing.
-        # Reachable via the generic PUT /admin/settings (which can write
-        # either key independently via the DEFAULT_SETTINGS allowlist).
-        # VacationModeState's model_validator would raise on construction
-        # with active=True+return_date=None, 500ing the GET. Coerce to
-        # inactive so admins see a clean state and can re-enable cleanly.
-        return VacationModeState(active=False, return_date=None)
+    """Pydantic wrapper over the shared `read_vacation_state` helper
+    (MEH-662). All str→bool/date conversion + corrupt-state defense
+    lives in `app/services/vacation_state.py`; this wrapper only adapts
+    the tuple shape into the typed VacationModeState model the admin
+    GET/POST endpoints expose."""
+    active, return_date = read_vacation_state(db)
     return VacationModeState(active=active, return_date=return_date)
 
 
