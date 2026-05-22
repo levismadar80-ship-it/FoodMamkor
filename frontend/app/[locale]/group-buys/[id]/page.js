@@ -30,6 +30,7 @@ export async function generateMetadata(props) {
   const entityName = groupBuy?.title || groupBuy?.name;
 
   if (!entityName) {
+    // MEH-641: titleless entity treated as 404; SEO-worthless by design — see ticket for rationale.
     // MEH-476 followup: 404 paths should not be indexed even though they
     // still emit valid hreflang (so cross-locale 404s are linked).
     return {

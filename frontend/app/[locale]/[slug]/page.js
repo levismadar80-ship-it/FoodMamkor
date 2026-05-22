@@ -40,6 +40,7 @@ export async function generateMetadata(props) {
   const alternates = buildAlternates(path, locale);
 
   if (!producer) {
+    // MEH-641: titleless entity treated as 404; SEO-worthless by design — see ticket for rationale.
     return {
       // title.absolute prevents layout's `%s | brand` template double-suffix.
       title: { absolute: buildEntityTitle(null, locale) },
