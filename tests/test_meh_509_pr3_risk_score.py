@@ -102,6 +102,31 @@ def test_score_producer_success_persists(db, monkeypatch):
     assert producer.risk_reasoning == "פרופיל מלא ונקי"
 
 
+def test_score_producer_serializes_hebrew_without_escapes(db, monkeypatch):
+    """MEH-509 PR3 follow-up #1 — `ensure_ascii=False` so Hebrew chars in
+    name/description reach Claude as native UTF-8 bytes instead of
+    `\\uXXXX` escapes. Claude Haiku tokenizes native Hebrew more cleanly
+    (escaped form splits each character across token boundaries),
+    improving classification accuracy."""
+    from app.services.producer_risk import score_producer
+
+    producer = make_producer(db, name="חוות העברית")
+    producer.description = "חלב וגבינות מקומיות"
+    db.commit()
+
+    mock_create = _install_anthropic_mock(monkeypatch)
+    score_producer(producer.id)
+
+    assert mock_create.call_count == 1
+    _, kwargs = mock_create.call_args
+    user_msg = kwargs["messages"][0]["content"]
+    # The Hebrew chars MUST appear as literal Unicode, not as `\uXXXX`.
+    assert "חוות העברית" in user_msg
+    assert "חלב וגבינות מקומיות" in user_msg
+    # Defensive: no \uXXXX escape sequences for Hebrew block (U+0590–U+05FF).
+    assert "\\u05" not in user_msg
+
+
 def test_score_producer_anthropic_error_leaves_null(db, monkeypatch):
     from app.services.producer_risk import score_producer
 

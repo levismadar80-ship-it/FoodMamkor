@@ -112,7 +112,17 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
             model=_MODEL,
             max_tokens=_MAX_TOKENS,
             system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": json.dumps(profile)}],
+            # MEH-509 PR3 follow-up: ensure_ascii=False keeps Hebrew chars
+            # as native UTF-8 bytes instead of \uXXXX escapes. Claude Haiku
+            # decodes either form but escaped Hebrew tokenizes less cleanly
+            # (each escape sequence may split across token boundaries),
+            # degrading classification accuracy on Hebrew descriptions.
+            messages=[
+                {
+                    "role": "user",
+                    "content": json.dumps(profile, ensure_ascii=False),
+                }
+            ],
         )
     except Exception as exc:  # noqa: BLE001 — fail-open per spec
         logger.warning("[RISK] anthropic call failed: %s", exc)
