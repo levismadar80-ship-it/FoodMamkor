@@ -407,6 +407,9 @@ def _read_vacation_state(db: Session) -> VacationModeState:
     lives in `app/services/vacation_state.py`; this wrapper only adapts
     the tuple shape into the typed VacationModeState model the admin
     GET/POST endpoints expose."""
+    # REUSES: app/services/vacation_state.py:read_vacation_state — single
+    # source of truth for AdminSetting str→bool/date + corrupt-state coerce
+    # (MEH-662 dedup).
     active, return_date = read_vacation_state(db)
     return VacationModeState(active=active, return_date=return_date)
 

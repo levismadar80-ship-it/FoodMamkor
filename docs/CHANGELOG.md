@@ -4,6 +4,29 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 post-cleanup follow-ups: 3 hardening items (canary tag + REUSES sentinels + negative Content-Length)
+
+`chore(MEH-509)`: 3 informational hardening items from PR #787's adversarial review verdict, bundled into 1 PR to amortize CI overhead. All non-blocking — no behavioral changes for legitimate traffic, just edge-case defense + grep-discoverability.
+
+**1. `hardening(MEH-509)`: per-request canary on Anthropic prompt tag (tag-escape defense).** Closes PR #787 adversarial review item 1 — a malicious producer could put literal `</producer_profile>` in their description to attempt premature tag-close.
+- `producer_risk.py` — `_SYSTEM_PROMPT` constant replaced by `_SYSTEM_PROMPT_TEMPLATE` with `{open_tag}` + `{close_tag}` placeholders + new `_build_prompt(profile)` helper that generates the canary via `secrets.token_hex(4)` (8 hex chars, ~4B values per call). Producer can't pre-include the actual close sequence because the canary is computed AFTER they submit.
+- 2 new tests: `test_score_producer_canary_unique_per_call` (two consecutive calls produce different canaries — guards against `token_hex` ever becoming constant), `test_score_producer_handles_tag_collision_in_profile` (adversarial description with literal `</producer_profile>` + injection attempt; canary tag stays intact; legitimate close tag appears EXACTLY ONCE at the wrapper boundary).
+- 2 existing tests updated to extract the canary via regex match.
+
+**2. `chore(MEH-509)`: REUSES sentinel comments at vacation_state call sites.** PR #787 adversarial review item 2 (style nit) — applies the `# REUSES: <file:line>` convention from `.claude/rules/code-execution.md §15` at the 2 consumers of MEH-662's `read_vacation_state` helper. Makes `grep -rE '# REUSES:'` discovery deterministic so the next session can find the provenance chain without re-reading commit log.
+- `admin_extra.py:_read_vacation_state` + `auto_reply_watchdog.py:run_watchdog` — 1 line each above the call site, pointing at `app/services/vacation_state.py:read_vacation_state` + MEH-662 dedup context.
+
+**3. `hardening(MEH-509)`: reject negative Content-Length on webhook (400).** Closes PR #787 adversarial review item 3 — RFC 7230 §3.3.2 specifies "decimal non-negative integer"; a hostile `Content-Length: -1` would slip past the `> _MAX_BODY_BYTES` check (-1 is not > 1_048_576).
+- `whatsapp_webhook.py` — new `if declared_int < 0` branch returns 400 (not 413; that's "too large", this is "malformed"). Extracted the Content-Length validation into a new `_enforce_content_length` helper because the added branch bumped `webhook_receive`'s McCabe complexity 10 → 11 (over C901 cap). Helper docstring documents the full failure-mode matrix.
+- New test `test_post_negative_content_length_returns_400`.
+
+**Verification:**
+- `pytest tests/test_meh_509_pr3_risk_score.py tests/test_meh_509_pr2c_webhook.py` → 18 + 19 = 37 green
+- Full MEH-509 sweep → 86/86 green (PR1 + PR2a + PR2b + PR2c + PR3 + helper + WhatsApp)
+- `ruff check + ruff format --check` clean
+- `grep '<producer_profile' backend/app/services/producer_risk.py` → 1 (f-string construction only, no hardcoded close tag)
+- `grep -c 'REUSES:' admin_extra.py auto_reply_watchdog.py` → 1 + 1
+
 ### 2026-05-22 — MEH-658: per-page SEO metadata for /login, /register, /contact, /search
 
 `feat(MEH-658)`: 4 routes that previously inherited the homepage `<title>` (`מהמקור — אוכל אמיתי, ישר מהמקור אליך`) now ship distinct per-page metadata. Root cause: all 4 are `"use client"` components, and Next.js App Router only honors `generateMetadata`/`metadata` exports on Server Components. Fix replicates the MEH-476 Wave 6 server-wrapper pattern: rename `page.{js,jsx}` → `{Login,Register,Contact,Search}Client.jsx` (logic byte-identical, only the default-export function name changes from `XxxPage` to `XxxClient`), then add a thin server `page.js` per route that exports `generateMetadata` + renders `<XxxClient />`. `title: { absolute: t("title") }` per the canonical `/about/page.js` so the layout's `%s | ${BRAND_NAME}` template doesn't double-append. Built titles verified: `/he/login` → "כניסה למהמקור | מהמקור"; `/he/register` → "הרשמה למהמקור | מהמקור"; `/he/contact` → "צרי קשר | מהמקור"; `/he/search` → "תוצאות חיפוש | מהמקור". EN mirrors. /about, /map, /terms, /privacy, /accessibility regression-checked — unchanged. All 4 routes remain ● SSG (1h ISR). HE↔EN parity preserved (2520/2520 keys).
