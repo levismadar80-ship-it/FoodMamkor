@@ -1,6 +1,6 @@
 # מהמקור — COPY BANK
 > Single source of truth for all copy decisions.
-> Last updated: 2026-05-10 (initial — MEH-541)
+> Last updated: 2026-05-22
 > **Status key:** ✅ Merged to staging · ⏳ PR open · 🕐 Pending
 >
 > Rule: document only **merged** copy. Pending entries show the MEH ticket to watch.
@@ -20,10 +20,12 @@
 ### Subtitle — Homepage hero
 | Field | Value |
 |---|---|
-| **Current** | `בתי עסק מקומיים, כולם במקום אחד.` |
+| **Current** | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` |
+| **Previous** | `בתי עסק מקומיים, כולם במקום אחד.` |
 | **i18n key** | `home.hero.subtitle` |
-| **Status** | ✅ |
-| **Why** | States the value proposition in one phrase. Short, punchy, memorable. |
+| **Status** | ✅ (MEH-620, PR #690) |
+| **Why** | MEH-522 ideation winner (variant κ). H1 asks "לא ידעת איפה" → Sub answers "אנחנו כבר בדקנו". Closes the arc; uses "כבר" work-already-done signal. |
+| **MEH** | MEH-620 (refs MEH-522) |
 
 ### Subtitle — Friday variant
 | Field | Value |
@@ -136,9 +138,22 @@
 | Field | Value |
 |---|---|
 | **Title** | `קבלו` |
-| **Body** | `אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות` |
+| **Body** | `האוכל מגיע אלייך טרי. כל בית עסק כאן עומד מאחורי מה שהיא מציעה.` |
+| **Previous body** | `אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות` |
 | **i18n keys** | `home.how_it_works.step03_title` / `home.how_it_works.step03_text` |
-| **Status** | ✅ |
+| **Status** | ✅ (MEH-609, PR #682, 2026-05-16) |
+| **Why** | Drops double-negative ("בלי X, בלי Y") for positive outcome + founder-accountability framing per Brand Hub v1.1 §8-9 + discovery synthesis F6. |
+| **MEH** | MEH-609 |
+
+### Categories — subheading
+| Field | Value |
+|---|---|
+| **Current** | `כל קטגוריה — בית עסק אחר, סיפור אחר.` |
+| **Previous** | `ישר מבית העסק — בלי מתווכים` |
+| **i18n key** | `home.categories.subheading` |
+| **Status** | ✅ (MEH-606, PR #682, 2026-05-16) |
+| **Why** | Drops saturated formula (5/7 Israeli competitors use a variant per Sub 2 Anti-pattern 1). Option A from issue menu chosen. |
+| **MEH** | MEH-606 |
 
 ### Sapir quote — Homepage
 | Field | Value |
@@ -189,6 +204,17 @@
 ---
 
 ## Section 4 — Producer-facing copy
+
+### /register/producer — Step 2 subhead
+| Field | Value |
+|---|---|
+| **Current** | `כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור.` |
+| **Previous** | `3 שדות בלבד — תשלימי...` (literal "3" — drift) |
+| **i18n key** | `register.producer.steps.business.subtitle` |
+| **Location** | `frontend/app/[locale]/register/producer/page.js:393` |
+| **Status** | ✅ (MEH-608, PR #683, 2026-05-16) |
+| **Why** | Step 2 actually renders 6 fields after MEH-530 (license) + MEH-532 (description) shipped. Count-free wording prevents future drift per synthesis Finding F11. |
+| **MEH** | MEH-608 |
 
 ### Welcome email — Consumer
 | Field | Value |
@@ -284,10 +310,13 @@
 | Field | Value |
 |---|---|
 | **Heading** | `יש לך עסק? בואי אליו` |
-| **Body** | `אם את בעלת עסק, חקלאית או מגדלת — הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` |
+| **Body** | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` |
+| **Previous body** | `אם את בעלת עסק, חקלאית או מגדלת — הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` |
 | **Button** | `הוסיפו את העסק שלך 🌿` |
 | **i18n keys** | `home.cta.heading` / `home.cta.body` / `home.cta.button` |
-| **Status** | ✅ |
+| **Status** | ✅ (MEH-605, PR #682, 2026-05-16) |
+| **Why** | Removes "דירקטורי" (marketplace word) + partial category list ("חקלאית או מגדלת" excluded ~75% of base — bakeries, dairies, wineries, chocolatiers). Brand Hub v1.1 §8: no partial category lists. |
+| **MEH** | MEH-605 |
 
 ### Footer made-with-love
 | Field | Value |
@@ -302,6 +331,10 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-05-16 | MEH-620 | Hero subtitle | `בתי עסק מקומיים, כולם במקום אחד.` | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` | MEH-522 winner κ — H1↔Sub arc closes ("לא ידעת איפה" → "אנחנו כבר בדקנו"). |
+| 2026-05-16 | MEH-605 | Home CTA body | `...הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` | Removes "דירקטורי" (marketplace word) + partial category list per Brand Hub v1.1 §8. |
+| 2026-05-16 | MEH-606 | Categories subhead | `ישר מבית העסק — בלי מתווכים` | `כל קטגוריה — בית עסק אחר, סיפור אחר.` | Drops saturated formula (5/7 Israeli competitors use a variant per Sub 2 Anti-pattern 1). |
+| 2026-05-16 | MEH-609 | HIW step 3 body | `אוכל אמיתי וטרי, ישר מהמקור — בלי מתווכים, בלי הנחות על האיכות` | `האוכל מגיע אלייך טרי. כל בית עסק כאן עומד מאחורי מה שהיא מציעה.` | Drops double-negative for positive outcome + founder-accountability framing. |
 | 2026-05-10 | MEH-208/209 | /about paragraph 1 sub copy | `העסקים שתמיד היו — רק שעכשיו את רואה אותם.` | `כל מה שקרוב אלייך, במקום אחד.` | Old closer was arrhythmic + passive. New copy: direct, rhythm-preserving, non-boastful. |
 | 2026-05-08 | MEH-521 | Stats strip visibility | Always visible | Hidden when < 5 approved producers; fallback text shown | Prevent "0 businesses" credibility gap during bootstrap phase. |
 | 2026-05-09 | MEH-508 | Producer welcome WhatsApp | Twilio `producer_welcome_v1` template | Meta Cloud API direct `send_text()` call | Twilio → Meta Cloud API migration. Message content unchanged. |
