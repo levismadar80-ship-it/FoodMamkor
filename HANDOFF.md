@@ -30,6 +30,24 @@
 > Previously: 2026-05-20 (MEH-475 — Language toggle UI (Globe icon, desktop + mobile drawer); **PR #731 MERGED** at `3a877ed2`; LOW-RISK end-to-end; **closes MEH-475 user-facing string scope** (PR-C4a chunks 1+2+3+4a+4b + toggle); 3 follow-up hygiene items folded into <issue id="MEH-629">MEH-629</issue> (now 7 items))
 > Previously: 2026-05-19 (MEH-475 PR-C4a/chunk-4b — tail components + wired-remaining sweep; 118 strings / 36 files; **PR #730 MERGED** at `22cce33`; final chunk of PR-C4a series; Brand-LOCK STOP triggered on 2 JSDoc comments → folded inline with MEH-543-aware rewrite)
 
+### MEH-634 + MEH-635 — agent-browser POC closed
+
+**MEH-634 result:** PARTIAL PASS — 15/15 cells executed, eval reliable,
+scroll detection working. 0 horizontal scroll issues on /, /map, /about,
+/terms, /privacy across iPhone SE / Galaxy / iPhone 14. Runtime 102s.
+Screenshots failed (script path bug, not tool bug — out of scope to fix).
+
+**MEH-635 ADR:** Deferred adoption to post-launch. Tool works, but
+pre-launch focus prioritizes launch-blockers. Trigger: launch + 30d
+revisit or any repeatable audit need.
+
+**Files:**
+- `docs/decisions/agent-browser-adoption.md` (ADR)
+- `docs/audits/MEH-233-mobile-audit-output.md` (15-cell evidence)
+- `docs/spikes/agent-browser-poc.md` (install findings)
+
+All on local `spike/agent-browser-poc` branch. No PR.
+
 ## Next session pickup
 
 **MEH-475 PR-C4b — ALL 5 CHUNKS MERGED ✅** (per `docs/wave-5-pr-c4b-inventory.md` §4). **MEH-476 Wave 6 — DONE ✅** (#745-#749, completed 2026-05-20). Below is the sweep-tail bucket that's NOT part of PR-C4b's original scope but surfaced during the post-PR-C4b residual scan.
