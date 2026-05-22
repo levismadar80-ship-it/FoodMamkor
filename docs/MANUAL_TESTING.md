@@ -3,6 +3,17 @@
 
 ---
 
+## MEH-641 PR-A — auth chrome noindex verification
+
+**Pages to verify (View Source in browser):**
+- /he/login, /he/register, /he/contact, /he/search → must show `<meta name="robots" content="noindex, nofollow"/>` (or comma-space variant)
+- /en/login, /en/register, /en/contact, /en/search → same
+
+**Regression check:**
+- /he/about, /he/map, /he/, /he/terms, /he/privacy → must NOT show `noindex` (default index,follow or no robots meta)
+
+---
+
 ## Anti-enumeration registration smoke test (MEH-328)
 
 **Run on the staging preview URL after PR #696 merges to staging.** Load-bearing for the upgrade-path regression — Tests A-C verify the new OWASP behavior, Test D verifies the upgrade path is unchanged, Test E verifies out-of-band notification.
