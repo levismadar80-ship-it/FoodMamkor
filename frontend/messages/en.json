@@ -472,6 +472,30 @@
       "og_title": "About Mehamakor — our vision and values",
       "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
     },
+    "login": {
+      "title": "Sign in to Mehamakor | Mehamakor",
+      "description": "Sign in to your Mehamakor account — Israel's real-food directory. Discover local food businesses and quality producers near you.",
+      "og_title": "Sign in to Mehamakor",
+      "og_description": "Sign in to discover local food businesses, save favorites, and support quality producers."
+    },
+    "register": {
+      "title": "Join Mehamakor | Mehamakor",
+      "description": "Join Mehamakor — Israel's real-food directory. Discover local food businesses and support quality producers near you.",
+      "og_title": "Join Mehamakor",
+      "og_description": "Create a free account to discover local food businesses, real food, and quality producers."
+    },
+    "contact": {
+      "title": "Contact us | Mehamakor",
+      "description": "Have a question, suggestion, or idea? We'd love to hear from you. Reach out and we'll get back to you shortly.",
+      "og_title": "Contact Mehamakor",
+      "og_description": "Questions, suggestions, or ideas for collaboration — we're here."
+    },
+    "search": {
+      "title": "Search results | Mehamakor",
+      "description": "Search local food businesses, producers, and real food on Mehamakor — Israel's real-food directory.",
+      "og_title": "Search Mehamakor",
+      "og_description": "Find local food businesses and real food easily."
+    },
     "map": {
       "title": "Map of local food businesses — Mehamakor",
       "description": "Find local food businesses on the map. Real, fresh, healthy food near you.",

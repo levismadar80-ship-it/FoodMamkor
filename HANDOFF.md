@@ -2,6 +2,13 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-22 — MEH-658 per-page SEO metadata for /login /register /contact /search
+
+LOW-RISK frontend-only. 4 routes that fell back to the homepage `<title>` now ship distinct SEO via the MEH-476 Wave 6 server-wrapper pattern: thin `page.js` server wrapper exports `generateMetadata` + renders the renamed `{Login,Register,Contact,Search}Client.jsx`. 8 new translation keys per locale; HE↔EN parity 2520/2520. Build green; all 4 routes remain ● SSG. /about, /map, /terms, /privacy regression-checked — unchanged.
+
+### Completed
+- MEH-658 — per-page SEO metadata for /login, /register, /contact, /search (server-wrapper pattern).
+
 ## 2026-05-22 — MEH-509 post-launch cleanup (4 hardening items, 1 PR)
 
 **LOW-RISK refactor + hardening — backend-only, no schema changes.**
