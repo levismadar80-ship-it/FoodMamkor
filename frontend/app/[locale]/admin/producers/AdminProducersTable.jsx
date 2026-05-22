@@ -12,13 +12,49 @@ import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-s
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
 // Column count for the table — used by the empty-state and story-card
-// sub-row's colSpan.
-const TABLE_COLUMN_COUNT = 6;
+// sub-row's colSpan. MEH-509 PR3: bumped 6 → 7 (added Risk column).
+const TABLE_COLUMN_COUNT = 7;
+
+// MEH-509 PR3: hardcoded score thresholds per spec. Constants here so a
+// future tuning of the buckets only touches this file.
+const RISK_LOW_MAX = 30;
+const RISK_MED_MAX = 70;
 
 function StatusBadge({ status }) {
   const label = getProducerStatusLabel(status);
   const cls = getProducerStatusColor(status);
   return <span className={`text-xs px-2 py-1 rounded-full ${cls}`}>{label}</span>;
+}
+
+// MEH-509 PR3: Anthropic-Haiku-backed risk score badge.
+// score=null → grey "אין מידע" (NULL = "not scored yet OR Anthropic call failed").
+// score ≤ 30 → green "סיכון נמוך", 31-70 → yellow "סיכון בינוני", >70 → red "סיכון גבוה".
+// Tooltip surfaces the full reasoning when present.
+function RiskBadge({ score, reasoning }) {
+  const t = useTranslations("admin");
+  let cls = "bg-gray-100 text-gray-600";
+  let label = t("producers.table.risk.unknown");
+  if (typeof score === "number") {
+    if (score <= RISK_LOW_MAX) {
+      cls = "bg-primary/20 text-primary";
+      label = t("producers.table.risk.low");
+    } else if (score <= RISK_MED_MAX) {
+      cls = "bg-yellow-100 text-yellow-800";
+      label = t("producers.table.risk.medium");
+    } else {
+      cls = "bg-red-100 text-red-700";
+      label = t("producers.table.risk.high");
+    }
+  }
+  const display = typeof score === "number" ? `${label} (${score})` : label;
+  return (
+    <span
+      className={`text-xs px-2 py-1 rounded-full ${cls}`}
+      title={reasoning || t("producers.table.risk.no_reasoning")}
+    >
+      {display}
+    </span>
+  );
 }
 
 function CompletenessBadge({ missing, priority }) {
@@ -135,6 +171,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
         <td className="px-4 py-3 text-xs"><ProducerTags producer={p} /></td>
         <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+        <td className="px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
         <td className="px-4 py-3">
           <ProducerActions producer={p} isStoryOpen={isStoryOpen} {...handlers} />
         </td>
@@ -177,6 +214,7 @@ function TableHead() {
           {t("producers.table.columns.status")}
           <InfoTooltip content={statusTooltip} label={t("producers.table.status_tooltip_label")} position="bottom" />
         </th>
+        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.risk")}</th>
         <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.actions")}</th>
       </tr>
     </thead>
