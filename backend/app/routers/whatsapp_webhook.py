@@ -45,6 +45,15 @@ router = APIRouter(prefix="/webhook", tags=["webhook"])
 _SIGNATURE_HEADER = "X-Hub-Signature-256"
 _SIGNATURE_PREFIX = "sha256="
 
+# MEH-663: in-app body-size cap as defense-in-depth against the unbounded
+# `await request.body()` read that happens BEFORE HMAC verification. Meta
+# payloads are typically < 50KB; 1 MiB is ~20× the largest realistic
+# inbound (status-receipt batch). Railway/Vercel edge proxies already
+# bound bodies in production, but if we ever change hosting topology the
+# implicit defense disappears silently — this constant makes the bound
+# explicit at the application layer. See docs/SECURITY.md §17a invariant #7.
+_MAX_BODY_BYTES = 1_048_576
+
 
 # ---- GET verification challenge --------------------------------------------
 
@@ -109,6 +118,26 @@ async def webhook_receive(
     unknown event shapes), because Meta retries on non-2xx and we don't
     want exponential backoff to hide a parser bug.
     """
+    # --- MEH-663: Content-Length pre-check (DoS defense-in-depth) ---
+    # Reject oversized payloads BEFORE the unbounded body read allocates
+    # memory. Missing header is allowed (Meta uses HTTP/1.1 with explicit
+    # length but we don't gratuitously break legitimate clients that omit
+    # it — the body read still happens and will be bounded by the proxy).
+    declared = request.headers.get("Content-Length")
+    if declared is not None:
+        try:
+            declared_int = int(declared)
+        except ValueError:
+            logger.warning("[WEBHOOK] POST rejected — non-numeric Content-Length")
+            raise HTTPException(status_code=400, detail="Bad Request")
+        if declared_int > _MAX_BODY_BYTES:
+            logger.warning(
+                "[WEBHOOK] POST rejected — Content-Length %d > %d cap",
+                declared_int,
+                _MAX_BODY_BYTES,
+            )
+            raise HTTPException(status_code=413, detail="Payload Too Large")
+
     body_bytes = await request.body()
 
     # --- Step 1: signature header ---

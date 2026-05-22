@@ -28,7 +28,8 @@ from app.config import (
     BUSINESS_HOURS_TIMEZONE,
     WATCHDOG_LOOKBACK_MINUTES,
 )
-from app.models import AdminSetting, InboundMessage
+from app.models import InboundMessage
+from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import send_template
 
 logger = logging.getLogger(__name__)
@@ -69,36 +70,12 @@ def is_within_business_hours(now: datetime | None = None) -> bool:
     return start_hour <= now.hour < end_hour
 
 
-# ---- Vacation-mode read (mirrors PR2a's admin_extra._read_vacation_state) --
-
-
-def _read_vacation_state(db: Session) -> tuple[bool, date | None]:
-    """Tuple form of the PR2a AdminSetting-backed vacation state.
-
-    Returns (active, return_date). Defensive against the same corrupt-
-    state surface admin_extra.py:402 handles — invalid ISO date string
-    or inconsistent active="true" + empty return_date both coerce to
-    (False, None) rather than 500ing the watchdog tick.
-    """
-    rows = {
-        r.key: r.value
-        for r in db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["vacation_mode_active", "vacation_return_date"])
-        )
-    }
-    active = (rows.get("vacation_mode_active") or "false").lower() == "true"
-    return_date_raw = rows.get("vacation_return_date") or ""
-    if not active:
-        return (False, None)
-    if not return_date_raw:
-        return (False, None)
-    try:
-        return (True, date.fromisoformat(return_date_raw))
-    except ValueError:
-        return (False, None)
-
-
 # ---- Per-message dispatch --------------------------------------------------
+# MEH-662: vacation state is now read via the shared
+# `app.services.vacation_state.read_vacation_state` helper. The
+# previous local _read_vacation_state was a verbatim copy of PR2a's
+# admin_extra version (PR2b adversarial review finding A40); both now
+# delegate to the single source of truth.
 
 
 def _decide_template(
@@ -160,7 +137,7 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
         logger.debug("[WATCHDOG] no candidates in last %dm", WATCHDOG_LOOKBACK_MINUTES)
         return counters
 
-    vacation_active, vacation_return_date = _read_vacation_state(db)
+    vacation_active, vacation_return_date = read_vacation_state(db)
     template_name, params = _decide_template(
         vacation_active=vacation_active,
         vacation_return_date=vacation_return_date,
