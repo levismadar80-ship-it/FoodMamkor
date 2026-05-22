@@ -94,6 +94,14 @@ class Settings(BaseSettings):
     vapid_public_key: str = ""
     vapid_subject: str = "mailto:admin@mehamakor.online"
 
+    # MEH-509 PR2b: after-hours watchdog feature flag. Default False so the
+    # 5-min APScheduler job does not run until PR2c (the Meta webhook
+    # receiver) ships and creates rows in `inbound_messages`. Set
+    # WATCHDOG_ENABLED=true in Railway staging first for smoke, then
+    # production. Pytest leaves it False — the watchdog never starts under
+    # tests, which exercise run_watchdog() directly via the public API.
+    watchdog_enabled: bool = False
+
     class Config:
         env_file = ".env"
         # Read JWT_SECRET_KEY env var into .secret_key (the more canonical name).
@@ -151,3 +159,25 @@ def _load_settings() -> Settings:
 
 
 settings = _load_settings()
+
+
+# MEH-509 PR2b: business-hours window for the after-hours watchdog.
+# Module-level constants (not Pydantic fields) — these are policy, not
+# env-driven. Asia/Jerusalem timezone honours DST automatically via
+# stdlib zoneinfo (Python ≥3.9). is_within_business_hours() in
+# app/services/auto_reply_watchdog.py is the sole consumer.
+#
+# Schedule: Sun-Thu 09-19, Fri 09-13, Sat closed. Hours are half-open
+# (start <= hour < end) so 19:00 itself counts as after-hours.
+BUSINESS_HOURS_TIMEZONE: str = "Asia/Jerusalem"
+BUSINESS_HOURS: dict[str, tuple[int, int] | None] = {
+    "sunday": (9, 19),
+    "monday": (9, 19),
+    "tuesday": (9, 19),
+    "wednesday": (9, 19),
+    "thursday": (9, 19),
+    "friday": (9, 13),
+    "saturday": None,  # closed
+}
+WATCHDOG_INTERVAL_MINUTES: int = 5
+WATCHDOG_LOOKBACK_MINUTES: int = 30

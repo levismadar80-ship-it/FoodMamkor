@@ -11,6 +11,7 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    InboundMessage,
     KashrutBadgeRequest,
     NewsletterSubscriber,
     OutreachLead,
@@ -61,4 +62,6 @@ __all__ = [
     # MEH-588 — producer recipes (chunk 1/4)
     "ProducerRecipe",
     "producer_recipe_products",
+    # MEH-509 PR2b — inbound WhatsApp messages (watchdog consumer)
+    "InboundMessage",
 ]
