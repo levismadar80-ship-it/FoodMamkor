@@ -44,6 +44,9 @@ export default async function sitemap() {
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     { path: "/register", priority: 0.5, changeFrequency: "monthly" },
     { path: "/login", priority: 0.3, changeFrequency: "monthly" },
+    // MEH-667: /contact + /search added post-MEH-658 (gave them per-page SEO metadata).
+    { path: "/contact", priority: 0.3, changeFrequency: "monthly" },
+    { path: "/search", priority: 0.3, changeFrequency: "monthly" },
     { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
   ];
   const staticPages = staticDefs.flatMap(({ path, priority, changeFrequency }) =>

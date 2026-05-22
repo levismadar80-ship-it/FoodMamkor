@@ -2,6 +2,14 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-22 — MEH-667 + MEH-668 post-MEH-658 hygiene
+
+LOW-RISK. Two unrelated fixes surfaced by PR #788 adversarial review, shipped in one PR. `frontend/app/sitemap.js` gets `/contact` + `/search` entries (priority 0.3, monthly) so Google indexes the surfaces MEH-658 gave proper metadata to. `.claude/hooks/rtl-allowlist.txt` PATH EXCEPTIONS updated for the `[locale]/` migration — 8 stale paths fixed (6 from MEH-476 Wave 6 drift + 2 from MEH-658 renames); all 13 entries now point to real files. Build green.
+
+### Completed
+- MEH-667 — `/contact` + `/search` in `frontend/app/sitemap.js`.
+- MEH-668 — RTL allowlist `[locale]/` migration sweep.
+
 ## 2026-05-22 — MEH-658 per-page SEO metadata for /login /register /contact /search
 
 LOW-RISK frontend-only. 4 routes that fell back to the homepage `<title>` now ship distinct SEO via the MEH-476 Wave 6 server-wrapper pattern: thin `page.js` server wrapper exports `generateMetadata` + renders the renamed `{Login,Register,Contact,Search}Client.jsx`. 8 new translation keys per locale; HE↔EN parity 2520/2520. Build green; all 4 routes remain ● SSG. /about, /map, /terms, /privacy regression-checked — unchanged.
