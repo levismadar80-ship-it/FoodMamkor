@@ -132,6 +132,8 @@ graph TD
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
+    Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
+    Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
 ```
 
 ## 6. Marketing + misc (anonymous, rate-limited)

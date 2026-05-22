@@ -30,6 +30,7 @@ from app.routers import (
     system,
     upload,
     users_me,
+    whatsapp_webhook,
 )
 
 
@@ -74,3 +75,5 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(health.router)
     app.include_router(system.router)
     app.include_router(holiday_mode.router)
+    # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
+    app.include_router(whatsapp_webhook.router)
