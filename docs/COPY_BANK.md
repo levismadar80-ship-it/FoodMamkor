@@ -70,14 +70,15 @@
 
 ## Section 2 — Trust signals & Social proof
 
-### Stats counter — verified businesses label
+### Stats counter — businesses label
 | Field | Value |
 |---|---|
-| **Current** | `בתי עסק מאומתים` |
-| **i18n key** | `home.stats.verified_businesses` |
-| **Status** | ✅ (MEH-521) |
-| **Why** | "מאומתים" (verified) is the key trust word. Chosen over "רשומים" (registered) — MEH-521 fixed visibility logic to only show approved producers. |
-| **MEH** | MEH-521 |
+| **Current** | `בתי עסק` |
+| **Previous** | `בתי עסק מאומתים` (deprecated per MEH-579 over-claim guard) |
+| **i18n key** | `home.stats.businesses` |
+| **Status** | ✅ (MEH-654, refs MEH-579) |
+| **Why** | MEH-579 over-claim guard prohibits unsubstantiated trust claims pre-launch. "מאומתים" implied vetting infrastructure that doesn't exist yet. Removed in i18n sweep (likely MEH-472). Doc now matches actual key `home.stats.businesses` in `frontend/messages/he.json`. |
+| **MEH** | MEH-654 (doc sync), MEH-521 (original entry), MEH-579 (over-claim guard) |
 
 ### Stats counter — categories label
 | Field | Value |
