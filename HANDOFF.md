@@ -2,6 +2,26 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-22 — MEH-669: admin producer-lockout privilege-escalation fix
+
+HIGH-RISK auth fix. Admin accounts hitting `/register/producer` had `role` silently flipped to `"producer"` by the upgrade path, locking them out of `/admin`. Discovered during pre-prod-promote staging smoke (Sapir's `sint12345@gmail.com`).
+
+Approach (a)+(c) per OWASP A01: backend 403 guards on `/auth/register/producer` (`auth.py:432`) and `/auth/register/producer/oauth` (`auth.py:817`) — both reject `role=="admin"` before any state mutation. Frontend defense-in-depth: CTAs hidden from admins in Header/Footer/ProducersClient + admin redirect on `/register/producer`. Hebrew error string uses feminine voice ("מנהלת...יכולה...").
+
+4 new tests in `tests/test_admin_producer_lockout.py` (pytest deferred to local run — sandbox limitation, MEH-360 pattern). Frontend build clean (101 static pages).
+
+### Completed
+- MEH-669 backend guard — `auth.py` upgrade path + OAuth Step 0 (Chunk 1).
+- MEH-669 frontend defense-in-depth — Header / Footer / ProducersClient / register page (Chunk 2).
+- MEH-669 Hebrew gender fix (feminine voice on error string + test fragment).
+- MEH-669 PR opened with `Addresses MEH-669` (manual close after recovery SQL).
+
+### Open — Smadar's action items post-merge
+- Run recovery SQL for Sapir's locked account (documented in `docs/MANUAL_TESTING.md` § "MEH-669 recovery").
+- Run audit query for other admin accounts that may have hit the bug (post-fix only — by definition pre-fix admins now have `role="producer"`, harder to detect).
+- Defer Approach (b) Alembic CHECK constraint to a separate post-launch ticket (defense-in-depth at DB layer).
+- pytest local run on `tests/test_admin_producer_lockout.py` to confirm 4/4 green (sandbox couldn't install FastAPI deps).
+
 ## 2026-05-22 — MEH-641 Carry-overs #1 PR-A + #2: noindex on 4 auth routes + 404 paper trail
 
 LOW-RISK. `/login`, `/register`, `/contact`, `/search` now emit `robots: noindex, nofollow` (alternates/hreflang preserved per Google's documented `noindex + hreflang` allowance); 3 dynamic 404 routes (`experiences/[id]`, `group-buys/[id]`, `[slug]`) got `// MEH-641:` sentinel comments documenting titleless-entity-as-404 as intentional behavior. Build green; 4 noindex routes verified on built HTML (he + en); regression-checked /about, /terms, /privacy still `index, follow`.
