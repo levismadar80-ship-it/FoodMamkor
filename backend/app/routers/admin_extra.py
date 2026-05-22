@@ -36,6 +36,7 @@ from app.schemas.schemas import (
     StaticPageUpdate,
     UserAdminOut,
     UserRoleUpdate,
+    VacationModeState,
 )
 from app.services.analytics import server_health
 
@@ -352,6 +353,12 @@ DEFAULT_SETTINGS = {
     "holiday_override_enabled": "false",
     "holiday_override_key": "",
     "friday_mode_override": "false",
+    # MEH-509 PR2a: vacation mode. Boolean as string + ISO date as string
+    # (matches the existing friday_mode_override pattern). The typed
+    # /admin/settings/vacation GET+POST endpoints below wrap the raw
+    # str↔bool/date conversion.
+    "vacation_mode_active": "false",
+    "vacation_return_date": "",
 }
 
 
@@ -383,6 +390,67 @@ def update_settings(
             )
     db.commit()
     return {"detail": "Settings updated"}
+
+
+# --- MEH-509 PR2a — vacation mode (typed wrapper over AdminSetting) ---------
+# Reads/writes the same `admin_settings` table the generic /admin/settings
+# endpoints use (one source of truth, no parallel table). The PR2b watchdog
+# will consume `vacation_mode_active` to decide which Meta-approved template
+# to send.
+
+def _read_vacation_state(db: Session) -> VacationModeState:
+    rows = {
+        r.key: r.value
+        for r in db.query(AdminSetting).filter(
+            AdminSetting.key.in_(["vacation_mode_active", "vacation_return_date"])
+        )
+    }
+    active = (rows.get("vacation_mode_active") or "false").lower() == "true"
+    return_date_raw = rows.get("vacation_return_date") or ""
+    return_date: date | None = None
+    if active and return_date_raw:
+        try:
+            return_date = date.fromisoformat(return_date_raw)
+        except ValueError:
+            # Corrupt persisted value — surface as inactive rather than 500
+            # the GET. PR2b watchdog will skip vacation send if active=false.
+            return VacationModeState(active=False, return_date=None)
+    return VacationModeState(active=active, return_date=return_date)
+
+
+def _write_setting(db: Session, key: str, value: str) -> None:
+    row = db.query(AdminSetting).filter(AdminSetting.key == key).first()
+    if row:
+        row.value = value
+    else:
+        db.add(AdminSetting(key=key, value=value))
+
+
+@router.get("/settings/vacation", response_model=VacationModeState)
+def get_vacation_mode(
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return _read_vacation_state(db)
+
+
+@router.post("/settings/vacation", response_model=VacationModeState)
+def set_vacation_mode(
+    body: VacationModeState,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    # VacationModeState's model_validator already rejected active+no-date.
+    # When deactivating, clear the date so the persisted state can't drift
+    # back into "active with stale date" after a future flip.
+    if body.active:
+        _write_setting(db, "vacation_mode_active", "true")
+        _write_setting(db, "vacation_return_date", body.return_date.isoformat())
+    else:
+        _write_setting(db, "vacation_mode_active", "false")
+        _write_setting(db, "vacation_return_date", "")
+    db.commit()
+    return _read_vacation_state(db)
 
 
 @router.post("/settings/test/{service}")

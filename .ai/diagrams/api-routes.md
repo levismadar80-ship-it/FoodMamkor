@@ -131,6 +131,7 @@ graph TD
     ExperiencesAdmin --> ExpChanges[POST /admin/experiences/{id}/request-changes<br/>🛡️ host notification email]
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
+    Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
 ```
 
 ## 6. Marketing + misc (anonymous, rate-limited)
