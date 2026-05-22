@@ -416,6 +416,14 @@ def _read_vacation_state(db: Session) -> VacationModeState:
             # Corrupt persisted value — surface as inactive rather than 500
             # the GET. PR2b watchdog will skip vacation send if active=false.
             return VacationModeState(active=False, return_date=None)
+    elif active and not return_date_raw:
+        # Inconsistent state: active="true" but return_date empty/missing.
+        # Reachable via the generic PUT /admin/settings (which can write
+        # either key independently via the DEFAULT_SETTINGS allowlist).
+        # VacationModeState's model_validator would raise on construction
+        # with active=True+return_date=None, 500ing the GET. Coerce to
+        # inactive so admins see a clean state and can re-enable cleanly.
+        return VacationModeState(active=False, return_date=None)
     return VacationModeState(active=active, return_date=return_date)
 
 

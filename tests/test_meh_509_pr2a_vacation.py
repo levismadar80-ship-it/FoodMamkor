@@ -128,6 +128,28 @@ def test_post_consumer_role_rejected(client, db):
     assert resp.status_code == 403
 
 
+def test_get_with_inconsistent_persisted_state_coerces_to_inactive(client, db):
+    """Regression — when vacation_mode_active='true' but vacation_return_date
+    is empty/missing (reachable via the generic PUT /admin/settings, which
+    can write either key independently via the DEFAULT_SETTINGS allowlist),
+    the typed GET must coerce to inactive instead of 500-ing.
+
+    Mirrors the existing corrupt-ISO-date defense at
+    backend/app/routers/admin_extra.py:415-418.
+    """
+    from app.models import AdminSetting
+
+    admin = _admin(db, email_suffix="inconsistent-state")
+    # Pre-populate the rows directly to simulate the inconsistent state.
+    db.add(AdminSetting(key="vacation_mode_active", value="true"))
+    db.add(AdminSetting(key="vacation_return_date", value=""))
+    db.commit()
+
+    resp = client.get("/admin/settings/vacation", headers=auth_header(admin))
+    assert resp.status_code == 200
+    assert resp.json() == {"active": False, "return_date": None}
+
+
 def test_get_via_generic_settings_includes_vacation_keys(client, db):
     """The vacation keys are present in GET /admin/settings (allowlist
     DEFAULT_SETTINGS), so the existing admin/settings page can read the
