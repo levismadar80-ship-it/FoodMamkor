@@ -27,6 +27,16 @@
 - `grep '<producer_profile' backend/app/services/producer_risk.py` → 1 (f-string construction only, no hardcoded close tag)
 - `grep -c 'REUSES:' admin_extra.py auto_reply_watchdog.py` → 1 + 1
 
+### 2026-05-22 — MEH-658: per-page SEO metadata for /login, /register, /contact, /search
+
+`feat(MEH-658)`: 4 routes that previously inherited the homepage `<title>` (`מהמקור — אוכל אמיתי, ישר מהמקור אליך`) now ship distinct per-page metadata. Root cause: all 4 are `"use client"` components, and Next.js App Router only honors `generateMetadata`/`metadata` exports on Server Components. Fix replicates the MEH-476 Wave 6 server-wrapper pattern: rename `page.{js,jsx}` → `{Login,Register,Contact,Search}Client.jsx` (logic byte-identical, only the default-export function name changes from `XxxPage` to `XxxClient`), then add a thin server `page.js` per route that exports `generateMetadata` + renders `<XxxClient />`. `title: { absolute: t("title") }` per the canonical `/about/page.js` so the layout's `%s | ${BRAND_NAME}` template doesn't double-append. Built titles verified: `/he/login` → "כניסה למהמקור | מהמקור"; `/he/register` → "הרשמה למהמקור | מהמקור"; `/he/contact` → "צרי קשר | מהמקור"; `/he/search` → "תוצאות חיפוש | מהמקור". EN mirrors. /about, /map, /terms, /privacy, /accessibility regression-checked — unchanged. All 4 routes remain ● SSG (1h ISR). HE↔EN parity preserved (2520/2520 keys).
+
+Frontend:
+- `frontend/app/[locale]/login/page.js` (new, server wrapper) + `frontend/app/[locale]/login/LoginClient.jsx` (renamed from `page.js`; function `LoginPage` → `LoginClient`).
+- `frontend/app/[locale]/register/page.js` (new) + `frontend/app/[locale]/register/RegisterClient.jsx` (renamed; function `RegisterPage` → `RegisterClient`).
+- `frontend/app/[locale]/contact/page.js` (new) + `frontend/app/[locale]/contact/ContactClient.jsx` (renamed; function `ContactPage` → `ContactClient`).
+- `frontend/app/[locale]/search/page.js` (new) + `frontend/app/[locale]/search/SearchClient.jsx` (renamed from `page.jsx`; function `SearchPage` → `SearchClient`).
+- `frontend/messages/he.json` + `frontend/messages/en.json` — new `seo.{login,register,contact,search}` namespaces (4 keys each: `title`, `description`, `og_title`, `og_description`). Feminine voice on HE per brand rules.
 ### 2026-05-22 — MEH-509 post-launch cleanup: 4 hardening items (MEH-662 + MEH-663 + 2 PR3 follow-ups)
 
 `chore(MEH-509)`: post-launch cleanup PR bundling 4 small hardening items from the PR2b/PR2c/PR3 adversarial reviews. 4 atomic commits, single PR to amortize CI + adversarial-review overhead.
