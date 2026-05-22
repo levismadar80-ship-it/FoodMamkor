@@ -398,6 +398,7 @@ def update_settings(
 # will consume `vacation_mode_active` to decide which Meta-approved template
 # to send.
 
+
 def _read_vacation_state(db: Session) -> VacationModeState:
     rows = {
         r.key: r.value
