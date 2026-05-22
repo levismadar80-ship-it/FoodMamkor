@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
+from app.services.auth_notifications import notify_producer_approved
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
@@ -390,21 +391,34 @@ def approve_producer(
     producer.status = "approved"
     db.commit()
 
+    # MEH-509 PR1: capture primitives before any post-commit work — ORM
+    # attributes are safe here (no expire_on_commit configured on this
+    # session), but capturing decouples the notify calls from the model.
+    p_name = producer.name
+    p_phone = producer.phone
+    p_slug = producer.slug
+    p_id = producer.id
+
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
         _send_notification_email(
             producer_user.email,
-            f'מהמקור - העסק "{producer.name}" אושר!',
-            f'שלום,\n\nהעסק שלך "{producer.name}" אושר במהמקור!\n'
+            f'מהמקור - העסק "{p_name}" אושר!',
+            f'שלום,\n\nהעסק שלך "{p_name}" אושר במהמקור!\n'
             f"הפרופיל שלך כעת גלוי לכל המשתמשים באתר.\n\n"
             f"בברכה,\nצוות מהמקור",
         )
+
+    # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
+    # producer. Fail-open at the service layer — any failure here must
+    # NOT block the 200 response (approval already committed above).
+    notify_producer_approved(p_name, p_phone, p_slug, p_id)
 
     # Notify admin via WhatsApp
     if settings.admin_whatsapp_to:
         _send_whatsapp(
             settings.admin_whatsapp_to,
-            f'✅ העסק "{producer.name}" אושר במהמקור.',
+            f'✅ העסק "{p_name}" אושר במהמקור.',
         )
 
     return {"detail": "Producer approved"}
