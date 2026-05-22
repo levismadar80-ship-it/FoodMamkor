@@ -264,6 +264,18 @@ erDiagram
         text body
         timestamp updated_at
     }
+
+    inbound_messages {
+        uuid id PK
+        string from_phone "indexed (MEH-509 PR2b)"
+        text body
+        timestamp received_at "indexed"
+        string meta_message_id UK "Meta at-least-once idempotency"
+        boolean bot_replied "indexed — watchdog gate"
+        timestamp bot_replied_at
+        string bot_template_sent "audit-trail: NULL = tried + failed"
+        boolean human_replied
+    }
 ```
 
 ## Locked invariants (do not drift)

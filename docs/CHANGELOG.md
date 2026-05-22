@@ -4,6 +4,38 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 PR2b: after-hours watchdog (APScheduler + business hours + InboundMessage)
+
+`feat(whatsapp)`: MEH-509 PR2b of 4 — 5-minute APScheduler job that scans inbound WhatsApp messages and auto-replies when (a) vacation mode is active (PR2a `AdminSetting.vacation_mode_active`) or (b) the current Asia/Jerusalem time is outside Sun-Thu 09-19 / Fri 09-13 / Sat-closed business hours. Reuses MEH-508's `send_template()` for outbound and the existing MEH-539 APScheduler instance (no second scheduler — one job per concern on the same singleton).
+
+**Phase 0 scope decisions (user-approved):**
+- _No Meta webhook receiver exists today_ → **Option A2 split.** This PR ships data layer + watchdog only; PR2c receiver lands the Meta `GET/POST /webhook/whatsapp` (verification + HMAC signature + replay protection) in its own adversarial-review pass.
+- _No InboundMessage model exists_ → new 9-field model + Alembic migration `d4046deb0dc1` + `EXPECTED_REV` bump in `.github/workflows/pr-checks.yml:157` + `EXPECTED_TABLES` bump 34 → 35.
+- _APScheduler already wired_ (`startup.py:142-157` for MEH-539 daily followups) → add a second `add_job(..., IntervalTrigger(minutes=5))` to the same scheduler instance, gated by `settings.watchdog_enabled` (default False) so the empty-table cron does not spin until PR2c lands.
+- _Single-instance guard_ → inherit MEH-539's Railway single-replica assumption (`startup.py:143`). No new file lock; if Railway ever scales out, both jobs would break together — `pg_try_advisory_lock(509)` is a 3-line follow-up.
+
+- `backend/app/models/models.py` (+50) — `InboundMessage(Base)`: `id` (UUID PK), `from_phone` (indexed), `body`, `received_at` (indexed, server_default `now()`), `meta_message_id` (UNIQUE nullable — webhook idempotency for Meta's at-least-once delivery), `bot_replied` (indexed) + `bot_replied_at` + `bot_template_sent`, `human_replied`. Three btree indexes sized for the watchdog `WHERE` clause + future per-phone history lookups.
+- `backend/alembic/versions/20260522_1130_d4046deb0dc1_meh_509_pr2b_inbound_messages.py` (new) — `down_revision="b504e4be4225"`. Upgrade creates the table + 3 indexes + UNIQUE on `meta_message_id`; downgrade drops in reverse order. Roundtrip verified locally (`upgrade head → downgrade -1 → upgrade head` clean).
+- `.github/workflows/pr-checks.yml:157-158` — `EXPECTED_REV="d4046deb0dc1"`, `EXPECTED_TABLES=35`.
+- `backend/app/config.py` (+30) — new `watchdog_enabled: bool = False` Settings field + module-level `BUSINESS_HOURS_TIMEZONE`, `BUSINESS_HOURS` dict, `WATCHDOG_INTERVAL_MINUTES`, `WATCHDOG_LOOKBACK_MINUTES`. Constants live at module level (not Pydantic settings) — they're policy, not env-driven.
+- `backend/app/services/auto_reply_watchdog.py` (new, 211 LOC) — public `is_within_business_hours(now=None) -> bool` (pure, testable via injected `now` so no freezegun dep), `_decide_template(...)` (pure routing — vacation > after-hours > skip), `run_watchdog(db, now=None) -> dict[str,int]` (counters dict; never raises). Idempotency contract: `bot_replied=True` is set BEFORE the send attempt, so a send failure permanently retires the message (one shot, no retry storm); `bot_template_sent` audit-trail diffs "tried" vs "succeeded". Per-message try/except so one bad send does not block the batch.
+- `backend/app/startup.py` (+30) — new `_run_watchdog_job()` thunk (opens fresh `SessionLocal`, fail-isolated). Registered on the existing `followup_scheduler` instance via `IntervalTrigger(minutes=5)` with `max_instances=1, coalesce=True, misfire_grace_time=60`, ONLY when `settings.watchdog_enabled` is True. Boot log: `[WATCHDOG] job registered — every 5 minutes` (or the `disabled (WATCHDOG_ENABLED=false) — PR2c gate` line otherwise).
+- `tests/test_meh_509_pr2b_watchdog.py` (new, 21 tests) — 8 cases on `is_within_business_hours` (parametrized boundary cases + naive-UTC fallback), 3 on `_decide_template` (pure routing), 9 on `run_watchdog` (vacation routing, after-hours routing, within-hours skip, idempotent skip, send-failure-does-not-block-batch, >30-minute lookback cutoff, human_replied skip, empty table, watchdog-disabled-in-test-env). Frozen `now` anchors live as module constants so test message `received_at` stays inside the watchdog's `now - 30min` window.
+- `docs/DATA.md` — `inbound_messages` row in the schema table.
+- `.ai/diagrams/db-schema.md` — new InboundMessage entry + foreign-key map (none; standalone table).
+- `docs/MANUAL_TESTING.md` — new "Watchdog smoke" section with the post-PR2c verification recipe.
+
+Local verification:
+- `pytest tests/test_meh_509_pr2b_watchdog.py -v` → 21/21 green in 4.11s.
+- `pytest tests/test_meh_509_pr1_hooks.py tests/test_meh_509_pr2a_vacation.py tests/test_whatsapp_notify.py tests/test_api.py` → **213 passed** in 140s (no regressions).
+- `alembic upgrade head → downgrade -1 → upgrade head` clean (chain `…→ b504e4be4225 → d4046deb0dc1`).
+- `ruff check + ruff format --check` clean.
+- `python -c "from app.services.auto_reply_watchdog import ...; from app.models import InboundMessage; print('OK')"` clean.
+
+**Post-merge ops checklist (recorded in HANDOFF.md):** `WATCHDOG_ENABLED=false` default ships everywhere — Railway staging and production env vars must stay unset until PR2c (webhook receiver) merges, smoke-passes, and a real inbound WhatsApp message at 22:00 IL triggers the after-hours auto-reply.
+
+**Out of scope (PR2c/PR3 territory):** Meta webhook receiver (`GET/POST /webhook/whatsapp`, signature verification, replay protection); `Producer.risk_score` + Anthropic risk classifier; multi-replica `pg_try_advisory_lock(509)` (3-line follow-up if Railway ever scales).
+
 ### 2026-05-22 — MEH-509 PR2a: vacation mode (typed toggle over AdminSetting store)
 
 `feat(admin)`: MEH-509 PR2a of 4 — add a vacation-mode toggle to the admin settings page. State is persisted via two new keys on the existing `admin_settings` key-value table (NOT a parallel `system_settings` table — Phase 0 caught the architectural-smell collision per `.claude/rules/db.md` MEH-271). PR2b watchdog will consume `vacation_mode_active` to swap `after_hours_response_he` → `vacation_mode_response_he`.
