@@ -407,6 +407,30 @@ def test_post_invalid_content_length_returns_400(client, db, webhook_settings):
     )
 
 
+def test_post_negative_content_length_returns_400(client, db, webhook_settings):
+    """MEH-509 batch-2 #3 — negative Content-Length is malformed per
+    RFC 7230 §3.3.2 ("a decimal non-negative integer"). Reject 400 (not
+    413) BEFORE the `> cap` check so a hostile `-1` can't bypass the
+    body-size gate via signed-int wraparound semantics.
+
+    Defense-in-depth: not exploitable today (Railway/Vercel proxies
+    normalize), but cheap to harden + locks the spec contract."""
+    payload = _build_text_payload(message_id="wamid.negative_cl")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {
+        "X-Hub-Signature-256": _sign(body_bytes),
+        "Content-Length": "-1",
+    }
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+    assert resp.status_code == 400
+    assert (
+        db.query(InboundMessage)
+        .filter(InboundMessage.meta_message_id == "wamid.negative_cl")
+        .count()
+        == 0
+    )
+
+
 def test_post_within_content_length_cap_still_processes(client, db, webhook_settings):
     """MEH-663 — Content-Length at or below the 1 MiB cap is unaffected
     (sanity check that the early-return doesn't break the happy path)."""
