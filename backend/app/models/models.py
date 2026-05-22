@@ -1163,3 +1163,52 @@ class ProducerRecipe(Base):
         secondary=producer_recipe_products,
         back_populates="recipes",
     )
+
+
+class InboundMessage(Base):
+    """MEH-509 PR2b — durable record of inbound WhatsApp messages.
+
+    Populated by the future PR2c webhook receiver (Meta sends POST to
+    /webhook/whatsapp). Consumed by the auto-reply watchdog in
+    app/services/auto_reply_watchdog.py, which scans every 5 min for
+    rows with `bot_replied=False AND human_replied=False` received in
+    the last 30 min, then dispatches `vacation_mode_response_he` or
+    `after_hours_response_he` and flips `bot_replied=True`.
+
+    `meta_message_id` is UNIQUE for webhook idempotency (Meta delivers
+    at-least-once). `bot_template_sent` is audit-trail-only so we can
+    diff "tried to send" (bot_replied=True) vs "send succeeded"
+    (bot_template_sent set).
+    """
+
+    __tablename__ = "inbound_messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    from_phone = Column(String(20), nullable=False, index=True)
+    body = Column(Text, nullable=False)
+    received_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        server_default=text("now()"),
+        index=True,
+    )
+    meta_message_id = Column(String(100), unique=True, nullable=True)
+    # Watchdog gate — flip True BEFORE attempting send, so a failure
+    # leaves the message permanently un-auto-replied (one shot, no
+    # retry storm). Indexed for the watchdog WHERE clause.
+    bot_replied = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+        index=True,
+    )
+    bot_replied_at = Column(DateTime, nullable=True)
+    bot_template_sent = Column(String(50), nullable=True)
+    human_replied = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
