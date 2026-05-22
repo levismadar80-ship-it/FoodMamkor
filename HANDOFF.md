@@ -2,6 +2,18 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-22 — MEH-641 Carry-overs #1 PR-A + #2: noindex on 4 auth routes + 404 paper trail
+
+LOW-RISK. `/login`, `/register`, `/contact`, `/search` now emit `robots: noindex, nofollow` (alternates/hreflang preserved per Google's documented `noindex + hreflang` allowance); 3 dynamic 404 routes (`experiences/[id]`, `group-buys/[id]`, `[slug]`) got `// MEH-641:` sentinel comments documenting titleless-entity-as-404 as intentional behavior. Build green; 4 noindex routes verified on built HTML (he + en); regression-checked /about, /terms, /privacy still `index, follow`.
+
+### Completed
+- MEH-641 Carry-over #1 PR-A — `robots:noindex,nofollow` on `/login`, `/register`, `/contact`, `/search`.
+- MEH-641 Carry-over #2 — paper-trail sentinels on 3 dynamic 404 metadata sites (option a per spec).
+
+### Open
+- MEH-641 Carry-over #1 PR-B — 5 Client→Server wrapper extractions for `/forgot-password`, `/reset-password`, `/verify-email`, `/favorites`, `/upgrade` (MEDIUM risk, separate ticket pending).
+- MEH-641 Carry-over #3 — manual Linear UI edit of MEH-476 spec (Smadar handles; no code).
+
 ## 2026-05-22 — MEH-667 + MEH-668 post-MEH-658 hygiene
 
 LOW-RISK. Two unrelated fixes surfaced by PR #788 adversarial review, shipped in one PR. `frontend/app/sitemap.js` gets `/contact` + `/search` entries (priority 0.3, monthly) so Google indexes the surfaces MEH-658 gave proper metadata to. `.claude/hooks/rtl-allowlist.txt` PATH EXCEPTIONS updated for the `[locale]/` migration — 8 stale paths fixed (6 from MEH-476 Wave 6 drift + 2 from MEH-658 renames); all 13 entries now point to real files. Build green.

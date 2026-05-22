@@ -25,6 +25,8 @@ export async function generateMetadata({ params }) {
       images: ["/og-image.jpg"],
     },
     alternates: buildAlternates("/search", locale),
+    // MEH-641: utility route — infinite URL combinations, no canonical content; not indexable, hreflang preserved
+    robots: { index: false, follow: false },
   };
 }
 

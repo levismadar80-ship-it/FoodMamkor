@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-641 Carry-overs #1 PR-A + #2: noindex on 4 auth routes + 404 path doc comments
+
+`fix(MEH-641)`: two LOW-RISK SEO hygiene fixes carried over from MEH-476 Wave 6 adversarial review, bundled in one PR.
+
+**Carry-over #1 PR-A (auth chrome noindex — 4 of 9 routes).** The 4 server-wrapped routes shipped in MEH-658 (PR #788) were emitting `index: true` by inheriting the layout default. They now emit `robots: { index: false, follow: false }` while keeping existing `alternates` (hreflang) intact — matches the MEH-476 Wave 6 404 pattern at `frontend/app/[locale]/events/[id]/page.js:36-49` where noindex + hreflang coexist by design (Google explicitly allows cross-locale hreflang on noindex pages).
+- `frontend/app/[locale]/login/page.js`, `register/page.js`, `contact/page.js`, `search/page.js` — 2 lines each (`// MEH-641:` sentinel + `robots: { index: false, follow: false }`).
+- `/search` included per the cross-ref note on MEH-641: "infinite URL combinations, no canonical content".
+- Verification (built HTML, both locales × 4 routes = 8 pages): all emit `<meta name="robots" content="noindex, nofollow"/>`; all 3 hreflang `<link>` tags (`he-IL`, `en`, `x-default`) intact. Regression-checked /about, /terms, /privacy — still `index, follow`.
+- **PR-B (5 Client→Server wrapper extractions for `/forgot-password`, `/reset-password`, `/verify-email`, `/favorites`, `/upgrade`) deferred to a separate ticket** — MEDIUM risk per `.claude/rules/workflow.md` Risk-tiered review, needs Playwright sanity on the auth flow.
+
+**Carry-over #2 (404 path edge cases — paper trail only, zero behavior change).** Added `// MEH-641: titleless entity treated as 404; SEO-worthless by design — see ticket for rationale.` sentinel above the existing MEH-476 followup comment in 3 dynamic detail routes: `experiences/[id]/page.js`, `group-buys/[id]/page.js`, `[slug]/page.js`. `events/[id]/page.js` left untouched per acceptance criteria — its existing MEH-476 followup comment (lines 37-38) already documents the intent; the new sentinel would be redundant. Resolved as **option (a)** per MEH-641 spec (document current behavior as intentional, not change it).
+
+Total: 7 files, 11 lines added. No schema, no auth, no central component touched. Build clean. **Carry-over #3 (Linear UI edit of MEH-476 spec) handled manually by Smadar — no code involved.**
+
 ### 2026-05-22 — MEH-667 + MEH-668: sitemap + RTL allowlist hygiene (post-MEH-658 follow-ups)
 
 `fix(MEH-667+668)`: two small SEO/CI hygiene fixes surfaced by the MEH-658 adversarial review (PR #788).

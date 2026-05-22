@@ -24,6 +24,8 @@ export async function generateMetadata({ params }) {
       images: ["/og-image.jpg"],
     },
     alternates: buildAlternates("/login", locale),
+    // MEH-641: auth chrome — not indexable, but hreflang preserved for cross-locale signal
+    robots: { index: false, follow: false },
   };
 }
 
