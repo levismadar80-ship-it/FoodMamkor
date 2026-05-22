@@ -96,6 +96,15 @@ class Producer(Base):
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
+    # MEH-509 PR3: Anthropic-Haiku-backed signup risk score.
+    # Populated asynchronously by app/services/producer_risk.py via
+    # FastAPI BackgroundTasks after producer signup. Both columns
+    # nullable — NULL means "not scored yet OR Anthropic call failed
+    # (fail-open)". score is clamped to [0,100] at the app layer; no
+    # CHECK constraint so any corrupt persisted value still renders in
+    # the admin "out of range" grey state rather than 500ing the GET.
+    risk_score = Column(Integer, nullable=True)
+    risk_reasoning = Column(Text, nullable=True)
     is_available_today = Column(Boolean, default=False)  # producer self-marks daily
     # MEH-12: durable availability status (vs. the per-day is_available_today above).
     # Values: "available" (default) | "full" | "vacation". Rendered as a

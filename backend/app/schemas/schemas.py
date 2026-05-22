@@ -605,6 +605,11 @@ class ProducerDetailOut(ProducerListOut):
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
     producer_license_number: str | None = None
+    # MEH-509 PR3: admin-only risk surface. NULL on both = "not scored yet
+    # OR Anthropic call failed (fail-open)" — frontend renders the grey
+    # "אין מידע" badge. Never exposed via ProducerDetailOut (public).
+    risk_score: int | None = None
+    risk_reasoning: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -1702,3 +1707,11 @@ class VacationModeState(BaseModel):
         if self.active and self.return_date is None:
             raise ValueError("חובה לציין תאריך חזרה כשמצב חופשה מופעל")
         return self
+
+
+# --- Admin: producer risk score (admin_extra.py) ---
+# MEH-509 PR3: shape of GET /admin/producers/{id}/risk-score. Both fields
+# nullable — NULL means "not scored yet OR Anthropic call failed".
+class RiskScoreResponse(BaseModel):
+    score: int | None = None
+    reasoning: str | None = None
