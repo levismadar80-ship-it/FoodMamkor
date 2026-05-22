@@ -171,34 +171,96 @@ async def webhook_receive(
     return Response(status_code=200)
 
 
-def _process_entries(db: Session, entries: list) -> dict[str, int]:
-    """Walk Meta's `entry[].changes[].value` tree and persist each message.
+def _process_entries(db: Session, entries) -> dict[str, int]:
+    """Walk Meta's ``entry[].changes[].value`` tree and persist each message.
 
     Extracted from `webhook_receive` so the handler stays under the
     project's McCabe-complexity ceiling (C901 / PLR0912). Returns counters
     of (persisted / duplicates / failed / statuses) for the caller's log.
     `statuses` counts delivery / read receipts that are intentionally NOT
     persisted in v1.
+
+    Defensive ``isinstance`` checks at every nesting level: if a valid-
+    signature POST ever carries a malformed shape (Meta change OR a
+    secret leak letting an attacker control the payload), we log the
+    bad-shape key + type and skip that level instead of letting an
+    AttributeError bubble to a 500 (which would put Meta into retry
+    storm). The log lines NEVER include the value — PII guard.
     """
     counters = {"persisted": 0, "duplicates": 0, "failed": 0, "statuses": 0}
+    if not isinstance(entries, list):
+        logger.warning(
+            "[WEBHOOK] payload.entry not a list: type=%s", type(entries).__name__
+        )
+        return counters
     for entry in entries:
-        for change in entry.get("changes") or []:
-            value = change.get("value") or {}
-            messages = value.get("messages") or []
-            if not messages:
-                # Delivery/read receipts come on `value.statuses[]`.
-                if value.get("statuses"):
-                    counters["statuses"] += len(value["statuses"])
-                continue
-            for message in messages:
-                result = _persist_message(db, message)
-                if result == "persisted":
-                    counters["persisted"] += 1
-                elif result == "duplicate":
-                    counters["duplicates"] += 1
-                else:
-                    counters["failed"] += 1
+        _process_one_entry(db, entry, counters)
     return counters
+
+
+def _process_one_entry(db: Session, entry, counters: dict[str, int]) -> None:
+    """Single-entry walker — extracted to keep `_process_entries` under the
+    McCabe / PLR0912 caps after the MEH-509 PR2c hardening pass."""
+    if not isinstance(entry, dict):
+        logger.warning("[WEBHOOK] entry not a dict: type=%s", type(entry).__name__)
+        return
+    changes = entry.get("changes")
+    if not isinstance(changes, list):
+        if changes is not None:
+            logger.warning(
+                "[WEBHOOK] entry.changes not a list: type=%s",
+                type(changes).__name__,
+            )
+        return
+    for change in changes:
+        _process_one_change(db, change, counters)
+
+
+def _process_one_change(db: Session, change, counters: dict[str, int]) -> None:
+    """Single-change walker — same extraction rationale as `_process_one_entry`."""
+    if not isinstance(change, dict):
+        logger.warning("[WEBHOOK] change not a dict: type=%s", type(change).__name__)
+        return
+    value = change.get("value")
+    if not isinstance(value, dict):
+        if value is not None:
+            logger.warning(
+                "[WEBHOOK] change.value not a dict: type=%s",
+                type(value).__name__,
+            )
+        return
+    messages = value.get("messages")
+    if messages is not None and not isinstance(messages, list):
+        logger.warning(
+            "[WEBHOOK] value.messages not a list: type=%s",
+            type(messages).__name__,
+        )
+        messages = None
+    if not messages:
+        statuses = value.get("statuses")
+        if isinstance(statuses, list):
+            counters["statuses"] += len(statuses)
+        return
+    _process_messages(db, messages, counters)
+
+
+def _process_messages(db: Session, messages: list, counters: dict[str, int]) -> None:
+    """Per-message persister loop — extracted to keep `_process_one_change`
+    under the McCabe ceiling after the MEH-509 PR2c isinstance hardening."""
+    for message in messages:
+        if not isinstance(message, dict):
+            logger.warning(
+                "[WEBHOOK] message not a dict: type=%s", type(message).__name__
+            )
+            counters["failed"] += 1
+            continue
+        result = _persist_message(db, message)
+        if result == "persisted":
+            counters["persisted"] += 1
+        elif result == "duplicate":
+            counters["duplicates"] += 1
+        else:
+            counters["failed"] += 1
 
 
 def _persist_message(db: Session, message: dict) -> str:

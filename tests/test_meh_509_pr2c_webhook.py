@@ -330,6 +330,40 @@ def test_post_unknown_event_shape_returns_200(client, db, webhook_settings):
     assert db.query(InboundMessage).count() == 0
 
 
+def test_post_malformed_entry_shape_returns_200_logs_warning(
+    client, db, webhook_settings, caplog
+):
+    """MEH-509 PR2c hardening — if a valid-signature POST ever carries a
+    malformed `entry` (Meta change OR an attacker-with-the-secret), the
+    isinstance() guards in `_process_entries` must skip that level and
+    log a warning rather than 500. Webhook stays at 200 so Meta does not
+    enter retry storm; no rows persisted because the walker bails before
+    reaching `_persist_message`."""
+    import logging
+
+    payload = {"object": "whatsapp_business_account", "entry": "not_a_list"}
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+
+    with caplog.at_level(logging.WARNING, logger="app.routers.whatsapp_webhook"):
+        resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    assert db.query(InboundMessage).count() == 0
+    # Warning logged about the malformed shape (PII-safe — type name only,
+    # never the bad value itself).
+    relevant = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and "entry not a list" in r.getMessage()
+    ]
+    assert relevant, f"expected entry-not-a-list warning, got: {[r.getMessage() for r in caplog.records]}"
+    # The log line carries the type name but not the raw value (PII guard).
+    msg = relevant[0].getMessage()
+    assert "str" in msg
+    assert "not_a_list" not in msg
+
+
 def test_post_status_event_returns_200_no_persist(client, db, webhook_settings):
     """Delivery/read receipts arrive on `value.statuses[]` (not `messages`).
     We log + 200 + persist nothing in v1."""
