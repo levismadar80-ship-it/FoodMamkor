@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-667 + MEH-668: sitemap + RTL allowlist hygiene (post-MEH-658 follow-ups)
+
+`fix(MEH-667+668)`: two small SEO/CI hygiene fixes surfaced by the MEH-658 adversarial review (PR #788).
+
+**MEH-667 (sitemap):** `frontend/app/sitemap.js:47-48` — added `/contact` and `/search` to `staticDefs` with priority 0.3 + monthly changeFrequency (matches the `/login` utility tier). MEH-658 gave both routes proper per-page metadata; without sitemap entries Google still has to discover them via internal links. Built sitemap.xml verified — 6 new `<loc>` entries (3 per locale × 2 routes).
+
+**MEH-668 (RTL allowlist):** `.claude/hooks/rtl-allowlist.txt` — 8 stale `frontend/app/<route>/...` paths updated to their `frontend/app/[locale]/...` equivalents. Drift originated in MEH-476 Wave 6 (6 paths) + MEH-658 file renames (2 paths). All 13 PATH EXCEPTIONS now point to real files on disk (verified via existence check); 5 unaffected component-level entries left as-is. CONTENT PATTERNS section (single `rtl-ok` marker) untouched. Hook + `verify-frontend` agent both read this single source of truth (per `.claude/rules/rtl.md`).
+
+No schema, no auth, no central component touched. Build clean.
+
 ### 2026-05-22 — MEH-658: per-page SEO metadata for /login, /register, /contact, /search
 
 `feat(MEH-658)`: 4 routes that previously inherited the homepage `<title>` (`מהמקור — אוכל אמיתי, ישר מהמקור אליך`) now ship distinct per-page metadata. Root cause: all 4 are `"use client"` components, and Next.js App Router only honors `generateMetadata`/`metadata` exports on Server Components. Fix replicates the MEH-476 Wave 6 server-wrapper pattern: rename `page.{js,jsx}` → `{Login,Register,Contact,Search}Client.jsx` (logic byte-identical, only the default-export function name changes from `XxxPage` to `XxxClient`), then add a thin server `page.js` per route that exports `generateMetadata` + renders `<XxxClient />`. `title: { absolute: t("title") }` per the canonical `/about/page.js` so the layout's `%s | ${BRAND_NAME}` template doesn't double-append. Built titles verified: `/he/login` → "כניסה למהמקור | מהמקור"; `/he/register` → "הרשמה למהמקור | מהמקור"; `/he/contact` → "צרי קשר | מהמקור"; `/he/search` → "תוצאות חיפוש | מהמקור". EN mirrors. /about, /map, /terms, /privacy, /accessibility regression-checked — unchanged. All 4 routes remain ● SSG (1h ISR). HE↔EN parity preserved (2520/2520 keys).
