@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509: rename vacation template to `vacation_response_he_v2` (Hebrew)
+
+`fix(MEH-509)`: production smoke against the post-PR2c staging deploy revealed that the original `vacation_mode_response_he` template was registered with Meta in **English**, not Hebrew. A new template `vacation_response_he_v2` was approved in Hebrew with the correct copy. This PR swaps the constant in the watchdog so the next send hits the Hebrew variant.
+
+- `backend/app/services/auto_reply_watchdog.py:39` — `TEMPLATE_VACATION` constant value flipped. The constant indirection means all `tests/test_meh_509_pr2b_watchdog.py` assertions (which compare against `TEMPLATE_VACATION`, not the literal) continue to pass without test edits.
+- `backend/app/models/models.py:1175` — `InboundMessage` docstring updated (live drift would mislead future readers).
+- `docs/MANUAL_TESTING.md:512` — vacation-routing smoke row updated to the new template name.
+- `HANDOFF.md:1558` — "Approved templates (utility)" reference row updated.
+
+Intentionally left alone (history records past state — must not be retroactively rewritten):
+- `backend/alembic/versions/20260522_1130_d4046deb0dc1_meh_509_pr2b_inbound_messages.py:10` — migration docstring references the original name. Migrations are immutable historical artifacts per `.claude/rules/db.md`.
+- `docs/CHANGELOG.md:28,85,1080` (the PR2a/PR2b/PR2c entries below) — each captures what was true at PR-merge time.
+
+Verification:
+- `pytest tests/test_meh_509_pr2b_watchdog.py -v` → all green (constant-indirected assertions absorb the rename).
+- `grep -rn "vacation_mode_response_he" backend/app/services/ tests/` → 0 results.
+- `grep -rn "vacation_response_he_v2" backend/app/services/auto_reply_watchdog.py` → 1 result at line 39.
+
+Closes MEH-509 vacation template language mismatch (discovered in production smoke).
+
 ### 2026-05-22 — MEH-509 PR2c: WhatsApp webhook receiver (GET challenge + POST + HMAC-SHA256)
 
 `feat(whatsapp)`: MEH-509 PR2c of 4 — Meta WhatsApp Cloud API webhook receiver. Two endpoints under `/webhook/whatsapp` (no auth dep — signature verification IS the gate):

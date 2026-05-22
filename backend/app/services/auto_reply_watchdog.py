@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # Meta-approved template names (do NOT invent new ones). Both are
 # established as the spec'd outputs of this watchdog; PR2c webhook will
 # populate the messages this watchdog dispatches against.
-TEMPLATE_VACATION = "vacation_mode_response_he"
+TEMPLATE_VACATION = "vacation_response_he_v2"
 TEMPLATE_AFTER_HOURS = "after_hours_response_he"
 
 

@@ -1172,7 +1172,7 @@ class InboundMessage(Base):
     /webhook/whatsapp). Consumed by the auto-reply watchdog in
     app/services/auto_reply_watchdog.py, which scans every 5 min for
     rows with `bot_replied=False AND human_replied=False` received in
-    the last 30 min, then dispatches `vacation_mode_response_he` or
+    the last 30 min, then dispatches `vacation_response_he_v2` or
     `after_hours_response_he` and flips `bot_replied=True`.
 
     `meta_message_id` is UNIQUE for webhook idempotency (Meta delivers

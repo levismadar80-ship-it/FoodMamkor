@@ -1555,7 +1555,7 @@ Effective 2026-05-09 — Twilio replaced with Meta WhatsApp Cloud API (Graph v21
 | **WhatsApp Business Account ID** | 2030655854463347 |
 | **API version** | v21.0 |
 | **Access Token** | Never expires (System User "Mehamakor API" — saved in Smadar's password manager) |
-| **Approved templates (utility)** | `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_mode_response_he` |
+| **Approved templates (utility)** | `producer_welcome_v1`, `producer_approved_v1`, `after_hours_response_he`, `vacation_response_he_v2` |
 | **Backup admin** | Smadar Levi (email recovery: levismadar80@gmail.com verified) |
 | **Coexistence + Talia linked device** | Deferred to post-launch |
 

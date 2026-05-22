@@ -509,7 +509,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ### After-hours watchdog (MEH-509 PR2b — gated off until PR2c webhook ships)
 - [ ] Post-PR2c smoke — set `WATCHDOG_ENABLED=true` in Railway **staging** env. `psql $DATABASE_URL_STAGING -c "INSERT INTO inbound_messages (id, from_phone, body, received_at) VALUES (gen_random_uuid(), '+972500000099', 'אפשר להזמין?', now() - interval '5 minutes');"` at 22:00 IL — תוצאה מצופה: within 6 min the WhatsApp on `+972500000099` receives `after_hours_response_he`; `psql` shows the row with `bot_replied=true, bot_template_sent='after_hours_response_he'`. Then disable the env var in staging.
-- [ ] Vacation routing — POST `/admin/settings/vacation {"active": true, "return_date": "2026-08-01"}` in staging; insert the same fake inbound row at 10:00 IL (within hours). תוצאה מצופה: vacation wins — the bot sends `vacation_mode_response_he` with `2026-08-01` as the body param, not `after_hours_response_he`.
+- [ ] Vacation routing — POST `/admin/settings/vacation {"active": true, "return_date": "2026-08-01"}` in staging; insert the same fake inbound row at 10:00 IL (within hours). תוצאה מצופה: vacation wins — the bot sends `vacation_response_he_v2` with `2026-08-01` as the body param, not `after_hours_response_he`.
 - [ ] Within-hours skip — POST `/admin/settings/vacation {"active": false}` to clear vacation; insert a fake inbound at 10:00 IL. תוצאה מצופה: row stays `bot_replied=false` indefinitely (humans were expected to reply).
 - [ ] Production promotion — only after staging smoke passes, set `WATCHDOG_ENABLED=true` in Railway production env. Watch Sentry for `[WATCHDOG]` warnings during the next 24h.
 
