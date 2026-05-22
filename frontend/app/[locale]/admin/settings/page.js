@@ -18,6 +18,14 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tests, setTests] = useState({});
+  // MEH-509 PR2a — vacation mode is persisted in the same admin_settings
+  // table but driven through the typed /admin/settings/vacation endpoint
+  // so we never serialize a stale return_date when the toggle flips off.
+  const [vacation, setVacation] = useState({ active: false, return_date: "" });
+  const [vacationOriginal, setVacationOriginal] = useState({ active: false, return_date: "" });
+  const [vacationSaving, setVacationSaving] = useState(false);
+  const [vacationToast, setVacationToast] = useState(null);
+  const [vacationError, setVacationError] = useState(null);
 
   useEffect(() => {
     api
@@ -38,6 +46,19 @@ export default function AdminSettingsPage() {
         setOriginalSettings(data);
       })
       .catch(() => setLoadError(true));
+    api
+      .get("/admin/settings/vacation")
+      .then((response) => {
+        const next = {
+          active: Boolean(response.data?.active),
+          return_date: response.data?.return_date || "",
+        };
+        setVacation(next);
+        setVacationOriginal(next);
+      })
+      .catch(() => {
+        // Non-fatal — main settings still render; vacation panel stays at defaults.
+      });
   }, []);
 
   if (loadError) return <div className="text-red-600 text-sm">{t("settings.load_error")}</div>;
@@ -70,6 +91,40 @@ export default function AdminSettingsPage() {
       setSaved(true);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const vacationDirty =
+    vacation.active !== vacationOriginal.active ||
+    vacation.return_date !== vacationOriginal.return_date;
+  const vacationCanSave =
+    vacationDirty && (!vacation.active || Boolean(vacation.return_date));
+
+  const saveVacation = async () => {
+    if (!vacationCanSave) return;
+    setVacationError(null);
+    setVacationToast(null);
+    setVacationSaving(true);
+    try {
+      const payload = vacation.active
+        ? { active: true, return_date: vacation.return_date }
+        : { active: false, return_date: null };
+      const response = await api.post("/admin/settings/vacation", payload);
+      const persisted = {
+        active: Boolean(response.data?.active),
+        return_date: response.data?.return_date || "",
+      };
+      setVacation(persisted);
+      setVacationOriginal(persisted);
+      setVacationToast(
+        persisted.active
+          ? t("settings.sections.vacation_saved_on", { date: persisted.return_date })
+          : t("settings.sections.vacation_saved_off"),
+      );
+    } catch {
+      setVacationError(t("settings.sections.vacation_error"));
+    } finally {
+      setVacationSaving(false);
     }
   };
 
@@ -200,6 +255,69 @@ export default function AdminSettingsPage() {
           >
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
+        </div>
+      </div>
+
+      {/* MEH-509 PR2a — vacation mode (state only; PR2b watchdog consumes it). */}
+      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+        <h2 className="font-semibold">
+          {t("settings.sections.vacation")}
+          <InfoTooltip
+            content={t("settings.sections.vacation_tooltip")}
+            label={t("settings.sections.vacation_tooltip_label")}
+            position="bottom"
+          />
+        </h2>
+        <p className="text-xs text-text-secondary">{t("settings.sections.vacation_hint")}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">{t("settings.sections.vacation_active")}</span>
+          <button
+            role="switch"
+            aria-checked={vacation.active}
+            onClick={() => {
+              setVacationToast(null);
+              setVacationError(null);
+              setVacation({ ...vacation, active: !vacation.active });
+            }}
+            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${vacation.active ? "bg-primary" : "bg-gray-200"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        {vacation.active && (
+          <Field label={t("settings.sections.vacation_return_label")}>
+            <input
+              type="date"
+              dir="ltr"
+              value={vacation.return_date || ""}
+              onChange={(event) => {
+                setVacationToast(null);
+                setVacationError(null);
+                setVacation({ ...vacation, return_date: event.target.value });
+              }}
+              className="w-full border border-border rounded-[12px] px-3 py-2"
+            />
+          </Field>
+        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={saveVacation}
+            disabled={vacationSaving || !vacationCanSave}
+            className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
+          >
+            {vacationSaving ? t("settings.save.saving") : t("settings.sections.vacation_save")}
+          </button>
+          {vacation.active && !vacation.return_date && (
+            <span className="text-xs text-red-600">
+              {t("settings.sections.vacation_date_required")}
+            </span>
+          )}
+          {vacationToast && (
+            <span className="text-sm text-primary">{vacationToast}</span>
+          )}
+          {vacationError && (
+            <span className="text-sm text-red-600">{vacationError}</span>
+          )}
         </div>
       </div>
 

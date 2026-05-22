@@ -534,6 +534,8 @@ PUT    /admin/pages/{slug}                     admin
 GET    /admin/analytics                        admin
 GET    /admin/settings                         admin
 PUT    /admin/settings                         admin
+GET    /admin/settings/vacation                admin — typed vacation-mode read (MEH-509 PR2a)
+POST   /admin/settings/vacation                admin — typed vacation-mode write (MEH-509 PR2a)
 POST   /admin/settings/test/{service}          admin — Twilio/Cloudinary test pings
 GET    /admin/dashboard                        admin
 GET    /admin/stats                            admin

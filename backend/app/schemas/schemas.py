@@ -1687,3 +1687,18 @@ class ContactClickIn(BaseModel):
 # MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
 class ClaimReferralRequest(BaseModel):
     code: str
+
+
+# --- Admin: vacation mode (admin_extra.py) ---
+# MEH-509 PR2a: typed wrapper over the AdminSetting key-value store for the
+# two vacation_* keys. Shared by GET + POST /admin/settings/vacation so the
+# wire shape is identical in both directions.
+class VacationModeState(BaseModel):
+    active: bool
+    return_date: date | None = None
+
+    @model_validator(mode="after")
+    def _require_return_date_when_active(self) -> "VacationModeState":
+        if self.active and self.return_date is None:
+            raise ValueError("חובה לציין תאריך חזרה כשמצב חופשה מופעל")
+        return self
