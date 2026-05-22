@@ -25,7 +25,7 @@ import { SkeletonProducerGrid } from "@/components/Skeleton";
  * Router static prerender — without it, `next build` throws on
  * /search with "Error occurred prerendering page".
  */
-export default function SearchPage() {
+export default function SearchClient() {
   return (
     <Suspense fallback={<SearchPageSkeleton />}>
       <SearchPageBody />
