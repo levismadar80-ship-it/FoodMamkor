@@ -63,6 +63,16 @@ class Settings(BaseSettings):
     whatsapp_api_version: str = "v21.0"
     admin_whatsapp_to: str = ""
 
+    # MEH-509 PR2c — inbound webhook receiver (GET challenge + POST receive).
+    # `whatsapp_app_secret` is the Meta App Secret used to compute the
+    # X-Hub-Signature-256 HMAC over each POST body; `whatsapp_verify_token`
+    # is the static token Meta sends in the GET subscription challenge.
+    # Empty defaults are fail-closed: empty app_secret → all POST signatures
+    # fail verification; empty verify_token → all GET challenges return 403.
+    # Configured in Railway via WHATSAPP_APP_SECRET / WHATSAPP_VERIFY_TOKEN.
+    whatsapp_app_secret: str = ""
+    whatsapp_verify_token: str = ""
+
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
     # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
     resend_api_key: str = ""

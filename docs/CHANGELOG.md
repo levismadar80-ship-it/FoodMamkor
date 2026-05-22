@@ -4,6 +4,36 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 PR2c: WhatsApp webhook receiver (GET challenge + POST + HMAC-SHA256)
+
+`feat(whatsapp)`: MEH-509 PR2c of 4 — Meta WhatsApp Cloud API webhook receiver. Two endpoints under `/webhook/whatsapp` (no auth dep — signature verification IS the gate):
+
+- **`GET /webhook/whatsapp`** — Meta subscription challenge. Constant-time-compares `hub.verify_token` against `settings.whatsapp_verify_token`; on match returns `hub.challenge` as plain-text 200, else 403. Fail-closed on empty verify-token.
+- **`POST /webhook/whatsapp`** — inbound message persister. Step order is load-bearing: (1) `await request.body()` captures raw bytes FIRST (FastAPI stream is single-consume), (2) `X-Hub-Signature-256` header is parsed, (3) fail-closed on empty `whatsapp_app_secret`, (4) `hmac.new(secret, body, sha256).hexdigest()` is constant-time-compared via `hmac.compare_digest`, (5) ONLY then is JSON parsed and `entry[].changes[].value.messages[]` walked. SHA-1 fallback intentionally not supported — adding the weaker primitive would expand the attack surface for zero migration benefit. Per-message try/except wraps `db.commit()`; UNIQUE(meta_message_id) constraint catches Meta's at-least-once replays via `IntegrityError` → 200 no-op.
+
+PR2c unblocks PR2b: after staging deploy + smoke, flip `WATCHDOG_ENABLED=true` in Railway and the watchdog starts dispatching `vacation_mode_response_he` / `after_hours_response_he` against the rows this receiver writes.
+
+- `backend/app/config.py` (+12) — `whatsapp_app_secret: str = ""` + `whatsapp_verify_token: str = ""` Settings fields. Empty defaults are fail-closed: empty `app_secret` → all POST signatures rejected at step 2; empty `verify_token` → all GET challenges 403.
+- `backend/.env.example` (+10) — `WHATSAPP_APP_SECRET=` + `WHATSAPP_VERIFY_TOKEN=` with Meta-Developer-Console rollout comment.
+- `backend/app/routers/whatsapp_webhook.py` (new, ~210 LOC) — `router = APIRouter(prefix="/webhook", tags=["webhook"])`. Two async handlers + `_process_entries` helper (extracted to keep `webhook_receive` under the project's McCabe cap) + `_persist_message` (text → body, non-text → `[<type>]` placeholder). PII guard: `logger.info("...from=...%s", from_phone[-4:])` — last-4-digits only.
+- `backend/app/router_registry.py` (+3) — import + `app.include_router(whatsapp_webhook.router)` at the tail.
+- `tests/test_meh_509_pr2c_webhook.py` (new, 14 tests) — `_sign(body, secret)` test helper, `_build_text_payload(...)` Meta-shaped payload factory. Coverage: 5 GET cases (valid challenge, invalid token, missing token, empty-settings-token fails-closed, wrong-mode), 6 POST signature cases (valid persists, invalid 403 + persists nothing, missing header 403, SHA-1 prefix 403, empty secret fails-closed, duplicate meta_message_id 200 + single row), 3 event-shape cases (non-text → `[<type>]` placeholder, unknown top-level shape 200 + zero rows, status receipts 200 + zero rows).
+- `docs/DATA.md` — `/webhook/whatsapp` row added to the endpoint reference.
+- `.ai/diagrams/api-routes.md` — `WhatsappWebhook` node added to the public cluster (no auth dep, signature-gated).
+- `docs/MANUAL_TESTING.md` — new "WhatsApp webhook receiver smoke (post-PR2c)" section with the 6-step rollout recipe.
+- `docs/SECURITY.md` — new "Webhook HMAC verification (MEH-509 PR2c)" section documenting the signature gate + PII logging policy.
+
+Local verification:
+- `pytest tests/test_meh_509_pr2c_webhook.py -v` → **14/14 green** in 4.20s.
+- `pytest tests/test_meh_509_pr1_hooks.py tests/test_meh_509_pr2a_vacation.py tests/test_meh_509_pr2b_watchdog.py tests/test_whatsapp_notify.py tests/test_api.py` → **234 passed** in 161s (no regressions).
+- `ruff check + ruff format --check` clean.
+- `bash scripts/check_env_drift.sh` → 55/55 documented, no missing vars.
+- `python -c "from app.routers.whatsapp_webhook import router, webhook_challenge, webhook_receive, _persist_message"` clean.
+
+**Post-merge ops checklist (recorded in HANDOFF.md):** set `WHATSAPP_APP_SECRET` + `WHATSAPP_VERIFY_TOKEN` in Railway staging → wait for deploy → Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL = `https://<staging-railway-url>/webhook/whatsapp`, paste the same verify token, click "Verify and save" → expect ✅ → subscribe to "messages" field → send real WhatsApp to `+972 55-255-3744` → confirm `inbound_messages` row arrives → THEN flip `WATCHDOG_ENABLED=true` in Railway staging → smoke after-hours auto-reply at 22:00 IL → promote to production with prod Railway URL.
+
+**Out of scope (PR3 territory):** `Producer.risk_score` + Anthropic risk classifier; inbound-message admin search UI; status-receipt persistence (`value.statuses[]` logged + counted, not persisted in v1); webhook signature middleware for other providers (this is WhatsApp-only).
+
 ### 2026-05-22 — MEH-509 PR2b: after-hours watchdog (APScheduler + business hours + InboundMessage)
 
 `feat(whatsapp)`: MEH-509 PR2b of 4 — 5-minute APScheduler job that scans inbound WhatsApp messages and auto-replies when (a) vacation mode is active (PR2a `AdminSetting.vacation_mode_active`) or (b) the current Asia/Jerusalem time is outside Sun-Thu 09-19 / Fri 09-13 / Sat-closed business hours. Reuses MEH-508's `send_template()` for outbound and the existing MEH-539 APScheduler instance (no second scheduler — one job per concern on the same singleton).

@@ -543,6 +543,13 @@ GET    /admin/stats                            admin
 GET    /admin/reports                          admin — producer reports inbox
 ```
 
+### WhatsApp webhook receiver (`app/routers/whatsapp_webhook.py`) — MEH-509 PR2c
+
+```
+GET    /webhook/whatsapp     public — Meta subscription challenge, verify_token gate
+POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signature gate
+```
+
 ### Admin — experiences (`app/routers/admin_experiences.py`)
 
 ```
