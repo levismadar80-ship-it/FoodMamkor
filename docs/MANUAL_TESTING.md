@@ -499,6 +499,14 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תאריך חזרה כשמצב חופשה מופעל". — תוצאה מצופה: cannot submit until date is set.
 - [ ] Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` → 422. — תוצאה מצופה: Pydantic model_validator rejects.
 
+### WhatsApp webhook receiver (MEH-509 PR2c)
+- [ ] GET challenge in staging — `curl 'https://<staging-railway-url>/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=hello'` — תוצאה מצופה: `200 hello` (plain text). Wrong token → 403.
+- [ ] Meta Console verify — Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL `https://<staging-railway-url>/webhook/whatsapp` + Verify Token = the env value → click "Verify and save". תוצאה מצופה: ✅ green checkmark; if 403, double-check `WHATSAPP_VERIFY_TOKEN` matches exactly (no whitespace, no quotes).
+- [ ] Subscribe to messages field — Meta Console → toggle "messages" subscription on.
+- [ ] Real inbound smoke — send a WhatsApp message from your personal phone to `+972 55-255-3744`. Within ~5 seconds: `psql $DATABASE_URL_STAGING -c "SELECT id, from_phone, body, received_at, bot_replied FROM inbound_messages ORDER BY received_at DESC LIMIT 1;"` — תוצאה מצופה: row exists with your phone + message body + bot_replied=false.
+- [ ] Forged signature rejection — `curl -X POST https://<staging-railway-url>/webhook/whatsapp -H 'X-Hub-Signature-256: sha256=deadbeef' -d '{}'` — תוצאה מצופה: 403, no new row.
+- [ ] Production promotion — repeat steps 1-4 with the production Railway URL; only after staging smoke passes.
+
 ### After-hours watchdog (MEH-509 PR2b — gated off until PR2c webhook ships)
 - [ ] Post-PR2c smoke — set `WATCHDOG_ENABLED=true` in Railway **staging** env. `psql $DATABASE_URL_STAGING -c "INSERT INTO inbound_messages (id, from_phone, body, received_at) VALUES (gen_random_uuid(), '+972500000099', 'אפשר להזמין?', now() - interval '5 minutes');"` at 22:00 IL — תוצאה מצופה: within 6 min the WhatsApp on `+972500000099` receives `after_hours_response_he`; `psql` shows the row with `bot_replied=true, bot_template_sent='after_hours_response_he'`. Then disable the env var in staging.
 - [ ] Vacation routing — POST `/admin/settings/vacation {"active": true, "return_date": "2026-08-01"}` in staging; insert the same fake inbound row at 10:00 IL (within hours). תוצאה מצופה: vacation wins — the bot sends `vacation_mode_response_he` with `2026-08-01` as the body param, not `after_hours_response_he`.

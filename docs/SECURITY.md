@@ -706,6 +706,65 @@ CREATE TABLE audit_log (
 
 ---
 
+## 17a. Webhook HMAC verification (MEH-509 PR2c)
+
+The Meta WhatsApp Cloud API delivers inbound messages via
+`POST /webhook/whatsapp`. This is the only public endpoint on
+`mehamakor.online` that writes to a producer-adjacent DB table
+(`inbound_messages`) without a JWT or `require_admin` dependency —
+**the HMAC-SHA256 signature on the request body IS the authentication
+gate**. A subtle bug here is the difference between a private inbox
+and an open-firehose write endpoint for anyone on the public internet.
+
+### Invariants
+
+1. **Raw body bytes captured BEFORE any FastAPI parsing.** `await
+   request.body()` is the first line of the handler. Adding a Pydantic
+   body model to the handler signature would consume the stream and
+   silently break HMAC verification (the recomputed hash would be over
+   `b""`, never matching what Meta signed).
+2. **`hmac.compare_digest` for constant-time compare.** Both args MUST
+   be `str` (or both `bytes`) — mixed types raise `TypeError`. We use
+   `str` on both sides (header value vs `hexdigest()`).
+3. **Fail-closed on empty secret.** If `settings.whatsapp_app_secret`
+   is `""`, an HMAC computed with an empty key is deterministic and
+   trivially derivable by any attacker (no secret = no security). The
+   handler explicitly returns 403 BEFORE computing, never letting an
+   attacker probe the empty-key path.
+4. **Fail-closed on empty verify token.** Same logic for
+   `whatsapp_verify_token` on the GET challenge — empty token = 403
+   on every challenge attempt.
+5. **SHA-1 is NOT accepted as a fallback.** Meta's deprecated
+   `X-Hub-Signature` (SHA-1) header would only weaken the gate. We
+   only accept `X-Hub-Signature-256` with literal `sha256=` prefix.
+6. **`UNIQUE(meta_message_id)` is the replay-protection anchor.**
+   Meta delivers at-least-once. A pre-check `SELECT` would race; the
+   DB constraint + `IntegrityError` catch is the atomic gate.
+
+### PII logging policy
+
+`POST /webhook/whatsapp` deliberately never logs the full phone number
+or the message body. The success log line is
+`[WEBHOOK] persisted msg from=...XXXX type=text` where `XXXX` is the
+last 4 digits of `from_phone`. Header values (including `X-Hub-
+Signature-256`) are also never logged on rejection — only the fact of
+the mismatch.
+
+### Operational risks
+
+- **Empty secret in Railway env**: would 403 every Meta delivery, then
+  Meta retries with exponential backoff for ~24h, then disables the
+  subscription. Recovery: set the env var, redeploy, re-subscribe in
+  Meta Developer Console. Pre-deploy guard: HANDOFF.md PR2c post-merge
+  checklist requires setting `WHATSAPP_APP_SECRET`+`WHATSAPP_VERIFY_TOKEN`
+  in Railway BEFORE clicking "Verify and save" in the Meta UI.
+- **Logs leaking PII**: any future log-line change in this router
+  must run the `from_phone[-4:]` test pattern. If you touch the
+  receiver, re-grep `from_phone` for full-string log lines before
+  merge.
+
+---
+
 ## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
