@@ -1,6 +1,100 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
+
+## 2026-05-22 — S3 Design closure + Phase 4 LOCK
+
+### Completed today
+
+**MEH-638 (S3 — Hero + ProducerCard + Categories) → Done**
+- Phase 1 v2 Hero (typography-only Direction A)
+- Phase 2 v4 ProducerCard (9 states incl. Vacation — scope added)
+- Phase 3 v8 Category Grid (2+4 asymmetric, hand-drawn glyphs, no counters)
+- 7 deviations from original spec documented in MEH-638 SYNC UPDATE banner
+
+**MEH-655 (Phase 4 — Floating Navbar, S3.5) → Done**
+- Spec extracted from MEH-638 on 22/5 10:58
+- v5 LOCKED — 5-pomegranate-seed logo, surface-aware ghost CTA, motion tokens, semantic alias layer, focus-visible WCAG 2.2
+- 4 deviations from original spec documented in MEH-655 SYNC UPDATE banner
+
+**MEH-660 (Favicon + PWA + social-share re-export) → New, Backlog, Priority 3**
+- Discovered: favicon.ico shows 4 lozenges (early MEH-637 iter), canonical logo.svg = 5 seeds
+- Scope expanded per Claude Design Note 1: og-image.png + og-image-en.png added
+- Now blocked by MEH-661 (corrected horizontal SVG needed for og-image regen)
+
+**MEH-661 (logo-horizontal-he.svg wordmark/seed overlap fix) → New, Backlog, Priority 3**
+- Discovered during MEH-655 v5 verification — wordmark מהמקור visually crowds first seed at large render sizes
+- Source SVG is correct (6 letters verified char-by-char) — layout positioning issue (text-anchor x=350 vs seed cluster x=410)
+- Blocks MEH-660 (favicon should consume corrected asset)
+
+**MEH-136 (Design tokens) → Updated**
+- 13 audit gaps documented (Token architecture × 5, Component × 1, Hebrew typography × 2, Accessibility × 4, QA infra × 1)
+- Claude Design Note 2 added: 3 new token files (color-scale.css, motion.css, semantic.css) + tailwind.config.js consumption pattern
+- Critical: --green legacy alias must point to --green-500 or older surfaces silently break
+- Priority: Gaps 1-9 + Note 2 = Must-do before MEH-602. Gaps 10-12 = Nice-to-have pre-launch. Gap 13 = post-launch.
+
+**MEH-639 (S4 Homepage Assembly) → Updated**
+- Claude Design Note 3 added: 3 integration points
+  - Point 1: Hero Direction A canonical guard (no variant prop, no Direction B leakage into app/page.jsx)
+  - Point 2: CategoryGrid `selected` prop spec (2px solid --green-500 border, single signal, /explore reuse)
+  - Point 3: Period rule (Hero H1 retains period, all section H2s wayfinding-tone no period) + section heading audit table
+- Now unblocked (S3 + P4 both Done) — ready for new Claude Design chat
+
+**MEH-124 (CONTENT SYNC) → v4 → v4.1**
+- S3 + Phase 4 LOCKED decisions integrated
+- 6 categories = editorial featured selection from 18 backend
+- Logo canonical disambiguation: 5 pomegranate seeds (favicon out-of-sync flagged)
+- No counters rule + 2+4 asymmetric layout + hand-drawn glyphs locked
+- Green scale, motion tokens, semantic aliases, --filter-paused documented
+
+### Tokens introduced in S3 (locked for MEH-136 implementation)
+
+Green scale (6 stops):
+```
+--green-50:  #EAF3DE
+--green-100: #C8DCB3
+--green-300: #6FA284
+--green-500: #2E6853  (BRAND, alias = --green)
+--green-700: #1F4C3C  (CTA hover)
+--green-900: #143228  (Footer dark)
+```
+
+Motion family (single curve, 3 durations):
+```
+--duration-fast: 180ms
+--duration-base: 420ms
+--duration-slow: 640ms
+--ease-quart:    cubic-bezier(.25, 1, .5, 1)
+```
+
+Component token (added):
+```
+--filter-paused: grayscale(0.35) opacity(0.7)  /* ProducerCard vacation */
+```
+
+### Key locks documented
+
+- 6 categories = editorial featured selection from 18 backend categories. Remaining 12 surfaced via search/explore/map.
+- Glyphs are hand-drawn line-art for Cohort 1. Photo migration trigger: 50+ producers AND 6 real still-life photos exist.
+- Phase 4 = MEH-655 separate (not MEH-638).
+- Logo canonical = 5 pomegranate seeds at 72° apart (forest/orange/gold/sand/sage). favicon.ico OUT OF SYNC, MEH-660 handles re-export.
+- SVG source `מהמקור` verified 6 letters; visual overlap with seeds is layout issue → MEH-661.
+
+### Blockers unblocked
+
+- MEH-639 (S4 Homepage Assembly) — ready to start in NEW Claude Design chat
+- MEH-136 (Design tokens) — still blocked by MEH-636 Done; can start once tokens spec locked
+- MEH-602 (Atomic components) — blocked by MEH-136
+
+### Open follow-ups (next session priorities)
+
+1. Start MEH-639 (S4 Homepage Assembly) in new Claude Design chat — paste CONTENT SYNC v4.1 + updated S4 prompt with Note 3 integration points
+2. MEH-661 (logo-horizontal overlap fix) — quick SVG positioning tweak
+3. MEH-660 (favicon + PWA + social-share regen) — after MEH-661 merges
+4. MEH-136 implementation — after MEH-636 spec locks in
+
+---
+
 > Last updated: 2026-05-22 (**MEH-509 PR2c — WhatsApp webhook receiver (GET challenge + POST + HMAC-SHA256); MED-RISK new internet-exposed endpoint, security-critical.** Two endpoints under `/webhook/whatsapp` (no auth dep — signature verification IS the gate). GET handles Meta's subscription challenge with constant-time `hub.verify_token` compare → echo `hub.challenge` plain-text 200. POST verifies `X-Hub-Signature-256` (HMAC-SHA256 of raw body bytes, hex, `sha256=` prefix) via `hmac.compare_digest`; fail-closed on empty `whatsapp_app_secret` or empty `whatsapp_verify_token` (empty key → deterministic-but-forgeable signature, reject before computing). Order is load-bearing: `await request.body()` FIRST so HMAC sees what FastAPI would otherwise consume. SHA-1 fallback NOT supported. Per-message try/except + `UNIQUE(meta_message_id)` constraint → `IntegrityError` → 200 no-op for Meta's at-least-once replays. PII guard: logs `from_phone[-4:]` only, never the body or full number. Non-text messages persist `body="[<type>]"` placeholder. New `whatsapp_webhook.py` router (~210 LOC) + `whatsapp_app_secret`+`whatsapp_verify_token` Settings + `WHATSAPP_APP_SECRET`+`WHATSAPP_VERIFY_TOKEN` in `.env.example`. 14 new tests cover signature-required, signature-validated, empty-secret-fails-closed, SHA-1 rejection, duplicate idempotency, non-text placeholder, unknown event shape, status-receipt non-persistence. Suite 234/234 regression-clean. **Post-merge rollout checklist (MUST follow in order):** (1) Generate Meta App Secret + your own verify token; (2) Set `WHATSAPP_APP_SECRET`+`WHATSAPP_VERIFY_TOKEN` in Railway **staging** env vars; (3) Wait for Railway redeploy; (4) Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL `https://<staging-railway-url>/webhook/whatsapp`, paste verify token, click **Verify and save** → expect ✅; (5) Subscribe to the `messages` field; (6) Send a real WhatsApp from your phone to `+972 55-255-3744` → confirm `inbound_messages` row arrives in staging DB; (7) **Only after step 6 succeeds**, flip `WATCHDOG_ENABLED=true` in Railway staging → wait 5 min after-hours → confirm `after_hours_response_he` arrives back to your phone; (8) Promote to production: same env vars + same Meta Console update pointing at prod Railway URL. **PR3 (AI risk-score) still pending.**)
 > Previously: 2026-05-22 (**MEH-509 PR2b — after-hours watchdog (APScheduler + business hours + InboundMessage); MED-RISK backend, adds new DB table.** Phase 0 caught (a) no Meta webhook receiver exists today and (b) the existing MEH-539 APScheduler instance already wired the single-replica Railway assumption. User approved Option A2: split — this PR ships data layer + watchdog only; PR2c will ship the Meta `GET/POST /webhook/whatsapp` receiver (verification + HMAC signature + replay protection) in a separate adversarial review. New `inbound_messages` table (9 fields, 3 btree indexes, UNIQUE on `meta_message_id` for at-least-once webhook idempotency) via Alembic `d4046deb0dc1` (`EXPECTED_REV` + `EXPECTED_TABLES=35` bumped in `.github/workflows/pr-checks.yml`). New `backend/app/services/auto_reply_watchdog.py` — pure `is_within_business_hours(now=None)` (Asia/Jerusalem, DST-aware via stdlib zoneinfo, half-open hour window), pure `_decide_template(...)` (vacation > after-hours > skip), `run_watchdog(db, now=None) -> dict[str,int]` counters (never raises; per-message try/except). Idempotency contract: `bot_replied=True` set BEFORE send → permanent retirement on failure (one shot, no retry storm); `bot_template_sent` audit-trail diffs "tried" vs "succeeded". 5-min job registered on the existing `followup_scheduler` instance via `IntervalTrigger(minutes=5)` with `max_instances=1, coalesce=True, misfire_grace_time=60`, **gated by `WATCHDOG_ENABLED=False` (default everywhere)**. 21 new tests all green; full `test_api.py` + PR1/PR2a 213/213 regression-clean. Ruff clean. **Post-PR2c smoke checklist**: after PR2c webhook receiver ships and verified, set `WATCHDOG_ENABLED=true` in Railway staging first, send a real inbound WhatsApp at 22:00 IL, verify `after_hours_response_he` arrives within 6 minutes, then promote to Railway production. **PR3 (AI risk-score) still pending.**)
 > Previously: 2026-05-22 (**MEH-509 PR2a — vacation mode toggle (typed wrapper over existing AdminSetting store); LOW-RISK additive backend+frontend.** Phase 0 caught that the spec's "build new SystemSettings table" path would duplicate the existing `admin_settings` key-value store (`models.py:269-274` + `admin_extra.py:340-389`, with `friday_mode_override` as the working boolean-toggle precedent) — that's exactly the architectural smell `.claude/rules/db.md` MEH-271 forbids. User approved Option A: reuse `AdminSetting`, **no new model, no Alembic migration, no `EXPECTED_REV` bump**. Added 2 keys to `DEFAULT_SETTINGS` (`vacation_mode_active: "false"` + `vacation_return_date: ""`), new `GET/POST /admin/settings/vacation` typed wrapper endpoints (`require_admin`), new `VacationModeState` Pydantic schema in `schemas.py` with model_validator that 422s on `active=true` + missing `return_date` (`"חובה לציין תאריך חזרה כשמצב חופשה מופעל"`). POST normalizes deactivation by clearing `return_date` regardless of payload — prevents "active=false with stale date" drift. Frontend: extended existing `frontend/app/[locale]/admin/settings/page.js` with a vacation section (toggle + conditional date input + dedicated save button, independent of the multi-field save), 12 new i18n keys per locale in `admin.settings.sections.vacation*`. 10 new pytest tests all green; full `test_api.py` 192/192 regression-clean (combined 202 passed in 140s); `npm run build` clean (101/101 pages, 11.4s). **PR2b (after-hours watchdog) will consume `vacation_mode_active` via this typed endpoint; PR3 (AI risk-score) still pending.**)
