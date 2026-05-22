@@ -4,12 +4,13 @@ import { useState } from "react";
 import { CheckCircle, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { CONTACT_EMAIL } from "@/lib/env.client";
 
-// Single source of truth for the public contact inbox shown on this page.
-// Must match the backend CONTACT_EMAIL env var (backend/.env.example,
-// backend/app/config.py::Settings.contact_email) so the visible address
-// matches where POST /contact actually delivers.
-const CONTACT_EMAIL = "levismadar80@gmail.com";
+// MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
+// with a "contact@mehamakor.co.il" fallback. Must still match the backend
+// CONTACT_EMAIL env var (backend/.env.example, backend/app/config.py::
+// Settings.contact_email) so the visible address matches where POST /contact
+// actually delivers.
 
 export default function ContactPage() {
   const t = useTranslations("contact");

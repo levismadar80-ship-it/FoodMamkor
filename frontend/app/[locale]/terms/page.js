@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buildAlternates } from "@/lib/i18n-seo";
+import { CONTACT_EMAIL } from "@/lib/env.client";
 
 // MEH-475 PR-C4b/chunk-3: terms of use i18n. SECTIONS-array shape
 // matches accessibility + privacy. Operator section (MEH-630) preserved
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }) {
   };
 }
 
-const CONTACT_EMAIL = "contact@mehamakor.co.il";
+// MEH-653: CONTACT_EMAIL imported from lib/env.client (Vercel env var with fallback).
 const OPERATOR_EMAIL = "noreply@mehamakor.co.il";
 
 const SECTION_IDS = [

@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buildAlternates } from "@/lib/i18n-seo";
+import { CONTACT_EMAIL } from "@/lib/env.client";
 
 // MEH-475 PR-C4b/chunk-2: accessibility statement i18n. Same pattern as
 // PR #736 (getTranslations in generateMetadata + namespace-scoped t())
@@ -78,11 +79,11 @@ const SECTIONS = [
         <br />
         📧{" "}
         <a
-          href="mailto:levismadar80@gmail.com"
+          href={`mailto:${CONTACT_EMAIL}`}
           className="text-primary hover:underline"
           dir="ltr"
         >
-          levismadar80@gmail.com
+          {CONTACT_EMAIL}
         </a>
         <br />
         📞 {t("sections.contact.phone_placeholder")}

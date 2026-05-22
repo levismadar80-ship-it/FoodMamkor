@@ -4,6 +4,27 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-653: Centralize CONTACT_EMAIL via NEXT_PUBLIC_CONTACT_EMAIL — replace 5 hardcoded references
+
+`feat`: Follow-up to MEH-631. Introduce `NEXT_PUBLIC_CONTACT_EMAIL` env var (Zod-validated as `z.string().email().optional()`, fallback `"contact@mehamakor.co.il"`) and migrate all 5 remaining hardcoded `levismadar80@gmail.com` references in the user-facing app to import `CONTACT_EMAIL` from `lib/env.client`.
+
+- `frontend/lib/env.client.js` — add `NEXT_PUBLIC_CONTACT_EMAIL` to the T3 client schema + `experimental__runtimeEnv` mapping + new `CONTACT_EMAIL` export with literal fallback. Preserves CLIENT-SAFE INVARIANT (MEH-464) — `NEXT_PUBLIC_*` only, no server-only var access at module scope.
+- `frontend/.env.example:38-46` — new `MEH-653: Public contact email` block documenting the var, its consumers, the fallback behavior, and the backend-pairing requirement (`backend/.env.example`, `backend/app/config.py::Settings.contact_email`).
+- `frontend/app/[locale]/terms/page.js:20` — local `CONTACT_EMAIL` const removed in favor of `import { CONTACT_EMAIL } from "@/lib/env.client"`.
+- `frontend/app/[locale]/privacy/page.js:20` — same.
+- `frontend/app/[locale]/contact/page.js:12` — same; multi-line comment updated to reference the new env var while preserving the backend-pairing requirement.
+- `frontend/app/[locale]/forgot-password/page.js:45-47` — 2 hardcoded literals replaced with `${CONTACT_EMAIL}` / `{CONTACT_EMAIL}` interpolation.
+- `frontend/app/[locale]/accessibility/page.js:80-86` — same (2 hardcoded literals).
+
+**Verification triad (Zod + fallback)**:
+- `SKIP_ENV_VALIDATION=true npm run build` → green (fallback path exercised).
+- `NEXT_PUBLIC_CONTACT_EMAIL=test@example.com npm run build` → green (valid override path).
+- `NEXT_PUBLIC_CONTACT_EMAIL=not-an-email npm run build` → **fails** with Zod `invalid_format` / `Invalid email address` at `lib/env.client.js:41` (negative path proves Zod actually applies, not silently bypassed).
+
+**Out-of-scope (do-not-touch confirmed):** `admin/users/page.js:9` `SUPER_ADMIN_EMAIL` (auth gate, role check, not contact info — replacing it would lock super-admin access); `admin/help/page.jsx:185` GitHub repo URL containing the `levismadar80-ship-it` username substring.
+
+**Vercel deployment requirement**: PR cannot reach production-correct state until `NEXT_PUBLIC_CONTACT_EMAIL=contact@mehamakor.co.il` is set in Vercel Project Settings → Environment Variables (Production + Preview + Development). The `|| "contact@mehamakor.co.il"` fallback in `lib/env.client.js` protects against missed setup, but the env var should be added before merge so the source of truth lives in one place, not two.
+
 ### 2026-05-22 — MEH-631: Replace private email with contact@mehamakor.co.il in /terms + /privacy
 
 `feat`: Replace the private `levismadar80@gmail.com` placeholder with the business `contact@mehamakor.co.il` address across the public legal pages and the dead i18n literals that mirror them.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { CONTACT_EMAIL } from "@/lib/env.client";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations();
@@ -42,8 +43,8 @@ export default function ForgotPasswordPage() {
             <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
             <p className="text-site-muted text-xs mt-2">
               {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
-              <a href="mailto:levismadar80@gmail.com" className="text-primary hover:underline">
-                levismadar80@gmail.com
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
+                {CONTACT_EMAIL}
               </a>
             </p>
           </div>
