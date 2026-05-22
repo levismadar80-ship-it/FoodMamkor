@@ -125,7 +125,10 @@ export default function Header() {
   }, [router]);
 
   const isProducer = user?.role === "producer";
-  const showAddBusinessCta = !isProducer;
+  // MEH-669: hide "register as producer" CTA from admins — server-side
+  // guard at auth.py:432 enforces the policy; this is defense-in-depth UX.
+  const isAdmin = user?.role === "admin";
+  const showAddBusinessCta = !isProducer && !isAdmin;
 
   const NAV_ITEMS = [
     { href: "/", label: t("nav.discover") },
