@@ -4,6 +4,27 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 PR1: producer welcome + approval WhatsApp template hooks
+
+`feat(whatsapp)`: MEH-509 PR1 of 3 — switch the producer-facing welcome from the MEH-287/508 free-text `send_text` path to the Meta-approved `producer_welcome_v1` template, and add a symmetric `producer_approved_v1` hook fired when admin approves a pending producer. Both calls are fail-open at the service layer (`send_template` already swallows `httpx.HTTPError`) with an additional belt-and-suspenders `try/except` at the consumer so an unexpected raise cannot break signup or the approval 200.
+
+- `backend/app/services/auth_notifications.py` — `notify_producer_registered(name, phone)` now calls `send_template(phone, "producer_welcome_v1", [name, profile_url], lang="he")`. `profile_url = f"{settings.frontend_url}/producer/dashboard"` (existing convention preserved per Q3). New `notify_producer_approved(name, phone, slug, producer_id)` fires `producer_approved_v1` with `[name, page_url]`; `page_url` prefers `producer.slug` and falls back to `/producer/{producer_id}` with `logger.info` so fallback frequency is monitorable in prod (Q2). Shared `_producer_wa_preflight()` + `_normalize_il_phone()` helpers absorb the MEH-287 skip-and-log gate and the `0…→+972` normalization. `send_text` import retained for `notify_admin_new_producer`.
+- `backend/app/routers/admin.py` — `approve_producer` captures `producer.{name,phone,slug,id}` primitives post-commit and calls `notify_producer_approved(...)` after the existing email + admin-WhatsApp notifications. No background-task wiring (synchronous matches the existing admin.py pattern for `_send_notification_email` + `_send_whatsapp`).
+- `tests/test_meh_509_pr1_hooks.py` (new, 7 tests) — mocks `app.services.whatsapp.httpx.post` per `tests/test_whatsapp_notify.py:48-73` convention. Asserts: (1) signup with phone fires the welcome template with `[name, profile_url]`; (2) signup without phone skips (no Meta call); (3) httpx raise during signup → response still 200; (4) **regression guard** — signup does NOT send both `type:text` and `type:template` (the PR's core invariant); (5) approve fires the approval template with `[name, page_url]` using `slug`; (6) null-slug → fallback to `/producer/{id}`; (7) httpx raise during approve → 200.
+
+**Phase 0 findings + resolutions:**
+- _Welcome already exists via `send_text`_ → REPLACE per Q1 (two welcome WhatsApps = bug). Free-text path deleted.
+- _`producer.slug` is `nullable=True`_ → fall back to `/producer/{producer_id}` with `log.info` per Q2.
+- _Spec's `/admin/me` profile URL_ → use `/producer/dashboard` per Q3 (`/admin/*` is founder-only).
+- _Spec's `backend/tests/` path_ → tests live at repo root `tests/` per Q4.
+
+Local verification triad:
+- `pytest tests/test_meh_509_pr1_hooks.py -v` → 7 passed in 4.68s.
+- `pytest tests/test_whatsapp_notify.py tests/test_auth_email_notify.py -v` → 6 passed in 3.77s (no regression in adjacent suites).
+- `pytest tests/test_api.py -v` → **192 passed** in 126.76s (full backend API surface, no regressions).
+
+**Out of scope (PR2/PR3 territory):** `backend/app/services/whatsapp.py` (locked from MEH-508), no schema changes, no new env vars, no frontend changes, no watchdog/vacation/risk-score logic.
+
 ### 2026-05-22 — MEH-653: Centralize CONTACT_EMAIL via NEXT_PUBLIC_CONTACT_EMAIL — replace 5 hardcoded references
 
 `feat`: Follow-up to MEH-631. Introduce `NEXT_PUBLIC_CONTACT_EMAIL` env var (Zod-validated as `z.string().email().optional()`, fallback `"contact@mehamakor.co.il"`) and migrate all 5 remaining hardcoded `levismadar80@gmail.com` references in the user-facing app to import `CONTACT_EMAIL` from `lib/env.client`.
