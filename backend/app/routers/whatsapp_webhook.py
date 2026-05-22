@@ -55,6 +55,48 @@ _SIGNATURE_PREFIX = "sha256="
 _MAX_BODY_BYTES = 1_048_576
 
 
+def _enforce_content_length(request: Request) -> None:
+    """MEH-663 + batch-2 #3 — reject oversized OR malformed
+    Content-Length BEFORE the unbounded `await request.body()` allocates.
+
+    Failure-mode matrix (documented in docs/SECURITY.md §17a invariant #7):
+      missing header     → fall through (proxy bounds the body; Meta
+                           always sends it but legitimate omissions
+                           don't get gratuitously broken).
+      non-numeric        → 400 Bad Request.
+      negative (-1, …)   → 400 Bad Request (RFC 7230 §3.3.2 specifies
+                           "decimal non-negative integer"). Rejected
+                           BEFORE the > cap check so a hostile `-1`
+                           can't slip past via signed-int comparison.
+      > _MAX_BODY_BYTES  → 413 Payload Too Large.
+
+    Extracted from `webhook_receive` to keep the handler under the
+    project McCabe ceiling (C901) after batch-2 #3 added the negative-
+    value branch.
+    """
+    declared = request.headers.get("Content-Length")
+    if declared is None:
+        return
+    try:
+        declared_int = int(declared)
+    except ValueError:
+        logger.warning("[WEBHOOK] POST rejected — non-numeric Content-Length")
+        raise HTTPException(status_code=400, detail="Bad Request")
+    if declared_int < 0:
+        logger.warning(
+            "[WEBHOOK] POST rejected — negative Content-Length %d",
+            declared_int,
+        )
+        raise HTTPException(status_code=400, detail="Bad Request")
+    if declared_int > _MAX_BODY_BYTES:
+        logger.warning(
+            "[WEBHOOK] POST rejected — Content-Length %d > %d cap",
+            declared_int,
+            _MAX_BODY_BYTES,
+        )
+        raise HTTPException(status_code=413, detail="Payload Too Large")
+
+
 # ---- GET verification challenge --------------------------------------------
 
 
@@ -118,26 +160,8 @@ async def webhook_receive(
     unknown event shapes), because Meta retries on non-2xx and we don't
     want exponential backoff to hide a parser bug.
     """
-    # --- MEH-663: Content-Length pre-check (DoS defense-in-depth) ---
-    # Reject oversized payloads BEFORE the unbounded body read allocates
-    # memory. Missing header is allowed (Meta uses HTTP/1.1 with explicit
-    # length but we don't gratuitously break legitimate clients that omit
-    # it — the body read still happens and will be bounded by the proxy).
-    declared = request.headers.get("Content-Length")
-    if declared is not None:
-        try:
-            declared_int = int(declared)
-        except ValueError:
-            logger.warning("[WEBHOOK] POST rejected — non-numeric Content-Length")
-            raise HTTPException(status_code=400, detail="Bad Request")
-        if declared_int > _MAX_BODY_BYTES:
-            logger.warning(
-                "[WEBHOOK] POST rejected — Content-Length %d > %d cap",
-                declared_int,
-                _MAX_BODY_BYTES,
-            )
-            raise HTTPException(status_code=413, detail="Payload Too Large")
-
+    # MEH-663 + batch-2 #3: Content-Length pre-check (DoS defense-in-depth).
+    _enforce_content_length(request)
     body_bytes = await request.body()
 
     # --- Step 1: signature header ---
