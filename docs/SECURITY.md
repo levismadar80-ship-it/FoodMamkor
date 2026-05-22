@@ -740,6 +740,15 @@ and an open-firehose write endpoint for anyone on the public internet.
 6. **`UNIQUE(meta_message_id)` is the replay-protection anchor.**
    Meta delivers at-least-once. A pre-check `SELECT` would race; the
    DB constraint + `IntegrityError` catch is the atomic gate.
+7. **Body size capped at 1 MiB via `Content-Length` pre-check (MEH-663).**
+   `_MAX_BODY_BYTES = 1_048_576` enforced BEFORE the unbounded
+   `await request.body()` allocates. `Content-Length > cap` → 413; non-
+   numeric `Content-Length` → 400; missing header is allowed (Meta sends
+   it explicitly, but legitimate omissions don't get gratuitously broken
+   — the body read still happens and is bounded by the Railway/Vercel
+   proxy layer in production). Defense-in-depth: this layer activates
+   if/when hosting topology changes and the implicit proxy bound goes
+   away.
 
 ### PII logging policy
 
