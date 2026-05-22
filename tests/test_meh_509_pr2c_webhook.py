@@ -364,6 +364,68 @@ def test_post_malformed_entry_shape_returns_200_logs_warning(
     assert "not_a_list" not in msg
 
 
+def test_post_oversized_content_length_returns_413(client, db, webhook_settings):
+    """MEH-663 — Content-Length above the 1 MiB cap is rejected BEFORE
+    the unbounded `await request.body()` allocates. 413 Payload Too
+    Large; no row persisted; logs the cap breach."""
+    payload = _build_text_payload(message_id="wamid.oversized")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {
+        "X-Hub-Signature-256": _sign(body_bytes),
+        # Declared length wildly exceeds the 1 MiB cap. Actual body is small;
+        # we're testing that the HEADER value alone trips the early-return
+        # before any body allocation happens.
+        "Content-Length": str(2_097_152),
+    }
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+    assert resp.status_code == 413
+    assert (
+        db.query(InboundMessage)
+        .filter(InboundMessage.meta_message_id == "wamid.oversized")
+        .count()
+        == 0
+    )
+
+
+def test_post_invalid_content_length_returns_400(client, db, webhook_settings):
+    """MEH-663 — non-numeric `Content-Length` is malformed and rejected
+    with 400 Bad Request before any body read. Per HTTP spec the header
+    must be a non-negative integer."""
+    payload = _build_text_payload(message_id="wamid.bad_cl")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {
+        "X-Hub-Signature-256": _sign(body_bytes),
+        "Content-Length": "not-a-number",
+    }
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+    assert resp.status_code == 400
+    assert (
+        db.query(InboundMessage)
+        .filter(InboundMessage.meta_message_id == "wamid.bad_cl")
+        .count()
+        == 0
+    )
+
+
+def test_post_within_content_length_cap_still_processes(client, db, webhook_settings):
+    """MEH-663 — Content-Length at or below the 1 MiB cap is unaffected
+    (sanity check that the early-return doesn't break the happy path)."""
+    payload = _build_text_payload(message_id="wamid.under_cap")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {
+        "X-Hub-Signature-256": _sign(body_bytes),
+        "Content-Length": str(len(body_bytes)),  # honest, small
+    }
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+    assert resp.status_code == 200
+    assert (
+        db.query(InboundMessage)
+        .filter(InboundMessage.meta_message_id == "wamid.under_cap")
+        .count()
+        == 1
+    )
+
+
 def test_post_status_event_returns_200_no_persist(client, db, webhook_settings):
     """Delivery/read receipts arrive on `value.statuses[]` (not `messages`).
     We log + 200 + persist nothing in v1."""
