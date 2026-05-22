@@ -431,7 +431,7 @@ async def register_producer(
         if user.role == "admin":
             raise HTTPException(
                 status_code=403,
-                detail="מנהל מערכת לא יכול להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+                detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
             )
         # Check both: producer_id (current link) and is_producer (durable flag).
         # is_producer stays True even if an admin manually clears producer_id,
@@ -820,7 +820,7 @@ def register_producer_oauth(
     if user.role == "admin":
         raise HTTPException(
             status_code=403,
-            detail="מנהל מערכת לא יכול להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
+            detail="מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת.",
         )
 
     # 3. If this account is already a producer, bail out — the producer

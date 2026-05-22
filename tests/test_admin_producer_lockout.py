@@ -41,7 +41,7 @@ UPGRADE_BODY = {
 # conftest.make_user default + valid_producer_register_payload.
 SAFE_PASSWORD = "Zx7Yp9Mq2Lr4"
 
-ADMIN_ERROR_FRAGMENT = "מנהל מערכת לא יכול להירשם כבית עסק"
+ADMIN_ERROR_FRAGMENT = "מנהלת מערכת לא יכולה להירשם כבית עסק"
 
 
 class TestRegisterProducerAdminLockout:
