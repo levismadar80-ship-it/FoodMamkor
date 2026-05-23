@@ -36,7 +36,10 @@ name: Staging smoke
 #     the smoke row is reached via the user. Idempotent: 0 rows -> no-op.
 #   - Rate limit: register is 3/hour per IP — keep manual runs under that.
 
-on:
+# NOTE: the trigger key MUST be quoted ("on"). Bare unquoted `on:` is coerced
+# to the boolean True by YAML 1.1 parsers, dropping the trigger entirely, so
+# GitHub reports "No event triggers defined in `on`" (MEH-671 first-paste bug).
+"on":
   workflow_dispatch:
     inputs:
       pre_wait_seconds:
