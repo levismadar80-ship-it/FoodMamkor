@@ -71,9 +71,13 @@ jobs:
     # Tests are read-only so running against production is safe; the concurrency
     # group (e2e-${{ deployment.ref }}) ensures no two runs race on the same ref.
     # paths-filter (MEH-424): skip when no frontend files changed.
+    # Cost sweep (May 2026): skip Dependabot PRs. deployment.ref carries the
+    # head branch (dependabot/*, all ecosystems); ~285 min/month saved (19
+    # runs × ~15 min). creator.login is unusable here — it's vercel[bot].
     if: |
       github.event.deployment_status.state == 'success' &&
-      needs.filter.outputs.frontend == 'true'
+      needs.filter.outputs.frontend == 'true' &&
+      !startsWith(github.event.deployment.ref, 'dependabot/')
 
     steps:
       - uses: actions/checkout@v6

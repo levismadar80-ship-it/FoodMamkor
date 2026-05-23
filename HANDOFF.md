@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — chore: skip Playwright E2E on Dependabot PRs
+
+LOW-RISK CI cost optimization (Issue A of the e2e.yml cost sweep). Added one
+condition to the `e2e` job `if:` in `.github/workflows/e2e.yml`:
+`!startsWith(github.event.deployment.ref, 'dependabot/')` — skips Playwright
+on Dependabot dep-bump PRs. Est. ~285 min/month saved (~19 runs × ~15 min;
+`e2e.yml` was ~31.5% of monthly Actions minutes per the May 2026 sweep).
+
+### Completed
+- Branch `feature/e2e-skip-dependabot` off `origin/staging`.
+- `e2e.yml` written via GitHub MCP API (local `Edit`/`Write` denied on
+  `.github/workflows/**` per `.claude/settings.json` — MEH-671 guardrail).
+- CHANGELOG + this file committed locally + pushed; PR opened (draft) → `staging`.
+
+### Key decisions
+- **Spec correction:** the task specced `creator.login != 'dependabot[bot]'`,
+  but for `deployment_status` events Vercel creates the deploy → `creator.login`
+  is always `vercel[bot]`, so that guard is a no-op. Switched to the deployment
+  **branch ref** (`dependabot/*`), confirmed populated (it keys concurrency at
+  `e2e.yml:30`). The deliberately-removed `startsWith(environment,'Preview')`
+  filter (`e2e.yml:68-70`) was NOT reintroduced.
+- No Linear ticket — landed as a generic `chore:` per Sapir's call.
+
+### Open / flagged
+- Confidence MEDIUM that Vercel sends a branch name (not a SHA) in
+  `deployment.ref`. If it ever sends a SHA, the guard safely no-ops (E2E still
+  runs, just no saving). Verify against a real Dependabot deploy after merge.
+- Remaining e2e.yml cost-sweep issues (B+) are separate tickets.
 ## 2026-05-23 — MEH-484: Playwright fail-on-flaky (rebuilt via MEH-681)
 
 `ci(MEH-484)` — landed via the MEH-681 PR backlog cleanup. Original work
