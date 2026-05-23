@@ -3,6 +3,21 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-559: k6 load testing baseline (rebuilt via MEH-681)
+
+`feat(MEH-559)` — landed via the MEH-681 PR backlog cleanup. Baseline
+collected 2026-05-14 (draft PR #652); script + runbook rebuilt today onto
+fresh `staging`. Three substantive files: `scripts/load-test.js` (k6, 5
+scenarios), `docs/research/k6-load-testing-baseline.md` (runbook + result
+template), and a "Load testing" section in `docs/MANUAL_TESTING.md`.
+One-time pre-launch baseline, NOT in CI. Default `BASE_URL` points at the
+Railway backend (`foodmamkor-staging.up.railway.app`) — run #1 against the
+Vercel host was thrown out (hit Next.js page handlers, not the API).
+`/producers/*` accepts 429 (slowapi 120/min cap vs 50-VU ramp). The
+MANUAL_TESTING.md section was 3-way merged (staging diverged since the
+branch base, so verbatim copy would have regressed it); the two new files
+were copied verbatim. PR #652 stays draft, base `staging`. Closes MEH-559.
+
 ## 2026-05-23 — chore: skip Playwright E2E on Dependabot PRs
 
 LOW-RISK CI cost optimization (Issue A of the e2e.yml cost sweep). Added one
