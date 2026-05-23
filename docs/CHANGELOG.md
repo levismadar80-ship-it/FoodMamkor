@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: switch GitHub default branch to staging
+
+`chore`: GitHub repo default branch flipped from `main` → `staging` via
+Settings → General UI (manual change by Sapir). No code change, no PR —
+config-only at the repo level. PRs opened without an explicit target now
+default to `staging`, matching the documented `feature/* → staging → main`
+flow in DEPLOYMENT.md. Phase 0 verified all 5 CI workflows already trigger
+on both branches (`dependency-audit.yml:17`, `deploy.yml:51,53`,
+`i18n-icu-parity.yml:10`, `pr-checks.yml:13`, `skills-audit.yml:18`).
+Production deploy gate at `deploy.yml:130` (`refs/heads/main` only)
+unchanged — `main` remains production. Branch protection still absent on
+both branches (`gh api .../branches/main/protection` → 404) — tracked as
+follow-up.
+
 ### 2026-05-23 — MEH-679: תיקון הפניית OG image (jpg → png)
 
 `fix(MEH-679)`: כל ה-share cards ברשתות החברתיות (OpenGraph + Twitter) הפנו ל-`/og-image.jpg` — קובץ שגוי בגודל 106×40 שהיה זהה byte-for-byte ל-`logo.png` (לוגו "MEHAMEKOR" באנגלית, md5 `38dbcdd…`), כלומר תוכן PNG עם סיומת `.jpg` מטעה. הוחלפו 21 הפניות ב-18 קבצים ל-`/og-image.png` — כרטיס השיתוף העברי הנכון (1200×630) שכבר היה ב-`frontend/public/` אך מעולם לא היה בשימוש. הקובץ המטעה `og-image.jpg` נמחק.

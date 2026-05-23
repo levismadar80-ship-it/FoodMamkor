@@ -3,6 +3,22 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — GitHub default branch: main → staging
+
+שונה ידנית דרך GitHub UI (Settings → General → Default branch) ע"י ספיר.
+מטרה: PRs חדשים נפתחים אוטומטית מול `staging` במקום `main`, מסיר את ה-trap
+של "branches off main" (CC bug #24516) שתועד שוב ושוב ב-CHANGELOG.
+CI לא נפגע — כל workflow ב-`.github/workflows/` כבר מקשיב ל-`[staging, main]`
+(אומת ב-Phase 0 לפני השינוי: `dependency-audit.yml:17`, `deploy.yml:51,53`,
+`i18n-icu-parity.yml:10`, `pr-checks.yml:13`, `skills-audit.yml:18`).
+Production deploy gate ב-`deploy.yml:130` (`refs/heads/main` בלבד) נשאר ללא
+שינוי — `main` = production.
+
+### Follow-up
+- Branch protection rules (Rulesets) עדיין לא מוגדרים על `staging`/`main`
+  (`gh api .../branches/main/protection` → 404). ראי FEATURES.md:188.
+  Linear issue ייפתח בנפרד.
+
 ## 2026-05-23 — MEH-679: OG image reference fix (jpg → png)
 
 LOW-RISK. Direct follow-up to the MEH-677 logo investigation. Every social share card pointed at `/og-image.jpg` — a mislabeled 106×40 PNG byte-identical to `logo.png` (English "MEHAMEKOR" wordmark). Swapped 21 references across 18 files to `/og-image.png` (the correct 1200×630 Hebrew card, already in the repo but unused) and deleted the bogus `.jpg`.
