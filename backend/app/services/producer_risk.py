@@ -149,6 +149,12 @@ def _extract_json_object(raw: str) -> dict | None:
         text = _CODE_FENCE_OPEN_RE.sub("", text)
         text = _CODE_FENCE_CLOSE_RE.sub("", text).strip()
     # Slice to the outermost braces if prose surrounds the object.
+    # Known limitation: a fence with prose AFTER the closing ``` (e.g.
+    # ```json\n{...}\n```\ntrailing) isn't recovered — this branch is
+    # skipped because the post-fence text already starts with "{", so the
+    # embedded ``` breaks json.loads and we fail open to NULL (the
+    # contract). The "first 200 chars" warning in _call_anthropic will
+    # surface it; make this slice unconditional in a follow-up if it fires.
     if not text.startswith("{"):
         start = text.find("{")
         end = text.rfind("}")
