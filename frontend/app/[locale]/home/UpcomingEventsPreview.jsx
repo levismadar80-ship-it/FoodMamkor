@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Calendar } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 
@@ -25,7 +26,8 @@ export function UpcomingEventsPreview() {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y border-t border-border">
       <div className="flex items-baseline justify-between mb-8">
-        <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline font-bold text-site-text flex items-center gap-2" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+          <Calendar size={16} className="text-current" />
           {t("home.events.heading")}
         </h2>
         <Link href="/events" className="text-primary hover:underline text-sm">

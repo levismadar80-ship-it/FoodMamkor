@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Heart, MapPin } from "@phosphor-icons/react/ssr";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -44,14 +45,16 @@ export default async function MessagesPage({ params }) {
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           href="/map"
-          className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40 inline-flex items-center justify-center gap-1"
         >
+          <MapPin size={14} className="text-current" />
           {t("cta_map")}
         </Link>
         <Link
           href="/favorites"
-          className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium"
+          className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium inline-flex items-center justify-center gap-1"
         >
+          <Heart size={14} className="text-current" />
           {t("cta_favorites")}
         </Link>
       </div>

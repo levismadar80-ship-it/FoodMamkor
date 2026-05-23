@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-657: Emoji LOCK v2 (A+B+D4+E) — PR #818 ready for review
+
+Narrowed scope (94 of 176): A=48 strip, B=18 Phosphor icons, D4=26 do/don't
+→ bold markers, E=2 guidance rewrites. Phosphor (NOT Lucide — repo bans it;
+the original ticket's Lucide assumption was wrong). Emoji count he 176→79,
+en 175→78.
+
+### Status
+- Branch `feature/meh-657-emoji-removal-narrowed`; **draft PR #818** → staging.
+- Commit 1 (A+B+D4 + 11 component icon edits), commit 2 (E), commit 3 (this).
+- Synced with staging (#819/#820 MEH-675 + dead-code cleanup) before commit 3.
+- `npm run build` green (messages/page.js needed `@phosphor-icons/react/ssr`
+  — it's a Server Component; client Phosphor icons break RSC there).
+
+### Deferred (NOT in this PR — 75 emojis remain by design)
+- **C** (53 category/badge tags) → MEH-683 (hand-drawn glyphs; 6 Phosphor
+  gaps: 🥩🧀🍞🫒🥦🥛).
+- **D1** (6 WhatsApp/share payloads) → KEEP (LOCK v2 outbound exception).
+- **D2** (15 toasts) → MEH-685 (showToast icon+text API refactor).
+- **D3** (1 ICU plural, line ~2272) → MEH-684.
+
+### Key decisions
+- Lucide → Phosphor swap (repo rule). `messages/page.js` uses the `/ssr`
+  Phosphor entry (Server Component). `nav.onboarding.map` left strip-only —
+  it's a `text=` string prop in BottomNav, can't take an inline icon.
+- `sweep_tail.messages.cta_map`/`cta_favorites` are LIVE (in `messages/page.js`),
+  NOT dead code → replaced with MapPin/Heart icons.
+
 ## 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix (A2 — manual paste pending)
 
 Diagnosis CONFIRMED: `e2e.yml` `filter` job checkout (lines 41-43) lacks
