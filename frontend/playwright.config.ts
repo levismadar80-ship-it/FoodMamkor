@@ -21,9 +21,11 @@ export default defineConfig({
     navigationTimeout: 30_000,
     reducedMotion: "reduce",
     ignoreHTTPSErrors: true,
+    // MEH-484 — flake visibility: keep trace + video small by default,
+    // capture rich evidence only when a test fails or retries.
     screenshot: "only-on-failure",
     trace: "on-first-retry",
-    video: "off",
+    video: "retain-on-failure",
     // MEH-264 — Vercel Deployment Protection returns 403 "host_not_allowed"
     // on every preview URL until requests present this bypass header.
     // Secret lives in GitHub Actions → Secrets as

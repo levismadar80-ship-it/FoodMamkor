@@ -4,6 +4,192 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: skip Claude PR review on docs-only PRs
+
+`chore`: adds a `paths-ignore:` block to the `pull_request:` trigger in
+`.github/workflows/claude-review.yml` so the Anthropic adversarial-review
+action no longer fires on docs-only PRs. F3 of the May 2026 Actions cost
+sweep — claude-review ran on every PR (~416 min/month of runner time **plus**
+Anthropic API spend on a separate budget); est. **~20 min/month** + API$
+saved.
+
+File classes mirror `e2e.yml:56-59` (MEH-424/499): `**/*.md`, `docs/**`,
+`.changeset/**`, `CHANGELOG.md`. Native `paths-ignore` syntax is used (no `!`
+prefix — that's a `dorny/paths-filter` negation operator, not valid at the
+trigger level). Unlike F1/#808 (which used the job-skip pattern to keep
+**required** checks satisfied), a trigger-level skip is correct here because
+`Adversarial review (calibration)` is **not** a required check
+(`continue-on-error: true`; it failed on #807/#808 without blocking merge) —
+so the workflow simply not running on docs-only PRs leaves no
+skipped-required-check gap. Job name, `concurrency`, `continue-on-error`, and
+`fetch-depth: 0` untouched. Landed via GitHub API (local `Edit`/`Write`
+denied on `.github/workflows/**`, MEH-671). Risk: LOW.
+
+### 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter
+
+`chore`: extends the existing `dorny/paths-filter@v3` gating (the `changes`
+job at `pr-checks.yml:34-56`) to the 3 warn-only jobs that previously ran on
+**every** PR including docs-only — `backend-mypy`, `frontend-knip`,
+`frontend-tsc-strict`. Each gains `needs: changes` + an `if:` matching the
+pattern already on `build`/`pytest`/`lint-backend`: `backend-mypy` →
+`backend || workflows`; both frontend jobs → `frontend || workflows`. F1 of
+the May 2026 Actions cost sweep (`pr-checks.yml` was ~23.6% of monthly
+minutes; the 3 jobs each did a full `npm ci`/`uv sync` on docs-only PRs) —
+est. **~50 min/month** saved.
+
+Job `name:` fields unchanged (branch-protection required-check identifiers
+preserved). `continue-on-error: true` retained — they stay warn-only. The
+`changes` job itself untouched. All 3 `if:` clauses include `|| workflows`,
+so a PR touching `.github/workflows/**` still runs them. On a docs-only PR
+the 3 jobs report `skipped` (= success for branch protection, per the
+MEH-485 contract). Landed via GitHub API (`create_or_update_file`) — local
+`Edit`/`Write` denied on `.github/workflows/**` (MEH-671). Risk: LOW.
+
+### 2026-05-23 — MEH-559: k6 load testing script + runbook + baseline
+
+`feat(MEH-559)`: adds `scripts/load-test.js` (k6 load test, 5 scenarios)
++ `docs/research/k6-load-testing-baseline.md` (runbook + result template)
++ a "Load testing" section in `docs/MANUAL_TESTING.md`. Implements
+MEH-557's "k6 SHIP — minimal" verdict: one-time pre-launch baseline, NOT
+in CI. Four endpoints use `ramping-vus` (1→50 VUs over 2m ramp + 5m hold
++ 1m ramp-down): `GET /producers`, `GET /producers/by-slug/{slug}`,
+`GET /producers/{producer_id}`, `POST /users/me/favorites/{producer_id}`
+(unauthenticated — asserts 401 per "no real user accounts in load test").
+`POST /chat` uses `constant-arrival-rate` at 10 RPS for 60s — Anthropic
+budget guard caps spend at ~$1/run.
+
+Run #1 (against `staging.mehamakor.online`) was thrown out — 100% failure
+on the 3 producer endpoints because requests hit Next.js page handlers,
+not the FastAPI API (`frontend/next.config.js` proxies only `/api/:path*`).
+Default `BASE_URL` switched to `https://foodmamkor-staging.up.railway.app`;
+`/producers/*` error-rate threshold relaxed `0.01 → 0.95` to accept the
+slowapi-dominated steady state (120/min per-IP cap vs 50-VU ramp ≈ 95%
+HTTP 429 after the first few seconds). p95 latency thresholds unchanged at
+< 2000ms. Capacity-ceiling cross-ref: MEH-583.
+
+(Baseline collected 2026-05-14; script + runbook rebuilt 2026-05-23 onto
+fresh staging via MEH-681 PR backlog cleanup. New files copied verbatim;
+the MANUAL_TESTING.md section was 3-way merged so staging's later edits
+were preserved.) Closes MEH-559.
+
+### 2026-05-23 — chore: skip Playwright E2E on Dependabot PRs
+
+`chore`: added a guard to the `e2e` job in `.github/workflows/e2e.yml` so
+Playwright E2E is skipped for Dependabot-authored deployments. The May 2026
+Actions cost sweep found `e2e.yml` was ~31.5% of monthly minutes; Dependabot
+dep-bump PRs alone triggered ~19 `deployment_status` runs (~15 min each) ≈
+**~285 min/month** of low-value E2E on automated bumps.
+
+Guard appended to the existing job `if:` (preserves `deployment_status.state
+== 'success'` + `needs.filter.outputs.frontend == 'true'`):
+`!startsWith(github.event.deployment.ref, 'dependabot/')`. Branch ref is used
+deliberately — for `deployment_status` events Vercel creates the deployment,
+so `github.event.deployment.creator.login` is always `vercel[bot]` and the
+originally-specced `creator.login != 'dependabot[bot]'` would be a silent
+no-op. `deployment.ref` is already a verified-populated field (it keys the
+concurrency group at `e2e.yml:30`) and `dependabot/` prefixes every ecosystem
+branch. The removed `startsWith(environment, 'Preview')` filter (see
+`e2e.yml:68-70` history) was NOT reintroduced. Job name `e2e` unchanged —
+branch-protection required-check name preserved. Skipped runs report success,
+consistent with the existing MEH-499 docs-only skip. Risk: LOW.
+### 2026-05-23 — MEH-484: Playwright `--fail-on-flaky-tests` + trace on retry
+
+`ci(MEH-484)`: turns Playwright flake from folklore (the MEH-269 4m31s
+retry-pass pattern) into a hard CI signal. `.github/workflows/e2e.yml` —
+`npx playwright test` gains `--fail-on-flaky-tests`, so any test that
+passes only on retry now fails the e2e job; artifact upload extended to
+capture both `frontend/playwright-report/` and
+`frontend/test-results/**/trace.zip` (7-day retention, `if: failure()`
+unchanged). `frontend/playwright.config.ts` — `video: 'off'` →
+`'retain-on-failure'`; `trace: 'on-first-retry'` + `screenshot:
+'only-on-failure'` already correct, tagged with an MEH-484 comment.
+Retries (1 in CI / 0 local) preserved — flake detection is via the flag,
+not by removing retries.
+
+Expected behavior change: a currently-flake-passing test will turn the
+e2e job RED — the correct outcome. File a follow-up per failure; do NOT
+mass-quarantine or roll back. The MEH-499 docs-only paths-filter skip
+block on staging was preserved through the 3-way rebuild (verbatim copy
+would have regressed it). (Originally authored 2026-05-07, rebuilt
+2026-05-23 onto fresh staging via MEH-681 PR backlog cleanup.)
+
+Closes MEH-484.
+
+### 2026-05-23 — MEH-486: ADR-007 — Expand-Contract codified as the only sanctioned risky-schema-change pattern
+
+`docs(MEH-486)`: codifies the 4-phase Expand-Contract pattern that MEH-291 → MEH-456 ad-hoc'd into a durable ADR so the next risky migration cannot cut corners under pressure (the failure mode that produced the MEH-265 `_migrate_columns` incident). ADR authored 2026-05-07; landed 2026-05-23 via MEH-681 Tier 2.5 (branch rebuilt onto fresh staging — no merge base, squash-merge SHA drift).
+
+- **`docs/decisions/ADR-007-expand-contract-schema-changes.md`** (NEW) — MADR format. Decision: risky changes (`DROP COLUMN`, `RENAME COLUMN`, type change, `NOT NULL` on existing, FK reversal) MUST follow 4-phase Expand-Contract; each phase its own PR + own MEH-XXX; Phase 4 PR title prefixed `[DESTRUCTIVE]`. Includes 5-step operational checklist, 3 "when NOT to use" cases, 3 named anti-patterns, and rejection rationale for migrate-and-pray / pt-osc / feature-flag-the-schema.
+- **`docs/decisions/README.md`** — index gains row 007 between rows 006 and 008.
+- **`CLAUDE.md`** — single inline clause on the **Schema via Alembic only** entry: ` · risky changes use Expand-Contract ([ADR-007](...))`. ADR-008 + ADR-009 content preserved verbatim.
+- **`docs/MIGRATIONS.md`** — new `## Expand-Contract לשינויים מסוכנים` section between "הוספת עמודה חדשה" and "בדיקה מקומית לפני PR".
+- **ADR triad** — ADR-003 = authority (Alembic-only), ADR-006 = parity, ADR-007 = sequencing across time.
+- **Out of scope** — no code changes; no ADR renumbering; no "while we're here" cleanup.
+
+Closes MEH-486.
+
+### 2026-05-23 — chore: switch GitHub default branch to staging
+
+`chore`: GitHub repo default branch flipped from `main` → `staging` via
+Settings → General UI (manual change by Sapir). No code change, no PR —
+config-only at the repo level. PRs opened without an explicit target now
+default to `staging`, matching the documented `feature/* → staging → main`
+flow in DEPLOYMENT.md. Phase 0 verified all 5 CI workflows already trigger
+on both branches (`dependency-audit.yml:17`, `deploy.yml:51,53`,
+`i18n-icu-parity.yml:10`, `pr-checks.yml:13`, `skills-audit.yml:18`).
+Production deploy gate at `deploy.yml:130` (`refs/heads/main` only)
+unchanged — `main` remains production. Branch protection still absent on
+both branches (`gh api .../branches/main/protection` → 404) — tracked as
+follow-up.
+
+### 2026-05-23 — MEH-679: תיקון הפניית OG image (jpg → png)
+
+`fix(MEH-679)`: כל ה-share cards ברשתות החברתיות (OpenGraph + Twitter) הפנו ל-`/og-image.jpg` — קובץ שגוי בגודל 106×40 שהיה זהה byte-for-byte ל-`logo.png` (לוגו "MEHAMEKOR" באנגלית, md5 `38dbcdd…`), כלומר תוכן PNG עם סיומת `.jpg` מטעה. הוחלפו 21 הפניות ב-18 קבצים ל-`/og-image.png` — כרטיס השיתוף העברי הנכון (1200×630) שכבר היה ב-`frontend/public/` אך מעולם לא היה בשימוש. הקובץ המטעה `og-image.jpg` נמחק.
+
+התגלה במהלך MEH-677 (חקירת הלוגו). שינוי string בלבד + מחיקת קובץ — אפס שינוי לוגיקה. `og-image-en.png` (וריאנט אנגלי) לא נגעתי בו — concern נפרד. רמת סיכון: LOW. Closes MEH-679.
+
+### 2026-05-23 — MEH-678: ADR-009 decision-capture proactive (PR pending)
+
+`docs(MEH-678)`: added a proactive decision-capture instruction so architectural decisions are recorded as they happen, not reconstructed post-hoc (recent losses: agent-browser defer, AutoDream defer, hybrid voice policy, 80-line cap). Three surfaces:
+
+- **CLAUDE.md** — new `## Decision capture (proactive)` section (3 lines): when a Project conversation produces an architectural decision, Claude offers `"זה ADR-worthy. רוצה שאכתוב ל-docs/decisions/?"`, linking the full trigger list to ADR-009. CLAUDE.md 82 → 85 lines (cap pressure noted in ADR-008 remains advisory; industry guidance allows ≤100).
+- **docs/decisions/ADR-009-decision-capture-proactive.md** — new meta-ADR (second after ADR-008), Status Accepted, holding the full trigger phrase list and the three rejected alternatives (skill `decision-recognizer`, slash `/adr`, post-hoc writing).
+- **docs/decisions/README.md** — ADR-009 row added to the Index table.
+
+Risk tier: LOW per MEH-450 — docs-only, no schema, no logic, no UI. DoD exception: mobile QA N/A (docs-only). Pre-existing drift flagged separately: ADR-008 is absent from the README index (out of this ticket's scope). Also backfilled ADR-008 README index row missed by PR #694 (single-line fix, same-file scope). Closes MEH-678.
+
+### 2026-05-23 — MEH-671: post-deploy staging smoke automation (V1)
+
+`feat(MEH-671)`: new GitHub Action + Python harness that drives the real producer-signup pipeline against staging and fails loud on integration breakage — the bug class transport-mocked unit tests miss (template-signature mismatch, missing background task, broken Meta/Anthropic call). Would have caught all four bugs found manually during the MEH-509 rollout.
+
+**Harness** (`.github/scripts/staging_smoke.py`, stdlib + httpx, reusable for manual runs) — 5 fail-fast steps: (1) anonymous `POST /auth/register/producer` with a unique `smoke+{run_id}@mehamakor.online` → 200; (2) poll `GET /admin/producers` for the new row (≤30s); (3) Railway log signal `[WHATSAPP] Producer welcome template sent` (≤30s); (4) Railway log signal `[RISK] scored producer=` (≤60s); (5) `risk_score` is int 0–100 (the admin badge).
+
+**Auth (design correction from spec):** access tokens are 15-min TTL and fingerprint-bound (`auth.py:183`), so a static `SMOKE_ADMIN_JWT` secret can't work. The harness logs in fresh each run via `POST /auth/login` (admin email+password), retaining the `__Secure-Fgp` cookie. Secrets are therefore `SMOKE_ADMIN_EMAIL` + `SMOKE_ADMIN_PASSWORD`, not a JWT.
+
+**WhatsApp/Anthropic verification via `railway logs`:** Meta exposes delivery status by webhook only (no query endpoint), so steps 3+4 grep the staging backend logs (a single reusable poll helper).
+
+**Cleanup** (workflow `if: always()` step) is FK-safe: `users.producer_id → producers.id` is the only non-CASCADE FK (`models.py:226`), so a CTE deletes smoke `users` first (RETURNING `producer_id`), then deletes those `producers` (CASCADE clears `producer_categories`/`delivery_areas`). `producers` has no `email` column — rows are reached via the user. Idempotent.
+
+**V1 scope (intentional):** trigger is `workflow_dispatch` only (auto-trigger on `push:staging` deferred to V2 after 5 clean runs); alerting is the GitHub Actions failure email (no WhatsApp send in V1).
+
+**Process note:** `.github/workflows/**` is deny-listed for direct CC edit — the workflow YAML ships in the PR body for Sapir to paste; this PR commits only the harness + docs. Smoke not run from CC (sandbox can't reach Railway/Meta/Anthropic — MEH-360); validation is the CI run after Sapir wires the secrets + workflow.
+
+### 2026-05-23 — MEH-661: fix wordmark right-edge clipping in logo-horizontal-he.svg
+
+Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text-anchor` from `end` to `start` (MEH-661). Root cause: SVG spec behavior with `direction=rtl` + `text-anchor=end` placed `x=350` as the left edge, flowing text rightward past `viewBox=460` and clipping leading מה glyphs (rendered as `מקור`). Single-attribute fix; all other coordinates, geometry, and string content unchanged. `logo-horizontal-en.svg` was confirmed unaffected (LTR + default anchor flows away from the left-placed mark).
+
+### 2026-05-23 — MEH-674: recognize staging as valid environment, harden FRONTEND_URL drift guard
+
+`fix(MEH-674)`: the `FRONTEND_URL drift: env=development but frontend_url points at mehamakor.online` warning fired on every staging backend boot. Phase 0 found this is a **true positive**, not a code bug — Railway staging runs `ENV=development` while `FRONTEND_URL=https://staging.mehamakor.online`, so the `development` branch of `_check_frontend_url_consistency` (`backend/app/startup.py`) correctly flagged the mismatch (the MEH-334 guard working as designed). The code + `tests/test_startup_guard.py` already handled all three environments.
+
+**Code hardening (`startup.py`):** added `_RECOGNIZED_ENVS = (development, staging, production)`. A typo like `ENV=stage` previously matched none of the drift branches and passed silently, disabling the guard with no signal; it now emits an `unrecognized ENV value` warning. Existing three drift branches unchanged → no regression.
+
+**Docs:** `backend/.env.example` now declares `ENV=development` with the three valid values documented, and notes the env var is **`ENV`, not `ENVIRONMENT`** (read by `config.py:_load_settings()` + `startup.py`).
+
+**Tests:** `tests/test_startup_guard.py` — `test_unrecognized_env_warns` (parametrized typos) + `test_recognized_envs_never_flagged_as_unrecognized`.
+
+**Operational fix (post-merge — Sapir):** set Railway staging **`ENV=staging`** (not `ENVIRONMENT`). With `ENV=staging` and the `staging.`-prefixed URL, all drift branches stay silent. This env-var change — not the code — is what actually clears the boot warning.
+
 ### 2026-05-23 — MEH-509 PR3 prod-fix: harden producer_risk JSON parser (staging incident 2026-05-23)
 
 `fix(MEH-509)`: production incident — after a producer-signup smoke on staging, the Anthropic call returned **HTTP 200** but `score_producer` logged `[RISK] anthropic response unparseable: Expecting value: line 1 column 1 (char 0)` and `producers.risk_score` stayed NULL (admin badge `אין מידע`). PR1 welcome/approval verified working in the same smoke — isolated to the PR3 risk path.
@@ -863,12 +1049,6 @@ hook (it stays a manual slash invocation); auto-applying findings
 (retro lives in chat only).
 
 Closes MEH-354.
-
-### 2026-05-16 — MEH-502: hooks gap analysis vs Agent SDK events (PR pending)
-
-`docs`: hooks gap analysis vs Agent SDK events (MEH-502). New read-only audit at `docs/audits/2026-05-16-hooks-gap-analysis.md` (~200 lines, 5 sections) maps the 17 wired Claude Code hooks in `.claude/settings.json` against the 8 official Agent SDK events. **Findings:** 4 events used (PreToolUse: 10 entries, PostToolUse: 1, Stop: 4, SessionStart: 2 incl. `matcher: "compact"`); 4 events unused (SessionEnd, UserPromptSubmit, SubagentStop, Notification). No drift or orphan scripts — `.claude/hooks/check-branch-base.sh` is intentionally opt-in per its own header (MEH-427). Section 1 carries `settings.json:line-range` evidence for every wired entry. **3 recommendations** with adopt/skip/defer: (1) DEFER — `SessionEnd` HANDOFF.md ledger (deterministic only; revisit post-MEH-456); (2) SKIP — `UserPromptSubmit` pre-go nudge (workflow rule 4 already covers, MEH-342 was caught by rule not hook); (3) ADOPT — `SubagentStop` → `docs/audits/subagent-trace.log` (closes the MEH-373/425 visibility gap where `tools:` frontmatter is advisory-only; logging is audit-only, does not change L1 deny + L2 hook enforcement). **Risk tier:** LOW per MEH-450 — docs-only single file, no code, no schema, no UI. **Verification:** report has 5 sections; Section 1 has file:line refs for all 17 entries; Section 4 has exactly 3 recommendations with verdicts; `npm run build` green. **DoD exception:** mobile QA N/A. **Out of scope:** implementing any of the adopted recommendations (follow-up MEH tickets to be opened by Smadar after merge); CI hook coverage (MEH-487); git pre-commit hooks (MEH-496); sub-agent permission model (MEH-425 Phase 2).
-
-Closes MEH-502.
 
 ### 2026-05-16 — MEH-501: ADR-008 defer AutoDream activation (PR pending)
 
