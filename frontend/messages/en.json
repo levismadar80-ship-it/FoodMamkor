@@ -502,6 +502,18 @@
       "og_title": "Reset your password",
       "og_description": "Enter your email and we'll send you a password reset link."
     },
+    "reset_password": {
+      "title": "Set a new password | Mehamakor",
+      "description": "Choose a new, secure password for your Mehamakor account.",
+      "og_title": "Set a new password",
+      "og_description": "Choose a new password and sign back in to your account."
+    },
+    "verify_email": {
+      "title": "Verify your email | Mehamakor",
+      "description": "Verifying your email address to activate your Mehamakor account.",
+      "og_title": "Verify your email",
+      "og_description": "Confirming your email finishes setting up your Mehamakor account."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
