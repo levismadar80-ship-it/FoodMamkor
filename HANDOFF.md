@@ -3,6 +3,21 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-678 ADR-009 + #804 backfill (end-of-day close)
+
+LOW-RISK docs-only. End-of-day consolidation for the MEH-678 work shipped today; supersedes the WIP note below — the ADR-008 drift it flagged is now closed by PR #804. MEH-678 was created today (Quick template 07, LOW risk per MEH-450, labels `tooling` + `stage-7-prelaunch`).
+
+### Shipped
+- **PR #803 merged** — proactive decision-capture instruction. `CLAUDE.md` 82 → 87 lines, new `## Decision capture (proactive)` section carrying the verbatim Hebrew offer `"זה ADR-worthy. רוצה שאכתוב ל-docs/decisions/?"`. New meta-ADR `docs/decisions/ADR-009-decision-capture-proactive.md` (≤30 lines, `_TEMPLATE.md`-compliant, second meta-ADR after ADR-008) holds the full trigger list — kept out of CLAUDE.md to respect the ADR-008 size-cap note. Plus README index ADR-009 row + CHANGELOG + HANDOFF entries.
+- **PR #804 merged (`fd27b18`)** — single-line follow-up backfilling the ADR-008 README index row, missed by PR #694 (MEH-501) when ADR-008 merged 2026-05-20. Closes that #694 side-effect index gap.
+
+### Final state
+- `docs/decisions/README.md` index: **001-006, 008, 009** (ADR-007 absent until MEH-486 ships).
+- MEH-678 closed via #803/#804; the post-merge comment is already on the Linear issue.
+
+### Earlier today (carry-forward, no new detail)
+- ~9 tickets closed earlier in the day are recorded in the sections below and prior HANDOFF entries — not re-detailed here.
+
 ## 2026-05-23 — GitHub default branch: main → staging
 
 שונה ידנית דרך GitHub UI (Settings → General → Default branch) ע"י ספיר.
