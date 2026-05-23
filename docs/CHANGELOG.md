@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-661: fix wordmark right-edge clipping in logo-horizontal-he.svg
+
+Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text-anchor` from `end` to `start` (MEH-661). Root cause: SVG spec behavior with `direction=rtl` + `text-anchor=end` placed `x=350` as the left edge, flowing text rightward past `viewBox=460` and clipping leading מה glyphs (rendered as `מקור`). Single-attribute fix; all other coordinates, geometry, and string content unchanged. `logo-horizontal-en.svg` was confirmed unaffected (LTR + default anchor flows away from the left-placed mark).
+
 ### 2026-05-23 — MEH-674: recognize staging as valid environment, harden FRONTEND_URL drift guard
 
 `fix(MEH-674)`: the `FRONTEND_URL drift: env=development but frontend_url points at mehamakor.online` warning fired on every staging backend boot. Phase 0 found this is a **true positive**, not a code bug — Railway staging runs `ENV=development` while `FRONTEND_URL=https://staging.mehamakor.online`, so the `development` branch of `_check_frontend_url_consistency` (`backend/app/startup.py`) correctly flagged the mismatch (the MEH-334 guard working as designed). The code + `tests/test_startup_guard.py` already handled all three environments.
