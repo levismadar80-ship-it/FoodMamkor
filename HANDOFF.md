@@ -3,6 +3,29 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-686 Phase γ commit 10: ADR-017 JWT supersedence shipped
+
+`docs(MEH-686)`: Y1 audit finding closed via ADR-017 supersedence of ADR-001.
+Branch `feature/meh-686-phase-g-adr-017-jwt-supersedence`. 5 files: ADR-017
+NEW, ADR-001 status line, README.md (2 row edits), CHANGELOG.md, HANDOFF.md.
+
+Verified the Y1 claim against code before writing: access token in
+localStorage (`frontend/lib/auth-context.js:93`, `frontend/lib/api.js:12`),
+refresh token in HttpOnly cookie (ADR-001 body line 17). Title was the
+misleading part, not the body.
+
+Risk tier: GREEN. End-to-end authority. No WAIT gates.
+
+Sequence completed: Phase β foundation (#827, merged) → Phase γ 9 ADRs (#828,
+rebase-merged) → Phase γ commit 10 ADR-017 (this PR). MEH-686 Phases β + γ
+both shipped.
+
+Next: Linear MCP updates (Sapir, orchestrator side via Claude.ai) — Cancel
+MEH-656 + MEH-665, closing comments on MEH-655 + MEH-472. Then Phases
+δ/ε/ζ/η in future sessions per Migration Order.
+
+Pre-design-upload Checklist: items 1, 3, 4 ready to mark complete post-merge.
+
 ## 2026-05-23 — MEH-686 Phase β: foundation commit shipped (PR pending)
 
 `docs(MEH-686)`: Phase β atomic commit landed on
