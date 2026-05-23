@@ -3,6 +3,21 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-679: OG image reference fix (jpg → png)
+
+LOW-RISK. Direct follow-up to the MEH-677 logo investigation. Every social share card pointed at `/og-image.jpg` — a mislabeled 106×40 PNG byte-identical to `logo.png` (English "MEHAMEKOR" wordmark). Swapped 21 references across 18 files to `/og-image.png` (the correct 1200×630 Hebrew card, already in the repo but unused) and deleted the bogus `.jpg`.
+
+### Completed
+- Branch `feature/meh-679-og-image-fix` off `origin/staging`.
+- 18 files swapped (`layout.js` `OG_IMAGE` constant + 17 `page.js` `images:` literals); `og-image.jpg` deleted. `git diff` confirms only og-image lines changed (21 ins / 21 del).
+- `npm run build` green (verified in-sandbox after `npm ci`).
+- CHANGELOG + this file. PR opened (draft) against `staging`.
+
+### Open / flagged
+- **`og-image-en.png` unused** — the English 1200×630 card exists but nothing references it; `/en` locale now inherits the Hebrew `og-image.png` (previously the English-logo `.jpg`). Per-locale OG selection is out of scope — separate ticket.
+- **English wordmark on Header/Footer/error/404** (`logo.png`) flagged in MEH-677, deferred (MEH-680, blocked on Suez One font availability).
+- Historical `og-image.jpg` mentions remain in `docs/CHANGELOG.md` (~L3672/L3778) and `docs/archive/FINAL_AUDIT.md` — append-only logs, intentionally not rewritten.
+
 ## 2026-05-23 — MEH-678: ADR-009 decision-capture proactive
 
 LOW-RISK docs-only. Added a proactive instruction so architectural decisions get recorded in real time instead of post-hoc. Three surfaces touched: `CLAUDE.md` (new `## Decision capture (proactive)` section, 82 → 85 lines), `docs/decisions/ADR-009-decision-capture-proactive.md` (new meta-ADR, second after ADR-008), `docs/decisions/README.md` (Index row).

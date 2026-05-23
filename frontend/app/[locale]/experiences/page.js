@@ -12,7 +12,7 @@ export const metadata = {
     type: "website",
     siteName: BRAND_NAME,
     locale: "he_IL",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.png"],
   },
   alternates: { canonical: "/experiences" },
 };

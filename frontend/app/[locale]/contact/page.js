@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.jpg"],
+      images: ["/og-image.png"],
     },
     alternates: buildAlternates("/contact", locale),
     // MEH-641: auth chrome — not indexable, but hreflang preserved for cross-locale signal
