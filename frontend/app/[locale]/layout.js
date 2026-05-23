@@ -27,7 +27,7 @@ import {
 const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
 const SITE_DESCRIPTION =
   "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
-const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 // MEH-476 PR 3b1: ACTIVE for all locale-stable routes (no headers() reads).
 // PR 3b2: every public route has per-page generateMetadata; this layout-level

@@ -14,7 +14,7 @@ export const metadata = {
     siteName: BRAND_NAME,
     locale: "he_IL",
     // Next.js replaces openGraph object on override — re-declare image.
-    images: ["/og-image.jpg"],
+    images: ["/og-image.png"],
   },
   alternates: { canonical: "/events" },
 };
