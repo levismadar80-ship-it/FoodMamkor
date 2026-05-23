@@ -496,6 +496,36 @@
       "og_title": "Search Mehamakor",
       "og_description": "Find local food businesses and real food easily."
     },
+    "forgot_password": {
+      "title": "Reset your password | Mehamakor",
+      "description": "Forgot your password? Enter your email and we'll send a reset link for your Mehamakor account.",
+      "og_title": "Reset your password",
+      "og_description": "Enter your email and we'll send you a password reset link."
+    },
+    "reset_password": {
+      "title": "Set a new password | Mehamakor",
+      "description": "Choose a new, secure password for your Mehamakor account.",
+      "og_title": "Set a new password",
+      "og_description": "Choose a new password and sign back in to your account."
+    },
+    "verify_email": {
+      "title": "Verify your email | Mehamakor",
+      "description": "Verifying your email address to activate your Mehamakor account.",
+      "og_title": "Verify your email",
+      "og_description": "Confirming your email finishes setting up your Mehamakor account."
+    },
+    "favorites": {
+      "title": "My favorites | Mehamakor",
+      "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
+      "og_title": "My favorites on Mehamakor",
+      "og_description": "The businesses and products you've saved, waiting in one place."
+    },
+    "upgrade": {
+      "title": "Upgrade to premium | Mehamakor",
+      "description": "Compare plans for business owners on Mehamakor — free vs premium: unlimited products, more images, stats, and more.",
+      "og_title": "Upgrade to premium on Mehamakor",
+      "og_description": "Showcase your business in full — unlimited products, image gallery, and stats."
+    },
     "map": {
       "title": "Map of local food businesses — Mehamakor",
       "description": "Find local food businesses on the map. Real, fresh, healthy food near you.",
