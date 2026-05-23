@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-657: Emoji LOCK v2 — remove/replace 94 emoji instances
+
+- 🧹 MEH-657: Emoji LOCK v2 enforcement on he.json + en.json. Categories
+  A (48, strip decorative), B (18, → Phosphor icons inline at JSX render
+  sites), D4 (26, do/don't ✅/❌ → bold `**כן:**`/`**לא:**` markers + ℹ️/↗/📋
+  handling), E (2, rewrite self-referential emoji-guidance copy). Phosphor
+  (not Lucide — repo bans Lucide; `components/CLAUDE.md`). Emoji count he
+  176→79, en 175→78. The remaining 75 (C category tags / D1 WhatsApp /
+  D2 toasts / D3 ICU plural) are intentionally untouched — deferred to
+  MEH-683 (C, hand-drawn glyphs), MEH-684 (D3), MEH-685 (D2 toast API).
+
 ### 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix
 
 - 🐛 MEH-675: תיקון e2e.yml — fetch-depth: 0 ב-actions/checkout כדי שpaths-filter יעבוד ב-deployment_status events
