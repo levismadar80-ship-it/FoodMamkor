@@ -30,6 +30,15 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [007](./ADR-007-expand-contract-schema-changes.md) | Schema changes use Expand-Contract pattern | Accepted | 2026-05-07 | MEH-486 |
 | [008](./ADR-008-autodream-defer.md) | Defer AutoDream activation on Claude Code | Accepted | 2026-05-16 | MEH-501 |
 | [009](./ADR-009-decision-capture-proactive.md) | Decision capture (proactive instruction) | Accepted | 2026-05-23 | MEH-678 |
+| [010](./ADR-010-pricing-model-v2.md) | Pricing model v2.0 — six LOCKs and four hypothesis options | Accepted | 2026-05-23 | MEH-686 |
+| [011](./ADR-011-tagline-locked.md) | Tagline locked — 14-word canonical version | Accepted | 2026-05-23 | MEH-686 |
+| [012](./ADR-012-logo-watt-4phase.md) | Logo design — Watt 4-phase method | Accepted | 2026-05-23 | MEH-686 |
+| [013](./ADR-013-icon-strategy-three-tier.md) | Icon strategy — three-tier (Phosphor exclusive for Tier 1) | Accepted | 2026-05-23 | MEH-686 |
+| [014](./ADR-014-voice-rules-hebrew-hybrid.md) | Voice rules — Hebrew Hybrid (UI gerund / brand feminine) | Accepted | 2026-05-23 | MEH-686 |
+| [015](./ADR-015-strategic-cancellations-pattern.md) | Strategic-framework cancellation pattern (2026-05-14 cohort) | Accepted | 2026-05-23 | MEH-686 |
+| [016](./ADR-016-risk-tier-nomenclature.md) | Risk-tier nomenclature — GREEN/YELLOW/RED (3-tier) | Accepted | 2026-05-23 | MEH-686 |
+| [018](./ADR-018-hero-direction-hierarchy.md) | Hero direction hierarchy — Direction A canonical, Direction B secondary | Accepted | 2026-05-23 | MEH-686 |
+| [019](./ADR-019-component-state-tokens.md) | Component state tokens — opacity-on-cream + --fg-muted only | Accepted | 2026-05-23 | MEH-686 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated
