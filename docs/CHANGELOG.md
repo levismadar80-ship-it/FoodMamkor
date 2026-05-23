@@ -27,6 +27,19 @@ would have regressed it). (Originally authored 2026-05-07, rebuilt
 
 Closes MEH-484.
 
+### 2026-05-23 — MEH-486: ADR-007 — Expand-Contract codified as the only sanctioned risky-schema-change pattern
+
+`docs(MEH-486)`: codifies the 4-phase Expand-Contract pattern that MEH-291 → MEH-456 ad-hoc'd into a durable ADR so the next risky migration cannot cut corners under pressure (the failure mode that produced the MEH-265 `_migrate_columns` incident). ADR authored 2026-05-07; landed 2026-05-23 via MEH-681 Tier 2.5 (branch rebuilt onto fresh staging — no merge base, squash-merge SHA drift).
+
+- **`docs/decisions/ADR-007-expand-contract-schema-changes.md`** (NEW) — MADR format. Decision: risky changes (`DROP COLUMN`, `RENAME COLUMN`, type change, `NOT NULL` on existing, FK reversal) MUST follow 4-phase Expand-Contract; each phase its own PR + own MEH-XXX; Phase 4 PR title prefixed `[DESTRUCTIVE]`. Includes 5-step operational checklist, 3 "when NOT to use" cases, 3 named anti-patterns, and rejection rationale for migrate-and-pray / pt-osc / feature-flag-the-schema.
+- **`docs/decisions/README.md`** — index gains row 007 between rows 006 and 008.
+- **`CLAUDE.md`** — single inline clause on the **Schema via Alembic only** entry: ` · risky changes use Expand-Contract ([ADR-007](...))`. ADR-008 + ADR-009 content preserved verbatim.
+- **`docs/MIGRATIONS.md`** — new `## Expand-Contract לשינויים מסוכנים` section between "הוספת עמודה חדשה" and "בדיקה מקומית לפני PR".
+- **ADR triad** — ADR-003 = authority (Alembic-only), ADR-006 = parity, ADR-007 = sequencing across time.
+- **Out of scope** — no code changes; no ADR renumbering; no "while we're here" cleanup.
+
+Closes MEH-486.
+
 ### 2026-05-23 — chore: switch GitHub default branch to staging
 
 `chore`: GitHub repo default branch flipped from `main` → `staging` via
