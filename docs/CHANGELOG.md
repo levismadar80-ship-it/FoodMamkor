@@ -4,6 +4,32 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-686 Phase β: foundation commit (CONTEXT.md + BRAND.md + ADR index)
+
+`docs(MEH-686)`: Phase β of documentation consolidation epic. Adds two new
+canonical SoT files following the PrestaShop AGENTS.md / CONTEXT.md pattern
+(March 2026 industry standard). Tool-specific files (CLAUDE.md,
+personal-preferences-v2.md, future IDE configs) become thin pointers to
+docs/CONTEXT.md going forward.
+
+Files added:
+- `docs/CONTEXT.md` (199 lines) — AI-agnostic apex SoT. DNA, stack, brand
+  locks, Truth Hierarchy, working model, Skeptic Mode, connector verification
+  (4-layer), memory hygiene. Replaces 3 stale copies of
+  `00-mehamakor-context.md` (which remain in Drive pending Phase ζ cleanup).
+- `docs/BRAND.md` (144 lines) — brand narrative one-pager. Positioning,
+  tagline (per ADR-011), LOCKs, voice (per ADR-014), inspiration index,
+  design patterns canonical home (per BRAND.md §6 pattern index).
+
+Files updated:
+- `docs/decisions/README.md` — 9 new rows in the Index table (ADR-010 through
+  ADR-019, excluding ADR-017 which lands in Phase γ commit 10 as a
+  supersedence of ADR-001).
+
+Risk tier: GREEN per ADR-016 (docs-only, no schema, no code, no CI behavior
+change). Phase γ (next): 9 atomic per-ADR commits + ADR-017 supersedence of
+ADR-001. Single PR with rebase-and-merge strategy. Closes MEH-686 partial.
+
 ### 2026-05-23 — chore: remove orphan doc artifacts
 
 `chore`: **Removed** orphan doc artifacts — `docs/wave-5-scan.json` (15,344
