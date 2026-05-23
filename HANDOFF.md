@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-484: Playwright fail-on-flaky (rebuilt via MEH-681)
+
+`ci(MEH-484)` — landed via the MEH-681 PR backlog cleanup. Original work
+authored 2026-05-07 (draft PR #539); rebuilt today onto fresh `staging`
+because the branch had no merge base with current staging (squash-merge
+SHA drift). Two substantive files: `.github/workflows/e2e.yml` gains
+`--fail-on-flaky-tests` + trace.zip artifact capture;
+`frontend/playwright.config.ts` flips `video: 'off'` →
+`'retain-on-failure'`. Rebuild used a 3-way cherry-pick (not verbatim
+copy) so the MEH-499 docs-only paths-filter skip block that landed on
+staging after 2026-05-07 was preserved. PR #539 stays draft, base
+`staging`. Closes MEH-484.
+
 ## 2026-05-23 — GitHub default branch: main → staging
 
 שונה ידנית דרך GitHub UI (Settings → General → Default branch) ע"י ספיר.

@@ -4,6 +4,29 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-484: Playwright `--fail-on-flaky-tests` + trace on retry
+
+`ci(MEH-484)`: turns Playwright flake from folklore (the MEH-269 4m31s
+retry-pass pattern) into a hard CI signal. `.github/workflows/e2e.yml` —
+`npx playwright test` gains `--fail-on-flaky-tests`, so any test that
+passes only on retry now fails the e2e job; artifact upload extended to
+capture both `frontend/playwright-report/` and
+`frontend/test-results/**/trace.zip` (7-day retention, `if: failure()`
+unchanged). `frontend/playwright.config.ts` — `video: 'off'` →
+`'retain-on-failure'`; `trace: 'on-first-retry'` + `screenshot:
+'only-on-failure'` already correct, tagged with an MEH-484 comment.
+Retries (1 in CI / 0 local) preserved — flake detection is via the flag,
+not by removing retries.
+
+Expected behavior change: a currently-flake-passing test will turn the
+e2e job RED — the correct outcome. File a follow-up per failure; do NOT
+mass-quarantine or roll back. The MEH-499 docs-only paths-filter skip
+block on staging was preserved through the 3-way rebuild (verbatim copy
+would have regressed it). (Originally authored 2026-05-07, rebuilt
+2026-05-23 onto fresh staging via MEH-681 PR backlog cleanup.)
+
+Closes MEH-484.
+
 ### 2026-05-23 — chore: switch GitHub default branch to staging
 
 `chore`: GitHub repo default branch flipped from `main` → `staging` via
