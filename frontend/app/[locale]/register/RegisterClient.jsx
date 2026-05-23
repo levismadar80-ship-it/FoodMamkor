@@ -39,7 +39,7 @@ export default function RegisterClient() {
       // private browsing — ignore
     }
   }, []);
-  // tasks_for_claude_code.md tasks 7+8 — per-field touched state for
+  // Per-field touched state for
   // onBlur inline validation. Password eye toggle + live policy
   // feedback now lives in <PasswordInput> (MEH-306 sub-B).
   const [nameTouched, setNameTouched] = useState(false);
@@ -113,7 +113,7 @@ export default function RegisterClient() {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  // tasks_for_claude_code.md task 8 — inline field-level validity.
+  // Inline field-level validity.
   // *Invalid flags only go true after the field has been touched (i.e.
   // user moved focus away) AND the current value fails validation —
   // this way the form doesn't show a sea of red borders before the
