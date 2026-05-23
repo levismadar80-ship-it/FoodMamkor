@@ -48,8 +48,13 @@ def _install_anthropic_mock(
     if raise_exc is not None:
         messages_create.side_effect = raise_exc
     else:
+        # `is None` (not `or`) so an explicit response_text="" reaches the
+        # mock as a real empty string — `"" or default` would coalesce it
+        # back to the default JSON and silently break the empty-response
+        # test (MEH-509 incident 2026-05-23).
+        default = '{"score": 42, "reasoning": "פרופיל מלא, ניסוח עברית תקין"}'
         messages_create.return_value = _fake_anthropic_response(
-            response_text or '{"score": 42, "reasoning": "פרופיל מלא, ניסוח עברית תקין"}'
+            default if response_text is None else response_text
         )
 
     fake_client = SimpleNamespace(messages=SimpleNamespace(create=messages_create))
