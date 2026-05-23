@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { useTranslations } from "next-intl";
-import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -370,7 +370,7 @@ export default function Header() {
 
       {user && user.email_verified === false && (
         <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm flex-wrap">
-          <span className="text-amber-800">{t("auth.verify.banner")}</span>
+          <span className="text-amber-800 inline-flex items-center gap-1"><EnvelopeSimple size={16} className="text-current" />{t("auth.verify.banner")}</span>
           {resendError ? (
             <span className="text-red-600 text-xs font-medium">{resendError}</span>
           ) : !resendSent ? (

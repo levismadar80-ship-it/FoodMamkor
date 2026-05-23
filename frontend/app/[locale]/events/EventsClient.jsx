@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { CookingPot, Grains } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
@@ -174,7 +175,7 @@ export default function EventsPage() {
                 : "border-transparent text-site-muted hover:text-primary"
             }`}
           >
-            {t("tab_events")}
+            <span className="inline-flex items-center gap-1"><Grains size={16} className="text-current" />{t("tab_events")}</span>
           </button>
           <button
             role="tab"
@@ -186,7 +187,7 @@ export default function EventsPage() {
                 : "border-transparent text-site-muted hover:text-primary"
             }`}
           >
-            {t("tab_experiences")}
+            <span className="inline-flex items-center gap-1"><CookingPot size={16} className="text-current" />{t("tab_experiences")}</span>
           </button>
           <Link
             href={tab === "experiences" ? "/experiences/new" : "/producer/dashboard/events/new"}

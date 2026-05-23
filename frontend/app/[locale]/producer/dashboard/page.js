@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PencilSimple } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -849,7 +850,7 @@ function BioPanelCard({ profile, onSave }) {
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline text-base font-bold mb-1">{t("heading")}</h2>
+      <h2 className="font-headline text-base font-bold mb-1 flex items-center gap-1"><PencilSimple size={16} className="text-current" />{t("heading")}</h2>
       <p className="text-xs text-site-muted mb-3">
         {t("intro")}
       </p>

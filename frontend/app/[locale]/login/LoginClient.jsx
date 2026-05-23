@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Heart, House, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -121,9 +121,9 @@ function LoginPageBody() {
 
         {/* Value-prop strip */}
         <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
-          <span>{t("value_save")}</span>
-          <span>{t("value_rate")}</span>
-          <span>{t("value_publish")}</span>
+          <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("value_save")}</span>
+          <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("value_rate")}</span>
+          <span className="inline-flex items-center gap-1"><House size={14} className="text-current" />{t("value_publish")}</span>
         </div>
 
         {/* Email + password form — FIRST per spec */}
