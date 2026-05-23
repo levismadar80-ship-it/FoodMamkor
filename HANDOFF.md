@@ -2,6 +2,35 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-23 — MEH-671: staging smoke automation (V1)
+
+LOW/MEDIUM-RISK infra. New `.github/scripts/staging_smoke.py` (httpx + stdlib) + a `workflow_dispatch`-only GitHub Action that runs the producer-signup pipeline against staging (register → admin row → WhatsApp welcome log → Anthropic risk-score log → admin badge 0–100) and fails loud. Catches the integration bug class unit tests miss.
+
+### Completed
+- Branch `feature/meh-671-staging-smoke` off `origin/staging`.
+- Harness committed: `.github/scripts/staging_smoke.py` (py_compile + ruff clean).
+- Docs: CHANGELOG, this file, MANUAL_TESTING (smoke now automated; manual = fallback), `backend/.env.example` (SMOKE_ADMIN_EMAIL/PASSWORD for local runs).
+- Workflow YAML in the PR body (NOT committed — `.github/workflows/**` deny-listed for CC; Sapir pastes it).
+
+### Open — Sapir's action items (post-merge wiring)
+1. **Add GitHub Actions secrets** (Settings → Secrets and variables → Actions):
+   - `SMOKE_ADMIN_EMAIL` — staging admin login (e.g. `sint12345@gmail.com`)
+   - `SMOKE_ADMIN_PASSWORD` — that account's staging password
+   - `RAILWAY_STAGING_TOKEN` — already exists (reused from deploy.yml)
+   - (`STAGING_URL` is hardcoded in the YAML; `RAILWAY_SERVICE_NAME` variable already set, defaults `FoodMamkor`)
+2. **Paste the workflow**: copy the YAML from the PR body → `.github/workflows/staging-smoke.yml` → commit + push to the branch.
+3. **Trigger** via Actions → "Staging smoke" → Run workflow (set `pre_wait_seconds=90` if running right after a deploy). CC can then read the CI logs, fix, re-trigger (≤3 attempts).
+4. Requires staging `ANTHROPIC_API_KEY` set (else `risk_score` stays NULL and step 5 correctly fails).
+
+### How to disable temporarily
+- It's `workflow_dispatch` only — it never runs unless manually triggered, so "disable" = just don't run it. To remove entirely: delete `.github/workflows/staging-smoke.yml`.
+
+### Design notes (why it deviates from the original spec)
+- **No static `SMOKE_ADMIN_JWT`**: access tokens are 15-min TTL + fingerprint-bound (`auth.py:183`); the harness logs in fresh each run instead.
+- **WhatsApp/Anthropic checked via `railway logs`** (Meta has no delivery-status query endpoint).
+- **Cleanup CTE** (users-first, RETURNING producer_id, then producers) — `users.producer_id` is the only non-CASCADE FK (`models.py:226`); `producers` has no email column.
+- **V1**: manual trigger + GH-email alerting only. WhatsApp alert + push:staging auto-trigger = V2.
+
 ## 2026-05-23 — MEH-509 PR3 prod-fix: producer_risk JSON parser hardening (staging incident)
 
 LOW-RISK fail-open service-layer fix. PR3 risk-score stayed NULL after a staging signup smoke: Anthropic returned 200 but `json.loads` failed with `Expecting value: line 1 column 1 (char 0)` — Haiku wrapped the JSON in a ```` ```json ```` fence (and a latent empty-text-block path produced the same error). New `_extract_json_object` helper strips fences / leading prose / trailing commas and slices to outermost braces; empty/whitespace text blocks now filtered; unparseable warning now logs first 200 chars of the body for future signal. `send_template`/SDK access path were fine — bug was purely the parse step.
