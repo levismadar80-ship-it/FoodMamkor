@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-678: ADR-009 decision-capture proactive (PR pending)
+
+`docs(MEH-678)`: added a proactive decision-capture instruction so architectural decisions are recorded as they happen, not reconstructed post-hoc (recent losses: agent-browser defer, AutoDream defer, hybrid voice policy, 80-line cap). Three surfaces:
+
+- **CLAUDE.md** — new `## Decision capture (proactive)` section (3 lines): when a Project conversation produces an architectural decision, Claude offers `"זה ADR-worthy. רוצה שאכתוב ל-docs/decisions/?"`, linking the full trigger list to ADR-009. CLAUDE.md 82 → 85 lines (cap pressure noted in ADR-008 remains advisory; industry guidance allows ≤100).
+- **docs/decisions/ADR-009-decision-capture-proactive.md** — new meta-ADR (second after ADR-008), Status Accepted, holding the full trigger phrase list and the three rejected alternatives (skill `decision-recognizer`, slash `/adr`, post-hoc writing).
+- **docs/decisions/README.md** — ADR-009 row added to the Index table.
+
+Risk tier: LOW per MEH-450 — docs-only, no schema, no logic, no UI. DoD exception: mobile QA N/A (docs-only). Pre-existing drift flagged separately: ADR-008 is absent from the README index (out of this ticket's scope). Closes MEH-678.
+
 ### 2026-05-23 — MEH-671: post-deploy staging smoke automation (V1)
 
 `feat(MEH-671)`: new GitHub Action + Python harness that drives the real producer-signup pipeline against staging and fails loud on integration breakage — the bug class transport-mocked unit tests miss (template-signature mismatch, missing background task, broken Meta/Anthropic call). Would have caught all four bugs found manually during the MEH-509 rollout.

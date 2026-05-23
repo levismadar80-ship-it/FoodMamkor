@@ -1,6 +1,19 @@
 # Session Handoff
 > Updated at the end of every session.
 > Read this before starting any work.
+> Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
+
+## 2026-05-23 — MEH-678: ADR-009 decision-capture proactive
+
+LOW-RISK docs-only. Added a proactive instruction so architectural decisions get recorded in real time instead of post-hoc. Three surfaces touched: `CLAUDE.md` (new `## Decision capture (proactive)` section, 82 → 85 lines), `docs/decisions/ADR-009-decision-capture-proactive.md` (new meta-ADR, second after ADR-008), `docs/decisions/README.md` (Index row).
+
+### Completed
+- Branch `chore/meh-678-decision-capture-proactive` off `origin/staging`.
+- CLAUDE.md section + ADR-009 + README index + CHANGELOG + this file. No code, no tests, no `.claude/rules/` touched.
+- PR opened (draft) against `staging`.
+
+### Open / flagged
+- **Pre-existing drift (out of scope):** ADR-008 is absent from `docs/decisions/README.md` Index, and ADR-007 has no file yet (MEH-486 pending). MEH-678 added only the ADR-009 row per scope; the index now reads 006 → 009. Worth a follow-up to backfill the 008 row.
 
 ## 2026-05-23 — MEH-671: staging smoke automation (V1)
 
