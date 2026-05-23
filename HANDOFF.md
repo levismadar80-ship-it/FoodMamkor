@@ -22,6 +22,21 @@ Approach (a)+(c) per OWASP A01: backend 403 guards on `/auth/register/producer` 
 - Defer Approach (b) Alembic CHECK constraint to a separate post-launch ticket (defense-in-depth at DB layer).
 - pytest local run on `tests/test_admin_producer_lockout.py` to confirm 4/4 green (sandbox couldn't install FastAPI deps).
 
+## 2026-05-22 — MEH-509 PR1 prod-fix: template params (Meta 400 "expected 1, got 0")
+
+LOW-RISK service-layer fix. Both producer-facing WhatsApp templates (`producer_welcome_v1` + `producer_approved_v1`) were 400ing in prod because callers in `backend/app/services/auth_notifications.py` passed 2 body params while Meta-approved templates accept 1. Fix: drop the second param (`profile_url` / `page_url`) + matching URL construction; correct the existing tests (they encoded the wrong 2-param contract); add `test_welcome_sends_exactly_one_body_param` + `test_approval_sends_exactly_one_body_param` as tight regression guards. `send_template` itself untouched — bug was caller-side.
+
+Same test-gap class as MEH-325 (transport-mocked tests can encode wrong contract → ships green).
+
+### Completed
+- Branch `feature/meh-509-template-params-fix` off `origin/staging`.
+- 2 files: `backend/app/services/auth_notifications.py`, `tests/test_meh_509_pr1_hooks.py`. No schema, no auth.py, no central component. No template changes in Meta.
+- Draft PR opened.
+
+### Open / blocked
+- Smoke verification deferred to Smadar (CC sandbox can't reach `graph.facebook.com` — MEH-360 sandbox limitation). After merge to staging: trigger a fresh producer signup; expect `producer_welcome_v1` to deliver to the producer's phone + Railway log `[WHATSAPP] Producer welcome template sent`.
+- PR3 risk-score smoke (separate prior diagnostic) — H1 (no fresh signups since deploy) still pending verification independently.
+
 ## 2026-05-22 — MEH-641 Carry-overs #1 PR-A + #2: noindex on 4 auth routes + 404 paper trail
 
 LOW-RISK. `/login`, `/register`, `/contact`, `/search` now emit `robots: noindex, nofollow` (alternates/hreflang preserved per Google's documented `noindex + hreflang` allowance); 3 dynamic 404 routes (`experiences/[id]`, `group-buys/[id]`, `[slug]`) got `// MEH-641:` sentinel comments documenting titleless-entity-as-404 as intentional behavior. Build green; 4 noindex routes verified on built HTML (he + en); regression-checked /about, /terms, /privacy still `index, follow`.
