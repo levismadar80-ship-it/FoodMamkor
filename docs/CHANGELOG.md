@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix
+
+- 🐛 MEH-675: תיקון e2e.yml — fetch-depth: 0 ב-actions/checkout כדי שpaths-filter יעבוד ב-deployment_status events
+
+### 2026-05-23 — chore: remove dead frontend code + orphan i18n keys
+
+`chore`: **Removed** dead frontend code — `ProducerReviews.jsx` (superseded by
+`ReviewsSection.jsx`, forensic comparison confirmed full feature parity),
+`lib/api-client.js` (superseded by `lib/api.js`), `lib/useFadeIn.js` (orphan
+hook, zero imports). Cleaned 4 orphan i18n keys used only by the deleted
+component (`reviews.owner_heading`, `body_label_alt`, `body_placeholder_alt`,
+`edit_cta`) from both `he.json`/`en.json`; `reviews.submit_update` kept
+(consumed by `admin/ProducerForm.jsx`). `npm run build` verified green
+post-deletion. Audit: `/tmp/cleanup_audit.md` + forensic verdict 2026-05-23.
+Follow-up to #815.
+
 ### 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs
 
 `chore`: F2 of the May 2026 Actions cost sweep. Adds a `changes`
