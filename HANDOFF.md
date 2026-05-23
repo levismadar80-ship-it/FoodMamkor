@@ -1696,6 +1696,14 @@ session boundary; resume only with fresh user direction.
 
 ---
 
+## Deferred to post-launch
+
+Tickets explicitly punted past launch. Check before opening any new work in these areas.
+
+- **MEH-568 Phase 1 (App Store mining)** — 8-app shortlist locked in Linear. Trigger: launch + 30 days, same window as MEH-567 + MEH-569 review session. Smadar collects 10-20 reviews per app via screenshots when triggered.
+
+---
+
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
 
 Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
@@ -1703,7 +1711,7 @@ Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workf
 | PR | Issue | Outcome |
 |---|---|---|
 | #644 | MEH-563 — UptimeRobot synthetic monitoring docs | **Merged** to staging (squash, SHA `b7a0c57`) |
-| #645 | MEH-557 — Pre-launch quality stack research | **Merging next** (this branch) |
+| #645 | MEH-557 — Pre-launch quality stack research | **Merged** to staging (squash, SHA `a2245ba`) |
 | #643 | MEH-568 — App Store mining Phase 0 / slate approval | **Closed, not merged.** Slate locked verbatim; Phase 1 deferred to post-launch + 30 days. Trigger: launch ships + 30 days of own user data so we can triangulate App Store reviews against actual Mehamakor user pain points instead of guessing. Beta testing (5 users pre-launch) covers same discovery class at higher fidelity. |
 
 **MEH-568 slate locked (8 apps):**
