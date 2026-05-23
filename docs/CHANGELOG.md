@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: skip Playwright E2E on Dependabot PRs
+
+`chore`: added a guard to the `e2e` job in `.github/workflows/e2e.yml` so
+Playwright E2E is skipped for Dependabot-authored deployments. The May 2026
+Actions cost sweep found `e2e.yml` was ~31.5% of monthly minutes; Dependabot
+dep-bump PRs alone triggered ~19 `deployment_status` runs (~15 min each) ≈
+**~285 min/month** of low-value E2E on automated bumps.
+
+Guard appended to the existing job `if:` (preserves `deployment_status.state
+== 'success'` + `needs.filter.outputs.frontend == 'true'`):
+`!startsWith(github.event.deployment.ref, 'dependabot/')`. Branch ref is used
+deliberately — for `deployment_status` events Vercel creates the deployment,
+so `github.event.deployment.creator.login` is always `vercel[bot]` and the
+originally-specced `creator.login != 'dependabot[bot]'` would be a silent
+no-op. `deployment.ref` is already a verified-populated field (it keys the
+concurrency group at `e2e.yml:30`) and `dependabot/` prefixes every ecosystem
+branch. The removed `startsWith(environment, 'Preview')` filter (see
+`e2e.yml:68-70` history) was NOT reintroduced. Job name `e2e` unchanged —
+branch-protection required-check name preserved. Skipped runs report success,
+consistent with the existing MEH-499 docs-only skip. Risk: LOW.
 ### 2026-05-23 — MEH-484: Playwright `--fail-on-flaky-tests` + trace on retry
 
 `ci(MEH-484)`: turns Playwright flake from folklore (the MEH-269 4m31s
