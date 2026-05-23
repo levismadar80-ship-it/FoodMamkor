@@ -4,6 +4,27 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: skip Claude PR review on docs-only PRs
+
+`chore`: adds a `paths-ignore:` block to the `pull_request:` trigger in
+`.github/workflows/claude-review.yml` so the Anthropic adversarial-review
+action no longer fires on docs-only PRs. F3 of the May 2026 Actions cost
+sweep — claude-review ran on every PR (~416 min/month of runner time **plus**
+Anthropic API spend on a separate budget); est. **~20 min/month** + API$
+saved.
+
+File classes mirror `e2e.yml:56-59` (MEH-424/499): `**/*.md`, `docs/**`,
+`.changeset/**`, `CHANGELOG.md`. Native `paths-ignore` syntax is used (no `!`
+prefix — that's a `dorny/paths-filter` negation operator, not valid at the
+trigger level). Unlike F1/#808 (which used the job-skip pattern to keep
+**required** checks satisfied), a trigger-level skip is correct here because
+`Adversarial review (calibration)` is **not** a required check
+(`continue-on-error: true`; it failed on #807/#808 without blocking merge) —
+so the workflow simply not running on docs-only PRs leaves no
+skipped-required-check gap. Job name, `concurrency`, `continue-on-error`, and
+`fetch-depth: 0` untouched. Landed via GitHub API (local `Edit`/`Write`
+denied on `.github/workflows/**`, MEH-671). Risk: LOW.
+
 ### 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter
 
 `chore`: extends the existing `dorny/paths-filter@v3` gating (the `changes`
