@@ -305,6 +305,8 @@ grep -r "create_all\|metadata.create\|_migrate" backend/ --include="*.py"
 Adapt the pattern to the surface (e.g. for auth: grep for two JWT
 decode paths; for config: grep for two env-var readers).
 
+This applies to docs too — when two docs own the same fact, one is deleted, not disabled.
+
 ### Smell #2 — "Remember to update X when you change Y" in docs
 
 **Signal:** any sentence in `CLAUDE.md` or `.claude/rules/` that says
@@ -472,8 +474,8 @@ turn-by-turn output.
 
 ### DEFAULT — ask if unsure
 
-If the task doesn't clearly fit either tier, ask Smadar before starting.
-There is no third "medium" tier — the ask covers ambiguity.
+If the task doesn't clearly fit a tier, ask Smadar before starting.
+See [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md) for current GREEN/YELLOW/RED tier definitions.
 
 _Source: MEH-450 (2026-05-04). Evidence: MEH-326 auth refactor (chunked
 review justified), MEH-331/348 email transport — chunked review caught
