@@ -40,7 +40,7 @@ export async function generateMetadata(props) {
       openGraph: {
         type: "article",
         locale: OG_LOCALE[locale],
-        images: ["/og-image.jpg"],
+        images: ["/og-image.png"],
       },
       alternates,
     };
@@ -53,7 +53,7 @@ export async function generateMetadata(props) {
     openGraph: {
       type: "article",
       locale: OG_LOCALE[locale],
-      images: groupBuy?.image_url ? [groupBuy.image_url] : ["/og-image.jpg"],
+      images: groupBuy?.image_url ? [groupBuy.image_url] : ["/og-image.png"],
     },
     alternates,
   };

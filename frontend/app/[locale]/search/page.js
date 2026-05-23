@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.jpg"],
+      images: ["/og-image.png"],
     },
     alternates: buildAlternates("/search", locale),
     // MEH-641: utility route — infinite URL combinations, no canonical content; not indexable, hreflang preserved

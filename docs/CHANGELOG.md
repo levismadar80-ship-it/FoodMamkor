@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-679: תיקון הפניית OG image (jpg → png)
+
+`fix(MEH-679)`: כל ה-share cards ברשתות החברתיות (OpenGraph + Twitter) הפנו ל-`/og-image.jpg` — קובץ שגוי בגודל 106×40 שהיה זהה byte-for-byte ל-`logo.png` (לוגו "MEHAMEKOR" באנגלית, md5 `38dbcdd…`), כלומר תוכן PNG עם סיומת `.jpg` מטעה. הוחלפו 21 הפניות ב-18 קבצים ל-`/og-image.png` — כרטיס השיתוף העברי הנכון (1200×630) שכבר היה ב-`frontend/public/` אך מעולם לא היה בשימוש. הקובץ המטעה `og-image.jpg` נמחק.
+
+התגלה במהלך MEH-677 (חקירת הלוגו). שינוי string בלבד + מחיקת קובץ — אפס שינוי לוגיקה. `og-image-en.png` (וריאנט אנגלי) לא נגעתי בו — concern נפרד. רמת סיכון: LOW. Closes MEH-679.
+
 ### 2026-05-23 — MEH-678: ADR-009 decision-capture proactive (PR pending)
 
 `docs(MEH-678)`: added a proactive decision-capture instruction so architectural decisions are recorded as they happen, not reconstructed post-hoc (recent losses: agent-browser defer, AutoDream defer, hybrid voice policy, 80-line cap). Three surfaces:

@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
       type: "article",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: ["/og-image.jpg"],
+      images: ["/og-image.png"],
     },
     alternates: buildAlternates("/about/for-businesses", locale),
   };
