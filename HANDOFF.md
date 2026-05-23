@@ -27,6 +27,49 @@ Both tickets shipped to `staging` this session:
   (D3 ICU plural), **MEH-685** (D2 toast icon+text API). D1 WhatsApp KEPT.
 - `staging → main` promotion is a separate decision.
 
+## 2026-05-23 — Cleanup trilogy (3 PRs merged to staging)
+
+- **#815** (squash `e2427a9`) — 11 legacy .docx/.xlsx files removed from repo
+  root. `admin_brief.docx` doc-comments repointed to CLAUDE.md §4. 2 producer
+  .xlsx kept (active dev-seed pipeline: `enrich_producers.py` →
+  `import_producers_xlsx.py`).
+- **#817** (squash `0055fc0`) — 3 dead frontend files removed:
+  `ProducerReviews.jsx` (superseded by `ReviewsSection.jsx`, forensic
+  supersession verified), `lib/api-client.js`, `lib/useFadeIn.js`. 4 orphan
+  i18n keys cleaned from both he.json + en.json. `reviews.submit_update`
+  preserved (used by `admin/ProducerForm.jsx`).
+- **#822** (squash `ac95e89`) — 3 doc artifacts removed: `docs/wave-5-scan.json`
+  (15,344 lines, one-time static-analysis output), `docs/wave-5-inventory.md`,
+  `tasks_for_claude_code.md`. 12 provenance references stripped (5 frontend
+  code comments + 7 MANUAL_TESTING headers) to prevent broken pointers.
+
+### Net impact
+- ~16,000 lines reclaimed
+- 17 files removed (11 + 3 + 3)
+- 4 orphan i18n keys cleaned
+- 12 broken-on-deletion provenance pointers preempted
+- Zero functional changes — comment/header text edits only
+
+### Pattern proven (worth reusing)
+1. Audit first (read-only, `/tmp/cleanup_audit.md`) — categorized candidates by
+   confidence.
+2. Forensic comparison for any "supersession" claim (ProducerReviews vs
+   ReviewsSection — file:line evidence required).
+3. PR per category, not one mega-PR (avoids scope mixing + easier CI debugging).
+4. Phase 0 grep re-verification before EACH deletion (caught false positives:
+   producer .xlsx pipeline, `edit_cta` in settings/page.jsx, 12
+   tasks_for_claude_code refs).
+5. CHANGELOG Accept-Both during rebase conflicts (append-only-log rule).
+
+### STOP conditions that fired correctly
+- #815: 2 producer .xlsx + admin_brief docstrings → kept .xlsx, repointed docs.
+- #817: `edit_cta` false-positive in settings/page.jsx → ruled out via grep context.
+- #822: 12 provenance refs → expanded scope to strip refs in same PR.
+
+### Flaky CI observation (not actionable yet, log for pattern detection)
+PR #817 hit a flaky `Frontend build` failure on merge SHA despite byte-identical
+diff. Reproduced green locally before re-trigger. If pattern repeats → open issue.
+
 ## 2026-05-23 — MEH-657: Emoji LOCK v2 (A+B+D4+E) — PR #818 ready for review
 
 Narrowed scope (94 of 176): A=48 strip, B=18 Phosphor icons, D4=26 do/don't
