@@ -1,7 +1,7 @@
 """One-shot import: load mehamakor_producers_final.xlsx into the dev DB.
 
 Uses the same `import_rows` function that powers POST /admin/producers/import,
-so the column mapping (CLAUDE.md / admin_brief.docx §4) is identical.
+so the column mapping (CLAUDE.md §4) is identical.
 """
 import os
 import sys

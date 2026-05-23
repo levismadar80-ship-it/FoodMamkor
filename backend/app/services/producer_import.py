@@ -1,6 +1,6 @@
 """Producer Excel/CSV import logic, shared between admin endpoint and CLI script.
 
-Excel column mapping (from admin_brief.docx, section 4):
+Excel column mapping (documented in CLAUDE.md §4):
   A=name              B=contact_name      C=phone
   D=instagram         E=website           F=whatsapp_group
   G=catalog (unused)  H=city              I=category_name
