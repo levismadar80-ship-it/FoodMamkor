@@ -3,6 +3,30 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — Session close: MEH-657 + MEH-675 both MERGED to staging
+
+Both tickets shipped to `staging` this session:
+- **MEH-657** (Emoji LOCK v2, A+B+D4+E) — squash-merged **#818** (`63ea1226`).
+  he 176→79, en 175→78. Required CI green; the lone red was the non-required
+  `Adversarial review (calibration)` flake (warn-only per DEPLOYMENT.md §C).
+- **MEH-675** (e2e.yml paths-filter fetch-depth) — docs **#819** (`e3d2877a`)
+  + the actual workflow fix **#820** (`9163805f`). Smadar's A2 manual paste of
+  `fetch-depth: 0`; the first paste hit the wrong (e2e) job — caught by
+  `/adversarial-review`, corrected to the **filter** job's checkout.
+
+### Verify on staging (deferred to Smadar)
+- Mobile QA on the 18 MEH-657 B-icon surfaces — CC can't reach Vercel preview
+  (MEH-360). Main thing to eyeball: 16px icon proportion next to the large
+  display headings (`home.new_businesses.heading`, `home.events.heading`).
+
+### Open / next
+- **PR #809** (MEH-681 docs HANDOFF) still open — unrelated to this session,
+  base is stale (`0d93a0e`); needs resync before any merge. Not touched.
+- Deferred emoji follow-ups (75 emojis remain in he.json by design):
+  **MEH-683** (C, 53 category/badge tags + 6 Phosphor gaps), **MEH-684**
+  (D3 ICU plural), **MEH-685** (D2 toast icon+text API). D1 WhatsApp KEPT.
+- `staging → main` promotion is a separate decision.
+
 ## 2026-05-23 — MEH-657: Emoji LOCK v2 (A+B+D4+E) — PR #818 ready for review
 
 Narrowed scope (94 of 176): A=48 strip, B=18 Phosphor icons, D4=26 do/don't
