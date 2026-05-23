@@ -246,8 +246,9 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
 
     score = _clamp_score(parsed.get("score"))
     reasoning = _truncate_reasoning(parsed.get("reasoning"))
-    if score is None and reasoning is None:
-        return (None, None)
+    # Both-None collapses to the same (None, None) the caller treats as a
+    # skip, so no separate early return — keeps _call_anthropic at PLR0911's
+    # 6-return ceiling after the MEH-509 parse-path split.
     return (score, reasoning)
 
 
