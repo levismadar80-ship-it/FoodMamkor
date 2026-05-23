@@ -4,6 +4,30 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-669: admin role lock-out via producer self-registration (OWASP A01)
+
+`fix(MEH-669)`: HIGH-RISK auth fix — closes a vertical privilege-escalation gap where any admin account that hit `/register/producer` (link, URL, or direct API call) had its `users.role` silently overwritten from `"admin"` to `"producer"` by the upgrade path at `backend/app/routers/auth.py:463`, locking the admin out of `/admin` (`frontend/app/[locale]/admin/layout.js:64` rejects non-admin role → push to `/login`). Discovered during staging smoke pre-production-promote (Sapir's `sint12345@gmail.com` admin account).
+
+**Approach: (a) + (c) per OWASP A01 — server-side enforcement is the source of truth; frontend is UX layer.**
+
+- **Backend guard (primary):** `backend/app/routers/auth.py:426-436` (upgrade path) and `:814-824` (OAuth Step 0) — explicit `if user.role == "admin"` rejection with `HTTPException(403, ...)` BEFORE the existing `producer_id or is_producer` check. Hebrew error (feminine voice): `"מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת."`
+- **Frontend defense-in-depth:**
+  - `frontend/components/Header.jsx:128-131` — `showAddBusinessCta = !isProducer && !isAdmin` (derived `isAdmin` locally; existing `isAdmin` at line 445 lives in `UserMenu`, different scope).
+  - `frontend/components/Footer.jsx` — `useAuth` import + whole CTA panel wrapped in `{!isAdmin && (...)}` (wrapped the panel not just the `<Link>` — hiding only the link would leave an orphan "יש לך עסק?" pitch box).
+  - `frontend/components/ProducersClient.jsx` — `CatalogEmptyState` `/register/producer` link wrapped; `notify_cta` to `/about#newsletter` stays visible.
+  - `frontend/app/[locale]/register/producer/page.js` — `useEffect` redirects `role=admin` to `/admin` after `authLoading` resolves.
+- **Tests:** new `tests/test_admin_producer_lockout.py` — 4 tests across `TestRegisterProducerAdminLockout` and `TestRegisterProducerOAuthAdminLockout` (admin 403 on both endpoints; consumer upgrade still 200; anonymous new signup still 200; admin row untouched in all rejection cases).
+
+**Deferred (per Phase 0 decision):**
+- Approach (b) — Alembic `CHECK (NOT (role = 'admin' AND producer_id IS NOT NULL))` constraint, defense-in-depth at the DB layer. Post-launch ticket.
+- Approach (d) — role-model refactor (single `role` enum → permissions matrix). Out of scope.
+- Recovery SQL for Sapir's locked account (`UPDATE users SET role='admin', producer_id=NULL, is_producer=false WHERE email='sint12345@gmail.com';` then optional `DELETE FROM producers WHERE id='<that producer_id>';`) — documented in `docs/MANUAL_TESTING.md`, executed manually by Smadar (FK `users.producer_id → producers.id` has no `ondelete=`, so the UPDATE must precede the DELETE).
+- Audit query for other affected admin accounts — manual, by Smadar.
+
+Backend pytest verification deferred to local run (sandbox lacks FastAPI per MEH-360 pattern). AST parse + import-target existence confirmed. Frontend build clean: `✓ Compiled successfully in 14.7s`, 101 static pages.
+
+No central component touched. PR opened with `Addresses MEH-669` (not `Closes`) — Smadar closes manually after recovery SQL + audit query run.
+
 ### 2026-05-22 — MEH-509 PR1 prod-fix: forward exactly 1 template param + remove unused URL construction
 
 `fix(MEH-509)`: production regression — both `producer_welcome_v1` and `producer_approved_v1` WhatsApp templates were failing with Meta 400 ("expected 1, got 0") because callers in `backend/app/services/auth_notifications.py` passed `[name, url]` (2 params) while the Meta-approved templates accept exactly 1 body param (`{{1}}` = business name).

@@ -2,6 +2,26 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-22 — MEH-669: admin producer-lockout privilege-escalation fix
+
+HIGH-RISK auth fix. Admin accounts hitting `/register/producer` had `role` silently flipped to `"producer"` by the upgrade path, locking them out of `/admin`. Discovered during pre-prod-promote staging smoke (Sapir's `sint12345@gmail.com`).
+
+Approach (a)+(c) per OWASP A01: backend 403 guards on `/auth/register/producer` (`auth.py:432`) and `/auth/register/producer/oauth` (`auth.py:817`) — both reject `role=="admin"` before any state mutation. Frontend defense-in-depth: CTAs hidden from admins in Header/Footer/ProducersClient + admin redirect on `/register/producer`. Hebrew error string uses feminine voice ("מנהלת...יכולה...").
+
+4 new tests in `tests/test_admin_producer_lockout.py` (pytest deferred to local run — sandbox limitation, MEH-360 pattern). Frontend build clean (101 static pages).
+
+### Completed
+- MEH-669 backend guard — `auth.py` upgrade path + OAuth Step 0 (Chunk 1).
+- MEH-669 frontend defense-in-depth — Header / Footer / ProducersClient / register page (Chunk 2).
+- MEH-669 Hebrew gender fix (feminine voice on error string + test fragment).
+- MEH-669 PR opened with `Addresses MEH-669` (manual close after recovery SQL).
+
+### Open — Smadar's action items post-merge
+- Run recovery SQL for Sapir's locked account (documented in `docs/MANUAL_TESTING.md` § "MEH-669 recovery").
+- Run audit query for other admin accounts that may have hit the bug (post-fix only — by definition pre-fix admins now have `role="producer"`, harder to detect).
+- Defer Approach (b) Alembic CHECK constraint to a separate post-launch ticket (defense-in-depth at DB layer).
+- pytest local run on `tests/test_admin_producer_lockout.py` to confirm 4/4 green (sandbox couldn't install FastAPI deps).
+
 ## 2026-05-22 — MEH-509 PR1 prod-fix: template params (Meta 400 "expected 1, got 0")
 
 LOW-RISK service-layer fix. Both producer-facing WhatsApp templates (`producer_welcome_v1` + `producer_approved_v1`) were 400ing in prod because callers in `backend/app/services/auth_notifications.py` passed 2 body params while Meta-approved templates accept 1. Fix: drop the second param (`profile_url` / `page_url`) + matching URL construction; correct the existing tests (they encoded the wrong 2-param contract); add `test_welcome_sends_exactly_one_body_param` + `test_approval_sends_exactly_one_body_param` as tight regression guards. `send_template` itself untouched — bug was caller-side.

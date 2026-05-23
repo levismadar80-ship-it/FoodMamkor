@@ -3,6 +3,91 @@
 
 ---
 
+## MEH-669 — Admin producer-lockout fix
+
+Run on Vercel preview before merging to staging.
+
+### Test 1 — Admin blocked on password upgrade path
+
+- [ ] Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`)
+- [ ] Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever rendered)
+- [ ] In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')}, body: JSON.stringify({producer_name:'X',phone:'0501234567',category_ids:[],primary_contact_method:'whatsapp'})}).then(r => r.json().then(j => console.log(r.status, j)))` → **expected:** `403 {"detail":"מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת."}`
+- [ ] After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/auth/me`
+
+### Test 2 — Admin blocked on OAuth Step 0
+
+- [ ] (Only if admin has linked Google) Click "Sign up as producer with Google" from `/register/producer` step 0 → **expected:** 403 with the same Hebrew copy; admin lands back on /admin (no Step-2 token issued)
+
+### Test 3 — Regression: consumer can still upgrade to producer
+
+- [ ] Log in as regular consumer (any non-admin, non-producer account)
+- [ ] Navigate to `/register/producer` → **expected:** form renders normally, no redirect
+- [ ] Submit a valid producer signup → **expected:** 200, role flips to `"producer"`, redirects to `/producer/dashboard`
+
+### Test 4 — Regression: anonymous can still sign up as producer
+
+- [ ] Log out completely (clear localStorage)
+- [ ] Navigate to `/register/producer` → form renders
+- [ ] Complete step 1 (email + name + password + producer fields) → **expected:** 200, OWASP anti-enumeration RegisterAck shape (no `access_token`), verification email sent
+
+### Test 5 — Frontend CTAs hidden from admins
+
+- [ ] Log in as admin → check Header (mobile drawer), Footer (CTA panel "יש לך עסק?"), and `/producers` empty state → **expected:** no "הוסיפי עסק" / "הוסיפי את העסק שלך" link visible anywhere
+- [ ] Log in as consumer → all 3 surfaces SHOULD show the CTA
+- [ ] Log out → all 3 surfaces SHOULD show the CTA (anonymous can still register)
+
+---
+
+## MEH-669 recovery — for Smadar's local terminal only
+
+**Affected account at time of writing:** `sint12345@gmail.com` (Sapir's staging admin).
+
+Recovery is a data fix, not a schema change — does NOT require Alembic.
+
+```sql
+-- 1) READ-ONLY inspect first. Capture the producer_id → call it $PID.
+SELECT id, email, role, producer_id, is_producer
+FROM users
+WHERE email = 'sint12345@gmail.com';
+
+-- 2) Restore admin access (single UPDATE — no cascade).
+--    This step alone is sufficient to unlock /admin.
+UPDATE users
+SET role = 'admin',
+    producer_id = NULL,
+    is_producer = false
+WHERE email = 'sint12345@gmail.com';
+
+-- 3) (Optional) Delete the orphan producer row.
+--    CASCADE will clean ProducerCategory, DeliveryArea, ProducerReview,
+--    ProducerFollower, ProducerPageView, ProducerWhatsAppClick, etc.
+--    (all FK'd to producers.id with ondelete=CASCADE).
+DELETE FROM producers WHERE id = '$PID';
+```
+
+**Run order matters:** `users.producer_id → producers.id` has no `ondelete=` (default NO ACTION). Running step 3 before step 2 raises a FK violation. Run step 2 first, always.
+
+**Production deny-list note:** `.claude/hooks/check-bash-safety.sh` blocks any Bash command containing `$DATABASE_URL_PRODUCTION`. Run psql from your own Git Bash terminal, not from a Claude Code session (per `.claude/rules/security.md` § production safety).
+
+### Audit query for other affected admins
+
+By design pre-fix admins now have `role='producer'`, which makes them indistinguishable from real producers. The narrowest filter that catches the bug class:
+
+```sql
+-- Producers with status=pending_whatsapp whose linked user was created
+-- BEFORE the producer row (= upgrade path, not new signup).
+SELECT u.id, u.email, u.role, u.created_at AS user_created,
+       p.id AS producer_id, p.created_at AS producer_created
+FROM users u
+JOIN producers p ON u.producer_id = p.id
+WHERE p.status = 'pending_whatsapp'
+  AND u.created_at < p.created_at;
+```
+
+Cross-check the returned emails against the original admin allowlist (whoever Smadar promoted manually). Any hit = an admin that lost their role via this bug and needs the recovery SQL above.
+
+---
+
 ## MEH-641 PR-A — auth chrome noindex verification
 
 **Pages to verify (View Source in browser):**
