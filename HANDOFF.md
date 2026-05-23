@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix (A2 — manual paste pending)
+
+Diagnosis CONFIRMED: `e2e.yml` `filter` job checkout (lines 41-43) lacks
+`fetch-depth: 0`; on a `deployment_status` event `dorny/paths-filter@v3` can't
+use the API path, falls back to a git diff needing history, and a shallow
+clone triggers an unauthenticated `git fetch` → `could not read Username …
+terminal prompts disabled`. Surfaced on PR #818's `Paths filter` check.
+
+### Status
+- Branch `feature/meh-675-e2e-fetch-depth-fix` off `origin/staging`.
+- **Draft PR #819** → `staging`. Carries CHANGELOG + HANDOFF only.
+- **A2 pattern:** `.github/workflows/**` is CC-deny-listed. The one-line fix
+  (`fetch-depth: 0` under the `filter` job's `with:`) is a **paste-ready diff
+  in the PR #819 body** — awaiting **manual application + push by Smadar**.
+  CC did NOT edit the workflow and did NOT bypass the deny via the GitHub API.
+
+### Pending (not blocking MEH-675)
+- MEH-657 (Emoji LOCK v2) PAUSED at user request: draft PR #818, commit 1
+  (A+B+D4) pushed; Category E (2 lines) awaiting copy approval; CHANGELOG/
+  HANDOFF for 657 not yet written.
+
 ## 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs (F2)
 
 LOW-RISK CI cost optimization (F2, final of the cost sweep). Added a `changes`
