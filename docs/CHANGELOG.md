@@ -12,7 +12,7 @@
 - **docs/decisions/ADR-009-decision-capture-proactive.md** — new meta-ADR (second after ADR-008), Status Accepted, holding the full trigger phrase list and the three rejected alternatives (skill `decision-recognizer`, slash `/adr`, post-hoc writing).
 - **docs/decisions/README.md** — ADR-009 row added to the Index table.
 
-Risk tier: LOW per MEH-450 — docs-only, no schema, no logic, no UI. DoD exception: mobile QA N/A (docs-only). Pre-existing drift flagged separately: ADR-008 is absent from the README index (out of this ticket's scope). Closes MEH-678.
+Risk tier: LOW per MEH-450 — docs-only, no schema, no logic, no UI. DoD exception: mobile QA N/A (docs-only). Pre-existing drift flagged separately: ADR-008 is absent from the README index (out of this ticket's scope). Also backfilled ADR-008 README index row missed by PR #694 (single-line fix, same-file scope). Closes MEH-678.
 
 ### 2026-05-23 — MEH-671: post-deploy staging smoke automation (V1)
 
