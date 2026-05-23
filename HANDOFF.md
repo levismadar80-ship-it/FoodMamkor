@@ -5,6 +5,25 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-686 Phase ε F1: HeartButton color swap
+
+Branch `feature/meh-686-phase-eps-f1-heart-color`. One code line:
+`frontend/components/ProducerCard.jsx:181` `text-red-500` → `text-primary`
+(saved-state ternary in `CardHeart`). Plus `docs/CHANGELOG.md` + `HANDOFF.md`.
+PR opened ready, Refs MEH-686. Build green (~20s), eslint 0 errors.
+
+F2 dropped from Phase ε: original spec targeted `home.hero.friday_subtitle` 🛒,
+but that key has no emoji — the 🛒 is at `producer.card.badges.available_today`
+(he.json:640), and a sanity scan found 30–50+ emoji-bearing UI strings. Scope
+explosion → deferred.
+
+Out-of-scope follow-ups recorded in PR body (deferred per Sapir 2026-05-24):
+- `ProducerCard.jsx:362` inline `<Heart>` hardcoded `#A32D2D` → new issue (grep
+  `#A32D2D` first to confirm single callsite).
+- `he.json` emoji audit (functional vs LOCK v2 violation triage) → new issue.
+
+Risk tier: GREEN. End-to-end authority, no WAIT gates. Awaiting Sapir merge.
+
 ## 2026-05-23 — MEH-686 Phase γ commit 10: ADR-017 JWT supersedence shipped
 
 `docs(MEH-686)`: Y1 audit finding closed via ADR-017 supersedence of ADR-001.
