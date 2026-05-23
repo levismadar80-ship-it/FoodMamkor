@@ -304,6 +304,8 @@ STOP criteria for PR-C4b are in `docs/wave-5-pr-c4b-inventory.md` §5.
 > Previously: 2026-05-16 (MEH-621 — SubagentStop trace hook (script-in-PR-description, manual wiring required); PR pending; docs/config-only LOW-RISK)
 > Previously: 2026-05-16 (MEH-354 — `/retro` slash command; **PR #697 MERGED** at `4a24a37`)
 > Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; PR pending; docs-only LOW-RISK)
+> Last updated: 2026-05-16 (MEH-502 — hooks gap analysis vs Agent SDK events; PR pending; docs-only LOW-RISK)
+> Previously: 2026-05-16 (MEH-501 — ADR-008 defer AutoDream activation; **PR #694 MERGED** at `156afd2`)
 > Previously: 2026-05-16 (MEH-618 — ADMIN.md monetization → Drive pointer; **PR #693 MERGED** at `dee98a4`)
 > Previously: 2026-05-16 (MEH-531 — license badge; **PR #691 MERGED** at `7df6a29`)
 > Previously: 2026-05-16 (MEH-620 — Hero subheading update per MEH-522; **PR #690 MERGED** at `284698c`)
@@ -649,6 +651,14 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 - `/auth/register/producer/oauth` — Phase 0 declared out of scope for the entire ticket.
 - `/auth/forgot-password` — already MEH-191 compliant.
 - `/auth/login` — already returns generic 401; timing leak filed as follow-up #3 above.
+
+---
+
+## 2026-05-16 — MEH-502: hooks gap analysis vs Agent SDK events (PR PENDING)
+
+**Branch:** `feature/meh-502-hooks-gap-analysis` off `staging@156afd2`.
+**Risk tier:** **🟢 LOW per MEH-450** — docs-only audit, 1 new file (`docs/audits/2026-05-16-hooks-gap-analysis.md`) + CHANGELOG + HANDOFF append. DoD exception: mobile QA N/A.
+**Closes:** MEH-502. Inventories 17 wired hooks across 4 SDK events (PreToolUse / PostToolUse / Stop / SessionStart) with `settings.json:line-range` evidence; flags 4 unused events; emits 3 recommendations: ADOPT `SubagentStop` logging (MEH-373/425 visibility), SKIP `UserPromptSubmit` nudge (rule 4 already covers), DEFER `SessionEnd` HANDOFF.md ledger (revisit post-MEH-456). No drift found — `check-branch-base.sh` is intentionally opt-in per MEH-427. **Follow-ups (separate tickets after merge, NOT in this PR):** implementation MEH for SubagentStop logging.
 
 ---
 
