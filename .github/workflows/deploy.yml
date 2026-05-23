@@ -59,8 +59,43 @@ on:
 # job here needs write scope on the GitHub side, so we don't widen.
 permissions:
   contents: read
+  # F2: dorny/paths-filter@v3 calls the PR Files API on pull_request
+  # events (same justification as pr-checks.yml). Read-only — no write scope.
+  pull-requests: read
 
 jobs:
+  # ──────────────────────────────────────────────────────────────────
+  # PATHS FILTER (F2 cost sweep) — gates lint + api-contract-static so
+  # they SKIP on docs-only PRs. Mirrors pr-checks.yml's `changes` job
+  # (MEH-485). Skipped downstream jobs report success, so the two
+  # required checks stay satisfied on docs-only PRs. The deploy jobs
+  # (production/staging/probe) do NOT depend on this and are unaffected
+  # — they remain push-gated and always run on push.
+  # ──────────────────────────────────────────────────────────────────
+  changes:
+    name: Paths filter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+              - 'package-lock.json'
+            backend:
+              - 'backend/**'
+              - 'tests/**'
+            workflows:
+              - '.github/workflows/**'
+
   # ──────────────────────────────────────────────────────────────────
   # LINT — runs on every PR and every push to main/staging.
   # Uses "warn" severity so pre-existing RTL violations don't block
@@ -69,6 +104,8 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   lint:
     name: Frontend lint (RTL + Next.js rules)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # MEH-485: per-job concurrency. CI checks dedupe per source branch
@@ -104,6 +141,8 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   api-contract-static:
     name: API contract audit (static)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # MEH-485: per-job concurrency, same shape as lint.
