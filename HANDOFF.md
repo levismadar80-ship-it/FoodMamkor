@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — chore: skip Claude PR review on docs-only PRs (F3)
+
+LOW-RISK CI cost optimization (F3 of the cost sweep). Added `paths-ignore:`
+to the `pull_request:` trigger in `.github/workflows/claude-review.yml` so the
+Anthropic review action skips docs-only PRs. Est. ~20 min/month + Anthropic
+API$ saved.
+
+### Completed
+- Branch `feature/meh-claudereview-docs-ignore` off `origin/staging` (`5277362`).
+- `claude-review.yml` written via GitHub API (local `Edit`/`Write` denied —
+  MEH-671); edit generated programmatically, diff-verified, post-push
+  byte-identical check.
+- CHANGELOG + this file committed locally; PR opened (draft) → `staging`.
+
+### Key decisions
+- **Trigger-level `paths-ignore` (not job-skip) chosen deliberately.** F1/#808
+  used the job-skip pattern because those jobs are *required* checks (skipped
+  must report success). `Adversarial review (calibration)` is `continue-on-error:
+  true` and NOT required (failed on #807/#808 without blocking) — so a
+  trigger-level skip leaves no missing-required-check gap and is simpler.
+- File globs mirror `e2e.yml:56-59` but use native `paths-ignore` syntax (no
+  `!` prefix — that's a dorny-filter operator). Phase 0 caught the mechanism
+  difference; Sapir confirmed.
+
+### Open / flagged
+- F2 (deploy.yml lint/contract on every PR, ~30 min/month) is a separate
+  session per the F-series plan.
+
 ## 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter (F1)
 
 LOW-RISK CI cost optimization (F1 of the pr-checks.yml cost sweep). Added
