@@ -22,6 +22,21 @@
 
 ---
 
+## 2026-05-23 — MEH-678 ADR-009 + #804 backfill (end-of-day close)
+
+LOW-RISK docs-only. End-of-day consolidation for the MEH-678 work shipped today; supersedes the WIP note below — the ADR-008 drift it flagged is now closed by PR #804. MEH-678 was created today (Quick template 07, LOW risk per MEH-450, labels `tooling` + `stage-7-prelaunch`).
+
+### Shipped
+- **PR #803 merged** — proactive decision-capture instruction. `CLAUDE.md` 82 → 87 lines, new `## Decision capture (proactive)` section carrying the verbatim Hebrew offer `"זה ADR-worthy. רוצה שאכתוב ל-docs/decisions/?"`. New meta-ADR `docs/decisions/ADR-009-decision-capture-proactive.md` (≤30 lines, `_TEMPLATE.md`-compliant, second meta-ADR after ADR-008) holds the full trigger list — kept out of CLAUDE.md to respect the ADR-008 size-cap note. Plus README index ADR-009 row + CHANGELOG + HANDOFF entries.
+- **PR #804 merged (`fd27b18`)** — single-line follow-up backfilling the ADR-008 README index row, missed by PR #694 (MEH-501) when ADR-008 merged 2026-05-20. Closes that #694 side-effect index gap.
+
+### Final state
+- `docs/decisions/README.md` index: **001-006, 008, 009** (ADR-007 absent until MEH-486 ships).
+- MEH-678 closed via #803/#804; the post-merge comment is already on the Linear issue.
+
+### Earlier today (carry-forward, no new detail)
+- ~9 tickets closed earlier in the day are recorded in the sections below and prior HANDOFF entries — not re-detailed here.
+
 ## 2026-05-23 — GitHub default branch: main → staging
 
 שונה ידנית דרך GitHub UI (Settings → General → Default branch) ע"י ספיר.
@@ -1715,6 +1730,14 @@ session boundary; resume only with fresh user direction.
 
 ---
 
+## Deferred to post-launch
+
+Tickets explicitly punted past launch. Check before opening any new work in these areas.
+
+- **MEH-568 Phase 1 (App Store mining)** — 8-app shortlist locked in Linear. Trigger: launch + 30 days, same window as MEH-567 + MEH-569 review session. Smadar collects 10-20 reviews per app via screenshots when triggered.
+
+---
+
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
 
 Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
@@ -1722,7 +1745,7 @@ Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workf
 | PR | Issue | Outcome |
 |---|---|---|
 | #644 | MEH-563 — UptimeRobot synthetic monitoring docs | **Merged** to staging (squash, SHA `b7a0c57`) |
-| #645 | MEH-557 — Pre-launch quality stack research | **Merging next** (this branch) |
+| #645 | MEH-557 — Pre-launch quality stack research | **Merged** to staging (squash, SHA `a2245ba`) |
 | #643 | MEH-568 — App Store mining Phase 0 / slate approval | **Closed, not merged.** Slate locked verbatim; Phase 1 deferred to post-launch + 30 days. Trigger: launch ships + 30 days of own user data so we can triangulate App Store reviews against actual Mehamakor user pain points instead of guessing. Beta testing (5 users pre-launch) covers same discovery class at higher fidelity. |
 
 **MEH-568 slate locked (8 apps):**
