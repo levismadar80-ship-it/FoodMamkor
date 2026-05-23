@@ -54,7 +54,7 @@ function LoginPageBody() {
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
-  // tasks_for_claude_code.md task 7 — eye-icon toggle for password visibility
+  // Eye-icon toggle for password visibility
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ function LoginPageBody() {
   const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
-  // tasks_for_claude_code.md task 8 — inline field-level validation.
+  // Inline field-level validation.
   // onBlur flips the `*Touched` state; error / valid states below only
   // activate after the user has interacted with the field, so the form
   // doesn't show a sea of red borders before the user types anything.

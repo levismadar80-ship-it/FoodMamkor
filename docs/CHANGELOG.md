@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: remove orphan doc artifacts
+
+`chore`: **Removed** orphan doc artifacts — `docs/wave-5-scan.json` (15,344
+lines), `docs/wave-5-inventory.md`, `tasks_for_claude_code.md`. One-time
+static-analysis output, complexity inventory, and superseded task tracker. 12
+provenance references (5 code comments + 7 MANUAL_TESTING headers) stripped to
+remove broken pointers. Cleanup trilogy: #815 → #817 → this PR.
+
 ### 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix
 
 - 🐛 MEH-675: תיקון e2e.yml — fetch-depth: 0 ב-actions/checkout כדי שpaths-filter יעבוד ב-deployment_status events
