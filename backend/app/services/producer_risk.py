@@ -16,13 +16,17 @@ Related:  app/routers/chat.py:158-179 (canonical anthropic.Anthropic +
           auth.py:474,575 (PR1 BackgroundTasks signup hooks — PR3 adds
           score_producer adjacent), app/schemas/schemas.py
           RiskScoreResponse (admin GET wire shape).
-History:  MEH-509 PR3 (creation).
+History:  MEH-509 PR3 (creation); MEH-509 (incident 2026-05-23: JSON
+          parser hardening — Haiku wrapped JSON in markdown fences /
+          leading prose / empty body, all surfaced as
+          "Expecting value: line 1 column 1 (char 0)").
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import re
 import secrets
 from uuid import UUID
 
@@ -126,6 +130,50 @@ def _truncate_reasoning(raw) -> str | None:
     return text[:_REASONING_CAP_CHARS]
 
 
+# MEH-509 (incident 2026-05-23): Haiku 4.5 ignores "Respond ONLY in JSON"
+# often enough that bare json.loads() fails in prod. Best-effort recovery of
+# a JSON object from a response that may carry markdown fences, leading/
+# trailing prose, or a trailing comma. Returns the parsed dict, or None when
+# nothing object-shaped can be recovered (caller fails open → NULL columns).
+_TRAILING_COMMA_RE = re.compile(r",(\s*[}\]])")
+_CODE_FENCE_OPEN_RE = re.compile(r"^```[a-zA-Z0-9_-]*\s*")
+_CODE_FENCE_CLOSE_RE = re.compile(r"\s*```$")
+
+
+def _extract_json_object(raw: str) -> dict | None:
+    text = (raw or "").strip()
+    if not text:
+        return None
+    # Strip a wrapping markdown code fence (```json … ``` or ``` … ```).
+    if text.startswith("```"):
+        text = _CODE_FENCE_OPEN_RE.sub("", text)
+        text = _CODE_FENCE_CLOSE_RE.sub("", text).strip()
+    # Slice to the outermost braces if prose surrounds the object.
+    # Known limitation: a fence with prose AFTER the closing ``` (e.g.
+    # ```json\n{...}\n```\ntrailing) isn't recovered — this branch is
+    # skipped because the post-fence text already starts with "{", so the
+    # embedded ``` breaks json.loads and we fail open to NULL (the
+    # contract). The "first 200 chars" warning in _call_anthropic will
+    # surface it; make this slice unconditional in a follow-up if it fires.
+    if not text.startswith("{"):
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            return None
+        text = text[start : end + 1]
+    # Parse; retry once after removing trailing commas (Haiku artifact).
+    for candidate in (text, _TRAILING_COMMA_RE.sub(r"\1", text)):
+        try:
+            parsed = json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        # Guard against valid-JSON-but-not-an-object (e.g. "123" → int),
+        # which would crash the downstream .get() calls.
+        if isinstance(parsed, dict):
+            return parsed
+    return None
+
+
 def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
     """Single non-streaming Anthropic call. Returns (score, reasoning) or
     (None, None) on any failure. Caller is responsible for the DB UPDATE.
@@ -168,24 +216,39 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
     # Spec requires the model to respond ONLY in JSON, but Claude can still
     # wrap or hedge — be defensive on parsing.
     try:
+        # MEH-509 (incident 2026-05-23): filter to non-empty text blocks —
+        # a block with text="" / whitespace must be treated like no text at
+        # all, else "".join(...).strip() yields "" and json.loads("") raises
+        # the same "char 0" error the incident reported.
         text_blocks = [
             b.text
             for b in (response.content or [])
-            if getattr(b, "type", None) == "text"
+            if getattr(b, "type", None) == "text" and (b.text or "").strip()
         ]
         if not text_blocks:
             logger.warning("[RISK] no text blocks in anthropic response")
             return (None, None)
         body = "".join(text_blocks).strip()
-        parsed = json.loads(body)
-    except (json.JSONDecodeError, AttributeError, TypeError) as exc:
-        logger.warning("[RISK] anthropic response unparseable: %s", exc)
+    except (AttributeError, TypeError) as exc:
+        logger.warning("[RISK] anthropic response shape unexpected: %s", exc)
+        return (None, None)
+
+    parsed = _extract_json_object(body)
+    if parsed is None:
+        # MEH-509 (incident 2026-05-23): log a truncated repr of the raw body
+        # so the next parse failure is diagnosable in prod (the original
+        # incident logged only the exception, not the offending content).
+        logger.warning(
+            "[RISK] anthropic response unparseable; first 200 chars: %r",
+            body[:200],
+        )
         return (None, None)
 
     score = _clamp_score(parsed.get("score"))
     reasoning = _truncate_reasoning(parsed.get("reasoning"))
-    if score is None and reasoning is None:
-        return (None, None)
+    # Both-None collapses to the same (None, None) the caller treats as a
+    # skip, so no separate early return — keeps _call_anthropic at PLR0911's
+    # 6-return ceiling after the MEH-509 parse-path split.
     return (score, reasoning)
 
 
