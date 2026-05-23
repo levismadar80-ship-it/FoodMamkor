@@ -27,6 +27,36 @@ Both tickets shipped to `staging` this session:
   (D3 ICU plural), **MEH-685** (D2 toast icon+text API). D1 WhatsApp KEPT.
 - `staging → main` promotion is a separate decision.
 
+## 2026-05-23 — MEH-686 Session 2 closed: 10 deliverables ready for Phase β-γ commits
+
+Session 2 of MEH-686 (Documentation Consolidation per 23/5/26 audit) produced
+10 commit-ready markdown files. 4 review iterations (Layer 1-4) converged with
+"stop-the-cascade" decision after Layer 4 — spike-outcome trigger from ADR-009
+applied to review process, not just code.
+
+**Deliverables (in /mnt/user-data/outputs/ from chat 2026-05-23):**
+- docs/CONTEXT.md (197 lines) — AI-agnostic apex SoT, AGENTS.md/CONTEXT.md pattern
+- docs/BRAND.md (144 lines) — one-page brand narrative summary
+- 7 new ADRs (ADR-010 through ADR-016) — pricing, tagline, logo, icons, voice, cancellations, risk-tier
+- PROJECT-INSTRUCTIONS.md (162 lines) — Project Knowledge manual upload (Sapir, not git)
+
+**Session 3 mandate (next chat):**
+1. Read MEH-656 + MEH-472 full descriptions (verification before commits)
+2. Phase β atomic commit (CONTEXT + BRAND + decisions/README.md)
+3. Phase γ atomic per-ADR commits (7 ADRs + ADR-017 superseding ADR-001 for Y1)
+4. Apply Layer 3 carry-over text edits (ADR-010/011/016 Status wording)
+5. Sapir uploads PROJECT-INSTRUCTIONS.md manually to Project Knowledge
+
+**Carry-overs explicitly deferred to Session 3:**
+- ADR-017 JWT supersedence of ADR-001 (Y1 fix via supersedence, not rename)
+- MEH-656 v4.2 Hero canonical + ProducerCard tokens — possibly ADR-018+
+- MEH-472 surface-scoped LOCK — possibly ADR-018+ or ADR-014 addition
+
+**Pre-design-upload Checklist progress:** items 1, 3, 4 ready to mark complete
+after Session 3 commits land. Item 6 (ADR-013 merged) is the gating item.
+
+Closes MEH-686 Session 2 scope. MEH-686 epic remains Open (Phases δ/ε/ζ/η pending).
+
 ## 2026-05-23 — Doc Consolidation Plan (Session 1 deliverable)
 
 Doc-Consolidation-Plan.md created at session output — canonical migration plan for documentation sprawl + drift + active contradictions discovered across Drive + repo + Project Knowledge + Linear + userMemories.
