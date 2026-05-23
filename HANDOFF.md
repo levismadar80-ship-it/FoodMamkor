@@ -7,20 +7,23 @@
 LOW/MEDIUM-RISK infra. New `.github/scripts/staging_smoke.py` (httpx + stdlib) + a `workflow_dispatch`-only GitHub Action that runs the producer-signup pipeline against staging (register → admin row → WhatsApp welcome log → Anthropic risk-score log → admin badge 0–100) and fails loud. Catches the integration bug class unit tests miss.
 
 ### Completed
-- Branch `feature/meh-671-staging-smoke` off `origin/staging`.
-- Harness committed: `.github/scripts/staging_smoke.py` (py_compile + ruff clean).
-- Docs: CHANGELOG, this file, MANUAL_TESTING (smoke now automated; manual = fallback), `backend/.env.example` (SMOKE_ADMIN_EMAIL/PASSWORD for local runs).
-- Workflow YAML in the PR body (NOT committed — `.github/workflows/**` deny-listed for CC; Sapir pastes it).
+- **PR #800 merged to staging** (squash `72af356`). MEH-671 closed via `Closes`.
+- Harness `.github/scripts/staging_smoke.py` (py_compile + ruff clean) + docs (CHANGELOG, this file, MANUAL_TESTING, `backend/.env.example`).
+- Workflow `.github/workflows/staging-smoke.yml` committed by Sapir (b053971/ff0ed03); CC fixed the YAML `on:` boolean-trap (commit `c54eccd` → quoted `"on":`; bare `on:` parsed as boolean `True`, giving "No event triggers defined in `on`").
+- CI green at merge (pytest, build, lint, e2e all pass; only the non-required "Adversarial review (calibration)" red, as repo-wide).
 
-### Open — Sapir's action items (post-merge wiring)
-1. **Add GitHub Actions secrets** (Settings → Secrets and variables → Actions):
-   - `SMOKE_ADMIN_EMAIL` — staging admin login (e.g. `sint12345@gmail.com`)
-   - `SMOKE_ADMIN_PASSWORD` — that account's staging password
-   - `RAILWAY_STAGING_TOKEN` — already exists (reused from deploy.yml)
-   - (`STAGING_URL` is hardcoded in the YAML; `RAILWAY_SERVICE_NAME` variable already set, defaults `FoodMamkor`)
-2. **Paste the workflow**: copy the YAML from the PR body → `.github/workflows/staging-smoke.yml` → commit + push to the branch.
-3. **Trigger** via Actions → "Staging smoke" → Run workflow (set `pre_wait_seconds=90` if running right after a deploy). CC can then read the CI logs, fix, re-trigger (≤3 attempts).
-4. Requires staging `ANTHROPIC_API_KEY` set (else `risk_score` stays NULL and step 5 correctly fails).
+### ⛔ BLOCKER — "Run workflow" button not appearing (next session)
+**Root cause:** GitHub's configured **default branch is `main`** (`git remote show origin` → `HEAD branch: main`), NOT `staging` despite the CLAUDE.md convention. `workflow_dispatch` only renders the button (and only accepts API dispatch) when the workflow file is on the **default branch**. `staging-smoke.yml` is on `staging` but **absent from `main`** (staging is 3 commits ahead of main). So it cannot be triggered yet — by UI or API.
+
+**Fix — Sapir decides (do not auto-do either):**
+1. *(recommended)* Change GitHub default branch to `staging` (Settings → Branches). Aligns GitHub with the team convention, button appears immediately, no prod deploy. Side effect: new PRs default to `staging` base (already desired).
+2. Promote `staging → main` via the normal release PR — carries the workflow to `main`, but that's a production deploy of 3 commits (MEH-674/661/671).
+
+### Then — Sapir's wiring + first run
+1. **Secrets** (Settings → Secrets and variables → Actions): `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD` (staging admin, e.g. `sint12345@gmail.com`); confirm `RAILWAY_STAGING_TOKEN` exists. `STAGING_URL` hardcoded; `RAILWAY_SERVICE_NAME` var defaults `FoodMamkor`.
+2. Confirm staging `ANTHROPIC_API_KEY` set (else `risk_score` stays NULL → step 5 correctly fails).
+3. **Trigger**: Actions → "Staging smoke" → Run workflow (`pre_wait_seconds=90` right after a deploy). Send CC the run URL — it's a `workflow_dispatch` run, NOT a PR check, so it won't arrive via the #800 subscription.
+4. **Two sandbox-untestable spots to watch on first run** (MEH-360): `railway logs --service FoodMamkor` non-interactive output (steps 3/4) and `railway run --service Postgres -- psql "$DATABASE_URL"` (cleanup CTE).
 
 ### How to disable temporarily
 - It's `workflow_dispatch` only — it never runs unless manually triggered, so "disable" = just don't run it. To remove entirely: delete `.github/workflows/staging-smoke.yml`.
