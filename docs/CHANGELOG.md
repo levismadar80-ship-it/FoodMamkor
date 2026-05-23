@@ -4,6 +4,23 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-509 PR3 prod-fix: harden producer_risk JSON parser (staging incident 2026-05-23)
+
+`fix(MEH-509)`: production incident — after a producer-signup smoke on staging, the Anthropic call returned **HTTP 200** but `score_producer` logged `[RISK] anthropic response unparseable: Expecting value: line 1 column 1 (char 0)` and `producers.risk_score` stayed NULL (admin badge `אין מידע`). PR1 welcome/approval verified working in the same smoke — isolated to the PR3 risk path.
+
+**Root cause.** `backend/app/services/producer_risk.py` did a bare `json.loads(body)` on the model output. Haiku 4.5 ignores the prompt's `Respond ONLY in JSON` often enough that it wraps the object in a ` ```json … ``` ` fence (or prepends prose), so the first char isn't `{` → `JSONDecodeError`. A second latent path: a text block with empty/whitespace `text` passed the `if not text_blocks` guard, yielding `body == ""` → the same `char 0` error. The SDK access path (`response.content[].text` for `type == "text"`) was already correct for SDK 0.97.0 — the bug was purely the parse step.
+
+**Fix** (`producer_risk.py`):
+- New `_extract_json_object(raw)` — strips a wrapping markdown fence, slices to the outermost `{…}` when prose surrounds the object, parses, and retries once after removing trailing commas (Haiku artifact). Returns `None` (→ fail-open NULL) when nothing object-shaped is recoverable; an `isinstance(dict)` guard prevents `json.loads("123") → int` from crashing the downstream `.get()`.
+- Empty-content guard fix: the text-block filter now drops blocks whose `text` is empty/whitespace, so they're treated like no text at all.
+- The unparseable warning now logs `first 200 chars: %r` of the raw body — prod signal for the next incident (the original logged only the exception). PII note: this is LLM output, not raw producer data; fires only on parse failure; truncated + `%r`-escaped.
+
+**Scope.** No prompt change, no model change, no retry of the API call (the trailing-comma re-parse is in-process string cleanup), no PR1/PR2 touch, no new dependency (`re` is stdlib). Fail-open contract intact — signup never blocked.
+
+**Tests** (`tests/test_meh_509_pr3_risk_score.py`) — 5 new shapes the original suite never mocked (same test-gap class as MEH-325 — it only covered pure JSON + outright garbage): `test_score_producer_handles_markdown_fence_wrap`, `..._leading_text_then_json`, `..._empty_response`, `..._trailing_whitespace`, `..._trailing_comma`. Existing `test_score_producer_invalid_json_leaves_null` (genuine garbage → NULL) still valid.
+
+**Smoke deferred to Sapir** (CC sandbox can't reach `graph.facebook.com`/Anthropic — MEH-360): fresh producer signup on staging post-merge → admin badge should show a numeric score, Railway log `[RISK] scored producer=...`.
+
 ### 2026-05-22 — MEH-669: admin role lock-out via producer self-registration (OWASP A01)
 
 `fix(MEH-669)`: HIGH-RISK auth fix — closes a vertical privilege-escalation gap where any admin account that hit `/register/producer` (link, URL, or direct API call) had its `users.role` silently overwritten from `"admin"` to `"producer"` by the upgrade path at `backend/app/routers/auth.py:463`, locking the admin out of `/admin` (`frontend/app/[locale]/admin/layout.js:64` rejects non-admin role → push to `/login`). Discovered during staging smoke pre-production-promote (Sapir's `sint12345@gmail.com` admin account).

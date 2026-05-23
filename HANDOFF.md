@@ -2,6 +2,20 @@
 > Updated at the end of every session.
 > Read this before starting any work.
 
+## 2026-05-23 — MEH-509 PR3 prod-fix: producer_risk JSON parser hardening (staging incident)
+
+LOW-RISK fail-open service-layer fix. PR3 risk-score stayed NULL after a staging signup smoke: Anthropic returned 200 but `json.loads` failed with `Expecting value: line 1 column 1 (char 0)` — Haiku wrapped the JSON in a ```` ```json ```` fence (and a latent empty-text-block path produced the same error). New `_extract_json_object` helper strips fences / leading prose / trailing commas and slices to outermost braces; empty/whitespace text blocks now filtered; unparseable warning now logs first 200 chars of the body for future signal. `send_template`/SDK access path were fine — bug was purely the parse step.
+
+### Completed
+- Branch `feature/meh-509-risk-parser-fix` off `origin/staging` (1b351b3).
+- `backend/app/services/producer_risk.py` (parser + guard + log), `tests/test_meh_509_pr3_risk_score.py` (5 new shape tests), CHANGELOG, HANDOFF. No prompt/model change, no retry, no new deps, no PR1/PR2 touch.
+- Parser logic trace-verified locally against all 8 shapes (fence/prose/empty/ws/trailing-comma/garbage/bare-int/plain) — pytest itself runs in CI (sandbox pip blocked).
+- PR opened (draft).
+
+### Open / blocked
+- **Smoke deferred to Sapir** (MEH-360 — CC can't reach Anthropic/graph.facebook.com). Fresh producer signup on staging post-merge → admin badge should show a numeric risk score; Railway log `[RISK] scored producer=...`. If still NULL, the new `first 200 chars: %r` warning will show the actual body shape.
+- **MEH-670** — watchdog template param-count audit (from prior session) still open.
+
 ## 2026-05-22 — MEH-669: admin producer-lockout privilege-escalation fix
 
 HIGH-RISK auth fix. Admin accounts hitting `/register/producer` had `role` silently flipped to `"producer"` by the upgrade path, locking them out of `/admin`. Discovered during pre-prod-promote staging smoke (Sapir's `sint12345@gmail.com`).
