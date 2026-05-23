@@ -20,6 +20,17 @@ component (`reviews.owner_heading`, `body_label_alt`, `body_placeholder_alt`,
 post-deletion. Audit: `/tmp/cleanup_audit.md` + forensic verdict 2026-05-23.
 Follow-up to #815.
 
+### 2026-05-23 — chore: remove 11 legacy .docx/.xlsx files from repo root
+
+`chore`: deleted 10 obsolete `.docx` drafts (admin/testing/design/roadmap
+briefs) plus the unreferenced `mehamakor_producers.xlsx`, all superseded by
+the Drive Brand Hub (post-May 2026). Verified via repo-wide grep: no CI,
+script, or active doc depends on them. The two `admin_brief.docx`
+doc-comment references in `producer_import.py` and `import_producers_xlsx.py`
+were repointed to `CLAUDE.md §4`. Kept `mehamakor_producers_final.xlsx` and
+`mehamakor_producers_updated.xlsx` — they feed the live dev seed pipeline
+(`enrich_producers.py` → `import_producers_xlsx.py`).
+
 ### 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs
 
 `chore`: F2 of the May 2026 Actions cost sweep. Adds a `changes`
