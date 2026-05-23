@@ -4,6 +4,32 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-686 Phase γ commit 10: ADR-017 supersedence of ADR-001 (Y1 close)
+
+`docs(MEH-686)`: closes the Y1 audit finding — ADR-001 title described a
+target state (both tokens in HttpOnly cookie) that was never fully
+implemented. Actual state: refresh token in HttpOnly cookie, access token in
+localStorage (verified at `frontend/lib/auth-context.js:93` +
+`frontend/lib/api.js:12`).
+
+Per `docs/decisions/_TEMPLATE.md` "never edit an Accepted ADR" rule, the
+correction lands as a supersedence (ADR-017), not as a title rename. ADR-001
+status transitions to "Superseded by ADR-017".
+
+Files added:
+- `docs/decisions/ADR-017-jwt-access-token-localStorage.md` — documents actual
+  current state.
+
+Files updated:
+- `docs/decisions/ADR-001-jwt-httponly-cookie.md` — Status line only (per
+  README "one-line edit only" rule).
+- `docs/decisions/README.md` — ADR-001 row Status updated; ADR-017 row added.
+
+This is not a code change. No application behavior changes; the
+access-token-in-localStorage posture is documented, not modified.
+
+Risk tier: GREEN per ADR-016 (docs-only). Closes MEH-686 partial (Y1 finding).
+
 ### 2026-05-23 — MEH-686 Phase β: foundation commit (CONTEXT.md + BRAND.md + ADR index)
 
 `docs(MEH-686)`: Phase β of documentation consolidation epic. Adds two new
