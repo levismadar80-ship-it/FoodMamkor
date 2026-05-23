@@ -87,7 +87,7 @@ jobs:
           # Vercel omits it on fast deploys — avoids an instant failure
           # from checkout receiving an empty ref string.
           ref: ${{ github.event.deployment.sha || github.sha }}
-          fetch-depth: 0
+          fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
       - name: Set up Node.js 20
         uses: actions/setup-node@v6
         with:
