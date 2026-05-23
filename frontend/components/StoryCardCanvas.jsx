@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { Camera } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
@@ -224,7 +225,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <p className="text-sm font-semibold text-site-text">{t("title")}</p>
+      <p className="text-sm font-semibold text-site-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
 
       {/* Canvas preview — scaled to fit */}
       <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
