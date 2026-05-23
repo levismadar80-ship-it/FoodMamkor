@@ -48,8 +48,13 @@ def _install_anthropic_mock(
     if raise_exc is not None:
         messages_create.side_effect = raise_exc
     else:
+        # `is None` (not `or`) so an explicit response_text="" reaches the
+        # mock as a real empty string — `"" or default` would coalesce it
+        # back to the default JSON and silently break the empty-response
+        # test (MEH-509 incident 2026-05-23).
+        default = '{"score": 42, "reasoning": "פרופיל מלא, ניסוח עברית תקין"}'
         messages_create.return_value = _fake_anthropic_response(
-            response_text or '{"score": 42, "reasoning": "פרופיל מלא, ניסוח עברית תקין"}'
+            default if response_text is None else response_text
         )
 
     fake_client = SimpleNamespace(messages=SimpleNamespace(create=messages_create))
@@ -315,6 +320,109 @@ def test_score_producer_invalid_json_leaves_null(db, monkeypatch):
     db.refresh(producer)
     assert producer.risk_score is None
     assert producer.risk_reasoning is None
+
+
+# ---- Parser hardening (MEH-509 incident 2026-05-23) ------------------------
+# Haiku 4.5 ignores "Respond ONLY in JSON" often enough that the bare
+# json.loads() shipped in PR3 failed in prod with "Expecting value: line 1
+# column 1 (char 0)". These cover the realistic shapes the model returns.
+# Same test-gap class as MEH-325: the original suite only mocked pure JSON
+# + outright garbage, never the fenced/prose/empty shapes that actually fire.
+
+
+def test_score_producer_handles_markdown_fence_wrap(db, monkeypatch):
+    from app.services.producer_risk import score_producer
+
+    producer = make_producer(db, name="חוות הגדר")
+    db.commit()
+
+    _install_anthropic_mock(
+        monkeypatch,
+        response_text='```json\n{"score": 15, "reasoning": "פרופיל תקין ומלא"}\n```',
+    )
+
+    score_producer(producer.id)
+
+    db.expire(producer)
+    db.refresh(producer)
+    assert producer.risk_score == 15
+    assert producer.risk_reasoning == "פרופיל תקין ומלא"
+
+
+def test_score_producer_handles_leading_text_then_json(db, monkeypatch):
+    from app.services.producer_risk import score_producer
+
+    producer = make_producer(db, name="חוות הפתיח")
+    db.commit()
+
+    _install_anthropic_mock(
+        monkeypatch,
+        response_text='Here is my assessment:\n{"score": 60, "reasoning": "חסר תיאור עסק"}',
+    )
+
+    score_producer(producer.id)
+
+    db.expire(producer)
+    db.refresh(producer)
+    assert producer.risk_score == 60
+    assert producer.risk_reasoning == "חסר תיאור עסק"
+
+
+def test_score_producer_handles_empty_response(db, monkeypatch):
+    """Empty / whitespace-only content must fail open to NULL, not crash.
+    Also exercises the MEH-509 guard fix: a text block whose text is empty
+    is filtered out so the join doesn't yield "" → json.loads("") → char 0."""
+    from app.services.producer_risk import score_producer
+
+    producer = make_producer(db, name="חוות הריק")
+    db.commit()
+
+    _install_anthropic_mock(monkeypatch, response_text="")
+
+    score_producer(producer.id)
+
+    db.expire(producer)
+    db.refresh(producer)
+    assert producer.risk_score is None
+    assert producer.risk_reasoning is None
+
+
+def test_score_producer_handles_trailing_whitespace(db, monkeypatch):
+    from app.services.producer_risk import score_producer
+
+    producer = make_producer(db, name="חוות הרווח")
+    db.commit()
+
+    _install_anthropic_mock(
+        monkeypatch,
+        response_text='   \n  {"score": 20, "reasoning": "תקין"}  \n\n',
+    )
+
+    score_producer(producer.id)
+
+    db.expire(producer)
+    db.refresh(producer)
+    assert producer.risk_score == 20
+    assert producer.risk_reasoning == "תקין"
+
+
+def test_score_producer_handles_trailing_comma(db, monkeypatch):
+    from app.services.producer_risk import score_producer
+
+    producer = make_producer(db, name="חוות הפסיק")
+    db.commit()
+
+    _install_anthropic_mock(
+        monkeypatch,
+        response_text='{"score": 33, "reasoning": "כמעט תקין",}',
+    )
+
+    score_producer(producer.id)
+
+    db.expire(producer)
+    db.refresh(producer)
+    assert producer.risk_score == 33
+    assert producer.risk_reasoning == "כמעט תקין"
 
 
 def test_score_producer_score_out_of_range_clamped(db, monkeypatch):
