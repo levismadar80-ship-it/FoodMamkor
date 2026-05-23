@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-686 Phase β: foundation commit shipped (PR pending)
+
+`docs(MEH-686)`: Phase β atomic commit landed on
+`feature/meh-686-phase-b-foundation`. Three files: `docs/CONTEXT.md` (199
+lines, AI-agnostic apex SoT), `docs/BRAND.md` (144 lines, brand one-pager),
+`docs/decisions/README.md` (+9 rows for ADRs 010-019 except 017).
+
+Risk tier: GREEN per ADR-016. End-to-end authority. No WAIT gates.
+
+Phase γ next: 9 ADRs (010-016, 018, 019) as 9 atomic commits in a single PR
+with rebase-and-merge. Then commit 10 = ADR-017 supersedence of ADR-001 (Y1
+close).
+
+Post-commits Linear updates (Sapir, via Linear MCP): Cancel MEH-656 + MEH-665
+(content absorbed into ADRs). Add closing comments to MEH-655 + MEH-472
+pointing to ADR-014 + BRAND.md §6.
+
+Pre-design-upload Checklist progress: items 1, 3, 4 ready to mark complete
+after Phase β + γ merge to staging.
+
 ## 2026-05-23 — Session close: MEH-657 + MEH-675 both MERGED to staging
 
 Both tickets shipped to `staging` this session:
