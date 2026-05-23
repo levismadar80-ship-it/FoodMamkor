@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix
+
+- 🐛 MEH-675: תיקון e2e.yml — fetch-depth: 0 ב-actions/checkout כדי שpaths-filter יעבוד ב-deployment_status events
+
 ### 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs
 
 `chore`: F2 of the May 2026 Actions cost sweep. Adds a `changes`
