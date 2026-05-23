@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-674: recognize staging as valid environment, harden FRONTEND_URL drift guard
+
+`fix(MEH-674)`: the `FRONTEND_URL drift: env=development but frontend_url points at mehamakor.online` warning fired on every staging backend boot. Phase 0 found this is a **true positive**, not a code bug — Railway staging runs `ENV=development` while `FRONTEND_URL=https://staging.mehamakor.online`, so the `development` branch of `_check_frontend_url_consistency` (`backend/app/startup.py`) correctly flagged the mismatch (the MEH-334 guard working as designed). The code + `tests/test_startup_guard.py` already handled all three environments.
+
+**Code hardening (`startup.py`):** added `_RECOGNIZED_ENVS = (development, staging, production)`. A typo like `ENV=stage` previously matched none of the drift branches and passed silently, disabling the guard with no signal; it now emits an `unrecognized ENV value` warning. Existing three drift branches unchanged → no regression.
+
+**Docs:** `backend/.env.example` now declares `ENV=development` with the three valid values documented, and notes the env var is **`ENV`, not `ENVIRONMENT`** (read by `config.py:_load_settings()` + `startup.py`).
+
+**Tests:** `tests/test_startup_guard.py` — `test_unrecognized_env_warns` (parametrized typos) + `test_recognized_envs_never_flagged_as_unrecognized`.
+
+**Operational fix (post-merge — Sapir):** set Railway staging **`ENV=staging`** (not `ENVIRONMENT`). With `ENV=staging` and the `staging.`-prefixed URL, all drift branches stay silent. This env-var change — not the code — is what actually clears the boot warning.
+
 ### 2026-05-23 — MEH-509 PR3 prod-fix: harden producer_risk JSON parser (staging incident 2026-05-23)
 
 `fix(MEH-509)`: production incident — after a producer-signup smoke on staging, the Anthropic call returned **HTTP 200** but `score_producer` logged `[RISK] anthropic response unparseable: Expecting value: line 1 column 1 (char 0)` and `producers.risk_score` stayed NULL (admin badge `אין מידע`). PR1 welcome/approval verified working in the same smoke — isolated to the PR3 risk path.
