@@ -87,7 +87,7 @@ jobs:
           # Vercel omits it on fast deploys — avoids an instant failure
           # from checkout receiving an empty ref string.
           ref: ${{ github.event.deployment.sha || github.sha }}
-
+          fetch-depth: 0
       - name: Set up Node.js 20
         uses: actions/setup-node@v6
         with:
