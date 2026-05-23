@@ -112,7 +112,10 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: Run E2E tests
-        run: npx playwright test
+        # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
+        # failure so flake stops hiding behind the retry. retries: 1 in CI is
+        # preserved (config); the flag detects flake without disabling retries.
+        run: npx playwright test --fail-on-flaky-tests
         working-directory: frontend
         env:
           TEST_URL: ${{ github.event.deployment_status.target_url }}
@@ -128,5 +131,10 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          # MEH-484 — also capture per-test trace.zip files so the trace viewer
+          # (playwright.dev/docs/trace-viewer) can replay flake-on-retry runs
+          # without re-running locally.
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/**/trace.zip
           retention-days: 7

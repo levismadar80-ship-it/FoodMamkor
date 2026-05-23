@@ -31,6 +31,18 @@ on Dependabot dep-bump PRs. Est. ~285 min/month saved (~19 runs × ~15 min;
   `deployment.ref`. If it ever sends a SHA, the guard safely no-ops (E2E still
   runs, just no saving). Verify against a real Dependabot deploy after merge.
 - Remaining e2e.yml cost-sweep issues (B+) are separate tickets.
+## 2026-05-23 — MEH-484: Playwright fail-on-flaky (rebuilt via MEH-681)
+
+`ci(MEH-484)` — landed via the MEH-681 PR backlog cleanup. Original work
+authored 2026-05-07 (draft PR #539); rebuilt today onto fresh `staging`
+because the branch had no merge base with current staging (squash-merge
+SHA drift). Two substantive files: `.github/workflows/e2e.yml` gains
+`--fail-on-flaky-tests` + trace.zip artifact capture;
+`frontend/playwright.config.ts` flips `video: 'off'` →
+`'retain-on-failure'`. Rebuild used a 3-way cherry-pick (not verbatim
+copy) so the MEH-499 docs-only paths-filter skip block that landed on
+staging after 2026-05-07 was preserved. PR #539 stays draft, base
+`staging`. Closes MEH-484.
 
 ## 2026-05-23 — MEH-486 ADR-007 Expand-Contract codified (landed via MEH-681 Tier 2.5)
 
