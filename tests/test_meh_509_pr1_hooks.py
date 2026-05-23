@@ -73,11 +73,9 @@ def test_signup_with_phone_fires_welcome_template(client, db, monkeypatch):
     assert payload["template"]["name"] == "producer_welcome_v1"
     assert payload["template"]["language"]["code"] == "he"
     params = payload["template"]["components"][0]["parameters"]
-    assert [p["text"] for p in params] == [
-        "חוות MEH-509",
-        # frontend_url default in test env is http://localhost:3000
-        "http://localhost:3000/producer/dashboard",
-    ]
+    # MEH-509 PR1 prod-fix: template signature is 1 param (name only).
+    # Pre-fix shape sent [name, dashboard_url] → Meta 400 "expected 1".
+    assert [p["text"] for p in params] == ["חוות MEH-509"]
 
 
 def test_signup_without_phone_skips_welcome(client, db, monkeypatch):
@@ -171,21 +169,23 @@ def test_approve_fires_approval_template(client, db, monkeypatch):
     assert payload["template"]["name"] == "producer_approved_v1"
     assert payload["template"]["language"]["code"] == "he"
     params = payload["template"]["components"][0]["parameters"]
-    assert [p["text"] for p in params] == [
-        "חוות האישור",
-        "http://localhost:3000/havat-haishur",
-    ]
+    # MEH-509 PR1 prod-fix: template signature is 1 param (name only).
+    # Pre-fix shape sent [name, page_url] → Meta 400 "expected 1".
+    assert [p["text"] for p in params] == ["חוות האישור"]
 
 
-def test_approve_with_null_slug_uses_producer_id_fallback(client, db, monkeypatch):
+def test_approve_with_null_slug_still_fires_with_name_only(client, db, monkeypatch):
+    """Approval must still fire when slug is null. MEH-509 PR1 prod-fix
+    dropped the slug-vs-id URL branch entirely (URL no longer sent), so
+    the slug=null path must behave identically to the slug=set path:
+    exactly one Meta call, exactly one body param (the producer name)."""
     captured = _install_whatsapp_capture(monkeypatch)
-    resp, producer = _approve(client, db, slug=None)
+    resp, _ = _approve(client, db, slug=None)
 
     assert resp.status_code == 200
     assert len(captured) == 1
     params = captured[0]["json"]["template"]["components"][0]["parameters"]
-    # Fallback shape: /producer/{producer.id}
-    assert params[1]["text"] == f"http://localhost:3000/producer/{producer.id}"
+    assert [p["text"] for p in params] == ["חוות האישור"]
 
 
 def test_approve_whatsapp_failure_does_not_break_approval(client, db, monkeypatch):
@@ -195,3 +195,41 @@ def test_approve_whatsapp_failure_does_not_break_approval(client, db, monkeypatc
     # Approval committed, response 200, even though Meta raised.
     assert resp.status_code == 200
     assert len(captured) == 1
+
+
+# ---------- Param-count regression guards (MEH-509 PR1 prod-fix) --------------
+# Tight assertion that both producer-facing templates send exactly ONE body
+# parameter. Drift in either direction (back to 2 params, or down to 0)
+# would trigger a Meta 400 in prod; these tests catch it pre-merge.
+
+
+def test_welcome_sends_exactly_one_body_param(client, db, monkeypatch):
+    captured = _install_whatsapp_capture(monkeypatch)
+    user = make_user(db, email="meh509-param-guard-welcome@example.com")
+
+    resp = client.post(
+        "/auth/register/producer",
+        json=VALID_PRODUCER_UPGRADE_REG,
+        headers=auth_header(user),
+    )
+
+    assert resp.status_code == 200
+    assert len(captured) == 1
+    params = captured[0]["json"]["template"]["components"][0]["parameters"]
+    assert len(params) == 1, (
+        f"producer_welcome_v1 expects exactly 1 body param; got {len(params)}. "
+        "Adding/removing params requires a matching template update in Meta."
+    )
+
+
+def test_approval_sends_exactly_one_body_param(client, db, monkeypatch):
+    captured = _install_whatsapp_capture(monkeypatch)
+    resp, _ = _approve(client, db, slug="param-guard-slug")
+
+    assert resp.status_code == 200
+    assert len(captured) == 1
+    params = captured[0]["json"]["template"]["components"][0]["parameters"]
+    assert len(params) == 1, (
+        f"producer_approved_v1 expects exactly 1 body param; got {len(params)}. "
+        "Adding/removing params requires a matching template update in Meta."
+    )

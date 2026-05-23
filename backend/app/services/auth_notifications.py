@@ -59,19 +59,22 @@ def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
 def notify_producer_registered(name: str, phone: str | None) -> bool:
     """Send WhatsApp welcome template to the new producer (MEH-509 PR1).
 
-    Fires the Meta-approved ``producer_welcome_v1`` template with two
-    positional params: business name + dashboard URL. Returns True on
-    success, False on skip/failure (MEH-287 contract preserved).
+    Fires the Meta-approved ``producer_welcome_v1`` template with one
+    positional param: business name. Returns True on success, False on
+    skip/failure (MEH-287 contract preserved).
     """
+    # MEH-509 PR1 prod-fix: template signature is 1 param (name only); the
+    # original 2-param shape returned 400 from Meta. The earlier dashboard
+    # URL construction was removed alongside the param — if a Quick-Reply
+    # URL button is added to the template later, reintroduce it then.
     if not _producer_wa_preflight(name, phone, "welcome"):
         return False
     normalized = _normalize_il_phone(phone)
-    profile_url = f"{settings.frontend_url}/producer/dashboard"
     try:
         ok = send_template(
             normalized,
             "producer_welcome_v1",
-            [name, profile_url],
+            [name],
             lang="he",
         )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
@@ -89,31 +92,28 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
 def notify_producer_approved(
     name: str,
     phone: str | None,
-    slug: str | None,
-    producer_id: UUID | str,
+    slug: str | None,  # noqa: ARG001 — kept in signature; callers pre-wired
+    producer_id: UUID | str,  # noqa: ARG001 — kept in signature; callers pre-wired
 ) -> bool:
     """Send WhatsApp approval template once admin approves the producer.
 
-    Fires ``producer_approved_v1`` with [name, page_url]. ``page_url``
-    prefers ``slug`` (public custom URL); falls back to
-    ``/producer/{producer_id}`` when slug is null, with a log.info so
-    fallback frequency is monitorable in prod.
+    Fires ``producer_approved_v1`` with one positional param: business
+    name. Returns True on success, False on skip/failure.
     """
+    # MEH-509 PR1 prod-fix: template signature is 1 param (name only); the
+    # original 2-param shape (name + page_url) returned 400 from Meta. The
+    # slug-vs-id URL construction was removed alongside the second param —
+    # if a Quick-Reply URL button is added to the template later,
+    # reintroduce that branch in the same PR. `slug` + `producer_id` stay
+    # in the signature so callers in routers/admin.py don't need to change.
     if not _producer_wa_preflight(name, phone, "approved"):
         return False
     normalized = _normalize_il_phone(phone)
-    if slug:
-        page_url = f"{settings.frontend_url}/{slug}"
-    else:
-        page_url = f"{settings.frontend_url}/producer/{producer_id}"
-        logger.info(
-            f"[WHATSAPP] Producer approved fallback URL used for '{name}' (no slug set)"
-        )
     try:
         ok = send_template(
             normalized,
             "producer_approved_v1",
-            [name, page_url],
+            [name],
             lang="he",
         )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open

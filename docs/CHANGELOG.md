@@ -4,6 +4,27 @@
 
 ## Unreleased
 
+### 2026-05-22 — MEH-509 PR1 prod-fix: forward exactly 1 template param + remove unused URL construction
+
+`fix(MEH-509)`: production regression — both `producer_welcome_v1` and `producer_approved_v1` WhatsApp templates were failing with Meta 400 ("expected 1, got 0") because callers in `backend/app/services/auth_notifications.py` passed `[name, url]` (2 params) while the Meta-approved templates accept exactly 1 body param (`{{1}}` = business name).
+
+**Root cause.** `send_template` at `backend/app/services/whatsapp.py:71-108` correctly forwards `params` to Meta's `components[].parameters[]` shape — the bug was purely caller-side. Existing PR1 tests at `tests/test_meh_509_pr1_hooks.py:75-80,173-177,186-188` asserted the WRONG 2-param contract, so the mismatch shipped green. Same **test-gap class** as MEH-325 (Resend transport bugs invisible to pytest because the transport is mocked).
+
+**Fix.**
+- `auth_notifications.py:69` — removed `profile_url = f"{settings.frontend_url}/producer/dashboard"` (now unused).
+- `auth_notifications.py:74` — `[name, profile_url]` → `[name]`.
+- `auth_notifications.py:105-111` — removed entire slug-vs-id `page_url` block + fallback `logger.info` (CLAUDE.md exec §11: dead code removed, not carried). `slug` + `producer_id` retained in signature with `# noqa: ARG001` so callers in `routers/admin.py` don't need to change. If a Quick-Reply URL button is added to the template later, the branch returns in that PR.
+- `auth_notifications.py:116` — `[name, page_url]` → `[name]`.
+
+**Tests.**
+- Existing assertions corrected to the 1-param shape (welcome + approval).
+- `test_approve_with_null_slug_uses_producer_id_fallback` repurposed → `test_approve_with_null_slug_still_fires_with_name_only`: asserts slug=null still emits exactly one Meta call with `[name]` only.
+- Added two tight regression guards: `test_welcome_sends_exactly_one_body_param` + `test_approval_sends_exactly_one_body_param`. Both assert `len(params) == 1` with a Hebrew-readable failure message explaining the template-signature constraint, so future drift in either direction (back to 2, down to 0) fails CI pre-merge.
+
+**Scope.** 2 files (1 service, 1 test). No schema, no auth.py, no central component, no template changes in Meta. `send_template` itself untouched. Out-of-scope caller `auto_reply_watchdog.py:164` (PR2b code) left alone.
+
+**Smoke verification deferred to Smadar** (CC sandbox can't reach `graph.facebook.com` — MEH-360). Manual smoke: trigger a fresh producer signup on staging post-merge; expect `producer_welcome_v1` to land + Railway log `[WHATSAPP] Producer welcome template sent`.
+
 ### 2026-05-22 — MEH-641 Carry-overs #1 PR-A + #2: noindex on 4 auth routes + 404 path doc comments
 
 `fix(MEH-641)`: two LOW-RISK SEO hygiene fixes carried over from MEH-476 Wave 6 adversarial review, bundled in one PR.
