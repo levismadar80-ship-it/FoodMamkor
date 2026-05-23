@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 
 /**
@@ -11,7 +12,7 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * Props:
  *   - open: boolean
  *   - onClose: () => void
- *   - message: string (default: "כדי לשמור עסקים אוהבים — היכנסי")
+ *   - message: string (default: modals.login_prompt.default_message)
  *   - nextPath: string (the URL to redirect back to after login)
  *
  * Accessibility:
@@ -26,9 +27,11 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 export default function LoginPromptModal({
   open,
   onClose,
-  message = "כדי לשמור עסקים אוהבים — היכנסי",
+  message,
   nextPath = "/",
 }) {
+  const t = useTranslations("modals.login_prompt");
+  const promptMessage = message ?? t("default_message");
   const primaryRef = useRef(null);
   const modalRef = useRef(null);
 
@@ -60,7 +63,7 @@ export default function LoginPromptModal({
     };
     window.addEventListener("keydown", handleKey);
 
-    // Move focus to "היכנסי" on open so keyboard users can Enter-confirm.
+    // Move focus to the login CTA on open so keyboard users can Enter-confirm.
     primaryRef.current?.focus();
 
     // Body scroll lock — restore on close.
@@ -94,7 +97,7 @@ export default function LoginPromptModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="סגרי חלונית"
+          aria-label={t("close_aria")}
           className="absolute top-3 start-3 text-site-muted hover:text-site-text transition p-1 rounded focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X size={20} weight="bold" aria-hidden="true" />
@@ -104,23 +107,23 @@ export default function LoginPromptModal({
           id="login-prompt-title"
           className="font-headline text-xl font-bold text-site-text mb-3"
         >
-          רוצה לשמור? 🌿
+          {t("title")}
         </h2>
-        <p className="text-site-text mb-6 leading-relaxed">{message}</p>
+        <p className="text-site-text mb-6 leading-relaxed">{promptMessage}</p>
 
         <a
           ref={primaryRef}
           href={loginHref}
           className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          היכנסי
+          {t("login_cta")}
         </a>
         <button
           type="button"
           onClick={onClose}
           className="block w-full mt-2 text-sm text-site-muted hover:text-site-text transition py-2 rounded focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          אולי אחר כך
+          {t("dismiss_cta")}
         </button>
       </div>
     </div>

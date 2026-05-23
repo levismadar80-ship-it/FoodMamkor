@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
@@ -15,23 +16,35 @@ import CitySearch from "@/components/CitySearch";
  * normal RTL flow; only the map canvas overlays need physical
  * positioning).
  */
+// PR-C4a chunk 4b: consolidated with chunk-3 LocationModal — both surfaces
+// now share `modals.location.popular_cities.*` keys. The `canonical` HE value
+// is the data axis (sent to onSelectCity → backend search), distinct from
+// the displayed label which resolves via t(`modals.location.popular_cities.${key}`).
+const POPULAR_CITIES = [
+  { key: "tel_aviv", canonical: "תל אביב" },
+  { key: "jerusalem", canonical: "ירושלים" },
+  { key: "haifa", canonical: "חיפה" },
+  { key: "beersheba", canonical: "באר שבע" },
+];
+
 export default function CityPickerModal({ open, onClose, onSelectCity }) {
+  const t = useTranslations();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full max-w-sm p-5 relative">
-        <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-light flex items-center justify-center text-site-muted" aria-label="סגור">
+        <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-light flex items-center justify-center text-site-muted" aria-label={t("common.aria.close")}>
           <X size={16} weight="bold" />
         </button>
-        <h3 className="font-headline text-lg font-bold text-site-text mb-1">לאן לשלוח?</h3>
-        <p className="text-site-muted text-sm mb-4">בחרי עיר כדי לסנן לפי משלוח</p>
+        <h3 className="font-headline text-lg font-bold text-site-text mb-1">{t("map.city_picker.heading")}</h3>
+        <p className="text-site-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         <div className="flex flex-wrap gap-2 mb-4">
-          {["תל אביב", "ירושלים", "חיפה", "באר שבע"].map((c) => (
-            <button key={c} type="button" onClick={() => onSelectCity(c)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition">{c}</button>
+          {POPULAR_CITIES.map(({ key, canonical }) => (
+            <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
           ))}
         </div>
-        <CitySearch id="city-picker-search" label="עיר אחרת" value="" onChange={(v) => { if (v.trim()) onSelectCity(v.trim()); }} placeholder="הקלידי שם עיר..." />
-        <button type="button" onClick={onClose} className="w-full mt-3 text-center text-sm text-site-muted hover:text-site-text transition py-2">דלגי</button>
+        <CitySearch id="city-picker-search" label={t("map.city_picker.other.label")} value="" onChange={(v) => { if (v.trim()) onSelectCity(v.trim()); }} placeholder={t("map.city_picker.other.placeholder")} />
+        <button type="button" onClick={onClose} className="w-full mt-3 text-center text-sm text-site-muted hover:text-site-text transition py-2">{t("map.city_picker.skip")}</button>
       </div>
     </div>
   );

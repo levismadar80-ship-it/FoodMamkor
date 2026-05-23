@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Gauge,
   Storefront,
@@ -14,9 +15,9 @@ import {
 } from "@phosphor-icons/react";
 
 /**
- * /admin/help — internal admin handbook (MEH-21).
+ * /admin/help — internal admin handbook (MEH-21, i18n MEH-475 PR-B).
  *
- * Static Hebrew guide rendered inside the /admin layout. A sticky
+ * Static admin guide rendered inside the /admin layout. A sticky
  * table-of-contents links to in-page anchors; each section is a
  * self-contained block that admins can skim without scrolling the
  * whole document.
@@ -27,226 +28,176 @@ import {
  * the same redaction pattern.
  */
 export default function AdminHelpPage() {
+  const t = useTranslations("admin.help");
+
+  const richComponents = {
+    strong: (chunks) => <strong>{chunks}</strong>,
+    code: (chunks) => (
+      <code className="bg-light px-1.5 py-0.5 rounded text-xs">{chunks}</code>
+    ),
+    em: (chunks) => <em>{chunks}</em>,
+    placeholder: (chunks) => <>&lt;{chunks}&gt;</>,
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-4">
         <Lifebuoy size={28} weight="fill" className="text-primary" aria-hidden="true" />
-        <h1 className="text-2xl font-bold">עזרה לאדמין</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
       </div>
       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
-        המדריך הזה מסכם את הכלים של פאנל הניהול, תהליכי אישור מרכזיים,
-        ותגובות לתקלות. מעודכן ידנית — אם משהו כאן לא נכון, פתחי PR עם
-        תיקון במקום להשאיר את הכיוון הבא באפלה.
+        {t("intro")}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
         {/* Sticky TOC */}
         <aside className="md:sticky md:top-24 self-start bg-white border border-border rounded-[12px] p-4 text-sm">
-          <p className="text-xs uppercase tracking-wider text-text-secondary mb-2">תוכן</p>
+          <p className="text-xs uppercase tracking-wider text-text-secondary mb-2">{t("toc_label")}</p>
           <nav className="flex flex-col gap-1.5">
-            <a href="#dashboard" className="hover:text-primary transition">סקירת לוח המחוונים</a>
-            <a href="#producers" className="hover:text-primary transition">אישור ודחיית בתי עסק</a>
-            <a href="#users" className="hover:text-primary transition">ניהול משתמשים</a>
-            <a href="#reviews" className="hover:text-primary transition">ביקורות</a>
-            <a href="#reports" className="hover:text-primary transition">דיווחים</a>
-            <a href="#experiences" className="hover:text-primary transition">חוויות</a>
-            <a href="#emergency" className="hover:text-primary transition">תקלות חירום</a>
-            <a href="#urls" className="hover:text-primary transition">כתובות חשובות</a>
+            <a href="#dashboard" className="hover:text-primary transition">{t("toc.dashboard")}</a>
+            <a href="#producers" className="hover:text-primary transition">{t("toc.producers")}</a>
+            <a href="#users" className="hover:text-primary transition">{t("toc.users")}</a>
+            <a href="#reviews" className="hover:text-primary transition">{t("toc.reviews")}</a>
+            <a href="#reports" className="hover:text-primary transition">{t("toc.reports")}</a>
+            <a href="#experiences" className="hover:text-primary transition">{t("toc.experiences")}</a>
+            <a href="#emergency" className="hover:text-primary transition">{t("toc.emergency")}</a>
+            <a href="#urls" className="hover:text-primary transition">{t("toc.urls")}</a>
           </nav>
         </aside>
 
         {/* Content */}
         <div className="space-y-10">
           {/* ===== Dashboard ===== */}
-          <Section id="dashboard" icon={Gauge} title="סקירת לוח המחוונים">
-            <p>
-              <strong>/admin</strong> — הדף הראשי. ארבע מטריקות עליונות (משתמשים,
-              בתי עסק, אירועים, דיווחים פתוחים) + שורת delta שבועית מתחתיה.
-            </p>
+          <Section id="dashboard" icon={Gauge} title={t("sections.dashboard.title")}>
+            <p>{t.rich("sections.dashboard.p1", richComponents)}</p>
             <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>
-                <strong>Pill צהוב על &ldquo;לוח מחוונים&rdquo; ב-sidebar</strong> — כמות פריטים
-                ממתינים לאישור (בתי עסק + דיווחים + מוצרים מסומנים + חוויות).
-                מתרענן בכל ניווט פנימי.
-              </li>
-              <li>
-                <strong>גרף DAU 30 ימים</strong> — מבוסס על
-                <code className="mx-1 bg-light px-1.5 py-0.5 rounded text-xs">users.last_active_at</code>
-                שמתעדכן בכל בקשה מאומתת (throttle של 5 דק׳).
-              </li>
-              <li>
-                <strong>ערים מובילות</strong> — מצטבר מ-
-                <code className="mx-1 bg-light px-1.5 py-0.5 rounded text-xs">producer_page_views</code>
-                (שורות ללא city לא נספרות).
-              </li>
-              <li>
-                <strong>בריאות שרת</strong> — זמן תגובה ממוצע + בקשות לדקה משעה
-                אחרונה. הנתון per-process בלבד (מתאפס בכל deploy).
-              </li>
+              <li>{t.rich("sections.dashboard.li1", richComponents)}</li>
+              <li>{t.rich("sections.dashboard.li2", richComponents)}</li>
+              <li>{t.rich("sections.dashboard.li3", richComponents)}</li>
+              <li>{t.rich("sections.dashboard.li4", richComponents)}</li>
             </ul>
           </Section>
 
           {/* ===== Producers ===== */}
-          <Section id="producers" icon={Storefront} title="אישור ודחיית בתי עסק">
-            <p><strong>/admin/producers</strong> — טבלה + חיפוש + ייבוא Excel.</p>
+          <Section id="producers" icon={Storefront} title={t("sections.producers.title")}>
+            <p>{t.rich("sections.producers.p1", richComponents)}</p>
             <ol className="list-decimal ps-5 space-y-2 mt-3">
-              <li>סנני לפי סטטוס <strong>pending</strong>.</li>
-              <li>
-                לחצי על שם העסק → עמוד פרטים מלא, כולל הצהרות רישוי,
-                תמונות, ותיאור.
-              </li>
-              <li>
-                <strong>לאשר:</strong> לחצי <em>201Cאישור מהיר201D</em>. העסק עובר
-                ל-<code className="bg-light px-1.5 py-0.5 rounded text-xs">approved</code>,
-                מופיע בדף הבית, ומגיע במפה.
-              </li>
-              <li>
-                <strong>לדחות:</strong> <em>201Cדחייה201D</em> + סיבה קצרה שתישלח
-                במייל לבעלת העסק.
-              </li>
-              <li>
-                <strong>ערוך (pencil):</strong> מעביר ל-
-                <code className="bg-light px-1.5 py-0.5 rounded text-xs">
-                  /admin/producers/[id]/edit
-                </code>
-                — כל השדות כולל 201Cמאומת201D / 201Cמומלץ201D / 201Cסטטוס זמינות201D / 201Cאמצעי קשר ראשי201D.
-              </li>
+              <li>{t.rich("sections.producers.li1", richComponents)}</li>
+              <li>{t.rich("sections.producers.li2", richComponents)}</li>
+              <li>{t.rich("sections.producers.li3", richComponents)}</li>
+              <li>{t.rich("sections.producers.li4", richComponents)}</li>
+              <li>{t.rich("sections.producers.li5", richComponents)}</li>
             </ol>
             <p className="mt-3 text-xs text-text-secondary">
-              העסק לא חייב להיות מאומת כדי להיות <em>approved</em> —
-              <strong> מאומת</strong> מוסיף תגית כחולה אחרי שבדקת רישוי וזהות, בדרך כלל
-              ב-audit חודשי.
+              {t.rich("sections.producers.footnote", richComponents)}
             </p>
           </Section>
 
           {/* ===== Users ===== */}
-          <Section id="users" icon={Users} title="ניהול משתמשים">
-            <p><strong>/admin/users</strong> — חיפוש לפי מייל/שם, סינון לפי role.</p>
+          <Section id="users" icon={Users} title={t("sections.users.title")}>
+            <p>{t.rich("sections.users.p1", richComponents)}</p>
             <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li><strong>role:</strong> consumer / producer / admin — שינוי מיידי, ללא אישור נוסף.</li>
-              <li><strong>חסימה:</strong> login חסום מחזיר 403. המשתמש לא יודע מיד, רואה הודעה בלבד בנסיון ההתחברות הבא.</li>
-              <li><strong>מועדפים:</strong> לחצי על הספירה ליד המשתמש כדי לראות את העסקים ששמרה — שימושי לאיתור פעילות חשודה.</li>
+              <li>{t.rich("sections.users.li1", richComponents)}</li>
+              <li>{t.rich("sections.users.li2", richComponents)}</li>
+              <li>{t.rich("sections.users.li3", richComponents)}</li>
             </ul>
             <p className="mt-3 text-xs text-text-secondary">
-              הזיכרון שלך: חסימה היא reversible, שינוי role משפיע מיד על ה-JWT הבא.
-              <strong> אל תקדמי משתמש ל-admin</strong> בלי לאמת זהות מחוץ למערכת.
+              {t.rich("sections.users.footnote", richComponents)}
             </p>
           </Section>
 
           {/* ===== Reviews ===== */}
-          <Section id="reviews" icon={Star} title="ביקורות">
-            <p><strong>/admin/reviews</strong> — כל הביקורות ברשימה אחת (חדשות קודם).</p>
+          <Section id="reviews" icon={Star} title={t("sections.reviews.title")}>
+            <p>{t.rich("sections.reviews.p1", richComponents)}</p>
             <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>סנני לפי דירוג (1–5) או חיפוש חופשי על עסק/משתמש/כותרת/טקסט.</li>
-              <li>מחיקה דורשת אישור (window.confirm). אחרי מחיקה ה-
-                <code className="bg-light px-1.5 py-0.5 rounded text-xs">avg_rating</code>
-                והספירה של העסק מתעדכנים אוטומטית.
-              </li>
-              <li>מחיקה היא pattern הנכון ל: לשון מבזה, זיהוי אישי, ספאם, ביקורת על עסק אחר.</li>
+              <li>{t.rich("sections.reviews.li1", richComponents)}</li>
+              <li>{t.rich("sections.reviews.li2", richComponents)}</li>
+              <li>{t.rich("sections.reviews.li3", richComponents)}</li>
             </ul>
           </Section>
 
           {/* ===== Reports ===== */}
-          <Section id="reports" icon={Warning} title="דיווחים">
-            <p><strong>/admin/reports</strong> — ממוין לפי דחיפות (חדש + מרובה-דיווחים קודם).</p>
+          <Section id="reports" icon={Warning} title={t("sections.reports.title")}>
+            <p>{t.rich("sections.reports.p1", richComponents)}</p>
             <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li><strong>פתור</strong> — סגירת הדיווח, אופציונלי עם פעולה נלווית (חסימה / מחיקה).</li>
-              <li><strong>השהה</strong> — משאיר פתוח אבל מעביר לתחתית הרשימה. לשימוש כשצריך לאסוף עוד מידע.</li>
-              <li><strong>התעלם</strong> — סגירה בלי פעולה, לדיווחים שלא מבססים בעיה.</li>
+              <li>{t.rich("sections.reports.li1", richComponents)}</li>
+              <li>{t.rich("sections.reports.li2", richComponents)}</li>
+              <li>{t.rich("sections.reports.li3", richComponents)}</li>
             </ul>
             <p className="mt-3 text-xs text-text-secondary">
-              חוק האצבע: <strong>תגובה תוך 24 שעות</strong>. דיווחים על בטיחות
-              מוצר (אלרגנים, תאריך תפוגה) — מיד.
+              {t.rich("sections.reports.footnote", richComponents)}
             </p>
           </Section>
 
           {/* ===== Experiences ===== */}
-          <Section id="experiences" icon={Sparkle} title="חוויות">
-            <p><strong>/admin/experiences</strong> — 5 טאבים: ממתינות / דרוש תיקון / מאושרות / נדחו / הכל.</p>
+          <Section id="experiences" icon={Sparkle} title={t("sections.experiences.title")}>
+            <p>{t.rich("sections.experiences.p1", richComponents)}</p>
             <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>בלחיצה: אישור / דחייה / בקשת תיקון. המארחת מקבלת מייל.</li>
-              <li>Haiku pre-check עובר לפני שהיא מגיעה לטאב 201Cממתינות201D — טאב 201Cדרוש תיקון201D זה כאשר ה-AI סימן אזהרה אך לא חסם.</li>
+              <li>{t.rich("sections.experiences.li1", richComponents)}</li>
+              <li>{t.rich("sections.experiences.li2", richComponents)}</li>
             </ul>
           </Section>
 
           {/* ===== Emergency ===== */}
-          <Section id="emergency" icon={Warning} title="תקלות חירום" danger>
+          <Section id="emergency" icon={Warning} title={t("sections.emergency.title")} danger>
             <ul className="space-y-3">
               <li>
-                <strong>האתר לא עולה</strong>
+                <strong>{t("sections.emergency.site_down_title")}</strong>
                 <p className="text-sm text-text-secondary mt-1">
-                  בדקי <code className="bg-light px-1.5 py-0.5 rounded text-xs">mehamakor.online/health</code>.
-                  אם זה לא 200 OK, בדקי Railway → healthcheck + logs. ראה
-                  CLAUDE.md §&ldquo;Railway runtime port = 8080&rdquo; לפני כל דיבוג —
-                  זה הסעיף הכי נפוץ של 502.
+                  {t.rich("sections.emergency.site_down_body", richComponents)}
                 </p>
               </li>
               <li>
-                <strong>Migration נכשלה אחרי deploy</strong>
+                <strong>{t("sections.emergency.migration_title")}</strong>
                 <p className="text-sm text-text-secondary mt-1">
-                  הסימפטום: ה-container עולה אבל endpoints מחזירים 500 עם
-                  <code className="bg-light px-1.5 py-0.5 rounded text-xs">UndefinedColumn</code>.
-                  הפתרון: בדקי ש-
-                  <code className="bg-light px-1.5 py-0.5 rounded text-xs">_migrate_columns</code>
-                  ב-main.py רשום את העמודה החדשה. אם לא, הוסיפי והעלי commit hotfix.
+                  {t.rich("sections.emergency.migration_body", richComponents)}
                 </p>
               </li>
               <li>
-                <strong>Login שבור לכולם</strong>
+                <strong>{t("sections.emergency.login_broken_title")}</strong>
                 <p className="text-sm text-text-secondary mt-1">
-                  ודאי ש-
-                  <code className="bg-light px-1.5 py-0.5 rounded text-xs">JWT_SECRET_KEY</code>
-                  קיים ב-Railway Variables. אם הוחלף בטעות — JWTs ישנים ייפסלו
-                  וכל משתמש צריך להתחבר מחדש. אל תחליפי את המפתח בלי להתריע לצוות.
+                  {t.rich("sections.emergency.login_broken_body", richComponents)}
                 </p>
               </li>
               <li>
-                <strong>סופת ספאם / רישומים מזויפים</strong>
+                <strong>{t("sections.emergency.spam_title")}</strong>
                 <p className="text-sm text-text-secondary mt-1">
-                  /register/producer כבר מוגבל ב-3/שעה (slowapi). אם זה לא
-                  מספיק, הדק ל-1/שעה זמנית ב-
-                  <code className="bg-light px-1.5 py-0.5 rounded text-xs">auth.py</code>
-                  + hotfix push. חסמי IPs חשודים דרך Railway edge אם יש נפח חריג.
+                  {t.rich("sections.emergency.spam_body", richComponents)}
                 </p>
               </li>
               <li>
-                <strong>AI features מחזירים שגיאות silent</strong>
+                <strong>{t("sections.emergency.ai_silent_title")}</strong>
                 <p className="text-sm text-text-secondary mt-1">
-                  בדקי
-                  <code className="bg-light px-1.5 py-0.5 rounded text-xs">ANTHROPIC_API_KEY</code>.
-                  גם fail-open הוא לא אינסופי — אם המפתח פג תוקף, moderation
-                  מאשר הכל (APPROVED default). CLAUDE.md §&ldquo;Anthropic client init&rdquo;
-                  מתאר את באג httpx 0.28+ שעשוי להחזיר TypeError דרך הכפתור הירוק.
+                  {t.rich("sections.emergency.ai_silent_body", richComponents)}
                 </p>
               </li>
             </ul>
           </Section>
 
           {/* ===== URLs ===== */}
-          <Section id="urls" icon={LinkSimple} title="כתובות חשובות">
+          <Section id="urls" icon={LinkSimple} title={t("sections.urls.title")}>
             <p className="text-sm text-text-secondary mb-3">
-              הכתובות הספציפיות (project IDs, tokens) לא כאן — הן בכספת של הצוות.
-              הרשימה כאן מכוונת אותך לאיפה להסתכל, לא מספקת credentials.
+              {t("sections.urls.intro")}
             </p>
             <ul className="space-y-2">
-              <ExternalRow label="האתר בפרודקשן" href="https://mehamakor.online">mehamakor.online</ExternalRow>
-              <ExternalRow label="האתר ב-staging" href="https://staging.mehamakor.online">staging.mehamakor.online</ExternalRow>
-              <ExternalRow label="קוד המקור" href="https://github.com/levismadar80-ship-it/FoodMamkor">GitHub</ExternalRow>
+              <ExternalRow label={t("sections.urls.prod_label")} href="https://mehamakor.online">mehamakor.online</ExternalRow>
+              <ExternalRow label={t("sections.urls.staging_label")} href="https://staging.mehamakor.online">staging.mehamakor.online</ExternalRow>
+              <ExternalRow label={t("sections.urls.github_label")} href="https://github.com/levismadar80-ship-it/FoodMamkor">{t("sections.urls.github_text")}</ExternalRow>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">Railway</span>
-                <span className="text-site-muted">&lt;להזין&gt; — project: <code className="bg-light px-1 rounded">believable-tenderness</code>, service: backend</span>
+                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.railway_label")}</span>
+                <span className="text-site-muted">{t.rich("sections.urls.railway_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">Vercel</span>
-                <span className="text-site-muted">&lt;להזין&gt; — project: <code className="bg-light px-1 rounded">food-mamkor</code></span>
+                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.vercel_label")}</span>
+                <span className="text-site-muted">{t.rich("sections.urls.vercel_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">Cloudinary</span>
-                <span className="text-site-muted">&lt;להזין&gt; — cloud: <code className="bg-light px-1 rounded">dvtcojtye</code> (בערך)</span>
+                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.cloudinary_label")}</span>
+                <span className="text-site-muted">{t.rich("sections.urls.cloudinary_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">Anthropic Console</span>
-                <span className="text-site-muted">&lt;להזין&gt; — workspace: מהמקור</span>
+                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.anthropic_label")}</span>
+                <span className="text-site-muted">{t.rich("sections.urls.anthropic_text", richComponents)}</span>
               </li>
             </ul>
           </Section>
@@ -254,11 +205,9 @@ export default function AdminHelpPage() {
           {/* Footer link back to the docs */}
           <div className="pt-6 border-t border-border">
             <p className="text-xs text-text-secondary">
-              צ&rsquo;קליסט יומי/שבועי/חודשי + אנשי קשר לחירום —
-              ראה <code className="bg-light px-1.5 py-0.5 rounded">docs/ADMIN.md</code>
-              (סקציה &quot;Handover checklist&quot;).
+              {t.rich("footer", richComponents)}
               <Link href="/admin" className="ms-3 text-primary hover:underline">
-                ← חזרה ללוח המחוונים
+                {t("footer_back")}
               </Link>
             </p>
           </div>

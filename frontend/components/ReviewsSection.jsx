@@ -2,22 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, Star } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import EmptyState from "@/components/ui/EmptyState";
 
-// "ספיר ל." — first name + last initial (privacy)
-function formatName(fullName) {
-  if (!fullName) return "לקוחה";
+// "Sapir L." — first name + last initial (privacy)
+function formatName(fullName, fallback) {
+  if (!fullName) return fallback;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
-function StarRow({ value, size = 16 }) {
+function StarRow({ value, size = 16, ariaLabel }) {
   return (
-    <div className="flex gap-0.5" dir="ltr" aria-label={`${value} כוכבים`}>
+    <div className="flex gap-0.5" dir="ltr" aria-label={ariaLabel}>
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
@@ -31,7 +32,7 @@ function StarRow({ value, size = 16 }) {
   );
 }
 
-function StarPicker({ value, onChange }) {
+function StarPicker({ value, onChange, ariaLabelFn }) {
   const [hover, setHover] = useState(0);
   return (
     <div className="flex gap-2" dir="ltr">
@@ -45,7 +46,7 @@ function StarPicker({ value, onChange }) {
             onMouseEnter={() => setHover(n)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(n)}
-            aria-label={`${n} כוכבים`}
+            aria-label={ariaLabelFn(n)}
           >
             <Star
               size={32}
@@ -72,6 +73,7 @@ function StarPicker({ value, onChange }) {
  * producer_whatsapp_clicks.user_id.
  */
 export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
+  const t = useTranslations("reviews");
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
@@ -141,33 +143,34 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
     e.preventDefault();
     setError("");
     if (stars < 1 || stars > 5) {
-      setError("בחרי דירוג בין 1 ל-5 כוכבים");
+      setError(t("error_invalid_stars"));
       return;
     }
     if (body.length < 10) {
-      setError("הביקורת צריכה לכלול לפחות 10 תווים");
+      setError(t("error_body_too_short"));
       return;
     }
     setSubmitting(true);
     try {
       const r = await api.post(`/producers/${producerId}/reviews`, { stars, body });
       setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
-      setTotal((t) => t + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
+      setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
       setShowForm(false);
-      showToast("הביקורת שלך נשמרה ⭐");
+      showToast(t("saved_toast"));
     } catch (err) {
-      setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setError(err.response?.data?.detail || t("error_generic"));
     } finally {
       setSubmitting(false);
     }
   };
 
   const showSummary = total >= 3 && avgRating > 0;
+  const anonymousFallback = t("anonymous_fallback");
 
   return (
     <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
       <h2 className="font-headline text-2xl font-bold text-site-text mb-6">
-        מה אומרות הלקוחות
+        {t("section_heading")}
         {total > 0 && (
           <span className="text-base font-normal text-site-muted ms-2">({total})</span>
         )}
@@ -182,8 +185,12 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           >
             {Number(avgRating).toFixed(1)}
           </p>
-          <StarRow value={Math.round(Number(avgRating))} size={20} />
-          <p className="text-site-muted text-sm mt-2">מבוסס על {total} ביקורות</p>
+          <StarRow
+            value={Math.round(Number(avgRating))}
+            size={20}
+            ariaLabel={t("star_aria", { value: Math.round(Number(avgRating)) })}
+          />
+          <p className="text-site-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
         </div>
       )}
 
@@ -197,21 +204,25 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               onClick={() => setShowForm(true)}
               className="mb-6 border border-site-text text-site-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-light transition"
             >
-              כתבי ביקורת
+              {t("write_cta")}
             </button>
           ) : (
             <form
               onSubmit={handleSubmit}
               className="bg-white rounded-[16px] p-5 border border-border mb-8 space-y-4"
             >
-              <h3 className="font-headline text-lg font-bold text-site-text">כתבי ביקורת</h3>
+              <h3 className="font-headline text-lg font-bold text-site-text">{t("form_heading")}</h3>
               <div>
-                <label className="block text-sm text-site-text mb-2">דירוג</label>
-                <StarPicker value={stars} onChange={setStars} />
+                <label className="block text-sm text-site-text mb-2">{t("rating_label")}</label>
+                <StarPicker
+                  value={stars}
+                  onChange={setStars}
+                  ariaLabelFn={(n) => t("star_aria", { value: n })}
+                />
               </div>
               <div>
                 <label htmlFor="review-body" className="block text-sm text-site-text mb-1">
-                  החוויה שלך
+                  {t("body_label")}
                 </label>
                 <textarea
                   id="review-body"
@@ -220,7 +231,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   rows={3}
                   maxLength={500}
                   className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
-                  placeholder="איך הייתה החוויה שלך?"
+                  placeholder={t("body_placeholder")}
                 />
                 <p className="text-xs text-site-muted mt-1">{body.length}/500</p>
               </div>
@@ -235,48 +246,49 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   disabled={submitting}
                   className="bg-primary-dark text-white px-6 py-2 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
                 >
-                  {submitting ? "שומרת..." : "פרסמי ביקורת"}
+                  {submitting ? t("submit_saving") : t("submit")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
                   className="text-sm text-site-muted hover:text-site-text transition"
                 >
-                  ביטול
+                  {t("cancel")}
                 </button>
               </div>
             </form>
           )
         ) : (
           <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-site-muted text-center">
-            לחצי על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת
+            {t("wa_gate_message")}
           </div>
         )
       ) : (
         <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-site-muted text-center">
-          <a href="/login" className="text-primary hover:underline">
-            התחברי
-          </a>{" "}
-          כדי לכתוב ביקורת
+          {t.rich("login_prompt", {
+            login: (chunks) => (
+              <a href="/login" className="text-primary hover:underline">{chunks}</a>
+            ),
+          })}
         </div>
       )}
 
       {/* Reviews list */}
       {loading ? (
-        <p className="text-sm text-site-muted">טוענת ביקורות...</p>
+        <p className="text-sm text-site-muted">{t("loading")}</p>
       ) : reviews.length === 0 ? (
         isOwner ? (
           <EmptyState
             emoji="⭐"
-            title="ביקורות ראשונות מגיעות אחרי כמה לקוחות"
-            description="ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין."
-            ctaLabel="שתפי את הפרופיל בוואטסאפ"
+            title={t("owner_empty_title")}
+            description={t("owner_empty_description")}
+            ctaLabel={t("owner_empty_cta")}
             ctaHref="/producer/dashboard/followers"
           />
         ) : (
           <div className="text-center py-8">
             <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-site-muted">עדיין אין ביקורות — היי הראשונה!</p>
+            <p className="text-site-muted">{t("empty_message")}</p>
           </div>
         )
       ) : (
@@ -287,7 +299,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="font-body font-semibold text-[15px] text-site-text leading-snug">
-                      {formatName(review.user_name)}
+                      {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {review.created_at && (
                       <p className="text-[13px] text-site-muted mt-0.5">
@@ -295,7 +307,11 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                       </p>
                     )}
                   </div>
-                  <StarRow value={review.stars} size={16} />
+                  <StarRow
+                    value={review.stars}
+                    size={16}
+                    ariaLabel={t("star_aria", { value: review.stars })}
+                  />
                 </div>
                 {review.body && (
                   <p className="text-[15px] text-site-text/85 leading-relaxed whitespace-pre-line">
@@ -311,7 +327,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               <button
                 onClick={() => fetchPage(page - 1)}
                 disabled={page <= 1}
-                aria-label="עמוד קודם"
+                aria-label={t("pagination.prev_aria")}
                 className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
               >
                 <ArrowRight size={18} weight="bold" aria-hidden="true" />
@@ -322,7 +338,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               <button
                 onClick={() => fetchPage(page + 1)}
                 disabled={page >= pages}
-                aria-label="עמוד הבא"
+                aria-label={t("pagination.next_aria")}
                 className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
               >
                 <ArrowLeft size={18} weight="bold" aria-hidden="true" />

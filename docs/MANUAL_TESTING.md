@@ -3,6 +3,178 @@
 
 ---
 
+## MEH-669 — Admin producer-lockout fix
+
+Run on Vercel preview before merging to staging.
+
+### Test 1 — Admin blocked on password upgrade path
+
+- [ ] Log in as admin (`sint12345@gmail.com` or any account with `role='admin'`)
+- [ ] Type `/register/producer` into the address bar → **expected:** automatic redirect to `/admin` (no form ever rendered)
+- [ ] In DevTools console, send a direct POST: `fetch('/auth/register/producer', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')}, body: JSON.stringify({producer_name:'X',phone:'0501234567',category_ids:[],primary_contact_method:'whatsapp'})}).then(r => r.json().then(j => console.log(r.status, j)))` → **expected:** `403 {"detail":"מנהלת מערכת לא יכולה להירשם כבית עסק. אנא צרי חשבון נפרד עם כתובת אימייל אחרת."}`
+- [ ] After both checks: refresh `/admin` → **expected:** admin dashboard loads normally; role still `"admin"` in `/auth/me`
+
+### Test 2 — Admin blocked on OAuth Step 0
+
+- [ ] (Only if admin has linked Google) Click "Sign up as producer with Google" from `/register/producer` step 0 → **expected:** 403 with the same Hebrew copy; admin lands back on /admin (no Step-2 token issued)
+
+### Test 3 — Regression: consumer can still upgrade to producer
+
+- [ ] Log in as regular consumer (any non-admin, non-producer account)
+- [ ] Navigate to `/register/producer` → **expected:** form renders normally, no redirect
+- [ ] Submit a valid producer signup → **expected:** 200, role flips to `"producer"`, redirects to `/producer/dashboard`
+
+### Test 4 — Regression: anonymous can still sign up as producer
+
+- [ ] Log out completely (clear localStorage)
+- [ ] Navigate to `/register/producer` → form renders
+- [ ] Complete step 1 (email + name + password + producer fields) → **expected:** 200, OWASP anti-enumeration RegisterAck shape (no `access_token`), verification email sent
+
+### Test 5 — Frontend CTAs hidden from admins
+
+- [ ] Log in as admin → check Header (mobile drawer), Footer (CTA panel "יש לך עסק?"), and `/producers` empty state → **expected:** no "הוסיפי עסק" / "הוסיפי את העסק שלך" link visible anywhere
+- [ ] Log in as consumer → all 3 surfaces SHOULD show the CTA
+- [ ] Log out → all 3 surfaces SHOULD show the CTA (anonymous can still register)
+
+---
+
+## MEH-669 recovery — for Smadar's local terminal only
+
+**Affected account at time of writing:** `sint12345@gmail.com` (Sapir's staging admin).
+
+Recovery is a data fix, not a schema change — does NOT require Alembic.
+
+```sql
+-- 1) READ-ONLY inspect first. Capture the producer_id → call it $PID.
+SELECT id, email, role, producer_id, is_producer
+FROM users
+WHERE email = 'sint12345@gmail.com';
+
+-- 2) Restore admin access (single UPDATE — no cascade).
+--    This step alone is sufficient to unlock /admin.
+UPDATE users
+SET role = 'admin',
+    producer_id = NULL,
+    is_producer = false
+WHERE email = 'sint12345@gmail.com';
+
+-- 3) (Optional) Delete the orphan producer row.
+--    CASCADE will clean ProducerCategory, DeliveryArea, ProducerReview,
+--    ProducerFollower, ProducerPageView, ProducerWhatsAppClick, etc.
+--    (all FK'd to producers.id with ondelete=CASCADE).
+DELETE FROM producers WHERE id = '$PID';
+```
+
+**Run order matters:** `users.producer_id → producers.id` has no `ondelete=` (default NO ACTION). Running step 3 before step 2 raises a FK violation. Run step 2 first, always.
+
+**Production deny-list note:** `.claude/hooks/check-bash-safety.sh` blocks any Bash command containing `$DATABASE_URL_PRODUCTION`. Run psql from your own Git Bash terminal, not from a Claude Code session (per `.claude/rules/security.md` § production safety).
+
+### Audit query for other affected admins
+
+By design pre-fix admins now have `role='producer'`, which makes them indistinguishable from real producers. The narrowest filter that catches the bug class:
+
+```sql
+-- Producers with status=pending_whatsapp whose linked user was created
+-- BEFORE the producer row (= upgrade path, not new signup).
+SELECT u.id, u.email, u.role, u.created_at AS user_created,
+       p.id AS producer_id, p.created_at AS producer_created
+FROM users u
+JOIN producers p ON u.producer_id = p.id
+WHERE p.status = 'pending_whatsapp'
+  AND u.created_at < p.created_at;
+```
+
+Cross-check the returned emails against the original admin allowlist (whoever Smadar promoted manually). Any hit = an admin that lost their role via this bug and needs the recovery SQL above.
+
+---
+
+## MEH-641 PR-A — auth chrome noindex verification
+
+**Pages to verify (View Source in browser):**
+- /he/login, /he/register, /he/contact, /he/search → must show `<meta name="robots" content="noindex, nofollow"/>` (or comma-space variant)
+- /en/login, /en/register, /en/contact, /en/search → same
+
+**Regression check:**
+- /he/about, /he/map, /he/, /he/terms, /he/privacy → must NOT show `noindex` (default index,follow or no robots meta)
+
+---
+
+## Anti-enumeration registration smoke test (MEH-328)
+
+**Run on the staging preview URL after PR #696 merges to staging.** Load-bearing for the upgrade-path regression — Tests A-C verify the new OWASP behavior, Test D verifies the upgrade path is unchanged, Test E verifies out-of-band notification.
+
+### Setup
+
+- Open the staging URL in an anonymous browser window.
+- Open DevTools (`F12`) → Application → Local Storage → the site's origin.
+- Open DevTools Network tab. Filter on `auth/register`.
+
+### Test A — Consumer flow, new email
+
+1. Navigate to `/he/register`.
+2. In DevTools console: `localStorage.clear()` then refresh.
+3. Submit the form with a fresh email (e.g. `meh328-a-<timestamp>@example.com`), a strong password (12+ chars), any name.
+4. Expect:
+   - Success screen headline: **"בדקי את תיבת המייל שלך 📬"**
+   - Body: **"אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."**
+   - Helper: **"לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה."**
+   - CTA: button **"חזרה לדף הראשי"** → routes to homepage.
+   - `localStorage.getItem('token')` → **`null`**.
+   - URL does NOT auto-redirect to `/producer/dashboard` or `/`.
+   - Network: `POST /auth/register` → `200`, body `{"detail": "אם האימייל פנוי..."}`. No `access_token` field.
+
+### Test B — Consumer flow, existing email (collision)
+
+5. Refresh the page. Submit the SAME email again with different password/name.
+6. Expect: **identical screen to step 4 — pixel for pixel.** No "already registered" chip. No different copy. Network response body matches byte-for-byte.
+
+### Test C — Producer non-upgrade, new email
+
+7. `localStorage.clear()` → refresh.
+8. Navigate to `/he/register/producer` (NOT logged in).
+9. Complete wizard steps 1 + 2 with a fresh email + producer details. Submit on step 2.
+10. Expect:
+    - Step 3 renders the **same inbox-check UI as Test A** (📬 emoji, headline, body, helper, "חזרה לדף הראשי" button).
+    - `localStorage.getItem('token')` → **`null`**.
+    - Network: `POST /auth/register/producer` → `200`, body `{"detail": "אם האימייל פנוי..."}`. No `access_token`, no `whatsapp_sent`.
+    - Step 3 does NOT show the old "הצטרפת!" + dashboard CTA.
+
+### Test D — Producer upgrade (LOAD-BEARING — regression risk for MEH-328 Chunk B)
+
+11. Log in as an existing consumer (no producer attached to the account).
+12. Navigate to `/he/register/producer`. The wizard should auto-skip step 1 (account form) — you should land on step 2 with the producer details form.
+13. Complete the wizard and submit.
+14. Expect:
+    - Step 3 renders the **OLD success UI**: `CheckCircle` icon + headline **"הצטרפת!"** + WhatsApp-aware paragraph + "מה הלאה?" bullet list + button **"לדשבורד שלי ←"** + share button.
+    - `localStorage.getItem('token')` → **non-null JWT** (the token from the upgrade response).
+    - Network: `POST /auth/register/producer` → `200`, body includes `access_token` + `whatsapp_sent`.
+    - Clicking "לדשבורד שלי ←" routes to `/producer/dashboard` and you're authenticated.
+
+### Test E — Duplicate-attempt email arrives
+
+15. Check the inbox of the EXISTING email used in Test B.
+16. Expect a Hebrew email:
+    - Subject: **"ניסיון רישום במהמקור — את כבר רשומה"**
+    - Body opens with **"היי {your name}, מישהו ניסה להירשם למהמקור עם הכתובת שלך."**
+    - For a password account: body says **"את כבר רשומה אצלנו עם סיסמה — אם זו את, היכנסי כאן: …"** + link to `/login`.
+    - For a Google/Apple account: body says **"את כבר רשומה אצלנו דרך {Google|Apple} — אם זו את, היכנסי כאן: …"** + link to `/login`.
+    - Footer: **"בברכה, צוות מהמקור"**.
+
+### Failure signals — STOP and file a hotfix if any of these fire
+
+- ❌ **Test D shows the inbox-check UI instead of the dashboard CTA** → upgrade-path branch detection is broken (`didUpgrade` state didn't flip). Possible root cause: response no longer carries `access_token` on the upgrade path, or `"access_token" in res.data` predicate is wrong.
+- ❌ **Test A or C renders different UI than Test B's collision response** → success-screen rendering bug. The whole point of MEH-328 is that the user cannot distinguish branches.
+- ❌ **Network response body for `/auth/register` (non-upgrade) carries an `access_token` field** → backend regression. Should be `{"detail": ...}` only.
+- ❌ **Test E email never arrives (within 5 min)** AND `RESEND_API_KEY` is configured on Railway → background task dispatch broken. Check Railway logs for `[EMAIL]` warnings.
+
+### Out of scope for this smoke
+
+- `/auth/register/producer/oauth` — out of scope for the entire MEH-328 ticket.
+- `/auth/forgot-password` — separate MEH-191 flow (already OWASP-compliant pre-MEH-328).
+- `/auth/login` — separate ticket (timing-leak follow-up filed).
+
+---
+
 ## Stats counter reframe + skeleton (MEH-607)
 
 Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {month} — N בתי עסק · M קטגוריות · מכל רחבי הארץ"* — editorial-cadence framing per synthesis §5.2 Option A. Dynamic month name via `Intl.DateTimeFormat('he-IL', { month: 'long' })`. F10: while `/stats` hasn't returned, a skeleton with matching `bg-primary text-white py-4` dimensions reserves height → zero CLS between loading and the real counter.
@@ -417,6 +589,32 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] פאנל בריאות שרת מציג `response_time_avg_ms` ו-`requests_per_minute` + הערה "per-process בזיכרון"
 - [ ] על בוט עם traffic בסיסי (curl /producers), ספירת `sample_count` עולה, avg וכו׳ מתעדכנים
 - [ ] אחרי redeploy של Railway — הפאנל מתאפס (ok)
+
+### Vacation mode toggle (/admin/settings) — MEH-509 PR2a
+- [ ] מצב חופשה — /admin/settings → toggle on → set date → save → toast → refresh → state persists. Toggle off → toast → refresh → date cleared. — תוצאה מצופה: state persists, date cleared on deactivate.
+- [ ] Activate without date — toggle on, leave date empty → save button disabled + inline red warning "חובה לציין תאריך חזרה כשמצב חופשה מופעל". — תוצאה מצופה: cannot submit until date is set.
+- [ ] Server-side guard — DevTools Network tab → POST /admin/settings/vacation `{active: true, return_date: null}` → 422. — תוצאה מצופה: Pydantic model_validator rejects.
+
+### AI risk-score badge (MEH-509 PR3 — admin only)
+- [ ] Fresh signup — sign up a new test producer with phone via `/auth/register/producer` → wait ~10 seconds → `/admin/producers` — תוצאה מצופה: new row appears with color-coded risk badge (green ≤30 / yellow 31-70 / red >70 / grey "אין מידע" if Anthropic was down).
+- [ ] Tooltip — hover the risk badge → תוצאה מצופה: tooltip surfaces the full Hebrew reasoning text (or "טרם דורג" if score is NULL).
+- [ ] Direct endpoint — `curl -H "Authorization: Bearer <admin-jwt>" https://<staging>/admin/producers/<id>/risk-score` → תוצאה מצופה: `{"score": <0-100 or null>, "reasoning": "<hebrew or null>"}`.
+- [ ] Auth gate — same curl without JWT → תוצאה מצופה: 401/403; with consumer-role JWT → 403.
+- [ ] Fail-open smoke — temporarily unset `ANTHROPIC_API_KEY` in Railway staging, sign up a producer, restore the key. תוצאה מצופה: signup completes 200, badge shows grey "אין מידע", logs show `[RISK] ANTHROPIC_API_KEY not set — skipping score`.
+
+### WhatsApp webhook receiver (MEH-509 PR2c)
+- [ ] GET challenge in staging — `curl 'https://<staging-railway-url>/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=hello'` — תוצאה מצופה: `200 hello` (plain text). Wrong token → 403.
+- [ ] Meta Console verify — Meta Developer Console → WhatsApp → Configuration → Edit Webhook → Callback URL `https://<staging-railway-url>/webhook/whatsapp` + Verify Token = the env value → click "Verify and save". תוצאה מצופה: ✅ green checkmark; if 403, double-check `WHATSAPP_VERIFY_TOKEN` matches exactly (no whitespace, no quotes).
+- [ ] Subscribe to messages field — Meta Console → toggle "messages" subscription on.
+- [ ] Real inbound smoke — send a WhatsApp message from your personal phone to `+972 55-255-3744`. Within ~5 seconds: `psql $DATABASE_URL_STAGING -c "SELECT id, from_phone, body, received_at, bot_replied FROM inbound_messages ORDER BY received_at DESC LIMIT 1;"` — תוצאה מצופה: row exists with your phone + message body + bot_replied=false.
+- [ ] Forged signature rejection — `curl -X POST https://<staging-railway-url>/webhook/whatsapp -H 'X-Hub-Signature-256: sha256=deadbeef' -d '{}'` — תוצאה מצופה: 403, no new row.
+- [ ] Production promotion — repeat steps 1-4 with the production Railway URL; only after staging smoke passes.
+
+### After-hours watchdog (MEH-509 PR2b — gated off until PR2c webhook ships)
+- [ ] Post-PR2c smoke — set `WATCHDOG_ENABLED=true` in Railway **staging** env. `psql $DATABASE_URL_STAGING -c "INSERT INTO inbound_messages (id, from_phone, body, received_at) VALUES (gen_random_uuid(), '+972500000099', 'אפשר להזמין?', now() - interval '5 minutes');"` at 22:00 IL — תוצאה מצופה: within 6 min the WhatsApp on `+972500000099` receives `after_hours_response_he`; `psql` shows the row with `bot_replied=true, bot_template_sent='after_hours_response_he'`. Then disable the env var in staging.
+- [ ] Vacation routing — POST `/admin/settings/vacation {"active": true, "return_date": "2026-08-01"}` in staging; insert the same fake inbound row at 10:00 IL (within hours). תוצאה מצופה: vacation wins — the bot sends `vacation_response_he_v2` with `2026-08-01` as the body param, not `after_hours_response_he`.
+- [ ] Within-hours skip — POST `/admin/settings/vacation {"active": false}` to clear vacation; insert a fake inbound at 10:00 IL. תוצאה מצופה: row stays `bot_replied=false` indefinitely (humans were expected to reply).
+- [ ] Production promotion — only after staging smoke passes, set `WATCHDOG_ENABLED=true` in Railway production env. Watch Sentry for `[WATCHDOG]` warnings during the next 24h.
 
 ### Sidebar pending moderation badge
 - [ ] צרי יצרנית חדשה עם status=pending + דיווח פתוח אחד + מוצר ביתי FLAGGED אחד + חוויה pending אחת

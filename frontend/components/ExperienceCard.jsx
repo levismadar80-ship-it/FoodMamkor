@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 /**
  * Card for an experience (community workshop).
@@ -34,17 +35,19 @@ function formatTime(t) {
   return t.slice(0, 5);
 }
 
-function formatPrice(p) {
-  if (p == null || Number(p) === 0) return "חינם";
-  return `₪${Number(p).toLocaleString("he-IL")}`;
-}
-
 export default function ExperienceCard({ experience: ex }) {
+  const t = useTranslations("experiences.card");
+
+  const formatPrice = (p) => {
+    if (p == null || Number(p) === 0) return t("free");
+    return `₪${Number(p).toLocaleString("he-IL")}`;
+  };
+
   const spotsBadge =
     ex.spots_left != null && ex.spots_left > 0 && ex.spots_left <= 5
-      ? `נשארו ${ex.spots_left} מקומות`
+      ? t("spots_left", { n: ex.spots_left })
       : ex.spots_left === 0
-      ? "אזל"
+      ? t("sold_out")
       : null;
 
   return (
@@ -84,7 +87,7 @@ export default function ExperienceCard({ experience: ex }) {
           {ex.title}
         </h3>
         <p className="text-sm text-site-muted mb-2">
-          {ex.host?.name || "מארחת קהילתית"}
+          {ex.host?.name || t("host_fallback")}
           {ex.city ? ` · ${ex.city}` : ""}
         </p>
         {ex.description && (

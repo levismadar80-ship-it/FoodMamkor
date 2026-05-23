@@ -1,43 +1,34 @@
 "use client";
 
-const TIER_CONFIG = {
-  2: {
-    label: "✓ מספר מאומת",
-    className: "bg-gray-100 text-gray-600 border-gray-200",
-    tooltip: "מספר הטלפון של בעלת העסק אומת באמצעות קוד חד-פעמי",
-  },
-  3: {
-    label: "✅ עסק מאומת",
-    className: "bg-primary/10 text-primary border-primary/20",
-    tooltip: "בית העסק עבר אימות ידני על ידי צוות מהמקור",
-  },
-  4: {
-    label: "⭐ מובילת קהילה",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
-    tooltip: "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה",
-  },
-  5: {
-    label: "🏅 שגרירת מהמקור",
-    className: "bg-[#2E4A2E]/10 text-[#2E4A2E] border-[#2E4A2E]/20",
-    tooltip: "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור",
-  },
+import { useTranslations } from "next-intl";
+
+// Visual classes per tier — display-only metadata. Labels + tooltips
+// resolve via t(`trust.tier_${tier}.{label,tooltip}`) so tier voice
+// follows the active locale.
+const TIER_CLASSNAME = {
+  2: "bg-gray-100 text-gray-600 border-gray-200",
+  3: "bg-primary/10 text-primary border-primary/20",
+  4: "bg-amber-50 text-amber-700 border-amber-200",
+  5: "bg-[#2E4A2E]/10 text-[#2E4A2E] border-[#2E4A2E]/20",
 };
 
 export default function TrustBadge({ tier, compact = false }) {
+  const t = useTranslations("trust");
   if (!tier || tier < 2) return null;
-  const config = TIER_CONFIG[tier] || TIER_CONFIG[2];
+  const tierKey = TIER_CLASSNAME[tier] ? tier : 2;
+  const tooltip = t(`tier_${tierKey}.tooltip`);
 
   return (
     <span
-      title={config.tooltip}
+      title={tooltip}
       className={[
         "inline-flex items-center rounded-full border font-medium",
         compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-0.5",
-        config.className,
+        TIER_CLASSNAME[tierKey],
       ].join(" ")}
-      aria-label={config.tooltip}
+      aria-label={tooltip}
     >
-      {config.label}
+      {t(`tier_${tierKey}.label`)}
     </span>
   );
 }

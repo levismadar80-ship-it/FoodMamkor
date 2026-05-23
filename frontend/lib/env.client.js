@@ -31,6 +31,7 @@ export const env = createEnv({
     NEXT_PUBLIC_APPLE_REDIRECT_URI: z.string().url().optional(),
     NEXT_PUBLIC_SUPPORT_PHONE: z.string().regex(/^\d{10,15}$/).optional(),
     NEXT_PUBLIC_CLARITY_PROJECT_ID: z.string().optional(),
+    NEXT_PUBLIC_CONTACT_EMAIL: z.string().email().optional(),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
@@ -40,6 +41,7 @@ export const env = createEnv({
     NEXT_PUBLIC_APPLE_REDIRECT_URI: process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI,
     NEXT_PUBLIC_SUPPORT_PHONE: process.env.NEXT_PUBLIC_SUPPORT_PHONE,
     NEXT_PUBLIC_CLARITY_PROJECT_ID: process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID,
+    NEXT_PUBLIC_CONTACT_EMAIL: process.env.NEXT_PUBLIC_CONTACT_EMAIL,
   },
   skipValidation:
     process.env.NODE_ENV === "test" || !!process.env.SKIP_ENV_VALIDATION,
@@ -50,3 +52,10 @@ export const SITE_URL =
 
 export const API_URL =
   env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// MEH-653: centralized public contact email shown on /terms, /privacy,
+// /contact, /forgot-password, /accessibility. Falls back to the literal
+// when the Vercel env var is unset so the public legal disclosure never
+// rotates to a blank string mid-deploy.
+export const CONTACT_EMAIL =
+  env.NEXT_PUBLIC_CONTACT_EMAIL || "contact@mehamakor.co.il";

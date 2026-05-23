@@ -125,8 +125,10 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await expect(submit).toBeEnabled();
 
     await submit.click();
-    // Success path lands on the email-verify confirmation screen.
-    await expect(page.getByText(/בדקי את האימייל שלך/)).toBeVisible({
+    // MEH-328 Chunk D: success path lands on the OWASP-aligned inbox-check
+    // screen. Identical body across new-email / collision branches; no
+    // access_token in response, no auto-login.
+    await expect(page.getByText(/בדקי את תיבת המייל שלך/)).toBeVisible({
       timeout: 10_000,
     });
   });

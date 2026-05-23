@@ -42,6 +42,9 @@
 | 20 | `search_queries` | Analytics log of every smart-search query (MEH-99) | _(raw SQL, no ORM model)_ |
 | 21 | `producer_recipes` | Producer-owned recipes promoting their products (admin-moderated) | `ProducerRecipe` |
 | 22 | `producer_recipe_products` | Many-to-many recipe ↔ product link (same-producer enforced in router) | _(association `Table`)_ |
+| 23 | `inbound_messages` | Inbound WhatsApp messages — populated by future PR2c receiver, consumed by MEH-509 PR2b watchdog | `InboundMessage` |
+
+> **MEH-509 PR3 (2026-05-22):** `producers.risk_score` (Integer nullable) + `producers.risk_reasoning` (Text nullable) added by migration `92afa3cb76e2`. Populated asynchronously by `app/services/producer_risk.py` via FastAPI BackgroundTasks after producer signup using Claude Haiku 4.5. NULL on both = "not scored yet OR Anthropic call failed (fail-open)". Admin-only — `ProducerAdminOut` schema surfaces them; `ProducerDetailOut` (public) intentionally does not. New endpoint: `GET /admin/producers/{id}/risk-score` returns `{score, reasoning}`.
 
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
@@ -350,8 +353,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 ### Auth (`app/routers/auth.py`)
 
 ```
-POST   /auth/register            public  — consumer signup, returns JWT (MEH-306: 12-char policy)
-POST   /auth/register/producer   public  — producer multi-step signup (8-char floor; MEH-306 sub-A out of scope)
+POST   /auth/register            public  — consumer signup → RegisterAck {detail} (MEH-328 OWASP anti-enum; no auto-login; verify via email)
+POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope)
 POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP)
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange
@@ -534,10 +537,19 @@ PUT    /admin/pages/{slug}                     admin
 GET    /admin/analytics                        admin
 GET    /admin/settings                         admin
 PUT    /admin/settings                         admin
+GET    /admin/settings/vacation                admin — typed vacation-mode read (MEH-509 PR2a)
+POST   /admin/settings/vacation                admin — typed vacation-mode write (MEH-509 PR2a)
 POST   /admin/settings/test/{service}          admin — Twilio/Cloudinary test pings
 GET    /admin/dashboard                        admin
 GET    /admin/stats                            admin
 GET    /admin/reports                          admin — producer reports inbox
+```
+
+### WhatsApp webhook receiver (`app/routers/whatsapp_webhook.py`) — MEH-509 PR2c
+
+```
+GET    /webhook/whatsapp     public — Meta subscription challenge, verify_token gate
+POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signature gate
 ```
 
 ### Admin — experiences (`app/routers/admin_experiences.py`)

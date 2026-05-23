@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -20,6 +21,7 @@ import StarSelector from "./StarSelector";
  * - DELETE /reviews/:id — owner/admin
  */
 export default function ProducerReviews({ producerId }) {
+  const t = useTranslations("reviews");
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(0);
@@ -91,7 +93,7 @@ export default function ProducerReviews({ producerId }) {
     e.preventDefault();
     setError("");
     if (stars < 1 || stars > 5) {
-      setError("בחרי דירוג בין 1 ל-5 כוכבים");
+      setError(t("error_invalid_stars"));
       return;
     }
     setSubmitting(true);
@@ -104,10 +106,10 @@ export default function ProducerReviews({ producerId }) {
         const without = prev.filter((x) => x.user_id !== r.data.user_id);
         return [r.data, ...without];
       });
-      setTotal((t) => t + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
-      showToast("הביקורת שלך נשמרה ⭐");
+      setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
+      showToast(t("saved_toast"));
     } catch (err) {
-      setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setError(err.response?.data?.detail || t("error_generic"));
     } finally {
       setSubmitting(false);
     }
@@ -118,7 +120,7 @@ export default function ProducerReviews({ producerId }) {
   return (
     <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
       <h2 className="font-headline text-2xl font-bold text-site-text mb-6">
-        ביקורות לקוחות
+        {t("owner_heading")}
         {total > 0 && <span className="text-base font-normal text-site-muted ms-2">({total})</span>}
       </h2>
 
@@ -130,15 +132,15 @@ export default function ProducerReviews({ producerId }) {
             className="bg-white rounded-[16px] p-5 border border-border mb-8 space-y-4"
           >
             <h3 className="font-headline text-lg font-bold text-site-text">
-              {myReview ? "עדכני את הביקורת שלך" : "כתבי ביקורת"}
+              {myReview ? t("edit_cta") : t("write_cta")}
             </h3>
             <div>
-              <label className="block text-sm text-site-text mb-2">דירוג</label>
+              <label className="block text-sm text-site-text mb-2">{t("rating_label")}</label>
               <StarSelector value={stars} onChange={setStars} />
             </div>
             <div>
               <label htmlFor="review-body" className="block text-sm text-site-text mb-1">
-                ספרי על החוויה שלך
+                {t("body_label_alt")}
               </label>
               <textarea
                 id="review-body"
@@ -147,7 +149,7 @@ export default function ProducerReviews({ producerId }) {
                 rows={3}
                 maxLength={2000}
                 className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
-                placeholder="מה אהבת? איך הייתה המסירה? האם תמליצי?"
+                placeholder={t("body_placeholder_alt")}
               />
             </div>
             {error && (
@@ -158,29 +160,33 @@ export default function ProducerReviews({ producerId }) {
               disabled={submitting}
               className="bg-primary text-white px-6 py-2 rounded-[8px] hover:bg-primary-light transition disabled:opacity-60"
             >
-              {submitting ? "שומרת..." : myReview ? "עדכני ביקורת" : "פרסמי ביקורת"}
+              {submitting ? t("submit_saving") : myReview ? t("submit_update") : t("submit")}
             </button>
           </form>
         ) : (
           <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-8 text-sm text-site-muted text-center">
-            לחצי על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת
+            {t("wa_gate_message")}
           </div>
         )
       ) : (
         <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-8 text-sm text-site-muted text-center">
-          <a href="/login" className="text-primary hover:underline">התחברי</a> כדי לכתוב ביקורת
+          {t.rich("login_prompt", {
+            login: (chunks) => (
+              <a href="/login" className="text-primary hover:underline">{chunks}</a>
+            ),
+          })}
         </div>
       )}
 
       {/* List */}
       {loading ? (
-        <p className="text-sm text-site-muted">טוענת ביקורות...</p>
+        <p className="text-sm text-site-muted">{t("loading")}</p>
       ) : reviews.length === 0 ? (
         <div className="text-center py-8">
           <div className="mb-2 flex justify-center">
             <Leaf size={48} weight="duotone" className="text-primary/70" aria-hidden="true" />
           </div>
-          <p className="text-site-muted">עדיין אין ביקורות — היי הראשונה!</p>
+          <p className="text-site-muted">{t("empty_message")}</p>
         </div>
       ) : (
         <>
@@ -188,7 +194,7 @@ export default function ProducerReviews({ producerId }) {
             {reviews.map((review) => (
               <div key={review.id} className="bg-white rounded-[16px] p-4 border border-border">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex gap-0.5" dir="ltr" aria-label={`${review.stars} כוכבים`}>
+                  <div className="flex gap-0.5" dir="ltr" aria-label={t("star_aria", { value: review.stars })}>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <span key={n} className="text-lg">
                         {n <= review.stars ? "⭐" : "☆"}
@@ -196,7 +202,7 @@ export default function ProducerReviews({ producerId }) {
                     ))}
                   </div>
                   <span className="text-xs text-site-muted flex items-center gap-1">
-                    <span>{review.user_name || "אנונימית"}</span>
+                    <span>{review.user_name || t("user_anonymous")}</span>
                     {review.created_at && (
                       <span dir="ltr">
                         · {new Date(review.created_at).toLocaleDateString("he-IL")}
@@ -219,7 +225,7 @@ export default function ProducerReviews({ producerId }) {
               <button
                 onClick={() => fetchPage(page - 1)}
                 disabled={page <= 1}
-                aria-label="עמוד קודם"
+                aria-label={t("pagination.prev_aria")}
                 className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
               >
                 <ArrowRight size={18} weight="bold" aria-hidden="true" />
@@ -230,7 +236,7 @@ export default function ProducerReviews({ producerId }) {
               <button
                 onClick={() => fetchPage(page + 1)}
                 disabled={page >= pages}
-                aria-label="עמוד הבא"
+                aria-label={t("pagination.next_aria")}
                 className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
               >
                 <ArrowLeft size={18} weight="bold" aria-hidden="true" />

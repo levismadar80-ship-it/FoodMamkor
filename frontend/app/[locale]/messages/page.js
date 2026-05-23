@@ -1,27 +1,44 @@
 import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { BRAND_NAME } from "@/lib/constants";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
-export const metadata = {
-  title: "הודעות | מהמקור",
-  description: "התקשורת במהמקור מתבצעת ישירות בווטסאפ עם בית העסק.",
-};
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations("sweep_tail.messages");
+  return {
+    title: { absolute: t("meta_title") },
+    description: t("meta_description"),
+    openGraph: {
+      title: t("meta_title"),
+      description: t("meta_description"),
+      type: "website",
+      siteName: BRAND_NAME,
+      locale: OG_LOCALE[locale],
+    },
+    alternates: buildAlternates("/messages", locale),
+  };
+}
 
-export default function MessagesPage() {
+export default async function MessagesPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "sweep_tail.messages" });
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 text-center">
       <div className="text-6xl mb-4" aria-hidden="true">💬</div>
       <h1 className="font-headline text-2xl font-bold text-site-text mb-3">
-        איך עובדת התקשורת במהמקור?
+        {t("heading")}
       </h1>
       <p className="text-site-muted leading-relaxed mb-6">
-        אין צ׳אט פנימי באפליקציה — אנחנו מאמינים בקשר ישיר ואמיתי בין הקונה לבית העסק.
-        בכל כרטיסיית עסק תמצאו כפתור ווטסאפ שיחבר אתכם ישירות לבעל העסק או לשכן המוכר.
+        {t("intro")}
       </p>
       <div className="bg-background border border-border rounded-[16px] p-5 text-right mb-8">
-        <h2 className="font-semibold text-site-text mb-2">למה ככה?</h2>
+        <h2 className="font-semibold text-site-text mb-2">{t("why_heading")}</h2>
         <ul className="text-sm text-site-muted space-y-2">
-          <li>✓ אין מתווכים — אתם מדברים עם האדם שגידל / הכין / אופה</li>
-          <li>✓ מסכמים על מחיר, משלוח וזמינות באופן אישי</li>
-          <li>✓ בונים יחסי אמון אמיתיים עם בית העסק</li>
+          <li>{t("why_item_no_middlemen")}</li>
+          <li>{t("why_item_direct_terms")}</li>
+          <li>{t("why_item_trust")}</li>
         </ul>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -29,13 +46,13 @@ export default function MessagesPage() {
           href="/map"
           className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          🗺️ גלי בתי עסק במפה
+          {t("cta_map")}
         </Link>
         <Link
           href="/favorites"
           className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium"
         >
-          ❤️ המועדפים שלי
+          {t("cta_favorites")}
         </Link>
       </div>
     </div>

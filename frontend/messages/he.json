@@ -69,6 +69,244 @@
       "resend": "שלחו שוב",
       "sent": "✓ נשלח!",
       "rate_limited": "הגעת למגבלה — נסו שוב בעוד שעה"
+    },
+    "toasts": {
+      "favoriteSaved": "נשמר למועדפים ❤️",
+      "sessionExpired": "פג תוקף ההתחברות — נא להתחבר מחדש",
+      "loginAgainCta": "התחברי"
+    },
+    "passwordValidation": {
+      "too_short": "סיסמתך חייבת להכיל לפחות {min} תווים",
+      "too_common": "הסיסמה הזו דלפה ברשת — בחרי סיסמה אחרת",
+      "same_as_current": "הסיסמה החדשה זהה לקודמת — בחרי סיסמה שונה",
+      "fallback": "הסיסמה לא עומדת בדרישות, נסי משהו ארוך וייחודי יותר"
+    },
+    "passwordRecovery": {
+      "forgot": {
+        "title": "איפוס סיסמה",
+        "subtitle": "נשלח לך קישור לאיפוס סיסמה לאימייל",
+        "success_main": "✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס",
+        "success_contact_prefix": "לא קיבלת? צרי קשר:",
+        "email_placeholder": "האימייל שלך",
+        "submit_sending": "שולח...",
+        "submit": "שלחי קישור לאיפוס",
+        "back_to_login": "חזרה להתחברות",
+        "errors": {
+          "send_failed": "שגיאה בשליחה, נסי שוב מאוחר יותר"
+        }
+      },
+      "reset": {
+        "loading": "טוען...",
+        "invalid_link": "קישור האיפוס לא תקין",
+        "request_new_link": "בקשי קישור חדש",
+        "title": "סיסמה חדשה",
+        "subtitle": "הזיני סיסמה חדשה (לפחות {min} תווים)",
+        "password_placeholder": "סיסמה חדשה",
+        "password_aria": "סיסמה חדשה",
+        "confirm_placeholder": "אישור סיסמה",
+        "toggle_show": "הציגי סיסמה",
+        "toggle_hide": "הסתירי סיסמה",
+        "success_title": "✓ הסיסמה עודכנה בהצלחה",
+        "success_subtitle": "מעבירים אותך לדף הכניסה...",
+        "submit_updating": "מעדכן...",
+        "submit": "עדכני סיסמה",
+        "errors": {
+          "too_short": "הסיסמה חייבת להכיל לפחות {min} תווים",
+          "mismatch": "הסיסמאות אינן תואמות",
+          "invalid_token": "קישור האיפוס לא תקין. בקשי קישור חדש.",
+          "expired_token": "קישור האיפוס פג תוקף. בקשי קישור חדש.",
+          "generic": "שגיאה בעדכון הסיסמה, נסי שוב"
+        }
+      }
+    },
+    "verifyEmail": {
+      "loading_title": "מאמתת...",
+      "loading_subtitle": "אנא המתיני",
+      "fallback_loading": "טוענת...",
+      "success_title": "האימייל אומת בהצלחה!",
+      "success_subtitle": "מעבירה אותך לאתר...",
+      "success_cta": "המשיכי לאתר",
+      "error_title": "האימות נכשל",
+      "error_cta": "חזרי לאתר",
+      "errors": {
+        "invalid_link": "קישור האימות לא תקין",
+        "invalid_or_expired": "קישור האימות לא תקין או פג תוקף"
+      }
+    },
+    "login": {
+      "loading": "טוען...",
+      "title": "כניסה למהמקור",
+      "welcome": "ברוכה הבאה",
+      "value_save": "❤️ שמרי עסקים",
+      "value_rate": "⭐ דרגי",
+      "value_publish": "🏠 פרסמי מטבח ביתי",
+      "email_label": "אימייל",
+      "email_invalid": "האימייל לא תקין",
+      "valid": "✓ תקין",
+      "password_label": "סיסמה",
+      "password_required": "הזיני סיסמה",
+      "password_show": "הציגי סיסמה",
+      "password_hide": "הסתירי סיסמה",
+      "forgot_password": "שכחת סיסמה?",
+      "submit": "כניסה",
+      "submitting": "מתחברת...",
+      "reset_success": "הסיסמה עודכנה בהצלחה — אפשר להתחבר",
+      "or": "או",
+      "no_account": "אין לך חשבון?",
+      "register_cta": "הצטרפי →",
+      "generic_error": "משהו השתבש, נסי שוב"
+    },
+    "oauth": {
+      "google_error": "שגיאה בהתחברות עם Google",
+      "apple_error": "שגיאה בהתחברות עם Apple",
+      "apple_continue": "המשך עם Apple",
+      "apple_continue_f": "המשיכי עם Apple",
+      "producer_quick_signup": "הרשמה מהירה",
+      "producer_only_email_name": "נקבל רק את השם והמייל שלך",
+      "or": "או",
+      "producer_already_account": "יש לך כבר חשבון במהמקור — היכנסי כדי לנהל אותו",
+      "rate_limited": "יותר מדי נסיונות, נסי בעוד דקה",
+      "connection_failed": "לא הצלחנו להתחבר, נסי שוב",
+      "generic_error": "שגיאה בהתחברות"
+    },
+    "register": {
+      "consumer": {
+        "heading": "הצטרפי לקהילה",
+        "subtitle": "ברוכה הבאה למהמקור 🌿",
+        "referral_badge": "הגעת דרך חברה 🌿 10% הנחה בהזמנה הראשונה",
+        "email_hint": "לאחר ההרשמה תישלח הודעת אימות לאימייל שלך",
+        "oauth_divider": "או",
+        "have_account": "יש לך כבר חשבון?",
+        "login_link": "כניסה לחשבון",
+        "cta_producer": "רוצה להוסיף את העסק שלך?",
+        "cta_producer_link": "הצטרפי כבית עסק",
+        "value_props": {
+          "discover": "🗺️ גלי יצרנים",
+          "favorites": "❤️ שמרי מועדפים",
+          "rate": "⭐ דרגי ושתפי"
+        },
+        "fields": {
+          "name": "שם מלא *",
+          "email": "אימייל *",
+          "password": "סיסמה *",
+          "password_aria": "סיסמה"
+        },
+        "validation": {
+          "name_required": "שם מלא הוא שדה חובה",
+          "email_invalid": "האימייל לא תקין",
+          "password_min": "סיסמתך חייבת להכיל לפחות {min} תווים",
+          "valid_hint": "✓ תקין"
+        },
+        "terms": {
+          "intro": "קראתי ואני מסכימה",
+          "tos_link": "לתנאי השימוש",
+          "and": "ו",
+          "privacy_link": "למדיניות הפרטיות"
+        },
+        "actions": {
+          "submit": "הצטרפי",
+          "submitting": "נרשמת..."
+        },
+        "errors": {
+          "generic": "משהו השתבש, נסי שוב"
+        },
+        "email_sent": {
+          "title": "בדקי את תיבת המייל שלך 📬",
+          "body": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.",
+          "hint": "לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.",
+          "back_home": "חזרה לדף הראשי"
+        }
+      },
+      "producer": {
+        "heading": "תני לעסק שלך בית",
+        "subtitle": "5 דקות. בלי עמלות. בלי מתווכים.",
+        "loading": "טוען...",
+        "loading_form": "טוען טופס הרשמה...",
+        "default_description": "בית עסק מקומי. עוד פרטים בקרוב.",
+        "prefill_notice": "מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.",
+        "upgrade_banner": {
+          "connected_with": "את מחוברת עם {email}",
+          "attached_to_account": "העסק יצורף לחשבון הזה"
+        },
+        "draft": {
+          "prompt": "שמרנו טיוטה ממילוי קודם — רוצה להמשיך?",
+          "continue": "כן, המשך",
+          "dismiss": "לא"
+        },
+        "steps": {
+          "account": {
+            "title": "1. פרטי חשבון",
+            "email_section": "הרשמה עם אימייל"
+          },
+          "business": {
+            "title": "2. פרטי העסק",
+            "subtitle": "כמה שדות בלבד — תשלימי את שאר הפרטים מהדשבורד אחרי האישור."
+          }
+        },
+        "fields": {
+          "name": "שם מלא *",
+          "email": "אימייל *",
+          "password": "סיסמה *",
+          "producer_name": "שם העסק *",
+          "description_label": "ספרי על העסק שלך",
+          "description_hint": "סיפור של 100-300 מילים — איך התחלת? מה מיוחד אצלך? מה הקרוב ביותר ללב שלך?",
+          "phone": "טלפון WhatsApp * (0501234567)",
+          "phone_hint": "נשלח לך הודעת WhatsApp לאישור ולהשלמת הפרופיל",
+          "license_required_label": "מספר רישיון יצרן (חובה)",
+          "license_required_hint": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
+          "license_optional_label": "מספר רישיון יצרן"
+        },
+        "validation": {
+          "all_required": "יש למלא את כל שדות החובה",
+          "email_invalid": "אימייל לא תקין",
+          "password_complexity": "הסיסמה חייבת להכיל לפחות 8 תווים, אות גדולה ומספר",
+          "producer_name_required": "יש למלא שם עסק",
+          "phone_required": "יש למלא מספר טלפון תקין",
+          "phone_invalid": "❌ מספר טלפון לא תקין",
+          "phone_valid": "✓ מספר תקין",
+          "category_required": "יש לבחור לפחות קטגוריה אחת",
+          "terms_required": "יש לאשר את תנאי השימוש לפני ההצטרפות",
+          "license_format": "מספר רישיון יצרן הוא 7-10 ספרות"
+        },
+        "terms": {
+          "intro": "קראתי ואני מסכימה",
+          "tos_link": "לתנאי השימוש",
+          "and": "ו",
+          "privacy_link": "למדיניות הפרטיות",
+          "license_declaration": ", ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים."
+        },
+        "actions": {
+          "next": "הבא →",
+          "back": "שלב קודם",
+          "submit": "הצטרפי →",
+          "submitting": "שולחת...",
+          "write_later": "אני אכתוב אחר כך",
+          "edit_description": "ערוך תיאור",
+          "add_license": "יש לי רישיון יצרן ↓",
+          "close": "סגור"
+        },
+        "errors": {
+          "already_has_producer": "כבר יש לך עסק רשום בחשבון זה.",
+          "generic": "שגיאת תקשורת — נסי שוב."
+        },
+        "success": {
+          "heading": "הצטרפת!",
+          "body_with_whatsapp": "שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים.",
+          "body_no_whatsapp": "הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים.",
+          "whatsapp_warning": "לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד.",
+          "next_heading": "מה הלאה?",
+          "next_step1": "✓ השלימי את הפרופיל מהדשבורד — תמונות, תיאור, משלוחים",
+          "next_step2": "✓ הצוות שלנו יבדוק את הבקשה תוך 1-2 ימי עסקים",
+          "next_step3": "✓ אחרי האישור — העסק יופיע במפה ובחיפוש",
+          "dashboard_cta": "לדשבורד שלי ←",
+          "share_msg": "היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל אמיתי. מוזמנת להצטרף: https://mehamakor.online/register/producer",
+          "share_cta": "הזמיני שכנה",
+          "inbox_title": "בדקי את תיבת המייל שלך 📬",
+          "inbox_body": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.",
+          "inbox_hint": "לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.",
+          "back_home": "חזרה לדף הראשי"
+        }
+      }
     }
   },
   "account": {
@@ -156,12 +394,55 @@
       "heading": "אירועים קרובים 📅",
       "all_events": "לכל האירועים ←",
       "free": "חינם"
+    },
+    "marquee": {
+      "tag_unprocessed": "🌿 ללא מעובד",
+      "tag_pasture": "🥩 ממרעה",
+      "tag_organic": "🧀 אורגני",
+      "tag_sourdough": "🍞 מחמצת",
+      "tag_extra_virgin": "🫒 כתית",
+      "tag_fresh_real": "🌱 טרי ואמיתי",
+      "tag_verified": "✅ מאומת",
+      "tag_local": "📍 מקומי"
+    },
+    "story_block": {
+      "founder_quote": "אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור.",
+      "founder_attribution": "— ספיר, מייסדת מהמקור",
+      "seasonal_heading": "כל עונה — טעם אחר"
     }
   },
   "common": {
     "cta": {
       "show_on_map": "הצג במפה",
       "more_info": "לפרופיל המלא"
+    },
+    "aria": {
+      "close": "סגור"
+    },
+    "pagination": {
+      "aria_label": "עימוד",
+      "per_page_label": "הצגה לעמוד",
+      "per_page_aria": "פריטים לעמוד",
+      "prev_aria": "עמוד קודם",
+      "prev": "← הקודם",
+      "page_aria": "עמוד {page}",
+      "next_aria": "עמוד הבא",
+      "next": "הבא →"
+    },
+    "breadcrumb": {
+      "aria": "נתיב ניווט"
+    },
+    "info_tooltip": {
+      "trigger_aria": "מידע נוסף"
+    },
+    "parallax_quote": {
+      "aria": "ציטוט"
+    },
+    "skeleton": {
+      "loading_businesses": "טוענת עסקים טריים"
+    },
+    "star_rating": {
+      "count_aria": "{count, plural, one {דירוג אחד} two {{count} דירוגים} other {({count} דירוגים)}}"
     }
   },
   "category": {
@@ -176,6 +457,3090 @@
   "seo": {
     "home": {
       "description": "בתי עסק מקומיים, כולם במקום אחד. מצאו אוכל אמיתי, טרי ובריא באזור שלך."
+    },
+    "site": {
+      "title": "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+      "description": "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.",
+      "og_title": "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+      "og_description": "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.",
+      "twitter_title": "מהמקור — אוכל אמיתי, ישר מהמקור אליך",
+      "twitter_description": "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך."
+    },
+    "about": {
+      "title": "החזון שלנו — על מהמקור",
+      "description": "מהמקור נולדה מתוך צורך אמיתי — למצוא אוכל אמיתי, ישר מהמקור. הסיפור של ספיר, המייסדת, הערכים שלנו וקריטריוני הכניסה לבתי עסק.",
+      "og_title": "החזון שלנו — על מהמקור",
+      "og_description": "הסיפור של ספיר, הערכים וקריטריוני הכניסה."
+    },
+    "login": {
+      "title": "כניסה למהמקור | מהמקור",
+      "description": "התחברי לחשבון שלך במהמקור — דירקטורי האוכל האמיתי של ישראל. גלי בתי עסק מקומיים ובעלות תוצרת איכותית.",
+      "og_title": "כניסה למהמקור",
+      "og_description": "התחברי כדי לגלות בתי עסק מקומיים, לשמור מועדפים, ולתמוך ביצרניות איכותיות."
+    },
+    "register": {
+      "title": "הרשמה למהמקור | מהמקור",
+      "description": "הצטרפי למהמקור — דירקטורי האוכל האמיתי של ישראל. גלי בתי עסק מקומיים ותמכי ביצרניות איכותיות.",
+      "og_title": "הרשמה למהמקור",
+      "og_description": "פתחי חשבון חינמי וגלי בתי עסק מקומיים, אוכל אמיתי, ובעלות תוצרת איכותית."
+    },
+    "contact": {
+      "title": "צרי קשר | מהמקור",
+      "description": "יש לך שאלה, הצעה או רעיון? נשמח לשמוע. צרי איתנו קשר ונחזור אלייך בהקדם.",
+      "og_title": "צרי קשר עם מהמקור",
+      "og_description": "שאלות, הצעות, או רעיונות לשיתוף פעולה — אנחנו כאן."
+    },
+    "search": {
+      "title": "תוצאות חיפוש | מהמקור",
+      "description": "חיפשי בתי עסק, יצרניות, ותוצרת מקומית במהמקור — דירקטורי האוכל האמיתי של ישראל.",
+      "og_title": "חיפוש במהמקור",
+      "og_description": "מצאי בתי עסק ותוצרת מקומית בקלות."
+    },
+    "forgot_password": {
+      "title": "שחזור סיסמה | מהמקור",
+      "description": "שכחתם את הסיסמה? הזינו את כתובת המייל ונשלח קישור לאיפוס הסיסמה לחשבון מהמקור.",
+      "og_title": "שחזור סיסמה במהמקור",
+      "og_description": "הזינו את כתובת המייל ונשלח קישור לאיפוס סיסמה."
+    },
+    "reset_password": {
+      "title": "איפוס סיסמה | מהמקור",
+      "description": "בחירת סיסמה חדשה ומאובטחת לחשבון מהמקור.",
+      "og_title": "איפוס סיסמה במהמקור",
+      "og_description": "בחירת סיסמה חדשה והתחברות מחדש לחשבון."
+    },
+    "verify_email": {
+      "title": "אימות כתובת מייל | מהמקור",
+      "description": "אימות כתובת המייל להפעלת החשבון במהמקור.",
+      "og_title": "אימות כתובת מייל במהמקור",
+      "og_description": "אישור כתובת המייל מסיים את הקמת החשבון במהמקור."
+    },
+    "favorites": {
+      "title": "המועדפים שלי | מהמקור",
+      "description": "כל בתי העסק והתוצרת השמורים במהמקור, במקום אחד. עדכונים על מה חדש מבעלי העסק האהובים.",
+      "og_title": "המועדפים שלי במהמקור",
+      "og_description": "בתי העסק והמוצרים השמורים — מחכים במקום אחד."
+    },
+    "upgrade": {
+      "title": "שדרוג לחשבון פרימיום | מהמקור",
+      "description": "השוואת מסלולים לבעלי עסק במהמקור — חינמי מול פרימיום: מוצרים ללא הגבלה, תמונות נוספות, סטטיסטיקות ועוד.",
+      "og_title": "שדרוג לפרימיום במהמקור",
+      "og_description": "הצגת בית העסק בגדול — מוצרים ללא הגבלה, גלריית תמונות וסטטיסטיקות."
+    },
+    "map": {
+      "title": "מפת בתי עסק מקומיים — מהמקור",
+      "description": "מצאי בתי עסק מקומיים על המפה. אוכל אמיתי, טרי ובריא באזור שלך.",
+      "og_title": "מפת בתי עסק מקומיים — מהמקור",
+      "og_description": "בתי עסק על המפה — אוכל אמיתי באזור שלך."
+    },
+    "experience": {
+      "title_fallback": "חוויה קולינרית — מהמקור",
+      "description_fallback": "חוויות קולינריות אצל בתי עסק מקומיים."
+    },
+    "group_buy": {
+      "title_fallback": "רכישה קבוצתית — מהמקור",
+      "description_fallback": "רכישות קבוצתיות מבתי עסק מקומיים."
+    },
+    "event": {
+      "title_fallback": "אירוע קולינרי — מהמקור",
+      "description_fallback": "אירועים קולינריים אצל בתי עסק מקומיים."
+    }
+  },
+  "producer": {
+    "detail": {
+      "loading_fresh": "טוענת עסקים טריים...",
+      "not_found": "לא מצאנו את בית העסק הזה — עדיין 🌱",
+      "breadcrumb_home": "בית",
+      "aria": {
+        "back": "חזרה לעמוד הקודם",
+        "tab_nav": "ניווט מהיר בפרופיל"
+      },
+      "back_label": "← חזרה",
+      "tabs": {
+        "about": "אודות",
+        "products": "מוצרים",
+        "delivery": "משלוח",
+        "reviews_label": "ביקורות"
+      },
+      "sections": {
+        "about": "אודות",
+        "similar": {
+          "heading": "עסקים דומים",
+          "in_area": "{category} · באזור שלך"
+        },
+        "events": {
+          "heading": "אירועים קרובים",
+          "free": "חינם",
+          "register": "הרשמה לאירוע →",
+          "show_all_count": "{count, plural, one {הציגי את האירוע} two {הציגי את שני האירועים} other {הציגי את כל # האירועים}}"
+        },
+        "products": {
+          "heading": "מוצרים"
+        },
+        "recipes": {
+          "cta": "המתכונים שלנו"
+        },
+        "delivery": {
+          "heading": "אזורי משלוח",
+          "col": {
+            "city": "עיר",
+            "min_order": "מינימום הזמנה",
+            "day": "יום משלוח"
+          }
+        }
+      },
+      "header": {
+        "review_count": "{count, plural, =0 {אין ביקורות} one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}",
+        "premium": "פרמיום",
+        "favorites_count": "{count, plural, one {אחת שמרה את העסק הזה} two {שניים שמרו את העסק הזה} other {# שמרו את העסק הזה}}",
+        "behind": "מאחורי העסק: {name}",
+        "attr": {
+          "grass_fed": "מרעה חופשי",
+          "organic": "אורגני מוסמך",
+          "delivery": "משלוח",
+          "kosher": "כשר"
+        },
+        "slow_response": "⏳ זמני תגובה ארוכים יותר השבוע",
+        "vacation": "🌙 בית עסק זה בהפסקה כרגע",
+        "vacation_return": "{label} — ניתן להשאיר הודעה"
+      },
+      "action_row": {
+        "aria": {
+          "show_on_map": "פתח את המיקום של העסק במפה"
+        },
+        "show_on_map": "הצג במפה",
+        "referral_msg": "גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/{code}",
+        "referral_cta": "שתפי וקבלי 10% 🌿"
+      },
+      "contact_sidebar": {
+        "join_whatsapp_group": "הצטרפי לקבוצת וואטסאפ"
+      },
+      "sticky_bar": {
+        "vacation_msg": "שלחי הודעה — יחזרו בקרוב"
+      }
+    },
+    "card": {
+      "contact": {
+        "phone": "טלפון",
+        "website": "אתר",
+        "email": "אימייל"
+      },
+      "favorites": {
+        "saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
+        "login_cta": "התחברי",
+        "error": "משהו השתבש, נסי שוב",
+        "remove": "הסר ממועדפים",
+        "add": "הוסף למועדפים"
+      },
+      "aria": {
+        "image_missing": "{name} — תמונה חסרה",
+        "primary_contact": "ערוץ קשר עיקרי: {method}"
+      },
+      "badges": {
+        "delivery_only": "🚚 משלוחים בלבד",
+        "available_today": "🛒 מגיעה היום"
+      },
+      "favorites_count_short": "{count, plural, one {אחת שמרה} two {שניים שמרו} other {# שמרו}}"
+    }
+  },
+  "recipes": {
+    "status": {
+      "pending": "ממתין לאישור",
+      "approved": "אושר ופורסם",
+      "rejected": "נדחה",
+      "needs_revision": "צריך תיקון"
+    },
+    "card": {
+      "minutes_suffix": "דקות",
+      "servings_suffix": "מנות"
+    },
+    "detail": {
+      "breadcrumb_aria": "ניווט קבצי שורש",
+      "breadcrumb_recipes": "מתכונים",
+      "prep_time_label": "זמן הכנה:",
+      "cook_time_label": "זמן בישול:",
+      "servings_label": "מנות:",
+      "minutes_unit": "דק",
+      "ingredients_heading": "רכיבים",
+      "instructions_heading": "הוראות הכנה",
+      "related_products_heading": "המוצרים שלנו במתכון",
+      "back_to_producer": "← חזרה לדף בית העסק",
+      "meta_title_not_found": "מתכון לא נמצא | מהמקור",
+      "meta_title_template": "{recipeTitle} | {producerName} | מהמקור"
+    },
+    "form": {
+      "heading_edit": "עריכת מתכון",
+      "heading_create": "פרסום מתכון חדש",
+      "title_label": "שם המתכון",
+      "description_label": "תיאור קצר",
+      "ingredients_label": "רכיבים",
+      "ingredients_placeholder": "500 גרם קמח\n10 גרם מלח\n350 מל מים",
+      "instructions_label": "הוראות הכנה",
+      "instructions_placeholder": "ערבבי את הקמח עם המלח...",
+      "prep_time_label": "זמן הכנה (דק)",
+      "cook_time_label": "זמן בישול (דק)",
+      "servings_label": "מספר מנות",
+      "image_label": "תמונה",
+      "image_remove": "הסירי תמונה",
+      "image_uploading": "מעלה...",
+      "image_upload": "העלאת תמונה",
+      "related_products_label": "מוצרים קשורים",
+      "related_products_hint": "(מתכון מקדם מוצרים שלך)",
+      "products_loading": "טוענת מוצרים...",
+      "no_products": "עדיין אין מוצרים בעסק שלך. אפשר לפרסם את המתכון בלי קישור.",
+      "submit_saving": "שומרת...",
+      "submit": "שמירת מתכון",
+      "cancel": "ביטול",
+      "toast_updated": "המתכון עודכן",
+      "toast_created": "המתכון נשלח לאישור 🌿",
+      "errors": {
+        "upload_image_failed": "שגיאה בהעלאת תמונה",
+        "rejected_default": "התוכן אינו עומד בקריטריונים שלנו",
+        "generic": "משהו השתבש, נסי שוב"
+      }
+    },
+    "dashboard": {
+      "back": "← לוח הבקרה",
+      "heading": "המתכונים שלי",
+      "btn_close_form": "סגרי",
+      "btn_open_form": "+ פרסום מתכון חדש",
+      "loading": "טוענת...",
+      "empty_title": "עדיין לא פרסמת מתכונים",
+      "empty_description": "מתכון מקדם את המוצרים שלך — שתפי איך הלקוחות שלך משתמשות בהם בבית.",
+      "empty_cta": "+ פרסום מתכון חדש",
+      "notes_needs_revision": "הערת מנהלת:",
+      "notes_rejected": "סיבת דחייה:",
+      "published": "פורסם באתר",
+      "not_published": "טרם פורסם",
+      "edit": "עריכה",
+      "delete": "מחיקה",
+      "delete_confirm": "למחוק את המתכון?",
+      "toast_deleted": "המתכון נמחק",
+      "toast_delete_error": "שגיאה במחיקה"
+    },
+    "edit": {
+      "back": "← חזרה למתכונים",
+      "heading": "עריכת מתכון",
+      "loading": "טוענת...",
+      "not_found": "המתכון לא נמצא"
+    }
+  },
+  "group_buys": {
+    "list": {
+      "hero_title": "קבוצות רכש",
+      "hero_subtitle": "קנו ביחד וחסכו — מוצרים מקומיים במחיר קבוצתי",
+      "filter_city_label": "סנני לפי עיר",
+      "filter_city_placeholder": "כל הערים",
+      "status_open": "פתוחות",
+      "status_funded": "ממומנות",
+      "status_fulfilled": "הושלמו",
+      "empty_title": "אין קבוצות רכש כרגע",
+      "empty_subtitle": "בדקי שוב בקרוב"
+    },
+    "card": {
+      "funded_banner": "🎉 המחיר נפתח!",
+      "by_producer": "מאת {name}",
+      "unit_prefix": "/ {unit}",
+      "min_hint": "במחיר הקבוצתי כשמגיעות ל‑{min} משתתפות",
+      "progress_label": "{commits} מתוך {min} משתתפות",
+      "days_left": "{days} ימים נותרו",
+      "expired": "פג התוקף",
+      "cta_funded_details": "פרטים",
+      "cta_join": "אני רוצה להצטרף!"
+    },
+    "detail": {
+      "loading": "טוענת...",
+      "not_found_title": "קבוצת הרכש לא נמצאה",
+      "back_to_list": "חזרה לקבוצות הרכש",
+      "back_to_list_arrow": "← חזרה לקבוצות הרכש",
+      "funded_title": "המחיר נפתח! 🎉",
+      "funded_subtitle": "{name} תצור קשר עם המשתתפות בקרוב",
+      "cancelled": "קבוצת הרכש בוטלה",
+      "fulfilled": "✅ קבוצת הרכש הושלמה",
+      "by_producer": "מאת {name}",
+      "unit_suffix": "/ {unit}",
+      "discount_hint": "חיסכון של {discount}% במחיר קבוצתי",
+      "progress_label": "{commits} מתוך {min} משתתפות",
+      "remaining_to_open": "עוד {n} משתתפות לפתיחת המחיר",
+      "deadline_prefix": "מועד אחרון: {date}",
+      "quantity_label": "כמות",
+      "phone_label": "טלפון ליצירת קשר",
+      "phone_placeholder": "050-1234567",
+      "submitting": "מצרפת...",
+      "submit_join": "אני רוצה להצטרף! 🛒",
+      "submit_login": "כניסה להצטרפות",
+      "login_required": "יש להתחבר כדי להצטרף לקבוצת רכש",
+      "committed_confirm": "✅ הצטרפת לקבוצת רכש זו",
+      "committed_units": " ({count} יחידות)",
+      "cancelling": "מבטלת...",
+      "cancel_cta": "בטלי את ההצטרפות",
+      "cancel_confirm": "לבטל את ההצטרפות?",
+      "deadline_passed": "המועד האחרון חלף — לא ניתן להצטרף",
+      "share_wa": "שתפי עם חברות",
+      "share_text": "הצטרפי לקבוצת רכש — {title} ב{city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
+      "share_default_region": "ישראל",
+      "errors": {
+        "generic": "משהו השתבש, נסי שוב",
+        "cancel_failed": "לא הצלחנו לבטל"
+      }
+    },
+    "dashboard": {
+      "status": {
+        "open": "פתוחה",
+        "funded": "ממומנת 🎉",
+        "cancelled": "בוטלה",
+        "fulfilled": "הושלמה ✅"
+      },
+      "back": "← לוח הבקרה",
+      "heading": "קבוצות הרכש שלי",
+      "btn_close_form": "סגרי",
+      "btn_open_form": "+ קבוצת רכש חדשה",
+      "loading": "טוענת...",
+      "empty_title": "קבוצות רכש = מחיר סיטונאי ללקוחות שלך",
+      "empty_description": "את קובעת מינימום משתתפות ותאריך. אם לא מגיעים למינימום — אף אחת לא משלמת. מושלם לשחיטה של כבש שלם, ליום אריזת סלסלות, או להזמנת עגלים קבוצתית.",
+      "empty_cta": "+ צרי קבוצה ראשונה",
+      "progress_label": "{commits} / {min} משתתפות",
+      "deadline_prefix": "מועד אחרון: {date}",
+      "view_public": "צפי בדף הציבורי ←",
+      "form": {
+        "heading": "קבוצת רכש חדשה",
+        "title_label": "כותרת",
+        "description_label": "תיאור",
+        "product_name_label": "שם המוצר",
+        "unit_label": "יחידה",
+        "unit_placeholder": "ק\"ג, ליטר, יחידה",
+        "price_regular_label": "מחיר רגיל (₪)",
+        "price_group_label": "מחיר קבוצתי (₪)",
+        "min_label": "מינימום משתתפות",
+        "min_tooltip": "מספר ההזמנות הדרוש כדי שהקבוצה תיסגר. אם לא מגיעים למינימום עד המועד האחרון — אף אחת לא משלמת ואת לא חייבת לבצע.",
+        "max_label": "מקסימום משתתפות",
+        "deadline_label": "מועד אחרון",
+        "city_label": "עיר",
+        "required_marker": " *",
+        "submitting": "יוצרת...",
+        "submit": "צרי קבוצת רכש",
+        "errors": {
+          "generic": "משהו השתבש, נסי שוב"
+        }
+      }
+    },
+    "availability": {
+      "status_label": {
+        "open_orders": "פתוח להזמנות",
+        "busy_week": "עמוס כרגע",
+        "on_vacation": "בהפסקה"
+      },
+      "card_label": {
+        "open_orders": "פתוח להזמנות",
+        "available_today": "זמינה היום 🟢",
+        "busy_week": "עמוסה השבוע 🟠",
+        "on_vacation": "בהפסקה ⏸"
+      }
+    },
+    "delivery": {
+      "heading": "משלוחים",
+      "nationwide": "משלוחים לכל הארץ",
+      "arranged": "משלוחים בתיאום מראש — צרי קשר לפרטים"
+    },
+    "follow": {
+      "error_generic": "משהו השתבש, נסי שוב",
+      "following": "עוקבת",
+      "follow_aria": "עקבי אחרי עסק זה",
+      "unfollowed_toast": "הפסקת לעקוב",
+      "followed_toast": "מעכשיו תקבלי עדכונים על מוצרים חדשים 🔔"
+    },
+    "badge_row": {
+      "aria": "תגיות בית עסק"
+    },
+    "friday_delivery": {
+      "today": "היום",
+      "title": "יצרניות עם משלוח היום",
+      "title_alt": "יצרניות עם משלוח היום"
+    },
+    "holiday_banner": {
+      "approaching": "{name} מתקרב {emoji}",
+      "aria": "הודעת חג",
+      "close_aria": "סגרי"
+    }
+  },
+  "map": {
+    "client": {
+      "loading_map": "טוענת מפה...",
+      "title": "מפת בתי עסק",
+      "errors": {
+        "no_gps": "הדפדפן שלך לא תומך ב-GPS",
+        "permission_denied": "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
+        "position_unavailable": "המיקום שלך לא זמין. נסי מאוחר יותר.",
+        "timeout": "לקח יותר מדי זמן. נסי שוב.",
+        "gps_unknown": "לא הצלחנו לקבל את המיקום שלך"
+      },
+      "aria": {
+        "split_50_50": "תצוגה 50/50",
+        "split_25_75": "תצוגה 25/75",
+        "my_location": "קרוב אלי"
+      },
+      "city_search": {
+        "label": "סנן לפי עיר",
+        "placeholder": "חפשי עיר..."
+      },
+      "business_count": "{count, plural, =0 {אין בתי עסק} one {בית עסק אחד} two {שני בתי עסק} other {# בתי עסק}}",
+      "sort": {
+        "nearest": "קרוב אליי",
+        "top_rated": "הכי מדורגות",
+        "newest": "חדש בשוק"
+      }
+    },
+    "errors": {
+      "load_failed": "לא הצלחנו לטעון עסקים — נסי שוב",
+      "invalid_search": "חיפוש לא תקין"
+    },
+    "city_picker": {
+      "heading": "לאן לשלוח?",
+      "subheading": "בחרי עיר כדי לסנן לפי משלוח",
+      "other": {
+        "label": "עיר אחרת",
+        "placeholder": "הקלידי שם עיר..."
+      },
+      "skip": "דלגי"
+    },
+    "popup": {
+      "whatsapp_greeting": "היי! מצאתי אותך במהמקור — {name}"
+    },
+    "filter": {
+      "aria": {
+        "remove": "הסירי סינון {label}"
+      },
+      "clear_all": "× נקי הכל"
+    },
+    "card_list": {
+      "empty": {
+        "heading": "לא נמצאו עסקים",
+        "body": "נסי להזיז את המפה או לשנות מסננים.",
+        "reset_filters": "אפסי סינון"
+      }
+    },
+    "pane": {
+      "hint": "לחצי על סמן עסק כדי לראות פרטים · גלגלי ברשימה מימין לכל העסקים",
+      "search_this_area": "חפשי באזור זה",
+      "empty": {
+        "heading": "אין עסקים באזור זה עדיין",
+        "body": "מכירה מישהי שתוכל להצטרף?",
+        "cta": "הוסיפי עסק +"
+      },
+      "aria": {
+        "center_on_me": "מרכזי את המפה על המיקום שלי",
+        "categories": "קטגוריות"
+      },
+      "show_all": "הצגי הכל"
+    },
+    "sheet": {
+      "badge": {
+        "verified": "✓ מאומת",
+        "organic": "🌿 אורגני",
+        "kosher": "✡️ כשר"
+      }
+    },
+    "page": {
+      "aria": {
+        "business_list": "רשימת בתי עסק על המפה"
+      },
+      "heading_ssr": "בתי עסק על המפה"
+    },
+    "homepage_mini": {
+      "loading": "טוענת מפה...",
+      "pre_launch_hint": "בקרוב מאוד — בתי עסק ראשונים מצטרפים השבוע",
+      "aria": "תצוגה מקדימה של המפה",
+      "dot_caption": "כל בית עסק על המפה",
+      "dot_subtitle": "גלי בתי עסק לפי מיקום",
+      "open_full": "פתחי מפה מלאה"
+    },
+    "component": {
+      "geo_invalid": "המיקום שהתקבל אינו תקין",
+      "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "marker_singular": "עסק",
+      "marker_plural": "עסק"
+    },
+    "producer_card": {
+      "verified": "✓ מאומת",
+      "distance_prefix": "ל",
+      "wa_message": "היי! מצאתי אותך במהמקור — {name}",
+      "full_profile": "פרופיל מלא"
+    },
+    "mini": {
+      "default_label": "מיקום",
+      "open_in_waze": "פתחי ב",
+      "open_in_google": "פתחי ב"
+    },
+    "bottom_sheet": {
+      "title": "בתי עסק באזור",
+      "show_map": "הצג מפה"
+    },
+    "chip_scroll": {
+      "category_aria": "סינון לפי קטגוריה",
+      "attribute_aria": "סינון לפי תכונה"
+    }
+  },
+  "admin": {
+    "common": {
+      "loading": "טוען...",
+      "loading_f": "טוענת...",
+      "saving": "שומר...",
+      "saving_f": "שומרת...",
+      "sending": "שולחת...",
+      "save": "שמור",
+      "saved": "✓ נשמר",
+      "saved_check": "נשמר ✓",
+      "cancel": "ביטול",
+      "delete": "מחק",
+      "delete_f": "מחקי",
+      "edit": "עריכה",
+      "view": "צפה",
+      "view_f": "צפי",
+      "approve": "אשר",
+      "approve_f": "אשרי",
+      "reject": "דחה",
+      "reject_f": "דחי",
+      "search": "חפש",
+      "submit": "אישור",
+      "back": "← חזרה לפאנל הניהול",
+      "back_to_dashboard": "← לוח אדמין",
+      "back_home": "← חזרה לאתר",
+      "error_loading": "שגיאה בטעינת המידע",
+      "error_generic": "שגיאה",
+      "no_data": "אין נתונים להצגה",
+      "no_results": "אין נתונים",
+      "items_pending_label": "{count} פריטים לאישור",
+      "items_pending_title": "{count} פריטים ממתינים לאישור",
+      "brand_admin": "מהמקור Admin"
+    },
+    "layout": {
+      "nav": {
+        "dashboard": "לוח מחוונים",
+        "producers": "בתי עסק",
+        "outreach": "גיוס",
+        "experiences": "חוויות",
+        "users": "משתמשים",
+        "content": "תוכן",
+        "reviews": "ביקורות",
+        "kashrut": "כשרות",
+        "reports": "דיווחים",
+        "category_requests": "בקשות קטגוריה",
+        "analytics": "אנליטיקס",
+        "settings": "הגדרות",
+        "help": "עזרה"
+      }
+    },
+    "dashboard": {
+      "title": "לוח מחוונים",
+      "subtitle": "סקירה כללית של הפלטפורמה",
+      "stats": {
+        "total_producers": "סה״כ בתי עסק",
+        "pending_approval": "ממתינים לאישור",
+        "registered_users": "משתמשים רשומים",
+        "home_products": "מוצרים ביתיים",
+        "group_buys": "קבוצות רכש",
+        "group_buys_tooltip": "ניהול קבוצות רכש של משתמשות. לא פעיל כרגע.",
+        "group_buys_tooltip_label": "מידע על קבוצות רכש"
+      },
+      "alerts": {
+        "producers_waiting": "{count} בתי עסק ממתינים לאישור",
+        "click_to_handle": "לחץ לטיפול",
+        "open_reports": "{count} דיווחים פתוחים",
+        "needs_review": "דורש בדיקה",
+        "hidden_home_products": "{count} מוצרים ביתיים מוסתרים",
+        "for_review": "לבדיקה"
+      },
+      "chart": {
+        "new_producers_6_months": "בתי עסק חדשים — 6 חודשים אחרונים"
+      },
+      "pending_panel": {
+        "heading": "בקשות ממתינות",
+        "view_all": "צפה בכל →",
+        "empty": "אין בקשות ממתינות",
+        "check": "בדוק"
+      },
+      "activity": {
+        "heading": "פעילות אחרונה",
+        "empty": "אין נתונים להצגה",
+        "added_producer": "נוסף בית עסק:"
+      },
+      "weekly": {
+        "new_users_week": "משתמשים חדשים השבוע",
+        "new_producers_week": "עסקים חדשים השבוע",
+        "out_of_total": "מתוך {total} סה״כ",
+        "events": "אירועים",
+        "experiences": "חוויות"
+      },
+      "dau": {
+        "heading": "משתמשים פעילים — 30 ימים אחרונים",
+        "empty": "אין נתונים עדיין",
+        "aria": "DAU 30 ימים"
+      },
+      "top_cities": {
+        "heading": "ערים מובילות",
+        "empty": "עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר."
+      },
+      "health": {
+        "heading": "בריאות שרת — שעה אחרונה",
+        "waiting_traffic": "מחכה לתנועה...",
+        "requests_count": "{count} בקשות",
+        "response_time_avg": "זמן תגובה ממוצע",
+        "requests_per_minute": "בקשות לדקה",
+        "footnote": "ℹ️ נתונים per-process בזיכרון — מתאפסים בכל deploy (תיעוד: docs/SECURITY.md)."
+      }
+    },
+    "producers": {
+      "list": {
+        "title": "בתי עסק",
+        "records_count": "{count} רשומות"
+      },
+      "toolbar": {
+        "search_placeholder": "חיפוש לפי שם או עיר...",
+        "all_statuses": "כל הסטטוסים",
+        "active": "פעילים",
+        "pending": "ממתינים",
+        "suspended": "מושהים",
+        "rejected": "נדחו",
+        "incomplete_title": "הצג רק עסקים שחסרים להם פרטים נדרשים",
+        "show_all": "הצג הכל",
+        "incomplete_label": "פרטים חסרים",
+        "export": "📤 ייצוא",
+        "import_excel": "📥 ייבא מ-Excel",
+        "new_producer": "+ בית עסק חדש"
+      },
+      "import": {
+        "errors_loading": "שגיאה בקריאת הקובץ",
+        "errors_importing": "שגיאה בייבוא"
+      },
+      "preview": {
+        "title": "תצוגה מקדימה של הייבוא",
+        "importing": "מייבא...",
+        "confirm": "אשר ייבוא ({count})",
+        "stats": {
+          "to_import": "לייבוא",
+          "skipped": "דולגו",
+          "errors": "שגיאות"
+        },
+        "table": {
+          "row": "שורה",
+          "name": "שם",
+          "city": "עיר",
+          "category": "קטגוריה",
+          "slug": "slug",
+          "status": "סטטוס"
+        }
+      },
+      "table": {
+        "status_tooltip_pending": "pending = ממתין לאישור ראשוני",
+        "status_tooltip_approved": "approved = מאושר ומוצג באתר",
+        "status_tooltip_rejected": "rejected = נדחה, מוסתר",
+        "status_tooltip_suspended": "suspended = הושעה זמנית",
+        "status_tooltip_label": "מידע על ערכי סטטוס עסק",
+        "completeness": {
+          "missing_critical_aria": "חסרים פרטים קריטיים",
+          "missing_aria": "חסרים פרטים",
+          "complete_aria": "שלם",
+          "complete_title": "כל הפרטים מולאו",
+          "missing_title": "חסרים פרטים: {fields}"
+        },
+        "tags": {
+          "verified": "מאומת",
+          "organic_certified": "אורגני מוסמך",
+          "grass_fed": "גראס פד",
+          "delivery": "משלוחים",
+          "pickup_points": "נקודות איסוף"
+        },
+        "actions": {
+          "approve_short": "✓ אשר",
+          "edit": "עריכה",
+          "view": "צפה",
+          "suspend": "השהה",
+          "activate": "הפעל",
+          "remove_ambassador_title": "הסר תפקיד שגרירה",
+          "set_ambassador_title": "הגדר כשגרירה",
+          "ambassador_active": "⭐ שגרירה",
+          "ambassador_inactive": "☆ שגריר",
+          "story_card_title": "צור כרטיס אינסטגרם",
+          "story_card": "📸 סטורי",
+          "delete": "מחק"
+        },
+        "columns": {
+          "name": "שם",
+          "city": "עיר",
+          "categories": "קטגוריות",
+          "tags": "תגיות",
+          "status": "סטטוס",
+          "risk": "סיכון",
+          "actions": "פעולות"
+        },
+        "risk": {
+          "low": "סיכון נמוך",
+          "medium": "סיכון בינוני",
+          "high": "סיכון גבוה",
+          "unknown": "אין מידע",
+          "no_reasoning": "טרם דורג"
+        },
+        "all_complete": "כל בתי העסק שלמים 🎉",
+        "empty": "אין בתי עסק להצגה",
+        "confirm_delete": "למחוק את \"{name}\"? פעולה זו אינה הפיכה."
+      },
+      "new": {
+        "title": "הוסף בית עסק חדש",
+        "subtitle": "העסק יישמר מיד כמאושר (status=approved) ויופיע באתר."
+      },
+      "edit": {
+        "title": "עריכה: {name}",
+        "not_found": "בית עסק לא נמצא"
+      },
+      "form": {
+        "errors": {
+          "image_upload": "שגיאה בהעלאת תמונה",
+          "save": "שגיאה בשמירה"
+        },
+        "submit_create": "צור עסק",
+        "submit_update": "שמור שינויים",
+        "uploading": "מעלה...",
+        "sections": {
+          "basic": "פרטי בסיס",
+          "categories_tags": "קטגוריות ותגיות",
+          "business_type": "סוג העסק",
+          "delivery_pickup": "משלוחים ואיסוף",
+          "description_price": "תיאור ומחיר",
+          "images": "תמונות",
+          "hours": "שעות פעילות",
+          "availability": "זמינות",
+          "admin_notes": "הערות פנימיות (לא גלוי למשתמשים)",
+          "availability_tooltip": "סמני שבעל עסק בחופשה. מוצג badge 'בחופשה' בדף העסק, ולחצן WhatsApp מוסתר עד לתאריך החזרה.",
+          "availability_tooltip_label": "מידע על מצב חופשה"
+        },
+        "fields": {
+          "name": "שם העסק *",
+          "contact_name": "איש קשר",
+          "phone": "טלפון / ווטסאפ",
+          "phone_placeholder": "050-1234567",
+          "instagram": "אינסטגרם",
+          "instagram_placeholder": "@username",
+          "website": "אתר",
+          "website_placeholder": "https://...",
+          "whatsapp_group": "קישור לקבוצת ווטסאפ",
+          "whatsapp_group_placeholder": "https://chat.whatsapp.com/...",
+          "primary_contact": "אמצעי קשר ראשי",
+          "primary_contact_whatsapp": "WhatsApp",
+          "primary_contact_phone": "טלפון",
+          "primary_contact_website": "אתר",
+          "primary_contact_email": "אימייל",
+          "contact_email": "אימייל ליצירת קשר",
+          "contact_email_placeholder": "business@example.com",
+          "city": "עיר / אזור",
+          "slug": "Slug (URL)",
+          "slug_placeholder": "auto-generated",
+          "lat": "Latitude",
+          "lng": "Longitude",
+          "organic_certified": "אורגני מוסמך",
+          "grass_fed": "גראס פד",
+          "verified": "מאומת",
+          "recommended": "⭐ מומלץ (תגית עורכת)",
+          "kosher": "כשרות",
+          "kosher_none": "—",
+          "kosher_kosher": "כשר",
+          "kosher_mehadrin": "כשר למהדרין",
+          "kosher_not_kosher": "לא כשר",
+          "license_label": "מספר רישיון יצרן",
+          "license_required_suffix": " (חובה)",
+          "license_required_hint": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
+          "license_format_warning": "מספר רישיון יצרן הוא 7-10 ספרות",
+          "license_optional_toggle": "יש לי רישיון יצרן ↓",
+          "has_physical_location": "🏪 חנות פיזית (קבלת לקוחות)",
+          "offers_delivery": "🚚 משלוחים",
+          "type_validation": "חייב לסמן לפחות אחד מהשניים",
+          "delivery_nationwide": "משלוחים לכל הארץ",
+          "delivery_cities_label": "ערים שמשלוחים אליהן",
+          "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
+          "has_delivery": "🚚 יש משלוחים",
+          "pickup_points": "📦 נקודות איסוף ברחבי הארץ",
+          "delivery_area_cities": "ערי משלוח (מופרדות בפסיק)",
+          "delivery_area_cities_placeholder": "תל אביב, חיפה, ירושלים",
+          "short_description": "תיאור קצר (לכרטיסייה)",
+          "description_full": "תיאור מלא",
+          "top_product": "מוצר עיקרי",
+          "top_product_placeholder": "בשר בקר grass-fed",
+          "price_range": "מחיר התחלתי",
+          "price_range_placeholder": "מ-₪65/ק״ג",
+          "opening_hours_label": "שעות פתיחה (פורמט: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
+          "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+          "avail_accepting": "פתוח להזמנות",
+          "avail_today": "זמינה היום 🟢",
+          "avail_full": "עמוסה השבוע 🟠",
+          "avail_vacation": "בהפסקה ⏸",
+          "vacation_until": "תאריך חזרה (אופציונלי)"
+        }
+      }
+    },
+    "users": {
+      "title": "משתמשים",
+      "count": "{count} משתמשים",
+      "search_placeholder": "חיפוש לפי אימייל או שם...",
+      "role_filter": {
+        "all": "כל התפקידים",
+        "consumer": "צרכן",
+        "producer": "בית עסק",
+        "admin": "אדמין"
+      },
+      "columns": {
+        "name": "שם",
+        "email": "אימייל",
+        "city": "עיר",
+        "role": "תפקיד",
+        "favorites": "מועדפים",
+        "joined": "הצטרף",
+        "actions": "פעולות"
+      },
+      "empty": "אין משתמשים",
+      "roles": {
+        "admin": "אדמין",
+        "admin_protected": "מוגן",
+        "producer": "בית עסק",
+        "consumer": "צרכן"
+      },
+      "actions": {
+        "promote": "העלי לאדמין",
+        "demote": "הסירי הרשאות",
+        "protected_title": "לא ניתן להסיר הרשאות מהאדמין הראשי",
+        "unblock": "🚫 שחרר חסימה",
+        "block": "חסום"
+      },
+      "favorites": {
+        "of": "המועדפים של {name}:",
+        "empty": "אין מועדפים"
+      },
+      "confirm": {
+        "promote": "את בטוחה שברצונך להעניק הרשאות אדמין ל{name}?",
+        "demote": "את בטוחה שברצונך להסיר הרשאות אדמין מ{name}?",
+        "submitting": "...",
+        "confirm": "אישור"
+      }
+    },
+    "experiences": {
+      "title": "חוויות קהילתיות",
+      "subtitle": "מודרציה לחוויות שהגישו משתמשים",
+      "public_link": "דף ציבורי →",
+      "tabs": {
+        "pending": "ממתינות",
+        "changes_requested": "שינויים נדרשים",
+        "approved": "מאושרות",
+        "rejected": "נדחו",
+        "all": "הכל"
+      },
+      "error_loading": "שגיאה בטעינת החוויות",
+      "empty": "אין חוויות בסטטוס הזה 🌿",
+      "columns": {
+        "title": "כותרת",
+        "host": "מארחת",
+        "date": "תאריך",
+        "city": "עיר",
+        "claude": "Claude",
+        "actions": "פעולות"
+      },
+      "claude_tooltip": "Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך.",
+      "claude_tooltip_label": "מידע על מודרציית Claude",
+      "actions": {
+        "approve": "אשרי",
+        "changes": "שינויים",
+        "reject": "דחי",
+        "view": "צפי"
+      },
+      "approve_toast": "החוויה אושרה 🌿",
+      "approve_error": "שגיאה באישור",
+      "validate_feedback": "יש למלא הערה",
+      "changes_toast": "נשלחה בקשה לשינויים",
+      "reject_toast": "החוויה נדחתה",
+      "submit_error": "שגיאה בשליחה",
+      "modal": {
+        "changes_title": "בקשי שינויים",
+        "reject_title": "דחי חוויה",
+        "changes_label": "הערות לעריכה",
+        "reject_label": "סיבת הדחייה",
+        "changes_placeholder": "לדוגמה: התיאור קצר מדי, חסרה כתובת מדויקת...",
+        "reject_placeholder": "לדוגמה: תוכן לא רלוונטי לפלטפורמה",
+        "submit": "אישור"
+      },
+      "free": "חינם",
+      "price_per_person": "₪{price} / אדם",
+      "requirements_label": "דרישות:",
+      "claude_preview": "🤖 Claude Haiku pre-moderation"
+    },
+    "outreach": {
+      "title": "גיוס עסקים",
+      "call_script_btn": "תסריט שיחה",
+      "status": {
+        "new": "חדש",
+        "contacted": "פניתי",
+        "replied": "ענו",
+        "registered": "נרשמה",
+        "declined": "סירבה"
+      },
+      "metrics": {
+        "total": "סה״כ",
+        "new": "חדשים",
+        "contacted": "פניתי",
+        "replied": "ענו",
+        "registered": "נרשמו"
+      },
+      "filters": {
+        "city_placeholder": "סננית לפי עיר...",
+        "all_statuses": "כל הסטטוסים",
+        "new_lead": "+ ליד חדש"
+      },
+      "columns": {
+        "name": "שם",
+        "city": "עיר",
+        "category": "קטגוריה",
+        "phone": "טלפון",
+        "instagram": "אינסטגרם",
+        "status": "סטטוס",
+        "actions": "פעולות"
+      },
+      "loading_leads": "טוענת לידים...",
+      "empty": "אין לידים להצגה. לחצי על \"+ ליד חדש\" כדי להתחיל.",
+      "actions": {
+        "prefill": "הכן פרופיל",
+        "prefill_title": "מכין פרופיל ומעתיק לינק",
+        "whatsapp": "WhatsApp",
+        "delete": "מחקי"
+      },
+      "toasts": {
+        "status_updated": "הסטטוס עודכן",
+        "status_failed": "לא הצלחנו לעדכן — נסי שוב",
+        "link_copied": "הלינק הועתק ללוח",
+        "prefill_failed": "לא הצלחנו להכין לינק — נסי שוב",
+        "lead_deleted": "הליד נמחק",
+        "delete_failed": "לא הצלחנו למחוק — נסי שוב",
+        "lead_added": "ליד נוסף",
+        "duplicate": "ליד דומה כבר קיים",
+        "generic_error": "משהו השתבש",
+        "copied": "הטקסט הועתק",
+        "copy_failed": "לא הצלחנו להעתיק — העתיקי ידנית"
+      },
+      "confirm_delete": "למחוק את הליד הזה לצמיתות?",
+      "modal_add": {
+        "title": "ליד חדש",
+        "name_placeholder": "שם העסק *",
+        "city_placeholder": "עיר",
+        "category_placeholder": "קטגוריה",
+        "phone_placeholder": "טלפון",
+        "instagram_placeholder": "אינסטגרם (שם משתמשת, בלי @)",
+        "website_placeholder": "אתר (אופציונלי)",
+        "notes_placeholder": "הערות פנימיות",
+        "name_required": "שם הוא שדה חובה",
+        "submit_saving": "שומרת...",
+        "submit": "הוסיפי"
+      },
+      "modal_script": {
+        "title": "תסריט שיחה",
+        "close": "סגור"
+      },
+      "modal_wa": {
+        "title": "הודעת WhatsApp אל {name}",
+        "preparing": "מכינה לינק פרופיל...",
+        "copy": "העתק",
+        "open": "פתח ב-WhatsApp",
+        "close": "סגור"
+      },
+      "wa_templates": {
+        "warm_title": "חמותה",
+        "warm_body": "היי {name} 🌿\nראיתי אותך ואני ממש אוהבת מה שאת עושה. אני מהמקור — אתר שמחבר בין בעלות עסק קטנות לצרכניות שמחפשות אוכל אמיתי ומקומי.\nמוזמנת להצטרף אלינו בחינם — פשוט ללחוץ על הלינק והפרטים מחכים לך:\n{prefillUrl}",
+        "professional_title": "מקצועי",
+        "professional_body": "שלום {name}, אני יוצרת קשר מטעם מהמקור — פלטפורמת דירקטורי לבתי עסק מקומיים שמחפשים לקוחות קבועים.\nהכנו לך פרופיל מלא, נותר רק לאשר סיסמה:\n{prefillUrl}\nהרשמה חינמית, ללא התחייבות.",
+        "short_title": "קצר",
+        "short_body": "{name}, מצרפים אותך למהמקור 💚\n{prefillUrl}"
+      },
+      "call_script": "1. פתיחה חמה: \"היי, אני מדברת ממהמקור, זה שם טוב?\"\n2. הסבר קצר: \"אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל איכותי.\"\n3. הצעת ערך: \"נרשמות בחינם, הפרופיל שלך יתפרסם, ואת מקבלת פניות ישירות מלקוחות דרך WhatsApp.\"\n4. שאלה פתוחה: \"איך נשמע?\"\n5. אם מתעניינת: \"מעולה! אני שולחת לך קישור מוכן עם כל הפרטים שלך — פשוט מאשרת סיסמה.\"\n6. אם מסרבת: \"אין בעיה, תודה על הזמן. אם תשני את דעתך, הכתובת שלנו mehamakor.online.\"\n7. בסוף: \"יום מצוין, אצלך.\""
+    },
+    "kashrut": {
+      "title": "אישור תעודות כשרות",
+      "tooltip": "בעל עסק ביקש תעודת כשרות. בדקי את התעודה המצורפת ואשרי/דחי.",
+      "tooltip_label": "מידע על בקשת תעודת כשרות",
+      "subtitle": "בתי עסק מבקשות תעודות כשרות דרך הדשבורד שלהן. בדקי את קישור התעודה לפני אישור.",
+      "status": {
+        "pending": "ממתינות",
+        "approved": "מאושרות",
+        "rejected": "נדחות"
+      },
+      "load_error": "שגיאה בטעינת הבקשות",
+      "no_requests": "אין בקשות",
+      "approved_toast": "Badge אושר ✅",
+      "rejected_toast": "בקשה נדחתה",
+      "columns": {
+        "producer": "בית עסק",
+        "badge": "Badge",
+        "cert": "תעודה",
+        "date": "תאריך בקשה",
+        "notes": "הערות",
+        "actions": "פעולות"
+      },
+      "cert_view": "צפי בתעודה ↗",
+      "no_cert": "לא הועלתה",
+      "actions": {
+        "approve": "אשרי",
+        "reject": "דחי"
+      },
+      "reject_modal": {
+        "title": "דחיית בקשה",
+        "placeholder": "סיבת דחייה (אופציונלי)",
+        "submitting": "שולחת...",
+        "submit": "דחי"
+      },
+      "badges": {
+        "rabanut": "כשר מרבנות",
+        "badatz": "בדצ\"ה",
+        "chalak": "חלק",
+        "mehadrin": "מהדרין",
+        "organic_kosher": "אורגני כשר",
+        "shmitta": "שמיטה",
+        "kilayim": "ללא כלאיים",
+        "artisan_dairy": "מוצרי חלב מהחווה"
+      }
+    },
+    "reports": {
+      "title": "דיווחים ובעיות",
+      "tabs": {
+        "reports": "דיווחי משתמשים",
+        "flagged": "מוצרים ביתיים בבדיקה",
+        "hidden": "מוסתרים אוטומטית"
+      },
+      "section_3plus": "בתי עסק עם 3+ דיווחים",
+      "no_reports": "אין דיווחים פתוחים 🎉",
+      "report_count": "{count} דיווחים",
+      "actions": {
+        "suspend": "⏸️ השהה עסק",
+        "ignore": "התעלם"
+      },
+      "remove_reason_prompt": "סיבת ההסרה (תישלח למוכר)",
+      "flagged": {
+        "heading": "מוצרים ביתיים שה-AI סימן לבדיקה",
+        "subtitle": "אלו מוצרים שפורסמו עם תגית \"בבדיקה\" כי ה-AI זיהה משהו לא ברור — טענות בריאות, מחיר חשוד, או עסק שמתחזה לביתי.",
+        "empty": "אין מוצרים בבדיקה כרגע 🌿",
+        "default_reason": "סומן לבדיקה",
+        "approve": "אשרי",
+        "remove": "❌ הסירי"
+      },
+      "hidden": {
+        "heading": "מוצרים ביתיים מוסתרים אוטומטית",
+        "empty": "אין מוצרים מוסתרים",
+        "restore": "שחזרי"
+      }
+    },
+    "reviews": {
+      "title": "ביקורות",
+      "tooltip": "Claude עבר על התוכן אוטומטית. 'דורש תיקון' = Claude סימן בעיה אבל לא חסם. 'ממתין' = עבר pre-check, מחכה לאישור ידני שלך.",
+      "tooltip_label": "מידע על מודרציית ביקורות",
+      "count": "{filtered} מתוך {total}",
+      "search_placeholder": "חיפוש לפי עסק, משתמש, כותרת או טקסט...",
+      "filter_aria": "סינון לפי דירוג",
+      "all_ratings": "כל הדירוגים",
+      "columns": {
+        "producer": "עסק",
+        "user": "משתמשת",
+        "rating": "דירוג",
+        "content": "תוכן",
+        "date": "תאריך",
+        "actions": "פעולות"
+      },
+      "loading": "טוענת ביקורות...",
+      "empty": "אין ביקורות להצגה",
+      "stars_aria": "{stars} כוכבים",
+      "delete_aria": "מחקי ביקורת של {user}",
+      "deleting": "מוחקת...",
+      "delete": "מחקי",
+      "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
+      "default_user": "משתמשת",
+      "default_producer": "העסק",
+      "deleted_toast": "הביקורת נמחקה",
+      "delete_error": "משהו השתבש, נסי שוב"
+    },
+    "settings": {
+      "title": "הגדרות",
+      "load_error": "שגיאה בטעינת הגדרות — נסי לרענן את הדף.",
+      "sections": {
+        "notifications": "התראות",
+        "freemium": "Freemium",
+        "holiday": "חלון חג",
+        "holiday_tooltip": "הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג.",
+        "holiday_tooltip_label": "מידע על חלון חג",
+        "holiday_hint": "הפעלי ידנית כדי לבדוק את הבאנר בדשבורד ובעמוד הבית לפני החג.",
+        "holiday_active": "חלון חג פעיל",
+        "friday_mode": "מצב שוק שישי",
+        "friday_tooltip": "הפעילי בבוקר יום שישי. מקדימה באתר עסקים שמוכרים בשווקים. לאחר השבת - כבה אוטומטית.",
+        "friday_tooltip_label": "מידע על מצב שוק שישי",
+        "friday_hint": "הפעלי ידנית כדי לבדוק את מצב שוק שישי (סרגל יצרניות, כותרת hero, badge 🛒) מחוץ לחלון הזמן הרגיל (ד׳ 18:00 — ו׳ 14:00). עקיפה זו פעילה בדפדפן הנוכחי בלבד.",
+        "friday_active": "מצב שוק שישי — override",
+        "vacation": "מצב חופשה",
+        "vacation_tooltip": "הפעילי כשאינך זמינה לענות. הווטסאפ של מהמקור ישלח תשובה אוטומטית במקום הודעת מחוץ-לשעות הרגילה, עד התאריך שתבחרי.",
+        "vacation_tooltip_label": "מידע על מצב חופשה",
+        "vacation_hint": "כשמופעל — לקוחות שיכתבו לעסק יקבלו תשובה אוטומטית של חופשה, גם בשעות הפעילות הרגילות. כיבוי ידני מחזיר התנהגות רגילה.",
+        "vacation_active": "מצב חופשה מופעל",
+        "vacation_return_label": "אני בחופשה עד",
+        "vacation_save": "שמרי מצב חופשה",
+        "vacation_saved_on": "מצב חופשה הופעל עד {date}",
+        "vacation_saved_off": "מצב חופשה בוטל",
+        "vacation_error": "שגיאה בשמירת מצב חופשה",
+        "vacation_date_required": "חובה לציין תאריך חזרה כשמצב חופשה מופעל",
+        "tests": "בדיקות חיבור",
+        "categories": "ניהול קטגוריות",
+        "categories_hint": "להוספה, עריכה ומחיקה — מסך התוכן.",
+        "categories_link": "לעמוד תוכן ←"
+      },
+      "fields": {
+        "admin_email": "אימייל אדמין לקבלת התראות",
+        "admin_whatsapp": "מספר ווטסאפ אדמין (E.164)",
+        "premium_price": "מחיר חודשי לפרמיום (₪)",
+        "free_image_limit": "מספר תמונות בחבילת חינם",
+        "holiday_key_label": "מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)",
+        "holiday_none": "— ללא עקיפה —",
+        "holiday_pesach": "פסח",
+        "holiday_shavuot": "שבועות",
+        "holiday_rosh_hashana": "ראש השנה",
+        "holiday_sukkot": "סוכות",
+        "holiday_chanuka": "חנוכה",
+        "holiday_tu_bishvat": "ט״ו בשבט"
+      },
+      "tests": {
+        "not_configured": "✗ לא מוגדר",
+        "testing": "בודק...",
+        "connected": "✓ מחובר",
+        "test_btn": "בדוק"
+      },
+      "save": {
+        "confirm_prefix": "האם לשמור את השינויים הבאים?",
+        "saving": "שומר...",
+        "submit": "שמור הגדרות",
+        "nothing_to_save_title": "אין שינויים לשמירה",
+        "unsaved_count": "{count} שינויים לא שמורים"
+      }
+    },
+    "content": {
+      "title": "תוכן",
+      "tabs": {
+        "categories": "קטגוריות",
+        "home_products": "מוצרים ביתיים",
+        "about": "עמוד חזון",
+        "terms": "תנאי שימוש"
+      },
+      "categories": {
+        "emoji_placeholder": "אימוג׳י",
+        "name_placeholder": "שם קטגוריה",
+        "add": "+ הוסף",
+        "empty": "אין נתונים להצגה",
+        "save": "שמור",
+        "delete": "מחק",
+        "confirm_delete": "למחוק קטגוריה?"
+      },
+      "home_products": {
+        "heading": "מוצרים ביתיים מוסתרים",
+        "empty": "אין מוצרים מוסתרים",
+        "restore": "שחזר",
+        "delete": "מחק",
+        "confirm_delete": "למחוק את המוצר?"
+      },
+      "page_editor": {
+        "title_placeholder": "כותרת",
+        "body_placeholder": "תוכן (Markdown נתמך)",
+        "saving": "שומר...",
+        "save": "שמור",
+        "saved": "נשמר ✓"
+      }
+    },
+    "category_requests": {
+      "title": "בקשות קטגוריה",
+      "subtitle": "קטגוריות שבתי עסק ביקשו להוסיף — מקובצות לפי שם. {count} קבוצות",
+      "load_error": "שגיאה בטעינה",
+      "status_updated": "הסטטוס עודכן",
+      "update_error": "שגיאה בעדכון",
+      "empty": "אין בקשות קטגוריה עדיין",
+      "request_one": "בקשה",
+      "request_many": "בקשות",
+      "status": {
+        "pending": "ממתינה",
+        "approved": "אושרה",
+        "rejected": "נדחתה",
+        "merged": "מוזגה"
+      },
+      "columns": {
+        "id": "מזהה",
+        "business": "עסק",
+        "date": "תאריך",
+        "status": "סטטוס",
+        "actions": "פעולות"
+      },
+      "actions": {
+        "approve": "אשרי",
+        "reject": "דחי",
+        "merge": "מיזגי",
+        "reset": "אפסי"
+      }
+    },
+    "group_buys": {
+      "title": "קבוצות רכש",
+      "status": {
+        "open": "פתוחה",
+        "funded": "ממומנת",
+        "cancelled": "בוטלה",
+        "fulfilled": "הושלמה"
+      },
+      "load_error": "שגיאה בטעינת נתונים",
+      "update_error": "שגיאה בעדכון סטטוס",
+      "all": "הכל",
+      "empty": "אין קבוצות רכש",
+      "until": "עד {date}",
+      "change_status": "שנה סטטוס:",
+      "view_page": "צפי בדף ←"
+    },
+    "analytics": {
+      "title": "אנליטיקס",
+      "subtitle": "תובנות על הפלטפורמה",
+      "monthly_growth": "צמיחה חודשית",
+      "legend_producers": "בתי עסק",
+      "legend_users": "משתמשים",
+      "top_categories": "קטגוריות פופולריות",
+      "no_data": "אין נתונים",
+      "no_data_display": "אין נתונים להצגה",
+      "top_cities": "ערים מובילות",
+      "top_producers_favorites": "בתי עסק עם הכי הרבה מועדפים",
+      "geographic": "פיזור גיאוגרפי",
+      "map_count": "{count} בתי עסק עם מיקום מיפוי"
+    },
+    "help": {
+      "title": "עזרה לאדמין",
+      "intro": "המדריך הזה מסכם את הכלים של פאנל הניהול, תהליכי אישור מרכזיים, ותגובות לתקלות. מעודכן ידנית — אם משהו כאן לא נכון, פתחי PR עם תיקון במקום להשאיר את הכיוון הבא באפלה.",
+      "toc_label": "תוכן",
+      "toc": {
+        "dashboard": "סקירת לוח המחוונים",
+        "producers": "אישור ודחיית בתי עסק",
+        "users": "ניהול משתמשים",
+        "reviews": "ביקורות",
+        "reports": "דיווחים",
+        "experiences": "חוויות",
+        "emergency": "תקלות חירום",
+        "urls": "כתובות חשובות"
+      },
+      "sections": {
+        "dashboard": {
+          "title": "סקירת לוח המחוונים",
+          "p1": "<strong>/admin</strong> — הדף הראשי. ארבע מטריקות עליונות (משתמשים, בתי עסק, אירועים, דיווחים פתוחים) + שורת delta שבועית מתחתיה.",
+          "li1": "<strong>Pill צהוב על \"לוח מחוונים\" ב-sidebar</strong> — כמות פריטים ממתינים לאישור (בתי עסק + דיווחים + מוצרים מסומנים + חוויות). מתרענן בכל ניווט פנימי.",
+          "li2": "<strong>גרף DAU 30 ימים</strong> — מבוסס על <code>users.last_active_at</code> שמתעדכן בכל בקשה מאומתת (throttle של 5 דק׳).",
+          "li3": "<strong>ערים מובילות</strong> — מצטבר מ-<code>producer_page_views</code> (שורות ללא city לא נספרות).",
+          "li4": "<strong>בריאות שרת</strong> — זמן תגובה ממוצע + בקשות לדקה משעה אחרונה. הנתון per-process בלבד (מתאפס בכל deploy)."
+        },
+        "producers": {
+          "title": "אישור ודחיית בתי עסק",
+          "p1": "<strong>/admin/producers</strong> — טבלה + חיפוש + ייבוא Excel.",
+          "li1": "סנני לפי סטטוס <strong>pending</strong>.",
+          "li2": "לחצי על שם העסק → עמוד פרטים מלא, כולל הצהרות רישוי, תמונות, ותיאור.",
+          "li3": "<strong>לאשר:</strong> לחצי <em>\"אישור מהיר\"</em>. העסק עובר ל-<code>approved</code>, מופיע בדף הבית, ומגיע במפה.",
+          "li4": "<strong>לדחות:</strong> <em>\"דחייה\"</em> + סיבה קצרה שתישלח במייל לבעלת העסק.",
+          "li5": "<strong>ערוך (pencil):</strong> מעביר ל-<code>/admin/producers/[id]/edit</code> — כל השדות כולל \"מאומת\" / \"מומלץ\" / \"סטטוס זמינות\" / \"אמצעי קשר ראשי\".",
+          "footnote": "העסק לא חייב להיות מאומת כדי להיות <em>approved</em> — <strong>מאומת</strong> מוסיף תגית כחולה אחרי שבדקת רישוי וזהות, בדרך כלל ב-audit חודשי."
+        },
+        "users": {
+          "title": "ניהול משתמשים",
+          "p1": "<strong>/admin/users</strong> — חיפוש לפי מייל/שם, סינון לפי role.",
+          "li1": "<strong>role:</strong> consumer / producer / admin — שינוי מיידי, ללא אישור נוסף.",
+          "li2": "<strong>חסימה:</strong> login חסום מחזיר 403. המשתמש לא יודע מיד, רואה הודעה בלבד בנסיון ההתחברות הבא.",
+          "li3": "<strong>מועדפים:</strong> לחצי על הספירה ליד המשתמש כדי לראות את העסקים ששמרה — שימושי לאיתור פעילות חשודה.",
+          "footnote": "הזיכרון שלך: חסימה היא reversible, שינוי role משפיע מיד על ה-JWT הבא. <strong>אל תקדמי משתמש ל-admin</strong> בלי לאמת זהות מחוץ למערכת."
+        },
+        "reviews": {
+          "title": "ביקורות",
+          "p1": "<strong>/admin/reviews</strong> — כל הביקורות ברשימה אחת (חדשות קודם).",
+          "li1": "סנני לפי דירוג (1–5) או חיפוש חופשי על עסק/משתמש/כותרת/טקסט.",
+          "li2": "מחיקה דורשת אישור (window.confirm). אחרי מחיקה ה-<code>avg_rating</code> והספירה של העסק מתעדכנים אוטומטית.",
+          "li3": "מחיקה היא pattern הנכון ל: לשון מבזה, זיהוי אישי, ספאם, ביקורת על עסק אחר."
+        },
+        "reports": {
+          "title": "דיווחים",
+          "p1": "<strong>/admin/reports</strong> — ממוין לפי דחיפות (חדש + מרובה-דיווחים קודם).",
+          "li1": "<strong>פתור</strong> — סגירת הדיווח, אופציונלי עם פעולה נלווית (חסימה / מחיקה).",
+          "li2": "<strong>השהה</strong> — משאיר פתוח אבל מעביר לתחתית הרשימה. לשימוש כשצריך לאסוף עוד מידע.",
+          "li3": "<strong>התעלם</strong> — סגירה בלי פעולה, לדיווחים שלא מבססים בעיה.",
+          "footnote": "חוק האצבע: <strong>תגובה תוך 24 שעות</strong>. דיווחים על בטיחות מוצר (אלרגנים, תאריך תפוגה) — מיד."
+        },
+        "experiences": {
+          "title": "חוויות",
+          "p1": "<strong>/admin/experiences</strong> — 5 טאבים: ממתינות / דרוש תיקון / מאושרות / נדחו / הכל.",
+          "li1": "בלחיצה: אישור / דחייה / בקשת תיקון. המארחת מקבלת מייל.",
+          "li2": "Haiku pre-check עובר לפני שהיא מגיעה לטאב \"ממתינות\" — טאב \"דרוש תיקון\" זה כאשר ה-AI סימן אזהרה אך לא חסם."
+        },
+        "emergency": {
+          "title": "תקלות חירום",
+          "site_down_title": "האתר לא עולה",
+          "site_down_body": "בדקי <code>mehamakor.online/health</code>. אם זה לא 200 OK, בדקי Railway → healthcheck + logs. ראה CLAUDE.md §\"Railway runtime port = 8080\" לפני כל דיבוג — זה הסעיף הכי נפוץ של 502.",
+          "migration_title": "Migration נכשלה אחרי deploy",
+          "migration_body": "הסימפטום: ה-container עולה אבל endpoints מחזירים 500 עם <code>UndefinedColumn</code>. הפתרון: בדקי ש-<code>_migrate_columns</code> ב-main.py רשום את העמודה החדשה. אם לא, הוסיפי והעלי commit hotfix.",
+          "login_broken_title": "Login שבור לכולם",
+          "login_broken_body": "ודאי ש-<code>JWT_SECRET_KEY</code> קיים ב-Railway Variables. אם הוחלף בטעות — JWTs ישנים ייפסלו וכל משתמש צריך להתחבר מחדש. אל תחליפי את המפתח בלי להתריע לצוות.",
+          "spam_title": "סופת ספאם / רישומים מזויפים",
+          "spam_body": "/register/producer כבר מוגבל ב-3/שעה (slowapi). אם זה לא מספיק, הדק ל-1/שעה זמנית ב-<code>auth.py</code> + hotfix push. חסמי IPs חשודים דרך Railway edge אם יש נפח חריג.",
+          "ai_silent_title": "AI features מחזירים שגיאות silent",
+          "ai_silent_body": "בדקי <code>ANTHROPIC_API_KEY</code>. גם fail-open הוא לא אינסופי — אם המפתח פג תוקף, moderation מאשר הכל (APPROVED default). CLAUDE.md §\"Anthropic client init\" מתאר את באג httpx 0.28+ שעשוי להחזיר TypeError דרך הכפתור הירוק."
+        },
+        "urls": {
+          "title": "כתובות חשובות",
+          "intro": "הכתובות הספציפיות (project IDs, tokens) לא כאן — הן בכספת של הצוות. הרשימה כאן מכוונת אותך לאיפה להסתכל, לא מספקת credentials.",
+          "prod_label": "האתר בפרודקשן",
+          "staging_label": "האתר ב-staging",
+          "github_label": "קוד המקור",
+          "github_text": "GitHub",
+          "railway_label": "Railway",
+          "railway_text": "<placeholder>להזין</placeholder> — project: <code>believable-tenderness</code>, service: backend",
+          "vercel_label": "Vercel",
+          "vercel_text": "<placeholder>להזין</placeholder> — project: <code>food-mamkor</code>",
+          "cloudinary_label": "Cloudinary",
+          "cloudinary_text": "<placeholder>להזין</placeholder> — cloud: <code>dvtcojtye</code> (בערך)",
+          "anthropic_label": "Anthropic Console",
+          "anthropic_text": "<placeholder>להזין</placeholder> — workspace: מהמקור"
+        }
+      },
+      "footer": "צ'קליסט יומי/שבועי/חודשי + אנשי קשר לחירום — ראה <code>docs/ADMIN.md</code> (סקציה \"Handover checklist\").",
+      "footer_back": "← חזרה ללוח המחוונים"
+    }
+  },
+  "events": {
+    "list": {
+      "title": "אירועים בחוות ואצל בתי עסק",
+      "subtitle": "סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור",
+      "breadcrumb_home": "בית",
+      "breadcrumb_events": "אירועים",
+      "tab_events": "🌾 אירועים בחוות",
+      "tab_experiences": "🍳 חוויות וסדנאות",
+      "add_event": "הוסיפי אירוע",
+      "submit_experience": "הגישי חוויה",
+      "view_mode_label": "מצב תצוגה",
+      "view_list": "רשימה",
+      "view_calendar": "לוח שנה",
+      "filter_city_label": "סנן לפי עיר",
+      "filter_city_placeholder": "חפשי עיר...",
+      "loading_events": "טוענת אירועים...",
+      "loading_experiences": "טוענת חוויות...",
+      "empty_events": "אין אירועים שתואמים לסינון הנוכחי — עדיין 🌱",
+      "empty_experiences": "לא מצאנו חוויות שתואמות לסינון — עדיין",
+      "free": "חינם"
+    },
+    "categories": {
+      "all": "הכל",
+      "workshop": "סדנה",
+      "tour": "סיור",
+      "market": "שוק",
+      "harvest": "קטיף",
+      "tasting": "טעימות",
+      "other": "אחר"
+    },
+    "experience_categories": {
+      "all": "הכל",
+      "cooking": "בישול",
+      "nutrition": "תזונה",
+      "food_tour": "סיור אוכל",
+      "agriculture": "חקלאות",
+      "tasting": "טעימות",
+      "workshop": "סדנה",
+      "other": "אחר"
+    },
+    "detail": {
+      "loading": "טוענת את האירוע...",
+      "not_found": "לא מצאנו את האירוע הזה",
+      "back_to_all": "← חזרה לכל האירועים",
+      "register": "להרשמה →",
+      "contact_producer": "צור קשר עם בית העסק",
+      "all_events": "← כל האירועים",
+      "organized_by": "מאורגן על ידי",
+      "participants_limit": "עד {n} משתתפים",
+      "free": "חינם",
+      "breadcrumb_home": "בית",
+      "breadcrumb_events": "אירועים"
+    },
+    "calendar": {
+      "previous_month": "חודש קודם",
+      "next_month": "חודש הבא",
+      "label": "לוח שנה",
+      "events_count": "{count, plural, =0 {אין אירועים} one {אירוע אחד} two {שני אירועים} other {# אירועים}}",
+      "days": {
+        "sun": "א׳",
+        "mon": "ב׳",
+        "tue": "ג׳",
+        "wed": "ד׳",
+        "thu": "ה׳",
+        "fri": "ו׳",
+        "sat": "ש׳"
+      }
+    }
+  },
+  "experiences": {
+    "list": {
+      "title": "חוויות וסדנאות קהילתיות",
+      "subtitle": "סדנאות בישול, סיורי אוכל, שיעורי תזונה — מארחים מקומיים, חוויות אמיתיות",
+      "submit_cta": "הגישי חוויה משלך 🌿",
+      "breadcrumb_home": "בית",
+      "breadcrumb_experiences": "חוויות",
+      "cross_link_events": "מחפשת גם אירועים בחוות? ראי את כל האירועים והחוויות ביחד ←",
+      "filter_city_label": "סנן לפי עיר",
+      "filter_city_placeholder": "חפשי עיר...",
+      "loading": "טוענת חוויות...",
+      "empty_title": "לא מצאנו חוויות שתואמות לסינון — עדיין",
+      "empty_cta": "הגישי את החוויה הראשונה ←"
+    },
+    "categories": {
+      "all": "הכל",
+      "cooking": "בישול",
+      "nutrition": "תזונה",
+      "food_tour": "סיור אוכל",
+      "agriculture": "חקלאות",
+      "tasting": "טעימות",
+      "workshop": "סדנה",
+      "other": "אחר"
+    },
+    "detail": {
+      "loading": "טוענת את החוויה...",
+      "not_found": "לא מצאנו את החוויה הזו",
+      "back_to_all": "← חזרה לכל החוויות",
+      "all_experiences": "← כל החוויות",
+      "status_pending": "החוויה שלך בהמתנה לאישור צוות מהמקור 🌿",
+      "status_changes_requested": "נדרשים שינויים לפני שנוכל לפרסם",
+      "status_rejected": "החוויה לא אושרה לפרסום",
+      "just_submitted": "✅ החוויה נשלחה לאישור! תקבלי מייל כשהיא תתפרסם 🌿",
+      "team_notes": "הערות הצוות:",
+      "reason": "סיבה:",
+      "requirements_title": "מה להביא / דרישות",
+      "whatsapp_cta": "פני למארחת ב-WhatsApp",
+      "whatsapp_message": "היי! אני רוצה להירשם ל-\"{title}\"",
+      "host_label": "מארחת:",
+      "free": "חינם",
+      "sold_out": "אזל",
+      "spots_count": "{spots} מתוך {max}",
+      "breadcrumb_home": "בית",
+      "breadcrumb_experiences": "חוויות"
+    },
+    "card": {
+      "host_fallback": "מארחת קהילתית",
+      "spots_left": "נשארו {n} מקומות",
+      "sold_out": "אזל",
+      "free": "חינם"
+    },
+    "new": {
+      "auth_loading": "טוענת...",
+      "breadcrumb_home": "בית",
+      "breadcrumb_experiences": "חוויות",
+      "breadcrumb_submit": "הגשה",
+      "title": "הגישי חוויה חדשה",
+      "subtitle": "כל ההגשות עוברות אישור צוות מהמקור. ננסה לחזור תוך 24–48 שעות 🌿",
+      "field_title": "כותרת החוויה *",
+      "field_title_placeholder": "לדוגמה: סדנת אפיית לחם מחמצת",
+      "field_description": "תיאור מפורט *",
+      "field_description_placeholder": "ספרי על החוויה — מה תלמדו, מה יהיה, למי זה מתאים...",
+      "checking_content": "🤖 בודקת תוכן...",
+      "rejected_fallback": "התוכן לא מתאים לפלטפורמה",
+      "field_category": "קטגוריה",
+      "category_none": "ללא",
+      "field_image": "תמונה (URL — Cloudinary מומלץ)",
+      "field_date": "תאריך *",
+      "field_time": "שעת התחלה",
+      "field_duration": "משך (דקות)",
+      "field_duration_placeholder": "180",
+      "field_location_type": "סוג מיקום *",
+      "location_home": "בבית פרטי",
+      "location_public": "מקום ציבורי",
+      "field_city": "עיר *",
+      "field_city_placeholder": "חפשי עיר...",
+      "field_address": "כתובת (פרטית — רק את והצוות רואים)",
+      "field_address_placeholder": "רחוב, מספר",
+      "field_price": "מחיר לאדם (₪) — השאירי ריק לחינם",
+      "field_price_placeholder": "150",
+      "field_max_participants": "מספר משתתפים מקסימלי",
+      "field_max_participants_placeholder": "10",
+      "field_requirements": "מה להביא / דרישות מוקדמות",
+      "field_requirements_placeholder": "סינר, נעליים סגורות, יכולת עמידה של שעתיים...",
+      "is_recurring": "החוויה חוזרת (שבועי / חודשי)",
+      "recurring_placeholder": "לדוגמה: כל יום שישי 9:00–12:00",
+      "cancel": "ביטול",
+      "submitting": "שולחת...",
+      "cannot_publish": "לא ניתן לפרסם",
+      "submit_cta": "שלחי לאישור 🌿",
+      "toast_submitted": "החוויה נשלחה לאישור 🌿",
+      "error_title_short": "הכותרת קצרה מדי",
+      "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
+      "error_date_required": "חובה לבחור תאריך",
+      "error_generic": "שגיאה בשליחת החוויה. נסי שוב."
+    }
+  },
+  "errors": {
+    "boundary": {
+      "heading": "משהו השתבש — נסי שוב",
+      "message": "הדף לא הצליח להיטען הפעם. לרוב זה עובד בפעם השנייה.",
+      "retry": "נסי שוב",
+      "home": "חזרי לדף הבית",
+      "contact_prefix": "אם זה ממשיך,",
+      "contact_link": "כתבי לנו"
+    },
+    "not_found": {
+      "heading": "לא מצאנו את הדף הזה",
+      "message": "יכול להיות שהקישור פג תוקף, או שהדף עבר לכתובת אחרת.",
+      "home": "חזרי לדף הבית",
+      "discover": "גלי עסקים במפה"
+    },
+    "producer_not_found": {
+      "heading": "בית העסק הזה לא נמצא",
+      "message": "אולי הקישור ישן, או שבית העסק כבר לא פעיל. גלי עסקים אחרים קרוב אלייך.",
+      "discover": "גלי עסקים במפה",
+      "home": "חזרה לדף הבית"
+    }
+  },
+  "about": {
+    "consumer": {
+      "hero": {
+        "heading": "פעם היית צריכה לדעת את מי לשאול. עכשיו לא."
+      },
+      "story": {
+        "image_aria": "תמונה של ספיר, מייסדת מהמקור",
+        "image_alt": "ספיר, מייסדת מהמקור",
+        "greeting": "היי, אני ספיר.",
+        "p1": "תמיד היה לי חשוב לדעת מאיפה האוכל שלי מגיע. רציתי לקנות יותר טוב — יותר בריא, יותר מקומי.",
+        "p2": "אבל מהר מאוד גיליתי שזה לא נגיש. כדי למצוא אוכל איכותי באמת, הייתי צריכה לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.",
+        "p3": "ואז הבנתי: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.",
+        "p4": "יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית. יש מישהי שאופה לחם מחמצת בשכונה ליד. יש בתי עסק קטנים עם מוצרים מדהימים — שרוב האנשים בכלל לא מכירים. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.",
+        "p5": "וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.",
+        "caption1": "מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.",
+        "caption2": "את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית.",
+        "caption3": "את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל."
+      },
+      "parallax": {
+        "quote": "כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"
+      },
+      "benefits": {
+        "local": {
+          "title": "אוכל אמיתי קרוב אלייך",
+          "body": "בלי לנסוע שעה. בלי לחפש שבועות.\nכל מה שקרוב אלייך, במקום אחד."
+        },
+        "trust": {
+          "title": "לסמוך על מה שאת אוכלת",
+          "body": "רק בתי עסק מאומתים. אנחנו בודקות כל אחת\nלפני שהיא מופיעה."
+        },
+        "community": {
+          "title": "לעזור לעסקים הקטנים",
+          "body": "כל קנייה מקומית היא בחירה — להשאיר את הכסף\nבקהילה שלך, ולתמוך באנשים שמאחורי האוכל."
+        }
+      },
+      "tips": {
+        "heading": "מה כדאי לדעת",
+        "eggs": {
+          "question": "למה ביצים אורגניות שוות את המחיר?",
+          "answer": "תרנגולות אורגניות גדלות בחוץ, אוכלות מזון ללא חומרי הדברה ואנטיביוטיקה. הביצים שלהן מכילות יותר אומגה-3, ויטמין E ונוגדי חמצון. לא שוני דרמטי — אבל פחות חשיפה לכימיקלים, וחיים יותר אנושיים לתרנגולות."
+        },
+        "grass_fed": {
+          "question": "מה זה grass-fed בישראל?",
+          "answer": "בסופר — רוב הבקר גדל בפיטום על תירס ותוספות. Grass-fed = פרות שחיו כל חייהן במרעה, אוכלות עשב טבעי. בישראל זה נדיר ויקר יותר — אבל הבשר בעל טעם עמוק יותר, שומן צהבהב אופייני, ויותר אומגה-3. מגדלים כמו גיליס מרמת הגולן ומרעה גולן הם דוגמאות קלאסיות."
+        },
+        "honey": {
+          "question": "דבש מהסופר vs. דבש לא מחומם — מה ההבדל?",
+          "answer": "דבש סופר עובר פסטור — חימום שהורס אנזימים, נוגדי חמצון ואבקת פרחים. דבש לא מחומם שומר על הכל — טעם עשיר יותר, תכונות אנטי-בקטריאליות טבעיות. איך מזהים? עבה יותר, לא שקוף לגמרי, לפעמים מתגבש — וזה סימן טוב."
+        }
+      },
+      "testimonials": {
+        "heading": "מה אומרים עלינו",
+        "subtitle": "הסיפורים מגיעים בקרוב 🌿",
+        "cta": "גם את רוצה לשתף? כתבי לנו"
+      },
+      "values": {
+        "heading": "כך אנחנו בוחרות",
+        "intro": "לא כל מה שכתוב \"טבעי\" באמת טבעי, ולא כל מה שכתוב \"מקומי\" באמת מקומי. אנחנו יודעות את זה. בשביל זה אנחנו עוברות על כל בית עסק לפני שהוא מצטרף — שואלות, מבררות, ולפעמים גם מבקרות במקום. הנה מה שחשוב לנו:",
+        "transparency": {
+          "title": "שקיפות",
+          "body": "את צריכה לדעת מי עומדת מאחורי המוצר שאת קונה. תמיד נספר לך מי בעלת בית העסק, איפה היא נמצאת, ואיך היא עובדת."
+        },
+        "proximity": {
+          "title": "קרבה",
+          "body": "אנחנו מעדיפות בתי עסק קרובים אלייך, ושרשרת קצרה ככל האפשר — מהשדה אלייך."
+        },
+        "quality": {
+          "title": "איכות",
+          "body": "חומרי גלם אמיתיים שאת מזהה — בלי צבעי מאכל, בלי חומרים משמרים מיותרים, בלי תוספות מלאכותיות."
+        },
+        "safety": {
+          "title": "בטיחות",
+          "body": "מקום הכנה נקי, אחסון נכון, ועמידה ברגולציה הרלוונטית לקטגוריה. בקטגוריות מסוימות נדרש רישיון יצרן בישראל, ושם נבקש אותו. כאן אין פשרות."
+        },
+        "closing": "אם זו את — בעלת עסק שבונה משהו שאת גאה בו — אנחנו רוצות להכיר."
+      },
+      "cta": {
+        "heading": "יש לך בית עסק? בואי אלינו.",
+        "register": "הוסיפו את העסק שלך",
+        "explore": "גלי עסקים קרובים"
+      },
+      "contact": {
+        "heading": "דברי איתנו",
+        "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן",
+        "name_label": "שם מלא",
+        "name_placeholder": "השם המלא שלך",
+        "email_label": "אימייל",
+        "message_label": "איך נוכל לעזור?",
+        "message_placeholder": "ספרי לנו על מה את רוצה לדבר...",
+        "submit": "שלחי",
+        "submit_loading": "שולחת...",
+        "success_toast": "תודה! נחזור אליך בקרוב 🌿",
+        "error_toast": "משהו השתבש, נסי שוב"
+      }
+    }
+  },
+  "modals": {
+    "location": {
+      "title": "איפה את?",
+      "subtitle": "נמצא עסקים קרובים אליך",
+      "search_label": "חיפוש עיר",
+      "search_placeholder": "הקלידי שם עיר...",
+      "aria_label": "בחירת עיר",
+      "close_aria": "סגור",
+      "geo_button": "קרוב אליי",
+      "geo_loading": "מחפשת...",
+      "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "current_location_fallback": "מיקום נוכחי",
+      "skip": "דלגי לעכשיו",
+      "popular_cities": {
+        "tel_aviv": "תל אביב",
+        "jerusalem": "ירושלים",
+        "haifa": "חיפה",
+        "beersheba": "באר שבע"
+      }
+    },
+    "category_request": {
+      "title": "איזו קטגוריה חסרה?",
+      "name_placeholder": "שם הקטגוריה המוצעת *",
+      "name_example": "לדוגמה: משקאות מותססים",
+      "examples_placeholder": "דוגמאות למוצרים (אופציונלי)",
+      "examples_hint": "קומבוצ'ה, קפיר, וואטר קפיר...",
+      "submit": "שלחי בקשה",
+      "submit_loading": "שולחת...",
+      "close": "סגרי",
+      "toasts": {
+        "success": "תודה! הבקשה התקבלה. בינתיים, בחרי את הקטגוריה הקרובה ביותר.",
+        "error": "שגיאה בשליחת הבקשה — נסי שוב"
+      }
+    },
+    "install_prompt": {
+      "aria_label": "הוסיפי לדף הבית",
+      "title": "מהמקור על הדף הבית",
+      "ios_instructions": "לחצי על <share>שתף</share> ← <add>הוסף למסך הבית</add>",
+      "android_subtitle": "הוסיפי לדף הבית — חוויה כמו אפליקציה, בלי App Store",
+      "android_cta": "הוסיפי",
+      "dismiss_aria": "סגרי"
+    },
+    "login_prompt": {
+      "default_message": "כדי לשמור עסקים אוהבים — היכנסי",
+      "close_aria": "סגרי חלונית",
+      "title": "רוצה לשמור? 🌿",
+      "login_cta": "היכנסי",
+      "dismiss_cta": "אולי אחר כך"
+    },
+    "cookie_banner": {
+      "aria_label": "הסכמה לעוגיות",
+      "message": "🍪 אנחנו משתמשים בעוגיות לשיפור החוויה — <link>מדיניות פרטיות</link>",
+      "accept_all": "קבלי הכל",
+      "essential_only": "רק הכרחיים"
+    },
+    "lightbox": {
+      "aria_label": "תצוגת תמונה",
+      "close_aria": "סגרי תצוגה",
+      "image_alt": "תמונה {current} מתוך {total}",
+      "prev_aria": "תמונה קודמת",
+      "next_aria": "תמונה הבאה"
+    },
+    "onboarding_tip": {
+      "cta_default": "הבנתי",
+      "close_aria": "סגירה"
+    }
+  },
+  "kashrut": {
+    "badges": {
+      "rabanut": {
+        "label": "כשר מרבנות",
+        "tooltip": "כשרות בפיקוח הרבנות המקומית"
+      },
+      "badatz": {
+        "label": "בדצ\"ה",
+        "tooltip": "כשרות מהדרין בפיקוח בית דין צדק"
+      },
+      "chalak": {
+        "label": "חלק",
+        "tooltip": "בשר חלק לפי המסורת הספרדית"
+      },
+      "mehadrin": {
+        "label": "מהדרין",
+        "tooltip": "כשרות מהדרין ברמת הידור גבוהה"
+      },
+      "organic_kosher": {
+        "label": "אורגני כשר",
+        "tooltip": "גידול אורגני מוסמך + כשרות"
+      },
+      "shmitta": {
+        "label": "שמיטה",
+        "tooltip": "תוצרת שנת השמיטה בהכשר מיוחד"
+      },
+      "kilayim": {
+        "label": "ללא כלאיים",
+        "tooltip": "ללא הרכבה אסורה בין מינים"
+      },
+      "artisan_dairy": {
+        "label": "מוצרי חלב מהחווה",
+        "tooltip": "חלב ומוצריו ישירות מהחווה, כשר"
+      }
+    },
+    "expiry": {
+      "valid_until": "תקף עד: {date}",
+      "near_expiry": "⚠️ תעודה פגה בקרוב"
+    }
+  },
+  "opening_hours": {
+    "heading": "שעות פעילות",
+    "open_now": "פתוח עכשיו",
+    "closes_at": "· סוגר ב-{time}",
+    "closed_now": "סגור",
+    "opens_at": "· פותח ב-{day} {time}",
+    "closed_day": "סגור",
+    "tomorrow": "מחר",
+    "weekdays": {
+      "sun": "יום ראשון",
+      "mon": "יום שני",
+      "tue": "יום שלישי",
+      "wed": "יום רביעי",
+      "thu": "יום חמישי",
+      "fri": "יום שישי",
+      "sat": "שבת"
+    }
+  },
+  "trust": {
+    "tier_2": {
+      "label": "✓ מספר מאומת",
+      "tooltip": "מספר הטלפון של בעלת העסק אומת באמצעות קוד חד-פעמי"
+    },
+    "tier_3": {
+      "label": "✅ עסק מאומת",
+      "tooltip": "בית העסק עבר אימות ידני על ידי צוות מהמקור"
+    },
+    "tier_4": {
+      "label": "⭐ מובילת קהילה",
+      "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
+    },
+    "tier_5": {
+      "label": "🏅 שגרירת מהמקור",
+      "tooltip": "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור"
+    }
+  },
+  "forms": {
+    "password": {
+      "placeholder_default": "סיסמה",
+      "aria_label_default": "סיסמה",
+      "toggle_show": "הציגי סיסמה",
+      "toggle_hide": "הסתירי סיסמה",
+      "min_length": "לפחות {min} תווים",
+      "checking": "בודק...",
+      "not_breached": "לא דלפה ברשת",
+      "different_from_current": "שונה מהקודמת — נבדק בשרת",
+      "strength": {
+        "weak": "חלשה",
+        "medium": "בינונית",
+        "strong": "חזקה",
+        "label": "חוזק סיסמה: {tier}"
+      }
+    },
+    "category_selector": {
+      "label": "קטגוריה",
+      "search_placeholder": "חפשי קטגוריה...",
+      "section_results": "תוצאות",
+      "section_popular": "פופולריות",
+      "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
+      "no_results_cta": "ספרי לנו ←",
+      "show_more": "← עוד קטגוריות ({count})",
+      "show_less": "↑ פחות קטגוריות"
+    }
+  },
+  "producers": {
+    "breadcrumb": {
+      "home": "בית",
+      "all": "כל בתי העסק",
+      "search": "חיפוש: {q}"
+    },
+    "title": {
+      "all": "כל בתי העסק",
+      "search_results": "תוצאות עבור:"
+    },
+    "discovery": {
+      "found_count": "{count, plural, =0 {לא נמצאו בתי עסק} one {נמצא בית עסק אחד} two {נמצאו {count} בתי עסק} other {נמצאו {count} בתי עסק}}",
+      "all_count": "{count, plural, one {כל בית עסק} two {כל שני בתי העסק} other {כל {count} בתי העסק}}",
+      "showing_count": "מציגות {loaded} מתוך {total} בתי עסק",
+      "all_shown": "{count, plural, one {הצגנו את בית העסק היחיד 🌿} two {הצגנו את כל שני בתי העסק 🌿} other {הצגנו את כל {count} בתי העסק 🌿}}",
+      "loading_more_aria": "טוענת עוד בתי עסק"
+    },
+    "recently_viewed": {
+      "aria": "ביקרת לאחרונה",
+      "label": "ביקרת לאחרונה"
+    },
+    "filters": {
+      "city_chip": "בעיר שלי",
+      "filter_by": "מסנן לפי:",
+      "clear_all": "נקי הכל"
+    },
+    "empty": {
+      "no_match_search": "לא מצאנו בתי עסק עבור \"{q}\"",
+      "no_match_filters": "לא מצאנו בתי עסק שמתאימים לסינון הזה",
+      "search_hint": "נסי מילה אחרת או גלי לפי קטגוריה",
+      "filters_hint": "נסי להסיר אחד מהסינונים",
+      "category_chips": {
+        "beef": "בשר",
+        "cheese": "גבינה",
+        "bread": "לחם",
+        "vegetables": "ירקות",
+        "oil": "שמן",
+        "honey": "דבש"
+      },
+      "clear_all_show_all": "נקי הכל והצגי הכל"
+    },
+    "catalog_empty": {
+      "title": "הרשימה בדרך",
+      "subtitle": "הציעי עסק שאת אוהבת, או הירשמי לעדכונים כשמצטרפות חדשות",
+      "add_cta": "הוסיפי את העסק שלך 🌿",
+      "notify_cta": "הודיעי לי כשמצטרפות חדשות"
+    },
+    "page_overflow": {
+      "message": "הגעת לסוף הרשימה",
+      "back_cta": "חזרי לעמוד ראשון"
+    },
+    "pagination": {
+      "aria": "עימוד",
+      "prev": "← עמוד קודם",
+      "next": "עמוד הבא →",
+      "page_of": "עמוד {page} מתוך {totalPages}"
+    }
+  },
+  "reviews": {
+    "section_heading": "מה אומרות הלקוחות",
+    "owner_heading": "ביקורות לקוחות",
+    "anonymous_fallback": "לקוחה",
+    "user_anonymous": "אנונימית",
+    "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",
+    "summary_based_on": "{total, plural, one {מבוסס על ביקורת אחת} two {מבוסס על {total} ביקורות} other {מבוסס על {total} ביקורות}}",
+    "write_cta": "כתבי ביקורת",
+    "edit_cta": "עדכני את הביקורת שלך",
+    "form_heading": "כתבי ביקורת",
+    "rating_label": "דירוג",
+    "body_label": "החוויה שלך",
+    "body_label_alt": "ספרי על החוויה שלך",
+    "body_placeholder": "איך הייתה החוויה שלך?",
+    "body_placeholder_alt": "מה אהבת? איך הייתה המסירה? האם תמליצי?",
+    "submit": "פרסמי ביקורת",
+    "submit_update": "עדכני ביקורת",
+    "submit_saving": "שומרת...",
+    "cancel": "ביטול",
+    "error_invalid_stars": "בחרי דירוג בין 1 ל-5 כוכבים",
+    "error_body_too_short": "הביקורת צריכה לכלול לפחות 10 תווים",
+    "error_generic": "משהו השתבש, נסי שוב",
+    "saved_toast": "הביקורת שלך נשמרה ⭐",
+    "wa_gate_message": "לחצי על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת",
+    "login_prompt": "<login>התחברי</login> כדי לכתוב ביקורת",
+    "loading": "טוענת ביקורות...",
+    "owner_empty_title": "ביקורות ראשונות מגיעות אחרי כמה לקוחות",
+    "owner_empty_description": "ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין.",
+    "owner_empty_cta": "שתפי את הפרופיל בוואטסאפ",
+    "empty_message": "עדיין אין ביקורות — היי הראשונה!",
+    "pagination": {
+      "prev_aria": "עמוד קודם",
+      "next_aria": "עמוד הבא"
+    }
+  },
+  "upgrade": {
+    "title": "שדרגו לפרמיום",
+    "subtitle": "קבלו יותר חשיפה ויותר אפשרויות לעסק שלכם",
+    "free_plan": {
+      "name": "חינם",
+      "feature_map": "✓ הופעה במפה",
+      "feature_3_images": "✓ עד 3 תמונות",
+      "feature_contact": "✓ פרטי קשר",
+      "feature_delivery": "✓ אזורי משלוח",
+      "missing_products": "✗ מוצרים ללא הגבלה",
+      "missing_images": "✗ תמונות ללא הגבלה",
+      "missing_stats": "✗ סטטיסטיקות"
+    },
+    "premium_plan": {
+      "recommended": "מומלץ",
+      "name": "פרמיום",
+      "price_pending": "בקרוב",
+      "feature_map": "✓ הופעה במפה",
+      "feature_unlimited_images": "✓ תמונות ללא הגבלה",
+      "feature_contact": "✓ פרטי קשר",
+      "feature_delivery": "✓ אזורי משלוח",
+      "feature_unlimited_products": "✓ רשימת מוצרים מלאה",
+      "feature_stats": "✓ סטטיסטיקות צפיות",
+      "feature_badge": "✓ תגית פרמיום"
+    },
+    "notify_success": "🎉 נרשמת! נעדכן אותך כשפרמיום יושק.",
+    "email_placeholder": "האימייל שלך",
+    "notify_cta": "עדכנו אותי כשיושק",
+    "notify_submitting": "שולח..."
+  },
+  "contact": {
+    "title": "דברי איתנו",
+    "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע 🌿",
+    "response_time_inline": "נחזור אלייך תוך <strong>3 ימי עסקים</strong>.",
+    "email_label": "כתובת מייל:",
+    "response_sla": "זמן מענה: עד 3 ימי עסקים",
+    "success_title": "תודה! קיבלנו את הפנייה.",
+    "success_message": "נחזור אלייך תוך 3 ימי עסקים",
+    "success_send_another": "שליחת פנייה נוספת",
+    "field_name_label": "שם מלא *",
+    "field_email_label": "אימייל *",
+    "field_message_label": "איך נוכל לעזור? *",
+    "submit": "שליחה",
+    "submit_loading": "שולחת...",
+    "open_mail_fallback": "פתיחת מייל ישירות →",
+    "error_default": "שליחת הטופס נכשלה. ניתן לשלוח אלינו מייל ישירות לכתובת למטה.",
+    "mailto_subject": "פנייה דרך האתר",
+    "mailto_body_prefix": "שם:",
+    "mailto_body_email": "אימייל:",
+    "privacy_notice": "בשליחת הטופס את מאשרת שקראת את <link>מדיניות הפרטיות</link>."
+  },
+  "search": {
+    "breadcrumb_home": "בית",
+    "breadcrumb_search": "חיפוש",
+    "breadcrumb_query": "חיפוש: {q}",
+    "title_default": "חיפוש",
+    "title_results": "תוצאות חיפוש עבור \"{q}\"",
+    "input_placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
+    "input_aria": "חיפוש",
+    "submit": "חפשי",
+    "no_results_hint": "לא מצאנו התאמות — נסי מילה אחרת או גלי לפי קטגוריות 🌱",
+    "results_count": "{totalHits, plural, one {תוצאה אחת} two {{totalHits} תוצאות} other {{totalHits} תוצאות}}",
+    "empty_prompt": "הקלידי ביטוי בשדה החיפוש בראש הדף.",
+    "section_producers": "בתי עסק",
+    "section_products": "מוצרים",
+    "product_by_prefix": "אצל",
+    "empty_title": "לא מצאנו התאמות — נסי מילה אחרת 🌱",
+    "empty_subtitle": "נסי לשנות את החיפוש או לעיין בקטגוריות בדף הבית.",
+    "empty_home_cta": "חזרה לדף הבית",
+    "hero": {
+      "submit_aria": "חיפוש",
+      "loading": "טוענת תוצאות...",
+      "no_results_for": "אין תוצאות עבור",
+      "section_producers": "🏪 בתי עסק",
+      "section_categories": "🏷️ קטגוריות",
+      "section_cities": "📍 ערים",
+      "recent_heading": "חיפושים אחרונים",
+      "trending_heading": "חיפושים פופולריים",
+      "remove_recent_aria": "הסר {q} מהחיפושים האחרונים"
+    },
+    "smart": {
+      "loading": "טוענת תוצאות...",
+      "no_results_for": "אין תוצאות עבור",
+      "section_producers": "בתי עסק",
+      "section_products": "מוצרים",
+      "product_by_prefix": "אצל",
+      "section_cities": "ערים",
+      "section_categories": "קטגוריות"
+    },
+    "cities_autocomplete": {
+      "remove_aria": "הסר {city}",
+      "placeholder": "הקלידי שם עיר..."
+    },
+    "city_search": {
+      "placeholder": "חפשי עיר...",
+      "clear_aria": "נקה עיר"
+    },
+    "address_search": {
+      "placeholder": "חפשי כתובת..."
+    }
+  },
+  "favorites": {
+    "alerts_aria": "הגדרי התראות",
+    "breadcrumb_home": "בית",
+    "breadcrumb_favorites": "מועדפים",
+    "title": "המועדפים שלי",
+    "empty_title": "עדיין לא שמרת בתי עסק 🌿",
+    "empty_subtitle": "לחצי על הלב בכרטיסיית עסק כדי לשמור אותו כאן לגישה מהירה.",
+    "first_visit_tip": "לחצי על ❤️ בכרטיס עסק כדי לשמור אותו כאן",
+    "empty_cta": "גלי עסקים",
+    "list_alerts_hint": "לחצי על 🔔 בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים",
+    "button": {
+      "saved_toast_first_time": "נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית",
+      "saved_toast": "נשמר למועדפים ❤️",
+      "removed_toast": "הוסר מהמועדפים",
+      "error_generic": "משהו השתבש, נסי שוב",
+      "add_aria": "הוסף למועדפים",
+      "remove_aria": "הסר ממועדפים",
+      "inline_label": "שמור",
+      "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסי"
+    }
+  },
+  "rate": {
+    "invalid_link": "קישור לא תקין",
+    "error_generic": "שגיאה בשליחה",
+    "loading": "טוענת...",
+    "thanks_title": "תודה!",
+    "thanks_message": "הדירוג שלך נשמר. זה עוזר לקהילה.",
+    "heading": "איך היה?",
+    "bought_from": "קנית מ<seller>{name}</seller>",
+    "comment_placeholder": "תגובה קצרה (אופציונלי)",
+    "submit": "שלח דירוג"
+  },
+  "report": {
+    "trigger": "🚩 דווח על עסק",
+    "form_heading": "דווח על עסק",
+    "reason_placeholder": "ספר/י מה הבעיה...",
+    "submit": "שלח דיווח",
+    "cancel": "ביטול",
+    "error_generic": "שגיאה בשליחה",
+    "success_title": "תודה על הדיווח",
+    "success_message": "נבדוק ונטפל תוך 48 שעות.",
+    "success_close": "סגור"
+  },
+  "share": {
+    "trigger": "שתף",
+    "modal_title": "שתף לינק לעסק",
+    "copy_link": "שתף לינק",
+    "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
+    "wa_message_business_fallback": "בית עסק",
+    "wa_meta_separator": " • ",
+    "copied_toast": "הקישור הועתק ✓"
+  },
+  "gallery": {
+    "open_aria": "הגדלי תמונה {current}",
+    "image_alt": "תמונה {current}",
+    "prev_aria": "תמונה קודמת",
+    "next_aria": "תמונה הבאה",
+    "thumb_aria": "עבור לתמונה {n}"
+  },
+  "whatsapp": {
+    "button": {
+      "default_message": "היי, ראיתי את \"{productTitle}\" במהמקור ואשמח לשמוע פרטים!",
+      "opening": "נפתח..."
+    },
+    "share_button": {
+      "default_message": "גיליתי את {name} במהמקור — {url}",
+      "share_aria": "שתפי את העסק בוואטסאפ",
+      "share_to_friend": "שלחי לחברה"
+    },
+    "question_chips": {
+      "my_area": "האזור שלי",
+      "city_placeholder": "[עיר]",
+      "ask_us": "שאלי אותנו",
+      "greeting_template": "שלום {name}, {q}"
+    }
+  },
+  "directory": {
+    "disclaimer": {
+      "brand_is_prefix": "היא פלטפורמת",
+      "directory_only": "דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר בלבד.",
+      "prices_set_by_businesses": "מחירים נקבעים על ידי בתי העסק."
+    }
+  },
+  "location": {
+    "banner": {
+      "message": "איפה את? נמצא עסקים קרובים אליך",
+      "choose_city": "בחרי עיר",
+      "close_aria": "סגור באנר"
+    }
+  },
+  "story": {
+    "canvas": {
+      "footer_url": "גלי עוד בתי עסק ב mehamakor.online",
+      "upload_error": "שגיאה בהעלאה לקלאודינרי",
+      "default_country": "ישראל",
+      "caption_prefix": "🌿 עסק חדש במהמקור!",
+      "title": "📸 כרטיס אינסטגרם מוכן",
+      "generating": "מייצר",
+      "download": "הורד",
+      "uploading": "מעלה...",
+      "save_cloudinary": "שמור ל-Cloudinary",
+      "copy_caption": "העתיקי caption",
+      "copied": "✅ הועתק!"
+    }
+  },
+  "footer": {
+    "copyright": "מהמקור · נעשה באהבה בישראל"
+  },
+  "accessibility": {
+    "meta_title": "הצהרת נגישות | מהמקור",
+    "meta_description": "הצהרת נגישות של אתר מהמקור — אנו מחויבות לאפשר שימוש באתר לכל המשתמשות והמשתמשים, לרבות אנשים עם מוגבלות.",
+    "heading": "הצהרת נגישות",
+    "date_label": "תאריך בדיקה אחרונה: אפריל 2026",
+    "sections": {
+      "commitment": {
+        "title": "מחויבות לנגישות",
+        "body": "אתר \"מהמקור\" מחויב לאפשר גלישה נוחה ושוויונית לכלל המשתמשות והמשתמשים, לרבות אנשים עם מוגבלות, בהתאם ל<law>חוק שוויון זכויות לאנשים עם מוגבלות, התשנ״ח–1998</law> ותקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע״ג–2013."
+      },
+      "standard": {
+        "title": "רמת תקן",
+        "body": "אנו פועלות להתאים את האתר לתקן הישראלי <standard>ת״י 5568</standard> ברמת AA, המבוסס על הנחיות <wcag>WCAG 2.1</wcag>."
+      },
+      "features": {
+        "title": "התאמות שבוצעו באתר",
+        "item_rtl": "תמיכה מלאה ב-RTL ובקריאת מסך בעברית.",
+        "item_contrast": "ניגודיות צבעים סבירה בין טקסט לרקע.",
+        "item_alt": "טקסטים חלופיים (alt) לתמונות משמעותיות.",
+        "item_keyboard": "ניווט מקלדת בכל הדפים.",
+        "item_labels": "תוויות ברורות לטפסים וכפתורים.",
+        "item_fonts": "גדלי גופנים הניתנים להגדלה בדפדפן.",
+        "item_semantic": "מבנה סמנטי (landmarks, headings) לתמיכה בטכנולוגיות מסייעות."
+      },
+      "gaps": {
+        "title": "חלקים שאינם נגישים במלואם",
+        "body": "ייתכנו דפים, תכנים או פונקציות שטרם הונגשו במלואם, לרבות תכנים שהועלו על ידי משתמשות (לדוגמה תמונות ללא תיאור חלופי). אנו פועלות באופן שוטף לשפר ולהרחיב את ההנגשה."
+      },
+      "contact": {
+        "title": "פנייה לרכזת נגישות",
+        "intro": "נתקלת בבעיית נגישות? נשמח לסייע ולתקן. ניתן לפנות לרכזת הנגישות של האתר:",
+        "coordinator_label": "רכזת נגישות:",
+        "coordinator_value": "צוות מהמקור",
+        "phone_placeholder": "להשלים",
+        "footnote": "בפנייה נא לתאר את הבעיה, את הדף שבו נתקלת בה ואת סוג הטכנולוגיה המסייעת שבה את/ה משתמש/ת. נחזור אלייך תוך 3 ימי עסקים."
+      },
+      "authority": {
+        "title": "רשות ממשלתית לנגישות",
+        "body": "לפרטים נוספים על זכויות נגישות ברשת, ניתן לפנות ל<link>אתר הנגישות הממשלתי</link>."
+      }
+    }
+  },
+  "about_business": {
+    "meta_title": "FAQ לבתי עסק — מהמקור",
+    "meta_description": "8 שאלות נפוצות מבעלות עסק מקומיות על מהמקור: עלות, ערך, זמן, אמון בפלטפורמה ושליטה בלקוחות. תשובות ישירות ושקופות.",
+    "og_title": "FAQ לבתי עסק — מהמקור",
+    "og_description": "8 שאלות נפוצות + תשובות ישירות לבעלות עסק שמתלבטות להצטרף.",
+    "eyebrow": "לבעלות עסק",
+    "heading": "שאלות נפוצות לבעלות עסק",
+    "categories": {
+      "money_value": "כסף וערך",
+      "time_effort": "זמן ומאמץ",
+      "trust": "אמון בפלטפורמה",
+      "control": "שליטה ועמדה"
+    },
+    "faq": {
+      "cost": {
+        "q": "כמה זה עולה להירשם?",
+        "a": "אפס. את לא משלמת לנו כלום — לא עמלה על הזמנות, לא דמי מנוי. הלקוחות יתקשרו אלייך ישירות ב-WhatsApp או בטלפון, ואת תקבלי 100% מהתשלום שלהן."
+      },
+      "value": {
+        "q": "מה אני מקבלת מזה?",
+        "a": "שני דברים שלא היו לך קודם:\n\n**שאנשים ימצאו אותך בגוגל.** מישהי שמחפשת אוכל מקומי בגוגל — מוצאת אותך. היום, אם את לא קונה תקציב פרסום, את כמעט בלתי-נראית. אצלנו כל בית עסק מקבל דף שעולה בחיפושים.\n\n**דף קבוע שלא נעלם.** Instagram נעלם אחרי 24 שעות. WhatsApp נעלם כשמישהי לא בקבוצה. הדף שלך במהמקור — נשאר. עם הסיפור שלך, התמונות שלך, ואמצעי הקשר שאת בוחרת. את יכולה לשלוח אותו כקישור, ולשים בביו של Instagram."
+      },
+      "time": {
+        "q": "כמה זמן זה ייקח לי?",
+        "a": "בערך 10 דקות לרישום הראשוני. אחרי זה — את לא מנהלת אצלנו עוד דבר. את ממשיכה לעבוד איך שאת עובדת. אם משהו אצלך משתנה — שעות פתיחה, מוצר חדש, הפסקה — את מעדכנת בלחיצה, או שולחת לי הודעה ב-WhatsApp ואני אעדכן."
+      },
+      "writing": {
+        "q": "אני לא יודעת לכתוב על עצמי. הדף יראה דל?",
+        "a": "את לא צריכה לכתוב לבד. תספרי לי על העסק במה שאת רגילה לכתוב — WhatsApp, אינסטגרם, איך שנוח לך — ואני אעזור לנסח. תמונות מהטלפון מצוינות, לא צריך צלם מקצועי. אם בא לך — נשב 15 דקות בטלפון ונבנה ביחד."
+      },
+      "founder": {
+        "q": "מי עומדת מאחורי מהמקור?",
+        "a": "אני ספיר, בת 21, מזכרון יעקב. בניתי את מהמקור כי גם אני חיפשתי איפה לקנות אוכל אמיתי וקרוב, וזה היה קשה — קבוצות WhatsApp, חיפוש באינסטגרם. רציתי מקום אחד. אני לבד כרגע, בלי משקיעים, בלי חברה גדולה. את יכולה לדבר איתי ב-WhatsApp ישירות, לשאול מה שאת רוצה."
+      },
+      "leads": {
+        "q": "הלקוחות שיגיעו דרככם — שלכם או שלי?",
+        "a": "שלך. לחלוטין. הלקוחות פונות אלייך ישירות ב-WhatsApp או בטלפון — את מקבלת את הפרטים שלהן, את מנהלת את הקשר. אנחנו לא בתווך, אנחנו לא רואות את ההודעות, אנחנו לא לוקחות פרטים. גם אם מהמקור תיסגר מחר, הלקוחות שהגיעו אלייך דרכנו נשארות שלך. זה ההפך מ-Wolt או Yango."
+      },
+      "visibility": {
+        "q": "אני כבר ב-Instagram וב-WhatsApp — למה אני צריכה עוד מקום?",
+        "a": "Instagram עובד רק כשמישהי כבר עוקבת אחרייך. WhatsApp groups עובדים רק כשמישהי כבר בקבוצה. מהמקור עובד גם כשאת לא חושבת על זה — מישהי שמחפשת אוכל מקומי בגוגל, מוצאת אותך. זה לא במקום הערוצים שלך, זה בנוסף.\n\nוחשוב לדעת — במהמקור אין השוואה. אין מחירים זה ליד זה, אין דירוג כוכבים, אין כפתור \"ראי 10 בתי עסק דומים\". כל בית עסק עומד בפני עצמו. הלקוחה רואה אותך, לא אותך-מול-אחרות."
+      },
+      "control": {
+        "q": "אני רוצה להחליט עם מי לעבוד ומתי.",
+        "a": "את החלטת מתי אצלך פתוח. כפתור אחד — \"מקבלת הזמנות\", \"עמוסה כרגע\", \"בהפסקה\" — את בוחרת. אין מי שמדרג אותך לפי כמה מהר ענית. את עונה ב-WhatsApp רק כשבא לך. ואם לקוחה לא מתאימה לך — את לא חייבת. אין דירוג שיורד לך אם תגידי \"סליחה, לא הפעם\"."
+      }
+    },
+    "footer_intro_prefix": "עדיין יש שאלה? כתבי לי ב-Instagram",
+    "footer_intro_suffix": "או הצטרפי עכשיו:",
+    "cta": "הוסיפי את העסק שלך"
+  },
+  "privacy": {
+    "meta_title": "מדיניות פרטיות | מהמקור",
+    "meta_description": "מדיניות פרטיות של מהמקור — אילו נתונים אנו אוספות, כיצד אנו משתמשות בהם, ומהן זכויותייך לפי חוק הגנת הפרטיות (תיקון 13, 2025).",
+    "heading": "מדיניות פרטיות",
+    "date_label": "עדכון אחרון: אפריל 2026 · מותאם לחוק הגנת הפרטיות, התשמ״א–1981 ולתיקון 13 (2025)",
+    "sections": {
+      "operator": {
+        "title": "פרטי מפעיל האתר",
+        "operator_label": "מפעילת האתר:",
+        "operator_value": "שנף טופז, עוסקת פטורה מס׳ 325120939.",
+        "trade_label": "השם המסחרי:",
+        "trade_value": "מהמקור / Mehamakor.",
+        "contact_label": "ליצירת קשר:"
+      },
+      "who": {
+        "title": "1. מי אנחנו",
+        "body": "\"מהמקור\" (להלן: \"האתר\" או \"הפלטפורמה\") היא פלטפורמת דירקטורי המחברת בין בתי עסק שמייצרים אוכל בריא ומוצרי טיפוח טבעיים לבין קונות וקונים בישראל. מדיניות זו מסבירה אילו פרטים אישיים אנו אוספות, כיצד אנו משתמשות בהם, עם מי אנו חולקות אותם, ומהן זכויותייך."
+      },
+      "data": {
+        "title": "2. אילו נתונים אנו אוספות",
+        "items": {
+          "identity": {
+            "label": "פרטי זיהוי והתקשרות:",
+            "value": "שם מלא, כתובת אימייל, מספר טלפון, עיר מגורים."
+          },
+          "business": {
+            "label": "פרטי עסק (למוכרות):",
+            "value": "שם העסק, תיאור, כתובת, קטגוריות, אזורי משלוח, קישורים חברתיים."
+          },
+          "technical": {
+            "label": "נתונים טכניים:",
+            "value": "כתובת IP, סוג דפדפן, מערכת הפעלה, מזהה מכשיר."
+          },
+          "location": {
+            "label": "נתוני מיקום:",
+            "value": "מיקום מקורב (רק אם אישרת זאת בדפדפן), לצורך הצגת בתי עסק קרובים במפה."
+          },
+          "cookies": {
+            "label": "עוגיות (Cookies) ונתוני התנהגות:",
+            "value": "דפים שביקרת בהם, חיפושים, לחיצות, מוצרים שנצפו ועסקים שנשמרו במועדפים."
+          },
+          "ugc": {
+            "label": "תוכן שנוצר על ידך:",
+            "value": "פרסומים בסקציית \"מהמטבח של השכן\", דירוגים, תגובות ופניות דרך טפסי יצירת קשר."
+          }
+        }
+      },
+      "why": {
+        "title": "3. למה אנחנו אוספות את הנתונים",
+        "items": {
+          "service": {
+            "label": "הפעלת השירות:",
+            "value": "אימות משתמשות, ניהול חשבון, הצגת עסקים, עיבוד הרשמות וחיבור בין קונות למוכרות."
+          },
+          "analytics": {
+            "label": "ניתוח ושיפור:",
+            "value": "הבנת השימוש באתר, שיפור החוויה, תיקון תקלות ופיתוח פיצ'רים חדשים."
+          },
+          "notifications": {
+            "label": "התראות ותקשורת:",
+            "value": "הודעות חיוניות לגבי החשבון, אישור הרשמות, התראות אדמין, וניוזלטר (רק אם נרשמת)."
+          },
+          "compliance": {
+            "label": "ציות לחוק:",
+            "value": "עמידה בדרישות חוק הגנת הפרטיות, טיפול בדיווחים ומניעת שימוש לרעה."
+          }
+        }
+      },
+      "third_parties": {
+        "title": "4. צדדים שלישיים",
+        "intro": "אנו משתמשות בספקי שירות חיצוניים לצורך הפעלת הפלטפורמה. כל אחד מהם כפוף למדיניות פרטיות משלו:",
+        "items": {
+          "cloudinary": "<b>Cloudinary</b> — אחסון ועיבוד תמונות שהועלו על ידי משתמשות.",
+          "google": "<b>Google</b> — Google OAuth להתחברות, Google Fonts, ושירותי אנליטיקה.",
+          "anthropic": "<b>Anthropic</b> — מודלי AI לתמיכה, מיתון תוכן ושיפור החוויה.",
+          "twilio": "<b>Twilio</b> — הודעות WhatsApp להתראות אדמין וללקוחות.",
+          "infra": "<b>Vercel & Railway</b> — אחסון ושרתים."
+        },
+        "outro": "אנו <b>לא מוכרות</b> את המידע שלך לצדדים שלישיים למטרות שיווק."
+      },
+      "rights": {
+        "title": "5. זכויותייך (לפי תיקון 13, 2025)",
+        "intro": "חוק הגנת הפרטיות מעניק לך את הזכויות הבאות. ניתן לממש כל אחת מהן ללא עלות, על ידי פנייה לכתובת <email>contact@mehamakor.co.il</email>:",
+        "items": {
+          "access": {
+            "label": "זכות עיון:",
+            "value": "לבקש לעיין במידע האישי שאנו מחזיקות עליך."
+          },
+          "rectify": {
+            "label": "זכות לתיקון:",
+            "value": "לבקש לתקן מידע שאינו מדויק, שלם או מעודכן."
+          },
+          "erase": {
+            "label": "זכות למחיקה:",
+            "value": "לבקש את מחיקת חשבונך והמידע האישי שלך. ניתן לעשות זאת גם דרך הגדרות החשבון."
+          },
+          "object": {
+            "label": "זכות להתנגדות:",
+            "value": "להתנגד לעיבוד מידע למטרות שיווק או אנליטיקה מסוימות."
+          },
+          "portability": {
+            "label": "זכות לניידות:",
+            "value": "לקבל עותק של המידע שלך בפורמט דיגיטלי נגיש."
+          }
+        },
+        "outro": "נטפל בפנייתך תוך 30 ימים. ניתן גם להגיש תלונה לרשות להגנת הפרטיות במשרד המשפטים."
+      },
+      "cookies": {
+        "title": "6. עוגיות (Cookies)",
+        "body": "אנו משתמשות בעוגיות הכרחיות לצורך שמירת החיבור לחשבון ופעולת האתר התקינה, וכן בעוגיות אנליטיקה לניתוח השימוש. בכניסה הראשונה לאתר תוצג הודעה המאפשרת לבחור בין \"אני מסכימה\" לבין \"רק הכרחיים\". ניתן לשנות את הבחירה בכל עת דרך הגדרות הדפדפן."
+      },
+      "retention": {
+        "title": "7. שמירת מידע ואבטחה",
+        "body": "אנו שומרות את הנתונים שלך כל עוד החשבון פעיל או כל עוד נדרש לצורך מתן השירות, ציות לחוק, יישוב מחלוקות ואכיפה של התנאים שלנו. אנו מיישמות אמצעי אבטחה סבירים לרבות הצפנה, אחסון מאובטח, בקרת גישה וגיבויים."
+      },
+      "minors": {
+        "title": "8. קטינים",
+        "body": "השירות מיועד למשתמשות ומשתמשים בני 18 ומעלה. איננו אוספות ביודעין מידע אישי של קטינים מתחת לגיל זה. אם נודע לנו כי נאסף מידע כאמור, נמחק אותו לאלתר."
+      },
+      "changes": {
+        "title": "9. שינויים במדיניות",
+        "body": "נעדכן מדיניות זו מעת לעת. גרסה מעודכנת תפורסם בעמוד זה עם תאריך העדכון. שימוש מתמשך בשירות מהווה הסכמה לגרסה העדכנית."
+      },
+      "contact": {
+        "title": "10. יצירת קשר",
+        "intro": "לכל שאלה בנוגע לפרטיות, מימוש זכויות או דיווח על תקלה:"
+      }
+    }
+  },
+  "terms": {
+    "meta_title": "תנאי שימוש | מהמקור",
+    "meta_description": "תנאי שימוש באתר מהמקור — פלטפורמת דירקטורי המחברת בין בתי עסק שמייצרים אוכל בריא לבין קונות וקונים בישראל.",
+    "heading": "תנאי שימוש",
+    "date_label": "עדכון אחרון: אפריל 2026",
+    "sections": {
+      "operator": {
+        "title": "פרטי מפעיל האתר",
+        "operator_label": "מפעילת האתר:",
+        "operator_value": "שנף טופז, עוסקת פטורה מס׳ 325120939.",
+        "trade_label": "השם המסחרי:",
+        "trade_value": "מהמקור / Mehamakor.",
+        "contact_label": "ליצירת קשר:"
+      },
+      "service": {
+        "title": "1. מהות השירות",
+        "body": "\"מהמקור\" (להלן: \"הפלטפורמה\" או \"האתר\") היא פלטפורמת <b>דירקטורי בלבד</b> המחברת בין בתי עסק לבין קונות וקונים בישראל. הפלטפורמה <b>אינה מוכרת</b> מוצרים, אינה צד לעסקה, אינה אחראית על הספקה או גבייה, ואינה מתווכת בעסקאות. כל עסקה נעשית ישירות בין המוכרת לקונה, על אחריותן הבלעדית."
+      },
+      "licensing": {
+        "title": "2. אחריות המוכרות על רישוי",
+        "intro": "כל מוכרת המופיעה בפלטפורמה נושאת ב<b>אחריות בלעדית</b> להחזקת כל הרישיונות, האישורים וההיתרים הנדרשים לפי דין, לרבות (אך לא רק): חוק רישוי עסקים, התשכ״ח–1968, תקנות בריאות הציבור (מזון), הוראות משרד הבריאות, והוראות כשרות וסימון רלוונטיות.",
+        "outro": "בעת ההרשמה כעסק, המוכרת מצהירה כי היא מחזיקה בכל הרישיונות הנדרשים למכירת המוצרים, וכי תמשיך להחזיקם בתוקף לאורך כל תקופת השימוש בפלטפורמה. מהמקור <b>אינה בודקת, מאמתת או מאשרת</b> רישיונות אלה, והאחריות לציות חלה על המוכרת בלבד."
+      },
+      "age": {
+        "title": "3. גיל מינימלי",
+        "body": "השימוש באתר מותר למשתמשות ומשתמשים בגיל <b>18 ומעלה</b> בלבד. בעצם ההרשמה או השימוש בפלטפורמה את/ה מאשר/ת כי את/ה בן/בת 18 ומעלה וכי יש לך את הכשרות המשפטית להתחייב לתנאים אלה."
+      },
+      "responsibility": {
+        "title": "4. אחריות על מוצרים ועל עסקאות",
+        "body": "כל מוצר המפורסם באתר הוא באחריות המוכרת בלבד. מהמקור אינה אחראית לאיכות המוצרים, לבטיחותם, לטריותם, לכשרותם, להתאמתם לתיאור, לזמני אספקה, או לכל נזק — ישיר או עקיף — שייגרם משימוש בהם או מהסתמכות עליהם. הקונה רוכשת על אחריותה הבלעדית וישירות מהמוכרת."
+      },
+      "verified": {
+        "title": "5. עסקים מאומתים",
+        "body": "תגית \"מאומת ע״י מהמקור\" מציינת שהעסק עבר בדיקה ראשונית של קריטריוני הפלטפורמה (זהות המוכרת, קיום פעילות, התאמה לקטגוריות). האימות <b>אינו מהווה ערובה</b> לאיכות המוצר, לקיום רישיונות או לכל רכישה ספציפית."
+      },
+      "report": {
+        "title": "6. דיווח על הפרות",
+        "intro": "נתקלת במוצר או עסק שאינו עומד בחוק או בתנאים אלה? ניתן לדווח באחת מהדרכים הבאות:",
+        "item_button": "לחיצה על כפתור \"דווחי\" בעמוד העסק או המוצר.",
+        "item_email": "פנייה ישירה לכתובת <email>contact@mehamakor.co.il</email>.",
+        "item_form": "שימוש ב<contactlink>טופס יצירת קשר</contactlink>.",
+        "outro": "נבדוק כל דיווח תוך <b>3 ימי עסקים</b>. הפלטפורמה שומרת לעצמה את הזכות להסיר תכנים, להשעות חשבונות ולפנות לרשויות במקרה של הפרה."
+      },
+      "ip": {
+        "title": "7. קניין רוחני",
+        "body": "כל התכנים בפלטפורמה, לרבות שם המותג, הלוגו והעיצוב, הם קניינה של מהמקור. תכנים שהועלו על ידי משתמשות נותרים בבעלותן, אך המשתמשת מעניקה למהמקור רישיון לא בלעדי להצגתם ולהפצתם לצורך הפעלת השירות."
+      },
+      "changes": {
+        "title": "8. שינויים בתנאים",
+        "body": "מהמקור רשאית לעדכן תנאים אלה מעת לעת. הגרסה המעודכנת תפורסם בעמוד זה עם תאריך העדכון. שימוש מתמשך בשירות לאחר עדכון מהווה הסכמה לתנאים המעודכנים."
+      },
+      "law": {
+        "title": "9. דין חל וסמכות שיפוט",
+        "body": "על תנאים אלה, על השימוש בפלטפורמה ועל כל מחלוקת הנובעת מהם יחולו דיני <b>מדינת ישראל</b> בלבד. סמכות השיפוט הייחודית והבלעדית בכל עניין הנוגע לתנאים אלה נתונה לבתי המשפט המוסמכים במחוז תל אביב–יפו."
+      },
+      "privacy": {
+        "title": "10. פרטיות",
+        "body": "השימוש בפלטפורמה כפוף גם <privacylink>למדיניות הפרטיות</privacylink>, המהווה חלק בלתי נפרד מתנאים אלה."
+      },
+      "contact": {
+        "title": "11. יצירת קשר",
+        "intro": "לכל שאלה או בירור בנוגע לתנאי השימוש:"
+      }
+    }
+  },
+  "guides": {
+    "index": {
+      "meta_title": "מדריכים לבעלות עסק | מהמקור",
+      "meta_description": "שלושה מדריכים קצרים לבעלות עסק במהמקור: איך לכתוב את הסיפור, איך לצלם את המוצרים, ואיך להגיב להודעות מלקוחות.",
+      "og_description": "שלושה מדריכים קצרים לבעלות עסק במהמקור — סיפור, צילום, הודעות.",
+      "eyebrow": "מדריכים לבעלות עסק",
+      "heading": "שלושה מדריכים לחודש הראשון",
+      "intro": "הצטרפת לאחרונה? אלה שלושת המדריכים שאני שולחת לכל בעלת עסק חדשה במהמקור. קצרים, ישירים, בלי הבטחות גדולות — רק מה שעובד.",
+      "minutes_label": "קריאה כ-{minutes} דקות",
+      "cta": "קראי את המדריך ←",
+      "footer_prefix": "יש שאלה שמדריך לא ענה עליה? כתבי לי באינסטגרם",
+      "footer_suffix": ".",
+      "card_previews": {
+        "business_story": "השדה שמשנה הכל בפרופיל — איך לכתוב אותו פעם אחת, נכון, ובלי שייקרא כמו פרסומת.",
+        "product_photography": "בלי מצלמה מקצועית, בלי סטודיו. 5 עקרונות + workflow של 30 דקות שמספיק לעמוד שלם.",
+        "customer_messages": "זמן תגובה, טון, ו-5 תבניות מוכנות. הדברים הקטנים שמכריעים אם השיחה נסגרת בהזמנה."
+      }
+    },
+    "business_story": {
+      "title": "איך לכתוב סיפור טוב על העסק שלך",
+      "subtitle": "כתבו את הסיפור פעם אחת, נכון. השאר ידאג לעצמו.",
+      "preview": "השדה שמשנה הכל בפרופיל — איך לכתוב אותו פעם אחת, נכון, ובלי שייקרא כמו פרסומת.",
+      "body": {
+        "b0": "יש שדה אחד בעמוד הפרופיל שלכם שמשנה הכל: **התיאור**.",
+        "b1": "לקוח/ה חדש/ה שמגיע/ה לעמוד שלכם דרך מהמקור, רואה את התמונה הראשונה, ואז את 2-3 השורות הראשונות של הטקסט. מה שכתוב שם — קובע אם היא תמשיך לקרוא, או תחזור לעמוד החיפוש.",
+        "b2": "באתרי אוכל אחרים, השדה הזה הוא מקום לרשימת מוצרים. במהמקור זה אחרת. כי מהמקור לא בנוי כמו marketplace — הוא בנוי כדי לתת לכל בעל/ת עסק עמוד מלא, עם תמונות, מפה, וסיפור. **הסיפור הוא הסיבה שמישהי תזכור אתכם בעוד שבועיים.**",
+        "b4": "למה סיפור — ולא רשימת מוצרים?",
+        "b5": "כי **מוצרים מוכרים עסקה אחת. סיפור מוכר את החזרה.**",
+        "b6": "לקוח/ה שקרא/ה את הסיפור שלכם — איך התחלתם, למה בחרתם בקטגוריה, מה מיוחד בגישה שלכם — תזכור אתכם. תספר עליכם לחברה. תחזור בעוד חודש. לקוח/ה שראה/תה רק רשימת מוצרים — קנה/תה פעם אחת, אם בכלל, ושכח/ה.",
+        "b7": "זה לא דעה. זה איך זיכרון אנושי עובד. מספרים לוקחים מקום בזיכרון לטווח קצר. סיפורים נצרבים.",
+        "b9": "שלוש שאלות שבונות סיפור טוב",
+        "b10": "לפני שאתם פותחים את שדה התיאור — קחו 10 דקות ותענו על השאלות האלה. בכתב, באמת. אל תפסחו על זה.",
+        "b11": "**1. למה התחלת?**",
+        "b12": "לא \"למה פתחתי עסק\" — זאת תשובה גנרית שכולם נותנים (\"רציתי להיות עצמאי\", \"אהבתי תמיד את התחום\"). אלא **מה גרם לבחור דווקא את הקטגוריה הזאת?**",
+        "b13": {
+          "i0": "אופה? היה רגע שהבנת שלחם מהסופר לא מספיק?",
+          "i1": "חקלאית? למדת חקלאות בארה\"ב? ירשת מהסבא?",
+          "i2": "יקבן? טעמת יין מסוים שגרם לך לחשוב \"אני יכול להכין יותר טוב\"?"
+        },
+        "b14": "**הרגע הראשון** — זה מה שעושה סיפור.",
+        "b15": "**2. מה מיוחד אצלכם?**",
+        "b16": "לא יחסית למתחרים. **יחסית לבייסיק בקטגוריה.**",
+        "b17": "אם אופה לחם, אתם לא משווים את עצמכם לאופה אחר. אתם משווים את עצמכם ללחם הממוצע שאפשר לקנות בסופר. מה ההבדל?",
+        "b18": {
+          "i0": "קמח אורגני מטחנה ספציפית?",
+          "i1": "תהליך תסיסה של 48 שעות?",
+          "i2": "התנור שעבד עליו בנכם המנוח?"
+        },
+        "b19": "ספציפיות. **דבר אחד מיוחד עם פרטים** > 5 טענות גנריות (\"איכותי, טרי, מקומי\").",
+        "b20": "**3. למי אתם מייצרים?**",
+        "b21": "לא \"לכולם\". זאת תשובה שאומרת לאף אחד.",
+        "b22": "חישבו על לקוח/ה אחד/ת אמיתי/ת שקנה/תה מכם בחודש האחרון. דמיינו אותו/ה. אתם כותבים אליו/ה. אם אתם מאפיית מחמצת — אולי זאת אמא של ילד שיש לו רגישות עיכולית ללחם רגיל, ומחמצת היא היחידה שעובדת אצלו. אם אתם רפת קטנה — אולי זה זוג שמשלם פרמיום על חלב כי הם מאמינים בחקלאות אתית.",
+        "b23": "כשאתם יודעים למי — הטקסט מסתדר מאליו.",
+        "b25": "דוגמה: לפני ואחרי",
+        "b26": "(שם בדוי לצורך הדוגמה)",
+        "b27": "**❌ לפני (גנרי, אין סיפור):**",
+        "b28": "מאפיית הלחם של גלית — מאפיית בוטיק איכותית. אנחנו מתמחים בלחמי מחמצת, מאפים מתוקים ולחם פיתה. כל המוצרים שלנו מקמח אורגני ובאיכות פרימיום. הזמינו עכשיו!",
+        "b29": "חלקים שלא עובדים:",
+        "b30": {
+          "i0": "\"בוטיק איכותית\" — כל מאפייה כותבת את זה",
+          "i1": "\"כל המוצרים מקמח אורגני\" — לא מספרת איזה קמח, מאיפה",
+          "i2": "\"פרימיום\" — מילה ריקה",
+          "i3": "\"הזמינו עכשיו\" — Marketing speak"
+        },
+        "b31": "**✅ אחרי (סיפור):**",
+        "b32": "גלית התחילה לאפות ב-2019, אחרי שנה במאפייה בצרפת. הלחם הראשון יצא חרוך. שנתיים אחר כך, היא פתחה את המאפייה. הקמח מגיע מטחנה קטנה בצפון — אורגני, נטחן ביום שמגיע אליה. תסיסה של 36 שעות. מאפייה קטנה, 4 לחמים ביום. אם הגעת מאוחר — חזרי מחר.",
+        "b33": "מה השתנה:",
+        "b34": {
+          "i0": "שם של אדם → סיפור אנושי",
+          "i1": "פרטים אזוריים (צרפת, צפון) → תחושת מקום בלי המצאת עסקים אמיתיים",
+          "i2": "פרטים טכניים (36 שעות תסיסה) → אמינות",
+          "i3": "\"4 לחמים ביום\" → סקרצ'יטי, אמיתיות",
+          "i4": "\"אם הגעת מאוחר — חזרי מחר\" → אופי"
+        },
+        "b36": "5 כללים מעשיים",
+        "b37": "**1. הימנעו ממילים-בלון:**",
+        "b38": "\"איכותי\", \"פרימיום\", \"טבעי\", \"מקצועי\", \"אותנטי\". הן לא אומרות כלום. **הוכיחו** במקום **להצהיר**.",
+        "b39": "**2. שמות וערים — חיוניים:**",
+        "b40": "\"כרמיאל\" טוב יותר מ-\"צפון הארץ\". \"טחנה בקיבוץ X\" טוב יותר מ-\"קמח מקומי\". פרטים = אמינות. (רק תוודאו שאתם משתמשים בשמות אמיתיים — הלקוח/ה יבדקו.)",
+        "b41": "**3. תאריך התחלה — תמיד.**",
+        "b42": "\"מ-2019\" עוזר ללקוח/ה לדעת שאתם לא חדשים-חדשים. גם אם אתם חדשים — \"מאז יוני 2024\" יותר טוב מכלום.",
+        "b43": "**4. אורך נכון: 150-300 מילים.**",
+        "b44": "לא יותר. הסיפור הראשון הוא רק הפתיחה. שאר הפרטים עוברים לעמוד \"אודות\" המלא או לקטלוג המוצרים.",
+        "b45": "**5. תקראו בקול לפני שאתם שומרים.**",
+        "b46": "אם זה נשמע כמו פרסומת — תתחילו מחדש. אם זה נשמע כמו שאתם מספרים לחבר/ה — אתם מוכנים.",
+        "b48": "מה לא לעשות",
+        "b49": {
+          "i0": "❌ **אל תפתחו ב-\"ברוכים הבאים\".** זה מקום פנוי. השתמשו בו לסיפור.",
+          "i1": "❌ **אל תכתבו ב-passive voice.** \"אנחנו מאמינים...\" או \"התחלתי ב-2019...\" טוב יותר מ-\"החברה הוקמה בשנת 2019...\"",
+          "i2": "❌ **אל תזכירו מתחרים.** \"טוב יותר מ-X\" משדר חוסר ביטחון.",
+          "i3": "❌ **אל תבטיחו דברים שאתם לא יכולים להוכיח.** \"המוצר הכי טוב באזור\" — אפשר לתבוע אתכם על זה.",
+          "i4": "❌ **לא אמוג'ים בגוף הטקסט.** אפשר בכותרת קטגוריה (🌿, 🥖) אבל לא לתוך הסיפור."
+        },
+        "b51": "עזרה אם נתקעתם",
+        "b52": "אם אתם יושבים מול השדה ולא מצליחים לכתוב — תכתבו לי בחזרה. אני קוראת את הסיפור, מצביעה איפה הוא חזק ואיפה הוא חלש, ועוזרת לערוך. **חינם, אישית, אבל לוקח לי כמה ימים — אני עוסקת בכל עסק לבד.**",
+        "b53": "זה לא הצעה לכולם. זה אופציה לבעלי עסק חדשים שעוד לא יודעים איך זה נראה. אחרי שכתבתם פעם אחת — תמיד יודעים."
+      }
+    },
+    "product_photography": {
+      "title": "איך לצלם את המוצרים שלכם נכון",
+      "subtitle": "בלי מצלמה מקצועית. בלי סטודיו. בטלפון שכבר יש לכם.",
+      "preview": "5 עקרונות + workflow של 30 דקות. איך להפיק 15 תמונות איכותיות לפרופיל בעזרת הטלפון.",
+      "body": {
+        "b0": "בעמוד הפרופיל שלכם במהמקור, **התמונה הראשונה היא הרגע שבו לקוח/ה מחליט/ה אם להישאר**. לפני שקרא/ה את הסיפור. לפני שראה/תה את המחיר. לפני הכל.",
+        "b1": "ובכל זאת — בעלי עסק רבים פותחים את שדה ההעלאה, מסתכלים בתמונות בטלפון, ומרגישים שהן \"לא מספיק מקצועיות\". מעלים תמונה אחת מהאינסטגרם של לפני שנתיים, ומקווים לטוב.",
+        "b2": "זה ה-guide שמסביר למה לא צריך לצלם בסטודיו, ומה כן צריך.",
+        "b4": "הכלל הראשון: לא צריך מצלמה מקצועית",
+        "b5": "הטלפון שלכם מספיק. **לגמרי.**",
+        "b6": "צילומים מקצועיים של מאפיות בוטיק שאתם רואים באינסטגרם — חלק גדול מהם צולמו בטלפון. ההבדל הוא לא הציוד. ההבדל הוא:",
+        "b7": {
+          "i0": "אור",
+          "i1": "סבלנות",
+          "i2": "בחירה"
+        },
+        "b8": "עליהם הוא ה-guide הזה.",
+        "b10": "5 העקרונות",
+        "b11": "**1. אור טבעי בלבד. בלי פלאש.**",
+        "b12": "פלאש משטח את התמונה והופך אוכל לפלסטיק. נורת תקרה יוצרת צללים קשים מלמעלה. השמש הישירה בצהריים — אותו דבר.",
+        "b13": "**מה שכן עובד:**",
+        "b14": {
+          "i0": "אור טבעי דרך חלון, בין 9:00-11:00 בבוקר או 15:00-17:00 אחה\"צ",
+          "i1": "ימים מעוננים — דווקא מצוינים. אור מפוזר ורך",
+          "i2": "מצב צל בחוץ (לא שמש ישירה)"
+        },
+        "b15": "**טכניקה פשוטה:** העמידו את המוצר ליד חלון — האור צריך ליפול מהצד, לא מלמעלה ולא נגדכם. תראו שהצד הקרוב לחלון בהיר והצד השני בצל קל — זה בדיוק מה שאתם רוצים.",
+        "b17": "**2. אנשים — לא רק מוצרים.**",
+        "b18": "זה הטיפ שעובד הכי חזק, ובעלי עסק הכי מתביישים ממנו.",
+        "b19": "**התמונה החזקה ביותר בפרופיל שלכם היא שלכם, עם המוצרים, בידיים.** לא portrait מקצועי במשרד. אתם בעבודה. בבגדי עבודה. עם קמח על הידיים. עם פירות בסלסילה.",
+        "b20": "למה זה עובד:",
+        "b21": {
+          "i0": "**אנשים קונים מאנשים.** רואים פנים → מרגישים אמון.",
+          "i1": "**זה מה שמהמקור הוא.** לא פלטפורמת מסחר, אלא מקום שמראה מי מאחורי כל עסק.",
+          "i2": "**רשתות גדולות לא יכולות להראות את ה\"בעלים בעבודה\". אתם כן.**"
+        },
+        "b22": "דוגמאות:",
+        "b23": {
+          "i0": "חקלאית מחזיקה ירקות שזה עתה קטפה",
+          "i1": "אופה מוציא לחם מהתנור",
+          "i2": "רפתן ליד הפרות בחליבה",
+          "i3": "יקבן מסתכל על ענבים בכרם"
+        },
+        "b25": "**3. תהליך — לא רק תוצאה.**",
+        "b26": "רוב בעלי העסק מצלמים רק את **המוצר המוכן**. אבל הלקוח/ה רוצה לראות גם איך הוא נעשה.",
+        "b27": "**השיטה הפשוטה:** חישבו על יום עבודה רגיל אצלכם. מההתחלה לסוף. **3 רגעים שווים תמונה:**",
+        "b28": {
+          "i0": "**רגע ההכנה** — לפני שהמוצר מוכן. החומרים הגולמיים, הציוד, היד הראשונה שנוגעת.",
+          "i1": "**רגע השינוי** — הרגע שבו החומר הגולמי הופך למוצר. (הוא שונה בכל קטגוריה — אבל הוא תמיד שם.)",
+          "i2": "**רגע הסיום** — המוצר מוכן. רגע לפני שיוצא מהעסק."
+        },
+        "b29": "**תרגיל של 5 דקות:** קחו דף נייר. כתבו את היום שלכם בעסק בשורה אחת — מהבוקר עד הסוף. סמנו 3 נקודות שבהן יש משהו לראות. לא חייבים יפים, חייבים אמיתיים. בפעם הבאה שהיום הזה קורה — צלמו את 3 הנקודות.",
+        "b30": "**למה זה עובד:** הלקוח/ה רואה מה באמת קורה, ולא רק את התוצאה הסופית המלוטשת. **תהליך = שקיפות = אמון.**",
+        "b32": "**4. סביבה — Sense of Place.**",
+        "b33": "המקום שלכם הוא חלק מהסיפור.",
+        "b34": {
+          "i0": "משק בגליל → תנו לגליל להיראות בתמונות",
+          "i1": "מאפייה בתל אביב → צלמו את הרחוב מבחוץ",
+          "i2": "רפת בנגב → נוף הנגב הוא חלק מהיין שלכם"
+        },
+        "b35": "**טיפ:** אל תפחדו מ-\"רעש רקע\" — ארגז עץ ישן, מפת פשתן, ספסל מתרוקן. זה לא מסיח. זה **מקנה לתמונה אופי**. הפוך מ-stock photo.",
+        "b37": "**5. אל תפילטרו יותר מדי.**",
+        "b38": "עריכה מינימלית בלבד:",
+        "b39": {
+          "i0": "✅ בהירות + ניגודיות עדינים",
+          "i1": "✅ חידוד קל",
+          "i2": "✅ קרופ אם צריך",
+          "i3": "❌ פילטר וינטג'",
+          "i4": "❌ VSCO look",
+          "i5": "❌ HDR",
+          "i6": "❌ Saturation חד מדי"
+        },
+        "b40": "**הסיבה:** פילטר משנה את הצבע של המוצר. הלקוח/ה תקבל את המוצר בבית ויראה משהו אחר. אכזבה = ביקורת רעה = לקוח/ה שלא חוזר/ת.",
+        "b41": "מהמקור הוא לא \"אסתטיקה של אינסטגרם\". אנחנו אמיתיים.",
+        "b43": "3 זוויות לכל מוצר",
+        "b44": "לכל מוצר עיקרי בקטלוג שלכם — צלמו לפחות 3 תמונות:",
+        "b45": {
+          "i0": "**המוצר לבד** — על משטח עץ, מפת פשתן, או רקע פשוט. שום סטיילינג מוגזם. רק המוצר.",
+          "i1": "**המוצר ביד** — היד שלכם, היד של לקוח/ה, יד שמחזיקה את המוצר. **scale** (גודל ביחס ליד) + **חיים אנושיים**.",
+          "i2": "**המוצר בסביבה** — על שולחן ארוחה, ליד כוס קפה, באריזת המשלוח, בקופסת המתנה. **שימוש בפועל.**"
+        },
+        "b47": "דוגמאות — מה כן, מה לא",
+        "b48": "**✅ עובד:**",
+        "b49": {
+          "i0": "אופה מחזיקה לחם חם, רואים את הקרום, אור טבעי מהחלון",
+          "i1": "חקלאי בכרם, מחזיק אשכול ענבים, ברקע השמיים בערב",
+          "i2": "יד שנוגעת בכוס יוגורט, רואים את הטקסטורה הסמיכה"
+        },
+        "b50": "**❌ לא עובד:**",
+        "b51": {
+          "i0": "מוצר על רקע לבן סטריליות (Amazon vibes)",
+          "i1": "צילום מעל ב-flatlay מסודר מדי (Pinterest vibes)",
+          "i2": "מבריק עם רוטב נוטף בתקריב מוגזם (food-styling אגרסיבי)",
+          "i3": "מסונן בכבדות (Instagram filter vibes)",
+          "i4": "packaging מתועש מואר באור סטודיו (Whole Foods vibes)"
+        },
+        "b52": "הסגנון של מהמקור: **כמו תמונה שצילמה חברה קרובה שבאה לבקר אצלכם בעסק, לא כמו תמונה של מותג שמשלם לצלם מקצועי.**",
+        "b54": "Workflow מעשי — 30 דקות",
+        "b55": "אם יש לכם 30 דקות פנויות בבוקר, ככה תקבלו אוסף תמונות מצוין:",
+        "b56": {
+          "i0": "**בחרו 5 מוצרים** מהקטלוג. הכי חשובים אצלכם.",
+          "i1": "**מצאו חלון** במטבח / בעסק עם אור צד יפה.",
+          "i2": "**לכל מוצר** — צלמו 20 תמונות. 3 זוויות × כמה ניסיונות.",
+          "i3": "**עברו מאוחר יותר** ובחרו 3 הכי טובות לכל מוצר."
+        },
+        "b57": "זהו. 15 תמונות לפרופיל — יותר מאשר ל-90% מהעסקים באתר.",
+        "b59": "מה אם אין לי תמונות טובות עכשיו?",
+        "b60": "3 אופציות:",
+        "b61": {
+          "i0": "**השתמשו ב-placeholder עד שתצלמו** — מהמקור מציגה אייקון קטגוריה (🌾, 🥖, 🧀) במקום תמונה חסרה. לא מושך, אבל לא נעלם.",
+          "i1": "**תאמו צילום קצר** — אם יש לכם חצי יום פנוי, צלמו הכל בבת אחת. כמה שעות הסתכלות באור = הרבה תמונות.",
+          "i2": "**המליצו על צלם/ת מקומי/ת** — לפעמים שווה ההשקעה. צלם/ת מקומי/ת יכול/ה לתת לכם הרבה תמונות איכותיות בחצי יום. מחירים משתנים — בקשו 2-3 הצעות לפני שמחליטים. אם תכננתם לפעול שנה — זאת השקעה משתלמת."
+        },
+        "b63": "עזרה אם נתקעתם",
+        "b64": "שלחו לי 2-3 תמונות שצילמתם. אני מסתכלת ומסבירה איזו מהן עובדת, איזו לא, ולמה. **חינם, אישית, אבל לוקח לי כמה ימים — אני עוסקת בכל עסק לבד.**",
+        "b65": "זה לא שירות קבוע — זה אופציה לבעלי עסק חדשים שעוד לומדים מה עובד."
+      }
+    },
+    "customer_messages": {
+      "title": "איך להגיב להודעות שמגיעות אליכם",
+      "subtitle": "זמן תגובה, טון, ומה לכתוב כשלא יודעים מה לכתוב.",
+      "preview": "הדברים הקטנים שמכריעים בין שיחה שמסתיימת בהזמנה לבין שיחה שמסתיימת ב-\"אחזור אליך\". 5 עקרונות + 5 תבניות מוכנות.",
+      "body": {
+        "b0": "ההודעה הראשונה מלקוח/ה חדש/ה היא רגע קטן שמכריע הרבה.",
+        "b1": "האדם שכותב לכם — לא מכיר אתכם אישית. לא יודע אם תענו. לא יודע אם אתם רציניים. **שלוש השורות הראשונות שתשלחו חזרה — קובעות אם הוא ימשיך, או יחפש במקום אחר.**",
+        "b2": "ה-guide הזה לא על להיות \"מנומסים\" או \"מקצועיים\". זה על הדברים הקטנים שעושים הבדל אמיתי בין שיחה שמסתיימת בהזמנה לבין שיחה שמסתיימת ב-\"תודה, אני אחזור אליך\" שלא חוזרת.",
+        "b4": "הכלל הראשון: זמן תגובה משנה יותר מהתשובה עצמה",
+        "b5": "אישה כותבת לכם בערב. שואלת על מוצר. מחפשת אישור שאתם פנויים, שיש מוצר, שאתם רציניים.",
+        "b6": "אם היא לא קיבלה תשובה עד הצהריים הבא — היא **כבר חיפשה במקום אחר**. לא כי המוצר שלכם פחות טוב. אלא כי **היא לא יודעת שאתם עוד שם**.",
+        "b7": "זה הכלל הכי חשוב: **תגובה מהירה > תגובה מושלמת.**",
+        "b9": "5 העקרונות",
+        "b10": "**1. ארבע שעות. זה הסף.**",
+        "b11": "לא מיידי — אתם בעלי עסק, לא צ'אט-בוט. אבל בתוך 4 שעות בשעות העבודה, **תענו משהו**.",
+        "b12": "\"משהו\" יכול להיות:",
+        "b13": {
+          "i0": "\"היי, ראיתי. אענה בפירוט הערב.\"",
+          "i1": "\"תודה שפנית! אני בעבודה עכשיו, אחזור אלייך תוך שעתיים.\"",
+          "i2": "\"קיבלתי את ההודעה. רק מסיים משלוח, אתפנה ב-14:00.\""
+        },
+        "b14": "זה לא תשובה מלאה. זה **אישור קבלה**. לקוח/ה שיודע/ת שראו את ההודעה — מחכה. לקוח/ה שלא יודע/ת — עוזב.",
+        "b16": "**2. אחרי שעות עבודה — תגדירו ציפיות.**",
+        "b17": "הודעה הגיעה ב-22:00? אל תרגישו חובה לענות מיד. אבל **שורה אחת בבוקר משנה הכל**:",
+        "b18": "בוקר טוב! ראיתי את ההודעה שלך אתמול בלילה. עונה עכשיו בפירוט.",
+        "b19": "**הסיבה:** הלקוח/ה התעוררה ופתחה את הטלפון. אם הראשון שהיא ראתה היה תגובה שלכם — היא תהיה אתכם בראש כל היום.",
+        "b20": "**טיפ נוסף:** הגדירו סטטוס בוואטסאפ עם שעות הפעילות שלכם:",
+        "b21": "פעילים 9:00-17:00. אענה לכל פנייה בבוקר.",
+        "b22": "זה לא מחליף תגובה אישית — זה מגדיר ציפייה לפני שמישהי כותבת.",
+        "b24": "**3. אישי מנצח תבנית מוכנה. אבל לא לגמרי.**",
+        "b25": "יש שני קצוות שלא עובדים:",
+        "b26": "**הקצה הראשון:** תשובה מעוצבת לחלוטין. \"שלום וברכה. תודה על פנייתך. הקטלוג המלא יישלח אליכם בקובץ נפרד. לכל שאלה נוספת ניתן לפנות במייל.\"",
+        "b27": "**הבעיה:** הלקוח/ה מרגיש/ה שמדבר/ת עם רובוט. או עם חברה שאין לה זמן.",
+        "b28": "**הקצה השני:** תשובה מאולתרת לגמרי. \"היי דנה! איזה כיף ששאלת. אז אנחנו עושים פיתות כל יום בשעה 6 בבוקר, יש לנו 3 סוגים — מחיטה מלאה, רגיל, וגם פיתה ירוקה חדשה עם זעתר שניסינו רק השבוע ובאמת יצאה ממש טעימה, אם תרצי אני יכולה לשלוח לך תמונה...\"",
+        "b29": "**הבעיה:** לוקח לכם 10 דקות לכל הודעה. לא בר-קיימא.",
+        "b30": "**המיקס הנכון:**",
+        "b31": {
+          "i0": "**פתיחה אישית** (\"היי דנה! תודה שפנית.\") — שורה אחת, אישית.",
+          "i1": "**גוף ההודעה בתבנית מוכנה** (קטלוג, מחירון, זמני אספקה) — מה ששוב ושוב.",
+          "i2": "**סגירה אישית** (\"מחכה להזמנה שלך — דברי כשרוצה.\") — שורה אחת, אישית."
+        },
+        "b33": "**4. שאלו לפני שאתם מספרים.**",
+        "b34": "זה הטיפ שמשנה את שיעור הסגירה.",
+        "b35": "לקוח/ה כותב/ת: \"יש לכם גבינות?\"",
+        "b36": "**❌ הגישה הגרועה:** לשלוח את כל הקטלוג מיד. 12 גבינות, מחירים, תיאורים. הלקוח/ה רואה wall of text, נסגרת.",
+        "b37": "**✅ הגישה הטובה:** לשאול שאלה אחת. \"כן! בשביל ארוחת ערב לזוג, או אירוח לקבוצה? יש לי המלצות שונות לכל אחד.\"",
+        "b38": "**למה זה עובד:**",
+        "b39": {
+          "i0": "**מתחיל שיחה** במקום לסגור אותה.",
+          "i1": "**גורם ללקוח/ה להרגיש שמטפלים בו/ה.** לא קיבל קטלוג — קיבל תשומת לב.",
+          "i2": "**מקצר את ההחלטה.** אחרי שתענה \"ארוחת ערב לזוג\" — יש לכם 2-3 גבינות להמליץ עליהן, לא 12."
+        },
+        "b40": "**הכלל:** לפני שאתם שולחים אינפורמציה — שאלו **שאלה אחת ממוקדת** שעוזרת לסנן.",
+        "b42": "**5. שיחה לא חייבת להסתיים במכירה.**",
+        "b43": "לפעמים לקוח/ה שואל/ת ולא קונה. מבקש/ת מחירון, חוקר/ת אופציות, ואז שותק/ת. זה בסדר.",
+        "b44": "**הסיבה:** תשובה טובה היום = הזמנה בעוד 3 חודשים. או המלצה לחברה. או חזרה כשהמצב משתנה.",
+        "b45": "אם אתם מנסים \"לסגור בכוח\" — שואלים \"אז מה החלטת?\", דוחפים, מציעים — אתם **מאבדים את ה-3 חודשים האלה**.",
+        "b46": "**מה כן לעשות אחרי שיחה שלא הסתיימה בהזמנה:**",
+        "b47": {
+          "i0": "שלחו תודה קצרה. \"תודה ששאלת! אם תצטרכי משהו בעתיד, אני פה.\"",
+          "i1": "**אל** תעקבו אחרי שבוע. **אל** תזכירו את עצמכם שוב \"במקרה\". **אל** תשלחו ניוזלטר אם לא ביקשו."
+        },
+        "b48": "הלקוח/ה יודע/ת איפה אתם. אם תרצה — תחזור.",
+        "b50": "Templates — 5 תבניות מוכנות",
+        "b51": "תשמרו את אלה ב-WhatsApp Business (תכונת \"תגובות מהירות\") או בפתק בטלפון. לחיסכון זמן:",
+        "b52": "**1. אישור קבלה (לפי הצורך):**",
+        "b53": "היי [שם]! קיבלתי את ההודעה. אענה בפירוט תוך [X] שעות.",
+        "b54": "**2. שאלה לסינון (לקוח/ה שואל/ת \"מה יש?\"):**",
+        "b55": "שאלה אחת קצרה — בשביל מה אתם מחפשים? [שתי אופציות לבחירה]. ככה אני יודעת מה להמליץ.",
+        "b56": "**3. מחירון מלא (לאחר סינון):**",
+        "b57": "מצרפת את המחירון 📋 משלוח לאזור [שלכם] — [X] ש\"ח. אספקה תוך [Z] ימים. תגידי לי מה לבחור ואני אכין.",
+        "b58": "**4. אישור הזמנה (התאימו לפי המסלול שלכם):**",
+        "b59": "מעולה! ההזמנה אצלי. אכין [פירוט].\n[אם איסוף עצמי:] תגיעו לאסוף ב-[יום, שעה] ב-[כתובת].\n[אם משלוח:] משלוח ביום [X] ב-[Y] ש\"ח.",
+        "b60": "**5. סגירה לשיחה שלא הסתיימה בהזמנה:**",
+        "b61": "תודה ששאלת! אם תצטרכי משהו בעתיד — אני פה.",
+        "b63": "מה לא לעשות",
+        "b64": {
+          "i0": "❌ **אל תתנצלו אם עניתם תוך הסטנדרט (4 שעות בשעות עבודה).** התנצלות יוצרת רושם של \"פגעתי במשהו\". אם עניתם בזמן הגיוני — תנו תשובה ישירה בלי \"סליחה ש-...\"",
+          "i1": "❌ **אל תשלחו \"?\" אם הלקוח/ה לא ענה/תה.** זה מרגיש לחוץ. תשלחו משפט שלם או כלום.",
+          "i2": "❌ **אל תפרסמו בסטטוס של וואטסאפ** הודעות פרטיות מלקוחות — גם בלי שם. אחרים יראו את זה, יבינו שאתם משתפים שיחות פרטיות, ולא יכתבו לכם.",
+          "i3": "❌ **אל תכתבו רק באותיות גדולות.** באנגלית זה צעקה. בעברית זה נדמה כעצבני.",
+          "i4": "❌ **אל תשלחו 5 הודעות נפרדות** (\"היי\" → \"ראיתי\" → \"תני לי דקה\" → \"אני בעבודה\" → \"אענה אחר כך\"). שלחו הודעה אחת מלאה."
+        },
+        "b66": "עזרה אם נתקעתם",
+        "b67": "יש לכם הודעה שאתם לא יודעים איך לענות עליה? **שלחו לי screenshot** (בלי פרטים מזהים של הלקוח/ה — מטשטשים שם וטלפון). אני אענה איך הייתי כותבת. **חינם, אישית, אבל לוקח לי כמה ימים — אני עוסקת בכל עסק לבד.**",
+        "b68": "זה לא שירות קבוע — זה אופציה לבעלי עסק חדשים שעוד לומדים את הקצב."
+      }
+    }
+  },
+  "dashboard": {
+    "producer": {
+      "loading_data": "טוענת נתונים...",
+      "loading_analytics": "טוענת סטטיסטיקות...",
+      "error_availability_update": "לא הצלחנו לעדכן את מצב הזמינות — נסי שוב בעוד רגע",
+      "error_questions_save": "שגיאה בשמירה — נסי שוב",
+      "vanity_link": {
+        "label": "🔗 הלינק שלי",
+        "copied": "✅ הועתק!",
+        "copy_cta": "העתיקי לינק",
+        "share_cta": "שתפי בוואטסאפ",
+        "wa_text_template": "הפרופיל שלי במהמקור: {url}"
+      },
+      "greeting": "שלום {name} 👋",
+      "welcome_subtitle": "ברוכה הבאה לניהול העסק של {business}",
+      "status": {
+        "pending": {
+          "title": "🌿 הפרופיל שלך בסקירה",
+          "body": "הצוות שלנו בודק את הפרטים — לרוב לוקח עד 3 ימי עסקים. פרופילים מלאים מאושרים מהר יותר.",
+          "cta": "השלימי פרופיל ←"
+        },
+        "rejected": {
+          "title": "⚠️ הבקשה לא אושרה",
+          "body": "צרי קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
+          "cta": "צרי קשר ←"
+        },
+        "pending_whatsapp": {
+          "title": "🌿 ברוכה הבאה! כמעט שם.",
+          "body": "השלימי את הפרופיל כדי להאיץ את הסקירה — פרופילים מלאים מאושרים מהר יותר.",
+          "cta": "השלימי פרופיל ←",
+          "companion_link": "עריכת פרופיל"
+        }
+      },
+      "holiday_catalog_cta": "עדכני את הקטלוג ←",
+      "availability": {
+        "tooltip_line_default": "פתוח להזמנות = ברירת מחדל.",
+        "tooltip_line_today": "זמינה היום = מלאי טרי עכשיו.",
+        "tooltip_line_full": "עמוסה השבוע = מופיעה אבל מסומנת.",
+        "tooltip_line_vacation": "בהפסקה = מוסתרת עד תאריך שתבחרי.",
+        "heading": "מצב זמינות",
+        "info_label": "מה ההבדל בין המצבים?",
+        "intro": "בחרי את הסטטוס שיוצג ללקוחות בכרטיסייה ובעמוד העסק.",
+        "group_aria": "מצב זמינות",
+        "options": {
+          "accepting_orders": "פתוח להזמנות",
+          "available_today": "זמינה היום 🟢",
+          "full_this_week": "עמוסה השבוע 🟠",
+          "on_vacation": "בהפסקה ⏸"
+        },
+        "vacation_return_label": "חזרה ב:",
+        "remove_vacation_date_aria": "הסירי תאריך חזרה"
+      },
+      "quick_links": {
+        "settings": {
+          "title": "עריכת פרופיל",
+          "sub": "עדכני פרטי עסק, משלוחים ותמונות"
+        },
+        "add_event": {
+          "title": "הוסף אירוע",
+          "sub": "סדנה, סיור, ימי פתיחה וכו׳"
+        },
+        "view_business": {
+          "title": "הצג את העסק באתר",
+          "sub": "כך לקוחות רואות אותו"
+        },
+        "group_buys": {
+          "title": "קבוצות הרכש שלי",
+          "sub": "נהלי קבוצות רכש ופתחי חדשות"
+        },
+        "recipes": {
+          "title": "מתכונים",
+          "sub": "פרסום וניהול מתכונים שמקדמים את המוצרים שלך"
+        }
+      },
+      "analytics": {
+        "stats_window_label": "7 ימים / 30 ימים / סה״כ",
+        "hero": {
+          "views_week_label": "צפיות השבוע",
+          "views_week_sub": "7 הימים האחרונים",
+          "whatsapp_clicks_label": "לחיצות ווטסאפ",
+          "whatsapp_clicks_sub": "7 הימים האחרונים",
+          "conversion_label": "המרה %",
+          "conversion_tooltip": "אחוז הצפיות שהפכו ללחיצה על ווטסאפ ב-30 הימים האחרונים. ככל שיותר גבוה — הפרופיל משכנע יותר.",
+          "conversion_sub": "צפייה → ווטסאפ (30 יום)",
+          "rank_label": "דירוג בעיר",
+          "rank_tooltip": "המיקום שלך בעיר לפי צפיות ב-30 הימים האחרונים. מתעדכן אוטומטית.",
+          "rank_sub": "לפי צפיות (30 יום)"
+        },
+        "eligible_weekly_title": "את מועמדת לבעלת עסק השבוע 🌟 צרי קשר עם הצוות",
+        "eligible_weekly_tooltip": "הצוות בוחר מדי שבוע בעלת עסק עם דירוג ראשון בעיר וחוזק פרופיל גבוה. אם את מועמדת — יופיע כאן הודעה.",
+        "eligible_weekly_sub": "דירוג ראשון בעיר + פרופיל חזק — כל הכבוד!",
+        "windowed": {
+          "profile_views": "צפיות בפרופיל",
+          "profile_views_tooltip": "כמה פעמים לקוחות נכנסו לעמוד העסק שלך. נספרת צפייה אחת ללקוחה ביום.",
+          "search_appearances": "הופעות בחיפוש",
+          "search_appearances_tooltip": "כמה פעמים העסק שלך הופיע ברשימת תוצאות חיפוש, גם אם הלקוחה לא לחצה.",
+          "whatsapp_clicks": "לחיצות ווטסאפ",
+          "contact_clicks": "לחיצות יצירת קשר"
+        },
+        "simple_cards": {
+          "followers_label": "עוקבות",
+          "followers_sub_template": "+{count} השבוע",
+          "rating_label": "דירוג ממוצע",
+          "rating_sub_template": "מתוך {count} ביקורות"
+        },
+        "views_chart_title": "צפיות ב-30 הימים האחרונים",
+        "views_chart_tooltip": "גרף יומי של צפיות בפרופיל. כל נקודה = יום בודד. השווה לימי שיווק שלך באינסטגרם או בקבוצות.",
+        "views_chart_aria": "גרף צפיות ב-30 הימים האחרונים",
+        "views_chart_empty": "אין נתונים עדיין",
+        "top_cities_title": "ערים מובילות",
+        "top_cities_empty": "עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר."
+      },
+      "strength": {
+        "heading": "חוזק פרופיל",
+        "tooltip": "ציון לפי 6 קריטריונים: תמונה, תיאור, מוצר פעיל, אזור משלוח, ביקורת ראשונה, טלפון מאומת. מעל 80% — לקוחות סומכות יותר.",
+        "label_weak": "הפרופיל שלך חלש — לקוחות לא רואות אותך",
+        "label_ok": "בסדר, אבל יש מה לשפר",
+        "label_strong": "פרופיל חזק 💪",
+        "label_perfect": "פרופיל מושלם ⭐",
+        "items": {
+          "image": "תמונת פרופיל",
+          "desc": "תיאור עסק (50+ תווים)",
+          "delivery": "אזור משלוח",
+          "review": "ביקורת ראשונה",
+          "phone": "טלפון מאומת"
+        }
+      },
+      "custom_questions": {
+        "heading": "שאלות שמופיעות בדף שלך",
+        "tooltip": "השאלות שיופיעו ללקוחה לפני שתשלח לך הודעת ווטסאפ — חוסך לך הסברים חוזרים. עד 5 שאלות.",
+        "subtitle": "אם תשאירי ריק, נציג שאלות ברירת מחדל לפי הקטגוריה שלך",
+        "placeholder": "דוגמה: אילו סוגי גבינות יש השבוע?",
+        "save_cta": "שמרי שאלות",
+        "saving": "שומרת...",
+        "saved": "✓ נשמר"
+      },
+      "bio": {
+        "heading": "✍️ ביו AI",
+        "intro": "הכניסי שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.",
+        "source_placeholder": "@handle / קישור אינסטגרם / תיאור חופשי",
+        "generate_cta": "צרי ביו",
+        "generating": "יוצרת...",
+        "save_cta": "שמרי ביו",
+        "saving": "שומרת...",
+        "saved": "✓ נשמר",
+        "error_empty_bio": "לא הצלחנו לייצר ביו — נסי שוב עם טקסט אחר",
+        "error_generate": "שגיאה ביצירת הביו — נסי שוב",
+        "error_save": "שגיאה בשמירת הביו"
+      }
+    }
+  },
+  "sweep_tail": {
+    "messages": {
+      "meta_title": "הודעות | מהמקור",
+      "meta_description": "התקשורת במהמקור מתבצעת ישירות בווטסאפ עם בית העסק.",
+      "heading": "איך עובדת התקשורת במהמקור?",
+      "intro": "אין צ׳אט פנימי באפליקציה — אנחנו מאמינים בקשר ישיר ואמיתי בין הקונה לבית העסק. בכל כרטיסיית עסק תמצאו כפתור ווטסאפ שיחבר אתכם ישירות לבעל העסק או לשכן המוכר.",
+      "why_heading": "למה ככה?",
+      "why_item_no_middlemen": "✓ אין מתווכים — אתם מדברים עם האדם שגידל / הכין / אופה",
+      "why_item_direct_terms": "✓ מסכמים על מחיר, משלוח וזמינות באופן אישי",
+      "why_item_trust": "✓ בונים יחסי אמון אמיתיים עם בית העסק",
+      "cta_map": "🗺️ גלי בתי עסק במפה",
+      "cta_favorites": "❤️ המועדפים שלי"
+    },
+    "followers": {
+      "back_link": "← לוח הבקרה",
+      "heading": "העוקבות שלי",
+      "loading": "טוענת...",
+      "empty_title": "עוד אין עוקבות — וזה בסדר",
+      "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפי את הקישור לפרופיל שלך בוואטסאפ.",
+      "share_cta": "העתיקי קישור לשיתוף",
+      "share_cta_copied": "הועתק! ✓",
+      "share_toast": "הקישור הועתק! 🔗",
+      "followers_label": "עוקבות",
+      "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפי את הפרופיל שלך כדי להגיע ליותר לקוחות."
+    },
+    "alert_prefs": {
+      "loading": "טוען...",
+      "heading": "הודעי לי כש...",
+      "close_aria": "סגור",
+      "row_new_event": "אירועים חדשים",
+      "row_new_product": "מוצרים חדשים",
+      "row_delivery_area": "אזורי משלוח חדשים",
+      "row_whatsapp_opt_in": "שלחי ב-WhatsApp",
+      "push_denied_toast": "הרשאת התראות נדחתה",
+      "push_blocked": "התראות דחיפה חסומות בדפדפן",
+      "push_enable": "הפעילי התראות דחיפה (PWA)",
+      "push_active": "התראות דחיפה פעילות",
+      "save_cta": "שמור הגדרות",
+      "saving": "שומר...",
+      "save_success_toast": "הגדרות עודכנו ✓",
+      "save_error_toast": "שגיאה בשמירה, נסי שוב"
+    },
+    "layout": {
+      "skip_to_main": "דלג לתוכן הראשי"
+    },
+    "event_new": {
+      "back_link": "← לוח הבקרה",
+      "heading": "פרסום אירוע חדש",
+      "field_title_label": "כותרת *",
+      "field_description_label": "תיאור",
+      "field_description_placeholder": "מה האירוע, מה יקרה, למי הוא מיועד...",
+      "field_category_label": "קטגוריה *",
+      "field_date_label": "תאריך *",
+      "field_time_label": "שעה",
+      "field_time_hint": "אופציונלי — אם לא הוזן, יוצג רק תאריך",
+      "field_location_label": "מיקום ספציפי",
+      "field_location_placeholder": "כתובת מדויקת או הוראות הגעה",
+      "field_city_label": "עיר *",
+      "field_price_label": "מחיר (₪)",
+      "field_price_hint": "0 = חינם",
+      "field_max_participants_label": "מקסימום משתתפות",
+      "field_max_participants_hint": "ריק = ללא הגבלה",
+      "field_image_label": "קישור לתמונה (Cloudinary)",
+      "field_image_placeholder": "https://res.cloudinary.com/...",
+      "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
+      "field_registration_url_placeholder": "https://...",
+      "submit_publishing": "מפרסמת...",
+      "submit": "פרסם אירוע",
+      "cancel": "ביטול",
+      "error_generic": "שגיאה ביצירת האירוע — נסי שוב.",
+      "crumb_dashboard": "ניהול העסק",
+      "crumb_current": "אירוע חדש",
+      "subtitle": "סדנה, סיור, שוק, קטיף או ימי פתיחה — פרסמי כאן",
+      "info_paragraph": "אירועים = סדנה, סיור, יום פתיחה, או כל מפגש עם לקוחות. יופיעו ב-/events ובעמוד שלך. מושלם להבאת לקוחות חדשות.",
+      "field_title_placeholder": "למשל: סדנת גבינה",
+      "field_description_full_placeholder": "אירועים נחשפים ללקוחות ב-/events ובעמוד שלך. ספרי: מה יקרה, מי מוזמנת, מה כלול במחיר, מה להביא.",
+      "field_city_placeholder": "חפשי עיר...",
+      "field_location_simple_placeholder": "בחווה שלנו / כתובת מלאה",
+      "field_price_label_full": "מחיר (0 = חינם)",
+      "field_max_participants_label_full": "מקסימום משתתפים"
+    }
+  },
+  "settings": {
+    "common": {
+      "page_heading": "הגדרות חשבון",
+      "loading": "טוענת...",
+      "tabs_aria": "טאבים",
+      "tab_profile": "פרופיל",
+      "tab_security": "אבטחה",
+      "tab_business": "העסק שלי",
+      "saving": "שומרת...",
+      "save_cta": "שמרי",
+      "optional_suffix": "(אופציונלי)"
+    },
+    "profile": {
+      "tabpanel_aria": "פרופיל",
+      "avatar_title": "לחצי לשינוי התמונה",
+      "avatar_aria": "שינוי תמונת פרופיל",
+      "avatar_hint": "לחצי על התמונה לשינוי",
+      "saved_msg": "הפרטים נשמרו",
+      "save_error_fallback": "לא הצלחנו לשמור. נסי שוב.",
+      "upload_type_error": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
+      "upload_size_error": "הקובץ גדול מדי — מקסימום 5MB",
+      "avatar_uploaded_msg": "תמונת הפרופיל עודכנה",
+      "avatar_upload_error_fallback": "שגיאה בהעלאת התמונה — נסי שוב",
+      "field_name_label": "שם מלא",
+      "field_city_label": "עיר",
+      "field_city_placeholder": "לדוגמה: תל אביב",
+      "field_city_hint": "כדי שנציג לך עסקים באזורך",
+      "field_email_label": "אימייל",
+      "email_oauth_hint": "האימייל מחובר לחשבון {provider} — לשינוי עדכני שם",
+      "email_oauth_provider_fallback": "חיצוני",
+      "email_change_hint": "לשינוי אימייל, פני לתמיכה",
+      "field_phone_label": "טלפון",
+      "field_phone_hint": "נוסיף בקרוב notifications"
+    },
+    "business": {
+      "tabpanel_aria": "העסק שלי",
+      "status_pending": "✋ הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.",
+      "status_rejected_title": "הבקשה לא אושרה",
+      "rejected_tip_details": "ודאי שכל פרטי העסק מלאים ומדויקים",
+      "rejected_tip_photos": "הוסיפי תמונות ברורות של המוצרים",
+      "rejected_tip_address": "בדקי שכתובת העסק נכונה",
+      "support_cta": "דברי איתנו →",
+      "status_suspended": "החשבון מושעה זמנית.",
+      "support_cta_short": "צרי קשר",
+      "stats_heading": "סטטיסטיקות",
+      "stats_loading": "טוענת...",
+      "stat_views": "צפיות",
+      "stat_favorites": "מועדפים",
+      "stat_reviews": "ביקורות",
+      "stat_avg_rating": "דירוג ממוצע",
+      "stat_products": "מוצרים",
+      "stat_orders": "הזמנות",
+      "stats_unavailable": "הנתונים אינם זמינים כרגע.",
+      "edit_profile_link": "ערכי פרופיל עסק →"
+    },
+    "products": {
+      "section_heading": "מוצרים",
+      "add_cta": "הוסיפי מוצר",
+      "errors": {
+        "upload_type": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
+        "upload_size": "הקובץ גדול מדי — מקסימום 5MB",
+        "upload_failed_fallback": "שגיאה בהעלאת תמונה — נסי שוב",
+        "name_required": "שם המוצר הוא שדה חובה",
+        "price_required": "הכניסי מחיר",
+        "price_min_too_low": "המחיר חייב להיות לפחות 1 ₪",
+        "price_too_high": "המחיר לא יכול לעבור 10,000 ₪",
+        "price_max_below_min": "מחיר עד חייב להיות גבוה ממחיר מ-",
+        "save_failed": "שגיאה בשמירת המוצר",
+        "delete_failed": "שגיאה במחיקת המוצר"
+      },
+      "empty": {
+        "title": "מוצר ראשון = בית עסק חי",
+        "description": "בלי מוצרים, הפרופיל שלך נראה ריק ולקוחות לא יודעות מה יש לך. הוסיפי 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות.",
+        "cta": "+ הוסיפי מוצר ראשון"
+      },
+      "edit_heading": "עריכת מוצר",
+      "edit_legacy_price_note": "המחיר הקיים: {range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)",
+      "add_heading": "מוצר חדש",
+      "cancel_aria": "ביטול",
+      "form": {
+        "name_label": "שם המוצר *",
+        "description_label": "תיאור קצר",
+        "price_min_label": "מחיר מ- (₪)",
+        "price_max_label": "מחיר עד- (₪)",
+        "price_max_optional_suffix": "אופציונלי",
+        "diet_heading": "סימוני תזונה (אופציונלי)",
+        "diet_gluten_free": "🌾 ללא גלוטן",
+        "diet_vegan": "🥦 טבעוני",
+        "diet_lactose_free": "🥛 ללא לקטוז",
+        "image_label": "תמונת מוצר",
+        "image_alt": "תמונה",
+        "image_remove": "הסר",
+        "image_upload_cta": "העלי תמונה",
+        "image_uploading": "מעלה..."
+      },
+      "save_edit_cta": "שמרי שינויים",
+      "save_edit_saving": "שומרת...",
+      "cancel_edit_cta": "בטלי",
+      "add_submit_cta": "הוסיפי מוצר",
+      "add_submitting": "מוסיפה...",
+      "card": {
+        "edit_aria_template": "ערכי {name}",
+        "delete_aria_template": "מחקי {name}"
+      }
+    },
+    "security": {
+      "common": {
+        "cancel": "ביטול",
+        "error_retry": "שגיאה — נסי שוב"
+      },
+      "password": {
+        "oauth_tabpanel_aria": "שינוי סיסמה",
+        "oauth_heading": "סיסמה",
+        "oauth_body": "החשבון שלך מחובר דרך OAuth — אין צורך בסיסמה נפרדת.",
+        "heading": "שינוי סיסמה",
+        "forgot_link": "שכחת סיסמה נוכחית?",
+        "current_label": "סיסמה נוכחית *",
+        "eye_hide_current": "הסתירי סיסמה נוכחית",
+        "eye_show_current": "הציגי סיסמה נוכחית",
+        "confirm_label": "אימות סיסמה חדשה *",
+        "eye_hide_confirm": "הסתירי אימות סיסמה",
+        "eye_show_confirm": "הציגי אימות סיסמה",
+        "mismatch_error": "הסיסמאות לא זהות",
+        "save_toast": "הסיסמה עודכנה בהצלחה",
+        "error_fallback": "שגיאה בעדכון הסיסמה",
+        "submit_cta": "עדכני סיסמה",
+        "submit_saving": "שומרת..."
+      },
+      "logout_all": {
+        "heading": "יציאה מכל המכשירים",
+        "body": "מבטלת את כל הסשנים הפעילים ומחדשת את האסימון — כולל המכשיר הנוכחי.",
+        "confirm_prompt": "לאשר יציאה מכל המכשירים?",
+        "confirm_submit": "כן, יציאה",
+        "confirm_submitting": "מתנתקת..."
+      },
+      "danger_zone": {
+        "heading": "מחיקת חשבון",
+        "body": "פעולה זו בלתי הפיכה. כל הנתונים, הביקורות והמועדפים יימחקו לצמיתות.",
+        "delete_cta": "מחקי חשבון",
+        "confirm_email_label": "הקלידי את האימייל שלך לאישור",
+        "submit_cta": "אישור מחיקה",
+        "submit_deleting": "מוחקת...",
+        "grace_heading": "בקשת המחיקה התקבלה",
+        "grace_body": "החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.",
+        "back_to_login": "חזרי לדף הכניסה"
+      }
+    },
+    "support_modal": {
+      "section_aria": "צרי קשר עם התמיכה",
+      "heading": "צרי קשר",
+      "body": "נשמח לעזור. בחרי את הדרך הנוחה לך:",
+      "whatsapp_label": "וואטסאפ",
+      "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
+      "email_label": "אימייל",
+      "close_cta": "סגרי"
     }
   }
 }

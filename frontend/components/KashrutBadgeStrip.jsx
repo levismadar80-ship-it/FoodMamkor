@@ -1,14 +1,20 @@
 "use client";
 
-const BADGE_META = {
-  rabanut:        { label: "כשר מרבנות",        tooltip: "כשרות בפיקוח הרבנות המקומית" },
-  badatz:         { label: 'בדצ"ה',              tooltip: 'כשרות מהדרין בפיקוח בית דין צדק' },
-  chalak:         { label: "חלק",                tooltip: "בשר חלק לפי המסורת הספרדית" },
-  mehadrin:       { label: "מהדרין",             tooltip: "כשרות מהדרין ברמת הידור גבוהה" },
-  "organic-kosher": { label: "אורגני כשר",       tooltip: "גידול אורגני מוסמך + כשרות" },
-  shmitta:        { label: "שמיטה",              tooltip: "תוצרת שנת השמיטה בהכשר מיוחד" },
-  kilayim:        { label: "ללא כלאיים",         tooltip: "ללא הרכבה אסורה בין מינים" },
-  "artisan-dairy": { label: "מוצרי חלב מהחווה", tooltip: "חלב ומוצריו ישירות מהחווה, כשר" },
+import { useTranslations, useFormatter } from "next-intl";
+
+// Display-only metadata = none. Labels + tooltips resolve via
+// t(`kashrut.badges.${key}.label`/`tooltip`). The `code` axis is the
+// API contract from the backend (snake-cased in messages: `organic-kosher`
+// → `organic_kosher`, `artisan-dairy` → `artisan_dairy`).
+const CODE_TO_KEY = {
+  rabanut: "rabanut",
+  badatz: "badatz",
+  chalak: "chalak",
+  mehadrin: "mehadrin",
+  "organic-kosher": "organic_kosher",
+  shmitta: "shmitta",
+  kilayim: "kilayim",
+  "artisan-dairy": "artisan_dairy",
 };
 
 function daysUntil(dateStr) {
@@ -18,21 +24,27 @@ function daysUntil(dateStr) {
 }
 
 export default function KashrutBadgeStrip({ badges, verified_at, expires_at }) {
+  const t = useTranslations("kashrut");
+  const format = useFormatter();
   if (!badges || badges.length === 0) return null;
 
   const expiresInDays = daysUntil(expires_at);
   const nearExpiry = expiresInDays !== null && expiresInDays <= 30;
 
   const expiryText = expires_at
-    ? `תקף עד: ${new Date(expires_at).toLocaleDateString("he-IL")}`
+    ? t("expiry.valid_until", {
+        date: format.dateTime(new Date(expires_at), { dateStyle: "short" }),
+      })
     : null;
 
   return (
     <div className="flex flex-wrap gap-1.5 items-center" dir="rtl">
       {badges.map((code) => {
-        const meta = BADGE_META[code];
-        if (!meta) return null;
-        const tooltip = [meta.tooltip, expiryText].filter(Boolean).join(" · ");
+        const key = CODE_TO_KEY[code];
+        if (!key) return null;
+        const label = t(`badges.${key}.label`);
+        const tooltipBase = t(`badges.${key}.tooltip`);
+        const tooltip = [tooltipBase, expiryText].filter(Boolean).join(" · ");
 
         return (
           <span
@@ -40,13 +52,13 @@ export default function KashrutBadgeStrip({ badges, verified_at, expires_at }) {
             title={tooltip}
             className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium cursor-default"
           >
-            {meta.label}
+            {label}
           </span>
         );
       })}
       {nearExpiry && (
         <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
-          ⚠️ תעודה פגה בקרוב
+          {t("expiry.near_expiry")}
         </span>
       )}
     </div>

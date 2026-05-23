@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -10,6 +11,7 @@ import EmptyState from "@/components/ui/EmptyState";
 
 export default function FollowersPage() {
   const router = useRouter();
+  const t = useTranslations("sweep_tail.followers");
   const { user, loading: authLoading } = useAuth();
   const [followerCount, setFollowerCount] = useState(null);
   const [slug, setSlug] = useState(null);
@@ -43,7 +45,7 @@ export default function FollowersPage() {
     if (!profileUrl) return;
     navigator.clipboard.writeText(profileUrl).then(() => {
       setCopied(true);
-      showToast("הקישור הועתק! 🔗");
+      showToast(t("share_toast"));
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -53,31 +55,31 @@ export default function FollowersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            ← לוח הבקרה
+            {t("back_link")}
           </Link>
           <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
-            העוקבות שלי
+            {t("heading")}
           </h1>
         </div>
       </div>
 
       {followerCount === null ? (
-        <div className="text-center py-16 text-site-muted">טוענת...</div>
+        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
       ) : followerCount === 0 ? (
         <EmptyState
           emoji="🌱"
-          title="עוד אין עוקבות — וזה בסדר"
-          description="עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפי את הקישור לפרופיל שלך בוואטסאפ."
-          ctaLabel={copied ? "הועתק! ✓" : "העתיקי קישור לשיתוף"}
+          title={t("empty_title")}
+          description={t("empty_description")}
+          ctaLabel={copied ? t("share_cta_copied") : t("share_cta")}
           ctaOnClick={handleCopy}
         />
       ) : (
         <div className="bg-white rounded-[14px] border border-border p-8 text-center">
           <p className="text-5xl mb-3">🌱</p>
           <p className="text-3xl font-bold text-site-text mb-1">{followerCount}</p>
-          <p className="text-site-muted mb-6">עוקבות</p>
+          <p className="text-site-muted mb-6">{t("followers_label")}</p>
           <p className="text-sm text-site-muted mb-4">
-            רשימה מפורטת של העוקבות בקרוב — שתפי את הפרופיל שלך כדי להגיע ליותר לקוחות.
+            {t("share_hint")}
           </p>
           {profileUrl && (
             <button
@@ -85,7 +87,7 @@ export default function FollowersPage() {
               onClick={handleCopy}
               className="inline-block bg-primary text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-primary-dark transition"
             >
-              {copied ? "הועתק! ✓" : "העתיקי קישור לשיתוף"}
+              {copied ? t("share_cta_copied") : t("share_cta")}
             </button>
           )}
         </div>

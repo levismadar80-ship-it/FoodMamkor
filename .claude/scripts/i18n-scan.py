@@ -8,6 +8,8 @@ pattern.
 
 Usage (from repo root):
   python .claude/scripts/i18n-scan.py [--scope <path|glob>] [--format text|json]
+  python .claude/scripts/i18n-scan.py --diff <baseline.json> [--scope <path|glob>]
+  python .claude/scripts/i18n-scan.py --self-test
 
 Default scope:
   frontend/components/**/*.{jsx,tsx}
@@ -16,7 +18,13 @@ Default scope:
 Granularity: one finding per string literal or JSX text node, not per word.
 Known limitation: Hebrew in end-of-line // comments is a false positive;
   ±5% baseline tolerance covers it.
-Exit code: always 0. Caller inspects the Total line.
+
+Exit codes:
+  0  — default scan; --diff with Δ ≤ 0 (improvement or no change); --self-test pass
+  1  — --diff regression (Δ > 0); --self-test fail; --diff baseline unreadable
+  2  — argparse error (e.g. --diff + --self-test combined)
+
+History: MEH-477 (creation); MEH-623 (added --diff + --self-test).
 """
 
 import argparse
@@ -24,6 +32,7 @@ import glob as glob_mod
 import json
 import os
 import re
+import sys
 
 # ── Patterns ────────────────────────────────────────────────────────────────
 
@@ -194,6 +203,88 @@ def collect_files(scope: str | None) -> list[str]:
     return sorted(files)
 
 
+# ── Shared scan helper (MEH-623) ─────────────────────────────────────────────
+
+def _run_scan(scope: str | None) -> list[tuple[str, int, str]]:
+    """Scan scope and return sorted (filepath, lineno, hebrew) findings."""
+    files = collect_files(scope)
+    findings: list[tuple[str, int, str]] = []
+    for filepath in files:
+        for lineno, hebrew in scan_file(filepath):
+            findings.append((filepath, lineno, hebrew))
+    findings.sort()
+    return findings
+
+
+# ── --diff (MEH-623) ──────────────────────────────────────────────────────────
+
+def run_diff(baseline_path: str, scope: str | None) -> int:
+    """Compare current scan against a previous --format json output.
+
+    baseline.json is the array produced by `--format json` on a prior run.
+    Total = len(array). Exit 0 if Δ ≤ 0 (improvement / no change), 1 if Δ > 0
+    (regression) or baseline unreadable.
+    """
+    try:
+        with open(baseline_path, encoding="utf-8") as fh:
+            baseline = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"ERROR reading baseline {baseline_path}: {exc}", file=sys.stderr)
+        return 1
+
+    if not isinstance(baseline, list):
+        print(
+            f"ERROR: baseline {baseline_path} must be a JSON array "
+            f"(got {type(baseline).__name__})",
+            file=sys.stderr,
+        )
+        return 1
+
+    previous = len(baseline)
+    current = len(_run_scan(scope))
+    delta = current - previous
+    sign = "+" if delta > 0 else ""
+    print(f"Previous: {previous} → Current: {current} (Δ {sign}{delta})")
+    return 1 if delta > 0 else 0
+
+
+# ── --self-test (MEH-623) ─────────────────────────────────────────────────────
+
+# Expected: per-fixture (count, tolerance_pct). T3 carries the ±5% slack for
+# the documented EOL-comment false-positive class; T1/T2 are exact-match.
+_FIXTURE_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "test", "i18n-scan-fixtures"
+)
+_SELF_TEST_EXPECTED: dict[str, tuple[int, float]] = {
+    "t1-literal.tsx": (1, 0.0),
+    "t2-template.tsx": (1, 0.0),
+    "t3-eol-comment.tsx": (1, 0.05),
+}
+
+
+def run_self_test() -> int:
+    """Scan T1–T3 fixtures, assert expected counts, exit 0/1."""
+    findings = _run_scan(_FIXTURE_DIR)
+    by_file: dict[str, int] = {}
+    for fp, _ln, _text in findings:
+        by_file[os.path.basename(fp)] = by_file.get(os.path.basename(fp), 0) + 1
+
+    all_pass = True
+    for name, (expected, tol_pct) in _SELF_TEST_EXPECTED.items():
+        actual = by_file.get(name, 0)
+        tol = max(0, int(round(expected * tol_pct)))
+        ok = abs(actual - expected) <= tol
+        mark = "✓" if ok else "✗"
+        suffix = f" (±{int(tol_pct * 100)}%)" if tol_pct > 0 else ""
+        tn = name.split("-", 1)[0].upper()  # "t1-literal.tsx" -> "T1"
+        print(f"{tn} {mark}  {name}: expected {expected}, got {actual}{suffix}")
+        if not ok:
+            all_pass = False
+
+    print("\n" + ("All self-tests passed." if all_pass else "Self-test FAILED."))
+    return 0 if all_pass else 1
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -208,17 +299,28 @@ def main() -> None:
         "--format", choices=["text", "json"], default="text",
         help="Output format (default: text, matches agent output format).",
     )
+    parser.add_argument(
+        "--diff", default=None, metavar="BASELINE_JSON",
+        help="Compare current scan against a previous --format json output. "
+             "Exits 1 on regression (Δ > 0).",
+    )
+    parser.add_argument(
+        "--self-test", action="store_true",
+        help="Run T1–T3 eval fixtures and exit 1 on mismatch.",
+    )
     args = parser.parse_args()
 
-    files = collect_files(args.scope)
-    all_findings: list[tuple[str, int, str]] = []
+    # MEH-623: --diff and --self-test are mutually exclusive subcommands.
+    if args.diff and args.self_test:
+        parser.error("--diff and --self-test are mutually exclusive")
 
-    for filepath in files:
-        for lineno, hebrew in scan_file(filepath):
-            all_findings.append((filepath, lineno, hebrew))
+    if args.self_test:
+        sys.exit(run_self_test())
+    if args.diff:
+        sys.exit(run_diff(args.diff, args.scope))
 
-    # Sort for determinism: file path → line number → text
-    all_findings.sort()
+    # Default path: scan + emit text/json (unchanged from MEH-477).
+    all_findings = _run_scan(args.scope)
 
     if args.format == "json":
         output = [

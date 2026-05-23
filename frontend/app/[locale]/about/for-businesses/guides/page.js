@@ -8,24 +8,33 @@
  * Related:  backend/app/services/onboarding_followup.py (the email
  *           bodies that link here), frontend/components/GuideArticle.jsx.
  * History:  MEH-539 (creation, 2026-05-16) — Phase 2D of MEH-615.
+ *           MEH-475 PR-C4b/chunk-5 (i18n, 2026-05-20) — GUIDES + chrome
+ *           wired to `guides.index.*` + per-guide title keys.
  */
 import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
-export const metadata = {
-  title: `מדריכים לבעלות עסק | ${BRAND_NAME}`,
-  description:
-    "שלושה מדריכים קצרים לבעלות עסק במהמקור: איך לכתוב את הסיפור, איך לצלם את המוצרים, ואיך להגיב להודעות מלקוחות.",
-  openGraph: {
-    title: `מדריכים לבעלות עסק | ${BRAND_NAME}`,
-    description:
-      "שלושה מדריכים קצרים לבעלות עסק במהמקור — סיפור, צילום, הודעות.",
-    type: "website",
-    siteName: BRAND_NAME,
-    locale: "he_IL",
-  },
-  alternates: { canonical: "/about/for-businesses/guides" },
-};
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations("guides.index");
+  const title = t("meta_title");
+  return {
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: title },
+    description: t("meta_description"),
+    openGraph: {
+      title,
+      description: t("og_description"),
+      type: "website",
+      siteName: BRAND_NAME,
+      locale: OG_LOCALE[locale],
+    },
+    alternates: buildAlternates("/about/for-businesses/guides", locale),
+  };
+}
 
 const PRIMARY = "#2e6853";
 const PRIMARY_DARK = "#2E4A2E";
@@ -36,30 +45,17 @@ const BG_CREAM = "#F5F0E8";
 const CARD_BORDER = "rgba(46,104,83,0.18)";
 
 const GUIDES = [
-  {
-    slug: "business-story",
-    title: "איך לכתוב סיפור טוב על העסק שלך",
-    preview:
-      "השדה שמשנה הכל בפרופיל — איך לכתוב אותו פעם אחת, נכון, ובלי שייקרא כמו פרסומת.",
-    readMinutes: 4,
-  },
-  {
-    slug: "product-photography",
-    title: "איך לצלם את המוצרים שלכם נכון",
-    preview:
-      "בלי מצלמה מקצועית, בלי סטודיו. 5 עקרונות + workflow של 30 דקות שמספיק לעמוד שלם.",
-    readMinutes: 5,
-  },
-  {
-    slug: "customer-messages",
-    title: "איך להגיב להודעות שמגיעות אליכם",
-    preview:
-      "זמן תגובה, טון, ו-5 תבניות מוכנות. הדברים הקטנים שמכריעים אם השיחה נסגרת בהזמנה.",
-    readMinutes: 6,
-  },
+  { slug: "business-story", nsKey: "business_story", readMinutes: 4 },
+  { slug: "product-photography", nsKey: "product_photography", readMinutes: 5 },
+  { slug: "customer-messages", nsKey: "customer_messages", readMinutes: 6 },
 ];
 
-export default function GuidesIndexPage() {
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function GuidesIndexPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "guides" });
+  const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
     <main
       className="min-h-screen"
@@ -75,7 +71,7 @@ export default function GuidesIndexPage() {
               textTransform: "uppercase",
             }}
           >
-            מדריכים לבעלות עסק
+            {ti("eyebrow")}
           </p>
           <h1
             className="font-headline mb-4"
@@ -86,14 +82,13 @@ export default function GuidesIndexPage() {
               fontWeight: 900,
             }}
           >
-            שלושה מדריכים לחודש הראשון
+            {ti("heading")}
           </h1>
           <p
             className="text-[17px] sm:text-[18px] leading-relaxed"
             style={{ color: BODY_PROSE }}
           >
-            הצטרפת לאחרונה? אלה שלושת המדריכים שאני שולחת לכל בעלת עסק חדשה
-            במהמקור. קצרים, ישירים, בלי הבטחות גדולות — רק מה שעובד.
+            {ti("intro")}
           </p>
         </header>
 
@@ -113,7 +108,7 @@ export default function GuidesIndexPage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  קריאה כ-{g.readMinutes} דקות
+                  {ti("minutes_label", { minutes: g.readMinutes })}
                 </p>
                 <h2
                   className="font-headline mb-2"
@@ -123,19 +118,19 @@ export default function GuidesIndexPage() {
                     fontWeight: 700,
                   }}
                 >
-                  {g.title}
+                  {t(`${g.nsKey}.title`)}
                 </h2>
                 <p
                   className="text-[15px] sm:text-[16px] leading-relaxed mb-3"
                   style={{ color: BODY_PROSE }}
                 >
-                  {g.preview}
+                  {ti(`card_previews.${g.nsKey}`)}
                 </p>
                 <span
                   className="inline-flex items-center gap-2 text-[14px]"
                   style={{ color: PRIMARY, fontWeight: 600 }}
                 >
-                  קראי את המדריך ←
+                  {ti("cta")}
                 </span>
               </Link>
             </li>
@@ -147,7 +142,7 @@ export default function GuidesIndexPage() {
           style={{ borderColor: CARD_BORDER }}
         >
           <p className="text-[15px]" style={{ color: BODY_PROSE }}>
-            יש שאלה שמדריך לא ענה עליה? כתבי לי באינסטגרם{" "}
+            {ti("footer_prefix")}{" "}
             <a
               href="https://www.instagram.com/meha_makor"
               target="_blank"
@@ -157,7 +152,7 @@ export default function GuidesIndexPage() {
             >
               @meha_makor
             </a>
-            .
+            {ti("footer_suffix")}
           </p>
         </footer>
       </div>

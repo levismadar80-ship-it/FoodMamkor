@@ -387,7 +387,11 @@ class TestProducerSignupPolicy:
         before = datetime.now(timezone.utc) - timedelta(seconds=1)
         resp = client.post("/auth/register/producer", json=self.VALID_REG)
         assert resp.status_code == 200
-        assert resp.json()["access_token"]
+        # MEH-328 Chunk B: non-upgrade signup now returns RegisterAck (no
+        # access_token — caller must verify via email then login). The
+        # MEH-457 invariant being tested (password_changed_at stamp on the
+        # producer User row) is unchanged and verified via DB query below.
+        assert "access_token" not in resp.json()
         # MEH-457 closes MEH-305 sibling gap: producer User must have iat anchor.
         user = db.query(User).filter(User.email == "p@x.com").first()
         assert user is not None

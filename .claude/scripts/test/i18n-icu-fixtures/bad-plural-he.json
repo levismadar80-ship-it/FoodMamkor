@@ -1,0 +1,6 @@
+{
+  "case_a_missing_two": "{count, plural, one {ביקורת אחת} other {# ביקורות}}",
+  "case_b_he_flat_en_plural": "ביקורות",
+  "case_c_well_formed": "{count, plural, one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}",
+  "case_d_with_zero": "{count, plural, =0 {אין ביקורות} one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}"
+}

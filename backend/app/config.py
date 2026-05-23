@@ -63,6 +63,16 @@ class Settings(BaseSettings):
     whatsapp_api_version: str = "v21.0"
     admin_whatsapp_to: str = ""
 
+    # MEH-509 PR2c — inbound webhook receiver (GET challenge + POST receive).
+    # `whatsapp_app_secret` is the Meta App Secret used to compute the
+    # X-Hub-Signature-256 HMAC over each POST body; `whatsapp_verify_token`
+    # is the static token Meta sends in the GET subscription challenge.
+    # Empty defaults are fail-closed: empty app_secret → all POST signatures
+    # fail verification; empty verify_token → all GET challenges return 403.
+    # Configured in Railway via WHATSAPP_APP_SECRET / WHATSAPP_VERIFY_TOKEN.
+    whatsapp_app_secret: str = ""
+    whatsapp_verify_token: str = ""
+
     # Email — Resend HTTP API (replaces smtplib; Railway blocks SMTP ports)
     # Sign up at resend.com, verify mehamakor.online domain, copy the API key.
     resend_api_key: str = ""
@@ -93,6 +103,14 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_public_key: str = ""
     vapid_subject: str = "mailto:admin@mehamakor.online"
+
+    # MEH-509 PR2b: after-hours watchdog feature flag. Default False so the
+    # 5-min APScheduler job does not run until PR2c (the Meta webhook
+    # receiver) ships and creates rows in `inbound_messages`. Set
+    # WATCHDOG_ENABLED=true in Railway staging first for smoke, then
+    # production. Pytest leaves it False — the watchdog never starts under
+    # tests, which exercise run_watchdog() directly via the public API.
+    watchdog_enabled: bool = False
 
     class Config:
         env_file = ".env"
@@ -151,3 +169,25 @@ def _load_settings() -> Settings:
 
 
 settings = _load_settings()
+
+
+# MEH-509 PR2b: business-hours window for the after-hours watchdog.
+# Module-level constants (not Pydantic fields) — these are policy, not
+# env-driven. Asia/Jerusalem timezone honours DST automatically via
+# stdlib zoneinfo (Python ≥3.9). is_within_business_hours() in
+# app/services/auto_reply_watchdog.py is the sole consumer.
+#
+# Schedule: Sun-Thu 09-19, Fri 09-13, Sat closed. Hours are half-open
+# (start <= hour < end) so 19:00 itself counts as after-hours.
+BUSINESS_HOURS_TIMEZONE: str = "Asia/Jerusalem"
+BUSINESS_HOURS: dict[str, tuple[int, int] | None] = {
+    "sunday": (9, 19),
+    "monday": (9, 19),
+    "tuesday": (9, 19),
+    "wednesday": (9, 19),
+    "thursday": (9, 19),
+    "friday": (9, 13),
+    "saturday": None,  # closed
+}
+WATCHDOG_INTERVAL_MINUTES: int = 5
+WATCHDOG_LOOKBACK_MINUTES: int = 30

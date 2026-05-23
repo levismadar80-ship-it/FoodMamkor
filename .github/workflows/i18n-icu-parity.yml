@@ -1,0 +1,34 @@
+name: ICU plural parity (he ↔ en)
+# MEH-473 reconstruction — gate for HE/EN plural-form drift in
+# next-intl messages. Hebrew has 4 plural categories (zero/one/two/other);
+# LLM translation batches frequently drop the `two` branch silently.
+# Validator: .claude/scripts/check-icu-parity.py (R-2 mitigation per
+# docs/i18n-migration-plan.md §7).
+
+on:
+  pull_request:
+    branches: [staging, main]
+    paths:
+      - 'frontend/messages/**'
+      - '.claude/scripts/check-icu-parity.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate HE/EN plural parity
+        run: python .claude/scripts/check-icu-parity.py

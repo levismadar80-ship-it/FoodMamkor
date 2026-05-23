@@ -18,27 +18,41 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
-const setLang = vi.fn();
+// MEH-629 item 6: the setLang mock was removed — PR #731 dropped the
+// setLang destructure from useLanguage(). Header no longer touches it;
+// locale changes flow through next-intl's router.
 vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({ lang: "he", setLang }),
+  useLanguage: () => ({ lang: "he" }),
 }));
 
 // MEH-471: Header reads useTranslations() from next-intl directly.
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key) =>
-    ({
-      "nav.discover": "גלה",
-      "nav.map": "מפה",
-      "nav.neighbor": "מהשכן",
-      "nav.about": "אודות",
-      "nav.login": "כניסה לחשבון",
-      "nav.logout": "התנתק",
-      "nav.add_business": "הוסיפי את העסק שלך",
-      "nav.favorites": "מועדפים",
-      "nav.admin": "אדמין",
-      "nav.mobile_label": "ניווט מובייל",
-    }[key] || key),
-}));
+// MEH-475: LanguageToggle adds useLocale() — current locale fixture is "he".
+// MEH-629 item 5: the mock now respects the namespace argument so tests
+// can rely on `t("nav.X")` from useTranslations() AND `t("X")` from
+// useTranslations("nav") resolving identically.
+vi.mock("next-intl", () => {
+  const DICT = {
+    "nav.discover": "גלה",
+    "nav.map": "מפה",
+    "nav.neighbor": "מהשכן",
+    "nav.about": "אודות",
+    "nav.login": "כניסה לחשבון",
+    "nav.logout": "התנתק",
+    "nav.add_business": "הוסיפי את העסק שלך",
+    "nav.favorites": "מועדפים",
+    "nav.admin": "אדמין",
+    "nav.mobile_label": "ניווט מובייל",
+    "nav.lang_switch_to_en": "Switch to English",
+    "nav.lang_switch_to_he": "החלף לעברית",
+    "nav.lang_he": "עברית",
+    "nav.lang_en": "EN",
+  };
+  return {
+    useLocale: () => "he",
+    useTranslations: (ns) => (key) =>
+      DICT[ns ? `${ns}.${key}` : key] ?? DICT[key] ?? key,
+  };
+});
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
@@ -58,6 +72,17 @@ vi.mock("@phosphor-icons/react", () => ({
   List: (props) => <span data-testid="icon-hamburger" {...props} />,
   MagnifyingGlass: (props) => <span data-testid="icon-search" {...props} />,
   X: (props) => <span data-testid="icon-close" {...props} />,
+  // MEH-475: Globe used by the new LanguageToggle child component.
+  Globe: (props) => <span data-testid="icon-globe" {...props} />,
+}));
+
+// MEH-475: LanguageToggle pulls useRouter/usePathname from "@/i18n/navigation"
+// (the next-intl-aware router that handles locale prefix routing). The
+// next/navigation mock above covers Header's own router calls; this mock
+// covers the toggle's locale-aware router.
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => "/about",
 }));
 
 describe("Header", () => {
@@ -65,7 +90,6 @@ describe("Header", () => {
     userRef.current = null;
     pathnameRef.current = "/about";
     mockLogout.mockClear();
-    setLang.mockClear();
   });
 
   describe("navigation", () => {

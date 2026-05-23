@@ -21,6 +21,7 @@ import AddressSearch from "@/components/AddressSearch";
  * organic + quantity/price/unit + up to 4 images + delivery method.
  */
 
+// TODO MEH-543: i18n after /neighbor activation post-launch
 const CATEGORIES = [
   "בשר ועוף",
   "דגים",

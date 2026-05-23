@@ -572,7 +572,11 @@ async def admin_only(
 # pip install passlib[bcrypt]
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
+# default at time of pinning + all existing user.password_hash rows.
+# Prevents future drift if passlib bumps its default — see SENTINEL_HASH
+# at backend/app/routers/auth.py (used by §13 timing equalization).
+pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
 
 # שמירה:
 hashed = pwd_context.hash(plain_password)
@@ -584,7 +588,53 @@ is_valid = pwd_context.verify(plain_password, hashed_password)
 # ✅ רק: bcrypt, argon2, scrypt
 ```
 
-### 13. Logging — אל תרשמי מידע רגיש
+**Why explicit `bcrypt__rounds=12`?** passlib's default rounds can change
+between library versions. Without an explicit pin, a passlib upgrade
+that bumps the default would re-generate `SENTINEL_HASH` (§13) at a
+higher cost than the existing `user.password_hash` rows still on the
+older cost — breaking the timing-equalization invariant. Any future
+rounds bump must be a deliberate decision with a migration plan to
+re-hash existing rows.
+
+### 13. Timing equalization (anti-enumeration)
+
+**Threat:** even with uniform status codes and bodies (per OWASP),
+an auth endpoint can leak which emails exist via response-time
+variance between branches that DO run bcrypt and branches that
+DON'T. ~50-200ms vs ~5-10ms is enough signal on most networks.
+
+**Rule:** every failure branch of an auth endpoint that could have
+run bcrypt MUST run an equivalent bcrypt operation before
+responding. No `time.sleep()` substitutes — CPU vs IO profile
+differs and the timing distribution shape gives the substitution
+away on enough samples.
+
+**Patterns in use:**
+
+- **Timing reorder** (MEH-328) — `/auth/register` and
+  `/auth/register/producer`. The handlers' branch order was rewritten
+  so HIBP + `hash_password` both run on the collision branches before
+  the response shape diverges. See the `/register` and
+  `/register/producer` handlers in `backend/app/routers/auth.py`.
+- **Sentinel hash** (MEH-626) — `/auth/login`. A pre-computed
+  `SENTINEL_HASH` module constant (created at import via
+  `hash_password("sentinel-password-do-not-use")`) gives the
+  wrong-email and OAuth-only branches a bcrypt-cost-parity verify
+  call before the 401. See the `SENTINEL_HASH` constant and the
+  three `/login` failure branches in `backend/app/routers/auth.py`.
+
+**Test invariant:**
+`tests/test_api.py::TestLoginTimingEqualization::test_login_timing_equivalence_across_failure_modes`
+asserts `max(p95) − min(p95) < 20ms` across the 3 `/login` failure
+branches. 5 warmup + 50 measured iterations per branch; p95 via
+`statistics.quantiles`. Decorated with `@pytest.mark.flaky(reruns=2,
+reruns_delay=1)` (MEH-647) so bcrypt timing variance on contended CI
+runners doesn't cause spurious failures — 2 reruns absorb noise; a
+third failure is a real signal worth investigating.
+
+**Cross-refs:** MEH-328 (PR #696), MEH-626 (this PR).
+
+### 14. Logging — אל תרשמי מידע רגיש
 
 ```python
 import logging
@@ -603,7 +653,7 @@ logger.warning(f"Rate limit exceeded for IP: {ip}")
 
 ## 🟢 כדאי — תוסיפי בהדרגה
 
-### 14. 2FA / אימות דו-שלבי לאדמין
+### 15. 2FA / אימות דו-שלבי לאדמין
 
 ```python
 # pip install pyotp qrcode
@@ -618,7 +668,7 @@ totp = pyotp.TOTP(secret)
 is_valid = totp.verify(user_entered_code)  # קוד מ-Google Authenticator
 ```
 
-### 15. Account Lockout — לאחר ניסיונות כושלים
+### 16. Account Lockout — לאחר ניסיונות כושלים
 
 ```python
 # ב-Redis או DB:
@@ -640,7 +690,7 @@ async def clear_attempts(email: str):
     await redis.delete(f"login_attempts:{email}")
 ```
 
-### 16. Audit Log — מי עשה מה
+### 17. Audit Log — מי עשה מה
 
 ```sql
 CREATE TABLE audit_log (
@@ -656,7 +706,75 @@ CREATE TABLE audit_log (
 
 ---
 
-## 17. Skills supply chain (MEH-397)
+## 17a. Webhook HMAC verification (MEH-509 PR2c)
+
+The Meta WhatsApp Cloud API delivers inbound messages via
+`POST /webhook/whatsapp`. This is the only public endpoint on
+`mehamakor.online` that writes to a producer-adjacent DB table
+(`inbound_messages`) without a JWT or `require_admin` dependency —
+**the HMAC-SHA256 signature on the request body IS the authentication
+gate**. A subtle bug here is the difference between a private inbox
+and an open-firehose write endpoint for anyone on the public internet.
+
+### Invariants
+
+1. **Raw body bytes captured BEFORE any FastAPI parsing.** `await
+   request.body()` is the first line of the handler. Adding a Pydantic
+   body model to the handler signature would consume the stream and
+   silently break HMAC verification (the recomputed hash would be over
+   `b""`, never matching what Meta signed).
+2. **`hmac.compare_digest` for constant-time compare.** Both args MUST
+   be `str` (or both `bytes`) — mixed types raise `TypeError`. We use
+   `str` on both sides (header value vs `hexdigest()`).
+3. **Fail-closed on empty secret.** If `settings.whatsapp_app_secret`
+   is `""`, an HMAC computed with an empty key is deterministic and
+   trivially derivable by any attacker (no secret = no security). The
+   handler explicitly returns 403 BEFORE computing, never letting an
+   attacker probe the empty-key path.
+4. **Fail-closed on empty verify token.** Same logic for
+   `whatsapp_verify_token` on the GET challenge — empty token = 403
+   on every challenge attempt.
+5. **SHA-1 is NOT accepted as a fallback.** Meta's deprecated
+   `X-Hub-Signature` (SHA-1) header would only weaken the gate. We
+   only accept `X-Hub-Signature-256` with literal `sha256=` prefix.
+6. **`UNIQUE(meta_message_id)` is the replay-protection anchor.**
+   Meta delivers at-least-once. A pre-check `SELECT` would race; the
+   DB constraint + `IntegrityError` catch is the atomic gate.
+7. **Body size capped at 1 MiB via `Content-Length` pre-check (MEH-663).**
+   `_MAX_BODY_BYTES = 1_048_576` enforced BEFORE the unbounded
+   `await request.body()` allocates. `Content-Length > cap` → 413; non-
+   numeric `Content-Length` → 400; missing header is allowed (Meta sends
+   it explicitly, but legitimate omissions don't get gratuitously broken
+   — the body read still happens and is bounded by the Railway/Vercel
+   proxy layer in production). Defense-in-depth: this layer activates
+   if/when hosting topology changes and the implicit proxy bound goes
+   away.
+
+### PII logging policy
+
+`POST /webhook/whatsapp` deliberately never logs the full phone number
+or the message body. The success log line is
+`[WEBHOOK] persisted msg from=...XXXX type=text` where `XXXX` is the
+last 4 digits of `from_phone`. Header values (including `X-Hub-
+Signature-256`) are also never logged on rejection — only the fact of
+the mismatch.
+
+### Operational risks
+
+- **Empty secret in Railway env**: would 403 every Meta delivery, then
+  Meta retries with exponential backoff for ~24h, then disables the
+  subscription. Recovery: set the env var, redeploy, re-subscribe in
+  Meta Developer Console. Pre-deploy guard: HANDOFF.md PR2c post-merge
+  checklist requires setting `WHATSAPP_APP_SECRET`+`WHATSAPP_VERIFY_TOKEN`
+  in Railway BEFORE clicking "Verify and save" in the Meta UI.
+- **Logs leaking PII**: any future log-line change in this router
+  must run the `from_phone[-4:]` test pattern. If you touch the
+  receiver, re-grep `from_phone` for full-string log lines before
+  merge.
+
+---
+
+## 18. Skills supply chain (MEH-397)
 
 Mehamakor loads 83 third-party skills via Claude Code's skill ingestion
 mechanism. Each load is an opportunity for a malicious skill to read
@@ -964,3 +1082,69 @@ Update SECURITY_REPORT.md with final status.
 ```
 
 **כלל: אל תעלי לדומיין לפני שכל ה-🔴 הפכו ל-✅**
+
+---
+
+## ✅ 18. Anti-enumeration on registration (MEH-328) — SHIPPED
+
+**Status:** shipped via PR #696, 2026-05-16. Chunks A → B → fix → C → early-D → D-prime → F across 6 commits on `feature/meh-328-register-anti-enum`.
+
+**OWASP source:** [Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html) — "Authentication Responses" + "Account creation".
+
+### Threat model
+
+Pre-MEH-328, three surfaces let an attacker enumerate registered emails:
+
+1. `POST /auth/register` returned `400 "האימייל כבר קיים במערכת"` on duplicate email (200 + JWT on new). Status + body diverged.
+2. `POST /auth/register/producer` returned `409 "האימייל כבר קיים במערכת. אם כבר נרשמת כצרכנית, התחברי לחשבון שלך."` on duplicate (200 + JWT on new). Same divergence + email-explicit copy.
+3. `GET /auth/email-exists?email=...` returned `{exists: bool}` at 30/min/IP — a dedicated oracle.
+
+Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" before login attempts → higher hit rate, slower lockout detection. Also a timing leak: the existing-email branch returned ~1ms (DB read only); the new-email branch ran HIBP + bcrypt for ~100ms.
+
+### Pattern applied
+
+- **Both register endpoints (non-upgrade path) return identical 200 ack** regardless of branch:
+  - `RegisterAck = {"detail": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר."}`
+  - Status code, body bytes, and `Set-Cookie` headers identical across new-email / password-collision / oauth-collision (pinned by `test_register_three_branches_have_identical_response_bytes` + producer sibling test).
+- **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
+- **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
+- **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
+- **No auto-login on register.** `lib/auth-context.js::register()` returns the ack to the caller; no `localStorage.setItem("token")`, no `/auth/me` chain. Users always verify via email link and then log in at `/auth/login`. Frontend success screens show a unified "בדקי את תיבת המייל שלך 📬" inbox-check UI on both `/register` and `/register/producer` non-upgrade.
+- **Upgrade path preserved** (authenticated user adding producer to existing account): still returns `ProducerRegistrationResponse {access_token, whatsapp_sent}`, still stores token, still renders the existing dashboard CTA on step 3. No enumeration vector — caller already proved control of the email via JWT.
+
+### Files changed
+
+Backend:
+- `backend/app/routers/auth.py` — `/register` rewritten (Chunk A); `/register/producer` non-upgrade rewritten + side-effect-symmetry (Chunk B); `/email-exists` handler deleted (Chunk C); `EmailStr` import removed.
+- `backend/app/schemas/schemas.py` — new `RegisterAck` model; `RegisterResponse` later deleted by MEH-625 (zero runtime callers post-MEH-328).
+- `backend/app/services/auth_emails.py` — new `send_duplicate_attempt_email(email, name, provider)` helper with Hebrew נקבה copy.
+
+Frontend:
+- `frontend/lib/auth-context.js` — `register()` simplified; no token, no `/auth/me` chain.
+- `frontend/app/[locale]/register/page.js` — inbox-check unified success screen; `emailExistsError` lifecycle removed.
+- `frontend/app/[locale]/register/producer/page.js` — `emailExistsWarning` (Chunk C/early-D) + `emailExistsSubmitError` (Chunk D) lifecycles removed; `didUpgrade` branch signal; step 3 split into upgrade vs non-upgrade renders; `handleEmailBlur` deleted with the deleted endpoint.
+
+Tests:
+- `tests/test_api.py` — flipped duplicate-email asserts; new identical-bytes tests for both endpoints; collision-side-effect-symmetry test; `/email-exists` 404 regression guard; `test_get_me_after_registration` rewired off the deleted token surface.
+- `tests/test_auth.py`, `tests/test_auth_email_notify.py`, `tests/test_producer_license.py`, `tests/test_whatsapp_notify.py` — collateral updates to match the new ack contract (whatsapp_sent assertions moved to upgrade path).
+- `frontend/e2e/flows/11-password-policy.spec.ts` — success-text regex updated to match the new headline.
+
+### Tests
+
+- **Identical-response-bytes invariant** asserted across all 3 non-upgrade branches for both `/register` (`test_register_three_branches_have_identical_response_bytes`) and `/register/producer` (`test_register_producer_three_branches_identical_response_bytes`).
+- **Upgrade path regression** covered by pre-existing `test_logged_in_user_can_upgrade_to_producer` + `test_upgrade_twice_returns_409` — both kept passing post-refactor.
+- **`/email-exists` deletion** pinned by `test_email_exists_endpoint_removed` (404 regression guard).
+- **Cookie/token absence on non-upgrade** asserted by `test_register_no_longer_returns_access_token`, `test_register_no_longer_sets_fingerprint_cookie`, and the producer-sibling test.
+- **Collision side-effect symmetry** asserted by `test_register_producer_collision_creates_no_producer_row` — no `Producer` / `ProducerCategory` / `DeliveryArea` row created on collision.
+
+### Follow-up items (post-MEH-328)
+
+Filed as separate Linear tickets:
+
+1. ~~**Per-email rate-limit key on `/register` + `/register/producer`** — `backend/app/routers/auth.py:249, 352` use only the per-IP `@limiter.limit(...)`. The MEH-191 `/forgot-password` reference uses an additional `key_func=email_from_body` dual-key. Without it, a botnet rotating IPs can still spray one victim email with 10 attempts per IP per hour. `email_from_body` is already imported (`auth.py:65`). Estimated 30 min.~~ **DONE (MEH-624, PR #723).**
+2. ~~**`RegisterResponse` Pydantic class deletion** — `backend/app/schemas/schemas.py:135-138`. No runtime callers post-MEH-328 (grep verified). Deferred per Chunk A spec ("do NOT delete in this chunk"). Estimated 10 min cleanup.~~ **DONE (MEH-625, PR #721).**
+3. **`/login` timing equalisation** — `backend/app/routers/auth.py:818-830`. Wrong-password runs `verify_password` (bcrypt); wrong-email skips it. Same threat model as MEH-328 on a sibling endpoint; same fix shape (bcrypt against a fixed sentinel hash on the no-user branch). Out of scope for MEH-328 per Phase 0 plan.
+
+### Deploy order
+
+Backend first, frontend within 5 minutes. The `/auth/register` response shape change (`Token + email_sent` → `RegisterAck`) is breaking for cached frontend bundles that expect a token. Vercel + Railway deploy windows are ~2 min each; brief overlap acceptable pre-launch.

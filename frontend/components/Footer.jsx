@@ -7,6 +7,7 @@ import { InstagramLogo, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -36,6 +37,12 @@ import { BRAND_NAME } from "@/lib/constants";
  */
 export default function Footer() {
   const t = useTranslations();
+  // MEH-669: hide the "add your business" CTA panel from admins.
+  // Server-side guard at backend/app/routers/auth.py:432 enforces the
+  // policy; this is defense-in-depth UX so admins don't see an action
+  // they're not allowed to take.
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
@@ -68,36 +75,41 @@ export default function Footer() {
     <footer className="mt-16 text-[#EAF3DE]" style={{ backgroundColor: "#2E4A2E" }}>
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* ================= CTA row ================= */}
-        <div
-          className="mb-10 rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-4"
-          style={{
-            backgroundColor: "rgba(76,176,139,0.15)",
-            border: "1px solid rgba(76,176,139,0.3)",
-            padding: "12px 24px",
-          }}
-        >
-          <Link
-            href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60"
+        {/* MEH-669: panel hidden from admins (defense-in-depth alongside
+            backend 403 at auth.py:432). Whole panel is wrapped — hiding
+            only the Link would leave an orphan "יש לך עסק?" pitch box. */}
+        {!isAdmin && (
+          <div
+            className="mb-10 rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-4"
             style={{
-              backgroundColor: "#4cb08b",
-              color: "white",
-              borderRadius: "8px",
-              padding: "10px 20px",
+              backgroundColor: "rgba(76,176,139,0.15)",
+              border: "1px solid rgba(76,176,139,0.3)",
+              padding: "12px 24px",
             }}
           >
-            {t("nav.footer.add_business")}
-            <ArrowLeft size={14} weight="bold" aria-hidden="true" />
-          </Link>
-          <div className="text-center sm:text-start">
-            <p className="font-headline text-white" style={{ fontSize: "14px" }}>
-              {t("nav.footer.cta_pitch")}
-            </p>
-            <p style={{ fontSize: "11px", color: "#9ab89a" }}>
-              {t("nav.footer.cta_subpitch")}
-            </p>
+            <Link
+              href="/register/producer"
+              className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60"
+              style={{
+                backgroundColor: "#4cb08b",
+                color: "white",
+                borderRadius: "8px",
+                padding: "10px 20px",
+              }}
+            >
+              {t("nav.footer.add_business")}
+              <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+            </Link>
+            <div className="text-center sm:text-start">
+              <p className="font-headline text-white" style={{ fontSize: "14px" }}>
+                {t("nav.footer.cta_pitch")}
+              </p>
+              <p style={{ fontSize: "11px", color: "#9ab89a" }}>
+                {t("nav.footer.cta_subpitch")}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ================= 3-column body ================= */}
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-8">
@@ -210,7 +222,7 @@ export default function Footer() {
           }}
         >
           <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} מהמקור · נעשה באהבה בישראל 🌿
+            © {new Date().getFullYear()} {t("footer.copyright")} 🌿
           </p>
           <ul className="flex items-center gap-4">
             {[
