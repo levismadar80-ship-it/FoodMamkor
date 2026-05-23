@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter
+
+`chore`: extends the existing `dorny/paths-filter@v3` gating (the `changes`
+job at `pr-checks.yml:34-56`) to the 3 warn-only jobs that previously ran on
+**every** PR including docs-only — `backend-mypy`, `frontend-knip`,
+`frontend-tsc-strict`. Each gains `needs: changes` + an `if:` matching the
+pattern already on `build`/`pytest`/`lint-backend`: `backend-mypy` →
+`backend || workflows`; both frontend jobs → `frontend || workflows`. F1 of
+the May 2026 Actions cost sweep (`pr-checks.yml` was ~23.6% of monthly
+minutes; the 3 jobs each did a full `npm ci`/`uv sync` on docs-only PRs) —
+est. **~50 min/month** saved.
+
+Job `name:` fields unchanged (branch-protection required-check identifiers
+preserved). `continue-on-error: true` retained — they stay warn-only. The
+`changes` job itself untouched. All 3 `if:` clauses include `|| workflows`,
+so a PR touching `.github/workflows/**` still runs them. On a docs-only PR
+the 3 jobs report `skipped` (= success for branch protection, per the
+MEH-485 contract). Landed via GitHub API (`create_or_update_file`) — local
+`Edit`/`Write` denied on `.github/workflows/**` (MEH-671). Risk: LOW.
+
 ### 2026-05-23 — MEH-559: k6 load testing script + runbook + baseline
 
 `feat(MEH-559)`: adds `scripts/load-test.js` (k6 load test, 5 scenarios)

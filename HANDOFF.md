@@ -3,6 +3,33 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter (F1)
+
+LOW-RISK CI cost optimization (F1 of the pr-checks.yml cost sweep). Added
+`needs: changes` + `if:` to `backend-mypy`, `frontend-knip`,
+`frontend-tsc-strict` in `.github/workflows/pr-checks.yml` so they skip on
+docs-only PRs (mirrors `build`/`pytest`/`lint-backend`). Est. ~50 min/month
+saved (each did a full `npm ci`/`uv sync` on every PR; `pr-checks.yml` was
+~23.6% of monthly Actions minutes).
+
+### Completed
+- Branch `feature/meh-prchecks-warnjobs-paths-filter` off `origin/staging`
+  (`0d93a0e`, includes #808 + #652).
+- `pr-checks.yml` written via GitHub API (local `Edit`/`Write` denied on
+  `.github/workflows/**` — MEH-671). 3 edits generated programmatically,
+  diff-verified byte-for-byte against base before push, re-verified post-push.
+- CHANGELOG + this file committed locally; PR opened (draft) → `staging`.
+
+### Key decisions
+- `backend-mypy` → `backend || workflows`; both frontend jobs →
+  `frontend || workflows`. Gating flag matches what each job inspects.
+- Job names unchanged (branch-protection identifiers); `continue-on-error:
+  true` kept — jobs stay warn-only by design.
+
+### Open / flagged
+- Remaining cost-sweep issues (deploy.yml lint/contract on every PR;
+  claude-review on docs-only) are separate tickets.
+
 ## 2026-05-23 — MEH-559: k6 load testing baseline (rebuilt via MEH-681)
 
 `feat(MEH-559)` — landed via the MEH-681 PR backlog cleanup. Baseline
