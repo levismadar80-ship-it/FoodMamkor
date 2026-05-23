@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Leaf } from "@phosphor-icons/react";
+import { Heart, Leaf, MapPin, Star } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -176,9 +176,9 @@ export default function RegisterClient() {
 
         {/* Value-prop strip */}
         <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
-          <span>{t("auth.register.consumer.value_props.discover")}</span>
-          <span>{t("auth.register.consumer.value_props.favorites")}</span>
-          <span>{t("auth.register.consumer.value_props.rate")}</span>
+          <span className="inline-flex items-center gap-1"><MapPin size={14} className="text-current" />{t("auth.register.consumer.value_props.discover")}</span>
+          <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("auth.register.consumer.value_props.favorites")}</span>
+          <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("auth.register.consumer.value_props.rate")}</span>
         </div>
 
         {/* MEH-49: referral discount badge */}

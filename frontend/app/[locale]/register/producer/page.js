@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CheckCircle, Leaf, WhatsappLogo } from "@phosphor-icons/react";
+import { CheckCircle, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
@@ -504,7 +504,7 @@ function RegisterProducerPageBody() {
                 dir="ltr"
               />
               {form.phone && !validateIsraeliPhone(form.phone) && (
-                <p className="text-xs text-red-500 mt-1">{t("auth.register.producer.validation.phone_invalid")}</p>
+                <p className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{t("auth.register.producer.validation.phone_invalid")}</p>
               )}
               {form.phone && validateIsraeliPhone(form.phone) && (
                 <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>

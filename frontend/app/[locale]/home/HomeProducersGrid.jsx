@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, MapPin } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -48,6 +48,7 @@ export function HomeProducersGrid({
           {t("home.producers.heading")}
         </h2>
         <Link href="/map" className="text-primary hover:underline flex items-center gap-1">
+          <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
       </div>
