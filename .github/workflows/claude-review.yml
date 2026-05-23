@@ -16,6 +16,16 @@ name: Claude PR Review
 on:
   pull_request:
     types: [opened, synchronize]
+    # F3 cost sweep (May 2026): skip Claude review on docs-only PRs. File
+    # classes mirror e2e.yml:56-59 (MEH-424/499); native paths-ignore syntax
+    # (no '!' prefix — that's a dorny-filter operator, not valid here). Safe
+    # as a trigger filter because this job is NOT a required check
+    # (continue-on-error calibration) — no skipped-required-check gap.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.changeset/**'
+      - 'CHANGELOG.md'
 
 permissions:
   contents: read
