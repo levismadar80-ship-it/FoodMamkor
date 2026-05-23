@@ -27,6 +27,38 @@ Both tickets shipped to `staging` this session:
   (D3 ICU plural), **MEH-685** (D2 toast icon+text API). D1 WhatsApp KEPT.
 - `staging → main` promotion is a separate decision.
 
+## 2026-05-23 — Doc Consolidation Plan (Session 1 deliverable)
+
+Doc-Consolidation-Plan.md created at session output — canonical migration plan for documentation sprawl + drift + active contradictions discovered across Drive + repo + Project Knowledge + Linear + userMemories.
+
+**Scope of analysis:**
+- INVENTORY: 21 categories (A-U), 60+ findings
+- Verify: 6 random gaps confirmed (4 worse than described)
+- Coverage: 22 sources read (8 ADRs + 7 .claude/rules files + EXECUTION_PROTOCOL/PLAN + ARCHITECTURE + commands variants + personal-preferences-v2 + CLAUDE.md + HANDOFF.md samples)
+- 12 new Y findings beyond INVENTORY (3 active contradictions, not drift)
+- Web research: 7 searches May 2026 (PrestaShop CONTEXT.md pattern, Google DESIGN.md spec, W3C tokens 2025.10 stable, Material for MkDocs maintenance mode, AGENTS.md cross-tool SoT)
+
+**4 gating decisions resolved by Sapir in session:**
+- Risk-tier nomenclature → GREEN/YELLOW/RED 3-tier (143-task sunk cost wins; ADR-016 supersedes MEH-450 "no third tier" clause)
+- State tokens (#B3261E, #B4770A, #64748B) → brand-owned (warm editorial signal, not generic Tailwind defaults)
+- Inspiration sources → retire gardensweet (I1), keep editorial premium (Kinfolk/Natoora/Cherry Bombe/Smitten Kitchen)
+- `Drive/04-Business-Model/` empty folder → delete
+
+**Target architecture (Truth Hierarchy):**
+ADR > .claude/rules > docs/CONTEXT.md > domain SoTs (BRAND.md, DESIGN.md) > general docs > HANDOFF (state) > Drive (working) > Project Knowledge (copy) > userMemories (cache).
+
+**Migration order:** 26 steps across phases α-η, ~8.5 hours work, 3-4 sessions. Phase ζ (Drive cleanup) is the only manual-Sapir block.
+
+**Pre-design-upload Checklist:** 14 must-have items before uploading new design. ADR-013 (Icon Strategy Three-Tier) is the gating ADR for checklist item 6.
+
+**Session 2 plan:** Project Instructions full draft (8 sections) + Phase α step 5 (write CONTEXT.md) + Phase γ in parallel (ADR drafts 010-016). 60-90 min.
+
+**userMemories updated this session:** entries #26 (Sapir canonical), #27 (Doc architecture v2), #28 (Truth Hierarchy), #29 (Stale patterns retired).
+
+**Deliverable file:** Doc-Consolidation-Plan.md (417 lines) — carry forward to Session 2.
+
+Closes Session 1 of Doc Consolidation work.
+
 ## 2026-05-23 — Cleanup trilogy (3 PRs merged to staging)
 
 - **#815** (squash `e2427a9`) — 11 legacy .docx/.xlsx files removed from repo
