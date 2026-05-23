@@ -27,6 +27,13 @@ def _redacted_db_url() -> str:
 # migrations managed by Alembic — see backend/alembic/
 
 
+# MEH-674: the three recognized deployment environments. ENV maps to one of
+# these (config.py:39 — read from the ENV env var, NOT ENVIRONMENT). Any other
+# value is a misconfiguration (typo) that would otherwise silently skip every
+# drift branch below, so it gets its own warning.
+_RECOGNIZED_ENVS = ("development", "staging", "production")
+
+
 def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
     """MEH-334: defense-in-depth boot guard for FRONTEND_URL drift.
 
@@ -37,10 +44,19 @@ def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
     Recurrence prevention for MEH-332: FRONTEND_URL was bulk-copied from
     production into staging Railway env vars and went undetected for ~3
     weeks because every staging email link pointed to the production host.
+
+    MEH-674: also flags an unrecognized ENV value — a typo like ENV=stage
+    matches none of the branches below and would otherwise pass silently,
+    disabling the drift guard without any signal.
     """
     e = (env or "").lower()
     url = (frontend_url or "").lower()
     issues: list[str] = []
+    if e and e not in _RECOGNIZED_ENVS:
+        issues.append(
+            f"unrecognized ENV value '{e}' — expected one of "
+            f"{', '.join(_RECOGNIZED_ENVS)}"
+        )
     if e == "staging" and "staging." not in url:
         issues.append("env=staging but frontend_url missing 'staging.' prefix")
     if e == "production" and ("staging" in url or "localhost" in url):

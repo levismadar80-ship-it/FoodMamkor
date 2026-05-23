@@ -71,9 +71,13 @@ jobs:
     # Tests are read-only so running against production is safe; the concurrency
     # group (e2e-${{ deployment.ref }}) ensures no two runs race on the same ref.
     # paths-filter (MEH-424): skip when no frontend files changed.
+    # Cost sweep (May 2026): skip Dependabot PRs. deployment.ref carries the
+    # head branch (dependabot/*, all ecosystems); ~285 min/month saved (19
+    # runs × ~15 min). creator.login is unusable here — it's vercel[bot].
     if: |
       github.event.deployment_status.state == 'success' &&
-      needs.filter.outputs.frontend == 'true'
+      needs.filter.outputs.frontend == 'true' &&
+      !startsWith(github.event.deployment.ref, 'dependabot/')
 
     steps:
       - uses: actions/checkout@v6
@@ -108,7 +112,10 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: Run E2E tests
-        run: npx playwright test
+        # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
+        # failure so flake stops hiding behind the retry. retries: 1 in CI is
+        # preserved (config); the flag detects flake without disabling retries.
+        run: npx playwright test --fail-on-flaky-tests
         working-directory: frontend
         env:
           TEST_URL: ${{ github.event.deployment_status.target_url }}
@@ -124,5 +131,10 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          # MEH-484 — also capture per-test trace.zip files so the trace viewer
+          # (playwright.dev/docs/trace-viewer) can replay flake-on-retry runs
+          # without re-running locally.
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/**/trace.zip
           retention-days: 7

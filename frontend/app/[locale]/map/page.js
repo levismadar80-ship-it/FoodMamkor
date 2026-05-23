@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
       // Include the shared OG image — Next.js REPLACES (not merges) the
       // openGraph object when overridden, so we have to re-declare the
       // image here or social previews will have no image.
-      images: ["/og-image.jpg"],
+      images: ["/og-image.png"],
     },
     alternates: buildAlternates("/map", locale),
   };

@@ -32,6 +32,19 @@ psql -h localhost -U postgres -d mehamakor_dev -c "\d producers"
 
 ---
 
+## Expand-Contract לשינויים מסוכנים
+
+שינויי סכמה מסוכנים — `DROP COLUMN` / `RENAME COLUMN` / שינוי טיפוס / הוספת `NOT NULL` על עמודה קיימת / היפוך כיוון FK — חייבים לעבור דרך **Expand-Contract**. תיעוד מלא ומחייב: [ADR-007](./decisions/ADR-007-expand-contract-schema-changes.md). 4 שלבים, 4 PRs נפרדים, soak של ≥7 ימים על staging לפני Phase 4 (`[DESTRUCTIVE]` בכותרת ה-PR).
+
+1. **Phase 1 — Expand:** ADD עמודה/טבלה/אינדקס. Backfill ב-loop של `UPDATE` עם `LIMIT`, לא בגוף ה-migration.
+2. **Phase 2 — Dual-write:** כתיבות ל-old וגם ל-new. קריאות עדיין מ-old.
+3. **Phase 3 — Read cutover:** קריאות עוברות ל-new בכל ה-surfaces. old נשאר ל-rollback.
+4. **Phase 4 — Contract:** `DROP` של old. תנאי-קדם (כל ארבעה): 7-day soak ✓, R2 backup ≤24h ✓, ללא dual-write divergence ✓, traffic על ה-new endpoint מוודא כתיבות אמיתיות ✓.
+
+דוגמה קנונית: MEH-291 (Phase 1-3) → MEH-456 (Phase 4) — availability-state consolidation.
+
+---
+
 ## בדיקה מקומית לפני PR
 
 ```bash

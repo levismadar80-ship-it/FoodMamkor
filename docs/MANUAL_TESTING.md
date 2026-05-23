@@ -3,6 +3,24 @@
 
 ---
 
+## MEH-671 — Producer-signup smoke (now automated)
+
+The 5-step producer-signup smoke is now a GitHub Action
+(`.github/workflows/staging-smoke.yml` + `.github/scripts/staging_smoke.py`,
+`workflow_dispatch` only). **The manual checklist below is the fallback** when
+the Action can't run (no secrets, Railway CLI issue, or you want to verify by
+hand). Trigger the automated one via Actions → "Staging smoke" → Run workflow.
+
+What the automation asserts (and what to check manually if it's down):
+- [ ] `POST /auth/register/producer` with a fresh `smoke+{id}@mehamakor.online` → **200**
+- [ ] New row appears in `/admin/producers` (admin login)
+- [ ] Railway log shows `[WHATSAPP] Producer welcome template sent` (not `… FAILED` / `… send failed`)
+- [ ] Railway log shows `[RISK] scored producer=` (not `… ANTHROPIC_API_KEY not set` / `… unparseable` / `… crashed`)
+- [ ] Admin badge for the row shows a numeric `risk_score` 0–100 (not `אין מידע`)
+- [ ] **Cleanup**: after the run, `SELECT count(*) FROM users WHERE email LIKE 'smoke+%@mehamakor.online'` → **0** (the Action's always() step does this via a users-first CTE)
+
+---
+
 ## MEH-669 — Admin producer-lockout fix
 
 Run on Vercel preview before merging to staging.
@@ -1591,4 +1609,30 @@ Brand-voice grep canary lives inside `/batch` (created in MEH-344, `.claude/comm
 | 1 — MCP OAuth | DONE | — |
 | 2 — `/autofix-pr` validation | DEFERRED | Run on next real CI failure |
 | 3 — Cloud Auto-Fix wiring | DEFERRED | After Phase 2 succeeds 2x |
+
+---
+
+# Load testing (MEH-559)
+
+One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. Full runbook + result template: [docs/research/k6-load-testing-baseline.md](./research/k6-load-testing-baseline.md).
+
+## When to (re-)run
+
+- [ ] Once, the week before public launch (the canonical MEH-559 run).
+- [ ] After any major backend refactor of `backend/app/routers/producers.py`, `chat.py`, or `favorites.py`.
+- [ ] After a Railway plan change (free -> hobby -> pro) — the latency numbers shift and the baseline must be re-anchored.
+- [ ] After any Anthropic model swap on `/chat` (Haiku -> Sonnet, version bumps) — verify the `/chat` p95 still fits the SLA.
+
+## Env vars required
+
+- `BASE_URL` — default `https://staging.mehamakor.online`. **Do not point at production.**
+- `VERCEL_BYPASS_TOKEN` — same value as `VERCEL_AUTOMATION_BYPASS_SECRET` in GitHub Actions (see `frontend/playwright.config.ts:38`).
+- `PRODUCER_SLUG`, `PRODUCER_ID` — fetch a real pair from `/producers` first so the latency numbers aren't dominated by 404 paths.
+
+## How to interpret
+
+- p95 < 2000ms + error rate < 1% per endpoint = SLA met.
+- `/chat` is expected to return mostly 429s — the rate-limiter trip is the intended observation.
+- `favorites_unauth` is expected to return 401 on every request — measures auth-rejection latency.
+- p99 > 5s or `X-Railway-Fallback: true` headers = Railway throttling; consider plan upgrade before launch.
 | 4 — Documentation | THIS PR | — |
