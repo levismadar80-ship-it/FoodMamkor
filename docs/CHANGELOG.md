@@ -31,6 +31,62 @@ fresh staging via MEH-681 PR backlog cleanup. New files copied verbatim;
 the MANUAL_TESTING.md section was 3-way merged so staging's later edits
 were preserved.) Closes MEH-559.
 
+### 2026-05-23 — chore: skip Playwright E2E on Dependabot PRs
+
+`chore`: added a guard to the `e2e` job in `.github/workflows/e2e.yml` so
+Playwright E2E is skipped for Dependabot-authored deployments. The May 2026
+Actions cost sweep found `e2e.yml` was ~31.5% of monthly minutes; Dependabot
+dep-bump PRs alone triggered ~19 `deployment_status` runs (~15 min each) ≈
+**~285 min/month** of low-value E2E on automated bumps.
+
+Guard appended to the existing job `if:` (preserves `deployment_status.state
+== 'success'` + `needs.filter.outputs.frontend == 'true'`):
+`!startsWith(github.event.deployment.ref, 'dependabot/')`. Branch ref is used
+deliberately — for `deployment_status` events Vercel creates the deployment,
+so `github.event.deployment.creator.login` is always `vercel[bot]` and the
+originally-specced `creator.login != 'dependabot[bot]'` would be a silent
+no-op. `deployment.ref` is already a verified-populated field (it keys the
+concurrency group at `e2e.yml:30`) and `dependabot/` prefixes every ecosystem
+branch. The removed `startsWith(environment, 'Preview')` filter (see
+`e2e.yml:68-70` history) was NOT reintroduced. Job name `e2e` unchanged —
+branch-protection required-check name preserved. Skipped runs report success,
+consistent with the existing MEH-499 docs-only skip. Risk: LOW.
+### 2026-05-23 — MEH-484: Playwright `--fail-on-flaky-tests` + trace on retry
+
+`ci(MEH-484)`: turns Playwright flake from folklore (the MEH-269 4m31s
+retry-pass pattern) into a hard CI signal. `.github/workflows/e2e.yml` —
+`npx playwright test` gains `--fail-on-flaky-tests`, so any test that
+passes only on retry now fails the e2e job; artifact upload extended to
+capture both `frontend/playwright-report/` and
+`frontend/test-results/**/trace.zip` (7-day retention, `if: failure()`
+unchanged). `frontend/playwright.config.ts` — `video: 'off'` →
+`'retain-on-failure'`; `trace: 'on-first-retry'` + `screenshot:
+'only-on-failure'` already correct, tagged with an MEH-484 comment.
+Retries (1 in CI / 0 local) preserved — flake detection is via the flag,
+not by removing retries.
+
+Expected behavior change: a currently-flake-passing test will turn the
+e2e job RED — the correct outcome. File a follow-up per failure; do NOT
+mass-quarantine or roll back. The MEH-499 docs-only paths-filter skip
+block on staging was preserved through the 3-way rebuild (verbatim copy
+would have regressed it). (Originally authored 2026-05-07, rebuilt
+2026-05-23 onto fresh staging via MEH-681 PR backlog cleanup.)
+
+Closes MEH-484.
+
+### 2026-05-23 — MEH-486: ADR-007 — Expand-Contract codified as the only sanctioned risky-schema-change pattern
+
+`docs(MEH-486)`: codifies the 4-phase Expand-Contract pattern that MEH-291 → MEH-456 ad-hoc'd into a durable ADR so the next risky migration cannot cut corners under pressure (the failure mode that produced the MEH-265 `_migrate_columns` incident). ADR authored 2026-05-07; landed 2026-05-23 via MEH-681 Tier 2.5 (branch rebuilt onto fresh staging — no merge base, squash-merge SHA drift).
+
+- **`docs/decisions/ADR-007-expand-contract-schema-changes.md`** (NEW) — MADR format. Decision: risky changes (`DROP COLUMN`, `RENAME COLUMN`, type change, `NOT NULL` on existing, FK reversal) MUST follow 4-phase Expand-Contract; each phase its own PR + own MEH-XXX; Phase 4 PR title prefixed `[DESTRUCTIVE]`. Includes 5-step operational checklist, 3 "when NOT to use" cases, 3 named anti-patterns, and rejection rationale for migrate-and-pray / pt-osc / feature-flag-the-schema.
+- **`docs/decisions/README.md`** — index gains row 007 between rows 006 and 008.
+- **`CLAUDE.md`** — single inline clause on the **Schema via Alembic only** entry: ` · risky changes use Expand-Contract ([ADR-007](...))`. ADR-008 + ADR-009 content preserved verbatim.
+- **`docs/MIGRATIONS.md`** — new `## Expand-Contract לשינויים מסוכנים` section between "הוספת עמודה חדשה" and "בדיקה מקומית לפני PR".
+- **ADR triad** — ADR-003 = authority (Alembic-only), ADR-006 = parity, ADR-007 = sequencing across time.
+- **Out of scope** — no code changes; no ADR renumbering; no "while we're here" cleanup.
+
+Closes MEH-486.
+
 ### 2026-05-23 — chore: switch GitHub default branch to staging
 
 `chore`: GitHub repo default branch flipped from `main` → `staging` via

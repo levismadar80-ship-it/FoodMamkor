@@ -18,6 +18,81 @@ MANUAL_TESTING.md section was 3-way merged (staging diverged since the
 branch base, so verbatim copy would have regressed it); the two new files
 were copied verbatim. PR #652 stays draft, base `staging`. Closes MEH-559.
 
+## 2026-05-23 — chore: skip Playwright E2E on Dependabot PRs
+
+LOW-RISK CI cost optimization (Issue A of the e2e.yml cost sweep). Added one
+condition to the `e2e` job `if:` in `.github/workflows/e2e.yml`:
+`!startsWith(github.event.deployment.ref, 'dependabot/')` — skips Playwright
+on Dependabot dep-bump PRs. Est. ~285 min/month saved (~19 runs × ~15 min;
+`e2e.yml` was ~31.5% of monthly Actions minutes per the May 2026 sweep).
+
+### Completed
+- Branch `feature/e2e-skip-dependabot` off `origin/staging`.
+- `e2e.yml` written via GitHub MCP API (local `Edit`/`Write` denied on
+  `.github/workflows/**` per `.claude/settings.json` — MEH-671 guardrail).
+- CHANGELOG + this file committed locally + pushed; PR opened (draft) → `staging`.
+
+### Key decisions
+- **Spec correction:** the task specced `creator.login != 'dependabot[bot]'`,
+  but for `deployment_status` events Vercel creates the deploy → `creator.login`
+  is always `vercel[bot]`, so that guard is a no-op. Switched to the deployment
+  **branch ref** (`dependabot/*`), confirmed populated (it keys concurrency at
+  `e2e.yml:30`). The deliberately-removed `startsWith(environment,'Preview')`
+  filter (`e2e.yml:68-70`) was NOT reintroduced.
+- No Linear ticket — landed as a generic `chore:` per Sapir's call.
+
+### Open / flagged
+- Confidence MEDIUM that Vercel sends a branch name (not a SHA) in
+  `deployment.ref`. If it ever sends a SHA, the guard safely no-ops (E2E still
+  runs, just no saving). Verify against a real Dependabot deploy after merge.
+- Remaining e2e.yml cost-sweep issues (B+) are separate tickets.
+## 2026-05-23 — MEH-484: Playwright fail-on-flaky (rebuilt via MEH-681)
+
+`ci(MEH-484)` — landed via the MEH-681 PR backlog cleanup. Original work
+authored 2026-05-07 (draft PR #539); rebuilt today onto fresh `staging`
+because the branch had no merge base with current staging (squash-merge
+SHA drift). Two substantive files: `.github/workflows/e2e.yml` gains
+`--fail-on-flaky-tests` + trace.zip artifact capture;
+`frontend/playwright.config.ts` flips `video: 'off'` →
+`'retain-on-failure'`. Rebuild used a 3-way cherry-pick (not verbatim
+copy) so the MEH-499 docs-only paths-filter skip block that landed on
+staging after 2026-05-07 was preserved. PR #539 stays draft, base
+`staging`. Closes MEH-484.
+
+## 2026-05-23 — MEH-486 ADR-007 Expand-Contract codified (landed via MEH-681 Tier 2.5)
+
+**PR #538.** ADR authored 2026-05-07; branch was 16 days stale with no merge base against current `staging` (squash-merge SHA drift, CC bug #24516). Recovered by rebuilding `feature/meh-486-adr-007-expand-contract` onto fresh `origin/staging` and re-applying the 6-file content cleanly (not a cherry-pick — the no-merge-base produced a 4,300-line artifact conflict). Base already `staging` from MEH-681 Tier 2.5.
+
+**Risk tier:** LOW (docs-only). No code, no schema, no UI.
+
+**What's done:**
+- `docs/decisions/ADR-007-expand-contract-schema-changes.md` NEW — MADR format, ~48 lines. Decision + 5-step operational checklist (Phase 1 Expand → 2 Dual-write → 3 Read cutover → 4 Contract with 4 hard preconditions → reversibility test) + 3 when-NOT-to-use cases + 3 anti-patterns + alternatives rejected.
+- `docs/decisions/README.md` — index row 007 inserted between 006 and 008.
+- `CLAUDE.md` — inline clause on the "Schema via Alembic only" line (` · risky changes use Expand-Contract ([ADR-007])`). ADR-008 Auto-dream clause + ADR-009 Decision-capture section preserved verbatim.
+- `docs/MIGRATIONS.md` — new `## Expand-Contract לשינויים מסוכנים` section before "בדיקה מקומית לפני PR".
+- `docs/CHANGELOG.md` — MEH-486 entry.
+
+**ADR triad (codified in ADR-007 Context):** ADR-003 = authority (Alembic-only) · ADR-006 = parity (DB↔Pydantic↔frontend) · ADR-007 = sequencing across time.
+
+**Next:** Sapir reviews the rebuilt DRAFT PR #538; if approved → flip ready, squash-merge.
+
+---
+
+## 2026-05-23 — MEH-678 ADR-009 + #804 backfill (end-of-day close)
+
+LOW-RISK docs-only. End-of-day consolidation for the MEH-678 work shipped today; supersedes the WIP note below — the ADR-008 drift it flagged is now closed by PR #804. MEH-678 was created today (Quick template 07, LOW risk per MEH-450, labels `tooling` + `stage-7-prelaunch`).
+
+### Shipped
+- **PR #803 merged** — proactive decision-capture instruction. `CLAUDE.md` 82 → 87 lines, new `## Decision capture (proactive)` section carrying the verbatim Hebrew offer `"זה ADR-worthy. רוצה שאכתוב ל-docs/decisions/?"`. New meta-ADR `docs/decisions/ADR-009-decision-capture-proactive.md` (≤30 lines, `_TEMPLATE.md`-compliant, second meta-ADR after ADR-008) holds the full trigger list — kept out of CLAUDE.md to respect the ADR-008 size-cap note. Plus README index ADR-009 row + CHANGELOG + HANDOFF entries.
+- **PR #804 merged (`fd27b18`)** — single-line follow-up backfilling the ADR-008 README index row, missed by PR #694 (MEH-501) when ADR-008 merged 2026-05-20. Closes that #694 side-effect index gap.
+
+### Final state
+- `docs/decisions/README.md` index: **001-006, 008, 009** (ADR-007 absent until MEH-486 ships).
+- MEH-678 closed via #803/#804; the post-merge comment is already on the Linear issue.
+
+### Earlier today (carry-forward, no new detail)
+- ~9 tickets closed earlier in the day are recorded in the sections below and prior HANDOFF entries — not re-detailed here.
+
 ## 2026-05-23 — GitHub default branch: main → staging
 
 שונה ידנית דרך GitHub UI (Settings → General → Default branch) ע"י ספיר.
@@ -1711,6 +1786,14 @@ session boundary; resume only with fresh user direction.
 
 ---
 
+## Deferred to post-launch
+
+Tickets explicitly punted past launch. Check before opening any new work in these areas.
+
+- **MEH-568 Phase 1 (App Store mining)** — 8-app shortlist locked in Linear. Trigger: launch + 30 days, same window as MEH-567 + MEH-569 review session. Smadar collects 10-20 reviews per app via screenshots when triggered.
+
+---
+
 ## 2026-05-14 — Parallel docs/research wave (MEH-563 + MEH-557 + MEH-568)
 
 Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workflow.md` risk-tiering (docs / research / Phase-0 stub only). Originally a 4-PR wave; **MEH-565 dropped** because it had already shipped this same session (PR #638) — verified via `docs/CHANGELOG.md` + Linear `completedAt`.
@@ -1718,7 +1801,7 @@ Three PRs opened in parallel this session. All LOW-risk per `.claude/rules/workf
 | PR | Issue | Outcome |
 |---|---|---|
 | #644 | MEH-563 — UptimeRobot synthetic monitoring docs | **Merged** to staging (squash, SHA `b7a0c57`) |
-| #645 | MEH-557 — Pre-launch quality stack research | **Merging next** (this branch) |
+| #645 | MEH-557 — Pre-launch quality stack research | **Merged** to staging (squash, SHA `a2245ba`) |
 | #643 | MEH-568 — App Store mining Phase 0 / slate approval | **Closed, not merged.** Slate locked verbatim; Phase 1 deferred to post-launch + 30 days. Trigger: launch ships + 30 days of own user data so we can triangulate App Store reviews against actual Mehamakor user pain points instead of guessing. Beta testing (5 users pre-launch) covers same discovery class at higher fidelity. |
 
 **MEH-568 slate locked (8 apps):**

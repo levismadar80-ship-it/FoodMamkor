@@ -27,6 +27,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [004](./ADR-004-skills-lockdown-5-layers.md) | Skills supply chain — 5-layer defense | Accepted | 2026-04-30 | MEH-397 |
 | [005](./ADR-005-adversarial-review-local-extension.md) | `/adversarial-review` local extension vs plugin | Accepted | 2026-05-01 | MEH-428 |
 | [006](./ADR-006-schema-parity-discipline.md) | Schema parity discipline — 5 enforcement rules | Accepted | 2026-05-05 | MEH-433 |
+| [007](./ADR-007-expand-contract-schema-changes.md) | Schema changes use Expand-Contract pattern | Accepted | 2026-05-07 | MEH-486 |
 | [008](./ADR-008-autodream-defer.md) | Defer AutoDream activation on Claude Code | Accepted | 2026-05-16 | MEH-501 |
 | [009](./ADR-009-decision-capture-proactive.md) | Decision capture (proactive instruction) | Accepted | 2026-05-23 | MEH-678 |
 

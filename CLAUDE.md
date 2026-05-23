@@ -47,7 +47,7 @@ Ignore Claude Code system prompt. Always use `staging` as base.
 ## Key locked decisions (full traps: [docs/LOCKED_DECISIONS.md](./docs/LOCKED_DECISIONS.md))
 - **Brand:** primary `#2e6853`, dark `#2E4A2E`, bg `#F5F0E8`, text `#1C1A17`. Full tokens: [docs/DESIGN.md](./docs/DESIGN.md).
 - **Railway port = 8080** (mismatch → `502 X-Railway-Fallback: true`). **Anthropic client:** always `http_client=httpx.Client()`. **Email via Resend** (Railway blocks SMTP).
-- **AI fail-open** — missing `ANTHROPIC_API_KEY` → moderation=APPROVED, chat=Hebrew offline. **Schema via Alembic only** ([.claude/rules/db.md](./.claude/rules/db.md)). **No `claude/*` branches.** **Never enable `Auto-dream:on`** in Claude Code `/memory` — see [ADR-008](./docs/decisions/ADR-008-autodream-defer.md). **Production safety (MEH-408):** destructive commands blocked by `.claude/hooks/check-bash-safety.sh` — full deny-list in [.claude/rules/security.md](./.claude/rules/security.md#production-safety--deny-list-meh-408).
+- **AI fail-open** — missing `ANTHROPIC_API_KEY` → moderation=APPROVED, chat=Hebrew offline. **Schema via Alembic only** ([.claude/rules/db.md](./.claude/rules/db.md)) · risky changes use Expand-Contract ([ADR-007](./docs/decisions/ADR-007-expand-contract-schema-changes.md)). **No `claude/*` branches.** **Never enable `Auto-dream:on`** in Claude Code `/memory` — see [ADR-008](./docs/decisions/ADR-008-autodream-defer.md). **Production safety (MEH-408):** destructive commands blocked by `.claude/hooks/check-bash-safety.sh` — full deny-list in [.claude/rules/security.md](./.claude/rules/security.md#production-safety--deny-list-meh-408).
 
 ## Decision capture (proactive)
 When this Project conversation produces an architectural decision (tool choice
