@@ -3,6 +3,25 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-486 ADR-007 Expand-Contract codified (landed via MEH-681 Tier 2.5)
+
+**PR #538.** ADR authored 2026-05-07; branch was 16 days stale with no merge base against current `staging` (squash-merge SHA drift, CC bug #24516). Recovered by rebuilding `feature/meh-486-adr-007-expand-contract` onto fresh `origin/staging` and re-applying the 6-file content cleanly (not a cherry-pick — the no-merge-base produced a 4,300-line artifact conflict). Base already `staging` from MEH-681 Tier 2.5.
+
+**Risk tier:** LOW (docs-only). No code, no schema, no UI.
+
+**What's done:**
+- `docs/decisions/ADR-007-expand-contract-schema-changes.md` NEW — MADR format, ~48 lines. Decision + 5-step operational checklist (Phase 1 Expand → 2 Dual-write → 3 Read cutover → 4 Contract with 4 hard preconditions → reversibility test) + 3 when-NOT-to-use cases + 3 anti-patterns + alternatives rejected.
+- `docs/decisions/README.md` — index row 007 inserted between 006 and 008.
+- `CLAUDE.md` — inline clause on the "Schema via Alembic only" line (` · risky changes use Expand-Contract ([ADR-007])`). ADR-008 Auto-dream clause + ADR-009 Decision-capture section preserved verbatim.
+- `docs/MIGRATIONS.md` — new `## Expand-Contract לשינויים מסוכנים` section before "בדיקה מקומית לפני PR".
+- `docs/CHANGELOG.md` — MEH-486 entry.
+
+**ADR triad (codified in ADR-007 Context):** ADR-003 = authority (Alembic-only) · ADR-006 = parity (DB↔Pydantic↔frontend) · ADR-007 = sequencing across time.
+
+**Next:** Sapir reviews the rebuilt DRAFT PR #538; if approved → flip ready, squash-merge.
+
+---
+
 ## 2026-05-23 — MEH-678 ADR-009 + #804 backfill (end-of-day close)
 
 LOW-RISK docs-only. End-of-day consolidation for the MEH-678 work shipped today; supersedes the WIP note below — the ADR-008 drift it flagged is now closed by PR #804. MEH-678 was created today (Quick template 07, LOW risk per MEH-450, labels `tooling` + `stage-7-prelaunch`).
