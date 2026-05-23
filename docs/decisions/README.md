@@ -27,6 +27,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [004](./ADR-004-skills-lockdown-5-layers.md) | Skills supply chain — 5-layer defense | Accepted | 2026-04-30 | MEH-397 |
 | [005](./ADR-005-adversarial-review-local-extension.md) | `/adversarial-review` local extension vs plugin | Accepted | 2026-05-01 | MEH-428 |
 | [006](./ADR-006-schema-parity-discipline.md) | Schema parity discipline — 5 enforcement rules | Accepted | 2026-05-05 | MEH-433 |
+| [009](./ADR-009-decision-capture-proactive.md) | Decision capture (proactive instruction) | Accepted | 2026-05-23 | MEH-678 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated
