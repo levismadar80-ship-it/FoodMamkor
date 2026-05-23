@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-23 — MEH-671: post-deploy staging smoke automation (V1)
+
+`feat(MEH-671)`: new GitHub Action + Python harness that drives the real producer-signup pipeline against staging and fails loud on integration breakage — the bug class transport-mocked unit tests miss (template-signature mismatch, missing background task, broken Meta/Anthropic call). Would have caught all four bugs found manually during the MEH-509 rollout.
+
+**Harness** (`.github/scripts/staging_smoke.py`, stdlib + httpx, reusable for manual runs) — 5 fail-fast steps: (1) anonymous `POST /auth/register/producer` with a unique `smoke+{run_id}@mehamakor.online` → 200; (2) poll `GET /admin/producers` for the new row (≤30s); (3) Railway log signal `[WHATSAPP] Producer welcome template sent` (≤30s); (4) Railway log signal `[RISK] scored producer=` (≤60s); (5) `risk_score` is int 0–100 (the admin badge).
+
+**Auth (design correction from spec):** access tokens are 15-min TTL and fingerprint-bound (`auth.py:183`), so a static `SMOKE_ADMIN_JWT` secret can't work. The harness logs in fresh each run via `POST /auth/login` (admin email+password), retaining the `__Secure-Fgp` cookie. Secrets are therefore `SMOKE_ADMIN_EMAIL` + `SMOKE_ADMIN_PASSWORD`, not a JWT.
+
+**WhatsApp/Anthropic verification via `railway logs`:** Meta exposes delivery status by webhook only (no query endpoint), so steps 3+4 grep the staging backend logs (a single reusable poll helper).
+
+**Cleanup** (workflow `if: always()` step) is FK-safe: `users.producer_id → producers.id` is the only non-CASCADE FK (`models.py:226`), so a CTE deletes smoke `users` first (RETURNING `producer_id`), then deletes those `producers` (CASCADE clears `producer_categories`/`delivery_areas`). `producers` has no `email` column — rows are reached via the user. Idempotent.
+
+**V1 scope (intentional):** trigger is `workflow_dispatch` only (auto-trigger on `push:staging` deferred to V2 after 5 clean runs); alerting is the GitHub Actions failure email (no WhatsApp send in V1).
+
+**Process note:** `.github/workflows/**` is deny-listed for direct CC edit — the workflow YAML ships in the PR body for Sapir to paste; this PR commits only the harness + docs. Smoke not run from CC (sandbox can't reach Railway/Meta/Anthropic — MEH-360); validation is the CI run after Sapir wires the secrets + workflow.
+
 ### 2026-05-23 — MEH-661: fix wordmark right-edge clipping in logo-horizontal-he.svg
 
 Fixed wordmark right-edge clipping in `logo-horizontal-he.svg` by changing `text-anchor` from `end` to `start` (MEH-661). Root cause: SVG spec behavior with `direction=rtl` + `text-anchor=end` placed `x=350` as the left edge, flowing text rightward past `viewBox=460` and clipping leading מה glyphs (rendered as `מקור`). Single-attribute fix; all other coordinates, geometry, and string content unchanged. `logo-horizontal-en.svg` was confirmed unaffected (LTR + default anchor flows away from the left-placed mark).

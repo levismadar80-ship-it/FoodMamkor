@@ -3,6 +3,24 @@
 
 ---
 
+## MEH-671 — Producer-signup smoke (now automated)
+
+The 5-step producer-signup smoke is now a GitHub Action
+(`.github/workflows/staging-smoke.yml` + `.github/scripts/staging_smoke.py`,
+`workflow_dispatch` only). **The manual checklist below is the fallback** when
+the Action can't run (no secrets, Railway CLI issue, or you want to verify by
+hand). Trigger the automated one via Actions → "Staging smoke" → Run workflow.
+
+What the automation asserts (and what to check manually if it's down):
+- [ ] `POST /auth/register/producer` with a fresh `smoke+{id}@mehamakor.online` → **200**
+- [ ] New row appears in `/admin/producers` (admin login)
+- [ ] Railway log shows `[WHATSAPP] Producer welcome template sent` (not `… FAILED` / `… send failed`)
+- [ ] Railway log shows `[RISK] scored producer=` (not `… ANTHROPIC_API_KEY not set` / `… unparseable` / `… crashed`)
+- [ ] Admin badge for the row shows a numeric `risk_score` 0–100 (not `אין מידע`)
+- [ ] **Cleanup**: after the run, `SELECT count(*) FROM users WHERE email LIKE 'smoke+%@mehamakor.online'` → **0** (the Action's always() step does this via a users-first CTE)
+
+---
+
 ## MEH-669 — Admin producer-lockout fix
 
 Run on Vercel preview before merging to staging.
