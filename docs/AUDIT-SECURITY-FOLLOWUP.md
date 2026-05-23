@@ -16,7 +16,7 @@
 | 1 | Login rate-limit shares Railway's proxy IP across all users | **HIGH** | Backend (rate_limit.py) |
 | 2 | No JWT refresh flow; 24h expiry drops user silently | MEDIUM | Backend + Frontend |
 | 3 | `allow_credentials=True` + JWT-in-localStorage is a latent CSRF trap if auth ever moves to cookies | MEDIUM | Backend (main.py) |
-| 4 | `/auth/email-exists` is a deliberate user-enumeration oracle rate-limited to 30/min | LOW | Backend (auth.py) |
+| 4 | `/auth/email-exists` is a deliberate user-enumeration oracle rate-limited to 30/min — **✅ RESOLVED PR #696 (MEH-328)** | LOW | Backend (auth.py) |
 
 ---
 
@@ -138,6 +138,11 @@ format from magic bytes, don't trust the client-reported content_type".
 ---
 
 ## 6. `/auth/email-exists` user enumeration — **LOW finding #4**
+**Status:** ✅ **RESOLVED via MEH-328 (PR #696, 2026-05-16).** The
+endpoint was deleted entirely as part of the OWASP anti-enumeration
+refactor on `/auth/register` + `/auth/register/producer`. See
+`docs/SECURITY.md` § 18 for the full pattern and follow-up items.
+
 **Topic:** discovered while auditing `/register`. `auth.py:185-191`
 exposes a rate-limited endpoint that tells callers whether an email is
 registered.
@@ -159,7 +164,7 @@ but doesn't prevent a patient attacker from harvesting the user base.
 - **MEH-AAA:** Login rate-limit IP resolution fix (finding #1) — **HIGH**, ship before launch
 - **MEH-BBB:** Global 401 interceptor + session-expired toast (finding #2, overlaps MEH-250) — MEDIUM
 - **MEH-CCC:** Document the cookie-auth CSRF trap in SECURITY.md (finding #3) — MEDIUM
-- **MEH-DDD:** Decide fate of `/auth/email-exists` (finding #4) — LOW
+- **MEH-DDD:** Decide fate of `/auth/email-exists` (finding #4) — LOW — **✅ RESOLVED via MEH-328 (PR #696, route deleted)**
 - **MEH-EEE:** (Optional) Short-TTL access + refresh token infra for v2
 
 ## Out of scope

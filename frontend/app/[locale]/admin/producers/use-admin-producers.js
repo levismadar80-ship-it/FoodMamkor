@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPage } from "@/lib/pagination";
@@ -51,6 +52,7 @@ function useProducersData() {
 
 // Sub-hook 2 — admin action handlers (each calls loadAllProducers after).
 function useProducerActions(loadAllProducers) {
+  const t = useTranslations("admin");
   const quickApprove = async (id) => {
     await api.post(`/admin/producers/${id}/approve`);
     loadAllProducers();
@@ -60,7 +62,7 @@ function useProducerActions(loadAllProducers) {
     loadAllProducers();
   };
   const deleteProducer = async (id, name) => {
-    if (!confirm(`למחוק את "${name}"? פעולה זו אינה הפיכה.`)) return;
+    if (!confirm(t("producers.table.confirm_delete", { name }))) return;
     await api.delete(`/admin/producers/${id}`);
     loadAllProducers();
   };
@@ -73,6 +75,7 @@ function useProducerActions(loadAllProducers) {
 
 // Sub-hook 3 — Excel import flow (dry-run preview, then confirm).
 function useImportFlow(loadAllProducers) {
+  const t = useTranslations("admin");
   const [importPreview, setImportPreview] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
@@ -89,7 +92,7 @@ function useImportFlow(loadAllProducers) {
       });
       setImportPreview({ ...r.data, _file: file });
     } catch (err) {
-      setImportError(err.response?.data?.detail || "שגיאה בקריאת הקובץ");
+      setImportError(err.response?.data?.detail || t("producers.import.errors_loading"));
     } finally {
       setImporting(false);
     }
@@ -108,7 +111,7 @@ function useImportFlow(loadAllProducers) {
       setImportPreview(null);
       loadAllProducers();
     } catch (err) {
-      setImportError(err.response?.data?.detail || "שגיאה בייבוא");
+      setImportError(err.response?.data?.detail || t("producers.import.errors_importing"));
     } finally {
       setImporting(false);
     }

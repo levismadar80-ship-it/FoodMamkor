@@ -5,9 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { WarningCircle } from "@phosphor-icons/react";
 import * as Sentry from "@sentry/nextjs";
+import { useTranslations } from "next-intl";
 import { BRAND_NAME } from "@/lib/constants";
 
 export default function GlobalError({ error, reset }) {
+  const t = useTranslations("errors.boundary");
   useEffect(() => {
     Sentry.captureException(error);
     if (process.env.NODE_ENV === "development") {
@@ -29,10 +31,10 @@ export default function GlobalError({ error, reset }) {
           aria-hidden="true"
         />
         <h1 className="font-headline text-4xl font-bold text-site-text mb-3">
-          משהו השתבש — נסי שוב
+          {t("heading")}
         </h1>
         <p className="text-site-muted text-lg mb-8 leading-relaxed">
-          הדף לא הצליח להיטען הפעם. לרוב זה עובד בפעם השנייה.
+          {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
@@ -40,19 +42,19 @@ export default function GlobalError({ error, reset }) {
             onClick={() => reset()}
             className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-light transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            נסי שוב
+            {t("retry")}
           </button>
           <Link
             href="/"
             className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium"
           >
-            חזרי לדף הבית
+            {t("home")}
           </Link>
         </div>
         <p className="mt-6 text-sm text-site-muted">
-          אם זה ממשיך,{" "}
+          {t("contact_prefix")}{" "}
           <Link href="/contact" className="text-primary underline underline-offset-2 hover:text-primary-light transition">
-            כתבי לנו
+            {t("contact_link")}
           </Link>
         </p>
         {process.env.NODE_ENV === "development" && error?.message && (

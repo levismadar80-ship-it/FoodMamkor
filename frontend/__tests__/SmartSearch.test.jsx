@@ -1,5 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+// MEH-475 PR-C4a chunk 4b: mock next-intl per established precedent.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = {
+      loading: "טוענת תוצאות...",
+      no_results_for: "אין תוצאות עבור",
+      section_producers: "בתי עסק",
+      section_products: "מוצרים",
+      product_by_prefix: "אצל",
+      section_cities: "ערים",
+      section_categories: "קטגוריות",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 import SmartSearch from "@/components/SmartSearch";
 
 const mockPush = vi.fn();

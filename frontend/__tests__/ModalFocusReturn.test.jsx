@@ -5,6 +5,51 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, act, screen, fireEvent } from "@testing-library/react";
 import { useState } from "react";
+
+// MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
+// Covers strings from LocationModal + LoginPromptModal that this file
+// renders. Test assertions use Hebrew strings, so map them explicitly.
+vi.mock("next-intl", () => ({
+  // MEH-629 item 3: namespace-aware mock so each modal's `title` resolves
+  // distinctly instead of colliding via JS object-literal "last wins".
+  useTranslations: (ns) => (key) => {
+    const flat = {
+      // modals.location.*
+      "modals.location.title": "איפה את?",
+      "modals.location.subtitle": "נמצא עסקים קרובים אליך",
+      "modals.location.search_label": "חיפוש עיר",
+      "modals.location.search_placeholder": "הקלידי שם עיר...",
+      "modals.location.aria_label": "בחירת עיר",
+      "modals.location.close_aria": "סגור",
+      "modals.location.geo_button": "קרוב אליי",
+      "modals.location.geo_loading": "מחפשת...",
+      "modals.location.geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "modals.location.current_location_fallback": "מיקום נוכחי",
+      "modals.location.skip": "דלגי לעכשיו",
+      "modals.location.popular_cities.tel_aviv": "תל אביב",
+      "modals.location.popular_cities.jerusalem": "ירושלים",
+      "modals.location.popular_cities.haifa": "חיפה",
+      "modals.location.popular_cities.beersheba": "באר שבע",
+      // modals.login_prompt.*
+      "modals.login_prompt.default_message": "כדי לשמור עסקים אוהבים — היכנסי",
+      "modals.login_prompt.title": "רוצה לשמור? 🌿",
+      "modals.login_prompt.login_cta": "היכנסי",
+      "modals.login_prompt.dismiss_cta": "אולי אחר כך",
+      // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
+      "report.trigger": "🚩 דווח על עסק",
+      "report.form_heading": "דווח על עסק",
+      "report.reason_placeholder": "ספר/י מה הבעיה...",
+      "report.submit": "שלח דיווח",
+      "report.cancel": "ביטול",
+      "report.error_generic": "שגיאה בשליחה",
+      "report.success_title": "תודה על הדיווח",
+      "report.success_message": "נבדוק ונטפל תוך 48 שעות.",
+      "report.success_close": "סגור",
+    };
+    return flat[ns ? `${ns}.${key}` : key] ?? key;
+  },
+}));
+
 import LocationModal from "@/components/LocationModal";
 import LoginPromptModal from "@/components/LoginPromptModal";
 import ReportButton from "@/components/ReportButton";

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlightMatch";
 
@@ -57,6 +58,7 @@ function deleteRecent(query) {
 }
 
 export default function HeroSearch({ placeholder, srLabel, className = "" }) {
+  const t = useTranslations("search.hero");
   const router = useRouter();
   const [value, setValue] = useState("");
   const [results, setResults] = useState(EMPTY_RESULT);
@@ -241,7 +243,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         type="button"
         onClick={() => submitRaw()}
         className="shrink-0 text-primary hover:text-primary-dark transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
-        aria-label="חיפוש"
+        aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >
         <MagnifyingGlass size={22} weight="bold" aria-hidden="true" />
@@ -257,16 +259,16 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           dir="rtl"
         >
           {loading && !hasAutoResults && (
-            <p className="px-3 py-3 text-xs text-site-muted">טוענת תוצאות...</p>
+            <p className="px-3 py-3 text-xs text-site-muted">{t("loading")}</p>
           )}
           {!loading && !hasAutoResults && (
             <p className="px-3 py-3 text-xs text-site-muted">
-              אין תוצאות עבור &quot;{trimmed}&quot;
+              {t("no_results_for")} &quot;{trimmed}&quot;
             </p>
           )}
 
           {results.producers.length > 0 && (
-            <Section title="🏪 בתי עסק">
+            <Section title={t("section_producers")}>
               {results.producers.slice(0, MAX_PER_SECTION).map((p) => {
                 const i = cursor++;
                 return (
@@ -288,7 +290,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           )}
 
           {results.categories.length > 0 && (
-            <Section title="🏷️ קטגוריות">
+            <Section title={t("section_categories")}>
               {results.categories.slice(0, MAX_PER_SECTION).map((c) => {
                 const i = cursor++;
                 return (
@@ -308,7 +310,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           )}
 
           {results.cities.length > 0 && (
-            <Section title="📍 ערים">
+            <Section title={t("section_cities")}>
               {results.cities.slice(0, MAX_PER_SECTION).map((city) => {
                 const i = cursor++;
                 return (
@@ -336,7 +338,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           dir="rtl"
         >
           {recentSearches.length > 0 ? (
-            <Section title="חיפושים אחרונים">
+            <Section title={t("recent_heading")}>
               {recentSearches.map((q) => (
                 <li
                   key={q}
@@ -357,7 +359,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                   <button
                     type="button"
                     className="text-site-muted hover:text-site-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    aria-label={`הסר ${q} מהחיפושים האחרונים`}
+                    aria-label={t("remove_recent_aria", { q })}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -370,7 +372,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               ))}
             </Section>
           ) : (
-            <Section title="חיפושים פופולריים">
+            <Section title={t("trending_heading")}>
               {trending.map((q) => (
                 <li
                   key={q}

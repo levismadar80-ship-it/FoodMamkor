@@ -137,6 +137,28 @@ _Precedent: PR #682 (MEH-605/606/609, 2026-05-16) — both rules drove
 the Sapir-override of the A/B/C copy menus in those Linear issues. See
 [docs/CHANGELOG.md](./CHANGELOG.md) and [HANDOFF.md](../HANDOFF.md)._
 
+### Brand name — UI vs outbound (Q6 hybrid rule)
+
+The brand has two written forms. UI surfaces visible inside the app use
+the Hebrew "מהמקור"; outbound surfaces visible to crawlers, link
+previews, or non-Hebrew audiences use the Latin "Mehamakor". The split
+is by surface type, not by locale — even in `/en/` pages the in-app
+siteName stays "מהמקור".
+
+| Context | Name | Surface type | Why |
+|---|---|---|---|
+| Header logo, page `<title>` | מהמקור | UI | In-app display; Hebrew audience reads the chrome |
+| `og:site_name` meta tag (appears in WhatsApp/FB/Twitter share preview cards) | מהמקור | UI metadata | Platform chrome, not our prose. One source-of-truth for the siteName constant. WhatsApp/FB render Hebrew normally for Hebrew sites — no friction |
+| Footer `© 2026 מהמקור` | מהמקור | UI | Visible UI |
+| `Organization.name` (JSON-LD structured data) | Mehamakor | Outbound (SEO) | Crawlers + knowledge-panel surfaces; Latin is the cross-platform key |
+| Sitemap URL path slugs (domain `mehamakor.online`, `/en/...` paths) | Mehamakor | Outbound (SEO) | URL-safe ASCII; international tooling |
+| WhatsApp Business display name + auto-replies | Mehamakor | Outbound | Cross-platform; non-Hebrew speakers in shared chats |
+| Share text **body** — the prose the user types or we pre-fill (e.g. "Check out Mehamakor at…") | Mehamakor | Outbound prose | This is our copy, not platform chrome. Distinct from `og:site_name` which is metadata, even though both appear in shares |
+
+_Precedent: Session 2026-05-16 — hybrid decision codified during Wave 4
+pre-flight (PR #704 MEH-473 reconstruction). Pointer from MEH-476 Wave 6
+spec; Brand Hub `02-מדריך-מותג.md` v1.2 mirrors this table._
+
 ---
 
 ## Hero Section — בדיוק כמו gardensweet.com

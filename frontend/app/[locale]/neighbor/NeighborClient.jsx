@@ -86,6 +86,7 @@ export default function NeighborClient() {
           aria-live="polite"
           className="fixed inset-x-4 z-[500] transition-opacity duration-500 top-20 rounded-[10px] bg-light text-primary py-[10px] px-4"
         >
+          {/* TODO MEH-543: i18n after /neighbor activation post-launch */}
           <p className="text-sm font-medium text-center">
             כאן שכנות מוכרות אוכל ביתי — גלגלי לגלות · לחצי על מוצר לפרטים
           </p>

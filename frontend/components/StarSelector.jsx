@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { Star } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export default function StarSelector({ value, onChange }) {
+  // Reuse reviews.star_aria — same semantic + ICU plural shape.
+  const t = useTranslations("reviews");
   const [hover, setHover] = useState(0);
 
   return (
@@ -18,7 +21,7 @@ export default function StarSelector({ value, onChange }) {
             onMouseEnter={() => setHover(star)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(star)}
-            aria-label={`${star} כוכבים`}
+            aria-label={t("star_aria", { value: star })}
           >
             <Star
               size={36}

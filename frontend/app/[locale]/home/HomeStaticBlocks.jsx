@@ -7,15 +7,17 @@ import FadeInSection from "@/components/FadeInSection";
 import HomeProductCard from "@/components/HomeProductCard";
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
-const MARQUEE_ITEMS = [
-  "🌿 ללא מעובד",
-  "🥩 ממרעה",
-  "🧀 אורגני",
-  "🍞 מחמצת",
-  "🫒 כתית",
-  "🌱 טרי ואמיתי",
-  "✅ מאומת",
-  "📍 מקומי",
+// Tag display labels resolve via home.marquee.* — preserving the order
+// matters for the loop animation. The keys are the data axis.
+const MARQUEE_KEYS = [
+  "tag_unprocessed",
+  "tag_pasture",
+  "tag_organic",
+  "tag_sourdough",
+  "tag_extra_virgin",
+  "tag_fresh_real",
+  "tag_verified",
+  "tag_local",
 ];
 
 /**
@@ -25,6 +27,7 @@ const MARQUEE_ITEMS = [
  * Pauses on hover; respects prefers-reduced-motion.
  */
 export function HomeMarquee() {
+  const t = useTranslations("home.marquee");
   return (
     <div
       className="bg-primary overflow-hidden marquee-edge-fade"
@@ -38,16 +41,16 @@ export function HomeMarquee() {
       <div className="marquee-track">
         {[0, 1].map((loop) => (
           <div key={loop} className="flex items-center" style={{ gap: "48px" }}>
-            {MARQUEE_ITEMS.map((text) => (
+            {MARQUEE_KEYS.map((key) => (
               <span
-                key={`${loop}-${text}`}
+                key={`${loop}-${key}`}
                 className="font-body whitespace-nowrap text-light"
                 style={{
                   fontSize: 14,
                   letterSpacing: "0.06em",
                 }}
               >
-                {text}
+                {t(key)}
               </span>
             ))}
           </div>
@@ -135,7 +138,8 @@ export function HomeRecentlyViewed({ items }) {
 }
 
 /**
- * מהמטבח של השכן — preview (max 3). Full browse lives at /neighbor.
+ * DEFERRED home-product preview (max 3). Hidden until MEH-543 launch.
+ * Full browse at /neighbor.
  * Hidden entirely when the products list is empty.
  */
 export function HomeKitchenPreview({ products, onWhatsAppClick }) {

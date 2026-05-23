@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 
 /**
@@ -14,6 +15,7 @@ import api from "@/lib/api";
  * Keyboard nav: ArrowUp/Down to move, Enter to add, Backspace to remove last.
  */
 export default function CitiesAutocomplete({ value = [], onChange }) {
+  const t = useTranslations("search.cities_autocomplete");
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -110,7 +112,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); removeCity(city); }}
-              aria-label={`הסר ${city}`}
+              aria-label={t("remove_aria", { city })}
               className="text-site-muted hover:text-red-500 transition leading-none"
             >
               ×
@@ -125,7 +127,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           onKeyDown={handleKeyDown}
           onFocus={() => { if (suggestions.length > 0) setOpen(true); else fetchSuggestions(query); }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder={value.length === 0 ? "הקלידי שם עיר..." : ""}
+          placeholder={value.length === 0 ? t("placeholder") : ""}
           className="flex-1 min-w-[120px] outline-none text-sm bg-transparent"
           dir="rtl"
           role="combobox"

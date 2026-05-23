@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -12,12 +13,24 @@ import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-fil
 import { useUserCity } from "@/lib/use-user-city";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
 
-const CITY_CHIP = { key: "city", label: "בעיר שלי", icon: "📍" };
+// Display axis = i18n key for the translated label.
+// Data axis = `q` value sent to /producers — must stay Hebrew because the
+// backend search matches against Hebrew producer name/description columns.
+// Translating `q` per locale would zero-match on /en/.
+const EMPTY_CATEGORY_CHIPS = [
+  { key: "beef", q: "בשר" },
+  { key: "cheese", q: "גבינה" },
+  { key: "bread", q: "לחם" },
+  { key: "vegetables", q: "ירקות" },
+  { key: "oil", q: "שמן" },
+  { key: "honey", q: "דבש" },
+];
 
 function initChipsFromParams(searchParams) {
   const result = { ...CHIPS_DEFAULT };
@@ -34,8 +47,11 @@ export default function ProducersClient({
   totalPages,
   perPage,
 }) {
+  const t = useTranslations("producers");
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const cityChipDef = { key: "city", label: t("filters.city_chip"), icon: "📍" };
 
   const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
@@ -191,7 +207,7 @@ export default function ProducersClient({
     trackEvent("producers_clear_all");
   };
 
-  const cityChip = cityFilter ? { ...CITY_CHIP, label: cityFilter } : CITY_CHIP;
+  const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
   const allChips = [...CHIPS_CONFIG, cityChip];
   const activeKeys = { ...chips, city: !!cityFilter };
 
@@ -204,35 +220,35 @@ export default function ProducersClient({
 
   const counterText = (() => {
     if (!showGrid) return null;
-    if (hasActiveChips) return `נמצאו ${filteredItems?.length ?? 0} בתי עסק`;
+    if (hasActiveChips) return t("discovery.found_count", { count: filteredItems?.length ?? 0 });
     const loaded = initialItems.length + appendItems.length;
     // MEH-159: use liveTotal (refreshed on scroll + tab focus) so the counter
     // stays correct after admin deletes producers mid-session.
     return loaded >= liveTotal
-      ? `כל ${liveTotal} בתי העסק`
-      : `מציגות ${loaded} מתוך ${liveTotal} בתי עסק`;
+      ? t("discovery.all_count", { count: liveTotal })
+      : t("discovery.showing_count", { loaded, total: liveTotal });
   })();
 
   return (
     <>
       <Breadcrumb
         items={[
-          { href: "/", label: "בית" },
+          { href: "/", label: t("breadcrumb.home") },
           searchQ
-            ? { href: "/producers", label: "כל בתי העסק" }
-            : { label: "כל בתי העסק" },
-          ...(searchQ ? [{ label: `חיפוש: ${searchQ}` }] : []),
+            ? { href: "/producers", label: t("breadcrumb.all") }
+            : { label: t("breadcrumb.all") },
+          ...(searchQ ? [{ label: t("breadcrumb.search", { q: searchQ }) }] : []),
         ]}
         className="mb-4"
       />
       <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
         {searchQ ? (
           <>
-            תוצאות עבור:{" "}
+            {t("title.search_results")}{" "}
             <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
           </>
         ) : (
-          "כל בתי העסק"
+          t("title.all")
         )}
       </h1>
 
@@ -253,7 +269,7 @@ export default function ProducersClient({
       {hasActiveChips && (
         <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1 py-2 bg-light border-y border-border">
           <span className="text-xs text-primary font-semibold whitespace-nowrap shrink-0">
-            מסנן לפי:
+            {t("filters.filter_by")}
           </span>
           {activeChipDefs.map((chip) => (
             <button
@@ -299,7 +315,7 @@ export default function ProducersClient({
             onClick={clearAll}
             className="text-xs text-primary underline whitespace-nowrap shrink-0 ms-1"
           >
-            נקי הכל
+            {t("filters.clear_all")}
           </button>
         </div>
       )}
@@ -343,13 +359,13 @@ export default function ProducersClient({
                   <div
                     className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
                     role="status"
-                    aria-label="טוענת עוד בתי עסק"
+                    aria-label={t("discovery.loading_more_aria")}
                   />
                 </div>
               )}
               {!hasMore && appendItems.length > 0 && (
                 <p className="text-center text-site-muted text-sm py-8">
-                  הצגנו את כל {liveTotal} בתי העסק 🌿
+                  {t("discovery.all_shown", { count: liveTotal })}
                 </p>
               )}
               {/* SEO fallback — shown when JS pagination is still the only option
@@ -372,6 +388,7 @@ export default function ProducersClient({
 }
 
 function RecentlyViewedStrip() {
+  const t = useTranslations("producers.recently_viewed");
   const [producers, setProducers] = useState([]);
 
   useEffect(() => {
@@ -390,8 +407,8 @@ function RecentlyViewedStrip() {
   if (!producers.length) return null;
 
   return (
-    <section aria-label="ביקרת לאחרונה" className="mb-5">
-      <p className="text-xs font-semibold text-site-muted mb-2 px-0.5">ביקרת לאחרונה</p>
+    <section aria-label={t("aria")} className="mb-5">
+      <p className="text-xs font-semibold text-site-muted mb-2 px-0.5">{t("label")}</p>
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {producers.map((p) => (
           <Link
@@ -408,6 +425,7 @@ function RecentlyViewedStrip() {
 }
 
 function FilterEmptyState({ onClear, searchQ }) {
+  const t = useTranslations("producers");
   return (
     <div className="text-center py-16">
       <div
@@ -418,21 +436,21 @@ function FilterEmptyState({ onClear, searchQ }) {
       </div>
       <h2 className="font-headline text-xl font-bold text-site-text mb-2">
         {searchQ
-          ? `לא מצאנו בתי עסק עבור "${searchQ}"`
-          : "לא מצאנו בתי עסק שמתאימים לסינון הזה"}
+          ? t("empty.no_match_search", { q: searchQ })
+          : t("empty.no_match_filters")}
       </h2>
       <p className="text-site-muted text-sm mb-6">
-        {searchQ ? "נסי מילה אחרת או גלי לפי קטגוריה" : "נסי להסיר אחד מהסינונים"}
+        {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
       {searchQ && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {["בשר", "גבינה", "לחם", "ירקות", "שמן", "דבש"].map((cat) => (
+          {EMPTY_CATEGORY_CHIPS.map(({ key, q }) => (
             <Link
-              key={cat}
-              href={`/producers?q=${encodeURIComponent(cat)}`}
+              key={key}
+              href={`/producers?q=${encodeURIComponent(q)}`}
               className="bg-white border border-border text-site-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
-              {cat}
+              {t(`empty.category_chips.${key}`)}
             </Link>
           ))}
         </div>
@@ -442,13 +460,19 @@ function FilterEmptyState({ onClear, searchQ }) {
         onClick={onClear}
         className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
       >
-        נקי הכל והצגי הכל
+        {t("empty.clear_all_show_all")}
       </button>
     </div>
   );
 }
 
 function CatalogEmptyState() {
+  const t = useTranslations("producers.catalog_empty");
+  // MEH-669: hide the "register as producer" CTA from admins.
+  // Server-side guard at backend/app/routers/auth.py:432 enforces; this
+  // is defense-in-depth UX. notify_cta link stays visible to everyone.
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   return (
     <div className="text-center py-16">
       <div
@@ -458,23 +482,25 @@ function CatalogEmptyState() {
         <span className="text-2xl">🌿</span>
       </div>
       <h2 className="font-headline text-xl font-bold text-site-text mb-2">
-        הרשימה בדרך
+        {t("title")}
       </h2>
       <p className="text-site-muted text-sm mb-6 max-w-sm mx-auto">
-        הציעי עסק שאת אוהבת, או הירשמי לעדכונים כשמצטרפות חדשות
+        {t("subtitle")}
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Link
-          href="/register/producer"
-          className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
-        >
-          הוסיפי את העסק שלך 🌿
-        </Link>
+        {!isAdmin && (
+          <Link
+            href="/register/producer"
+            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
+          >
+            {t("add_cta")}
+          </Link>
+        )}
         <Link
           href="/about#newsletter"
           className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-light transition"
         >
-          הודיעי לי כשמצטרפות חדשות
+          {t("notify_cta")}
         </Link>
       </div>
     </div>
@@ -482,20 +508,22 @@ function CatalogEmptyState() {
 }
 
 function PageOverflowState() {
+  const t = useTranslations("producers.page_overflow");
   return (
     <div className="text-center py-16">
-      <p className="text-site-muted mb-4">הגעת לסוף הרשימה</p>
+      <p className="text-site-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
         className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-light transition"
       >
-        חזרי לעמוד ראשון
+        {t("back_cta")}
       </Link>
     </div>
   );
 }
 
 function ServerPageLinks({ page, totalPages }) {
+  const t = useTranslations("producers.pagination");
   if (totalPages <= 1) return null;
   const prev =
     page > 1 ? (page - 1 === 1 ? "/producers" : `/producers?page=${page - 1}`) : null;
@@ -503,7 +531,7 @@ function ServerPageLinks({ page, totalPages }) {
 
   return (
     <nav
-      aria-label="עימוד"
+      aria-label={t("aria")}
       className="flex items-center justify-center gap-3 mt-8 text-sm"
     >
       {prev ? (
@@ -511,24 +539,24 @@ function ServerPageLinks({ page, totalPages }) {
           href={prev}
           className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-light transition"
         >
-          ← עמוד קודם
+          {t("prev")}
         </Link>
       ) : (
         <span className="border border-border text-site-muted px-4 py-2 rounded-[12px] opacity-50">
-          ← עמוד קודם
+          {t("prev")}
         </span>
       )}
-      <span className="text-site-muted">עמוד {page} מתוך {totalPages}</span>
+      <span className="text-site-muted">{t("page_of", { page, totalPages })}</span>
       {next ? (
         <Link
           href={next}
           className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-light transition"
         >
-          עמוד הבא →
+          {t("next")}
         </Link>
       ) : (
         <span className="border border-border text-site-muted px-4 py-2 rounded-[12px] opacity-50">
-          עמוד הבא →
+          {t("next")}
         </span>
       )}
     </nav>

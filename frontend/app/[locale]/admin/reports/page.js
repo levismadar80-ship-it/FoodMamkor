@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
-const TABS = [
-  { key: "reports", label: "דיווחי משתמשים" },
-  { key: "flagged", label: "מוצרים ביתיים בבדיקה" },
-  { key: "hidden", label: "מוסתרים אוטומטית" },
-];
-
 export default function AdminReportsPage() {
+  const t = useTranslations("admin");
   const [tab, setTab] = useState("reports");
   const [reports, setReports] = useState([]);
   const [flagged, setFlagged] = useState([]);
   const [hidden, setHidden] = useState([]);
+
+  const TABS = [
+    { key: "reports", label: t("reports.tabs.reports") },
+    { key: "flagged", label: t("reports.tabs.flagged") },
+    { key: "hidden", label: t("reports.tabs.hidden") },
+  ];
 
   useEffect(() => {
     api.get("/admin/reports").then((r) => setReports(r.data)).catch(() => setReports([]));
@@ -33,7 +35,7 @@ export default function AdminReportsPage() {
   };
 
   const removeFlagged = async (id) => {
-    const reason = window.prompt("סיבת ההסרה (תישלח למוכר)", "");
+    const reason = window.prompt(t("reports.remove_reason_prompt"), "");
     if (reason === null) return;
     await api.post(`/admin/home-products/${id}/remove`, { reason });
     setFlagged(flagged.filter((hp) => hp.id !== id));
@@ -41,24 +43,24 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-headline text-3xl font-bold text-site-text">דיווחים ובעיות</h1>
+      <h1 className="font-headline text-3xl font-bold text-site-text">{t("reports.title")}</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border">
-        {TABS.map((t) => {
-          const count = t.key === "reports" ? reports.length : t.key === "flagged" ? flagged.length : hidden.length;
+        {TABS.map((tt) => {
+          const count = tt.key === "reports" ? reports.length : tt.key === "flagged" ? flagged.length : hidden.length;
           return (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={tt.key}
+              onClick={() => setTab(tt.key)}
               className={`px-4 py-2 text-sm transition border-b-2 ${
-                tab === t.key
+                tab === tt.key
                   ? "border-primary text-primary font-semibold"
                   : "border-transparent text-site-muted hover:text-site-text"
               }`}
-              aria-current={tab === t.key ? "page" : undefined}
+              aria-current={tab === tt.key ? "page" : undefined}
             >
-              {t.label}
+              {tt.label}
               {count > 0 && (
                 <span className="me-2 bg-light text-primary px-2 py-0.5 rounded-full text-xs">{count}</span>
               )}
@@ -70,10 +72,10 @@ export default function AdminReportsPage() {
       {/* Tab 1: producer reports */}
       {tab === "reports" && (
         <section>
-          <h2 className="font-semibold text-lg mb-3">בתי עסק עם 3+ דיווחים</h2>
+          <h2 className="font-semibold text-lg mb-3">{t("reports.section_3plus")}</h2>
           {reports.length === 0 ? (
             <p className="text-sm text-site-muted bg-white border border-border rounded-[12px] p-5">
-              אין דיווחים פתוחים 🎉
+              {t("reports.no_reports")}
             </p>
           ) : (
             <div className="space-y-3">
@@ -85,20 +87,20 @@ export default function AdminReportsPage() {
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-semibold">{r.producer_name}</h3>
-                        <p className="text-red-600 text-sm font-medium">{r.report_count} דיווחים</p>
+                        <p className="text-red-600 text-sm font-medium">{t("reports.report_count", { count: r.report_count })}</p>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => suspendProducer(r.producer_id)}
                           className="bg-yellow-500 text-white px-3 py-1.5 rounded-[12px] text-xs"
                         >
-                          ⏸️ השהה עסק
+                          {t("reports.actions.suspend")}
                         </button>
                         <button
                           onClick={() => setReports(reports.filter((x) => x.producer_id !== r.producer_id))}
                           className="bg-white border border-border px-3 py-1.5 rounded-[12px] text-xs"
                         >
-                          התעלם
+                          {t("reports.actions.ignore")}
                         </button>
                       </div>
                     </div>
@@ -122,13 +124,13 @@ export default function AdminReportsPage() {
       {/* Tab 2: AI-flagged home products */}
       {tab === "flagged" && (
         <section>
-          <h2 className="font-semibold text-lg mb-3">מוצרים ביתיים שה-AI סימן לבדיקה</h2>
+          <h2 className="font-semibold text-lg mb-3">{t("reports.flagged.heading")}</h2>
           <p className="text-sm text-site-muted mb-4">
-            אלו מוצרים שפורסמו עם תגית &quot;בבדיקה&quot; כי ה-AI זיהה משהו לא ברור — טענות בריאות, מחיר חשוד, או עסק שמתחזה לביתי.
+            {t("reports.flagged.subtitle")}
           </p>
           {flagged.length === 0 ? (
             <p className="text-sm text-site-muted bg-white border border-border rounded-[12px] p-5">
-              אין מוצרים בבדיקה כרגע 🌿
+              {t("reports.flagged.empty")}
             </p>
           ) : (
             <div className="space-y-3">
@@ -148,7 +150,7 @@ export default function AdminReportsPage() {
                         className="mt-3 rounded-[8px] p-3 text-sm"
                         style={{ background: "#FFF9E6", border: "1px solid #F0C040", color: "#946A00" }}
                       >
-                        <p className="font-medium"><Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {hp.moderation_reason || "סומן לבדיקה"}</p>
+                        <p className="font-medium"><Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {hp.moderation_reason || t("reports.flagged.default_reason")}</p>
                         {hp.moderation_suggestion && (
                           <p className="mt-1 opacity-80">💡 {hp.moderation_suggestion}</p>
                         )}
@@ -159,13 +161,13 @@ export default function AdminReportsPage() {
                         onClick={() => approveFlagged(hp.id)}
                         className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-light transition"
                       >
-                        <CheckCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> אשרי
+                        <CheckCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {t("reports.flagged.approve")}
                       </button>
                       <button
                         onClick={() => removeFlagged(hp.id)}
                         className="bg-white border border-red-400 text-red-600 px-3 py-1.5 rounded-[8px] text-xs hover:bg-red-50 transition"
                       >
-                        ❌ הסירי
+                        {t("reports.flagged.remove")}
                       </button>
                     </div>
                   </div>
@@ -179,10 +181,10 @@ export default function AdminReportsPage() {
       {/* Tab 3: auto-hidden by negative ratings */}
       {tab === "hidden" && (
         <section>
-          <h2 className="font-semibold text-lg mb-3">מוצרים ביתיים מוסתרים אוטומטית</h2>
+          <h2 className="font-semibold text-lg mb-3">{t("reports.hidden.heading")}</h2>
           {hidden.length === 0 ? (
             <p className="text-sm text-site-muted bg-white border border-border rounded-[12px] p-5">
-              אין מוצרים מוסתרים
+              {t("reports.hidden.empty")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -199,7 +201,7 @@ export default function AdminReportsPage() {
                     }}
                     className="text-xs bg-primary text-white px-3 py-1.5 rounded-[12px]"
                   >
-                    שחזרי
+                    {t("reports.hidden.restore")}
                   </button>
                 </div>
               ))}

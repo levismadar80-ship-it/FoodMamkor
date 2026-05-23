@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
+  const t = useTranslations("admin");
   const [data, setData] = useState(null);
   useEffect(() => {
     api.get("/admin/analytics").then((r) => setData(r.data)).catch(() => {});
   }, []);
 
-  if (!data) return <div className="text-text-secondary">טוען...</div>;
+  if (!data) return <div className="text-text-secondary">{t("common.loading")}</div>;
 
   // Two stacked line series for monthly chart
   const months = data.monthly || [];
@@ -37,17 +39,17 @@ export default function AdminAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">אנליטיקס</h1>
-        <p className="text-text-secondary text-sm mt-1">תובנות על הפלטפורמה</p>
+        <h1 className="text-2xl font-bold">{t("analytics.title")}</h1>
+        <p className="text-text-secondary text-sm mt-1">{t("analytics.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Monthly chart */}
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">צמיחה חודשית</h2>
+          <h2 className="font-semibold mb-3">{t("analytics.monthly_growth")}</h2>
           <div className="flex gap-4 text-xs mb-2">
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary"></span>בתי עסק</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-secondary"></span>משתמשים</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary"></span>{t("analytics.legend_producers")}</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-secondary"></span>{t("analytics.legend_users")}</span>
           </div>
           <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
             <path d={path("producers")} fill="none" stroke="#2e6853" strokeWidth="2" />
@@ -65,9 +67,9 @@ export default function AdminAnalyticsPage() {
 
         {/* Top categories */}
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">קטגוריות פופולריות</h2>
+          <h2 className="font-semibold mb-3">{t("analytics.top_categories")}</h2>
           {cats.length === 0 ? (
-            <p className="text-sm text-text-secondary">אין נתונים</p>
+            <p className="text-sm text-text-secondary">{t("analytics.no_data")}</p>
           ) : (
             <ul className="space-y-2">
               {cats.map((c) => (
@@ -90,9 +92,9 @@ export default function AdminAnalyticsPage() {
 
         {/* Top cities */}
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">ערים מובילות</h2>
+          <h2 className="font-semibold mb-3">{t("analytics.top_cities")}</h2>
           {(data.by_city || []).length === 0 ? (
-            <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
+            <p className="text-sm text-text-secondary">{t("analytics.no_data_display")}</p>
           ) : (
             <ol className="space-y-1.5 text-sm">
               {(data.by_city || []).map((c, i) => (
@@ -107,9 +109,9 @@ export default function AdminAnalyticsPage() {
 
         {/* Top producers */}
         <div className="bg-white border border-border rounded-[12px] p-5">
-          <h2 className="font-semibold mb-3">בתי עסק עם הכי הרבה מועדפים</h2>
+          <h2 className="font-semibold mb-3">{t("analytics.top_producers_favorites")}</h2>
           {(data.top_producers || []).length === 0 ? (
-            <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
+            <p className="text-sm text-text-secondary">{t("analytics.no_data_display")}</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
               {(data.top_producers || []).map((p) => (
@@ -128,12 +130,12 @@ export default function AdminAnalyticsPage() {
 
       {/* Heat map note */}
       <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-3">פיזור גיאוגרפי</h2>
+        <h2 className="font-semibold mb-3">{t("analytics.geographic")}</h2>
         <p className="text-sm text-text-secondary mb-2">
-          {(data.map_points || []).length} בתי עסק עם מיקום מיפוי
+          {t("analytics.map_count", { count: (data.map_points || []).length })}
         </p>
         {(data.map_points || []).length === 0 ? (
-          <p className="text-sm text-text-secondary">אין נתונים להצגה</p>
+          <p className="text-sm text-text-secondary">{t("analytics.no_data_display")}</p>
         ) : (
           <div className="bg-accent/30 rounded-[12px] p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
             {(data.map_points || []).slice(0, 30).map((p) => (

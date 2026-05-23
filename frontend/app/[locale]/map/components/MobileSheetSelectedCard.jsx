@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -31,6 +32,7 @@ import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
  * minimal extension that preserves source behavior.
  */
 export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
+  const t = useTranslations();
   if (!selectedProducer) return null;
   const sp = selectedProducer;
   const spImg = optimizeCloudinary(sp.images?.[0]);
@@ -52,7 +54,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
           <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
         )}
         {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: map overlay close button, physically positioned */}
-        <button type="button" onClick={onClose} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-site-muted" aria-label="סגור">
+        <button type="button" onClick={onClose} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-site-muted" aria-label={t("common.aria.close")}>
           <X size={14} weight="bold" />
         </button>
       </div>
@@ -61,13 +63,13 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
         <p className="text-[13px] text-site-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
         {(sp.is_verified || sp.is_organic || sp.is_kosher) && (
           <div className="flex flex-wrap gap-1 mt-1.5">
-            {sp.is_verified && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">✓ מאומת</span>}
-            {sp.is_organic && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">🌿 אורגני</span>}
-            {sp.is_kosher && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">✡️ כשר</span>}
+            {sp.is_verified && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.verified")}</span>}
+            {sp.is_organic && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.organic")}</span>}
+            {sp.is_kosher && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.kosher")}</span>}
           </div>
         )}
         {spPhone && (
-          <a href={getWhatsAppHref(spPhone, `היי! מצאתי אותך במהמקור — ${sp.name || ""}`)} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(sp.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
+          <a href={getWhatsAppHref(spPhone, t("map.popup.whatsapp_greeting", { name: sp.name || "" }))} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(sp.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2.5 font-medium text-sm">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
             WhatsApp
           </a>

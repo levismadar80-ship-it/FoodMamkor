@@ -17,7 +17,10 @@ from app.config import settings
 from app.database import get_db
 from app.models import User
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
+# default at time of pinning AND all existing user.password_hash rows.
+# Prevents future drift if passlib bumps its default — see MEH-626 A7.
+pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 logger = structlog.get_logger(__name__)

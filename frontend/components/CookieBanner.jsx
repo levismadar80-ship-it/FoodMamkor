@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 /**
  * Cookie consent — compact bottom bar (max ~80px).
@@ -10,6 +11,7 @@ import Link from "next/link";
  * Fires CustomEvent("cookie-consent") on dismiss so ChatWidget repositions.
  */
 export default function CookieBanner() {
+  const t = useTranslations("modals.cookie_banner");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -33,12 +35,17 @@ export default function CookieBanner() {
     <div
       className="cookie-banner fixed bottom-16 md:bottom-0 inset-x-0 z-[599] bg-primary-dark text-light shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="dialog"
-      aria-label="הסכמה לעוגיות"
+      aria-label={t("aria_label")}
     >
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
         <p className="text-xs md:text-sm text-light/90 min-w-0">
-          🍪 אנחנו משתמשים בעוגיות לשיפור החוויה —{" "}
-          <Link href="/privacy" className="underline hover:text-white">מדיניות פרטיות</Link>
+          {t.rich("message", {
+            link: (chunks) => (
+              <Link href="/privacy" className="underline hover:text-white">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
         <div className="flex items-center gap-2 shrink-0">
           <button
@@ -46,14 +53,14 @@ export default function CookieBanner() {
             onClick={() => accept("all")}
             className="bg-light text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap"
           >
-            קבלי הכל
+            {t("accept_all")}
           </button>
           <button
             type="button"
             onClick={() => accept("essential")}
             className="text-light/80 text-xs px-4 py-2 rounded-full border border-light/30 hover:bg-light/10 transition whitespace-nowrap"
           >
-            רק הכרחיים
+            {t("essential_only")}
           </button>
         </div>
       </div>

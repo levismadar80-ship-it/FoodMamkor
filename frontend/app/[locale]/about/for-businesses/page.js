@@ -1,95 +1,76 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL } from "@/lib/seo";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
-export const metadata = {
-  title: "FAQ לבתי עסק — מהמקור",
-  description:
-    "8 שאלות נפוצות מבעלות עסק מקומיות על מהמקור: עלות, ערך, זמן, אמון בפלטפורמה ושליטה בלקוחות. תשובות ישירות ושקופות.",
-  openGraph: {
-    title: "FAQ לבתי עסק — מהמקור",
-    description: "8 שאלות נפוצות + תשובות ישירות לבעלות עסק שמתלבטות להצטרף.",
-    type: "article",
-    siteName: BRAND_NAME,
-    locale: "he_IL",
-    images: ["/og-image.jpg"],
-  },
-  alternates: { canonical: "/about/for-businesses" },
-};
+// MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
+// pattern for JSON-LD that consumes translation keys via a t() pass.
+// FAQPage schema shape unchanged: name + acceptedAnswer.text built from
+// the same source keys the visible <details> rendering uses.
+// MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations("about_business");
+  return {
+    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
+    title: { absolute: t("meta_title") },
+    description: t("meta_description"),
+    openGraph: {
+      title: t("og_title"),
+      description: t("og_description"),
+      type: "article",
+      siteName: BRAND_NAME,
+      locale: OG_LOCALE[locale],
+      images: ["/og-image.jpg"],
+    },
+    alternates: buildAlternates("/about/for-businesses", locale),
+  };
+}
 
 const CATEGORIES = [
   {
-    heading: "כסף וערך",
+    key: "money_value",
     items: [
-      {
-        q: "כמה זה עולה להירשם?",
-        a: "אפס. את לא משלמת לנו כלום — לא עמלה על הזמנות, לא דמי מנוי. הלקוחות יתקשרו אלייך ישירות ב-WhatsApp או בטלפון, ואת תקבלי 100% מהתשלום שלהן.",
-        open: true,
-      },
-      {
-        q: "מה אני מקבלת מזה?",
-        a:
-          "שני דברים שלא היו לך קודם:\n\n" +
-          "**שאנשים ימצאו אותך בגוגל.** מישהי שמחפשת אוכל מקומי בגוגל — מוצאת אותך. היום, אם את לא קונה תקציב פרסום, את כמעט בלתי-נראית. אצלנו כל בית עסק מקבל דף שעולה בחיפושים.\n\n" +
-          "**דף קבוע שלא נעלם.** Instagram נעלם אחרי 24 שעות. WhatsApp נעלם כשמישהי לא בקבוצה. הדף שלך במהמקור — נשאר. עם הסיפור שלך, התמונות שלך, ואמצעי הקשר שאת בוחרת. את יכולה לשלוח אותו כקישור, ולשים בביו של Instagram.",
-      },
+      { key: "cost", open: true },
+      { key: "value" },
     ],
   },
   {
-    heading: "זמן ומאמץ",
+    key: "time_effort",
     items: [
-      {
-        q: "כמה זמן זה ייקח לי?",
-        a: "בערך 10 דקות לרישום הראשוני. אחרי זה — את לא מנהלת אצלנו עוד דבר. את ממשיכה לעבוד איך שאת עובדת. אם משהו אצלך משתנה — שעות פתיחה, מוצר חדש, הפסקה — את מעדכנת בלחיצה, או שולחת לי הודעה ב-WhatsApp ואני אעדכן.",
-      },
-      {
-        q: "אני לא יודעת לכתוב על עצמי. הדף יראה דל?",
-        a: "את לא צריכה לכתוב לבד. תספרי לי על העסק במה שאת רגילה לכתוב — WhatsApp, אינסטגרם, איך שנוח לך — ואני אעזור לנסח. תמונות מהטלפון מצוינות, לא צריך צלם מקצועי. אם בא לך — נשב 15 דקות בטלפון ונבנה ביחד.",
-      },
+      { key: "time" },
+      { key: "writing" },
     ],
   },
   {
-    heading: "אמון בפלטפורמה",
+    key: "trust",
     items: [
-      {
-        q: "מי עומדת מאחורי מהמקור?",
-        a: "אני ספיר, בת 21, מזכרון יעקב. בניתי את מהמקור כי גם אני חיפשתי איפה לקנות אוכל אמיתי וקרוב, וזה היה קשה — קבוצות WhatsApp, חיפוש באינסטגרם. רציתי מקום אחד. אני לבד כרגע, בלי משקיעים, בלי חברה גדולה. את יכולה לדבר איתי ב-WhatsApp ישירות, לשאול מה שאת רוצה.",
-      },
-      {
-        q: "הלקוחות שיגיעו דרככם — שלכם או שלי?",
-        a: "שלך. לחלוטין. הלקוחות פונות אלייך ישירות ב-WhatsApp או בטלפון — את מקבלת את הפרטים שלהן, את מנהלת את הקשר. אנחנו לא בתווך, אנחנו לא רואות את ההודעות, אנחנו לא לוקחות פרטים. גם אם מהמקור תיסגר מחר, הלקוחות שהגיעו אלייך דרכנו נשארות שלך. זה ההפך מ-Wolt או Yango.",
-      },
+      { key: "founder" },
+      { key: "leads" },
     ],
   },
   {
-    heading: "שליטה ועמדה",
+    key: "control",
     items: [
-      {
-        q: "אני כבר ב-Instagram וב-WhatsApp — למה אני צריכה עוד מקום?",
-        a:
-          "Instagram עובד רק כשמישהי כבר עוקבת אחרייך. WhatsApp groups עובדים רק כשמישהי כבר בקבוצה. מהמקור עובד גם כשאת לא חושבת על זה — מישהי שמחפשת אוכל מקומי בגוגל, מוצאת אותך. זה לא במקום הערוצים שלך, זה בנוסף.\n\n" +
-          'וחשוב לדעת — במהמקור אין השוואה. אין מחירים זה ליד זה, אין דירוג כוכבים, אין כפתור "ראי 10 בתי עסק דומים". כל בית עסק עומד בפני עצמו. הלקוחה רואה אותך, לא אותך-מול-אחרות.',
-      },
-      {
-        q: "אני רוצה להחליט עם מי לעבוד ומתי.",
-        a: 'את החלטת מתי אצלך פתוח. כפתור אחד — "מקבלת הזמנות", "עמוסה כרגע", "בהפסקה" — את בוחרת. אין מי שמדרג אותך לפי כמה מהר ענית. את עונה ב-WhatsApp רק כשבא לך. ואם לקוחה לא מתאימה לך — את לא חייבת. אין דירוג שיורד לך אם תגידי "סליחה, לא הפעם".',
-      },
+      { key: "visibility" },
+      { key: "control" },
     ],
   },
 ];
 
-const ALL_ITEMS = CATEGORIES.flatMap((c) => c.items);
+const ALL_ITEM_KEYS = CATEGORIES.flatMap((c) => c.items.map((i) => i.key));
 
-function buildFaqJsonLd() {
+function buildFaqJsonLd(t) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "@id": `${SITE_URL}/about/for-businesses#faq`,
-    mainEntity: ALL_ITEMS.map((item) => ({
+    mainEntity: ALL_ITEM_KEYS.map((k) => ({
       "@type": "Question",
-      name: item.q,
+      name: t(`faq.${k}.q`),
       acceptedAnswer: {
         "@type": "Answer",
-        text: item.a.replace(/\*\*/g, ""),
+        text: t(`faq.${k}.a`).replace(/\*\*/g, ""),
       },
     })),
   };
@@ -114,8 +95,12 @@ function renderAnswer(text) {
   ));
 }
 
-export default function FaqForBusinessesPage() {
-  const jsonLd = buildFaqJsonLd();
+// MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
+export default async function FaqForBusinessesPage({ params }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "about_business" });
+  const jsonLd = buildFaqJsonLd(t);
   return (
     <main
       className="min-h-screen"
@@ -135,7 +120,7 @@ export default function FaqForBusinessesPage() {
               textTransform: "uppercase",
             }}
           >
-            לבעלות עסק
+            {t("eyebrow")}
           </p>
           <h1
             className="font-headline mb-4"
@@ -146,13 +131,13 @@ export default function FaqForBusinessesPage() {
               fontWeight: 900,
             }}
           >
-            שאלות נפוצות לבעלות עסק
+            {t("heading")}
           </h1>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">
           {CATEGORIES.map((cat) => (
-            <section key={cat.heading}>
+            <section key={cat.key}>
               <h2
                 className="font-headline mb-4"
                 style={{
@@ -161,11 +146,11 @@ export default function FaqForBusinessesPage() {
                   fontWeight: 700,
                 }}
               >
-                {cat.heading}
+                {t(`categories.${cat.key}`)}
               </h2>
               <ul className="flex flex-col gap-3">
                 {cat.items.map((item) => (
-                  <li key={item.q}>
+                  <li key={item.key}>
                     <details
                       open={item.open || undefined}
                       className="group rounded-lg border bg-white transition-colors"
@@ -181,7 +166,7 @@ export default function FaqForBusinessesPage() {
                           fontWeight: 600,
                         }}
                       >
-                        <span>{item.q}</span>
+                        <span>{t(`faq.${item.key}.q`)}</span>
                         <span
                           aria-hidden="true"
                           className="shrink-0 transition-transform group-open:rotate-45 text-2xl leading-none"
@@ -194,7 +179,7 @@ export default function FaqForBusinessesPage() {
                         className="px-5 pb-5 pt-1 text-[15px] leading-relaxed"
                         style={{ color: "#3a3a3a" }}
                       >
-                        {renderAnswer(item.a)}
+                        {renderAnswer(t(`faq.${item.key}.a`))}
                       </div>
                     </details>
                   </li>
@@ -206,7 +191,17 @@ export default function FaqForBusinessesPage() {
 
         <footer className="mt-14 sm:mt-16 border-t pt-8" style={{ borderColor: "rgba(46,104,83,0.18)" }}>
           <p className="text-base mb-4" style={{ color: "#3a3a3a" }}>
-            עדיין יש שאלה? כתבי לי ב-Instagram <a href="https://www.instagram.com/meha_makor" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "#2e6853" }}>@meha_makor</a> או הצטרפי עכשיו:
+            {t("footer_intro_prefix")}{" "}
+            <a
+              href="https://www.instagram.com/meha_makor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+              style={{ color: "#2e6853" }}
+            >
+              @meha_makor
+            </a>{" "}
+            {t("footer_intro_suffix")}
           </p>
           <a
             href="/register/producer"
@@ -218,7 +213,7 @@ export default function FaqForBusinessesPage() {
               padding: "12px 22px",
             }}
           >
-            הוסיפי את העסק שלך
+            {t("cta")}
           </a>
         </footer>
       </div>

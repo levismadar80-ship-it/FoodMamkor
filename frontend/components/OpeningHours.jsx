@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 
-// Day name constants
+// Day name constants. DAY_ABBR (English) is the API axis — used to parse
+// backend strings like "Sun-Thu 09:00-18:00". DAY_KEYS maps each index to
+// its translation key so display labels follow the active locale.
 const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const DAY_HE = ["יום ראשון", "יום שני", "יום שלישי", "יום רביעי", "יום חמישי", "יום שישי", "שבת"];
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 // Parse "Sun-Thu 09:00-18:00, Fri 09:00-14:00" into a map of dayIndex → {open, close} | null
 function parseHours(raw) {
@@ -37,7 +40,9 @@ function toMinutes(hhmm) {
   return h * 60 + m;
 }
 
-// Given parsed map, compute current status in Israel timezone
+// Given parsed map, compute current status in Israel timezone.
+// Returns { isOpen, closeTime?, nextDayKey?, nextTime?, nextIsTomorrow? }.
+// Day labels are resolved at the JSX layer via t() so this stays locale-agnostic.
 function computeStatus(map) {
   const now = new Date();
   // Israel timezone
@@ -59,14 +64,19 @@ function computeStatus(map) {
   for (let d = 1; d <= 7; d++) {
     const nextIdx = (dayIdx + d) % 7;
     if (map[nextIdx]) {
-      const label = d === 1 ? "מחר" : DAY_HE[nextIdx];
-      return { isOpen: false, nextDay: label, nextTime: map[nextIdx].open };
+      return {
+        isOpen: false,
+        nextDayKey: DAY_KEYS[nextIdx],
+        nextTime: map[nextIdx].open,
+        nextIsTomorrow: d === 1,
+      };
     }
   }
   return { isOpen: false };
 }
 
 export default function OpeningHours({ opening_hours }) {
+  const t = useTranslations("opening_hours");
   const map = useMemo(() => parseHours(opening_hours), [opening_hours]);
   const status = useMemo(() => (map ? computeStatus(map) : null), [map]);
 
@@ -74,7 +84,7 @@ export default function OpeningHours({ opening_hours }) {
 
   return (
     <section className="mt-8 border-t border-border pt-8">
-      <h2 className="font-headline text-2xl font-bold text-site-text mb-4">שעות פעילות</h2>
+      <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("heading")}</h2>
 
       {/* Open / closed indicator */}
       {status && (
@@ -85,14 +95,26 @@ export default function OpeningHours({ opening_hours }) {
           />
           {status.isOpen ? (
             <span className="text-primary">
-              פתוח עכשיו
-              {status.closeTime && <span className="text-site-muted font-normal"> · סוגר ב-{status.closeTime}</span>}
+              {t("open_now")}
+              {status.closeTime && (
+                <span className="text-site-muted font-normal">
+                  {" "}{t("closes_at", { time: status.closeTime })}
+                </span>
+              )}
             </span>
           ) : (
             <span className="text-[#A32D2D]">
-              סגור
-              {status.nextDay && (
-                <span className="text-site-muted font-normal"> · פותח ב-{status.nextDay} {status.nextTime}</span>
+              {t("closed_now")}
+              {status.nextDayKey && (
+                <span className="text-site-muted font-normal">
+                  {" "}
+                  {t("opens_at", {
+                    day: status.nextIsTomorrow
+                      ? t("tomorrow")
+                      : t(`weekdays.${status.nextDayKey}`),
+                    time: status.nextTime,
+                  })}
+                </span>
               )}
             </span>
           )}
@@ -109,9 +131,9 @@ export default function OpeningHours({ opening_hours }) {
               key={abbr}
               className={`flex justify-between text-sm py-1.5 ${isToday ? "font-semibold text-site-text" : "text-site-text/80"}`}
             >
-              <span>{DAY_HE[i]}</span>
+              <span>{t(`weekdays.${DAY_KEYS[i]}`)}</span>
               <span dir="ltr" className="text-start">
-                {hours ? `${hours.open}–${hours.close}` : "סגור"}
+                {hours ? `${hours.open}–${hours.close}` : t("closed_day")}
               </span>
             </div>
           );

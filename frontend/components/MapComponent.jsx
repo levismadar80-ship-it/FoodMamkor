@@ -9,6 +9,7 @@ import "leaflet-defaulticon-compatibility";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import { useTranslations } from "next-intl";
 import { styleForProducer } from "@/lib/map-categories";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
@@ -136,6 +137,7 @@ export default function MapComponent({
   // recently_viewed sessionStorage). These markers render dimmed.
   visitedIds = null,
 }) {
+  const t = useTranslations("map.component");
   const visitedSet =
     visitedIds instanceof Set
       ? visitedIds
@@ -219,7 +221,7 @@ export default function MapComponent({
           (pos) => {
             const { latitude, longitude } = pos.coords;
             if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
-              showToast("המיקום שהתקבל אינו תקין", "error");
+              showToast(t("geo_invalid"), "error");
               return;
             }
             const latlng = [latitude, longitude];
@@ -238,7 +240,7 @@ export default function MapComponent({
               }).addTo(mapInstanceRef.current);
             }
           },
-          () => showToast("לא הצלחנו לקבל את המיקום שלך", "error"),
+          () => showToast(t("geo_failure"), "error"),
         );
       },
       getMap: () => mapInstanceRef.current,
@@ -395,8 +397,8 @@ export default function MapComponent({
         // MEH-30 #8: no Leaflet tooltip or popup. Marker click opens the
         // bottom sheet in MapClient.jsx (via onProducerClickRef). Hover
         // syncs with card highlight — it is NOT a tooltip.
-        alt: p.name || "עסק",
-        title: p.name || "עסק",
+        alt: p.name || t("marker_singular"),
+        title: p.name || t("marker_singular"),
         keyboard: true,
       });
 

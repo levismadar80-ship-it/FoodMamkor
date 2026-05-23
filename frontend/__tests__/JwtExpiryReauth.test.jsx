@@ -6,6 +6,17 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, act, screen } from "@testing-library/react";
 import { AuthProvider, useAuth } from "../lib/auth-context.js";
 
+// MEH-474 Wave 4 chunk 4: AuthProvider now calls useTranslations("auth.toasts").
+// Same precedent as Header.test.jsx (Wave 1) + ProducerCard.test.jsx (Wave 3).
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) =>
+    ({
+      favoriteSaved: "נשמר למועדפים ❤️",
+      sessionExpired: "פג תוקף ההתחברות — נא להתחבר מחדש",
+      loginAgainCta: "התחברי",
+    }[key] ?? key),
+}));
+
 // Mock api so /auth/me doesn't fire real requests
 vi.mock("../lib/api.js", () => ({
   default: {

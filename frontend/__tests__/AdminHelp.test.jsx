@@ -28,6 +28,58 @@ vi.mock("@phosphor-icons/react", () => {
   };
 });
 
+// MEH-475 PR-B: help/page.jsx reads useTranslations("admin.help") and uses
+// t.rich() for paragraphs with embedded <strong>/<code>/<em>/<placeholder>
+// markup. Map only the keys this test asserts on; everything else falls
+// through to the key path. Plain string lookups cover section titles + the
+// page heading; t.rich is supported by tag-stripping the same string so
+// .textContent substring assertions still match the Hebrew copy.
+vi.mock("next-intl", () => {
+  const flat = {
+    "admin.help.title": "עזרה לאדמין",
+    "admin.help.toc.dashboard": "סקירת לוח המחוונים",
+    "admin.help.toc.producers": "אישור ודחיית בתי עסק",
+    "admin.help.toc.users": "ניהול משתמשים",
+    "admin.help.toc.reviews": "ביקורות",
+    "admin.help.toc.reports": "דיווחים",
+    "admin.help.toc.experiences": "חוויות",
+    "admin.help.toc.emergency": "תקלות חירום",
+    "admin.help.toc.urls": "כתובות חשובות",
+    "admin.help.sections.dashboard.title": "סקירת לוח המחוונים",
+    "admin.help.sections.producers.title": "אישור ודחיית בתי עסק",
+    "admin.help.sections.users.title": "ניהול משתמשים",
+    "admin.help.sections.reviews.title": "ביקורות",
+    "admin.help.sections.reports.title": "דיווחים",
+    "admin.help.sections.experiences.title": "חוויות",
+    "admin.help.sections.emergency.title": "תקלות חירום",
+    "admin.help.sections.urls.title": "כתובות חשובות",
+    "admin.help.sections.emergency.site_down_title": "האתר לא עולה",
+    "admin.help.sections.emergency.migration_title": "Migration נכשלה אחרי deploy",
+    "admin.help.sections.emergency.login_broken_title": "Login שבור לכולם",
+    "admin.help.sections.emergency.spam_title": "סופת ספאם / רישומים מזויפים",
+    "admin.help.sections.emergency.ai_silent_title": "AI features מחזירים שגיאות silent",
+    "admin.help.sections.urls.github_text": "GitHub",
+  };
+  return {
+    useTranslations: (scope) => {
+      const t = (key) => {
+        const fullKey = scope ? `${scope}.${key}` : key;
+        return flat[fullKey] ?? fullKey;
+      };
+      // t.rich(key, components) — for our test purposes, return the raw
+      // string verbatim so .textContent substring assertions still match.
+      // Real next-intl renders a React node; here we return a plain string
+      // (which React renders as text, tags included). Test assertions on
+      // emergency content use textContent.contains() which still matches.
+      t.rich = (key) => {
+        const fullKey = scope ? `${scope}.${key}` : key;
+        return flat[fullKey] ?? fullKey;
+      };
+      return t;
+    },
+  };
+});
+
 describe("AdminHelp page", () => {
   it("renders the header + all 8 sections (heading + TOC link for each)", () => {
     render(<AdminHelpPage />);

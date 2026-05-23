@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 /**
  * ParallaxQuote — full-bleed divider section with a slow Ken Burns
  * background pan/zoom and a centered quote. Used between homepage
@@ -24,11 +26,12 @@ export default function ParallaxQuote({
   overlayOpacity = 0.6,
   height = "400px",
 }) {
+  const t = useTranslations("common.parallax_quote");
   return (
     <section
       className="relative w-full overflow-hidden"
       style={{ height }}
-      aria-label="ציטוט"
+      aria-label={t("aria")}
     >
       <div
         className="kenburns-left absolute"

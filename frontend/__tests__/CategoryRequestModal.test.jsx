@@ -5,6 +5,25 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 
+// MEH-475 PR-C4a chunk 3: mock next-intl per PR-A1/B precedent.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = {
+      title: "איזו קטגוריה חסרה?",
+      name_placeholder: "שם הקטגוריה המוצעת *",
+      name_example: "לדוגמה: משקאות מותססים",
+      examples_placeholder: "דוגמאות למוצרים (אופציונלי)",
+      examples_hint: "קומבוצ'ה, קפיר, וואטר קפיר...",
+      submit: "שלחי בקשה",
+      submit_loading: "שולחת...",
+      close: "סגרי",
+      "toasts.success": "תודה! הבקשה התקבלה. בינתיים, בחרי את הקטגוריה הקרובה ביותר.",
+      "toasts.error": "שגיאה בשליחת הבקשה — נסי שוב",
+    };
+    return flat[key] ?? key;
+  },
+}));
+
 vi.mock("@/lib/use-focus-return", () => ({ useFocusReturn: vi.fn() }));
 vi.mock("@/lib/toast", () => ({ showToast: vi.fn() }));
 

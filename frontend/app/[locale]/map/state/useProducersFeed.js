@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -18,6 +19,7 @@ import { showToast } from "@/lib/toast";
  * source (:423-426).
  */
 export function useProducersFeed() {
+  const t = useTranslations();
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
 
@@ -28,7 +30,7 @@ export function useProducersFeed() {
       .catch((err) => {
         console.error("[חפשי באזור זה] GET /producers failed:", err);
         setAllProducers([]);
-        showToast("לא הצלחנו לטעון עסקים — נסי שוב", "error");
+        showToast(t("map.errors.load_failed"), "error");
       });
   };
 

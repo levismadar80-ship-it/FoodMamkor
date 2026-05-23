@@ -100,6 +100,28 @@ def _run_followup_job() -> None:
         db.close()
 
 
+def _run_watchdog_job() -> None:
+    """MEH-509 PR2b: 5-min after-hours watchdog tick. Shares the same
+    APScheduler instance as the MEH-539 followup job (one scheduler, two
+    cron entries) so the Railway single-replica assumption is inherited
+    rather than reinvented. run_watchdog() is fail-isolated per message
+    and never raises; this wrapper exists only to open a fresh session
+    (the worker thread can't share request-scoped sessions) and log the
+    aggregate counters."""
+    from app.database import SessionLocal
+    from app.services.auto_reply_watchdog import run_watchdog
+
+    db = SessionLocal()
+    try:
+        counters = run_watchdog(db)
+        if counters.get("scanned", 0):
+            log.info("[WATCHDOG] tick complete counters=%s", counters)
+    except Exception:
+        log.error("[WATCHDOG] tick crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -152,6 +174,27 @@ async def lifespan(app: FastAPI):
         id="meh_539_onboarding_followups_daily",
         replace_existing=True,
     )
+    # MEH-509 PR2b: register the after-hours watchdog on the same
+    # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
+    # table cron does not spin until PR2c webhook receiver ships.
+    # max_instances=1 + coalesce=True defend against tick overlap if a
+    # single run ever exceeds the 5-min interval; misfire_grace_time
+    # tolerates short pauses (e.g. brief DB hiccup) without skipping.
+    if settings.watchdog_enabled:
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        followup_scheduler.add_job(
+            _run_watchdog_job,
+            IntervalTrigger(minutes=5),
+            id="meh_509_pr2b_after_hours_watchdog",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info("[WATCHDOG] job registered — every 5 minutes")
+    else:
+        log.info("[WATCHDOG] disabled (WATCHDOG_ENABLED=false) — PR2c gate")
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
     log.info("[FOLLOWUP] scheduler started — daily 10:00 UTC")

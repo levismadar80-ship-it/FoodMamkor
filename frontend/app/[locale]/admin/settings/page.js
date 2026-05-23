@@ -3,10 +3,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminSettingsPage() {
+  const t = useTranslations("admin");
   const [settings, setSettings] = useState(null);
   // MEH-250 — pristine copy of what the server returned; compared to
   // `settings` to compute the diff for the confirm dialog + disable the
@@ -16,6 +18,14 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tests, setTests] = useState({});
+  // MEH-509 PR2a — vacation mode is persisted in the same admin_settings
+  // table but driven through the typed /admin/settings/vacation endpoint
+  // so we never serialize a stale return_date when the toggle flips off.
+  const [vacation, setVacation] = useState({ active: false, return_date: "" });
+  const [vacationOriginal, setVacationOriginal] = useState({ active: false, return_date: "" });
+  const [vacationSaving, setVacationSaving] = useState(false);
+  const [vacationToast, setVacationToast] = useState(null);
+  const [vacationError, setVacationError] = useState(null);
 
   useEffect(() => {
     api
@@ -36,10 +46,23 @@ export default function AdminSettingsPage() {
         setOriginalSettings(data);
       })
       .catch(() => setLoadError(true));
+    api
+      .get("/admin/settings/vacation")
+      .then((response) => {
+        const next = {
+          active: Boolean(response.data?.active),
+          return_date: response.data?.return_date || "",
+        };
+        setVacation(next);
+        setVacationOriginal(next);
+      })
+      .catch(() => {
+        // Non-fatal — main settings still render; vacation panel stays at defaults.
+      });
   }, []);
 
-  if (loadError) return <div className="text-red-600 text-sm">שגיאה בטעינת הגדרות — נסי לרענן את הדף.</div>;
-  if (!settings) return <div className="text-text-secondary">טוען...</div>;
+  if (loadError) return <div className="text-red-600 text-sm">{t("settings.load_error")}</div>;
+  if (!settings) return <div className="text-text-secondary">{t("common.loading")}</div>;
 
   const update = (key, value) => {
     setSettings({ ...settings, [key]: value });
@@ -58,7 +81,7 @@ export default function AdminSettingsPage() {
     const summary = changedKeys
       .map((key) => `• ${key}: ${originalSettings[key] || "∅"} → ${settings[key] || "∅"}`)
       .join("\n");
-    if (!globalThis.confirm(`האם לשמור את השינויים הבאים?\n\n${summary}`)) {
+    if (!globalThis.confirm(`${t("settings.save.confirm_prefix")}\n\n${summary}`)) {
       return;
     }
     setSaving(true);
@@ -68,6 +91,40 @@ export default function AdminSettingsPage() {
       setSaved(true);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const vacationDirty =
+    vacation.active !== vacationOriginal.active ||
+    vacation.return_date !== vacationOriginal.return_date;
+  const vacationCanSave =
+    vacationDirty && (!vacation.active || Boolean(vacation.return_date));
+
+  const saveVacation = async () => {
+    if (!vacationCanSave) return;
+    setVacationError(null);
+    setVacationToast(null);
+    setVacationSaving(true);
+    try {
+      const payload = vacation.active
+        ? { active: true, return_date: vacation.return_date }
+        : { active: false, return_date: null };
+      const response = await api.post("/admin/settings/vacation", payload);
+      const persisted = {
+        active: Boolean(response.data?.active),
+        return_date: response.data?.return_date || "",
+      };
+      setVacation(persisted);
+      setVacationOriginal(persisted);
+      setVacationToast(
+        persisted.active
+          ? t("settings.sections.vacation_saved_on", { date: persisted.return_date })
+          : t("settings.sections.vacation_saved_off"),
+      );
+    } catch {
+      setVacationError(t("settings.sections.vacation_error"));
+    } finally {
+      setVacationSaving(false);
     }
   };
 
@@ -83,11 +140,11 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold">הגדרות</h1>
+      <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">התראות</h2>
-        <Field label="אימייל אדמין לקבלת התראות">
+        <h2 className="font-semibold">{t("settings.sections.notifications")}</h2>
+        <Field label={t("settings.fields.admin_email")}>
           <input
             type="email"
             dir="ltr"
@@ -97,7 +154,7 @@ export default function AdminSettingsPage() {
             placeholder="admin@mehamakor.co.il"
           />
         </Field>
-        <Field label="מספר ווטסאפ אדמין (E.164)">
+        <Field label={t("settings.fields.admin_whatsapp")}>
           <input
             value={settings.admin_whatsapp || ""}
             onChange={(event) => update("admin_whatsapp", event.target.value)}
@@ -108,8 +165,8 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
-        <h2 className="font-semibold">Freemium</h2>
-        <Field label="מחיר חודשי לפרמיום (₪)">
+        <h2 className="font-semibold">{t("settings.sections.freemium")}</h2>
+        <Field label={t("settings.fields.premium_price")}>
           <input
             type="number"
             value={settings.freemium_premium_price || ""}
@@ -118,7 +175,7 @@ export default function AdminSettingsPage() {
             placeholder="49"
           />
         </Field>
-        <Field label="מספר תמונות בחבילת חינם">
+        <Field label={t("settings.fields.free_image_limit")}>
           <input
             type="number"
             value={settings.freemium_free_image_limit || ""}
@@ -131,16 +188,16 @@ export default function AdminSettingsPage() {
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">
-          חלון חג
+          {t("settings.sections.holiday")}
           <InfoTooltip
-            content="הפעילי לפני חגים. מציג banner באתר: 'חג שמח — חלק מהעסקים לא מקבלים הזמנות השבוע'. לכיבוי אחרי החג."
-            label="מידע על חלון חג"
+            content={t("settings.sections.holiday_tooltip")}
+            label={t("settings.sections.holiday_tooltip_label")}
             position="bottom"
           />
         </h2>
-        <p className="text-xs text-text-secondary">הפעלי ידנית כדי לבדוק את הבאנר בדשבורד ובעמוד הבית לפני החג.</p>
+        <p className="text-xs text-text-secondary">{t("settings.sections.holiday_hint")}</p>
         <div className="flex items-center justify-between">
-          <span className="text-sm">חלון חג פעיל</span>
+          <span className="text-sm">{t("settings.sections.holiday_active")}</span>
           <button
             role="switch"
             aria-checked={settings.holiday_override_enabled === "true"}
@@ -150,39 +207,37 @@ export default function AdminSettingsPage() {
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
-        <Field label="מפתח חג לבדיקה (ריק = חישוב אוטומטי לפי תאריך)">
+        <Field label={t("settings.fields.holiday_key_label")}>
           <select
             value={settings.holiday_override_key || ""}
             onChange={(event) => update("holiday_override_key", event.target.value)}
             className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
           >
-            <option value="">— ללא עקיפה —</option>
-            <option value="pesach">פסח</option>
-            <option value="shavuot">שבועות</option>
-            <option value="rosh_hashana">ראש השנה</option>
-            <option value="sukkot">סוכות</option>
-            <option value="chanuka">חנוכה</option>
-            <option value="tu_bishvat">ט״ו בשבט</option>
+            <option value="">{t("settings.fields.holiday_none")}</option>
+            <option value="pesach">{t("settings.fields.holiday_pesach")}</option>
+            <option value="shavuot">{t("settings.fields.holiday_shavuot")}</option>
+            <option value="rosh_hashana">{t("settings.fields.holiday_rosh_hashana")}</option>
+            <option value="sukkot">{t("settings.fields.holiday_sukkot")}</option>
+            <option value="chanuka">{t("settings.fields.holiday_chanuka")}</option>
+            <option value="tu_bishvat">{t("settings.fields.holiday_tu_bishvat")}</option>
           </select>
         </Field>
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
         <h2 className="font-semibold">
-          מצב שוק שישי
+          {t("settings.sections.friday_mode")}
           <InfoTooltip
-            content="הפעילי בבוקר יום שישי. מקדימה באתר עסקים שמוכרים בשווקים. לאחר השבת - כבה אוטומטית."
-            label="מידע על מצב שוק שישי"
+            content={t("settings.sections.friday_tooltip")}
+            label={t("settings.sections.friday_tooltip_label")}
             position="bottom"
           />
         </h2>
         <p className="text-xs text-text-secondary">
-          הפעלי ידנית כדי לבדוק את מצב שוק שישי (סרגל יצרניות, כותרת hero, badge 🛒)
-          מחוץ לחלון הזמן הרגיל (ד׳ 18:00 — ו׳ 14:00).
-          עקיפה זו פעילה בדפדפן הנוכחי בלבד.
+          {t("settings.sections.friday_hint")}
         </p>
         <div className="flex items-center justify-between">
-          <span className="text-sm">מצב שוק שישי — override</span>
+          <span className="text-sm">{t("settings.sections.friday_active")}</span>
           <button
             role="switch"
             aria-checked={settings.friday_mode_override === "true"}
@@ -203,16 +258,79 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
+      {/* MEH-509 PR2a — vacation mode (state only; PR2b watchdog consumes it). */}
+      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+        <h2 className="font-semibold">
+          {t("settings.sections.vacation")}
+          <InfoTooltip
+            content={t("settings.sections.vacation_tooltip")}
+            label={t("settings.sections.vacation_tooltip_label")}
+            position="bottom"
+          />
+        </h2>
+        <p className="text-xs text-text-secondary">{t("settings.sections.vacation_hint")}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">{t("settings.sections.vacation_active")}</span>
+          <button
+            role="switch"
+            aria-checked={vacation.active}
+            onClick={() => {
+              setVacationToast(null);
+              setVacationError(null);
+              setVacation({ ...vacation, active: !vacation.active });
+            }}
+            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${vacation.active ? "bg-primary" : "bg-gray-200"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        {vacation.active && (
+          <Field label={t("settings.sections.vacation_return_label")}>
+            <input
+              type="date"
+              dir="ltr"
+              value={vacation.return_date || ""}
+              onChange={(event) => {
+                setVacationToast(null);
+                setVacationError(null);
+                setVacation({ ...vacation, return_date: event.target.value });
+              }}
+              className="w-full border border-border rounded-[12px] px-3 py-2"
+            />
+          </Field>
+        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={saveVacation}
+            disabled={vacationSaving || !vacationCanSave}
+            className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
+          >
+            {vacationSaving ? t("settings.save.saving") : t("settings.sections.vacation_save")}
+          </button>
+          {vacation.active && !vacation.return_date && (
+            <span className="text-xs text-red-600">
+              {t("settings.sections.vacation_date_required")}
+            </span>
+          )}
+          {vacationToast && (
+            <span className="text-sm text-primary">{vacationToast}</span>
+          )}
+          {vacationError && (
+            <span className="text-sm text-red-600">{vacationError}</span>
+          )}
+        </div>
+      </div>
+
       <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
-        <h2 className="font-semibold">בדיקות חיבור</h2>
+        <h2 className="font-semibold">{t("settings.sections.tests")}</h2>
         {[
           { key: "whatsapp", label: "WhatsApp" },
           { key: "cloudinary", label: "Cloudinary" },
         ].map(({ key, label }) => {
           const result = tests[key];
-          let statusText = "✗ לא מוגדר";
-          if (result?.loading) statusText = "בודק...";
-          else if (result?.ok) statusText = "✓ מחובר";
+          let statusText = t("settings.tests.not_configured");
+          if (result?.loading) statusText = t("settings.tests.testing");
+          else if (result?.ok) statusText = t("settings.tests.connected");
           return (
             <div key={key} className="flex items-center justify-between gap-3 border-b border-border last:border-0 pb-2 last:pb-0">
               <span className="text-sm">{label}</span>
@@ -226,7 +344,7 @@ export default function AdminSettingsPage() {
                   onClick={() => testService(key)}
                   className="text-xs bg-secondary text-white px-3 py-1 rounded-[12px]"
                 >
-                  בדוק
+                  {t("settings.tests.test_btn")}
                 </button>
               </div>
             </div>
@@ -235,10 +353,10 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-2">ניהול קטגוריות</h2>
-        <p className="text-sm text-text-secondary mb-3">להוספה, עריכה ומחיקה — מסך התוכן.</p>
+        <h2 className="font-semibold mb-2">{t("settings.sections.categories")}</h2>
+        <p className="text-sm text-text-secondary mb-3">{t("settings.sections.categories_hint")}</p>
         <Link href="/admin/content" className="text-primary text-sm hover:underline">
-          לעמוד תוכן ←
+          {t("settings.sections.categories_link")}
         </Link>
       </div>
 
@@ -247,16 +365,16 @@ export default function AdminSettingsPage() {
           onClick={save}
           disabled={saving || !isDirty}
           className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
-          title={isDirty ? undefined : "אין שינויים לשמירה"}
+          title={isDirty ? undefined : t("settings.save.nothing_to_save_title")}
         >
-          {saving ? "שומר..." : "שמור הגדרות"}
+          {saving ? t("settings.save.saving") : t("settings.save.submit")}
         </button>
         {isDirty && !saving && (
           <span className="text-xs text-site-muted">
-            {changedKeys.length} שינויים לא שמורים
+            {t("settings.save.unsaved_count", { count: changedKeys.length })}
           </span>
         )}
-        {saved && !isDirty && <span className="text-sm text-primary">נשמר ✓</span>}
+        {saved && !isDirty && <span className="text-sm text-primary">{t("common.saved_check")}</span>}
       </div>
     </div>
   );

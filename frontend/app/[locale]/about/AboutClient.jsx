@@ -5,45 +5,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { Leaf, Plus, Minus } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import ParallaxQuote from "@/components/ParallaxQuote";
 
-const TIPS = [
-  {
-    question: "למה ביצים אורגניות שוות את המחיר?",
-    answer: "תרנגולות אורגניות גדלות בחוץ, אוכלות מזון ללא חומרי הדברה ואנטיביוטיקה. הביצים שלהן מכילות יותר אומגה-3, ויטמין E ונוגדי חמצון. לא שוני דרמטי — אבל פחות חשיפה לכימיקלים, וחיים יותר אנושיים לתרנגולות.",
-  },
-  {
-    question: "מה זה grass-fed בישראל?",
-    answer: "בסופר — רוב הבקר גדל בפיטום על תירס ותוספות. Grass-fed = פרות שחיו כל חייהן במרעה, אוכלות עשב טבעי. בישראל זה נדיר ויקר יותר — אבל הבשר בעל טעם עמוק יותר, שומן צהבהב אופייני, ויותר אומגה-3. מגדלים כמו גיליס מרמת הגולן ומרעה גולן הם דוגמאות קלאסיות.",
-  },
-  {
-    question: "דבש מהסופר vs. דבש לא מחומם — מה ההבדל?",
-    answer: "דבש סופר עובר פסטור — חימום שהורס אנזימים, נוגדי חמצון ואבקת פרחים. דבש לא מחומם שומר על הכל — טעם עשיר יותר, תכונות אנטי-בקטריאליות טבעיות. איך מזהים? עבה יותר, לא שקוף לגמרי, לפעמים מתגבש — וזה סימן טוב.",
-  },
-];
-
-const values = [
-  {
-    title: "שקיפות",
-    body: "את צריכה לדעת מי עומדת מאחורי המוצר שאת קונה. תמיד נספר לך מי בעלת בית העסק, איפה היא נמצאת, ואיך היא עובדת.",
-  },
-  {
-    title: "קרבה",
-    body: "אנחנו מעדיפות בתי עסק קרובים אלייך, ושרשרת קצרה ככל האפשר — מהשדה אלייך.",
-  },
-  {
-    title: "איכות",
-    body: "חומרי גלם אמיתיים שאת מזהה — בלי צבעי מאכל, בלי חומרים משמרים מיותרים, בלי תוספות מלאכותיות.",
-  },
-  {
-    title: "בטיחות",
-    body: "מקום הכנה נקי, אחסון נכון, ועמידה ברגולציה הרלוונטית לקטגוריה. בקטגוריות מסוימות נדרש רישיון יצרן בישראל, ושם נבקש אותו. כאן אין פשרות.",
-  },
-];
+const TIP_KEYS = ["eggs", "grass_fed", "honey"];
+const VALUE_KEYS = ["transparency", "proximity", "quality", "safety"];
 
 export default function AboutPage() {
+  const t = useTranslations("about.consumer");
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
@@ -57,11 +28,11 @@ export default function AboutPage() {
     try {
       await api.post("/contact", form);
       setContactStatus("success");
-      setContactMsg("תודה! נחזור אליך בקרוב 🌿");
+      setContactMsg(t("contact.success_toast"));
       setForm({ name: "", email: "", message: "" });
     } catch (error) {
       setContactStatus("error");
-      setContactMsg(error.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setContactMsg(error.response?.data?.detail || t("contact.error_toast"));
     }
   };
 
@@ -88,7 +59,7 @@ export default function AboutPage() {
         />
         <div className="relative max-w-4xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            פעם היית צריכה לדעת את מי לשאול. עכשיו לא.
+            {t("hero.heading")}
           </h1>
         </div>
       </section>
@@ -101,14 +72,14 @@ export default function AboutPage() {
             <div className="flex justify-center md:justify-start order-1">
               <div
                 className="relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl bg-light flex items-center justify-center border border-primary/15 overflow-hidden"
-                aria-label="תמונה של ספיר, מייסדת מהמקור"
+                aria-label={t("story.image_aria")}
               >
                 {imgFailed ? (
                   <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
                 ) : (
                   <Image
                     src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
-                    alt="ספיר, מייסדת מהמקור"
+                    alt={t("story.image_alt")}
                     fill
                     sizes="(min-width: 768px) 360px, 280px"
                     className="object-cover"
@@ -123,31 +94,21 @@ export default function AboutPage() {
                 className="text-site-text/85 font-body text-lg space-y-5"
                 style={{ lineHeight: "1.8" }}
               >
-                <p className="font-headline font-bold text-site-text text-2xl">היי, אני ספיר.</p>
-                <p>
-                  תמיד היה לי חשוב לדעת מאיפה האוכל שלי מגיע. רציתי לקנות יותר טוב — יותר בריא, יותר מקומי.
-                </p>
-                <p>
-                  אבל מהר מאוד גיליתי שזה לא נגיש. כדי למצוא אוכל איכותי באמת, הייתי צריכה לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.
-                </p>
-                <p>
-                  ואז הבנתי: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.
-                </p>
-                <p>
-                  יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית. יש מישהי שאופה לחם מחמצת בשכונה ליד. יש בתי עסק קטנים עם מוצרים מדהימים — שרוב האנשים בכלל לא מכירים. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.
-                </p>
-                <p>
-                  וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.
-                </p>
+                <p className="font-headline font-bold text-site-text text-2xl">{t("story.greeting")}</p>
+                <p>{t("story.p1")}</p>
+                <p>{t("story.p2")}</p>
+                <p>{t("story.p3")}</p>
+                <p>{t("story.p4")}</p>
+                <p>{t("story.p5")}</p>
                 <div className="border-s-2 border-primary/40 ps-4 mt-2 space-y-3">
                   <p className="text-base text-site-text/85 italic leading-relaxed">
-                    מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.
+                    {t("story.caption1")}
                   </p>
                   <p className="text-base text-site-text/85 italic leading-relaxed">
-                    את האתר אני בונה לבד. את כל בית עסק אני בודקת אישית.
+                    {t("story.caption2")}
                   </p>
                   <p className="text-base text-site-text/85 italic leading-relaxed">
-                    את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.
+                    {t("story.caption3")}
                   </p>
                 </div>
               </div>
@@ -159,7 +120,7 @@ export default function AboutPage() {
       {/* Parallax divider */}
       <ParallaxQuote
         image="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&auto=format&q=80&fm=webp"
-        quote="כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר"
+        quote={t("parallax.quote")}
         overlayOpacity={0.7}
         height="350px"
       />
@@ -169,27 +130,21 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
-              <h3 className="font-headline text-2xl font-bold mb-4">אוכל אמיתי קרוב אלייך</h3>
-              <p className="text-light/90 leading-relaxed font-body">
-                בלי לנסוע שעה. בלי לחפש שבועות.
-                <br />
-                כל מה שקרוב אלייך, במקום אחד.
+              <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.local.title")}</h3>
+              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+                {t("benefits.local.body")}
               </p>
             </div>
             <div className="text-center">
-              <h3 className="font-headline text-2xl font-bold mb-4">לסמוך על מה שאת אוכלת</h3>
-              <p className="text-light/90 leading-relaxed font-body">
-                רק בתי עסק מאומתים. אנחנו בודקות כל אחת
-                <br />
-                לפני שהיא מופיעה.
+              <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.trust.title")}</h3>
+              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+                {t("benefits.trust.body")}
               </p>
             </div>
             <div className="text-center">
-              <h3 className="font-headline text-2xl font-bold mb-4">לעזור לעסקים הקטנים</h3>
-              <p className="text-light/90 leading-relaxed font-body">
-                כל קנייה מקומית היא בחירה — להשאיר את הכסף
-                <br />
-                בקהילה שלך, ולתמוך באנשים שמאחורי האוכל.
+              <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.community.title")}</h3>
+              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+                {t("benefits.community.body")}
               </p>
             </div>
           </div>
@@ -199,11 +154,11 @@ export default function AboutPage() {
       {/* ======== Section 4 — Tips accordion ======== */}
       <section className="max-w-3xl mx-auto px-4 section-y">
         <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
-          מה כדאי לדעת
+          {t("tips.heading")}
         </h2>
         <div className="space-y-3">
-          {TIPS.map((tip, i) => (
-            <div key={i} className="border border-border rounded-[12px] overflow-hidden bg-white">
+          {TIP_KEYS.map((key, i) => (
+            <div key={key} className="border border-border rounded-[12px] overflow-hidden bg-white">
               <button
                 type="button"
                 onClick={() => setOpenTip(openTip === i ? null : i)}
@@ -211,7 +166,7 @@ export default function AboutPage() {
                 aria-expanded={openTip === i}
                 aria-controls={`tip-panel-${i}`}
               >
-                <span>{tip.question}</span>
+                <span>{t(`tips.${key}.question`)}</span>
                 {openTip === i ? (
                   <Minus size={18} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
                 ) : (
@@ -220,7 +175,7 @@ export default function AboutPage() {
               </button>
               {openTip === i && (
                 <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-site-text/85 leading-relaxed border-t border-border">
-                  {tip.answer}
+                  {t(`tips.${key}.answer`)}
                 </div>
               )}
             </div>
@@ -232,14 +187,14 @@ export default function AboutPage() {
       <section className="bg-background section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="font-headline text-3xl font-bold mb-4 text-site-text">
-            מה אומרים עלינו
+            {t("testimonials.heading")}
           </h2>
-          <p className="text-site-muted text-lg mb-6">הסיפורים מגיעים בקרוב 🌿</p>
+          <p className="text-site-muted text-lg mb-6">{t("testimonials.subtitle")}</p>
           <Link
             href="/contact"
             className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
           >
-            גם את רוצה לשתף? כתבי לנו
+            {t("testimonials.cta")}
           </Link>
         </div>
       </section>
@@ -248,25 +203,25 @@ export default function AboutPage() {
       <section className="bg-white section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="font-headline text-3xl font-bold mb-6 text-center text-site-text">
-            כך אנחנו בוחרות
+            {t("values.heading")}
           </h2>
           <p className="text-site-text/85 text-right text-lg leading-relaxed mb-10">
-            לא כל מה שכתוב &quot;טבעי&quot; באמת טבעי, ולא כל מה שכתוב &quot;מקומי&quot; באמת מקומי. אנחנו יודעות את זה. בשביל זה אנחנו עוברות על כל בית עסק לפני שהוא מצטרף — שואלות, מבררות, ולפעמים גם מבקרות במקום. הנה מה שחשוב לנו:
+            {t("values.intro")}
           </p>
           <div className="space-y-8 text-right">
-            {values.map((item, i) => (
-              <article key={i}>
+            {VALUE_KEYS.map((key) => (
+              <article key={key}>
                 <h3 className="font-headline font-bold text-2xl text-site-text mb-3">
-                  {item.title}
+                  {t(`values.${key}.title`)}
                 </h3>
                 <p className="text-site-text/85 text-lg leading-relaxed">
-                  {item.body}
+                  {t(`values.${key}.body`)}
                 </p>
               </article>
             ))}
           </div>
           <p className="text-site-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
-            אם זו את — בעלת עסק שבונה משהו שאת גאה בו — אנחנו רוצות להכיר.
+            {t("values.closing")}
           </p>
         </div>
       </section>
@@ -275,21 +230,21 @@ export default function AboutPage() {
       <section className="section-y bg-background border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="font-headline text-4xl font-bold mb-8 text-site-text">
-            יש לך בית עסק? בואי אלינו.
+            {t("cta.heading")}
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/register/producer"
               className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-semibold text-lg"
             >
-              הוסיפו את העסק שלך
+              {t("cta.register")}
               <Leaf size={20} weight="duotone" aria-hidden="true" />
             </Link>
             <Link
               href="/map"
               className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-light transition font-semibold text-lg"
             >
-              גלי עסקים קרובים
+              {t("cta.explore")}
             </Link>
           </div>
         </div>
@@ -298,21 +253,21 @@ export default function AboutPage() {
       {/* ======== Contact form ======== */}
       <section className="bg-background section-y border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-4xl font-bold text-site-text mb-3">דברי איתנו</h2>
+          <h2 className="font-headline text-4xl font-bold text-site-text mb-3">{t("contact.heading")}</h2>
           <p className="text-site-muted font-body text-base mb-10">
-            שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן
+            {t("contact.subtitle")}
           </p>
 
           <form onSubmit={handleContact} className="space-y-4 text-right">
             <div>
               <label htmlFor="contact-name" className="block text-sm font-medium text-site-text mb-1">
-                שם מלא
+                {t("contact.name_label")}
               </label>
               <input
                 id="contact-name"
                 type="text"
                 required
-                placeholder="השם המלא שלך"
+                placeholder={t("contact.name_placeholder")}
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
                 className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
@@ -320,7 +275,7 @@ export default function AboutPage() {
             </div>
             <div>
               <label htmlFor="contact-email" className="block text-sm font-medium text-site-text mb-1">
-                אימייל
+                {t("contact.email_label")}
               </label>
               <input
                 id="contact-email"
@@ -335,13 +290,13 @@ export default function AboutPage() {
             </div>
             <div>
               <label htmlFor="contact-message" className="block text-sm font-medium text-site-text mb-1">
-                איך נוכל לעזור?
+                {t("contact.message_label")}
               </label>
               <textarea
                 id="contact-message"
                 required
                 rows={4}
-                placeholder="ספרי לנו על מה את רוצה לדבר..."
+                placeholder={t("contact.message_placeholder")}
                 value={form.message}
                 onChange={(event) => setForm({ ...form, message: event.target.value })}
                 className="w-full bg-white border border-border rounded-[8px] px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-none"
@@ -355,10 +310,10 @@ export default function AboutPage() {
               {contactStatus === "loading" ? (
                 <span className="inline-flex items-center gap-2">
                   <ButtonSpinner />
-                  שולחת...
+                  {t("contact.submit_loading")}
                 </span>
               ) : (
-                "שלחי"
+                t("contact.submit")
               )}
             </button>
 

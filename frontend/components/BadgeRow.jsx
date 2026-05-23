@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { allBadges, topBadges } from "@/lib/badges";
 
 /**
@@ -15,6 +16,7 @@ import { allBadges, topBadges } from "@/lib/badges";
  * without requiring hover.
  */
 export default function BadgeRow({ producer, limit }) {
+  const t = useTranslations("producer.badge_row");
   const badges = limit != null ? topBadges(producer, limit) : allBadges(producer);
   if (badges.length === 0) return null;
 
@@ -22,7 +24,7 @@ export default function BadgeRow({ producer, limit }) {
     <div
       className="flex flex-wrap gap-1.5"
       role="list"
-      aria-label="תגיות בית עסק"
+      aria-label={t("aria")}
     >
       {badges.map((b) => (
         <Badge key={b.key} badge={b} />

@@ -1,5 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+// MEH-475 PR-C4a chunk 4b: mock next-intl per established precedent.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => {
+    const flat = { trigger_aria: "מידע נוסף" };
+    return flat[key] ?? key;
+  },
+}));
+
 import InfoTooltip from "@/components/InfoTooltip";
 
 describe("InfoTooltip", () => {

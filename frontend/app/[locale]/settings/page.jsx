@@ -19,6 +19,7 @@ import {
   X,
   Camera,
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import CitySearch from "@/components/CitySearch";
@@ -27,21 +28,25 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { env } from "@/lib/env";
 import EmptyState from "@/components/ui/EmptyState";
 
+function SettingsLoadingFallback() {
+  const tCommon = useTranslations("settings.common");
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-12 text-site-muted">
+      {tCommon("loading")}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-3xl mx-auto px-4 py-12 text-site-muted">
-          טוענת...
-        </div>
-      }
-    >
+    <Suspense fallback={<SettingsLoadingFallback />}>
       <SettingsPageBody />
     </Suspense>
   );
 }
 
 function SettingsPageBody() {
+  const tCommon = useTranslations("settings.common");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
@@ -82,13 +87,13 @@ function SettingsPageBody() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
-        הגדרות חשבון
+        {tCommon("page_heading")}
       </h1>
 
       {/* Tab bar — overflow-x-auto so business tab stays reachable at 375px */}
       <div
         role="tablist"
-        aria-label="טאבים"
+        aria-label={tCommon("tabs_aria")}
         className="flex gap-1 bg-white border border-border rounded-full p-1 mb-8 overflow-x-auto"
       >
         <TabButton
@@ -101,7 +106,7 @@ function SettingsPageBody() {
             />
           }
         >
-          פרופיל
+          {tCommon("tab_profile")}
         </TabButton>
         <TabButton
           active={tab === "security"}
@@ -110,7 +115,7 @@ function SettingsPageBody() {
             <Lock size={16} weight={tab === "security" ? "fill" : "duotone"} />
           }
         >
-          אבטחה
+          {tCommon("tab_security")}
         </TabButton>
         {isProducer && (
           <TabButton
@@ -124,7 +129,7 @@ function SettingsPageBody() {
               />
             }
           >
-            העסק שלי
+            {tCommon("tab_business")}
           </TabButton>
         )}
       </div>
@@ -166,6 +171,8 @@ const TabButton = forwardRef(function TabButton(
 
 function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
+  const tCommon = useTranslations("settings.common");
+  const t = useTranslations("settings.profile");
   const [name, setName] = useState(user.name || "");
   const [city, setCity] = useState(user.city || "");
   const [phone, setPhone] = useState(user.phone || "");
@@ -193,10 +200,10 @@ function ProfileTab() {
       if (trimmedName !== user.name) patch.name = trimmedName;
       if (city.trim() !== (user.city || "")) patch.city = city.trim();
       await updateProfile(patch);
-      setMessage("הפרטים נשמרו");
+      setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || "לא הצלחנו לשמור. נסי שוב.");
+      setError(err?.response?.data?.detail || t("save_error_fallback"));
     } finally {
       setSaving(false);
     }
@@ -207,12 +214,12 @@ function ProfileTab() {
     if (!file) return;
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
-      setError("רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF");
+      setError(t("upload_type_error"));
       e.target.value = "";
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("הקובץ גדול מדי — מקסימום 5MB");
+      setError(t("upload_size_error"));
       e.target.value = "";
       return;
     }
@@ -225,10 +232,10 @@ function ProfileTab() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       await refreshUser();
-      setMessage("תמונת הפרופיל עודכנה");
+      setMessage(t("avatar_uploaded_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה בהעלאת התמונה — נסי שוב");
+      setError(err?.response?.data?.detail || t("avatar_upload_error_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -238,14 +245,14 @@ function ProfileTab() {
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
 
   return (
-    <section role="tabpanel" aria-label="פרופיל" className="bg-white border border-border rounded-[16px] p-6">
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label
           htmlFor="avatar-upload"
-          title="לחצי לשינוי התמונה"
+          title={t("avatar_title")}
           className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
-          aria-label="שינוי תמונת פרופיל"
+          aria-label={t("avatar_aria")}
         >
           {user.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -272,13 +279,13 @@ function ProfileTab() {
         <div>
           <p className="font-semibold text-site-text">{user.name}</p>
           <p className="text-sm text-site-muted" dir="ltr">{user.email}</p>
-          <p className="text-xs text-site-muted mt-0.5">לחצי על התמונה לשינוי</p>
+          <p className="text-xs text-site-muted mt-0.5">{t("avatar_hint")}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="profile-name" className="block text-sm font-medium mb-1">שם מלא *</label>
+          <label htmlFor="profile-name" className="block text-sm font-medium mb-1">{t("field_name_label")} *</label>
           <input
             id="profile-name"
             type="text"
@@ -291,20 +298,20 @@ function ProfileTab() {
         </div>
         <div>
           <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
-            עיר <span className="text-site-muted font-normal">(אופציונלי)</span>
+            {t("field_city_label")} <span className="text-site-muted font-normal">{tCommon("optional_suffix")}</span>
           </label>
           <CitySearch
             id="profile-city"
             value={city}
             onChange={setCity}
-            placeholder="לדוגמה: תל אביב"
+            placeholder={t("field_city_placeholder")}
           />
           <p className="text-xs text-site-muted mt-1 text-right">
-            כדי שנציג לך עסקים באזורך
+            {t("field_city_hint")}
           </p>
         </div>
         <div>
-          <label htmlFor="profile-email" className="block text-sm font-medium mb-1">אימייל</label>
+          <label htmlFor="profile-email" className="block text-sm font-medium mb-1">{t("field_email_label")}</label>
           <input
             id="profile-email"
             type="email"
@@ -316,13 +323,13 @@ function ProfileTab() {
           />
           <p className="text-xs text-site-muted mt-1 text-right">
             {isOAuth
-              ? `האימייל מחובר לחשבון ${oAuthProvider ?? "חיצוני"} — לשינוי עדכני שם`
-              : "לשינוי אימייל, פני לתמיכה"}
+              ? t("email_oauth_hint", { provider: oAuthProvider ?? t("email_oauth_provider_fallback") })
+              : t("email_change_hint")}
           </p>
         </div>
         <div>
           <label htmlFor="profile-phone" className="block text-sm font-medium mb-1">
-            טלפון <span className="text-site-muted font-normal">(אופציונלי)</span>
+            {t("field_phone_label")} <span className="text-site-muted font-normal">{tCommon("optional_suffix")}</span>
           </label>
           <input
             id="profile-phone"
@@ -334,7 +341,7 @@ function ProfileTab() {
             dir="ltr"
           />
           <p className="text-xs text-site-muted mt-1 text-right">
-            נוסיף בקרוב notifications
+            {t("field_phone_hint")}
           </p>
         </div>
 
@@ -346,7 +353,7 @@ function ProfileTab() {
           disabled={!canSave || saving}
           className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
-          {saving ? "שומרת..." : "שמרי"}
+          {saving ? tCommon("saving") : tCommon("save_cta")}
         </button>
       </form>
     </section>
@@ -371,6 +378,13 @@ function SecurityTab() {
 }
 
 function PasswordChangeCard({ isOAuth }) {
+  // MEH-628: scoped translator for password-policy failure copy.
+  const tValidation = useTranslations("auth.passwordValidation");
+  // MEH-629 item 2: re-uses the existing reset-flow key for the
+  // "new password" label + aria-label (same canonical HE string).
+  const tReset = useTranslations("auth.passwordRecovery.reset");
+  // MEH-475 S2-a: card-scoped translator (security.common reserved for S2-b/c).
+  const t = useTranslations("settings.security.password");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -398,7 +412,7 @@ function PasswordChangeCard({ isOAuth }) {
       // 204 — backend reissued refresh + fingerprint cookies via Set-Cookie
       // (sub-A commit 52bb5f5). Browser auto-stores; /auth/refresh on this
       // device keeps working with the new cookies.
-      setMessage("הסיסמה עודכנה בהצלחה");
+      setMessage(t("save_toast"));
       setCurrent(""); setNext(""); setConfirm("");
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
@@ -414,11 +428,11 @@ function PasswordChangeCard({ isOAuth }) {
         // Reuse (same_as_current) only fires from this endpoint (server has
         // current_hash); PasswordInput shows a "נבדק בשרת" pending tile
         // pre-submit so the user knows the check happens here.
-        setError(firstFailureMessage(detail.failures));
+        setError(firstFailureMessage(detail.failures, tValidation));
       } else if (typeof detail === "string") {
         setError(detail);
       } else {
-        setError("שגיאה בעדכון הסיסמה");
+        setError(t("error_fallback"));
       }
     } finally {
       setSaving(false);
@@ -427,9 +441,9 @@ function PasswordChangeCard({ isOAuth }) {
 
   if (isOAuth) {
     return (
-      <section role="tabpanel" aria-label="שינוי סיסמה" className="bg-white border border-border rounded-[16px] p-6">
-        <h2 className="font-semibold text-site-text mb-2">סיסמה</h2>
-        <p className="text-sm text-site-muted">החשבון שלך מחובר דרך OAuth — אין צורך בסיסמה נפרדת.</p>
+      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+        <h2 className="font-semibold text-site-text mb-2">{t("oauth_heading")}</h2>
+        <p className="text-sm text-site-muted">{t("oauth_body")}</p>
       </section>
     );
   }
@@ -437,16 +451,16 @@ function PasswordChangeCard({ isOAuth }) {
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-site-text">שינוי סיסמה</h2>
+        <h2 className="font-semibold text-site-text">{t("heading")}</h2>
         <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-          שכחת סיסמה נוכחית?
+          {t("forgot_link")}
         </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Current password */}
         <div>
-          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">סיסמה נוכחית *</label>
+          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">{t("current_label")}</label>
           <div className="relative">
             <input
               id="sec-current"
@@ -463,7 +477,7 @@ function PasswordChangeCard({ isOAuth }) {
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
               className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label={showCurrent ? "הסתירי סיסמה נוכחית" : "הציגי סיסמה נוכחית"}
+              aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
               {showCurrent ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
@@ -476,14 +490,14 @@ function PasswordChangeCard({ isOAuth }) {
             "נבדק בשרת" pending tile because reuse-vs-current_hash is
             enforced inside the change_password handler (server-only). */}
         <div>
-          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">סיסמה חדשה *</label>
+          <label htmlFor="pw-new" className="block text-sm font-medium mb-1">{tReset("password_aria")} *</label>
           <PasswordInput
             id="pw-new"
             name="new"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             placeholder=""
-            ariaLabel="סיסמה חדשה"
+            ariaLabel={tReset("password_aria")}
             showCurrentPasswordReuse={true}
             onValidityChange={setNextOk}
           />
@@ -491,7 +505,7 @@ function PasswordChangeCard({ isOAuth }) {
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">אימות סיסמה חדשה *</label>
+          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">{t("confirm_label")}</label>
           <div className="relative">
             <input
               id="sec-confirm"
@@ -509,14 +523,14 @@ function PasswordChangeCard({ isOAuth }) {
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
               className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label={showConfirm ? "הסתירי אימות סיסמה" : "הציגי אימות סיסמה"}
+              aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >
               {showConfirm ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             </button>
           </div>
           {mismatch && (
-            <p className="text-xs text-red-500 mt-1 text-right" role="alert">הסיסמאות לא זהות</p>
+            <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("mismatch_error")}</p>
           )}
         </div>
 
@@ -528,7 +542,7 @@ function PasswordChangeCard({ isOAuth }) {
           disabled={!canSave || saving}
           className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
         >
-          {saving ? "שומרת..." : "עדכני סיסמה"}
+          {saving ? t("submit_saving") : t("submit_cta")}
         </button>
       </form>
     </section>
@@ -541,6 +555,9 @@ function PasswordChangeCard({ isOAuth }) {
 
 function LogoutAllDevicesCard() {
   const { logoutAllDevices } = useAuth();
+  // MEH-475 S2-b: card-scoped + shared-common translators.
+  const t = useTranslations("settings.security.logout_all");
+  const tCommon = useTranslations("settings.security.common");
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -552,7 +569,7 @@ function LogoutAllDevicesCard() {
       await logoutAllDevices();
       setConfirming(false);
     } catch {
-      setError("שגיאה — נסי שוב");
+      setError(tCommon("error_retry"));
     } finally {
       setLoading(false);
     }
@@ -560,9 +577,9 @@ function LogoutAllDevicesCard() {
 
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
-      <h2 className="font-semibold text-site-text mb-1">יציאה מכל המכשירים</h2>
+      <h2 className="font-semibold text-site-text mb-1">{t("heading")}</h2>
       <p className="text-sm text-site-muted mb-4">
-        מבטלת את כל הסשנים הפעילים ומחדשת את האסימון — כולל המכשיר הנוכחי.
+        {t("body")}
       </p>
 
       {!confirming ? (
@@ -571,11 +588,11 @@ function LogoutAllDevicesCard() {
           onClick={() => setConfirming(true)}
           className="border border-amber-500 text-amber-700 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-50 transition"
         >
-          יציאה מכל המכשירים
+          {t("heading")}
         </button>
       ) : (
         <div className="rounded-[12px] bg-amber-50 border border-amber-200 p-4 space-y-3">
-          <p className="text-sm text-amber-800 font-medium">לאשר יציאה מכל המכשירים?</p>
+          <p className="text-sm text-amber-800 font-medium">{t("confirm_prompt")}</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -583,14 +600,14 @@ function LogoutAllDevicesCard() {
               disabled={loading}
               className="bg-amber-500 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
             >
-              {loading ? "מתנתקת..." : "כן, יציאה"}
+              {loading ? t("confirm_submitting") : t("confirm_submit")}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
               className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
             >
-              ביטול
+              {tCommon("cancel")}
             </button>
           </div>
           {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
@@ -607,6 +624,9 @@ function LogoutAllDevicesCard() {
 function DangerZoneCard() {
   const { user, deleteAccount } = useAuth();
   const router = useRouter();
+  // MEH-475 S2-c: card-scoped + shared-common translators.
+  const t = useTranslations("settings.security.danger_zone");
+  const tCommon = useTranslations("settings.security.common");
   const [phase, setPhase] = useState("idle"); // idle | confirm | grace
   const [emailInput, setEmailInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -623,7 +643,7 @@ function DangerZoneCard() {
       await deleteAccount(); // clears token + user state via auth context
       setPhase("grace");
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה — נסי שוב");
+      setError(err?.response?.data?.detail || tCommon("error_retry"));
     } finally {
       setLoading(false);
     }
@@ -633,16 +653,16 @@ function DangerZoneCard() {
     return (
       <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
         <p className="text-2xl">⏳</p>
-        <h2 className="font-semibold text-site-text">בקשת המחיקה התקבלה</h2>
+        <h2 className="font-semibold text-site-text">{t("grace_heading")}</h2>
         <p className="text-sm text-site-muted">
-          החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.
+          {t("grace_body")}
         </p>
         <button
           type="button"
           onClick={() => router.push("/login")}
           className="mt-2 text-sm text-primary hover:underline"
         >
-          חזרי לדף הכניסה
+          {t("back_to_login")}
         </button>
       </section>
     );
@@ -650,9 +670,9 @@ function DangerZoneCard() {
 
   return (
     <section className="bg-white border border-red-200 rounded-[16px] p-6">
-      <h2 className="font-semibold text-red-700 mb-1">מחיקת חשבון</h2>
+      <h2 className="font-semibold text-red-700 mb-1">{t("heading")}</h2>
       <p className="text-sm text-site-muted mb-4">
-        פעולה זו בלתי הפיכה. כל הנתונים, הביקורות והמועדפים יימחקו לצמיתות.
+        {t("body")}
       </p>
 
       {phase === "idle" && (
@@ -661,14 +681,14 @@ function DangerZoneCard() {
           onClick={() => setPhase("confirm")}
           className="border border-red-400 text-red-600 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-50 transition"
         >
-          מחקי חשבון
+          {t("delete_cta")}
         </button>
       )}
 
       {phase === "confirm" && (
         <form onSubmit={handleDelete} className="space-y-3">
           <label htmlFor="danger-email" className="block text-sm font-medium text-red-700">
-            הקלידי את האימייל שלך לאישור
+            {t("confirm_email_label")}
           </label>
           <input
             id="danger-email"
@@ -687,14 +707,14 @@ function DangerZoneCard() {
               disabled={!emailMatch || loading}
               className="bg-red-600 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
             >
-              {loading ? "מוחקת..." : "אישור מחיקה"}
+              {loading ? t("submit_deleting") : t("submit_cta")}
             </button>
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
               className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
             >
-              ביטול
+              {tCommon("cancel")}
             </button>
           </div>
         </form>
@@ -709,6 +729,7 @@ function DangerZoneCard() {
 
 function BusinessTab() {
   const { user } = useAuth();
+  const t = useTranslations("settings.business");
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -730,59 +751,59 @@ function BusinessTab() {
       {/* Status banner */}
       {status === "pending" && (
         <div className="rounded-[12px] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
-          ✋ הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.
+          {t("status_pending")}
         </div>
       )}
       {status === "rejected" && (
         <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-4 space-y-3">
-          <p className="text-sm font-semibold text-red-700">הבקשה לא אושרה</p>
+          <p className="text-sm font-semibold text-red-700">{t("status_rejected_title")}</p>
           {rejectionReason && (
             <p className="text-sm text-red-600">{rejectionReason}</p>
           )}
           <ul className="space-y-1 text-sm text-red-700">
-            <li className="flex items-start gap-2"><span>•</span><span>ודאי שכל פרטי העסק מלאים ומדויקים</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>הוסיפי תמונות ברורות של המוצרים</span></li>
-            <li className="flex items-start gap-2"><span>•</span><span>בדקי שכתובת העסק נכונה</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_details")}</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_photos")}</span></li>
+            <li className="flex items-start gap-2"><span>•</span><span>{t("rejected_tip_address")}</span></li>
           </ul>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
             className="text-sm text-primary hover:underline"
           >
-            דברי איתנו &rarr;
+            {t("support_cta")}
           </button>
         </div>
       )}
       {status === "suspended" && (
         <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
           <span>⚠️</span>
-          <span className="font-medium">החשבון מושעה זמנית.</span>
+          <span className="font-medium">{t("status_suspended")}</span>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
             className="ms-auto text-primary hover:underline text-xs"
           >
-            צרי קשר
+            {t("support_cta_short")}
           </button>
         </div>
       )}
 
       {/* Stats grid */}
       <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
-        <h2 className="font-semibold text-site-text mb-4">סטטיסטיקות</h2>
+        <h2 className="font-semibold text-site-text mb-4">{t("stats_heading")}</h2>
         {loadingStats ? (
-          <p className="text-sm text-site-muted">טוענת...</p>
+          <p className="text-sm text-site-muted">{t("stats_loading")}</p>
         ) : stats ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <StatCard label="צפיות" value={stats.views ?? 0} />
-            <StatCard label="מועדפים" value={stats.favorites ?? 0} />
-            <StatCard label="ביקורות" value={stats.reviews ?? 0} />
-            <StatCard label="דירוג ממוצע" value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
-            <StatCard label="מוצרים" value={stats.products ?? 0} />
-            <StatCard label="הזמנות" value={stats.orders ?? 0} />
+            <StatCard label={t("stat_views")} value={stats.views ?? 0} />
+            <StatCard label={t("stat_favorites")} value={stats.favorites ?? 0} />
+            <StatCard label={t("stat_reviews")} value={stats.reviews ?? 0} />
+            <StatCard label={t("stat_avg_rating")} value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
+            <StatCard label={t("stat_products")} value={stats.products ?? 0} />
+            <StatCard label={t("stat_orders")} value={stats.orders ?? 0} />
           </div>
         ) : (
-          <p className="text-sm text-site-muted">הנתונים אינם זמינים כרגע.</p>
+          <p className="text-sm text-site-muted">{t("stats_unavailable")}</p>
         )}
       </section>
 
@@ -790,7 +811,7 @@ function BusinessTab() {
       {status === "approved" && (
         <div className="text-center">
           <Link href="/producer/edit" className="text-sm text-primary hover:underline">
-            ערכי פרופיל עסק &rarr;
+            {t("edit_profile_link")}
           </Link>
         </div>
       )}
@@ -801,6 +822,10 @@ function BusinessTab() {
 }
 
 function ProductsSection() {
+  const t = useTranslations("settings.products");
+  const tForm = useTranslations("settings.products.form");
+  const tErr = useTranslations("settings.products.errors");
+  const tCommon = useTranslations("settings.common");
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -825,12 +850,12 @@ function ProductsSection() {
     if (!file) return;
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
-      setError("רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF");
+      setError(tErr("upload_type"));
       e.target.value = "";
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("הקובץ גדול מדי — מקסימום 5MB");
+      setError(tErr("upload_size"));
       e.target.value = "";
       return;
     }
@@ -842,7 +867,7 @@ function ProductsSection() {
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה בהעלאת תמונה — נסי שוב");
+      setError(err?.response?.data?.detail || tErr("upload_failed_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -851,13 +876,13 @@ function ProductsSection() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError("שם המוצר הוא שדה חובה"); return; }
-    if (form.price_min === "") { setError("הכניסי מחיר"); return; }
+    if (!form.name.trim()) { setError(tErr("name_required")); return; }
+    if (form.price_min === "") { setError(tErr("price_required")); return; }
     const minNum = Number(form.price_min);
     const maxNum = form.price_max === "" ? null : Number(form.price_max);
-    if (minNum < 1) { setError("המחיר חייב להיות לפחות 1 ₪"); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError("המחיר לא יכול לעבור 10,000 ₪"); return; }
-    if (maxNum !== null && maxNum < minNum) { setError("מחיר עד חייב להיות גבוה ממחיר מ-"); return; }
+    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
+    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
+    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
     setSaving(true);
     setError("");
     try {
@@ -876,7 +901,7 @@ function ProductsSection() {
       setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_lactose_free: false });
       setAdding(false);
     } catch {
-      setError("שגיאה בשמירת המוצר");
+      setError(tErr("save_failed"));
     } finally {
       setSaving(false);
     }
@@ -907,12 +932,12 @@ function ProductsSection() {
     if (!file) return;
     const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!ALLOWED.includes(file.type)) {
-      setError("רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF");
+      setError(tErr("upload_type"));
       e.target.value = "";
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError("הקובץ גדול מדי — מקסימום 5MB");
+      setError(tErr("upload_size"));
       e.target.value = "";
       return;
     }
@@ -924,7 +949,7 @@ function ProductsSection() {
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setEditForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
-      setError(err?.response?.data?.detail || "שגיאה בהעלאת תמונה — נסי שוב");
+      setError(err?.response?.data?.detail || tErr("upload_failed_fallback"));
     } finally {
       setEditUploading(false);
       e.target.value = "";
@@ -933,13 +958,13 @@ function ProductsSection() {
 
   const handleEdit = async (productId, e) => {
     e.preventDefault();
-    if (!editForm.name?.trim()) { setError("שם המוצר הוא שדה חובה"); return; }
-    if (editForm.price_min === "") { setError("הכניסי מחיר"); return; }
+    if (!editForm.name?.trim()) { setError(tErr("name_required")); return; }
+    if (editForm.price_min === "") { setError(tErr("price_required")); return; }
     const minNum = Number(editForm.price_min);
     const maxNum = editForm.price_max === "" ? null : Number(editForm.price_max);
-    if (minNum < 1) { setError("המחיר חייב להיות לפחות 1 ₪"); return; }
-    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError("המחיר לא יכול לעבור 10,000 ₪"); return; }
-    if (maxNum !== null && maxNum < minNum) { setError("מחיר עד חייב להיות גבוה ממחיר מ-"); return; }
+    if (minNum < 1) { setError(tErr("price_min_too_low")); return; }
+    if (minNum > 10000 || (maxNum !== null && maxNum > 10000)) { setError(tErr("price_too_high")); return; }
+    if (maxNum !== null && maxNum < minNum) { setError(tErr("price_max_below_min")); return; }
     setSavingEdit(true);
     setError("");
     try {
@@ -957,7 +982,7 @@ function ProductsSection() {
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
       setEditingId(null);
     } catch {
-      setError("שגיאה בשמירת המוצר");
+      setError(tErr("save_failed"));
     } finally {
       setSavingEdit(false);
     }
@@ -968,7 +993,7 @@ function ProductsSection() {
       await api.delete(`/producers/me/products/${id}`);
       setProducts((p) => p.filter((pr) => pr.id !== id));
     } catch {
-      setError("שגיאה במחיקת המוצר");
+      setError(tErr("delete_failed"));
     }
   };
 
@@ -977,14 +1002,14 @@ function ProductsSection() {
   return (
     <div className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline text-lg font-bold text-site-text">מוצרים</h3>
+        <h3 className="font-headline text-lg font-bold text-site-text">{t("section_heading")}</h3>
         {!adding && (
           <button
             onClick={() => { setAdding(true); setError(""); }}
             className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
           >
             <Plus size={14} aria-hidden="true" />
-            הוסיפי מוצר
+            {t("add_cta")}
           </button>
         )}
       </div>
@@ -994,9 +1019,9 @@ function ProductsSection() {
       {products?.length === 0 && !adding && (
         <EmptyState
           emoji="🥕"
-          title="מוצר ראשון = בית עסק חי"
-          description="בלי מוצרים, הפרופיל שלך נראה ריק ולקוחות לא יודעות מה יש לך. הוסיפי 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות."
-          ctaLabel="+ הוסיפי מוצר ראשון"
+          title={t("empty.title")}
+          description={t("empty.description")}
+          ctaLabel={t("empty.cta")}
           ctaOnClick={() => { setAdding(true); setError(""); }}
         />
       )}
@@ -1010,18 +1035,18 @@ function ProductsSection() {
               className="border border-border rounded-[10px] p-4 space-y-3 bg-light"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-site-text">עריכת מוצר</p>
-                <button type="button" onClick={cancelEdit} aria-label="ביטול">
+                <p className="text-sm font-medium text-site-text">{t("edit_heading")}</p>
+                <button type="button" onClick={cancelEdit} aria-label={t("cancel_aria")}>
                   <X size={16} className="text-site-muted" aria-hidden="true" />
                 </button>
               </div>
               {product.price_min == null && product.price_range && (
                 <p className="text-xs text-site-muted mb-2">
-                  המחיר הקיים: {product.price_range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)
+                  {t("edit_legacy_price_note", { range: product.price_range })}
                 </p>
               )}
               <div>
-                <label className="text-xs text-site-muted mb-1 block">שם המוצר *</label>
+                <label className="text-xs text-site-muted mb-1 block">{tForm("name_label")}</label>
                 <input
                   required
                   value={editForm.name || ""}
@@ -1030,7 +1055,7 @@ function ProductsSection() {
                 />
               </div>
               <div>
-                <label className="text-xs text-site-muted mb-1 block">תיאור קצר</label>
+                <label className="text-xs text-site-muted mb-1 block">{tForm("description_label")}</label>
                 <input
                   value={editForm.description || ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -1039,7 +1064,7 @@ function ProductsSection() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-site-muted mb-1 block">מחיר מ- (₪)</label>
+                  <label className="text-xs text-site-muted mb-1 block">{tForm("price_min_label")}</label>
                   <input
                     required
                     type="number"
@@ -1052,7 +1077,7 @@ function ProductsSection() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-site-muted mb-1 block">מחיר עד- (₪) <span className="text-site-muted">אופציונלי</span></label>
+                  <label className="text-xs text-site-muted mb-1 block">{tForm("price_max_label")} <span className="text-site-muted">{tForm("price_max_optional_suffix")}</span></label>
                   <input
                     type="number"
                     min={1}
@@ -1065,7 +1090,7 @@ function ProductsSection() {
                 </div>
               </div>
               <div>
-                <p className="text-xs text-site-muted mb-2">סימוני תזונה (אופציונלי)</p>
+                <p className="text-xs text-site-muted mb-2">{tForm("diet_heading")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -1074,7 +1099,7 @@ function ProductsSection() {
                       onChange={(e) => setEditForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
                       className="w-4 h-4 accent-primary"
                     />
-                    <span>🌾 ללא גלוטן</span>
+                    <span>{tForm("diet_gluten_free")}</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -1083,7 +1108,7 @@ function ProductsSection() {
                       onChange={(e) => setEditForm((f) => ({ ...f, is_vegan: e.target.checked }))}
                       className="w-4 h-4 accent-primary"
                     />
-                    <span>🥦 טבעוני</span>
+                    <span>{tForm("diet_vegan")}</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -1092,29 +1117,29 @@ function ProductsSection() {
                       onChange={(e) => setEditForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
                       className="w-4 h-4 accent-primary"
                     />
-                    <span>🥛 ללא לקטוז</span>
+                    <span>{tForm("diet_lactose_free")}</span>
                   </label>
                 </div>
               </div>
               <div>
-                <label className="text-xs text-site-muted mb-1 block">תמונת מוצר</label>
+                <label className="text-xs text-site-muted mb-1 block">{tForm("image_label")}</label>
                 {editForm.image_url ? (
                   <div className="flex items-center gap-2">
                     <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
-                      <Image src={editForm.image_url} alt="תמונה" fill className="object-cover" sizes="48px" />
+                      <Image src={editForm.image_url} alt={tForm("image_alt")} fill className="object-cover" sizes="48px" />
                     </div>
                     <button
                       type="button"
                       onClick={() => setEditForm((f) => ({ ...f, image_url: "" }))}
                       className="text-xs text-red-500 hover:underline"
                     >
-                      הסר
+                      {tForm("image_remove")}
                     </button>
                   </div>
                 ) : (
                   <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
                     <Package size={14} aria-hidden="true" />
-                    {editUploading ? "מעלה..." : "העלי תמונה"}
+                    {editUploading ? tForm("image_uploading") : tForm("image_upload_cta")}
                     <input
                       type="file"
                       accept="image/*"
@@ -1131,14 +1156,14 @@ function ProductsSection() {
                   disabled={savingEdit || editUploading}
                   className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
                 >
-                  {savingEdit ? "שומרת..." : "שמרי שינויים"}
+                  {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
                 </button>
                 <button
                   type="button"
                   onClick={cancelEdit}
                   className="px-4 bg-white border border-border text-site-text rounded-[8px] py-2 text-sm font-medium hover:bg-light transition"
                 >
-                  בטלי
+                  {t("cancel_edit_cta")}
                 </button>
               </div>
             </form>
@@ -1167,14 +1192,14 @@ function ProductsSection() {
               </div>
               <button
                 onClick={() => startEdit(product)}
-                aria-label={`ערכי ${product.name}`}
+                aria-label={t("card.edit_aria_template", { name: product.name })}
                 className="p-1.5 rounded-[6px] text-site-muted hover:text-primary hover:bg-primary/5 transition"
               >
                 <Pencil size={16} aria-hidden="true" />
               </button>
               <button
                 onClick={() => handleDelete(product.id)}
-                aria-label={`מחקי ${product.name}`}
+                aria-label={t("card.delete_aria_template", { name: product.name })}
                 className="p-1.5 rounded-[6px] text-site-muted hover:text-red-500 hover:bg-red-50 transition"
               >
                 <Trash size={16} aria-hidden="true" />
@@ -1187,13 +1212,13 @@ function ProductsSection() {
       {adding && (
         <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-light">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-site-text">מוצר חדש</p>
-            <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label="ביטול">
+            <p className="text-sm font-medium text-site-text">{t("add_heading")}</p>
+            <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
               <X size={16} className="text-site-muted" aria-hidden="true" />
             </button>
           </div>
           <div>
-            <label className="text-xs text-site-muted mb-1 block">שם המוצר *</label>
+            <label className="text-xs text-site-muted mb-1 block">{tForm("name_label")}</label>
             <input
               required
               value={form.name}
@@ -1202,7 +1227,7 @@ function ProductsSection() {
             />
           </div>
           <div>
-            <label className="text-xs text-site-muted mb-1 block">תיאור קצר</label>
+            <label className="text-xs text-site-muted mb-1 block">{tForm("description_label")}</label>
             <input
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -1211,7 +1236,7 @@ function ProductsSection() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-site-muted mb-1 block">מחיר מ- (₪)</label>
+              <label className="text-xs text-site-muted mb-1 block">{tForm("price_min_label")}</label>
               <input
                 required
                 type="number"
@@ -1224,7 +1249,7 @@ function ProductsSection() {
               />
             </div>
             <div>
-              <label className="text-xs text-site-muted mb-1 block">מחיר עד- (₪) <span className="text-site-muted">אופציונלי</span></label>
+              <label className="text-xs text-site-muted mb-1 block">{tForm("price_max_label")} <span className="text-site-muted">{tForm("price_max_optional_suffix")}</span></label>
               <input
                 type="number"
                 min={1}
@@ -1237,7 +1262,7 @@ function ProductsSection() {
             </div>
           </div>
           <div>
-            <p className="text-xs text-site-muted mb-2">סימוני תזונה (אופציונלי)</p>
+            <p className="text-xs text-site-muted mb-2">{tForm("diet_heading")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1246,7 +1271,7 @@ function ProductsSection() {
                   onChange={(e) => setForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
                   className="w-4 h-4 accent-primary"
                 />
-                <span>🌾 ללא גלוטן</span>
+                <span>{tForm("diet_gluten_free")}</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1255,7 +1280,7 @@ function ProductsSection() {
                   onChange={(e) => setForm((f) => ({ ...f, is_vegan: e.target.checked }))}
                   className="w-4 h-4 accent-primary"
                 />
-                <span>🥦 טבעוני</span>
+                <span>{tForm("diet_vegan")}</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1264,29 +1289,29 @@ function ProductsSection() {
                   onChange={(e) => setForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
                   className="w-4 h-4 accent-primary"
                 />
-                <span>🥛 ללא לקטוז</span>
+                <span>{tForm("diet_lactose_free")}</span>
               </label>
             </div>
           </div>
           <div>
-            <label className="text-xs text-site-muted mb-1 block">תמונת מוצר</label>
+            <label className="text-xs text-site-muted mb-1 block">{tForm("image_label")}</label>
             {form.image_url ? (
               <div className="flex items-center gap-2">
                 <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
-                  <Image src={form.image_url} alt="תמונה" fill className="object-cover" sizes="48px" />
+                  <Image src={form.image_url} alt={tForm("image_alt")} fill className="object-cover" sizes="48px" />
                 </div>
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
                   className="text-xs text-red-500 hover:underline"
                 >
-                  הסר
+                  {tForm("image_remove")}
                 </button>
               </div>
             ) : (
               <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
                 <Package size={14} aria-hidden="true" />
-                {uploading ? "מעלה..." : "העלי תמונה"}
+                {uploading ? tForm("image_uploading") : tForm("image_upload_cta")}
                 <input
                   type="file"
                   accept="image/*"
@@ -1303,7 +1328,7 @@ function ProductsSection() {
               disabled={saving || uploading}
               className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
             >
-              {saving ? "מוסיפה..." : "הוסיפי מוצר"}
+              {saving ? t("add_submitting") : t("add_submit_cta")}
             </button>
           </div>
         </form>
@@ -1322,17 +1347,19 @@ function StatCard({ label, value }) {
 }
 
 function SupportModal({ onClose }) {
+  // MEH-652: SupportModal i18n — final settings/page.jsx residual.
+  const t = useTranslations("settings.support_modal");
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
-      aria-label="צרי קשר עם התמיכה"
+      aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-site-text text-lg">צרי קשר</h2>
-        <p className="text-sm text-site-muted">נשמח לעזור. בחרי את הדרך הנוחה לך:</p>
+        <h2 className="font-semibold text-site-text text-lg">{t("heading")}</h2>
+        <p className="text-sm text-site-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
@@ -1341,8 +1368,8 @@ function SupportModal({ onClose }) {
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
-            <p className="text-sm font-medium">וואטסאפ</p>
-            <p className="text-xs text-site-muted">זמינות ב׳–ה׳ 9:00–17:00</p>
+            <p className="text-sm font-medium">{t("whatsapp_label")}</p>
+            <p className="text-xs text-site-muted">{t("whatsapp_hours")}</p>
           </div>
         </a>
         <a
@@ -1351,7 +1378,7 @@ function SupportModal({ onClose }) {
         >
           <EnvelopeSimple size={22} weight="duotone" className="text-primary shrink-0" />
           <div>
-            <p className="text-sm font-medium">אימייל</p>
+            <p className="text-sm font-medium">{t("email_label")}</p>
             <p className="text-xs text-site-muted">support@mehamakor.online</p>
           </div>
         </a>
@@ -1360,7 +1387,7 @@ function SupportModal({ onClose }) {
           onClick={onClose}
           className="w-full py-2.5 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
         >
-          סגרי
+          {t("close_cta")}
         </button>
       </div>
     </div>

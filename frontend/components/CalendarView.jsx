@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
-const HEBREW_DAY_NAMES = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 function dateKey(date) {
   const y = date.getFullYear();
@@ -34,6 +35,7 @@ function formatHebrewDate(date) {
 }
 
 export default function CalendarView({ items, linkPrefix }) {
+  const t = useTranslations("events.calendar");
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -93,7 +95,7 @@ export default function CalendarView({ items, linkPrefix }) {
         <button
           type="button"
           onClick={prevMonth}
-          aria-label="חודש קודם"
+          aria-label={t("previous_month")}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-light transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -106,7 +108,7 @@ export default function CalendarView({ items, linkPrefix }) {
         <button
           type="button"
           onClick={nextMonth}
-          aria-label="חודש הבא"
+          aria-label={t("next_month")}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-light transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -119,14 +121,14 @@ export default function CalendarView({ items, linkPrefix }) {
         role="row"
         className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-site-muted"
       >
-        {HEBREW_DAY_NAMES.map((name) => (
-          <div key={name} className="py-2" role="columnheader">
-            {name}
+        {DAY_KEYS.map((key) => (
+          <div key={key} className="py-2" role="columnheader">
+            {t(`days.${key}`)}
           </div>
         ))}
       </div>
 
-      <div role="grid" aria-label="לוח שנה" className="grid grid-cols-7 gap-1">
+      <div role="grid" aria-label={t("label")} className="grid grid-cols-7 gap-1">
         {cells.map((d, idx) => {
           if (!d) {
             return (
@@ -178,9 +180,7 @@ export default function CalendarView({ items, linkPrefix }) {
               {formatHebrewDate(selectedDate)}
             </h4>
             <span className="text-sm text-site-muted">
-              {selectedItems.length === 0
-                ? "אין אירועים"
-                : `${selectedItems.length} ${selectedItems.length === 1 ? "אירוע" : "אירועים"}`}
+              {t("events_count", { count: selectedItems.length })}
             </span>
           </div>
           {selectedItems.length > 0 && (

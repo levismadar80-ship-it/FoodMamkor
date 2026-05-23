@@ -1,24 +1,31 @@
 "use client";
 
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
 import { useAdminProducers } from "./use-admin-producers";
 
+function SuspenseFallback() {
+  const t = useTranslations("admin");
+  return <div className="text-text-secondary">{t("common.loading")}</div>;
+}
+
 export default function ProducersPageWrapper() {
   return (
-    <Suspense fallback={<div className="text-text-secondary">טוען...</div>}>
+    <Suspense fallback={<SuspenseFallback />}>
       <ProducersAdminPage />
     </Suspense>
   );
 }
 
 function PageHeader({ count }) {
+  const t = useTranslations("admin");
   return (
     <div className="flex items-center justify-between">
-      <h1 className="text-2xl font-bold">בתי עסק</h1>
-      <span className="text-sm text-text-secondary">{count} רשומות</span>
+      <h1 className="text-2xl font-bold">{t("producers.list.title")}</h1>
+      <span className="text-sm text-text-secondary">{t("producers.list.records_count", { count })}</span>
     </div>
   );
 }

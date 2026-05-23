@@ -57,6 +57,8 @@ erDiagram
         boolean grass_fed
         boolean organic_certified
         string kosher
+        int risk_score "nullable — MEH-509 PR3, Anthropic Haiku 0-100, fail-open NULL"
+        text risk_reasoning "nullable — one-sentence Hebrew explanation, truncated to 500 chars"
         timestamp created_at
     }
 
@@ -263,6 +265,18 @@ erDiagram
         string title
         text body
         timestamp updated_at
+    }
+
+    inbound_messages {
+        uuid id PK
+        string from_phone "indexed (MEH-509 PR2b)"
+        text body
+        timestamp received_at "indexed"
+        string meta_message_id UK "Meta at-least-once idempotency"
+        boolean bot_replied "indexed — watchdog gate"
+        timestamp bot_replied_at
+        string bot_template_sent "audit-trail: NULL = tried + failed"
+        boolean human_replied
     }
 ```
 

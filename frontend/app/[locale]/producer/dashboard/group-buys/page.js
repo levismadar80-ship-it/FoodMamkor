@@ -3,19 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import InfoTooltip from "@/components/InfoTooltip";
 
-const STATUS_LABELS = {
-  open: { label: "פתוחה", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-  funded: { label: "ממומנת 🎉", cls: "bg-[#EAF3DE] text-primary border-primary/20" },
-  cancelled: { label: "בוטלה", cls: "bg-gray-100 text-gray-500 border-gray-200" },
-  fulfilled: { label: "הושלמה ✅", cls: "bg-light text-primary border-primary/30" },
+const STATUS_CLS = {
+  open: "bg-blue-50 text-blue-700 border-blue-200",
+  funded: "bg-[#EAF3DE] text-primary border-primary/20",
+  cancelled: "bg-gray-100 text-gray-500 border-gray-200",
+  fulfilled: "bg-light text-primary border-primary/30",
 };
 
 function NewGroupBuyForm({ producerCity, onCreated }) {
+  const t = useTranslations("group_buys.dashboard.form");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -48,7 +50,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       });
       onCreated();
     } catch (err) {
-      setError(err.response?.data?.detail || "משהו השתבש, נסי שוב");
+      setError(err.response?.data?.detail || t("errors.generic"));
     } finally {
       setSubmitting(false);
     }
@@ -56,11 +58,11 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
-      <h2 className="font-headline text-lg font-bold text-site-text">קבוצת רכש חדשה</h2>
+      <h2 className="font-headline text-lg font-bold text-site-text">{t("heading")}</h2>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-1">כותרת *</label>
+          <label className="block text-sm font-medium mb-1">{t("title_label")}{t("required_marker")}</label>
           <input
             value={form.title}
             onChange={set("title")}
@@ -71,7 +73,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-1">תיאור</label>
+          <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
           <textarea
             value={form.description}
             onChange={set("description")}
@@ -82,7 +84,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">שם המוצר *</label>
+          <label className="block text-sm font-medium mb-1">{t("product_name_label")}{t("required_marker")}</label>
           <input
             value={form.product_name}
             onChange={set("product_name")}
@@ -92,18 +94,18 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">יחידה</label>
+          <label className="block text-sm font-medium mb-1">{t("unit_label")}</label>
           <input
             value={form.unit}
             onChange={set("unit")}
-            placeholder='ק"ג, ליטר, יחידה'
+            placeholder={t("unit_placeholder")}
             className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
             dir="rtl"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">מחיר רגיל (₪) *</label>
+          <label className="block text-sm font-medium mb-1">{t("price_regular_label")}{t("required_marker")}</label>
           <input
             type="number"
             min={1}
@@ -116,7 +118,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">מחיר קבוצתי (₪) *</label>
+          <label className="block text-sm font-medium mb-1">{t("price_group_label")}{t("required_marker")}</label>
           <input
             type="number"
             min={1}
@@ -131,8 +133,8 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
         <div>
           <label className="block text-sm font-medium mb-1">
-            מינימום משתתפות *
-            <InfoTooltip content="מספר ההזמנות הדרוש כדי שהקבוצה תיסגר. אם לא מגיעים למינימום עד המועד האחרון — אף אחת לא משלמת ואת לא חייבת לבצע." />
+            {t("min_label")}{t("required_marker")}
+            <InfoTooltip content={t("min_tooltip")} />
           </label>
           <input
             type="number"
@@ -145,7 +147,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">מקסימום משתתפות</label>
+          <label className="block text-sm font-medium mb-1">{t("max_label")}</label>
           <input
             type="number"
             min={2}
@@ -157,7 +159,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">מועד אחרון *</label>
+          <label className="block text-sm font-medium mb-1">{t("deadline_label")}{t("required_marker")}</label>
           <input
             type="datetime-local"
             value={form.deadline}
@@ -168,7 +170,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">עיר</label>
+          <label className="block text-sm font-medium mb-1">{t("city_label")}</label>
           <input
             value={form.city}
             onChange={set("city")}
@@ -184,13 +186,14 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         disabled={submitting}
         className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
       >
-        {submitting ? "יוצרת..." : "צרי קבוצת רכש"}
+        {submitting ? t("submitting") : t("submit")}
       </button>
     </form>
   );
 }
 
 export default function ProducerGroupBuysPage() {
+  const t = useTranslations("group_buys.dashboard");
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState(null);
@@ -238,22 +241,27 @@ export default function ProducerGroupBuysPage() {
 
   if (authLoading || !user) return null;
 
+  const statusLabel = (status) => {
+    const key = STATUS_CLS[status] ? `status.${status}` : null;
+    return key ? t(key) : status;
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            ← לוח הבקרה
+            {t("back")}
           </Link>
           <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
-            קבוצות הרכש שלי
+            {t("heading")}
           </h1>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
         >
-          {showForm ? "סגרי" : "+ קבוצת רכש חדשה"}
+          {showForm ? t("btn_close_form") : t("btn_open_form")}
         </button>
       </div>
 
@@ -270,19 +278,19 @@ export default function ProducerGroupBuysPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-site-muted">טוענת...</div>
+        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
           emoji="🛒"
-          title="קבוצות רכש = מחיר סיטונאי ללקוחות שלך"
-          description="את קובעת מינימום משתתפות ותאריך. אם לא מגיעים למינימום — אף אחת לא משלמת. מושלם לשחיטה של כבש שלם, ליום אריזת סלסלות, או להזמנת עגלים קבוצתית."
-          ctaLabel="+ צרי קבוצה ראשונה"
+          title={t("empty_title")}
+          description={t("empty_description")}
+          ctaLabel={t("empty_cta")}
           ctaOnClick={() => setShowForm(true)}
         />
       ) : (
         <div className="space-y-4">
           {items.map((gb) => {
-            const s = STATUS_LABELS[gb.status] || { label: gb.status, cls: "bg-gray-100 text-gray-600 border-gray-200" };
+            const cls = STATUS_CLS[gb.status] || "bg-gray-100 text-gray-600 border-gray-200";
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
               <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
@@ -291,8 +299,8 @@ export default function ProducerGroupBuysPage() {
                     <h2 className="font-semibold text-site-text">{gb.title}</h2>
                     <p className="text-xs text-site-muted mt-0.5">{gb.product_name}</p>
                   </div>
-                  <span className={`text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${s.cls}`}>
-                    {s.label}
+                  <span className={`text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${cls}`}>
+                    {statusLabel(gb.status)}
                   </span>
                 </div>
 
@@ -303,7 +311,7 @@ export default function ProducerGroupBuysPage() {
 
                 <div className="mb-2">
                   <div className="flex justify-between text-xs text-site-muted mb-1">
-                    <span>{gb.commits_count} / {gb.min_participants} משתתפות</span>
+                    <span>{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
                     <span>{pct}%</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2 overflow-hidden">
@@ -316,13 +324,13 @@ export default function ProducerGroupBuysPage() {
 
                 <div className="flex items-center justify-between text-xs text-site-muted">
                   <span>
-                    מועד אחרון: {new Date(gb.deadline).toLocaleDateString("he-IL")}
+                    {t("deadline_prefix", { date: new Date(gb.deadline).toLocaleDateString("he-IL") })}
                   </span>
                   <Link
                     href={`/group-buys/${gb.id}`}
                     className="text-primary hover:underline"
                   >
-                    צפי בדף הציבורי ←
+                    {t("view_public")}
                   </Link>
                 </div>
               </div>

@@ -4,23 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Leaf, MapPin } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
-
-const STATUS_BANNER = {
-  pending: {
-    className: "bg-yellow-50 border-yellow-300 text-yellow-900",
-    label: "החוויה שלך בהמתנה לאישור צוות מהמקור 🌿",
-  },
-  changes_requested: {
-    className: "bg-orange-50 border-orange-300 text-orange-900",
-    label: "נדרשים שינויים לפני שנוכל לפרסם",
-  },
-  rejected: {
-    className: "bg-red-50 border-red-300 text-red-900",
-    label: "החוויה לא אושרה לפרסום",
-  },
-};
 
 function formatDate(iso) {
   if (!iso) return "";
@@ -41,12 +27,8 @@ function formatTime(t) {
   return t.slice(0, 5);
 }
 
-function formatPrice(p) {
-  if (p == null || Number(p) === 0) return "חינם";
-  return `₪${Number(p).toLocaleString("he-IL")}`;
-}
-
 export default function ExperienceDetailClient() {
+  const t = useTranslations("experiences.detail");
   const { id } = useParams();
   const search = useSearchParams();
   const justSubmitted = search.get("pending") === "1";
@@ -64,10 +46,15 @@ export default function ExperienceDetailClient() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const formatPrice = (p) => {
+    if (p == null || Number(p) === 0) return t("free");
+    return `₪${Number(p).toLocaleString("he-IL")}`;
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center text-site-muted">
-        טוענת את החוויה...
+        {t("loading")}
       </div>
     );
   }
@@ -78,13 +65,28 @@ export default function ExperienceDetailClient() {
         <div className="mb-4 flex justify-center">
           <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
         </div>
-        <p className="text-site-muted mb-6">לא מצאנו את החוויה הזו</p>
+        <p className="text-site-muted mb-6">{t("not_found")}</p>
         <Link href="/experiences" className="text-primary hover:underline">
-          ← חזרה לכל החוויות
+          {t("back_to_all")}
         </Link>
       </div>
     );
   }
+
+  const STATUS_BANNER = {
+    pending: {
+      className: "bg-yellow-50 border-yellow-300 text-yellow-900",
+      label: t("status_pending"),
+    },
+    changes_requested: {
+      className: "bg-orange-50 border-orange-300 text-orange-900",
+      label: t("status_changes_requested"),
+    },
+    rejected: {
+      className: "bg-red-50 border-red-300 text-red-900",
+      label: t("status_rejected"),
+    },
+  };
 
   const banner = STATUS_BANNER[ex.status];
   const isApproved = ex.status === "approved";
@@ -103,8 +105,8 @@ export default function ExperienceDetailClient() {
       <div className="max-w-3xl mx-auto px-4 py-10">
         <Breadcrumb
           items={[
-            { href: "/", label: "בית" },
-            { href: "/experiences", label: "חוויות" },
+            { href: "/", label: t("breadcrumb_home") },
+            { href: "/experiences", label: t("breadcrumb_experiences") },
             { label: ex.title },
           ]}
           className="mb-4"
@@ -112,7 +114,7 @@ export default function ExperienceDetailClient() {
 
         {justSubmitted && ex.status === "pending" && (
           <div className="bg-green-50 border border-primary text-primary rounded-[12px] p-4 mb-4">
-            ✅ החוויה נשלחה לאישור! תקבלי מייל כשהיא תתפרסם 🌿
+            {t("just_submitted")}
           </div>
         )}
 
@@ -121,13 +123,13 @@ export default function ExperienceDetailClient() {
             <p className="font-medium">{banner.label}</p>
             {ex.status === "changes_requested" && ex.admin_feedback && (
               <p className="text-sm mt-2 whitespace-pre-wrap">
-                <span className="font-medium">הערות הצוות:</span>{" "}
+                <span className="font-medium">{t("team_notes")}</span>{" "}
                 {ex.admin_feedback}
               </p>
             )}
             {ex.status === "rejected" && ex.rejection_reason && (
               <p className="text-sm mt-2 whitespace-pre-wrap">
-                <span className="font-medium">סיבה:</span> {ex.rejection_reason}
+                <span className="font-medium">{t("reason")}</span> {ex.rejection_reason}
               </p>
             )}
           </div>
@@ -164,8 +166,11 @@ export default function ExperienceDetailClient() {
             <p className="flex items-center gap-2">
               <span aria-hidden>👥</span>
               {ex.spots_left === 0
-                ? "אזל"
-                : `${ex.spots_left ?? ex.max_participants} מתוך ${ex.max_participants}`}
+                ? t("sold_out")
+                : t("spots_count", {
+                    spots: ex.spots_left ?? ex.max_participants,
+                    max: ex.max_participants,
+                  })}
             </p>
           )}
         </div>
@@ -179,7 +184,7 @@ export default function ExperienceDetailClient() {
         {ex.requirements && (
           <div className="bg-light border border-border rounded-[16px] p-6 mb-6">
             <h2 className="font-headline text-lg font-bold text-site-text mb-2">
-              מה להביא / דרישות
+              {t("requirements_title")}
             </h2>
             <p className="text-site-text/85 whitespace-pre-line">
               {ex.requirements}
@@ -191,26 +196,26 @@ export default function ExperienceDetailClient() {
           <div className="flex flex-wrap gap-3 mt-6">
             <a
               href={`https://wa.me/?text=${encodeURIComponent(
-                `היי! אני רוצה להירשם ל-"${ex.title}"`
+                t("whatsapp_message", { title: ex.title })
               )}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
             >
-              פני למארחת ב-WhatsApp
+              {t("whatsapp_cta")}
             </a>
             <Link
               href="/experiences"
               className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
             >
-              ← כל החוויות
+              {t("all_experiences")}
             </Link>
           </div>
         )}
 
         {ex.host?.name && (
           <p className="text-sm text-site-muted mt-8">
-            מארחת: <span className="text-primary">{ex.host.name}</span>
+            {t("host_label")} <span className="text-primary">{ex.host.name}</span>
           </p>
         )}
       </div>

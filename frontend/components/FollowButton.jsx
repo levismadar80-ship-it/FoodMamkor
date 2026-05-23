@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bell, BellSlash } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -16,6 +17,7 @@ import { showToast } from "@/lib/toast";
  * data-only foundation per docs/archive/FEEDBACK_FIXES.md.
  */
 export default function FollowButton({ producerId }) {
+  const t = useTranslations("producer.follow");
   const { user } = useAuth();
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,14 +38,14 @@ export default function FollowButton({ producerId }) {
       if (following) {
         await api.delete(`/producers/${producerId}/follow`);
         setFollowing(false);
-        showToast("הפסקת לעקוב");
+        showToast(t("unfollowed_toast"));
       } else {
         await api.post(`/producers/${producerId}/follow`);
         setFollowing(true);
-        showToast("מעכשיו תקבלי עדכונים על מוצרים חדשים 🔔");
+        showToast(t("followed_toast"));
       }
     } catch {
-      showToast("משהו השתבש, נסי שוב", "error");
+      showToast(t("error_generic"), "error");
     }
     setLoading(false);
   };
@@ -63,12 +65,12 @@ export default function FollowButton({ producerId }) {
       {following ? (
         <>
           <Bell size={16} weight="fill" />
-          עוקבת
+          {t("following")}
         </>
       ) : (
         <>
           <BellSlash size={16} weight="duotone" />
-          עקבי אחרי עסק זה
+          {t("follow_aria")}
         </>
       )}
     </button>

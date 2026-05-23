@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Heart } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
 export default function AdminUsersPage() {
+  const t = useTranslations("admin");
   const { user: me } = useAuth();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -63,13 +65,13 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">משתמשים</h1>
-        <span className="text-sm text-text-secondary">{users.length} משתמשים</span>
+        <h1 className="text-2xl font-bold">{t("users.title")}</h1>
+        <span className="text-sm text-text-secondary">{t("users.count", { count: users.length })}</span>
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
         <input
-          placeholder="חיפוש לפי אימייל או שם..."
+          placeholder={t("users.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && load()}
@@ -80,13 +82,13 @@ export default function AdminUsersPage() {
           onChange={(e) => setRole(e.target.value)}
           className="border border-border rounded-[12px] px-3 py-2 bg-white"
         >
-          <option value="all">כל התפקידים</option>
-          <option value="consumer">צרכן</option>
-          <option value="producer">בית עסק</option>
-          <option value="admin">אדמין</option>
+          <option value="all">{t("users.role_filter.all")}</option>
+          <option value="consumer">{t("users.role_filter.consumer")}</option>
+          <option value="producer">{t("users.role_filter.producer")}</option>
+          <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
         <button onClick={load} className="bg-secondary text-white px-4 py-2 rounded-[12px] text-sm">
-          חפש
+          {t("common.search")}
         </button>
       </div>
 
@@ -95,19 +97,19 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">שם</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">אימייל</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">עיר</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">תפקיד</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">מועדפים</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">הצטרף</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">פעולות</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.name")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.email")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.city")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.role")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.favorites")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.joined")}</th>
+                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-text-secondary">אין משתמשים</td>
+                  <td colSpan={7} className="text-center py-8 text-text-secondary">{t("users.empty")}</td>
                 </tr>
               )}
               {users.map((u) => (
@@ -123,20 +125,20 @@ export default function AdminUsersPage() {
                           isSuperAdmin(u) ? (
                             <>
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
-                                אדמין
+                                {t("users.roles.admin")}
                               </span>
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#8B6914] font-medium">
-                                מוגן
+                                {t("users.roles.admin_protected")}
                               </span>
                             </>
                           ) : (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
-                              אדמין
+                              {t("users.roles.admin")}
                             </span>
                           )
                         ) : (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                            {u.role === "producer" ? "בית עסק" : "צרכן"}
+                            {u.role === "producer" ? t("users.roles.producer") : t("users.roles.consumer")}
                           </span>
                         )}
 
@@ -146,7 +148,7 @@ export default function AdminUsersPage() {
                             onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "promote" })}
                             className="text-xs px-2 py-0.5 rounded border border-[#2e6853] text-[#2e6853] hover:bg-[#EAF3DE] transition"
                           >
-                            העלי לאדמין
+                            {t("users.actions.promote")}
                           </button>
                         )}
 
@@ -156,13 +158,13 @@ export default function AdminUsersPage() {
                             onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "demote" })}
                             className="text-xs px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
                           >
-                            הסירי הרשאות
+                            {t("users.actions.demote")}
                           </button>
                         )}
 
                         {/* Tooltip for protected super-admin row */}
                         {isSuperAdmin(u) && (
-                          <span className="text-xs text-text-secondary" title="לא ניתן להסיר הרשאות מהאדמין הראשי">
+                          <span className="text-xs text-text-secondary" title={t("users.actions.protected_title")}>
                             🔒
                           </span>
                         )}
@@ -185,16 +187,16 @@ export default function AdminUsersPage() {
                             : "text-text-secondary hover:text-red-600"
                         }`}
                       >
-                        {u.is_blocked ? "🚫 שחרר חסימה" : "חסום"}
+                        {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
                       </button>
                     </td>
                   </tr>
                   {expanded === u.id && favorites[u.id] && (
                     <tr key={u.id + "-fav"} className="border-t bg-background/30">
                       <td colSpan={7} className="px-6 py-3 text-xs">
-                        <p className="font-medium mb-2">המועדפים של {u.name}:</p>
+                        <p className="font-medium mb-2">{t("users.favorites.of", { name: u.name })}</p>
                         {favorites[u.id].length === 0 ? (
-                          <p className="text-text-secondary">אין מועדפים</p>
+                          <p className="text-text-secondary">{t("users.favorites.empty")}</p>
                         ) : (
                           <ul className="space-y-1">
                             {favorites[u.id].map((f) => (
@@ -221,8 +223,8 @@ export default function AdminUsersPage() {
           <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4">
             <p className="font-medium text-base">
               {confirm.action === "promote"
-                ? `את בטוחה שברצונך להעניק הרשאות אדמין ל${confirm.userName}?`
-                : `את בטוחה שברצונך להסיר הרשאות אדמין מ${confirm.userName}?`}
+                ? t("users.confirm.promote", { name: confirm.userName })
+                : t("users.confirm.demote", { name: confirm.userName })}
             </p>
             <div className="flex gap-3 justify-start">
               <button
@@ -236,13 +238,13 @@ export default function AdminUsersPage() {
                     : "bg-red-600 hover:bg-red-700"
                 } disabled:opacity-50`}
               >
-                {busy ? "..." : "אישור"}
+                {busy ? t("users.confirm.submitting") : t("users.confirm.confirm")}
               </button>
               <button
                 onClick={() => setConfirm(null)}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-text-secondary hover:bg-gray-50 transition"
               >
-                ביטול
+                {t("common.cancel")}
               </button>
             </div>
           </div>

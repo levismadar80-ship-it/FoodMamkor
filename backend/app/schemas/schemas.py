@@ -128,13 +128,20 @@ class ProducerRegistrationResponse(Token):
     whatsapp_sent: bool
 
 
-# MEH-301: email pre-flight flags for registration endpoints.
+# MEH-328: generic ack returned by POST /auth/register on ALL branches
+# (new email, existing password user, existing OAuth user). Body bytes
+# must be identical across branches to prevent email enumeration; the
+# legitimate owner finds out via the duplicate-attempt email dispatched
+# server-side. No access_token — caller must verify email then login.
+class RegisterAck(BaseModel):
+    detail: str
+
+
+# MEH-301: email pre-flight flag for OAuth registration endpoints.
 # True = RESEND_API_KEY present and background task dispatched.
 # False = missing config; frontend can show a diagnostic banner.
-class RegisterResponse(Token):
-    email_sent: bool
-
-
+# Password /auth/register returns RegisterAck (MEH-328); OAuth siblings
+# retain the email_sent flag because they auto-create users in one step.
 class GoogleAuthResponse(Token):
     email_sent: bool
 
@@ -598,6 +605,11 @@ class ProducerDetailOut(ProducerListOut):
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
     producer_license_number: str | None = None
+    # MEH-509 PR3: admin-only risk surface. NULL on both = "not scored yet
+    # OR Anthropic call failed (fail-open)" — frontend renders the grey
+    # "אין מידע" badge. Never exposed via ProducerDetailOut (public).
+    risk_score: int | None = None
+    risk_reasoning: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -1680,3 +1692,26 @@ class ContactClickIn(BaseModel):
 # MEH-460 Pkg 5 (FINAL): relocated from routers/referrals.py per ADR-006 R1.
 class ClaimReferralRequest(BaseModel):
     code: str
+
+
+# --- Admin: vacation mode (admin_extra.py) ---
+# MEH-509 PR2a: typed wrapper over the AdminSetting key-value store for the
+# two vacation_* keys. Shared by GET + POST /admin/settings/vacation so the
+# wire shape is identical in both directions.
+class VacationModeState(BaseModel):
+    active: bool
+    return_date: date | None = None
+
+    @model_validator(mode="after")
+    def _require_return_date_when_active(self) -> "VacationModeState":
+        if self.active and self.return_date is None:
+            raise ValueError("חובה לציין תאריך חזרה כשמצב חופשה מופעל")
+        return self
+
+
+# --- Admin: producer risk score (admin_extra.py) ---
+# MEH-509 PR3: shape of GET /admin/producers/{id}/risk-score. Both fields
+# nullable — NULL means "not scored yet OR Anthropic call failed".
+class RiskScoreResponse(BaseModel):
+    score: int | None = None
+    reasoning: str | None = None

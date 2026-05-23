@@ -3,23 +3,27 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
 import ExperienceCard from "@/components/ExperienceCard";
 
-const CATEGORIES = [
-  { key: "", label: "הכל" },
-  { key: "בישול", label: "בישול" },
-  { key: "תזונה", label: "תזונה" },
-  { key: "סיור אוכל", label: "סיור אוכל" },
-  { key: "חקלאות", label: "חקלאות" },
-  { key: "טעימות", label: "טעימות" },
-  { key: "סדנה", label: "סדנה" },
-  { key: "אחר", label: "אחר" },
+// API filter values are Hebrew strings (server enum). Localize labels via t().
+const CATEGORY_KEYS = [
+  { key: "", labelKey: "all" },
+  { key: "בישול", labelKey: "cooking" },
+  { key: "תזונה", labelKey: "nutrition" },
+  { key: "סיור אוכל", labelKey: "food_tour" },
+  { key: "חקלאות", labelKey: "agriculture" },
+  { key: "טעימות", labelKey: "tasting" },
+  { key: "סדנה", labelKey: "workshop" },
+  { key: "אחר", labelKey: "other" },
 ];
 
 export default function ExperiencesClient() {
+  const t = useTranslations("experiences.list");
+  const tCat = useTranslations("experiences.categories");
   const [experiences, setExperiences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("");
@@ -68,16 +72,16 @@ export default function ExperiencesClient() {
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
-            חוויות וסדנאות קהילתיות
+            {t("title")}
           </h1>
           <p className="text-light text-lg">
-            סדנאות בישול, סיורי אוכל, שיעורי תזונה — מארחים מקומיים, חוויות אמיתיות
+            {t("subtitle")}
           </p>
           <Link
             href="/experiences/new"
             className="inline-block mt-6 bg-background text-primary px-6 py-3 rounded-full font-medium hover:bg-light transition"
           >
-            הגישי חוויה משלך 🌿
+            {t("submit_cta")}
           </Link>
         </div>
       </section>
@@ -86,8 +90,8 @@ export default function ExperiencesClient() {
       <div className="max-w-5xl mx-auto px-4 pt-4">
         <Breadcrumb
           items={[
-            { href: "/", label: "בית" },
-            { label: "חוויות" },
+            { href: "/", label: t("breadcrumb_home") },
+            { label: t("breadcrumb_experiences") },
           ]}
         />
       </div>
@@ -98,7 +102,7 @@ export default function ExperiencesClient() {
           href="/events?tab=experiences"
           className="text-sm text-site-muted hover:text-primary transition"
         >
-          מחפשת גם אירועים בחוות? ראי את כל האירועים והחוויות ביחד ←
+          {t("cross_link_events")}
         </Link>
       </div>
 
@@ -107,14 +111,14 @@ export default function ExperiencesClient() {
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <CitySearch
             id="experiences-city"
-            label="סנן לפי עיר"
+            label={t("filter_city_label")}
             value={city}
             onChange={setCity}
-            placeholder="חפשי עיר..."
+            placeholder={t("filter_city_placeholder")}
             className="md:w-64"
           />
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
+            {CATEGORY_KEYS.map((cat) => (
               <button
                 key={cat.key || "all"}
                 onClick={() => setCategory(cat.key)}
@@ -124,7 +128,7 @@ export default function ExperiencesClient() {
                     : "bg-white text-site-text border border-border hover:bg-light"
                 }`}
               >
-                {cat.label}
+                {tCat(cat.labelKey)}
               </button>
             ))}
           </div>
@@ -132,7 +136,7 @@ export default function ExperiencesClient() {
 
         {loading ? (
           <p className="text-center text-site-muted py-12">
-            טוענת חוויות...
+            {t("loading")}
           </p>
         ) : experiences.length === 0 ? (
           <div className="text-center py-16">
@@ -140,13 +144,13 @@ export default function ExperiencesClient() {
               <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
             </div>
             <p className="text-site-muted">
-              לא מצאנו חוויות שתואמות לסינון — עדיין
+              {t("empty_title")}
             </p>
             <Link
               href="/experiences/new"
               className="inline-block mt-4 text-primary hover:underline"
             >
-              הגישי את החוויה הראשונה ←
+              {t("empty_cta")}
             </Link>
           </div>
         ) : (

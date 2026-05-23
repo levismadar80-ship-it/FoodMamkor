@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
@@ -21,6 +22,7 @@ import { env } from "@/lib/env";
  */
 
 export default function ProducerOAuthButtons({ onSuccess, onError }) {
+  const t = useTranslations("auth.oauth");
   const googleId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const appleId = env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const appleRedirect = env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
@@ -46,15 +48,15 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
         // Toast survives the router.push to /login (parent's onError
         // redirects but drops the message); without it the user lands
         // on /login with no context and the OAuth button looks broken.
-        const msg = detail || "יש לך כבר חשבון במהמקור — היכנסי כדי לנהל אותו";
+        const msg = detail || t("producer_already_account");
         showToast(msg, "error", 5000);
         onError?.(msg, { redirectToLogin: true });
       } else if (status === 429) {
-        onError?.("יותר מדי נסיונות, נסי בעוד דקה");
+        onError?.(t("rate_limited"));
       } else if (status === 401) {
-        onError?.("לא הצלחנו להתחבר, נסי שוב");
+        onError?.(t("connection_failed"));
       } else {
-        onError?.(detail || "שגיאה בהתחברות");
+        onError?.(detail || t("generic_error"));
       }
     } finally {
       setLoading(false);
@@ -107,7 +109,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
     };
     const handleFailure = (event) => {
       if (event.detail?.error !== "popup_closed_by_user") {
-        onError?.("שגיאה בהתחברות עם Apple");
+        onError?.(t("apple_error"));
       }
     };
     document.addEventListener("AppleIDSignInOnSuccess", handleSuccess);
@@ -124,7 +126,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
 
   return (
     <div className="space-y-3" aria-busy={loading ? "true" : "false"}>
-      <p className="text-sm font-semibold text-site-text">הרשמה מהירה</p>
+      <p className="text-sm font-semibold text-site-text">{t("producer_quick_signup")}</p>
       {googleId && <div ref={googleBtnRef} className="w-full min-h-[48px]" />}
       {appleId && (
         <button
@@ -132,20 +134,20 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
           onClick={() => window.AppleID?.auth.signIn()}
           disabled={loading}
           className="w-full bg-black text-white py-3 rounded-[8px] hover:bg-gray-900 transition font-medium flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-black/40 min-h-[48px] disabled:opacity-60"
-          aria-label="המשיכי עם Apple"
+          aria-label={t("apple_continue_f")}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
           </svg>
-          המשיכי עם Apple
+          {t("apple_continue_f")}
         </button>
       )}
       <p className="text-xs text-site-muted text-center">
-        נקבל רק את השם והמייל שלך
+        {t("producer_only_email_name")}
       </p>
       <div className="flex items-center gap-3 pt-2">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-xs text-site-muted">או</span>
+        <span className="text-xs text-site-muted">{t("or")}</span>
         <div className="flex-1 h-px bg-border" />
       </div>
     </div>

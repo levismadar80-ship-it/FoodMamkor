@@ -26,6 +26,7 @@ import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import { ArrowLeft, MapTrifold } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -103,26 +104,29 @@ function CanvasClickToFullMap() {
 }
 
 function PreviewSkeleton() {
+  const t = useTranslations("map.homepage_mini");
   return (
     <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} weight="duotone" className="text-primary/30" />
-      <p className="text-site-muted text-sm">טוענת מפה...</p>
+      <p className="text-site-muted text-sm">{t("loading")}</p>
     </div>
   );
 }
 
 function PreviewEmpty() {
+  const t = useTranslations("map.homepage_mini");
   return (
     <div className="w-full h-full rounded-[12px] bg-light flex flex-col items-center justify-center gap-2 px-4 text-center">
       <MapTrifold size={48} weight="duotone" className="text-primary/40" />
       <p className="text-site-text text-sm">
-        בקרוב מאוד — בתי עסק ראשונים מצטרפים השבוע 🌿
+        {t("pre_launch_hint")} 🌿
       </p>
     </div>
   );
 }
 
 export default function HomepageMiniMap() {
+  const t = useTranslations("map.homepage_mini");
   const [shouldLoad, setShouldLoad] = useState(false);
   const [producers, setProducers] = useState(null); // null = not yet fetched
 
@@ -173,15 +177,15 @@ export default function HomepageMiniMap() {
 
   return (
     <section
-      aria-label="תצוגה מקדימה של המפה"
+      aria-label={t("aria")}
       className="mt-6 mb-12 md:mt-12 md:mb-16 px-4 md:px-6"
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
           <h2 className="text-xl md:text-2xl font-semibold text-site-text">
-            כל בית עסק על המפה
+            {t("dot_caption")}
           </h2>
-          <p className="text-sm text-site-muted mt-1">גלי בתי עסק לפי מיקום</p>
+          <p className="text-sm text-site-muted mt-1">{t("dot_subtitle")}</p>
         </header>
 
         <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
@@ -240,7 +244,7 @@ export default function HomepageMiniMap() {
             href="/map"
             className="inline-flex items-center gap-1 text-primary hover:text-primary-light text-sm font-medium"
           >
-            פתחי מפה מלאה
+            {t("open_full")}
             <ArrowLeft size={16} weight="bold" aria-hidden="true" />
           </Link>
         </div>

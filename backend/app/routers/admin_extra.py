@@ -32,12 +32,15 @@ from app.models.models import KashrutBadgeRequest
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
+    RiskScoreResponse,
     StaticPageOut,
     StaticPageUpdate,
     UserAdminOut,
     UserRoleUpdate,
+    VacationModeState,
 )
 from app.services.analytics import server_health
+from app.services.vacation_state import read_vacation_state
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
@@ -352,6 +355,12 @@ DEFAULT_SETTINGS = {
     "holiday_override_enabled": "false",
     "holiday_override_key": "",
     "friday_mode_override": "false",
+    # MEH-509 PR2a: vacation mode. Boolean as string + ISO date as string
+    # (matches the existing friday_mode_override pattern). The typed
+    # /admin/settings/vacation GET+POST endpoints below wrap the raw
+    # str↔bool/date conversion.
+    "vacation_mode_active": "false",
+    "vacation_return_date": "",
 }
 
 
@@ -383,6 +392,84 @@ def update_settings(
             )
     db.commit()
     return {"detail": "Settings updated"}
+
+
+# --- MEH-509 PR2a — vacation mode (typed wrapper over AdminSetting) ---------
+# Reads/writes the same `admin_settings` table the generic /admin/settings
+# endpoints use (one source of truth, no parallel table). The PR2b watchdog
+# will consume `vacation_mode_active` to decide which Meta-approved template
+# to send.
+
+
+def _read_vacation_state(db: Session) -> VacationModeState:
+    """Pydantic wrapper over the shared `read_vacation_state` helper
+    (MEH-662). All str→bool/date conversion + corrupt-state defense
+    lives in `app/services/vacation_state.py`; this wrapper only adapts
+    the tuple shape into the typed VacationModeState model the admin
+    GET/POST endpoints expose."""
+    # REUSES: app/services/vacation_state.py:read_vacation_state — single
+    # source of truth for AdminSetting str→bool/date + corrupt-state coerce
+    # (MEH-662 dedup).
+    active, return_date = read_vacation_state(db)
+    return VacationModeState(active=active, return_date=return_date)
+
+
+def _write_setting(db: Session, key: str, value: str) -> None:
+    row = db.query(AdminSetting).filter(AdminSetting.key == key).first()
+    if row:
+        row.value = value
+    else:
+        db.add(AdminSetting(key=key, value=value))
+
+
+@router.get("/settings/vacation", response_model=VacationModeState)
+def get_vacation_mode(
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return _read_vacation_state(db)
+
+
+@router.post("/settings/vacation", response_model=VacationModeState)
+def set_vacation_mode(
+    body: VacationModeState,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    # VacationModeState's model_validator already rejected active+no-date.
+    # When deactivating, clear the date so the persisted state can't drift
+    # back into "active with stale date" after a future flip.
+    if body.active:
+        _write_setting(db, "vacation_mode_active", "true")
+        _write_setting(db, "vacation_return_date", body.return_date.isoformat())
+    else:
+        _write_setting(db, "vacation_mode_active", "false")
+        _write_setting(db, "vacation_return_date", "")
+    db.commit()
+    return _read_vacation_state(db)
+
+
+# --- MEH-509 PR3 — producer risk score (read-only admin view) ---------------
+# Backed by producers.risk_score + producers.risk_reasoning (PR3 migration
+# 92afa3cb76e2). Populated asynchronously by app/services/producer_risk.py
+# via BackgroundTasks after producer signup. NULL on both = "not scored yet
+# OR Anthropic call failed (fail-open)" — admin UI shows the grey "אין מידע"
+# badge in that case.
+
+
+@router.get("/producers/{producer_id}/risk-score", response_model=RiskScoreResponse)
+def get_producer_risk_score(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is None:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    return RiskScoreResponse(
+        score=producer.risk_score,
+        reasoning=producer.risk_reasoning,
+    )
 
 
 @router.post("/settings/test/{service}")

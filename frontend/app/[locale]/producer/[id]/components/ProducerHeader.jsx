@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { MapPin, Heart } from "@phosphor-icons/react";
 
 import AvailabilityBadge from "@/components/AvailabilityBadge";
@@ -27,6 +28,7 @@ export default function ProducerHeader({
   vacationReturnLabel,
   primaryCategory,
 }) {
+  const t = useTranslations();
   return (
     <>
       {/* Header: name + trust badges */}
@@ -41,20 +43,20 @@ export default function ProducerHeader({
         {producer.reviews_count > 0 && (
           <span
             className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
-            title={`${producer.reviews_count} ביקורות`}
+            title={t("producer.detail.header.review_count", { count: producer.reviews_count })}
           >
             ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
           </span>
         )}
         {producer.plan === "premium" && (
           <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">
-            פרמיום
+            {t("producer.detail.header.premium")}
           </span>
         )}
         {(producer.favorites_count ?? 0) >= 5 && (
           <span className="inline-flex items-center gap-1 text-[13px] text-site-muted">
             <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
-            {producer.favorites_count} שמרו את העסק הזה
+            {t("producer.detail.header.favorites_count", { count: producer.favorites_count })}
           </span>
         )}
         {/* MEH-291 — unified 4-state availability. Backend dual-writes to the
@@ -75,7 +77,7 @@ export default function ProducerHeader({
 
       {producer.contact_name && (
         <p className="text-[12px] text-site-muted mt-0.5">
-          מאחורי העסק: {producer.contact_name}
+          {t("producer.detail.header.behind", { name: producer.contact_name })}
         </p>
       )}
 
@@ -118,22 +120,22 @@ export default function ProducerHeader({
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
             <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
-              🌾<span className="hidden sm:inline"> מרעה חופשי</span>
+              🌾<span className="hidden sm:inline"> {t("producer.detail.header.attr.grass_fed")}</span>
             </span>
           )}
           {producer.organic_certified && (
             <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
-              🌿<span className="hidden sm:inline"> אורגני מוסמך</span>
+              🌿<span className="hidden sm:inline"> {t("producer.detail.header.attr.organic")}</span>
             </span>
           )}
           {producer.delivery_areas?.length > 0 && (
             <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
-              🚚<span className="hidden sm:inline"> משלוח</span>
+              🚚<span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
           {producer.kosher && (
             <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
-              ✡️<span className="hidden sm:inline"> כשר</span>
+              ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}
         </div>
@@ -155,16 +157,16 @@ export default function ProducerHeader({
           dominates the messaging. */}
       {producer.availability_state === "full_this_week" && !isVacation && (
         <div className="mx-0 mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
-          <p className="text-sm font-bold text-amber-800">⏳ זמני תגובה ארוכים יותר השבוע</p>
+          <p className="text-sm font-bold text-amber-800">{t("producer.detail.header.slow_response")}</p>
         </div>
       )}
 
       {/* Vacation banner — slate (neutral unavailable), not amber (which reads as sale/warning) */}
       {isVacation && (
         <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-          <p className="text-sm font-bold text-slate-700">🌙 בית עסק זה בהפסקה כרגע</p>
+          <p className="text-sm font-bold text-slate-700">{t("producer.detail.header.vacation")}</p>
           <p className="text-xs text-slate-500 mt-1">
-            {vacationReturnLabel} — ניתן להשאיר הודעה
+            {t("producer.detail.header.vacation_return", { label: vacationReturnLabel })}
           </p>
         </div>
       )}

@@ -15,25 +15,29 @@
  *             after the inline-export version pulled Leaflet into SSR).
  */
 
+"use client";
+
 import { MapTrifold } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export default function HomepageMiniMapSkeleton() {
+  const t = useTranslations("map.homepage_mini");
   return (
     <section
-      aria-label="תצוגה מקדימה של המפה"
+      aria-label={t("aria")}
       className="mt-6 mb-12 md:mt-12 md:mb-16 px-4 md:px-6"
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
           <h2 className="text-xl md:text-2xl font-semibold text-site-text">
-            כל בית עסק על המפה
+            {t("dot_caption")}
           </h2>
-          <p className="text-sm text-site-muted mt-1">גלי בתי עסק לפי מיקום</p>
+          <p className="text-sm text-site-muted mt-1">{t("dot_subtitle")}</p>
         </header>
         <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
           <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
             <MapTrifold size={48} weight="duotone" className="text-primary/30" />
-            <p className="text-site-muted text-sm">טוענת מפה...</p>
+            <p className="text-site-muted text-sm">{t("loading")}</p>
           </div>
         </div>
       </div>

@@ -56,10 +56,12 @@ graph TD
 
 ## 3. Auth + account self-service
 
+<!-- Rate limit: per-IP 10/hour (MEH-417, April 2026) + per-email 5/15min (MEH-624, May 2026) -->
+
 ```mermaid
 graph TD
-    SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 3/hour]
-    SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>creates Producer+User in one tx]
+    SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
+    SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 3/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
     SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token]
     SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token<br/>App Store requirement]
 
@@ -129,6 +131,10 @@ graph TD
     ExperiencesAdmin --> ExpChanges[POST /admin/experiences/{id}/request-changes<br/>🛡️ host notification email]
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
+    Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
+    Meta[Meta WhatsApp Cloud API] --> WebhookGet[GET /webhook/whatsapp<br/>🌐 MEH-509 PR2c subscription challenge<br/>const-time verify_token compare]
+    Meta --> WebhookPost[POST /webhook/whatsapp<br/>🌐 MEH-509 PR2c inbound persist<br/>X-Hub-Signature-256 HMAC gate<br/>writes inbound_messages]
+    AdminProducers[/admin/producers page] --> AdminRiskScore[GET /admin/producers/&#123;id&#125;/risk-score<br/>🛡️ MEH-509 PR3 Anthropic Haiku risk score<br/>NULL when not scored / fail-open]
 ```
 
 ## 6. Marketing + misc (anonymous, rate-limited)

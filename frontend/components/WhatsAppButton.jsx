@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { WhatsappLogo } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
 
 /**
@@ -20,6 +21,7 @@ import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
  * or environments without sendBeacon.
  */
 export default function WhatsAppButton({ phone, productTitle, onClick, producerId }) {
+  const t = useTranslations("whatsapp.button");
   const [pending, setPending] = useState(false);
   const firedRef = useRef(false);
 
@@ -33,10 +35,7 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
   const cleanPhone = normalizePhone(phone);
   if (!cleanPhone) return null;
 
-  const url = getWhatsAppHref(
-    cleanPhone,
-    `היי, ראיתי את "${productTitle}" במהמקור ואשמח לשמוע פרטים!`,
-  );
+  const url = getWhatsAppHref(cleanPhone, t("default_message", { productTitle }));
 
   const handleClick = () => {
     if (firedRef.current) return;
@@ -75,7 +74,7 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
       }`}
     >
       <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
-      {pending ? "נפתח..." : "WhatsApp"}
+      {pending ? t("opening") : "WhatsApp"}
     </a>
   );
 }

@@ -164,6 +164,42 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
     return True
 
 
+def send_duplicate_attempt_email(email: str, name: str, provider: str) -> None:
+    """MEH-328: notify an existing account that someone tried to register
+    with their email. Triggered from the anti-enumeration branch in
+    POST /auth/register where the response body is identical to the
+    happy path; this email is the only out-of-band signal the legitimate
+    owner receives. `provider` selects body copy:
+      - "password" → "את כבר רשומה אצלנו עם סיסמה"
+      - "google"/"apple" → "את כבר רשומה אצלנו דרך {Google|Apple}"
+    Fail-open via send_email (no Resend key → silent skip).
+    """
+    login_url = f"{settings.frontend_url}/login"
+    subject = "ניסיון רישום במהמקור — את כבר רשומה"
+    if provider == "password":
+        body = (
+            f"היי {name},\n"
+            f"מישהו ניסה להירשם למהמקור עם הכתובת שלך.\n"
+            f"את כבר רשומה אצלנו עם סיסמה — אם זו את, היכנסי כאן:\n"
+            f"{login_url}\n\n"
+            f"אם זה לא את — סיסמתך לא נחשפה ולא דרושה פעולה.\n"
+            f"בברכה,\n"
+            f"צוות מהמקור"
+        )
+    else:
+        provider_label = "Google" if provider == "google" else "Apple"
+        body = (
+            f"היי {name},\n"
+            f"מישהו ניסה להירשם למהמקור עם הכתובת שלך.\n"
+            f"את כבר רשומה אצלנו דרך {provider_label} — אם זו את, היכנסי כאן:\n"
+            f"{login_url}\n\n"
+            f"אם זה לא את — חשבונך לא נפגע ולא דרושה פעולה.\n"
+            f"בברכה,\n"
+            f"צוות מהמקור"
+        )
+    send_email(email, subject, body)
+
+
 def send_deletion_email(email: str, name: str) -> None:
     body = (
         f"שלום {name},\n\n"

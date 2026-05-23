@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { useFocusReturn } from "@/lib/use-focus-return";
 
 export default function ReportButton({ producerId }) {
+  const t = useTranslations("report");
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [reason, setReason] = useState("");
@@ -23,7 +25,7 @@ export default function ReportButton({ producerId }) {
       await api.post(`/producers/${producerId}/report`, { reason });
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.detail || "שגיאה בשליחה");
+      setError(err.response?.data?.detail || t("error_generic"));
     }
   };
 
@@ -33,7 +35,7 @@ export default function ReportButton({ producerId }) {
         onClick={() => setShowModal(true)}
         className="text-sm text-red-500 hover:text-red-700 transition flex items-center gap-1"
       >
-        🚩 דווח על עסק
+        {t("trigger")}
       </button>
 
       {showModal && (
@@ -46,22 +48,22 @@ export default function ReportButton({ producerId }) {
           >
             {submitted ? (
               <div className="text-center">
-                <p className="text-lg font-semibold mb-2">תודה על הדיווח</p>
-                <p className="text-text-secondary mb-4">נבדוק ונטפל תוך 48 שעות.</p>
+                <p className="text-lg font-semibold mb-2">{t("success_title")}</p>
+                <p className="text-text-secondary mb-4">{t("success_message")}</p>
                 <button
                   onClick={() => { setShowModal(false); setSubmitted(false); setReason(""); }}
                   className="bg-primary text-white px-6 py-2 rounded-[12px]"
                 >
-                  סגור
+                  {t("success_close")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <h3 id="report-dialog-title" className="text-lg font-semibold mb-4">דווח על עסק</h3>
+                <h3 id="report-dialog-title" className="text-lg font-semibold mb-4">{t("form_heading")}</h3>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="ספר/י מה הבעיה..."
+                  placeholder={t("reason_placeholder")}
                   className="w-full border rounded-[12px] p-3 mb-3 resize-none h-24"
                   maxLength={500}
                   required
@@ -69,14 +71,14 @@ export default function ReportButton({ producerId }) {
                 {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
                 <div className="flex gap-3">
                   <button type="submit" className="bg-red-500 text-white px-6 py-2 rounded-[12px] hover:bg-red-600">
-                    שלח דיווח
+                    {t("submit")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
                     className="text-text-secondary hover:text-text-primary"
                   >
-                    ביטול
+                    {t("cancel")}
                   </button>
                 </div>
               </form>

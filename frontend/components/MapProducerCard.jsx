@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
 import { getWhatsAppHref } from "@/lib/utils";
 
 export default function MapProducerCard({ producer, active, onClick }) {
+  const t = useTranslations("map.producer_card");
   const { city: userCity } = useUserCity();
   const p = producer;
   const imgSrc = optimizeCloudinary(p.images?.[0]);
@@ -23,7 +25,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
     : null;
 
   const trustItems = [];
-  if (isVerified) trustItems.push("✓ מאומת");
+  if (isVerified) trustItems.push(t("verified"));
   if (rating > 0) trustItems.push(`⭐ ${rating.toFixed(1)} (${reviewsCount})`);
 
   const handleRootClick = (e) => {
@@ -93,7 +95,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {deliveryMatch && (
             <span className="text-[11px] bg-light text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-0.5">
-              🚚 ל{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
+              🚚 {t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
             </span>
           )}
         </div>
@@ -108,7 +110,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Actions */}
         <div className="flex items-center gap-2 mt-1.5">
           <a
-            href={waPhone ? getWhatsAppHref(waPhone, `היי! מצאתי אותך במהמקור — ${p.name || ""}`) : baseHref}
+            href={waPhone ? getWhatsAppHref(waPhone, t("wa_message", { name: p.name || "" })) : baseHref}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => { e.stopPropagation(); if (waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
@@ -122,7 +124,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             className="text-primary text-[13px] font-medium hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
-            פרופיל מלא ←
+{t("full_profile")} ←
           </Link>
         </div>
       </div>

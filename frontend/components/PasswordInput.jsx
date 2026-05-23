@@ -40,6 +40,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
@@ -54,12 +55,17 @@ export default function PasswordInput({
   value,
   onChange,
   showCurrentPasswordReuse = false,
-  placeholder = "סיסמה",
-  ariaLabel = "סיסמה",
+  placeholder,
+  ariaLabel,
   required = true,
   autoComplete = "new-password",
   onValidityChange,
 }) {
+  // MEH-628: scoped translator for password-policy failure copy.
+  const tValidation = useTranslations("auth.passwordValidation");
+  const tForm = useTranslations("forms.password");
+  const placeholderText = placeholder ?? tForm("placeholder_default");
+  const ariaLabelText = ariaLabel ?? tForm("aria_label_default");
   const [show, setShow] = useState(false);
   const [apiFailures, setApiFailures] = useState([]);
   const [isChecking, setIsChecking] = useState(false);
@@ -139,8 +145,8 @@ export default function PasswordInput({
           type={show ? "text" : "password"}
           value={value}
           onChange={onChange}
-          placeholder={placeholder}
-          aria-label={ariaLabel}
+          placeholder={placeholderText}
+          aria-label={ariaLabelText}
           required={required}
           autoComplete={autoComplete}
           dir="ltr"
@@ -150,7 +156,7 @@ export default function PasswordInput({
           type="button"
           onClick={() => setShow((v) => !v)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
-          aria-label={show ? "הסתירי סיסמה" : "הציגי סיסמה"}
+          aria-label={show ? tForm("toggle_hide") : tForm("toggle_show")}
           aria-pressed={show}
           tabIndex={0}
         >
@@ -174,8 +180,8 @@ export default function PasswordInput({
           >
             <span aria-hidden="true">{tooShort ? "○" : "✓"}</span>
             {tooShort
-              ? failureMessage("too_short")
-              : `לפחות ${PASSWORD_MIN_LENGTH} תווים`}
+              ? failureMessage("too_short", tValidation)
+              : tForm("min_length", { min: PASSWORD_MIN_LENGTH })}
           </li>
           <li
             className={`text-xs flex items-center gap-1.5 ${
@@ -190,15 +196,15 @@ export default function PasswordInput({
               {breachOk ? "✓" : breachPending ? "…" : "○"}
             </span>
             {breachPending
-              ? "בודק..."
+              ? tForm("checking")
               : apiFailures.includes("too_common")
-                ? failureMessage("too_common")
-                : "לא דלפה ברשת"}
+                ? failureMessage("too_common", tValidation)
+                : tForm("not_breached")}
           </li>
           {showCurrentPasswordReuse && (
             <li className="text-xs flex items-center gap-1.5 text-site-muted">
               <span aria-hidden="true">○</span>
-              שונה מהקודמת — נבדק בשרת
+              {tForm("different_from_current")}
             </li>
           )}
         </ul>
