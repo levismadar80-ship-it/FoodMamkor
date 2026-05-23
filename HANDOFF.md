@@ -10,12 +10,15 @@ Same test-gap class as MEH-325 (transport-mocked tests can encode wrong contract
 
 ### Completed
 - Branch `feature/meh-509-template-params-fix` off `origin/staging`.
-- 2 files: `backend/app/services/auth_notifications.py`, `tests/test_meh_509_pr1_hooks.py`. No schema, no auth.py, no central component. No template changes in Meta.
-- Draft PR opened.
+- 2 code/test files + 2 docs: `backend/app/services/auth_notifications.py`, `tests/test_meh_509_pr1_hooks.py`, CHANGELOG, HANDOFF. No schema, no auth.py, no central component. No template changes in Meta.
+- **PR #793 MERGED to staging** — squash `7613f14` (2026-05-22). Required checks green (backend pytest covered the change directly). Two non-blocking reds at merge: `Adversarial review (calibration)` (continue-on-error by design) + `Playwright E2E` (backend-only PR; failed against still-building Vercel preview + an upstream Azure-packages 403 — infra flake, not a code signal). `mergeable_state` was `unstable` not `blocked`. Merge authorized explicitly by Smadar.
+- **Filed MEH-670** — audit `auto_reply_watchdog.py:164` for the same template param-count mismatch class (`after_hours_response_he` + `vacation_response_he_v2` vs Meta). Backlog, priority TBD by Sapir. Related to MEH-509. Sibling-grep per Bug Protocol step 2.
 
 ### Open / blocked
-- Smoke verification deferred to Smadar (CC sandbox can't reach `graph.facebook.com` — MEH-360 sandbox limitation). After merge to staging: trigger a fresh producer signup; expect `producer_welcome_v1` to deliver to the producer's phone + Railway log `[WHATSAPP] Producer welcome template sent`.
+- **Smoke verification deferred to Smadar** (CC sandbox can't reach `graph.facebook.com` — MEH-360). Now that #793 is on staging: trigger a fresh producer signup → expect `producer_welcome_v1` to deliver (name only, no URL) + Railway log `[WHATSAPP] Producer welcome template sent`, no Meta 400. Then approve from `/admin/producers/pending` → expect `producer_approved_v1` + `[WHATSAPP] Producer approved template sent`.
+- **MEH-670** — watchdog template arity audit (curl steps in the ticket). Run from a Meta-reachable machine.
 - PR3 risk-score smoke (separate prior diagnostic) — H1 (no fresh signups since deploy) still pending verification independently.
+- Post-merge staging deploy health (Workflow rule 17 `Monitor`/`/loop`) NOT run — CC sandbox can't reach Railway (MEH-360); deferred to Smadar's manual smoke above.
 
 ## 2026-05-22 — MEH-641 Carry-overs #1 PR-A + #2: noindex on 4 auth routes + 404 paper trail
 
