@@ -3,6 +3,63 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs (F2)
+
+LOW-RISK CI cost optimization (F2, final of the cost sweep). Added a `changes`
+paths-filter job to `.github/workflows/deploy.yml` + gated `lint` and
+`api-contract-static` to skip on docs-only PRs. Est. ~30 min/month saved.
+
+### Completed
+- Branch `feature/meh-deployyml-pathsfilter` off `origin/staging` (`82176ba`).
+- `deploy.yml` written via GitHub API (local edits denied — MEH-671). 4-edit
+  transform generated programmatically, diff-verified (purely additive, 0
+  deletions), post-push byte-identical check.
+- CHANGELOG + this file committed locally; PR opened (draft) → `staging`.
+
+### Key decisions
+- **Option A (job-skip), not Option C (trigger paths-ignore).** Both `Frontend
+  lint (RTL + Next.js rules)` and `API contract audit (static)` are REQUIRED
+  checks on protect-main (Sapir confirmed via UI). Trigger-level skip would
+  make them absent on docs-only PRs → branch protection blocks the PR. Job-skip
+  reports skipped=success → required checks satisfied.
+- `lint` → `frontend || workflows`; `api-contract-static` → `frontend ||
+  backend || workflows`. Added `pull-requests: read` (dorny PR Files API).
+- Deploy jobs (production/staging/probe) NOT gated — stay push-only, always run.
+
+### Open / flagged
+- Minor coverage gap: a `scripts/check_api_contract.py`-only PR would skip the
+  static contract check; post-deploy staging probe is the backstop. Disclosed
+  in PR body. Not worth a 4th filter output.
+- F-series cost sweep now complete (F1 #811, F3 #812, F2 this PR; #808 earlier).
+
+## 2026-05-23 — chore: skip Claude PR review on docs-only PRs (F3)
+
+LOW-RISK CI cost optimization (F3 of the cost sweep). Added `paths-ignore:`
+to the `pull_request:` trigger in `.github/workflows/claude-review.yml` so the
+Anthropic review action skips docs-only PRs. Est. ~20 min/month + Anthropic
+API$ saved.
+
+### Completed
+- Branch `feature/meh-claudereview-docs-ignore` off `origin/staging` (`5277362`).
+- `claude-review.yml` written via GitHub API (local `Edit`/`Write` denied —
+  MEH-671); edit generated programmatically, diff-verified, post-push
+  byte-identical check.
+- CHANGELOG + this file committed locally; PR opened (draft) → `staging`.
+
+### Key decisions
+- **Trigger-level `paths-ignore` (not job-skip) chosen deliberately.** F1/#808
+  used the job-skip pattern because those jobs are *required* checks (skipped
+  must report success). `Adversarial review (calibration)` is `continue-on-error:
+  true` and NOT required (failed on #807/#808 without blocking) — so a
+  trigger-level skip leaves no missing-required-check gap and is simpler.
+- File globs mirror `e2e.yml:56-59` but use native `paths-ignore` syntax (no
+  `!` prefix — that's a dorny-filter operator). Phase 0 caught the mechanism
+  difference; Sapir confirmed.
+
+### Open / flagged
+- F2 (deploy.yml lint/contract on every PR, ~30 min/month) is a separate
+  session per the F-series plan.
+
 ## 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter (F1)
 
 LOW-RISK CI cost optimization (F1 of the pr-checks.yml cost sweep). Added

@@ -4,6 +4,55 @@
 
 ## Unreleased
 
+### 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs
+
+`chore`: F2 of the May 2026 Actions cost sweep. Adds a `changes`
+paths-filter job to `.github/workflows/deploy.yml` and gates the two
+PR-triggered jobs — `lint` (Frontend ESLint) and `api-contract-static` — so
+they skip on docs-only PRs. `deploy.yml` was ~21.8% of monthly Actions
+minutes; both jobs did a full `npm ci`/Python setup on every PR including
+docs-only. Est. **~30 min/month** saved.
+
+**Option A (job-skip), chosen deliberately:** `Frontend lint (RTL + Next.js
+rules)` and `API contract audit (static)` are **required checks** on the
+protect-main ruleset (confirmed via GitHub UI). A trigger-level `paths-ignore`
+(Option C) would make those checks *absent* on docs-only PRs → branch
+protection blocks the PR forever. The job-skip pattern reports skipped jobs as
+`success`, satisfying the required checks (same MEH-485 contract pr-checks.yml
+relies on). `lint` → `if: frontend || workflows`; `api-contract-static` →
+`if: frontend || backend || workflows`.
+
+**Deploy jobs untouched:** `production`, `staging`, `api-contract-probe-staging`
+do **not** depend on `changes` and keep their `if: github.event_name == 'push'
+&& github.ref == ...` guards — they always run on push regardless of paths.
+Added `pull-requests: read` to `permissions` (dorny/paths-filter@v3 needs the
+PR Files API on `pull_request`; read-only, no write scope). All 5 original job
+names unchanged. Landed via GitHub API (local `Edit`/`Write` denied on
+`.github/workflows/**`, MEH-671). Known minor gap: a PR touching *only*
+`scripts/check_api_contract.py` would skip the static check (the post-deploy
+staging probe is the backstop). Risk: LOW.
+
+### 2026-05-23 — chore: skip Claude PR review on docs-only PRs
+
+`chore`: adds a `paths-ignore:` block to the `pull_request:` trigger in
+`.github/workflows/claude-review.yml` so the Anthropic adversarial-review
+action no longer fires on docs-only PRs. F3 of the May 2026 Actions cost
+sweep — claude-review ran on every PR (~416 min/month of runner time **plus**
+Anthropic API spend on a separate budget); est. **~20 min/month** + API$
+saved.
+
+File classes mirror `e2e.yml:56-59` (MEH-424/499): `**/*.md`, `docs/**`,
+`.changeset/**`, `CHANGELOG.md`. Native `paths-ignore` syntax is used (no `!`
+prefix — that's a `dorny/paths-filter` negation operator, not valid at the
+trigger level). Unlike F1/#808 (which used the job-skip pattern to keep
+**required** checks satisfied), a trigger-level skip is correct here because
+`Adversarial review (calibration)` is **not** a required check
+(`continue-on-error: true`; it failed on #807/#808 without blocking merge) —
+so the workflow simply not running on docs-only PRs leaves no
+skipped-required-check gap. Job name, `concurrency`, `continue-on-error`, and
+`fetch-depth: 0` untouched. Landed via GitHub API (local `Edit`/`Write`
+denied on `.github/workflows/**`, MEH-671). Risk: LOW.
+
 ### 2026-05-23 — chore: gate 3 warn-only PR-check jobs behind paths-filter
 
 `chore`: extends the existing `dorny/paths-filter@v3` gating (the `changes`
