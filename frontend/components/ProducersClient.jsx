@@ -13,6 +13,7 @@ import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-fil
 import { useUserCity } from "@/lib/use-user-city";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
 const FILTER_LIMIT = 100;
@@ -467,6 +468,11 @@ function FilterEmptyState({ onClear, searchQ }) {
 
 function CatalogEmptyState() {
   const t = useTranslations("producers.catalog_empty");
+  // MEH-669: hide the "register as producer" CTA from admins.
+  // Server-side guard at backend/app/routers/auth.py:432 enforces; this
+  // is defense-in-depth UX. notify_cta link stays visible to everyone.
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   return (
     <div className="text-center py-16">
       <div
@@ -482,12 +488,14 @@ function CatalogEmptyState() {
         {t("subtitle")}
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Link
-          href="/register/producer"
-          className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
-        >
-          {t("add_cta")}
-        </Link>
+        {!isAdmin && (
+          <Link
+            href="/register/producer"
+            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
+          >
+            {t("add_cta")}
+          </Link>
+        )}
         <Link
           href="/about#newsletter"
           className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-light transition"

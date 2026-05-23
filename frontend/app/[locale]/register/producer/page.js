@@ -114,6 +114,14 @@ function RegisterProducerPageBody() {
     if (isUpgrade && step === 1) setStep(2);
   }, [isUpgrade]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // MEH-669: admins cannot register as producers. Backend rejects with
+  // 403 at auth.py:432; this redirect prevents them from filling out the
+  // form only to hit a server error on submit. Wait for auth to resolve
+  // so we don't bounce mid-load while user is still null.
+  useEffect(() => {
+    if (!authLoading && user?.role === "admin") router.push("/admin");
+  }, [authLoading, user, router]);
+
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
     try {
