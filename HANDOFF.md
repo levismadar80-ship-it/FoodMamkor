@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-05-23 — MEH-681 PR backlog cleanup (full-session)
+
+**Scope:** 21 open PRs → cleaned to active set only (0 open against `staging` at session end).
+
+**Outcome:** 7 PRs merged to staging today, 16 PRs closed (stale), 0 PRs remaining open.
+
+**Tier breakdown:**
+- Tier 1B: 10 Dependabot PRs closed (#620-629)
+- Tier 2: 5 stale drafts closed (#465, #530, #572, #717, #733) + #724 closed
+- Tier 2.5: 3 PRs rebuilt-fresh onto staging (#538, #539, #652 — no merge base, squash-merge SHA drift)
+- Tier A: 5 PRs merged to staging (#647, #797, #805, #538, #539)
+- Tier B: #808 (skip Playwright E2E on Dependabot) + #652 (k6 load testing) merged
+- MEH-682: Canceled (premise disproven by Phase 0 — dependabot.yml was already correct)
+
+**Merge order (staging):** `69e7e25` #647 → `0cbeeb6` #797 → `fcf53b4` #805 → `e38e6bb` #538 → `cfbe9ee` #539 → `6b1b978` #808 → `0d93a0e` #652.
+
+**Systemic lessons:**
+1. Branch-protection name mismatch: ruleset required `api-contract-static` (job key) but GitHub matches by check-run name `API contract audit (static)` (the job's `name:` field, `deploy.yml:105-106`). Blocked all merges until corrected.
+2. Adversarial-review-calibration is warn-only per `docs/DEPLOYMENT.md` §C — its FAILURE never blocks merge.
+3. Sequential HANDOFF.md + CHANGELOG.md merges in one batch require resync + Accept-Both (rule 25 Haacked pattern) between each PR — each merge moves the log head, so the next PR re-conflicts and must re-resync onto the prior tip.
+4. PR snapshot ≠ root cause: Phase 0 verify the suspected-broken file before opening cleanup sub-issues.
+
+**Final staging tip:** `0d93a0e`
+
+**Remaining open (post-session):** none (the `chore/meh-681-session-close` docs PR is the only open item, awaiting Sapir's final merge).
+
+**Next session:** smoke test passed; staging is clean. Ready for staging → main when Sapir decides timing. #652 k6 baseline numbers still TBD — run locally per the PR's pre-merge checklist (sandbox can't reach Railway/Vercel).
+
 ## 2026-05-23 — MEH-559: k6 load testing baseline (rebuilt via MEH-681)
 
 `feat(MEH-559)` — landed via the MEH-681 PR backlog cleanup. Baseline
