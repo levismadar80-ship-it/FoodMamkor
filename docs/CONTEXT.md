@@ -47,7 +47,7 @@ When two documents at the same level own the same fact, **one is deleted, not di
 
 ## 4 · Stack
 
-Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backend) · PostgreSQL with **Alembic as sole schema authority** (post-MEH-265, see ADR-003 + ADR-007) · Cloudinary (images) · Leaflet + OpenStreetMap (maps) · JWT + Google OAuth (auth) · Linear (MEH-XX issues) · GitHub (CI/CD) · Claude Code (file execution).
+Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backend) · PostgreSQL with **Alembic as sole schema authority** (post-MEH-265, see ADR-003 + ADR-007) · Cloudinary (images) · Leaflet + OpenStreetMap (maps) · JWT + Google OAuth (auth) · Linear (MEH-XX issues) · GitHub (CI/CD) · Claude Code (file execution). Anthropic SDK: Opus for moderation, Haiku for chat widget.
 
 ## 5 · Brand locks (summary — full version in docs/BRAND.md)
 
