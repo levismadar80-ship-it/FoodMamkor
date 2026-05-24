@@ -178,7 +178,7 @@ function CardHeart({ producer, onCountChange }) {
       <HeartStraight
         size={22}
         weight={filled ? "fill" : "regular"}
-        className={filled ? "text-red-500" : "text-site-text"}
+        className={filled ? "text-primary" : "text-site-text"}
         aria-hidden="true"
       />
     </button>
