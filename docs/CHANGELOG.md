@@ -4,6 +4,21 @@
 
 ## Unreleased
 
+### 2026-05-24 — MEH-686 Phase ε F1: HeartButton saved-state color swap
+
+`fix(MEH-686)`: `CardHeart` saved state in `frontend/components/ProducerCard.jsx:181`
+now uses `text-primary` (#2e6853) instead of `text-red-500`, per BRAND.md §3
+(no red on heart save/like — Ive council guidance). Single-line className
+ternary swap; the unfilled branch (`text-site-text`) is unchanged.
+
+Out of scope (recorded as follow-ups in PR body): `ProducerCard.jsx:362`
+inline `<Heart>` with hardcoded `#A32D2D` (separate issue), and the broader
+`he.json` emoji audit (original F2 key path was wrong — 🛒 lives at
+`producer.card.badges.available_today`, not `home.hero.friday_subtitle`).
+
+Risk tier: GREEN per ADR-016 (single-line, single-file, no logic change).
+Refs MEH-686 Phase ε (partial — F1 only).
+
 ### 2026-05-23 — MEH-686 Phase γ commit 10: ADR-017 supersedence of ADR-001 (Y1 close)
 
 `docs(MEH-686)`: closes the Y1 audit finding — ADR-001 title described a
