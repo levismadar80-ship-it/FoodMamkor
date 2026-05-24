@@ -25,7 +25,7 @@
 **Effort:** medium / high / xhigh / max
 ```
 
-זה לא "ניחוש" — Claude Code (Smadar) רואה את ההמלצה לפני שמתחילה את המשימה.
+זה לא "ניחוש" — Claude Code (Sapir) רואה את ההמלצה לפני שמתחילה את המשימה.
 ראי `00-model-selection-guide.md` ל-decision flow.
 
 ---
@@ -195,7 +195,8 @@ Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
 
 <file_locations>
 Backend NEW: backend/app/routers/reviews.py
-Backend UPDATE: backend/app/main.py (router + _migrate_columns)
+Backend UPDATE: backend/app/main.py (add router only)
+Migration NEW: backend/alembic/versions/[timestamp]_add_reviews_and_click_tokens.py (Alembic revision per ADR-003 + ADR-007; see docs/MIGRATIONS.md for generation steps)
 Frontend NEW: frontend/components/ReviewCard.jsx, ReviewForm.jsx
 Frontend UPDATE: frontend/app/producers/[slug]/page.js
 Tests NEW: backend/tests/test_reviews.py
@@ -224,7 +225,7 @@ Verified badge: "✓ ביקורת מאומתת"
 <examples>
 Auth pattern: backend/app/routers/auth.py:45-72
 Rate limit: backend/app/routers/producers.py:101
-Migration: backend/app/main.py:_migrate_columns
+Migration pattern: backend/alembic/versions/ — examples of revision files (Alembic upgrade/downgrade pattern per docs/MIGRATIONS.md).
 RTL: frontend/components/ProducerCard.jsx
 </examples>
 
