@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-24 — MEH-693: Template content debt sweep (5 anomalies)
+
+**Type:** docs (content reconciliation)
+
+**Shipped:**
+- Anomaly 1 — `docs/templates/06-linear-issue.md`: removed stale `_migrate_columns` references from the MEH-103 example block; replaced with Alembic + ADR-003 + ADR-007 + `docs/MIGRATIONS.md` pointers matching the Template 02 v2.1 canonical pattern.
+- Anomaly 2 — `docs/templates/05-claude-research.md`: rationale reconciled from Opus 4.6 to Opus 4.7 (qualitative point-gap, no re-benchmarking).
+- Anomaly 3 — `docs/templates/00-model-selection-guide.md`: dropped the specific 1.2pt / 79.6% SWE-bench figure for a qualitative comparison and removed the stale `Opus 4.6 default` effort line; reconciled to Opus 4.7.
+- Anomaly 4 — founder name `Smadar` → `Sapir` directory-wide across templates 00/06/08 (5 occurrences; scope extension beyond the spec's Template-08-only wording confirmed by Sapir per ADR-020 Deciders + CONTEXT.md §1).
+- Anomaly 5 — `docs/templates/08-linear-issue-examples.md`: version label bumped 1.0 → 2.0 with a one-line changelog header.
+
+**Impact:**
+- First repo-canonical template content PR enabled by MEH-689 (ADR-020) — cleared the content debt logged during the byte-identical promotion, with no Drive-side manual sync.
+
+**PR:** #837 (squash `af74dbd`, merged 2026-05-24). Closes MEH-693.
+
 ### 2026-05-24 — MEH-689: Templates promoted to repo (ADR-020)
 
 **Type:** docs (structural)
@@ -22,7 +38,7 @@
 - Future template edits become repo-canonical PRs. Eliminates Drive-side manual sync pattern (5-step Sapir-manual flow) that drove 3 of 5 PRs in MEH-686 Phase δ Session 1.
 - AGENTS.md / CONTEXT.md pattern consistency: templates now sit at the repo apex layer alongside CONTEXT.md, BRAND.md, DESIGN.md.
 
-**PR:** (link added post-merge)
+**PR:** #836 (squash `165d2293`, merged 2026-05-24).
 
 ### 2026-05-24 — MEH-686 Phase ε F1: HeartButton saved-state color swap
 
