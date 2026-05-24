@@ -10,7 +10,7 @@
 >
 > **Upgrade ל-Opus 4.7** רק כש: קוד מורכב מולטי-קובץ, vision/screenshots, החלטה אסטרטגית, design taste, או PR review של PR גדול.
 
-זה לא דעה — זו ההמלצה הרשמית של Anthropic ב-2026. Sonnet 4.6 מקבל 79.6% ב-SWE-bench, רק 1.2 נקודות מאחורי Opus 4.6. עלה פי 5 פחות.
+זה לא דעה — זו ההמלצה הרשמית של Anthropic ב-2026. Sonnet 4.6 מפגר אחרי Opus 4.7 רק במרווח צר ב-SWE-bench, ועולה פי 5 פחות.
 
 ---
 
@@ -109,7 +109,7 @@
 ```
 low      → trivial, latency-sensitive (Haiku territory)
 medium   → routine Sonnet work, cost-conscious
-high     → Sonnet default, Opus 4.6 default
+high     → Sonnet default
 xhigh    → Opus 4.7 default — coding/agentic sweet spot
 max      → genuine hard problems only. אזהרה: prone to overthinking.
 ```
