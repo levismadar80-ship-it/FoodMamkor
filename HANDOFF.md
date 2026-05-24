@@ -5,6 +5,31 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-686 Phase δ step 15: Template 02 _migrate_columns removal (manual)
+
+Risk tier: 🟢 GREEN — docs-only, single file (this HANDOFF entry).
+
+Sapir completed step 15 manually via Drive UI + Project Knowledge re-upload.
+Template 02 (`02-claude-code-feature.md`) lives in Drive `02-Templates/` + PK
+per CONTEXT.md §12, **not** in the repo. The 4 `_migrate_columns()` instructional
+references (prev Drive version lines 62, 69, 163, 193 — deleted in MEH-267, root
+cause of the MEH-265 incident) were replaced with Alembic + ADR-003 + ADR-007 +
+`docs/MIGRATIONS.md` pointers. Three defense-in-depth additions landed together:
+v2.1 self-documenting header, anti-pattern guard, and a מקורות bullet to the
+canonical ADRs. New file is 250 lines (was 246).
+
+Architecture finding: Doc-Consolidation-Plan §D attributed step 15 to Claude
+Code — corrected to Sapir manual ownership (templates are Drive/PK-native). A
+follow-up Linear issue for the templates-Drive-vs-repo question opens at end of
+session.
+
+Verification: `grep -c "_migrate_columns" 02-claude-code-feature.md` → 2 (v2.1
+header line 5 + anti-pattern guard line 229; zero in instructional content).
+
+Phase δ continuation: steps 16 (Template 01 E2/E3/E4) and 19
+(personal-preferences-v2.md pointer) follow the same Sapir manual pattern;
+step 17 (CLAUDE.md → thin pointer) is the only repo-native CC work remaining.
+
 ## 2026-05-24 — MEH-686 Phase ε F1: HeartButton color swap
 
 Branch `feature/meh-686-phase-eps-f1-heart-color`. One code line:
