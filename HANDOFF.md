@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
+
+**Branch:** `feature/meh-694-meta-patterns` (off staging). Risk tier: 🟢 GREEN — docs-only under `.claude/rules/`.
+
+**Shipped:** new `.claude/rules/meta-patterns.md` (5 cross-session shaping patterns from claude.ai userMemories 2026-05: orchestrator-claim verification, two-stage CC flow, large-payload splitting, explicit-spec-over-hooks, autonomy preference) + CLAUDE.md rules-line pointer appended (66 lines, ≤80 cap held; AGENTS.md symlink diff empty). 4 files touched: meta-patterns.md (new), CLAUDE.md, CHANGELOG.md, HANDOFF.md.
+
+**Decision (Sapir, 2026-05-24):** DoD "<50 lines" was a spec error — verbatim 5-pattern content is source of truth (~70 lines). Reinterpreted DoD as qualitative "concise + scannable", not numeric.
+
+**Follow-up (NOT in this PR):** 2 mechanical patterns (path verification + single-symptom grep) → 2 hooks via A2 pattern, separate Linear issues.
+
 ## MEH-689 — Templates promotion to docs/templates/ (per ADR-020)
 
 **Branch:** `feature/meh-689-templates-promotion-adr-020` (PR open, awaiting merge)
