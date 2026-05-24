@@ -1,6 +1,8 @@
 # 📊 Template 08 — Linear Issue Examples (Model Recommendations)
 
-10 issues אמיתיים מהbacklog של מהמקור — כל אחד עם המלצה מדויקת. גרסה 1.0 · אפריל 2026.
+10 issues אמיתיים מהbacklog של מהמקור — כל אחד עם המלצה מדויקת. גרסה 2.0 · אפריל 2026.
+
+> v2.0 · 2026-05: founder name reconciliation per MEH-693
 
 ---
 
