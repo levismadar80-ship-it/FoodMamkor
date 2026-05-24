@@ -5,6 +5,36 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## MEH-689 — Templates promotion to docs/templates/ (per ADR-020)
+
+**Branch:** `feature/meh-689-templates-promotion-adr-020` (PR open, awaiting merge)
+
+**Status:** PR open, Stage 2 complete (4 commits). Awaiting Sapir review + merge.
+
+**Scope shipped:**
+- ADR-020 establishing `docs/templates/` as canonical home for prompt templates
+- 9 templates (00-08) promoted byte-identical from Drive `02-Templates/` (PK snapshot)
+- Downstream updates: CONTEXT.md §12, CLAUDE.md doc map, Doc-Consolidation-Plan §C
+- Template 09 (Council Mode) deferred to MEH-690 — Phase 0 finding that PK snapshot lacks the file
+
+**Known content debt logged for follow-up (NOT in scope for this PR):**
+- Template 06 stale `_migrate_columns` references — contradicts ADR-003 + Template 02 v2.1
+- Template 05 — 4.6/4.7 version slip (header vs rationale)
+- Template 08 founder name inconsistency (Sapir vs Smadar)
+- Template 08 still labeled v1.0 (others v2.0/v2.1)
+- Will be addressed in MEH-693 follow-up sweep (orchestrator to open post-merge)
+
+**Post-merge Sapir actions:**
+1. Refresh Project Knowledge with 9 templates from `docs/templates/`
+2. Paste Drive stub README at Drive `02-Templates/00-README.md` (text in PR body)
+3. Open MEH-693 issue for content debt sweep
+4. Comment on MEH-686 noting MEH-689 unblocks future template PRs
+
+**References:**
+- MEH-686 Phase δ Session 2 (orchestration carryover)
+- MEH-690 (Template 09 reconciliation — carve-out)
+- MEH-692 (auto-close drift investigation — avoided here via Refs/Closes ordering)
+
 ## 2026-05-24 — MEH-686 Phase δ step 19: personal-preferences-v2.md → pointer (partial)
 
 Risk tier: 🟢 GREEN — docs-only, single file (this HANDOFF entry).

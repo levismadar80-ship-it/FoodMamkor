@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-05-24 — MEH-689: Templates promoted to repo (ADR-020)
+
+**Type:** docs (structural)
+
+**Shipped:**
+- ADR-020 establishing `docs/templates/` as canonical home for prompt templates.
+- 9 templates (00-08) moved byte-identical from Drive `02-Templates/` to `docs/templates/`.
+- `docs/templates/README.md` scaffolded with template index + edit workflow + Truth Hierarchy reference.
+- Downstream sync: `docs/CONTEXT.md` §12, `CLAUDE.md` doc map, `Doc-Consolidation-Plan.md` §C target architecture diagram.
+
+**Deferred:**
+- Template 09 (Council Mode) status reconciliation → MEH-690 follow-up.
+- Template content debt sweep (Template 06 `_migrate_columns` refs, Template 05/00 version slip, Template 08 founder name) → MEH-693 follow-up (to be opened post-merge).
+
+**Impact:**
+- Future template edits become repo-canonical PRs. Eliminates Drive-side manual sync pattern (5-step Sapir-manual flow) that drove 3 of 5 PRs in MEH-686 Phase δ Session 1.
+- AGENTS.md / CONTEXT.md pattern consistency: templates now sit at the repo apex layer alongside CONTEXT.md, BRAND.md, DESIGN.md.
+
+**PR:** (link added post-merge)
+
 ### 2026-05-24 — MEH-686 Phase ε F1: HeartButton saved-state color swap
 
 `fix(MEH-686)`: `CardHeart` saved state in `frontend/components/ProducerCard.jsx:181`
