@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-24 — MEH-696: PreToolUse path-verification hook (A2 pattern)
+
+`feat(hooks)`: new `.claude/hooks/check-path-exists.sh` (delivered in PR body
+for manual install — deny-list blocks `.claude/hooks/**`). Blocks `Edit`/
+`MultiEdit` when target `file_path` does NOT exist on disk. Catches the
+"orchestrator-claimed wrong path" pattern (meta-patterns.md §1, proven 4x in
+2026-05). Pass-through for Write (intentional file creation). Fail-open on
+missing jq, consistent with other hooks. README hook-inventory row also
+deferred to PR body (same `Edit(.claude/hooks/**)` deny). Manual wiring
+(cp + chmod + settings.json paste + README row) required post-merge — see
+PR description.
+
+Closes MEH-696.
+
 ### 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
 
 `docs(rules)`: new `.claude/rules/meta-patterns.md` with 5 cross-session
