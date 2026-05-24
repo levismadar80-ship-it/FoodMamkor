@@ -5,6 +5,35 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-686 Phase δ step 17: CLAUDE.md → thin pointer
+
+Risk tier: 🟡 YELLOW — downgraded from RED (CONTEXT.md §6.1 lists CLAUDE.md
+as a central component) per Doc-Consolidation-Plan §D; justification in the
+PR body. Pure structural docs refactor, single-file blast radius.
+
+CLAUDE.md transformed from an 87-line quick-start into a 65-line thin
+Claude-specific pointer to `docs/CONTEXT.md`, per the AGENTS.md pattern
+(PrestaShop #41152, DeployHQ, The Prompt Shelf, Redreamality — research
+validated 2026-05-24). AI-agnostic content removed (Project DNA, Tech stack
+table, My environment, Decision capture, brand-color line) — all now owned
+by CONTEXT.md (§1/§2 DNA, §4 stack, §13 decision capture, §20 environment)
+and DESIGN.md (`#2E4A2E` token). Removing the §Project block also resolved
+the stale "home cooks (/neighbor)" contradiction vs CONTEXT.md §2.
+
+Preserved inline (CC-operational, verbatim): Session Start git block, the 7
+operational locks (Railway 8080, httpx.Client, Resend, AI fail-open, Alembic,
+no claude/* branches, Auto-dream/ADR-008, MEH-408), branch strategy, workflow
+rule pointers, documentation map, CC sandbox + list_branches gotchas.
+
+Documentation map gained two rows: `docs/CONTEXT.md` (apex SoT) + `docs/BRAND.md`
+(brand domain SoT). One approved line added to CONTEXT.md §4 (Anthropic SDK
+Opus/Haiku) — single ownership; Framer Motion + Apple OAuth loss accepted
+(discoverable in package.json + auth config). AGENTS.md is a symlink → mirrors
+automatically, no separate edit. Hard cap restored: 87 → 65 (well under 80).
+
+Phase δ continuation: steps 16 + 19 remain Sapir-manual (Drive/PK); step 18
+(tailwind.config.js) deferred pending step 5 (DESIGN.md Google-format transform).
+
 ## 2026-05-24 — MEH-686 Phase δ step 15: Template 02 _migrate_columns removal (manual)
 
 Risk tier: 🟢 GREEN — docs-only, single file (this HANDOFF entry).
