@@ -4,6 +4,16 @@
 
 ## Unreleased
 
+### 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
+
+`docs(rules)`: new `.claude/rules/meta-patterns.md` with 5 cross-session
+shaping patterns from claude.ai userMemories 2026-05. Patterns: orchestrator
+claim verification, two-stage CC flow, large payload splitting,
+explicit-spec-over-hooks, autonomy preference. CLAUDE.md pointer extended
+(80-line cap preserved). Compliance note included acknowledging
+Jaroslawicz et al. 2025 on linear-decay — for mechanical enforcement, see
+follow-up hooks (separate PRs). Closes MEH-694.
+
 ### 2026-05-24 — MEH-693: Template content debt sweep (5 anomalies)
 
 **Type:** docs (content reconciliation)
