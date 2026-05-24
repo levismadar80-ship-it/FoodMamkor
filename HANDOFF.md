@@ -5,6 +5,24 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-696: PreToolUse path-verification hook (A2 pattern)
+
+**Branch:** `feature/meh-696-path-verification-hook` (off staging). Risk tier: 🟢 GREEN — A2 pattern (script + settings + README row in PR body; only CHANGELOG + HANDOFF committed). Closes MEH-696.
+
+**Why A2:** `permissions.deny` has `Edit(.claude/hooks/**)` covering the whole hooks dir — so neither the executable nor `README.md` can be committed from a CC session. Both go in the PR body; Sapir installs manually post-merge. (Spec assumed README.md was committable — corrected per meta-patterns §1, the exact pattern this hook mechanizes.)
+
+**What the hook does:** blocks `Edit`/`MultiEdit` when `file_path` does not exist on disk (catches orchestrator-claimed-wrong-path bugs, meta-patterns §1). Pass-through for `Write` (intentional file creation) and non-Edit/MultiEdit tools. Fail-open if `jq` missing. Exit 2 = block, exit 0 = allow. Field path `.tool_input.file_path` verified against `check-rtl.sh:43` (uniform for Edit + MultiEdit).
+
+**Manual wiring (Sapir, post-merge — full copy-paste in PR body):**
+1. Save script from PR body → `.claude/hooks/check-path-exists.sh`; `chmod +x`.
+2. Add the `PreToolUse` JSON block (PR body) to `.claude/settings.json` as a new array entry (sibling matcher).
+3. Add the README hook-inventory row (PR body) to `.claude/hooks/README.md`.
+4. Verify `command -v jq` returns a path.
+
+**Smoke test:** open a CC session, ask it to `Edit /tmp/does-not-exist.txt` → must block with "⛔ Path verification FAILED".
+
+**Status:** Manual wiring required — moves to SHIPPED after Sapir confirms wiring + smoke test.
+
 ## 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
 
 **Branch:** `feature/meh-694-meta-patterns` (off staging). Risk tier: 🟢 GREEN — docs-only under `.claude/rules/`.
