@@ -229,6 +229,8 @@ REPO (canonical — versioned, blame-able, PR-reviewed)
 │   ├── DESIGN.md ···················· 🟢 SoT — tokens (Google spec)
 │   ├── decisions/ ··················· 🟢 SoT — ADRs (now incl. brand)
 │   │   └── ADR-001..ADR-016 (and growing)
+│   ├── templates/ ··················· 🟢 SoT — 9 prompt templates (per ADR-020)
+│   │   └── 00..08 + README.md (Template 09 deferred to MEH-690)
 │   ├── CHANGELOG.md ················· canonical ledger (append-only)
 │   ├── ARCHITECTURE.md, DATA.md, ···· technical references
 │   │   DEPLOYMENT.md, SECURITY.md, …
@@ -245,7 +247,7 @@ DRIVE (working — drafts, iteration, archive)
 ├── 00-Active/ ······················· daily working files only
 ├── 01-Strategy/ ····················· working drafts of strategy
 │   └─ (pricing-model.md = working until ADR-010 supersedes)
-├── 02-Templates/ ··················· Claude prompt templates (10)
+├── 02-Templates/ ··················· ARCHIVE — see docs/templates/ (per ADR-020)
 ├── 99-Archive/ ······················ retired files (Brand Hub 12, etc.)
 └── (NO duplicates of repo SoT files)
 
@@ -259,7 +261,7 @@ PROJECT KNOWLEDGE (Claude.ai chat surface — working copies)
 │
 ├── CONTEXT.md ······················· manual upload of canonical
 ├── BRAND.md ························· manual upload of canonical
-├── Templates 00-09 ·················· manual upload of Drive
+├── Templates 00-08 ·················· manual snapshot of docs/templates/ (non-canonical per ADR-020)
 └── (NOT canonical; manual refresh on canonical change)
 
 USER MEMORIES (Claude L3 cache)

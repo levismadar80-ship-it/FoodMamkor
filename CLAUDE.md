@@ -51,6 +51,7 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 | [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) | Alembic workflow: add column, local check, rollback, CI gate |
 | [docs/MODERATION.md](./docs/MODERATION.md) + [ADMIN.md](./docs/ADMIN.md) | Hybrid AI moderation + admin pages, seed, role enforcement |
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |
+| [docs/templates/](./docs/templates/README.md) | 9 prompt templates (00-08) for Linear issues, CC tasks, Claude.ai design — see [ADR-020](./docs/decisions/ADR-020-templates-in-repo.md) |
 | [docs/BUG_PATTERNS.md](./docs/BUG_PATTERNS.md) + [docs/decisions/](./docs/decisions/README.md) | Known bug patterns + ADR index (legacy `LOCKED_DECISIONS.md` migrating in) |
 | [docs/CENTRAL_COMPONENTS.md](./docs/CENTRAL_COMPONENTS.md) + [EMERGENCY_OVERRIDE.md](./docs/EMERGENCY_OVERRIDE.md) | Vibe Coding Guardrails — 4-step protocol + emergency skip log |
 

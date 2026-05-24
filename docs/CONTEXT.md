@@ -114,9 +114,11 @@ Every schema change goes through an Alembic revision. Risky changes (DROP COLUMN
 - PR descriptions end with `Closes MEH-XX`.
 - Branch: `feature/meh-XXX-slug` off `staging`.
 
-## 12 · Templates (v2.1) — in Drive `02-Templates/`, mirrored to Project Knowledge
+## 12 · Templates (v2.1) — in `docs/templates/`
 
-`00-model-selection` · `01-design` · `02-feature` · `03-bug` · `04-refactor` · `05-research` · `06-linear-issue` · `07-linear-quick` · `08-linear-examples` · `09-council-mode`
+Canonical location: `docs/templates/` (per ADR-020). Project Knowledge holds a manual snapshot (non-canonical, refresh on canonical change).
+
+Current set: `00-model-selection-guide` · `01-claude-design` · `02-claude-code-feature` · `03-claude-code-bug` · `04-claude-code-refactor` · `05-claude-research` · `06-linear-issue` · `07-linear-quick` · `08-linear-issue-examples`. Template 09 (Council Mode) status under reconciliation in MEH-690.
 
 Every Linear issue uses 8 sections + XML positive framing in the prompt: `<role>` · `<intent>` · `<acceptance_criteria>` · `<file_locations>` · `<scope>` · `<constraints>` · `<examples>` · `<confidence_calibration>` · `<over_engineering_guard>` · `<verification_step>`. If task type is unclear → ask, don't guess.
 
