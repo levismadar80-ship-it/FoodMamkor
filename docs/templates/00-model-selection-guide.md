@@ -10,7 +10,7 @@
 >
 > **Upgrade ל-Opus 4.7** רק כש: קוד מורכב מולטי-קובץ, vision/screenshots, החלטה אסטרטגית, design taste, או PR review של PR גדול.
 
-זה לא דעה — זו ההמלצה הרשמית של Anthropic ב-2026. Sonnet 4.6 מקבל 79.6% ב-SWE-bench, רק 1.2 נקודות מאחורי Opus 4.6. עלה פי 5 פחות.
+זה לא דעה — זו ההמלצה הרשמית של Anthropic ב-2026. Sonnet 4.6 מפגר אחרי Opus 4.7 רק במרווח צר ב-SWE-bench, ועולה פי 5 פחות.
 
 ---
 
@@ -109,12 +109,12 @@
 ```
 low      → trivial, latency-sensitive (Haiku territory)
 medium   → routine Sonnet work, cost-conscious
-high     → Sonnet default, Opus 4.6 default
+high     → Sonnet default
 xhigh    → Opus 4.7 default — coding/agentic sweet spot
 max      → genuine hard problems only. אזהרה: prone to overthinking.
 ```
 
-**אצל Smadar (Claude Code Max):**
+**אצל Sapir (Claude Code Max):**
 - Sonnet 4.6 → השאירי על default (high)
 - Opus 4.7 → השאירי על xhigh (default). העלי ל-max רק ל-MEH-99 / MEH-122 / MEH-329 רמה.
 
@@ -197,7 +197,7 @@ Haiku 4.5  → אין adaptive thinking (manual mode בלבד)
 | **Claude Code CLI** | אוטומטי לפי effort level | xhigh = always thinks |
 | **API** | `thinking: {type: "adaptive"}` | תמיד מומלץ ל-Opus 4.7+ |
 
-**אצל Smadar (Claude.ai Max):** Opus 4.7 → **תמיד ON**. Sonnet 4.6 → ON אם יש "למה" / "איך" / "מה הקומפרומיס" בשאלה.
+**אצל Sapir (Claude.ai Max):** Opus 4.7 → **תמיד ON**. Sonnet 4.6 → ON אם יש "למה" / "איך" / "מה הקומפרומיס" בשאלה.
 
 ---
 
@@ -248,7 +248,7 @@ Haiku 4.5  → אין adaptive thinking (manual mode בלבד)
 
 ## 💰 Cost optimization
 
-**Smadar ב-Claude Code Max:**
+**Sapir ב-Claude Code Max:**
 - Sonnet token allocation גדול → השתמשי בלי דאגה לכל היומיום
 - Opus 4.7 token allocation קטן יותר → שמרי ל-hard tasks
 - אסטרטגיה: התחילי כל משימה ב-Sonnet. אם נתקעת ב-2 turns → escalate ל-Opus.

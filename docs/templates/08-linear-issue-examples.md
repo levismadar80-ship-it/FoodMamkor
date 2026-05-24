@@ -1,6 +1,8 @@
 # 📊 Template 08 — Linear Issue Examples (Model Recommendations)
 
-10 issues אמיתיים מהbacklog של מהמקור — כל אחד עם המלצה מדויקת. גרסה 1.0 · אפריל 2026.
+10 issues אמיתיים מהbacklog של מהמקור — כל אחד עם המלצה מדויקת. גרסה 2.0 · אפריל 2026.
+
+> v2.0 · 2026-05: founder name reconciliation per MEH-693
 
 ---
 
@@ -75,7 +77,7 @@
 דוגמה: "סתם להחליף מילה — אבל אולי יש עוד 5 מקומות"
 → **התחילי quick (Sonnet, OFF). אם מתגלה scope creep → STOP, פתחי 06.**
 
-### "Smadar ביקשה Opus אבל זה נראה Sonnet"
+### "Sapir ביקשה Opus אבל זה נראה Sonnet"
 → **Pre-go scope-match check** (workflow.md rule). אם spec עבור Opus היה כי המשימה מורכבת — Sonnet יכול לפספס. אם spec היה כי Sapir רגיל — אפשר לרדת.
 
 ### "פיצ'ר חדש אבל יש pattern קיים"
