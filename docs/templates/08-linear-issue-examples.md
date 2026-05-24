@@ -75,7 +75,7 @@
 דוגמה: "סתם להחליף מילה — אבל אולי יש עוד 5 מקומות"
 → **התחילי quick (Sonnet, OFF). אם מתגלה scope creep → STOP, פתחי 06.**
 
-### "Smadar ביקשה Opus אבל זה נראה Sonnet"
+### "Sapir ביקשה Opus אבל זה נראה Sonnet"
 → **Pre-go scope-match check** (workflow.md rule). אם spec עבור Opus היה כי המשימה מורכבת — Sonnet יכול לפספס. אם spec היה כי Sapir רגיל — אפשר לרדת.
 
 ### "פיצ'ר חדש אבל יש pattern קיים"

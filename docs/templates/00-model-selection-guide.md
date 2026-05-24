@@ -114,7 +114,7 @@ xhigh    → Opus 4.7 default — coding/agentic sweet spot
 max      → genuine hard problems only. אזהרה: prone to overthinking.
 ```
 
-**אצל Smadar (Claude Code Max):**
+**אצל Sapir (Claude Code Max):**
 - Sonnet 4.6 → השאירי על default (high)
 - Opus 4.7 → השאירי על xhigh (default). העלי ל-max רק ל-MEH-99 / MEH-122 / MEH-329 רמה.
 
@@ -197,7 +197,7 @@ Haiku 4.5  → אין adaptive thinking (manual mode בלבד)
 | **Claude Code CLI** | אוטומטי לפי effort level | xhigh = always thinks |
 | **API** | `thinking: {type: "adaptive"}` | תמיד מומלץ ל-Opus 4.7+ |
 
-**אצל Smadar (Claude.ai Max):** Opus 4.7 → **תמיד ON**. Sonnet 4.6 → ON אם יש "למה" / "איך" / "מה הקומפרומיס" בשאלה.
+**אצל Sapir (Claude.ai Max):** Opus 4.7 → **תמיד ON**. Sonnet 4.6 → ON אם יש "למה" / "איך" / "מה הקומפרומיס" בשאלה.
 
 ---
 
@@ -248,7 +248,7 @@ Haiku 4.5  → אין adaptive thinking (manual mode בלבד)
 
 ## 💰 Cost optimization
 
-**Smadar ב-Claude Code Max:**
+**Sapir ב-Claude Code Max:**
 - Sonnet token allocation גדול → השתמשי בלי דאגה לכל היומיום
 - Opus 4.7 token allocation קטן יותר → שמרי ל-hard tasks
 - אסטרטגיה: התחילי כל משימה ב-Sonnet. אם נתקעת ב-2 turns → escalate ל-Opus.

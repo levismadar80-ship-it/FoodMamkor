@@ -25,7 +25,7 @@
 **Effort:** medium / high / xhigh / max
 ```
 
-זה לא "ניחוש" — Claude Code (Smadar) רואה את ההמלצה לפני שמתחילה את המשימה.
+זה לא "ניחוש" — Claude Code (Sapir) רואה את ההמלצה לפני שמתחילה את המשימה.
 ראי `00-model-selection-guide.md` ל-decision flow.
 
 ---
