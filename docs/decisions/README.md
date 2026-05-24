@@ -40,6 +40,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [017](./ADR-017-jwt-access-token-localStorage.md) | JWT access token in localStorage (refresh in HttpOnly cookie) | Accepted | 2026-05-23 | MEH-686 |
 | [018](./ADR-018-hero-direction-hierarchy.md) | Hero direction hierarchy — Direction A canonical, Direction B secondary | Accepted | 2026-05-23 | MEH-686 |
 | [019](./ADR-019-component-state-tokens.md) | Component state tokens — opacity-on-cream + --fg-muted only | Accepted | 2026-05-23 | MEH-686 |
+| [020](./ADR-020-templates-in-repo.md) | Prompt templates promoted to repo (docs/templates/) | Accepted | 2026-05-24 | MEH-689 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated
