@@ -5,6 +5,44 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-686 Phase δ step 19: personal-preferences-v2.md → pointer (partial)
+
+Risk tier: 🟢 GREEN — docs-only, single file (this HANDOFF entry).
+
+Sapir transformed `personal-preferences-v2.md` (Drive + PK) from a 151-line
+full preferences file into a 20-line thin pointer per the AGENTS.md pattern,
+referencing canonical sources: BRAND.md §1-§4 (DNA + voice + language),
+CONTEXT.md §6-§9 (workflow + Skeptic Mode + connector verification),
+ADR-009 (decision capture), and CLAUDE.md (Claude-specific operational items).
+Same Drive-resident manual pattern as steps 15 + 16.
+
+3-surface mapping (partial completion is **deliberate**, not a bug):
+
+| Surface | Action | Status |
+|---|---|---|
+| Drive `personal-preferences-v2.md` | Replaced with pointer | ✅ done |
+| Project Knowledge copy | Replaced with pointer | ✅ done |
+| Settings → Personal Preferences | V2.0 retained unchanged | ⏸ deferred (ADR-021 candidate) |
+| V2.1 patch (Council Mode / Template 09) reconciliation | Unverified in PK snapshot | ⏸ follow-up Linear |
+| ADR-021 dual-surface architecture | Not written | ⏸ follow-up Linear |
+
+Why Settings deferred: the claude.ai chat surface lacks repo-read capability,
+so a pointer to `docs/BRAND.md` would resolve to nothing. Settings keeps full
+V2.0 until chat gains repo-read OR cross-surface drift becomes an operational
+problem. The asymmetry is an ADR-021 candidate (dual-surface architecture).
+
+Architecture finding (continuation of steps 15+16): templates AND preferences
+both live in Drive + PK per CONTEXT.md §12, not the repo — Sapir-manual pattern
+now confirmed across 3 steps this session.
+
+Phase δ Session 1 closes after this entry: 4 Phase δ PRs (#832 step 15,
+#834 step 16, #833 step 17, + this step 19); plus #831 (Phase ε F1) earlier
+this session. Pre-design-upload Checklist ~11/14 (step 19 partial). Steps 7
+(DESIGN.md Google transform) + 18 (tailwind.config.js) deferred to a future session.
+
+Verification: Drive `personal-preferences-v2.md` `wc -l` → 20; grep `Caveman
+style` → 0; grep `docs/BRAND.md` → 1.
+
 ## 2026-05-24 — MEH-686 Phase δ step 16: Template 01 E2/E3/E4 fixes (manual)
 
 Risk tier: 🟢 GREEN — docs-only, single file (this HANDOFF entry); same
