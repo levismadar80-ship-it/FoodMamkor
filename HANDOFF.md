@@ -5,6 +5,40 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-24 — MEH-686 Phase δ step 16: Template 01 E2/E3/E4 fixes (manual)
+
+Risk tier: 🟢 GREEN — docs-only, single file (this HANDOFF entry); same
+classification as step 15.
+
+Sapir completed step 16 manually via Drive UI + Project Knowledge re-upload
+(same pattern as step 15 / PR #832). Template 01 (`01-claude-design.md`) lives
+in Drive `02-Templates/` + PK per CONTEXT.md §12, **not** in the repo. Three
+fixes per Doc-Consolidation-Plan §B.5:
+- **E2** — logo state `[current state — open]` → canonical 5-pomegranate-seed
+  lockup + מהמקור wordmark per ADR-012 + MEH-637 (Done 2026-05-22, + MEH-664 DoD fix).
+- **E3** — text dark color `#1a1a1a` → `#1C1A17` per BRAND.md §3 + CONTEXT.md §5.
+- **E4** — Lucide-used-as-is rule → "Lucide FORBIDDEN; use `@phosphor-icons/react`
+  exclusively" per ADR-013 + BRAND.md §3 (icon tier 1).
+
+Four defense-in-depth additions (mirroring step 15; justified — template lives
+outside repo, no CI guard): v2.1 self-documenting header, anti-pattern bullet
+for Lucide, DoD checklist updates (text-dark hex + Lucide in AI-slop list),
+מקורות ADR pointers (ADR-012/013/014). New file is 237 lines (was 246).
+
+Architecture finding (continuation of step 15): Doc-Consolidation-Plan §D
+attributed step 16 to Claude Code — corrected to Sapir manual ownership
+(templates are Drive/PK-native). Follow-up Linear issue for the
+templates-Drive-vs-repo question tracked at end-of-session.
+
+Verification: `grep -c "Olive branch\|current state — open" 01-claude-design.md`
+→ 0; `#1a1a1a` → 1 (only in v2.1 changelog header); all Lucide mentions in
+FORBIDDEN context.
+
+Phase δ continuation: step 17 done (PR #833, CLAUDE.md → thin pointer, merged
+2026-05-24). Step 19 (personal-preferences-v2.md → pointer) pending, same Sapir
+manual pattern; step 18 (tailwind.config.js) deferred pending step 7 (DESIGN.md
+Google-format transform).
+
 ## 2026-05-24 — MEH-686 Phase δ step 17: CLAUDE.md → thin pointer
 
 Risk tier: 🟡 YELLOW — downgraded from RED (CONTEXT.md §6.1 lists CLAUDE.md
