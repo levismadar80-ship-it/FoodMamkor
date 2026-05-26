@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-712 restore Heebo Hebrew fallback (RED, chunk-by-chunk)
+
+**Branch:** `feature/meh-712-restore-heebo-hebrew-fallback` (off staging tip `5125646`, Wave 1A merge). **PR #TBD** (draft), base `staging`. Closes MEH-712; unblocks MEH-700, MEH-701.
+
+**What:** restored Heebo to canonical `body-*`/`label-*` token stacks (`"DM Sans","Heebo","sans-serif"`) via DESIGN.md front-matter → tokens.json regen → config spread (no config edit; single source of truth + drift gate preserved). Migrated the 1 remaining `font-sans` usage (StoryCardCanvas.jsx:272 → `font-body-md`). DESIGN.md prose documents the Hebrew-fallback policy. Headlines (Frank Ruhl Libre) untouched.
+
+**Context:** PR #853 dropped Heebo from these stacks; DM Sans has no Hebrew coverage (Wave 2A web-confirmed). NOT a shipped regression (0 token adoption + globals.css:24 root fallback). MEH-712 absorbed the original font-sans scope + the body/label hardening (MEH-713 was NOT created — folded here per Option A).
+
+**Verification:** chunk1 (tokens) + chunk2 (prose+StoryCardCanvas) committed; design:lint 0 errors; drift gate clean; build green. **Mobile QA REQUIRED** post-merge: Hebrew render smoke test on StoryCardCanvas output (verify Heebo, not system default).
+
+**Next:** await PR CI + Sapir mobile QA → merge → MEH-700/701 unblocked. Pending decisions still open: MEH-702 (light/green scale via MEH-710), MEH-699 (site-muted→fg-muted), MEH-705 (primary-light hover→primary-dark, YELLOW).
+
 ## 2026-05-26 — MEH-686 Wave 1A (batched token migration)
 
 **Branch:** `feature/meh-686-wave-1a-token-cleanup` (off staging post-PR-#853). GREEN-tier batched (3 migrations, 1 PR) to resolve the 10-file overlap from Wave 1 Phase 0. **PR #TBD** (draft), base `staging`. Zero visual change (pure class renames; config untouched).
