@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-26 — Migrate light → green-50 (MEH-702 Contract — largest Contract PR)
+
+`feat(MEH-702)`: Contract-phase rename — all `light` color usages → `green-50`
+across **83 files / 199 occurrences** (177 `bg-light`, 21 `text-light`, 1
+`border-light`). Value-identical (`light` = `green-50` = `#EAF3DE`, the latter
+added in MEH-710/#857), **zero visual change**. Disambiguation verified:
+`primary-light` (47, MEH-705) and `secondary-light` (2, MEH-703) untouched; no
+blanket `light` replace. No `tailwind.config.js`/`tokens.json`/DESIGN.md change
+(legacy `light` alias drops in MEH-708). Build + drift gate green; mobile QA waived.
+- _Side-finding (not in scope, flagged):_ 4 pre-existing `bg-green-50` usages
+  (in files this PR didn't touch) referenced Tailwind's default green-50;
+  MEH-710's custom `green-50` override silently shifted them #f0fdf4→#EAF3DE on
+  #857 merge. Candidate follow-up ticket.
+
 ### 2026-05-26 — Migrate site-muted → fg-muted (MEH-699 Contract)
 
 `feat(MEH-699)`: Contract-phase rename — all `*-site-muted` → `*-fg-muted` across

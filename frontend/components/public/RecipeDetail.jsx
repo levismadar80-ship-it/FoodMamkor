@@ -63,7 +63,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
 
       {/* Hero */}
       {recipe.image_url && (
-        <div className="aspect-[16/9] bg-light rounded-[16px] overflow-hidden mb-6">
+        <div className="aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={recipe.image_url}
@@ -164,7 +164,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 ) : (
                   <span
                     aria-hidden="true"
-                    className="w-14 h-14 rounded-[8px] bg-light flex items-center justify-center text-xl"
+                    className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center text-xl"
                   >
                     🌿
                   </span>

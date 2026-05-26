@@ -94,7 +94,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Pills row */}
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {deliveryMatch && (
-            <span className="text-[11px] bg-light text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-0.5">
+            <span className="text-[11px] bg-green-50 text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-0.5">
               🚚 {t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
             </span>
           )}

@@ -178,7 +178,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
       {/* Rating summary block — only when ≥3 reviews */}
       {showSummary && (
-        <div className="bg-light rounded-lg p-6 text-center mb-6">
+        <div className="bg-green-50 rounded-lg p-6 text-center mb-6">
           <p
             className="font-headline font-black leading-none text-site-text mb-2"
             style={{ fontSize: 48 }}
@@ -202,7 +202,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           !showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="mb-6 border border-site-text text-site-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-light transition"
+              className="mb-6 border border-site-text text-site-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}
             </button>
@@ -259,12 +259,12 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             </form>
           )
         ) : (
-          <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
+          <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
             {t("wa_gate_message")}
           </div>
         )
       ) : (
-        <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
+        <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
           {t.rich("login_prompt", {
             login: (chunks) => (
               <a href="/login" className="text-primary hover:underline">{chunks}</a>
@@ -328,7 +328,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 onClick={() => fetchPage(page - 1)}
                 disabled={page <= 1}
                 aria-label={t("pagination.prev_aria")}
-                className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
+                className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
               >
                 <ArrowRight size={18} weight="bold" aria-hidden="true" />
               </button>
@@ -339,7 +339,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 onClick={() => fetchPage(page + 1)}
                 disabled={page >= pages}
                 aria-label={t("pagination.next_aria")}
-                className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
+                className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
               >
                 <ArrowLeft size={18} weight="bold" aria-hidden="true" />
               </button>

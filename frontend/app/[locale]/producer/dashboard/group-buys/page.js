@@ -13,7 +13,7 @@ const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700 border-blue-200",
   funded: "bg-[#EAF3DE] text-primary border-primary/20",
   cancelled: "bg-gray-100 text-gray-500 border-gray-200",
-  fulfilled: "bg-light text-primary border-primary/30",
+  fulfilled: "bg-green-50 text-primary border-primary/30",
 };
 
 function NewGroupBuyForm({ producerCity, onCreated }) {

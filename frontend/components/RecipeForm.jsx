@@ -266,7 +266,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-light">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50">
             <input
               type="file"
               accept="image/*"
@@ -293,7 +293,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             {t("no_products")}
           </p>
         ) : (
-          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-light">
+          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-green-50">
             {products.map((p) => (
               <li key={p.id}>
                 <label className="flex items-center gap-2 text-sm cursor-pointer py-1">

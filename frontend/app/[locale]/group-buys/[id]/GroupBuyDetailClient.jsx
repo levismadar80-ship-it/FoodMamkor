@@ -212,7 +212,7 @@ export default function GroupBuyDetailClient({ id }) {
           </div>
         )}
         {fulfilled && (
-          <div className="mb-6 rounded-[12px] bg-light border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">
+          <div className="mb-6 rounded-[12px] bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">
             {t("fulfilled")}
           </div>
         )}
@@ -221,7 +221,7 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Header */}
           <div className="mb-4">
             {gb.city && (
-              <span className="text-xs bg-light text-primary px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-green-50 text-primary px-2 py-0.5 rounded-full">
                 {gb.city}
               </span>
             )}
@@ -237,7 +237,7 @@ export default function GroupBuyDetailClient({ id }) {
           </div>
 
           {/* Price */}
-          <div className="flex items-center gap-3 mb-4 p-4 rounded-[12px] bg-light">
+          <div className="flex items-center gap-3 mb-4 p-4 rounded-[12px] bg-green-50">
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-primary">

@@ -69,7 +69,7 @@ export default function UpgradeClient() {
         </div>
 
         {submitted ? (
-          <div className="bg-light border border-primary/20 rounded-[16px] px-6 py-5">
+          <div className="bg-green-50 border border-primary/20 rounded-[16px] px-6 py-5">
             <p className="text-primary font-semibold">{t("notify_success")}</p>
           </div>
         ) : (

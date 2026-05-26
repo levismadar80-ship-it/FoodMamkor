@@ -37,7 +37,7 @@ export default function NotFound() {
           </Link>
           <Link
             href="/map"
-            className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium"
+            className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium"
           >
             {t("discover")}
           </Link>

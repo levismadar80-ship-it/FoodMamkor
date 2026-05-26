@@ -165,7 +165,7 @@ export default function RegisterClient() {
         {/* Brand mark + heading */}
         <div className="mb-6">
           <div
-            className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center"
+            className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
             aria-hidden="true"
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />

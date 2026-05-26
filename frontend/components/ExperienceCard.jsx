@@ -74,7 +74,7 @@ export default function ExperienceCard({ experience: ex }) {
           )}
         </div>
       ) : (
-        <div className="h-44 bg-light flex items-center justify-center text-5xl">
+        <div className="h-44 bg-green-50 flex items-center justify-center text-5xl">
           🍳
         </div>
       )}
@@ -97,7 +97,7 @@ export default function ExperienceCard({ experience: ex }) {
         )}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
           {ex.category && (
-            <span className="bg-light text-primary text-xs px-2 py-1 rounded-full">
+            <span className="bg-green-50 text-primary text-xs px-2 py-1 rounded-full">
               {ex.category}
             </span>
           )}

@@ -37,7 +37,7 @@ const COLOR_CLASSES = {
   primary: "bg-primary text-white",
   accent: "bg-accent text-white",
   secondary: "bg-secondary text-white",
-  muted: "bg-light text-site-text border border-border",
+  muted: "bg-green-50 text-site-text border border-border",
 };
 
 function Badge({ badge }) {

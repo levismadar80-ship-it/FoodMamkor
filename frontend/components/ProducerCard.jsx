@@ -259,7 +259,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               />
             ) : (
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-light px-2"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 px-2"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
                 <span className="text-5xl leading-none" aria-hidden="true">
@@ -346,7 +346,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           )}
           {/* MEH-213: delivery-only badge — shown when no physical storefront */}
           {producer.has_physical_location === false && producer.offers_delivery && (
-            <span className="inline-flex items-center rounded-full bg-light border border-border text-site-text px-2 py-0.5 text-[11px]">
+            <span className="inline-flex items-center rounded-full bg-green-50 border border-border text-site-text px-2 py-0.5 text-[11px]">
               {t("producer.card.badges.delivery_only")}
             </span>
           )}

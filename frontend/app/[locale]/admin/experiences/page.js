@@ -134,7 +134,7 @@ export default function AdminExperiencesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-site-text hover:bg-light"
+                : "bg-white border border-border text-site-text hover:bg-green-50"
             }`}
           >
             {t(`experiences.tabs.${value}`)}
@@ -157,7 +157,7 @@ export default function AdminExperiencesPage() {
       ) : (
         <div className="bg-white border border-border rounded-[16px] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-light text-fg-muted text-xs">
+            <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
                 <th className="text-end p-3 font-medium">{t("experiences.columns.title")}</th>
                 <th className="text-end p-3 font-medium">{t("experiences.columns.host")}</th>
@@ -219,7 +219,7 @@ export default function AdminExperiencesPage() {
               <button
                 onClick={closeModal}
                 disabled={busy}
-                className="px-4 py-2 rounded-[8px] border border-border text-site-text hover:bg-light"
+                className="px-4 py-2 rounded-[8px] border border-border text-site-text hover:bg-green-50"
               >
                 {t("common.cancel")}
               </button>
@@ -248,12 +248,12 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
     ex.moderation_status === "FLAGGED"
       ? "bg-yellow-100 text-yellow-800"
       : ex.moderation_status === "APPROVED"
-      ? "bg-light text-primary"
+      ? "bg-green-50 text-primary"
       : "bg-gray-100 text-gray-600";
 
   return (
     <>
-      <tr className="border-t border-border hover:bg-light/30">
+      <tr className="border-t border-border hover:bg-green-50/30">
         <td className="p-3">
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -310,7 +310,7 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-light/20 border-t border-border">
+        <tr className="bg-green-50/20 border-t border-border">
           <td colSpan={6} className="p-4">
             <div className="text-sm space-y-2 text-site-text">
               <p className="whitespace-pre-wrap">{ex.description}</p>

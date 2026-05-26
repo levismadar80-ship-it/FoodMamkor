@@ -10,7 +10,7 @@ const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700",
   funded: "bg-[#EAF3DE] text-primary",
   cancelled: "bg-gray-100 text-gray-500",
-  fulfilled: "bg-light text-primary",
+  fulfilled: "bg-green-50 text-primary",
 };
 
 const STATUS_OPTIONS = ["open", "funded", "cancelled", "fulfilled"];

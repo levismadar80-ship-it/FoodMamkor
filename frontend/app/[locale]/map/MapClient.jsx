@@ -224,10 +224,10 @@ export default function MapPage() {
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
             <h1 className="font-headline text-xl font-bold text-site-text">{t("map.client.title")}</h1>
             <div className="flex gap-1">
-              <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label={t("map.client.aria.split_50_50")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-fg-muted hover:bg-light"}`}>
+              <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label={t("map.client.aria.split_50_50")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-fg-muted hover:bg-green-50"}`}>
                 <Rows size={18} weight="bold" />
               </button>
-              <button type="button" onClick={() => hints.setSplitRatio("25fr 75fr")} aria-label={t("map.client.aria.split_25_75")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("25") ? "bg-primary text-white" : "text-fg-muted hover:bg-light"}`}>
+              <button type="button" onClick={() => hints.setSplitRatio("25fr 75fr")} aria-label={t("map.client.aria.split_25_75")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("25") ? "bg-primary text-white" : "text-fg-muted hover:bg-green-50"}`}>
                 <MapPinLine size={18} weight="bold" />
               </button>
             </div>
@@ -273,7 +273,7 @@ export default function MapPage() {
             <div className="flex-1">
               <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
             </div>
-            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation()} className="cursor-pointer shrink-0 w-10 h-10 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-light transition" aria-label={t("map.client.aria.my_location")}>
+            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation()} className="cursor-pointer shrink-0 w-10 h-10 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-green-50 transition" aria-label={t("map.client.aria.my_location")}>
               <Crosshair size={18} weight="duotone" className="text-primary" />
             </button>
           </div>

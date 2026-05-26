@@ -33,7 +33,7 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full max-w-sm p-5 relative">
-        <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-light flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
+        <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={16} weight="bold" />
         </button>
         <h3 className="font-headline text-lg font-bold text-site-text mb-1">{t("map.city_picker.heading")}</h3>

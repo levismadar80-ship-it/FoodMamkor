@@ -320,7 +320,7 @@ function Row({ id, active, onSelect, onHover, children }) {
       }}
       onMouseEnter={onHover}
       className={`px-3 py-2 cursor-pointer text-sm ${
-        active ? "bg-light text-primary" : "text-site-text hover:bg-light/50"
+        active ? "bg-green-50 text-primary" : "text-site-text hover:bg-green-50/50"
       }`}
     >
       {children}

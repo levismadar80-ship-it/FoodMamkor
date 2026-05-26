@@ -88,7 +88,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 start-4 w-8 h-8 rounded-full bg-background-secondary hover:bg-light flex items-center justify-center text-site-text transition-colors"
+          className="absolute top-4 start-4 w-8 h-8 rounded-full bg-background-secondary hover:bg-green-50 flex items-center justify-center text-site-text transition-colors"
           aria-label={t("close_aria")}
         >
           <X size={16} weight="regular" />
@@ -120,7 +120,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
               key={key}
               type="button"
               onClick={() => handleCityPick(canonical)}
-              className="px-4 py-3 rounded-lg bg-light hover:bg-primary hover:text-white transition-colors min-h-[44px] text-site-text text-sm font-medium"
+              className="px-4 py-3 rounded-lg bg-green-50 hover:bg-primary hover:text-white transition-colors min-h-[44px] text-site-text text-sm font-medium"
             >
               {t(`popular_cities.${key}`)}
             </button>

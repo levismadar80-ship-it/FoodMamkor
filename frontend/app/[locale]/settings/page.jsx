@@ -318,7 +318,7 @@ function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-light text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-green-50 text-fg-muted cursor-not-allowed"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -1032,7 +1032,7 @@ function ProductsSection() {
             <form
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
-              className="border border-border rounded-[10px] p-4 space-y-3 bg-light"
+              className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50"
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-site-text">{t("edit_heading")}</p>
@@ -1161,14 +1161,14 @@ function ProductsSection() {
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-site-text rounded-[8px] py-2 text-sm font-medium hover:bg-light transition"
+                  className="px-4 bg-white border border-border text-site-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
               </div>
             </form>
           ) : (
-            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-light">
+            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
               {product.image_url ? (
                 <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
                   <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="48px" />
@@ -1210,7 +1210,7 @@ function ProductsSection() {
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-light">
+        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-site-text">{t("add_heading")}</p>
             <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
@@ -1339,7 +1339,7 @@ function ProductsSection() {
 
 function StatCard({ label, value }) {
   return (
-    <div className="rounded-[12px] bg-light px-4 py-3 text-center">
+    <div className="rounded-[12px] bg-green-50 px-4 py-3 text-center">
       <p className="text-2xl font-bold text-site-text">{value}</p>
       <p className="text-xs text-fg-muted mt-0.5">{label}</p>
     </div>
@@ -1364,7 +1364,7 @@ function SupportModal({ onClose }) {
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
@@ -1374,7 +1374,7 @@ function SupportModal({ onClose }) {
         </a>
         <a
           href="mailto:support@mehamakor.online"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} weight="duotone" className="text-primary shrink-0" />
           <div>

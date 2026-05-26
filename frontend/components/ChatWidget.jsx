@@ -273,7 +273,7 @@ export default function ChatWidget() {
               <div className="flex flex-col gap-2 pt-1">
                 {SUGGESTED_PROMPTS.map((p) => (
                   <button key={p} type="button" onClick={() => sendMessage(p)}
-                    className="text-right text-xs text-primary bg-light hover:bg-light/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="text-right text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   >{p}</button>
                 ))}
               </div>
