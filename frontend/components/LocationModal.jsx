@@ -94,7 +94,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           <X size={16} weight="regular" />
         </button>
 
-        <h2 className="font-headline text-xl font-bold text-text mb-1">
+        <h2 className="font-headline-md text-xl font-bold text-text mb-1">
           {t("title")}
         </h2>
         <p className="text-fg-muted text-sm mb-5">

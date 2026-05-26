@@ -57,7 +57,7 @@ export default function FollowersPage() {
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
             {t("back_link")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-text mt-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>

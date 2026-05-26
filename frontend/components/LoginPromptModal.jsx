@@ -105,7 +105,7 @@ export default function LoginPromptModal({
 
         <h2
           id="login-prompt-title"
-          className="font-headline text-xl font-bold text-text mb-3"
+          className="font-headline-md text-xl font-bold text-text mb-3"
         >
           {t("title")}
         </h2>

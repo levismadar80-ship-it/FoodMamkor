@@ -194,7 +194,7 @@ export default function NeighborClient() {
             </div>
             {user?.role === "producer" ? (
               <>
-                <h2 className="font-headline text-2xl font-bold text-text mb-2">
+                <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                   מהמטבח של השכן = מכירה חד-פעמית מהבית
                 </h2>
                 <p className="text-fg-muted mb-6 max-w-md mx-auto">
@@ -220,7 +220,7 @@ export default function NeighborClient() {
               </>
             ) : (
               <>
-                <h2 className="font-headline text-2xl font-bold text-text mb-2">
+                <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                   {city
                     ? "אין מוצרים באזור הזה עדיין 🌱"
                     : "אין עדיין מוצרים ביתיים 🌱"}

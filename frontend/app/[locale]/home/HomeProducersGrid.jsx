@@ -145,7 +145,7 @@ export function HomeProducersGrid({
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} weight="duotone" className="text-primary" />
               </div>
-              <h3 className="font-headline text-xl font-bold text-text mb-2">
+              <h3 className="font-headline-md text-xl font-bold text-text mb-2">
                 {t("home.producers.empty_heading")}
               </h3>
               <p className="text-fg-muted mb-5 max-w-md mx-auto">

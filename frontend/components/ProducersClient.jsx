@@ -241,7 +241,7 @@ export default function ProducersClient({
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-text mb-6">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
         {searchQ ? (
           <>
             {t("title.search_results")}{" "}
@@ -434,7 +434,7 @@ function FilterEmptyState({ onClear, searchQ }) {
       >
         <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
       </div>
-      <h2 className="font-headline text-xl font-bold text-text mb-2">
+      <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {searchQ
           ? t("empty.no_match_search", { q: searchQ })
           : t("empty.no_match_filters")}
@@ -481,7 +481,7 @@ function CatalogEmptyState() {
       >
         <span className="text-2xl">🌿</span>
       </div>
-      <h2 className="font-headline text-xl font-bold text-text mb-2">
+      <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {t("title")}
       </h2>
       <p className="text-fg-muted text-sm mb-6 max-w-sm mx-auto">

@@ -61,7 +61,7 @@ export default function AdminGroupBuysPage() {
           <Link href="/admin" className="text-sm text-primary hover:underline">
             {t("common.back_to_dashboard")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-text mt-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("group_buys.title")}
           </h1>
         </div>

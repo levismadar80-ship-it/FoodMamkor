@@ -23,7 +23,7 @@ function ProducerMiniCard({ producer }) {
         {img ? (
           <Image src={img} alt={producer.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="144px" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-2xl text-primary/40 font-headline">
+          <div className="w-full h-full flex items-center justify-center text-2xl text-primary/40 font-headline-md">
             {(producer.name || "?")[0]}
           </div>
         )}

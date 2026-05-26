@@ -169,7 +169,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
   return (
     <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
-      <h2 className="font-headline text-2xl font-bold text-text mb-6">
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
         {t("section_heading")}
         {total > 0 && (
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>

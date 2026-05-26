@@ -288,7 +288,7 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="font-headline text-2xl font-bold text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+        <h1 className="font-headline-md text-2xl font-bold text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
         <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
 
         {/* MEH-143: logged-in upgrade banner */}
@@ -691,7 +691,7 @@ function RegisterProducerPageBody() {
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
+            <h2 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
             <p className="text-fg-muted mb-6">
               {whatsappSent
                 ? t("auth.register.producer.success.body_with_whatsapp")
@@ -735,7 +735,7 @@ function RegisterProducerPageBody() {
         {step === 3 && !didUpgrade && (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-            <h2 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
+            <h2 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
             <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
             <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
             <button

@@ -212,7 +212,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
   return (
     <div className="bg-white rounded-[16px] p-6 mb-6 border border-border">
-      <h3 className="font-headline text-2xl font-bold mb-1 text-text">פרסום מוצר ביתי</h3>
+      <h3 className="font-headline-md text-2xl font-bold mb-1 text-text">פרסום מוצר ביתי</h3>
       <p className="text-fg-muted text-sm mb-6">
         מלאי את כל השדות החובה. הקונים רואים את כל המידע ומחליטים על סמך זה.
       </p>

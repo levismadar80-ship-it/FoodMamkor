@@ -222,7 +222,7 @@ export default function MapPage() {
         {/* List pane (RTL → first child = right) */}
         <div className="overflow-y-auto border-l border-border flex flex-col">
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
-            <h1 className="font-headline text-xl font-bold text-text">{t("map.client.title")}</h1>
+            <h1 className="font-headline-md text-xl font-bold text-text">{t("map.client.title")}</h1>
             <div className="flex gap-1">
               <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label={t("map.client.aria.split_50_50")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-fg-muted hover:bg-green-50"}`}>
                 <Rows size={18} weight="bold" />

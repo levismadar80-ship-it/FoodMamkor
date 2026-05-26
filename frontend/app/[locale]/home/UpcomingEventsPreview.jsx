@@ -51,7 +51,7 @@ export function UpcomingEventsPreview() {
               <p className="text-primary text-sm font-semibold mb-1">
                 {formatEventDate(ev.event_date)} {ev.event_time && `· ${ev.event_time.slice(0, 5)}`}
               </p>
-              <h3 className="font-headline text-xl font-bold text-text mb-1">{ev.title}</h3>
+              <h3 className="font-headline-md text-xl font-bold text-text mb-1">{ev.title}</h3>
               <p className="text-sm text-fg-muted mb-2">
                 {ev.producer_name} · {ev.city}
               </p>

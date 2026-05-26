@@ -199,7 +199,7 @@ export function HomeHowItWorks() {
         ].map((step, idx) => (
           <FadeInSection key={step.step} delay={idx * 0.12}>
             <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
-            <h3 className="font-headline text-2xl font-bold mb-2">{step.title}</h3>
+            <h3 className="font-headline-md text-2xl font-bold mb-2">{step.title}</h3>
             <p className="text-text/85 leading-relaxed">{step.text}</p>
           </FadeInSection>
         ))}

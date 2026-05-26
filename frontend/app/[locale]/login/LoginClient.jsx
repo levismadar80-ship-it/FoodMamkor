@@ -113,7 +113,7 @@ function LoginPageBody() {
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline text-2xl font-bold text-text mb-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mb-1">
             {t("title")}
           </h1>
           <p className="text-fg-muted text-sm">{t("welcome")}</p>

@@ -284,7 +284,7 @@ export default function EventsPage() {
           <div className="space-y-12">
             {Object.entries(groupedByMonth).map(([month, monthEvents]) => (
               <div key={month}>
-                <h2 className="font-headline text-2xl font-bold text-text mb-6 border-b border-border pb-2">
+                <h2 className="font-headline-md text-2xl font-bold text-text mb-6 border-b border-border pb-2">
                   {month}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -326,7 +326,7 @@ function EventCard({ event, freeLabel }) {
           {formatDate(event.event_date)}
           {event.event_time && ` · ${formatTime(event.event_time)}`}
         </p>
-        <h3 className="font-headline text-xl font-bold text-text mb-1">
+        <h3 className="font-headline-md text-xl font-bold text-text mb-1">
           {event.title}
         </h3>
         <p className="text-sm text-fg-muted mb-2">

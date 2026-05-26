@@ -86,7 +86,7 @@ function SettingsPageBody() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="font-headline text-3xl font-bold text-text mb-6">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
         {tCommon("page_heading")}
       </h1>
 
