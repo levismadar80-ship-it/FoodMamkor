@@ -84,7 +84,7 @@ export default function OpeningHours({ opening_hours }) {
 
   return (
     <section className="mt-8 border-t border-border pt-8">
-      <h2 className="font-headline text-2xl font-bold text-text mb-4">{t("heading")}</h2>
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("heading")}</h2>
 
       {/* Open / closed indicator */}
       {status && (

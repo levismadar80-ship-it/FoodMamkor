@@ -33,7 +33,7 @@ export default function ProducerHeader({
     <>
       {/* Header: name + trust badges */}
       <div className="flex items-center flex-wrap gap-2 mb-2">
-        <h1 className="font-headline text-4xl font-bold text-text">
+        <h1 className="font-headline-lg text-4xl font-bold text-text">
           {producer.name}
         </h1>
         {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}

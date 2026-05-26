@@ -36,7 +36,7 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
         <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={16} weight="bold" />
         </button>
-        <h3 className="font-headline text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
+        <h3 className="font-headline-md text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
         <p className="text-fg-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {POPULAR_CITIES.map(({ key, canonical }) => (

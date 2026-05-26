@@ -83,7 +83,7 @@ export default function ExperienceCard({ experience: ex }) {
           {formatDate(ex.event_date)}
           {ex.event_time && ` · ${formatTime(ex.event_time)}`}
         </p>
-        <h3 className="font-headline text-xl font-bold text-text mb-1">
+        <h3 className="font-headline-md text-xl font-bold text-text mb-1">
           {ex.title}
         </h3>
         <p className="text-sm text-fg-muted mb-2">

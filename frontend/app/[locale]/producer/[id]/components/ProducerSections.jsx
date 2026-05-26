@@ -73,7 +73,7 @@ export default function ProducerSections({
       {/* Description */}
       {producer.description && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-text mb-3">{t("producer.detail.sections.about")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("producer.detail.sections.about")}</h2>
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
@@ -91,7 +91,7 @@ export default function ProducerSections({
       {/* MEH-102: Similar producers */}
       {similarProducers.length >= 3 && (
         <section className="mt-8 border-t border-border pt-8">
-          <h2 className="font-headline text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
           {producer.categories?.[0]?.name && (
             <p className="text-sm text-fg-muted mb-4">
               {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
@@ -110,7 +110,7 @@ export default function ProducerSections({
       {/* Events section */}
       {events.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
           <div className="space-y-3">
             {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
               // MEH-473: Q4 — Gregorian dates via next-intl/format. The
@@ -175,7 +175,7 @@ export default function ProducerSections({
       {/* Products (premium only) */}
       {producer.products?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {producer.products.map((product) => (
               <div
@@ -224,7 +224,7 @@ export default function ProducerSections({
           RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
       {producer.slug && recipes.length > 0 && (
         <section className="mt-8" id="recipes">
-          <h2 className="font-headline text-2xl font-bold text-text mb-4">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -251,7 +251,7 @@ export default function ProducerSections({
           (has delivery_areas rows but no delivery_cities set yet). */}
       {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-text mb-4">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.delivery.heading")}
           </h2>
           <div className="bg-white rounded-[12px] overflow-hidden border border-border">

@@ -29,7 +29,7 @@ export default function UpgradeClient() {
     <div className="max-w-2xl mx-auto px-4 py-16">
       <div className="bg-background border border-border rounded-[16px] p-8 text-center">
         <div className="text-5xl mb-4" aria-hidden="true">⭐</div>
-        <h1 className="font-headline text-3xl font-bold text-text mb-2">{t("title")}</h1>
+        <h1 className="font-headline-lg text-3xl font-bold text-text mb-2">{t("title")}</h1>
         <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

@@ -60,7 +60,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-right" dir="rtl">
-        <h2 id="cat-req-title" className="font-headline text-lg font-bold text-text mb-4">
+        <h2 id="cat-req-title" className="font-headline-md text-lg font-bold text-text mb-4">
           {t("title")}
         </h2>
 

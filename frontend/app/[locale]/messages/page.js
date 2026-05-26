@@ -28,7 +28,7 @@ export default async function MessagesPage({ params }) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 text-center">
       <div className="text-6xl mb-4" aria-hidden="true">💬</div>
-      <h1 className="font-headline text-2xl font-bold text-text mb-3">
+      <h1 className="font-headline-md text-2xl font-bold text-text mb-3">
         {t("heading")}
       </h1>
       <p className="text-fg-muted leading-relaxed mb-6">

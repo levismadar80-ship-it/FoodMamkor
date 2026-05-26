@@ -116,7 +116,7 @@ export default function NeighborClient() {
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1
-            className="font-headline font-bold text-white mb-3 inline-flex items-center gap-3"
+            className="font-headline-display font-bold text-white mb-3 inline-flex items-center gap-3"
             style={{ fontSize: "clamp(36px, 5vw, 56px)" }}
           >
             מהמטבח של השכן
@@ -194,7 +194,7 @@ export default function NeighborClient() {
             </div>
             {user?.role === "producer" ? (
               <>
-                <h2 className="font-headline text-2xl font-bold text-text mb-2">
+                <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                   מהמטבח של השכן = מכירה חד-פעמית מהבית
                 </h2>
                 <p className="text-fg-muted mb-6 max-w-md mx-auto">
@@ -220,7 +220,7 @@ export default function NeighborClient() {
               </>
             ) : (
               <>
-                <h2 className="font-headline text-2xl font-bold text-text mb-2">
+                <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                   {city
                     ? "אין מוצרים באזור הזה עדיין 🌱"
                     : "אין עדיין מוצרים ביתיים 🌱"}

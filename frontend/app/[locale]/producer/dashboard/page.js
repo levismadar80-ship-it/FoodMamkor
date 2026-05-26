@@ -144,7 +144,7 @@ export default function ProducerDashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <h1 className="font-headline text-4xl font-bold text-text mb-2">
+      <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">
         {t("greeting", { name: user.name })}
       </h1>
       <p className="text-fg-muted mb-8">
@@ -321,28 +321,28 @@ export default function ProducerDashboardPage() {
           href="/settings"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
-          <p className="font-headline text-lg font-bold mb-1">{t("quick_links.settings.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.settings.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.settings.sub")}</p>
         </Link>
         <Link
           href="/producer/dashboard/events/new"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
-          <p className="font-headline text-lg font-bold mb-1">{t("quick_links.add_event.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.add_event.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.add_event.sub")}</p>
         </Link>
         <Link
           href={`/producer/${producer.id}`}
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
-          <p className="font-headline text-lg font-bold mb-1">{t("quick_links.view_business.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.view_business.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.view_business.sub")}</p>
         </Link>
         <Link
           href="/producer/dashboard/group-buys"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
-          <p className="font-headline text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
         </Link>
         {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
@@ -350,7 +350,7 @@ export default function ProducerDashboardPage() {
           href="/producer/dashboard/recipes"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
-          <p className="font-headline text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
         </Link>
       </div>
@@ -412,7 +412,7 @@ function AnalyticsSection({ analytics, profile }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
           <p className="text-xs text-fg-muted mb-1">{t("hero.views_week_label")}</p>
-          <p className={`font-headline text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
+          <p className={`font-headline-lg text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
             {profile_views?.last_7d ?? 0}
             <span className={`text-lg font-semibold ${trendColor}`}>{trendIcon}</span>
           </p>
@@ -420,7 +420,7 @@ function AnalyticsSection({ analytics, profile }) {
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
           <p className="text-xs text-fg-muted mb-1">{t("hero.whatsapp_clicks_label")}</p>
-          <p className="font-headline text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
+          <p className="font-headline-lg text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
           <p className="text-xs text-fg-muted mt-1">{t("hero.whatsapp_clicks_sub")}</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
@@ -428,7 +428,7 @@ function AnalyticsSection({ analytics, profile }) {
             {t("hero.conversion_label")}
             <InfoTooltip content={t("hero.conversion_tooltip")} />
           </p>
-          <p className="font-headline text-3xl font-bold text-primary">{conversion_rate}%</p>
+          <p className="font-headline-lg text-3xl font-bold text-primary">{conversion_rate}%</p>
           <p className="text-xs text-fg-muted mt-1">{t("hero.conversion_sub")}</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
@@ -436,7 +436,7 @@ function AnalyticsSection({ analytics, profile }) {
             {t("hero.rank_label")}
             <InfoTooltip content={t("hero.rank_tooltip")} />
           </p>
-          <p className="font-headline text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
+          <p className="font-headline-md text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
           <p className="text-xs text-fg-muted mt-1">{t("hero.rank_sub")}</p>
         </div>
       </div>
@@ -512,14 +512,14 @@ function AnalyticsSection({ analytics, profile }) {
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-border rounded-[16px] p-5">
-          <h2 className="font-headline text-lg font-bold mb-3">
+          <h2 className="font-headline-md text-lg font-bold mb-3">
             {t("views_chart_title")}
             <InfoTooltip content={t("views_chart_tooltip")} />
           </h2>
           <ViewsLineChart data={views_by_day} />
         </div>
         <div className="bg-white border border-border rounded-[16px] p-5">
-          <h2 className="font-headline text-lg font-bold mb-3">{t("top_cities_title")}</h2>
+          <h2 className="font-headline-md text-lg font-bold mb-3">{t("top_cities_title")}</h2>
           <TopCitiesBarChart data={top_cities} />
         </div>
       </div>
@@ -540,15 +540,15 @@ function WindowedMetricCard({ label, icon, windows, tooltip }) {
         {tooltip && <InfoTooltip content={tooltip} />}
       </p>
       <div className="flex items-baseline gap-3">
-        <span className="font-headline text-4xl font-bold text-primary">
+        <span className="font-headline-lg text-4xl font-bold text-primary">
           {windows?.last_7d ?? 0}
         </span>
         <span className="text-lg text-text/60">/</span>
-        <span className="font-headline text-2xl font-semibold text-text">
+        <span className="font-headline-md text-2xl font-semibold text-text">
           {windows?.last_30d ?? 0}
         </span>
         <span className="text-lg text-text/60">/</span>
-        <span className="font-headline text-xl text-fg-muted">
+        <span className="font-headline-md text-xl text-fg-muted">
           {windows?.total ?? 0}
         </span>
       </div>
@@ -563,7 +563,7 @@ function SimpleCard({ label, icon, value, sub }) {
         <span className="text-2xl" aria-hidden="true">{icon}</span>
       </div>
       <p className="text-sm text-fg-muted mb-2">{label}</p>
-      <p className="font-headline text-4xl font-bold text-primary">{value}</p>
+      <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>
       <p className="text-xs text-fg-muted mt-1">{sub}</p>
     </div>
   );
@@ -701,7 +701,7 @@ function ProfileStrengthCard({ profile, analytics }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-headline text-base font-bold">
+        <h2 className="font-headline-md text-base font-bold">
           {t("heading")}
           <InfoTooltip content={t("tooltip")} position="bottom" />
         </h2>
@@ -770,7 +770,7 @@ function CustomQuestionsCard({ profile, onSave }) {
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline text-base font-bold mb-1">
+      <h2 className="font-headline-md text-base font-bold mb-1">
         {t("heading")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
       </h2>
@@ -850,7 +850,7 @@ function BioPanelCard({ profile, onSave }) {
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline text-base font-bold mb-1 flex items-center gap-1"><PencilSimple size={16} className="text-current" />{t("heading")}</h2>
+      <h2 className="font-headline-md text-base font-bold mb-1 flex items-center gap-1"><PencilSimple size={16} className="text-current" />{t("heading")}</h2>
       <p className="text-xs text-fg-muted mb-3">
         {t("intro")}
       </p>

@@ -59,7 +59,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
         </button>
       </div>
       <div className="p-3">
-        <h3 className="font-headline font-bold text-text line-clamp-1" style={{ fontSize: "18px" }}>{sp.name}</h3>
+        <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "18px" }}>{sp.name}</h3>
         <p className="text-[13px] text-fg-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
         {(sp.is_verified || sp.is_organic || sp.is_kosher) && (
           <div className="flex flex-wrap gap-1 mt-1.5">

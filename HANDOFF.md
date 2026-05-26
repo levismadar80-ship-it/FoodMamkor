@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-700 font-headline structural split (🟡 YELLOW)
+
+**Branch:** `feature/meh-700-split-font-headline` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-700. **YELLOW — mobile QA gate before merge.**
+
+**What:** structural split of bare `font-headline` → `font-headline-display`/`-lg`/`-md` — **167 occurrences, 77 files**. Two phases: 96 auto-applied where one clean canonical size class present (`text-5xl+`→display ×4, `text-3xl/4xl`→lg ×22, `text-xl/2xl`→md ×70); 71 ambiguous resolved per-group (below-range 33→md; no-size 28 by rendered px; responsive 10 by largest breakpoint → +12 display/+9 lg/+50 md). **Value-identical / zero visual change** — empirically confirmed compiled CSS: `.font-headline-{display,lg,md}{font-family:Frank Ruhl Libre}` (family-only; size lives on `text-headline-*`, never written here). 0 bare `font-headline` remain. No config/tokens/DESIGN edit (legacy `headline` family alias drops in MEH-708). build+lint green.
+
+**⚠️ Mobile QA REQUIRED before merge:** verify headline rendering on 5+ pages (homepage / producer / category / search / story) on the Vercel preview — visual identity must match staging (Frank Ruhl Libre everywhere it was before, same sizes).
+
+**Next:** await mobile QA + Sapir MERGE. Remaining Contract: MEH-703 (secondary, decision-needed), MEH-708 (alias-drop). MEH-713 (green-50 audit, Low). Do NOT auto-start next.
+
 ## 2026-05-26 — MEH-705 primary-light → primary-dark hover (🟡 YELLOW)
 
 **Branch:** `feature/meh-705-primary-light-to-primary-dark` (off staging `e859cf7`, #860 merge). **PR #TBD** (draft), base `staging`. Closes MEH-705. **YELLOW — mobile QA gate before merge.**

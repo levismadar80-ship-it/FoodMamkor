@@ -68,7 +68,7 @@ export default function NewEventPage() {
         <span className="text-text">{t("crumb_current")}</span>
       </nav>
 
-      <h1 className="font-headline text-4xl font-bold text-text mb-2">{t("heading")}</h1>
+      <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">{t("heading")}</h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
       {error && (

@@ -86,7 +86,7 @@ export default function EventDetailClient() {
           {event.category}
         </span>
 
-        <h1 className="font-headline text-4xl md:text-5xl font-bold text-text mb-4">
+        <h1 className="font-headline-display text-4xl md:text-5xl font-bold text-text mb-4">
           {event.title}
         </h1>
 

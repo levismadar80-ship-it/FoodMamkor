@@ -86,7 +86,7 @@ function SettingsPageBody() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="font-headline text-3xl font-bold text-text mb-6">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
         {tCommon("page_heading")}
       </h1>
 
@@ -1002,7 +1002,7 @@ function ProductsSection() {
   return (
     <div className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline text-lg font-bold text-text">{t("section_heading")}</h3>
+        <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
         {!adding && (
           <button
             onClick={() => { setAdding(true); setError(""); }}

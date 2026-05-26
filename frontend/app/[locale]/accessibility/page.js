@@ -122,7 +122,7 @@ export default async function AccessibilityPage({ params }) {
   return (
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="font-headline text-5xl font-bold text-text mb-2">
+        <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
           {t("heading")}
         </h1>
         <p className="text-fg-muted mb-12">{t("date_label")}</p>
@@ -134,7 +134,7 @@ export default async function AccessibilityPage({ params }) {
               id={section.id}
               className="bg-white rounded-[16px] p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
             >
-              <h2 className="font-headline text-2xl font-bold text-text mb-3">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
                 {t(`sections.${section.id}.title`)}
               </h2>
               <div className="text-text/85 leading-relaxed">
