@@ -40,7 +40,7 @@ export default function GlobalError({ error, reset }) {
           <button
             type="button"
             onClick={() => reset()}
-            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-light transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {t("retry")}
           </button>
@@ -53,7 +53,7 @@ export default function GlobalError({ error, reset }) {
         </div>
         <p className="mt-6 text-sm text-fg-muted">
           {t("contact_prefix")}{" "}
-          <Link href="/contact" className="text-primary underline underline-offset-2 hover:text-primary-light transition">
+          <Link href="/contact" className="text-primary underline underline-offset-2 hover:text-primary-dark transition">
             {t("contact_link")}
           </Link>
         </p>

@@ -159,7 +159,7 @@ export default function AdminReportsPage() {
                     <div className="flex flex-col gap-2 shrink-0">
                       <button
                         onClick={() => approveFlagged(hp.id)}
-                        className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-light transition"
+                        className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-dark transition"
                       >
                         <CheckCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {t("reports.flagged.approve")}
                       </button>

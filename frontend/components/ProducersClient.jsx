@@ -458,7 +458,7 @@ function FilterEmptyState({ onClear, searchQ }) {
       <button
         type="button"
         onClick={onClear}
-        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
+        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
       >
         {t("empty.clear_all_show_all")}
       </button>
@@ -491,7 +491,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
+            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -514,7 +514,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-light transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>

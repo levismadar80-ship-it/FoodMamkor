@@ -209,7 +209,7 @@ function SearchPageBody() {
               </p>
               <Link
                 href="/"
-                className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium"
+                className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium"
               >
                 {t("empty_home_cta")}
               </Link>

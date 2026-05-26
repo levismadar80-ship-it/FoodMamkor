@@ -159,7 +159,7 @@ export default function AdminOutreachPage() {
         <button
           type="button"
           onClick={() => setAddOpen(true)}
-          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-light transition"
+          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition"
         >
           {t("outreach.filters.new_lead")}
         </button>
@@ -243,7 +243,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-light"
+                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark"
                           title={t("outreach.actions.prefill_title")}
                         >
                           {t("outreach.actions.prefill")}

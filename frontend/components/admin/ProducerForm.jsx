@@ -49,7 +49,7 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
         <button
           type="button"
           onClick={() => setOptionalExpanded(true)}
-          className="text-xs text-primary underline hover:text-primary-light"
+          className="text-xs text-primary underline hover:text-primary-dark"
         >
           {t("producers.form.fields.license_optional_toggle")}
         </button>
@@ -702,7 +702,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
-          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>

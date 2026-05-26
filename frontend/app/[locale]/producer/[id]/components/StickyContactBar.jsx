@@ -76,7 +76,7 @@ export default function StickyContactBar({
                 : getPrimaryMethod(producer) === "whatsapp"
                 ? "btn-whatsapp"
                 : getPrimaryMethod(producer) === "phone"
-                ? "bg-primary text-white hover:bg-primary-light"
+                ? "bg-primary text-white hover:bg-primary-dark"
                 : getPrimaryMethod(producer) === "email"
                 ? "bg-primary-dark text-white hover:bg-primary"
                 : "bg-white text-text border border-primary hover:bg-green-50"
